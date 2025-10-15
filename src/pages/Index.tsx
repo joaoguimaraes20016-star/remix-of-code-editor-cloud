@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { MetricCard } from "@/components/MetricCard";
 import { SalesTable, Sale } from "@/components/SalesTable";
 import { AddSaleDialog } from "@/components/AddSaleDialog";
@@ -12,106 +15,186 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DollarSign, TrendingUp, Users, Calendar } from "lucide-react";
-
-// Sample data
-const initialSales: Sale[] = [
-  {
-    id: '1',
-    customerName: 'Acme Corp',
-    setter: 'Sarah Lee',
-    salesRep: 'John Doe',
-    date: '2025-10-10',
-    revenue: 15000,
-    setterCommission: 300,
-    commission: 1500,
-    status: 'closed',
-  },
-  {
-    id: '2',
-    customerName: 'TechStart Inc',
-    setter: 'Mike Ross',
-    salesRep: 'Jane Smith',
-    date: '2025-10-12',
-    revenue: 8500,
-    setterCommission: 170,
-    commission: 850,
-    status: 'closed',
-  },
-  {
-    id: '3',
-    customerName: 'GlobalSoft',
-    setter: 'Sarah Lee',
-    salesRep: 'Mike Johnson',
-    date: '2025-10-14',
-    revenue: 12000,
-    setterCommission: 240,
-    commission: 1200,
-    status: 'pending',
-  },
-  {
-    id: '4',
-    customerName: 'DataFlow Ltd',
-    setter: 'Mike Ross',
-    salesRep: 'Jane Smith',
-    date: '2025-10-13',
-    revenue: 0,
-    setterCommission: 0,
-    commission: 0,
-    status: 'no-show',
-  },
-  {
-    id: '5',
-    customerName: 'CloudNine Systems',
-    setter: 'Tom Brady',
-    salesRep: 'John Doe',
-    date: '2025-10-11',
-    revenue: 22000,
-    setterCommission: 440,
-    commission: 2200,
-    status: 'closed',
-  },
-];
-
-const chartData = [
-  { name: 'Mon', revenue: 4000 },
-  { name: 'Tue', revenue: 3000 },
-  { name: 'Wed', revenue: 5000 },
-  { name: 'Thu', revenue: 8500 },
-  { name: 'Fri', revenue: 6000 },
-  { name: 'Sat', revenue: 7500 },
-  { name: 'Sun', revenue: 4500 },
-];
+import { Button } from "@/components/ui/button";
+import { DollarSign, TrendingUp, Users, Calendar, ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const [sales, setSales] = useState<Sale[]>(initialSales);
+  const { teamId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [selectedRep, setSelectedRep] = useState<string>("all");
+  const [selectedClient, setSelectedClient] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
+  const [teamName, setTeamName] = useState("");
 
-  const handleAddSale = (newSale: Omit<Sale, 'id'>) => {
-    const sale: Sale = {
-      ...newSale,
-      id: Date.now().toString(),
-    };
-    setSales([sale, ...sales]);
+  useEffect(() => {
+    if (!user || !teamId) {
+      navigate('/');
+      return;
+    }
+    loadTeamData();
+    loadClients();
+    loadSales();
+  }, [user, teamId, navigate]);
+
+  const loadTeamData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', teamId)
+        .single();
+
+      if (error) throw error;
+      setTeamName(data.name);
+    } catch (error: any) {
+      toast({
+        title: 'Error loading team',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleImport = (importedSales: Omit<Sale, 'id'>[]) => {
-    const newSales = importedSales.map((sale, index) => ({
-      ...sale,
-      id: `${Date.now()}-${index}`,
-    }));
-    setSales([...newSales, ...sales]);
+  const loadClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('team_id', teamId);
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error: any) {
+      toast({
+        title: 'Error loading clients',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const loadSales = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('*, clients(name)')
+        .eq('team_id', teamId)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedSales: Sale[] = (data || []).map((sale: any) => ({
+        id: sale.id,
+        customerName: sale.customer_name,
+        setter: sale.setter,
+        salesRep: sale.sales_rep,
+        date: sale.date,
+        revenue: Number(sale.revenue),
+        setterCommission: Number(sale.setter_commission),
+        commission: Number(sale.commission),
+        status: sale.status,
+        clientName: sale.clients?.name,
+      }));
+
+      setSales(formattedSales);
+    } catch (error: any) {
+      toast({
+        title: 'Error loading sales',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddSale = async (newSale: Omit<Sale, 'id'>) => {
+    try {
+      const { error } = await supabase
+        .from('sales')
+        .insert({
+          team_id: teamId,
+          client_id: newSale.clientId || null,
+          customer_name: newSale.customerName,
+          setter: newSale.setter,
+          sales_rep: newSale.salesRep,
+          date: newSale.date,
+          revenue: newSale.revenue,
+          setter_commission: newSale.setterCommission,
+          commission: newSale.commission,
+          status: newSale.status,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sale added',
+        description: 'New sale has been added successfully',
+      });
+
+      loadSales();
+    } catch (error: any) {
+      toast({
+        title: 'Error adding sale',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleImport = async (importedSales: Omit<Sale, 'id'>[]) => {
+    try {
+      const salesData = importedSales.map(sale => ({
+        team_id: teamId,
+        client_id: sale.clientId || null,
+        customer_name: sale.customerName,
+        setter: sale.setter,
+        sales_rep: sale.salesRep,
+        date: sale.date,
+        revenue: sale.revenue,
+        setter_commission: sale.setterCommission,
+        commission: sale.commission,
+        status: sale.status,
+      }));
+
+      const { error } = await supabase
+        .from('sales')
+        .insert(salesData);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sales imported',
+        description: `${importedSales.length} sales have been imported successfully`,
+      });
+
+      loadSales();
+    } catch (error: any) {
+      toast({
+        title: 'Error importing sales',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   // Get unique sales reps
   const salesReps = ['all', ...new Set(sales.map(s => s.salesRep))];
 
-  // Filter sales by selected rep
-  const filteredSales = selectedRep === 'all' 
-    ? sales 
-    : sales.filter(s => s.salesRep === selectedRep);
+  // Filter sales by selected rep and client
+  const filteredSales = sales.filter(s => {
+    const repMatch = selectedRep === 'all' || s.salesRep === selectedRep;
+    const clientMatch = selectedClient === 'all' || s.clientId === selectedClient;
+    return repMatch && clientMatch;
+  });
 
-  // Calculate metrics (use filtered sales for display)
+  // Calculate metrics
   const totalRevenue = filteredSales
     .filter(s => s.status === 'closed')
     .reduce((sum, sale) => sum + sale.revenue, 0);
@@ -128,38 +211,87 @@ const Index = () => {
     ? ((filteredSales.filter(s => s.status !== 'no-show').length / filteredSales.length) * 100).toFixed(1)
     : '0';
 
+  // Prepare chart data (last 7 days)
+  const chartData = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const dayRevenue = sales
+      .filter(s => s.date === dateStr && s.status === 'closed')
+      .reduce((sum, s) => sum + s.revenue, 0);
+
+    return {
+      name: date.toLocaleDateString('en-US', { weekday: 'short' }),
+      revenue: dayRevenue,
+    };
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">GRWTH</h1>
+            <div className="flex items-center gap-2 mb-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">{teamName}</h1>
             <p className="text-muted-foreground mt-1">
               Track your sales performance and commissions
             </p>
           </div>
           <div className="flex gap-2">
             <ImportSpreadsheet onImport={handleImport} />
-            <AddSaleDialog onAddSale={handleAddSale} />
+            <AddSaleDialog onAddSale={handleAddSale} clients={clients} />
           </div>
         </div>
 
-        {/* Filter by Sales Rep */}
-        <div className="flex items-center gap-4">
-          <label className="text-sm font-medium">Filter by Sales Rep:</label>
-          <Select value={selectedRep} onValueChange={setSelectedRep}>
-            <SelectTrigger className="w-[200px] bg-card">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-card">
-              {salesReps.map((rep) => (
-                <SelectItem key={rep} value={rep}>
-                  {rep === 'all' ? 'All Sales Reps' : rep}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Sales Rep:</label>
+            <Select value={selectedRep} onValueChange={setSelectedRep}>
+              <SelectTrigger className="w-[200px] bg-card">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card">
+                {salesReps.map((rep) => (
+                  <SelectItem key={rep} value={rep}>
+                    {rep === 'all' ? 'All Sales Reps' : rep}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Client:</label>
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <SelectTrigger className="w-[200px] bg-card">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card">
+                <SelectItem value="all">All Clients</SelectItem>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Metrics Grid */}
@@ -195,7 +327,7 @@ const Index = () => {
         </div>
 
         {/* Commission Breakdown */}
-        <CommissionBreakdown sales={sales} />
+        <CommissionBreakdown sales={filteredSales} />
 
         {/* Chart */}
         <RevenueChart data={chartData} />
@@ -204,6 +336,7 @@ const Index = () => {
         <div>
           <h2 className="text-2xl font-semibold mb-4">
             {selectedRep === 'all' ? 'All Sales' : `${selectedRep}'s Sales`}
+            {selectedClient !== 'all' && ` - ${clients.find(c => c.id === selectedClient)?.name}`}
           </h2>
           <SalesTable sales={filteredSales} />
         </div>

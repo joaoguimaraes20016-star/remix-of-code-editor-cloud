@@ -21,11 +21,17 @@ import {
 import { Plus } from "lucide-react";
 import { Sale } from "./SalesTable";
 
-interface AddSaleDialogProps {
-  onAddSale: (sale: Omit<Sale, 'id'>) => void;
+interface Client {
+  id: string;
+  name: string;
 }
 
-export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
+interface AddSaleDialogProps {
+  onAddSale: (sale: Omit<Sale, 'id'>) => void;
+  clients?: Client[];
+}
+
+export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
   const [open, setOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [setter, setSetter] = useState("");
@@ -35,6 +41,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
   const [setterCommission, setSetterCommission] = useState("");
   const [commission, setCommission] = useState("");
   const [status, setStatus] = useState<Sale['status']>("pending");
+  const [clientId, setClientId] = useState<string>("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +54,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
       setterCommission: parseFloat(setterCommission),
       commission: parseFloat(commission),
       status,
+      clientId: clientId || undefined,
     });
     setCustomerName("");
     setSetter("");
@@ -56,6 +64,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
     setSetterCommission("");
     setCommission("");
     setStatus("pending");
+    setClientId("");
     setOpen(false);
   };
 
@@ -76,6 +85,24 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            {clients.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="client">Client (Optional)</Label>
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="customer">Customer Name</Label>
               <Input

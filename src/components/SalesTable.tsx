@@ -18,6 +18,8 @@ export interface Sale {
   setterCommission: number;
   commission: number;
   status: 'closed' | 'pending' | 'no-show';
+  clientId?: string;
+  clientName?: string;
 }
 
 interface SalesTableProps {
