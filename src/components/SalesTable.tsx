@@ -50,7 +50,7 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted }: 
   const [deleting, setDeleting] = useState(false);
 
   const canDelete = (sale: Sale) => {
-    return userRole === 'admin' || sale.offerOwner === currentUserName;
+    return userRole === 'admin' || userRole === 'owner' || sale.offerOwner === currentUserName;
   };
 
   const handleDeleteClick = (sale: Sale) => {
