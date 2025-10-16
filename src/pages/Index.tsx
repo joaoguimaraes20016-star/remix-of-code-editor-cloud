@@ -416,6 +416,16 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="scheduling" className="space-y-6 mt-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-semibold">Appointments Database</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Import daily CSV to add new appointments
+                </p>
+              </div>
+              <ImportAppointments teamId={teamId!} onImport={loadSales} />
+            </div>
+            
             <Tabs defaultValue={canViewSetterScheduling ? "new" : "closer"} className="w-full">
               <TabsList>
                 {canViewSetterScheduling && <TabsTrigger value="new">New Appointments</TabsTrigger>}
@@ -428,15 +438,10 @@ const Index = () => {
                 <>
                   <TabsContent value="new" className="mt-6">
                     <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h2 className="text-2xl font-semibold">New Appointments</h2>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Import daily CSV or click "Assign" to add appointments to your list
-                          </p>
-                        </div>
-                        <ImportAppointments teamId={teamId!} onImport={loadSales} />
-                      </div>
+                      <h3 className="text-lg font-semibold mb-4">New Appointments</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Click "Assign" to add an appointment to your list
+                      </p>
                       <NewAppointments teamId={teamId!} />
                     </div>
                   </TabsContent>
