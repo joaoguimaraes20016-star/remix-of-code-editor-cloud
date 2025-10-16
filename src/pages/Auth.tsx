@@ -36,18 +36,31 @@ const Auth = () => {
     const token = params.get('invite');
     
     if (token) {
+      console.log('Invitation token found:', token);
       // Load invitation details
       supabase
         .from('team_invitations')
         .select('*')
         .eq('token', token)
         .is('accepted_at', null)
-        .single()
+        .maybeSingle()
         .then(({ data, error }) => {
-          if (error || !data) {
+          console.log('Invitation query result:', { data, error });
+          
+          if (error) {
+            console.error('Error fetching invitation:', error);
             toast({
-              title: 'Invalid or expired invitation',
-              description: 'This invitation link is not valid.',
+              title: 'Error loading invitation',
+              description: error.message,
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          if (!data) {
+            toast({
+              title: 'Invalid invitation',
+              description: 'This invitation link is not valid or has already been used.',
               variant: 'destructive',
             });
             return;
@@ -64,6 +77,7 @@ const Auth = () => {
             return;
           }
 
+          console.log('Setting invitation data:', data.email);
           setInviteToken(token);
           setInviteEmail(data.email);
           setSignUpData(prev => ({ ...prev, email: data.email }));
