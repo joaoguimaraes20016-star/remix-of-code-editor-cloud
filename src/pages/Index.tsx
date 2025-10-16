@@ -63,12 +63,15 @@ const Index = () => {
         .from('teams')
         .select('name, google_sheets_url')
         .eq('id', teamId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setTeamName(data.name);
-      setGoogleSheetsUrl(data.google_sheets_url);
+      if (data) {
+        setTeamName(data.name);
+        setGoogleSheetsUrl(data.google_sheets_url);
+      }
     } catch (error: any) {
+      console.error('Error loading team:', error);
       toast({
         title: 'Error loading team',
         description: error.message,
