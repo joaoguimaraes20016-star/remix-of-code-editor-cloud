@@ -29,8 +29,13 @@ const Auth = () => {
   useEffect(() => {
     // Check if this is a password reset callback
     const checkPasswordReset = async () => {
-      console.log('Full URL:', window.location.href);
-      console.log('Hash:', window.location.hash);
+      const fullUrl = window.location.href;
+      const hash = window.location.hash;
+      
+      console.log('=== Password Reset Check ===');
+      console.log('Full URL:', fullUrl);
+      console.log('Hash:', hash);
+      console.log('Hash length:', hash.length);
       
       // Parse hash parameters from URL
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
@@ -39,16 +44,17 @@ const Auth = () => {
       const error = hashParams.get('error');
       const errorCode = hashParams.get('error_code');
       
-      console.log('Parsed hash params:', { 
+      console.log('Parsed params:', { 
         type, 
         hasAccessToken: !!accessToken,
         error,
-        errorCode,
-        allParams: Object.fromEntries(hashParams.entries())
+        errorCode
       });
+      console.log('All hash params:', Object.fromEntries(hashParams.entries()));
       
       // Check for expired link error
       if (error === 'access_denied' && errorCode === 'otp_expired') {
+        console.log('Link expired, showing reset form');
         setLinkExpired(true);
         setShowResetForm(true);
         toast({
@@ -62,16 +68,16 @@ const Auth = () => {
       }
       
       if (type === 'recovery' && accessToken) {
-        console.log('Recovery mode detected, showing password reset form');
+        console.log('✓ Recovery mode activated - showing password reset form');
         setIsResettingPassword(true);
         // Get the user's email from the session
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('Session data:', session);
+        console.log('Session email:', session?.user?.email);
         if (session?.user?.email) {
           setUserEmail(session.user.email);
         }
       } else {
-        console.log('No recovery type detected, showing normal auth forms');
+        console.log('✗ Not in recovery mode - showing normal auth');
       }
     };
     
