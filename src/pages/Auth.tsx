@@ -39,23 +39,34 @@ const Auth = () => {
       // Load invitation details
       supabase
         .from('team_invitations')
-        .select('email, team_id, role')
+        .select('email, team_id, role, expires_at')
         .eq('token', token)
         .is('accepted_at', null)
-        .gt('expires_at', new Date().toISOString())
         .single()
         .then(({ data, error }) => {
-          if (data) {
-            setInviteToken(token);
-            setInviteEmail(data.email);
-            setSignUpData(prev => ({ ...prev, email: data.email }));
-          } else {
+          if (error || !data) {
             toast({
               title: 'Invalid or expired invitation',
               description: 'This invitation link is not valid.',
               variant: 'destructive',
             });
+            return;
           }
+
+          // Check if invitation is expired
+          const expiresAt = new Date(data.expires_at);
+          if (expiresAt < new Date()) {
+            toast({
+              title: 'Invitation expired',
+              description: 'This invitation link has expired.',
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          setInviteToken(token);
+          setInviteEmail(data.email);
+          setSignUpData(prev => ({ ...prev, email: data.email }));
         });
       return; // Don't process password reset if invitation is present
     }
@@ -181,15 +192,21 @@ const Auth = () => {
               .eq('id', invitation.id);
 
             toast({
-              title: 'Welcome!',
-              description: 'You have been added to the team.',
+              title: 'Welcome to the team!',
+              description: 'Your account has been created successfully.',
             });
             
+            // Redirect to the team dashboard
             navigate(`/team/${invitation.team_id}`);
           }
         }
       } catch (err) {
         console.error('Error processing invitation:', err);
+        toast({
+          title: 'Error joining team',
+          description: 'There was a problem adding you to the team. Please contact support.',
+          variant: 'destructive',
+        });
       }
     } else {
       toast({
@@ -393,8 +410,23 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 {inviteToken && (
-                  <div className="p-3 bg-primary/10 rounded-lg text-sm">
-                    You've been invited! Complete signup to join the team.
+                  <div className="space-y-3">
+                    <div className="p-4 bg-primary/10 rounded-lg">
+                      <h3 className="font-semibold mb-1">Welcome!</h3>
+                      <p className="text-sm text-muted-foreground">
+                        You've been invited to join a team. Complete your profile to get started.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-email">Email</Label>
+                      <Input
+                        id="invite-email"
+                        type="email"
+                        value={inviteEmail}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
                   </div>
                 )}
                 {!inviteToken && (
@@ -415,27 +447,31 @@ const Auth = () => {
                   <Input
                     id="signup-name"
                     type="text"
+                    placeholder="Enter your full name"
                     value={signUpData.fullName}
                     onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
                     required
                   />
                 </div>
+                {!inviteToken && (
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={signUpData.email}
+                      onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={signUpData.email}
-                    onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
-                    disabled={!!inviteToken}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">Set Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
+                    placeholder="Create a password (min 6 characters)"
                     value={signUpData.password}
                     onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
                     required
@@ -443,7 +479,7 @@ const Auth = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Sign Up'}
+                  {loading ? 'Creating account...' : inviteToken ? 'Join Team' : 'Sign Up'}
                 </Button>
               </form>
             </TabsContent>
