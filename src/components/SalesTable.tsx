@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 export interface Sale {
   id: string;
   customerName: string;
+  offerOwner: string;
   setter: string;
   salesRep: string;
   date: string;
@@ -18,8 +19,6 @@ export interface Sale {
   setterCommission: number;
   commission: number;
   status: 'closed' | 'pending' | 'no-show';
-  clientId?: string;
-  clientName?: string;
 }
 
 interface SalesTableProps {
@@ -53,6 +52,7 @@ export function SalesTable({ sales }: SalesTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Customer</TableHead>
+            <TableHead>Offer Owner</TableHead>
             <TableHead>Setter</TableHead>
             <TableHead>Closer</TableHead>
             <TableHead>Date</TableHead>
@@ -66,6 +66,7 @@ export function SalesTable({ sales }: SalesTableProps) {
           {sales.map((sale) => (
             <TableRow key={sale.id}>
               <TableCell className="font-medium">{sale.customerName}</TableCell>
+              <TableCell>{sale.offerOwner}</TableCell>
               <TableCell>{sale.setter}</TableCell>
               <TableCell>{sale.salesRep}</TableCell>
               <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>

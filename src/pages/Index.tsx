@@ -30,9 +30,7 @@ const Index = () => {
   const { role: userRole, isOwner } = useTeamRole(teamId);
   
   const [sales, setSales] = useState<Sale[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
   const [selectedRep, setSelectedRep] = useState<string>("all");
-  const [selectedClient, setSelectedClient] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState("");
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; preset: DateRangePreset }>({
@@ -47,7 +45,6 @@ const Index = () => {
       return;
     }
     loadTeamData();
-    loadClients();
     loadSales();
   }, [user, teamId, navigate]);
 
@@ -70,29 +67,11 @@ const Index = () => {
     }
   };
 
-  const loadClients = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('team_id', teamId);
-
-      if (error) throw error;
-      setClients(data || []);
-    } catch (error: any) {
-      toast({
-        title: 'Error loading clients',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
   const loadSales = async () => {
     try {
       const { data, error } = await supabase
         .from('sales')
-        .select('*, clients(name)')
+        .select('*')
         .eq('team_id', teamId)
         .order('date', { ascending: false });
 
@@ -101,6 +80,7 @@ const Index = () => {
       const formattedSales: Sale[] = (data || []).map((sale: any) => ({
         id: sale.id,
         customerName: sale.customer_name,
+        offerOwner: sale.offer_owner || '',
         setter: sale.setter,
         salesRep: sale.sales_rep,
         date: sale.date,
@@ -108,7 +88,6 @@ const Index = () => {
         setterCommission: Number(sale.setter_commission),
         commission: Number(sale.commission),
         status: sale.status,
-        clientName: sale.clients?.name,
       }));
 
       setSales(formattedSales);
@@ -123,14 +102,24 @@ const Index = () => {
     }
   };
 
-  const handleAddSale = async (newSale: Omit<Sale, 'id'>) => {
+  const handleAddSale = async (newSale: {
+    customerName: string;
+    setter: string;
+    salesRep: string;
+    offerOwner: string;
+    date: string;
+    revenue: number;
+    setterCommission: number;
+    commission: number;
+    status: 'closed' | 'pending' | 'no-show';
+  }) => {
     try {
       const { error } = await supabase
         .from('sales')
         .insert({
           team_id: teamId,
-          client_id: newSale.clientId || null,
           customer_name: newSale.customerName,
+          offer_owner: newSale.offerOwner,
           setter: newSale.setter,
           sales_rep: newSale.salesRep,
           date: newSale.date,
@@ -161,8 +150,8 @@ const Index = () => {
     try {
       const salesData = importedSales.map(sale => ({
         team_id: teamId,
-        client_id: sale.clientId || null,
         customer_name: sale.customerName,
+        offer_owner: sale.offerOwner,
         setter: sale.setter,
         sales_rep: sale.salesRep,
         date: sale.date,
@@ -196,10 +185,9 @@ const Index = () => {
   // Get unique sales reps
   const salesReps = ['all', ...new Set(sales.map(s => s.salesRep))];
 
-  // Filter sales by selected rep, client, and date range
+  // Filter sales by selected rep and date range
   const filteredSales = sales.filter(s => {
     const repMatch = selectedRep === 'all' || s.salesRep === selectedRep;
-    const clientMatch = selectedClient === 'all' || s.clientId === selectedClient;
     
     // Date range filtering
     let dateMatch = true;
@@ -216,7 +204,7 @@ const Index = () => {
       }
     }
     
-    return repMatch && clientMatch && dateMatch;
+    return repMatch && dateMatch;
   });
 
   // Calculate metrics
@@ -316,7 +304,7 @@ const Index = () => {
               </Button>
             )}
             <ImportSpreadsheet onImport={handleImport} />
-            <AddSaleDialog onAddSale={handleAddSale} clients={clients} />
+            <AddSaleDialog onAddSale={handleAddSale} />
           </div>
         </div>
 
@@ -342,26 +330,7 @@ const Index = () => {
               </SelectContent>
             </Select>
           </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Client:</label>
-            <Select value={selectedClient} onValueChange={setSelectedClient}>
-              <SelectTrigger className="w-[200px] bg-card">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-card">
-                <SelectItem value="all">All Clients</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
-
-        {/* Metrics Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Total Revenue"
@@ -417,7 +386,6 @@ const Index = () => {
         <div>
           <h2 className="text-2xl font-semibold mb-4">
             {selectedRep === 'all' ? 'All Sales' : `${selectedRep}'s Sales`}
-            {selectedClient !== 'all' && ` - ${clients.find(c => c.id === selectedClient)?.name}`}
           </h2>
           <SalesTable sales={filteredSales} />
         </div>

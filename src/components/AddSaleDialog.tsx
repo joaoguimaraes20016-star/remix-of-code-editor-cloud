@@ -19,29 +19,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import { Sale } from "./SalesTable";
-
-interface Client {
-  id: string;
-  name: string;
-}
 
 interface AddSaleDialogProps {
-  onAddSale: (sale: Omit<Sale, 'id'>) => void;
-  clients?: Client[];
+  onAddSale: (sale: {
+    customerName: string;
+    setter: string;
+    salesRep: string;
+    offerOwner: string;
+    date: string;
+    revenue: number;
+    setterCommission: number;
+    commission: number;
+    status: 'closed' | 'pending' | 'no-show';
+  }) => void;
 }
 
-export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
+export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
   const [open, setOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
+  const [offerOwner, setOfferOwner] = useState("");
   const [setter, setSetter] = useState("");
   const [salesRep, setSalesRep] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [revenue, setRevenue] = useState("");
   const [setterCommission, setSetterCommission] = useState("");
   const [commission, setCommission] = useState("");
-  const [status, setStatus] = useState<Sale['status']>("pending");
-  const [clientId, setClientId] = useState<string>("");
+  const [status, setStatus] = useState<'closed' | 'pending' | 'no-show'>("pending");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,23 +52,27 @@ export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
       customerName,
       setter,
       salesRep,
+      offerOwner,
       date,
       revenue: parseFloat(revenue),
       setterCommission: parseFloat(setterCommission),
       commission: parseFloat(commission),
       status,
-      clientId: clientId || undefined,
     });
+    setOpen(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
     setCustomerName("");
+    setOfferOwner("");
     setSetter("");
     setSalesRep("");
-    setDate("");
+    setDate(new Date().toISOString().split('T')[0]);
     setRevenue("");
     setSetterCommission("");
     setCommission("");
     setStatus("pending");
-    setClientId("");
-    setOpen(false);
   };
 
   return (
@@ -76,7 +83,7 @@ export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
           Add Sale
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Sale</DialogTitle>
           <DialogDescription>
@@ -85,51 +92,50 @@ export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            {clients.length > 0 && (
-              <div className="grid gap-2">
-                <Label htmlFor="client">Client (Optional)</Label>
-                <Select value={clientId} onValueChange={setClientId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="grid gap-2">
-              <Label htmlFor="customer">Customer Name</Label>
+              <Label htmlFor="customerName">Customer Name</Label>
               <Input
-                id="customer"
+                id="customerName"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="John Doe"
                 required
               />
             </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="offerOwner">Offer Owner</Label>
+              <Input
+                id="offerOwner"
+                value={offerOwner}
+                onChange={(e) => setOfferOwner(e.target.value)}
+                placeholder="Jane Smith"
+                required
+              />
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="setter">Setter</Label>
               <Input
                 id="setter"
                 value={setter}
                 onChange={(e) => setSetter(e.target.value)}
+                placeholder="Mike Johnson"
                 required
               />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="salesRep">Closer</Label>
               <Input
                 id="salesRep"
                 value={salesRep}
                 onChange={(e) => setSalesRep(e.target.value)}
+                placeholder="Sarah Williams"
                 required
               />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="date">Date</Label>
               <Input
@@ -140,6 +146,7 @@ export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
                 required
               />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="revenue">Revenue</Label>
               <Input
@@ -148,9 +155,11 @@ export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
                 step="0.01"
                 value={revenue}
                 onChange={(e) => setRevenue(e.target.value)}
+                placeholder="10000"
                 required
               />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="setterCommission">Setter Commission</Label>
               <Input
@@ -159,9 +168,11 @@ export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
                 step="0.01"
                 value={setterCommission}
                 onChange={(e) => setSetterCommission(e.target.value)}
+                placeholder="500"
                 required
               />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="commission">Closer Commission</Label>
               <Input
@@ -170,12 +181,14 @@ export function AddSaleDialog({ onAddSale, clients = [] }: AddSaleDialogProps) {
                 step="0.01"
                 value={commission}
                 onChange={(e) => setCommission(e.target.value)}
+                placeholder="1000"
                 required
               />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={(value) => setStatus(value as Sale['status'])}>
+              <Select value={status} onValueChange={(value) => setStatus(value as 'closed' | 'pending' | 'no-show')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

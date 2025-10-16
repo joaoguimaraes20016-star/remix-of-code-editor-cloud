@@ -78,6 +78,7 @@ export type Database = {
           customer_name: string
           date: string
           id: string
+          offer_owner: string | null
           revenue: number | null
           sales_rep: string
           setter: string
@@ -93,6 +94,7 @@ export type Database = {
           customer_name: string
           date: string
           id?: string
+          offer_owner?: string | null
           revenue?: number | null
           sales_rep: string
           setter: string
@@ -108,6 +110,7 @@ export type Database = {
           customer_name?: string
           date?: string
           id?: string
+          offer_owner?: string | null
           revenue?: number | null
           sales_rep?: string
           setter?: string

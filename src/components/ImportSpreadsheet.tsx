@@ -37,10 +37,11 @@ export function ImportSpreadsheet({ onImport }: ImportSpreadsheetProps) {
       
       const importedSales: Omit<Sale, 'id'>[] = dataLines
         .map(line => {
-          const [customerName, setter, salesRep, date, revenue, setterCommission, commission, status] = line.split(',').map(s => s.trim());
+          const [customerName, offerOwner, setter, salesRep, date, revenue, setterCommission, commission, status] = line.split(',').map(s => s.trim());
           
           return {
             customerName,
+            offerOwner: offerOwner || '',
             setter,
             salesRep,
             date,
@@ -93,7 +94,7 @@ export function ImportSpreadsheet({ onImport }: ImportSpreadsheetProps) {
           <DialogTitle>Import Sales Data</DialogTitle>
           <DialogDescription>
             Upload a CSV file with your sales data. The file should have the following columns:
-            Customer Name, Setter, Closer, Date, Revenue, Setter Commission, Closer Commission, Status
+            Customer Name, Offer Owner, Setter, Closer, Date, Revenue, Setter Commission, Closer Commission, Status
           </DialogDescription>
         </DialogHeader>
         
@@ -126,9 +127,9 @@ export function ImportSpreadsheet({ onImport }: ImportSpreadsheetProps) {
           <div className="bg-secondary/50 p-4 rounded-lg">
             <p className="text-sm font-medium mb-2">Expected CSV Format:</p>
             <code className="text-xs block bg-card p-2 rounded overflow-x-auto">
-              Customer Name, Setter, Closer, Date, Revenue, Setter Commission, Closer Commission, Status<br />
-              Acme Corp, Sarah Lee, John Doe, 2025-10-10, 15000, 300, 1500, closed<br />
-              TechStart Inc, Mike Ross, Jane Smith, 2025-10-12, 8500, 170, 850, closed
+              Customer Name, Offer Owner, Setter, Closer, Date, Revenue, Setter Commission, Closer Commission, Status<br />
+              Acme Corp, Jane Admin, Sarah Lee, John Doe, 2025-10-10, 15000, 300, 1500, closed<br />
+              TechStart Inc, Mike Manager, Mike Ross, Jane Smith, 2025-10-12, 8500, 170, 850, closed
             </code>
           </div>
         </div>
