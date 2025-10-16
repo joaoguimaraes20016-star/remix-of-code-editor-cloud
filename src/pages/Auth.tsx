@@ -27,6 +27,7 @@ const Auth = () => {
   const [linkExpired, setLinkExpired] = useState(false);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [activeTab, setActiveTab] = useState('signin');
 
 
 
@@ -76,6 +77,7 @@ const Auth = () => {
           setInviteToken(token);
           setInviteEmail(data.email);
           setSignUpData(prev => ({ ...prev, email: data.email }));
+          setActiveTab('signup');
         });
       return; // Don't process password reset if invitation is present
     }
@@ -349,7 +351,7 @@ const Auth = () => {
               </Button>
             </form>
           ) : (
-            <Tabs defaultValue={inviteToken ? "signup" : "signin"} className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin" disabled={!!inviteToken}>Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
