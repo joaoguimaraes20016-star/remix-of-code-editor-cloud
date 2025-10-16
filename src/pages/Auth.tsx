@@ -57,6 +57,7 @@ const Auth = () => {
             });
           }
         });
+      return; // Don't process password reset if invitation is present
     }
 
     // Set up auth state listener to catch PASSWORD_RECOVERY event
