@@ -142,10 +142,10 @@ export function CloserView({ teamId }: CloserViewProps) {
     const mrr = parseFloat(mrrAmount);
     const months = parseInt(mrrMonths);
 
-    if (isNaN(cc) || cc <= 0) {
+    if (isNaN(cc) || cc < 0) {
       toast({
         title: 'Invalid CC amount',
-        description: 'Please enter a valid cash collected amount',
+        description: 'Please enter a valid cash collected amount (cannot be negative)',
         variant: 'destructive',
       });
       return;
