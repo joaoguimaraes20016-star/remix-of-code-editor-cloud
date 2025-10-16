@@ -81,10 +81,10 @@ serve(async (req) => {
 
     // Parse headers to find column indices
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
-    const nameIndex = headers.findIndex(h => h.includes('name') || h.includes('lead'));
+    const nameIndex = headers.findIndex(h => h.includes('name') && (h.includes('invitee') || h.includes('lead')));
     const emailIndex = headers.findIndex(h => h.includes('email'));
-    const dateIndex = headers.findIndex(h => h.includes('date') || h.includes('time') || h.includes('start'));
-    const closerIndex = headers.findIndex(h => h.includes('closer') || h.includes('meeting with') || h.includes('meeting_with'));
+    const dateIndex = headers.findIndex(h => h.includes('date') || h.includes('time') || h.includes('start') || h.includes('created'));
+    const closerIndex = headers.findIndex(h => (h.includes('profile') && h.includes('name')) || h.includes('closer') || h.includes('meeting with') || h.includes('meeting_with'));
 
     console.log('CSV headers:', headers);
     console.log('Column indices - name:', nameIndex, 'email:', emailIndex, 'date:', dateIndex, 'closer:', closerIndex);
