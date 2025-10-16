@@ -238,7 +238,7 @@ const Index = () => {
     return repMatch && dateMatch;
   });
 
-  // Calculate metrics from appointments (CC revenue)
+  // Calculate metrics from appointments (CC revenue) - ONLY closed appointments with actual revenue
   const totalCCRevenue = appointments
     .filter(apt => {
       if (!dateRange.from && !dateRange.to) return true;
@@ -253,9 +253,9 @@ const Index = () => {
       }
       return true;
     })
-    .reduce((sum, apt) => sum + (apt.cc_collected || 0), 0);
+    .reduce((sum, apt) => sum + (Number(apt.cc_collected) || 0), 0);
 
-  // Calculate total MRR
+  // Calculate total MRR (sum of all monthly recurring revenue)
   const totalMRR = appointments
     .filter(apt => {
       if (!dateRange.from && !dateRange.to) return true;
@@ -270,8 +270,9 @@ const Index = () => {
       }
       return true;
     })
-    .reduce((sum, apt) => sum + ((apt.mrr_amount || 0) * (apt.mrr_months || 0)), 0);
+    .reduce((sum, apt) => sum + ((Number(apt.mrr_amount) || 0) * (Number(apt.mrr_months) || 0)), 0);
   
+  // Calculate total commissions from CLOSED appointments only (CC-based)
   const totalCommissions = appointments
     .filter(apt => {
       if (!dateRange.from && !dateRange.to) return true;
@@ -287,18 +288,44 @@ const Index = () => {
       return true;
     })
     .reduce((sum, apt) => {
-      const cc = apt.cc_collected || 0;
-      const closerComm = cc * 0.10;
-      const setterComm = apt.setter_id ? cc * 0.05 : 0;
+      const cc = Number(apt.cc_collected) || 0;
+      const closerComm = cc * 0.10; // 10% for closer
+      const setterComm = apt.setter_id ? cc * 0.05 : 0; // 5% for setter if assigned
       return sum + closerComm + setterComm;
     }, 0);
   
-  const closeRate = filteredSales.length > 0 
-    ? ((filteredSales.filter(s => s.status === 'closed').length / filteredSales.length) * 100).toFixed(1)
+  // Calculate close rate from sales data
+  const closedSalesCount = filteredSales.filter(s => s.status === 'closed').length;
+  const totalSalesCount = filteredSales.length;
+  const closeRate = totalSalesCount > 0 
+    ? ((closedSalesCount / totalSalesCount) * 100).toFixed(1)
     : '0';
   
-  const showUpRate = filteredSales.length > 0
-    ? ((filteredSales.filter(s => s.status !== 'no-show').length / filteredSales.length) * 100).toFixed(1)
+  // Calculate show-up rate (appointments that are not NO_SHOW)
+  const allAppointmentsInRange = appointments.filter(apt => {
+    if (!dateRange.from && !dateRange.to) return true;
+    const aptDate = new Date(apt.start_at_utc);
+    aptDate.setHours(0, 0, 0, 0);
+    if (dateRange.from && dateRange.to) {
+      return aptDate >= dateRange.from && aptDate <= dateRange.to;
+    } else if (dateRange.from) {
+      return aptDate >= dateRange.from;
+    } else if (dateRange.to) {
+      return aptDate <= dateRange.to;
+    }
+    return true;
+  });
+  
+  const showedUpCount = allAppointmentsInRange.filter(apt => apt.status !== 'NO_SHOW').length;
+  const totalAppointmentsCount = allAppointmentsInRange.length;
+  const showUpRate = totalAppointmentsCount > 0
+    ? ((showedUpCount / totalAppointmentsCount) * 100).toFixed(1)
+    : '0';
+
+  // Calculate no-show rate
+  const noShowCount = allAppointmentsInRange.filter(apt => apt.status === 'NO_SHOW').length;
+  const noShowRate = totalAppointmentsCount > 0
+    ? ((noShowCount / totalAppointmentsCount) * 100).toFixed(1)
     : '0';
 
   // Calculate leaderboards
@@ -421,40 +448,47 @@ const Index = () => {
             </Select>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
           <MetricCard
             title="CC Revenue"
-            value={`$${totalCCRevenue.toLocaleString()}`}
+            value={`$${totalCCRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={DollarSign}
-            trend="+12.5% from last month"
+            trend={`${closedSalesCount} deals closed`}
             trendUp
           />
           <MetricCard
             title="Total MRR"
-            value={`$${totalMRR.toLocaleString()}`}
+            value={`$${totalMRR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={DollarSign}
-            trend="+8.2% from last month"
+            trend="All recurring revenue"
             trendUp
           />
           <MetricCard
             title="Total Commissions"
-            value={`$${totalCommissions.toLocaleString()}`}
+            value={`$${totalCommissions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={TrendingUp}
-            trend="+8.2% from last month"
+            trend="From closed deals"
             trendUp
           />
           <MetricCard
             title="Close Rate"
             value={`${closeRate}%`}
             icon={Users}
-            trend="+4.3% from last month"
+            trend={`${closedSalesCount}/${totalSalesCount} closed`}
             trendUp
           />
           <MetricCard
             title="Show Up Rate"
             value={`${showUpRate}%`}
             icon={Calendar}
-            trend="-2.1% from last month"
+            trend={`${showedUpCount}/${totalAppointmentsCount} showed`}
+            trendUp={Number(showUpRate) >= 70}
+          />
+          <MetricCard
+            title="No-Show Rate"
+            value={`${noShowRate}%`}
+            icon={Calendar}
+            trend={`${noShowCount}/${totalAppointmentsCount} no-shows`}
             trendUp={false}
           />
         </div>
