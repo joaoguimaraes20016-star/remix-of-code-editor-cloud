@@ -241,6 +241,7 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('handleSignUp called, inviteToken:', inviteToken);
     setLoading(true);
     
     // Skip signup code validation if user has an invitation
@@ -257,6 +258,8 @@ const Auth = () => {
     }
     
     const { data: signUpResult, error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName);
+    
+    console.log('signUp result:', { signUpResult, error });
     
     if (error) {
       // If user already exists and has an invitation, sign them in instead
@@ -355,6 +358,7 @@ const Auth = () => {
 
     // If user signed up with an invitation, add them to the team
     if (inviteToken && signUpResult?.user) {
+      console.log('Processing invitation for new user:', signUpResult.user.id);
       try {
         const { data: invitation } = await supabase
           .from('team_invitations')
