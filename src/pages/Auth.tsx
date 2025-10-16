@@ -43,8 +43,7 @@ const Auth = () => {
       // Check if user is already logged in
       supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (session?.user) {
-          // User is logged in, process invitation immediately
-          setLoading(true);
+          // User is logged in - check if their email matches the invitation
           try {
             const { data: invitation, error: inviteError } = await supabase
               .from('team_invitations')
@@ -61,10 +60,22 @@ const Auth = () => {
                 description: 'This invitation link is not valid or has already been used.',
                 variant: 'destructive',
               });
-              setLoading(false);
               return;
             }
 
+            // Check if the logged-in user's email matches the invitation
+            if (session.user.email?.toLowerCase() !== invitation.email.toLowerCase()) {
+              toast({
+                title: 'Wrong account',
+                description: `This invitation is for ${invitation.email}. Please sign out and use the correct account, or open this link in a private/incognito window.`,
+                variant: 'destructive',
+              });
+              return;
+            }
+
+            // Emails match - process invitation immediately
+            setLoading(true);
+            
             // Check if invitation is expired
             const expiresAt = new Date(invitation.expires_at);
             if (expiresAt < new Date()) {
