@@ -39,7 +39,7 @@ const Auth = () => {
       // Load invitation details
       supabase
         .from('team_invitations')
-        .select('email, team_id, role, expires_at')
+        .select('*')
         .eq('token', token)
         .is('accepted_at', null)
         .single()
