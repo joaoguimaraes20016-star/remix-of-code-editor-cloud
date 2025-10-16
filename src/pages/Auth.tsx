@@ -427,6 +427,12 @@ const Auth = () => {
     if (inviteToken && signUpResult?.user) {
       console.log('Account created for invited user:', signUpResult.user.id);
       
+      // Set account_type to 'invited' for users signing up with invitation
+      await supabase
+        .from('profiles')
+        .update({ account_type: 'invited' })
+        .eq('id', signUpResult.user.id);
+      
       // Sign out immediately so they have to manually sign in
       await supabase.auth.signOut();
       
@@ -441,6 +447,14 @@ const Auth = () => {
       setLoading(false);
       return;
     } else {
+      // Set account_type to 'creator' for regular signups with code
+      if (signUpResult?.user) {
+        await supabase
+          .from('profiles')
+          .update({ account_type: 'creator' })
+          .eq('id', signUpResult.user.id);
+      }
+      
       toast({
         title: 'Check your email!',
         description: 'We sent you a confirmation link. Please verify your email to continue.',

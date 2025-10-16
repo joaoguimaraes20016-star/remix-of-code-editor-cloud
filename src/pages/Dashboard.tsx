@@ -167,13 +167,24 @@ const Dashboard = () => {
               Select a team to get started
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={handleSignOut}
-            className="hover:bg-primary/10 hover:text-primary transition-all duration-300"
-          >
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-3">
+            {!canCreateTeams && (
+              <Button 
+                variant="default" 
+                onClick={() => navigate('/auth?creator=true')}
+                className="bg-primary hover:bg-primary/90 transition-all duration-300"
+              >
+                Sign Up as Creator
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              onClick={handleSignOut}
+              className="hover:bg-primary/10 hover:text-primary transition-all duration-300"
+            >
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 animate-scale-in">

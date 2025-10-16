@@ -172,6 +172,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
@@ -179,6 +180,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          account_type?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -186,6 +188,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          account_type?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -425,6 +428,10 @@ export type Database = {
       }
       has_valid_invitation: {
         Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_creator: {
+        Args: { _user_id: string }
         Returns: boolean
       }
       is_team_member: {
