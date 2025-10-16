@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Team Invites <onboarding@resend.dev>",
+            from: "Team Invites <invites@notifications.grwthengine.org>",
             to: [email],
             subject: `You've been invited to join ${teamName}`,
             html: `
