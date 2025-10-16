@@ -25,7 +25,7 @@ interface Appointment {
   start_at_utc: string;
   lead_name: string;
   lead_email: string;
-  status: 'NEW' | 'SHOWED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED' | 'NO_SHOW';
+  status: 'NEW' | 'CONFIRMED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED';
   setter_notes: string | null;
 }
 
@@ -77,7 +77,7 @@ export function MyClaimed({ teamId }: MyClaimedProps) {
         .order('start_at_utc', { ascending: false });
 
       if (error) throw error;
-      setAppointments(data || []);
+      setAppointments((data || []) as Appointment[]);
     } catch (error: any) {
       toast({
         title: 'Error loading appointments',
@@ -130,7 +130,7 @@ export function MyClaimed({ teamId }: MyClaimedProps) {
     }
   };
 
-  const handleStatusChange = async (id: string, newStatus: 'NEW' | 'SHOWED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED' | 'NO_SHOW') => {
+  const handleStatusChange = async (id: string, newStatus: 'NEW' | 'CONFIRMED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED') => {
     try {
       const { error } = await supabase
         .from('appointments')
@@ -194,14 +194,14 @@ export function MyClaimed({ teamId }: MyClaimedProps) {
               <TableCell>
                 <Select 
                   value={apt.status} 
-                  onValueChange={(value: 'NEW' | 'SHOWED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED' | 'NO_SHOW') => handleStatusChange(apt.id, value)}
+                  onValueChange={(value: 'NEW' | 'CONFIRMED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED') => handleStatusChange(apt.id, value)}
                 >
                   <SelectTrigger className="w-[140px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NEW">NEW</SelectItem>
-                    <SelectItem value="SHOWED">SHOWED</SelectItem>
+                    <SelectItem value="CONFIRMED">CONFIRMED</SelectItem>
                     <SelectItem value="CANCELLED">CANCELLED</SelectItem>
                     <SelectItem value="RESCHEDULED">RESCHEDULED</SelectItem>
                     <SelectItem value="CLOSED">CLOSED</SelectItem>
