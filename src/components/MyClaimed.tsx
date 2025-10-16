@@ -10,6 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 
@@ -18,7 +25,7 @@ interface Appointment {
   start_at_utc: string;
   lead_name: string;
   lead_email: string;
-  status: string;
+  status: 'NEW' | 'SHOWED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED' | 'NO_SHOW';
   setter_notes: string | null;
 }
 
@@ -123,6 +130,33 @@ export function MyClaimed({ teamId }: MyClaimedProps) {
     }
   };
 
+  const handleStatusChange = async (id: string, newStatus: 'NEW' | 'SHOWED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED' | 'NO_SHOW') => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Status updated',
+        description: `Appointment status changed to ${newStatus}`,
+      });
+
+      // Update local state
+      setAppointments(prev =>
+        prev.map(apt => apt.id === id ? { ...apt, status: newStatus as Appointment['status'] } : apt)
+      );
+    } catch (error: any) {
+      toast({
+        title: 'Error updating status',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const formatLocalTime = (utcTime: string) => {
     return format(new Date(utcTime), 'MMM d, yyyy h:mm a');
   };
@@ -158,9 +192,21 @@ export function MyClaimed({ teamId }: MyClaimedProps) {
               <TableCell className="font-medium">{apt.lead_name}</TableCell>
               <TableCell>{apt.lead_email}</TableCell>
               <TableCell>
-                <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-primary/10 text-primary">
-                  {apt.status}
-                </span>
+                <Select 
+                  value={apt.status} 
+                  onValueChange={(value: 'NEW' | 'SHOWED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED' | 'NO_SHOW') => handleStatusChange(apt.id, value)}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NEW">NEW</SelectItem>
+                    <SelectItem value="SHOWED">SHOWED</SelectItem>
+                    <SelectItem value="CANCELLED">CANCELLED</SelectItem>
+                    <SelectItem value="RESCHEDULED">RESCHEDULED</SelectItem>
+                    <SelectItem value="CLOSED">CLOSED</SelectItem>
+                  </SelectContent>
+                </Select>
               </TableCell>
               <TableCell>
                 <Input

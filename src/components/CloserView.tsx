@@ -110,12 +110,12 @@ export function CloserView({ teamId }: CloserViewProps) {
       if (newError) throw newError;
       setNewAppointments(newData || []);
 
-      // Load closed appointments (status changed to CLOSED when revenue is added)
+      // Load closed appointments
       const { data: closedData, error: closedError } = await supabase
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
-        .eq('status', 'CANCELLED')
+        .eq('status', 'CLOSED') // Query for CLOSED status
         .gt('revenue', 0)
         .order('start_at_utc', { ascending: false });
 
@@ -174,7 +174,7 @@ export function CloserView({ teamId }: CloserViewProps) {
       const { error: updateError } = await supabase
         .from('appointments')
         .update({
-          status: 'CANCELLED', // Using CANCELLED to track closed deals
+          status: 'CLOSED', // Set status to CLOSED
           closer_id: user.id,
           closer_name: userProfile.full_name,
           revenue: cc, // Revenue is just CC

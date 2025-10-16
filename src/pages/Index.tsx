@@ -123,7 +123,7 @@ const Index = () => {
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
-        .eq('status', 'CANCELLED') // Closed deals
+        .eq('status', 'CLOSED') // Query for CLOSED status
         .gt('revenue', 0);
 
       if (error) throw error;

@@ -357,7 +357,13 @@ export type Database = {
       }
     }
     Enums: {
-      appointment_status: "NEW" | "SHOWED" | "NO_SHOW" | "CANCELLED"
+      appointment_status:
+        | "NEW"
+        | "SHOWED"
+        | "NO_SHOW"
+        | "CANCELLED"
+        | "CLOSED"
+        | "RESCHEDULED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -485,7 +491,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      appointment_status: ["NEW", "SHOWED", "NO_SHOW", "CANCELLED"],
+      appointment_status: [
+        "NEW",
+        "SHOWED",
+        "NO_SHOW",
+        "CANCELLED",
+        "CLOSED",
+        "RESCHEDULED",
+      ],
     },
   },
 } as const
