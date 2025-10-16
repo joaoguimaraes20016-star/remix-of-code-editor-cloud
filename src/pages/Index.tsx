@@ -7,6 +7,7 @@ import { SalesTable, Sale } from "@/components/SalesTable";
 import { AddSaleDialog } from "@/components/AddSaleDialog";
 import { RevenueChart } from "@/components/RevenueChart";
 import { CommissionBreakdown } from "@/components/CommissionBreakdown";
+import { Leaderboard } from "@/components/Leaderboard";
 import { ImportSpreadsheet } from "@/components/ImportSpreadsheet";
 import {
   Select,
@@ -213,6 +214,37 @@ const Index = () => {
     ? ((filteredSales.filter(s => s.status !== 'no-show').length / filteredSales.length) * 100).toFixed(1)
     : '0';
 
+  // Calculate leaderboards
+  const closedSales = filteredSales.filter(s => s.status === 'closed');
+  
+  const closerLeaderboard = Object.entries(
+    closedSales.reduce((acc, sale) => {
+      if (!acc[sale.salesRep]) {
+        acc[sale.salesRep] = { sales: 0, revenue: 0, commission: 0 };
+      }
+      acc[sale.salesRep].sales += 1;
+      acc[sale.salesRep].revenue += sale.revenue;
+      acc[sale.salesRep].commission += sale.commission;
+      return acc;
+    }, {} as Record<string, { sales: number; revenue: number; commission: number }>)
+  )
+    .map(([name, stats]) => ({ name, ...stats }))
+    .sort((a, b) => b.commission - a.commission);
+
+  const setterLeaderboard = Object.entries(
+    closedSales.reduce((acc, sale) => {
+      if (!acc[sale.setter]) {
+        acc[sale.setter] = { sales: 0, revenue: 0, commission: 0 };
+      }
+      acc[sale.setter].sales += 1;
+      acc[sale.setter].revenue += sale.revenue;
+      acc[sale.setter].commission += sale.setterCommission;
+      return acc;
+    }, {} as Record<string, { sales: number; revenue: number; commission: number }>)
+  )
+    .map(([name, stats]) => ({ name, ...stats }))
+    .sort((a, b) => b.commission - a.commission);
+
   // Prepare chart data (last 7 days)
   const chartData = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
@@ -311,15 +343,13 @@ const Index = () => {
             trend="+12.5% from last month"
             trendUp
           />
-          {userRole === 'owner' && (
-            <MetricCard
-              title="Total Commissions"
-              value={`$${totalCommissions.toLocaleString()}`}
-              icon={TrendingUp}
-              trend="+8.2% from last month"
-              trendUp
-            />
-          )}
+          <MetricCard
+            title="Total Commissions"
+            value={`$${totalCommissions.toLocaleString()}`}
+            icon={TrendingUp}
+            trend="+8.2% from last month"
+            trendUp
+          />
           <MetricCard
             title="Close Rate"
             value={`${closeRate}%`}
@@ -336,8 +366,22 @@ const Index = () => {
           />
         </div>
 
-        {/* Commission Breakdown - Only for owners */}
-        {userRole === 'owner' && <CommissionBreakdown sales={filteredSales} />}
+        {/* Commission Breakdown */}
+        <CommissionBreakdown sales={filteredSales} />
+
+        {/* Leaderboards */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <Leaderboard 
+            title="Top Closers" 
+            entries={closerLeaderboard}
+            type="closer"
+          />
+          <Leaderboard 
+            title="Top Setters" 
+            entries={setterLeaderboard}
+            type="setter"
+          />
+        </div>
 
         {/* Chart */}
         <RevenueChart data={chartData} />
@@ -348,7 +392,7 @@ const Index = () => {
             {selectedRep === 'all' ? 'All Sales' : `${selectedRep}'s Sales`}
             {selectedClient !== 'all' && ` - ${clients.find(c => c.id === selectedClient)?.name}`}
           </h2>
-          <SalesTable sales={filteredSales} userRole={userRole} />
+          <SalesTable sales={filteredSales} />
         </div>
       </div>
     </div>

@@ -24,11 +24,9 @@ export interface Sale {
 
 interface SalesTableProps {
   sales: Sale[];
-  userRole?: string | null;
 }
 
-export function SalesTable({ sales, userRole }: SalesTableProps) {
-  const showCommissions = userRole === 'owner';
+export function SalesTable({ sales }: SalesTableProps) {
   const getStatusBadge = (status: Sale['status']) => {
     const variants = {
       closed: 'default',
@@ -59,8 +57,8 @@ export function SalesTable({ sales, userRole }: SalesTableProps) {
             <TableHead>Closer</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Revenue</TableHead>
-            {showCommissions && <TableHead>Setter Commission</TableHead>}
-            {showCommissions && <TableHead>Closer Commission</TableHead>}
+            <TableHead>Setter Commission</TableHead>
+            <TableHead>Closer Commission</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -72,16 +70,12 @@ export function SalesTable({ sales, userRole }: SalesTableProps) {
               <TableCell>{sale.salesRep}</TableCell>
               <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
               <TableCell>${sale.revenue.toLocaleString()}</TableCell>
-              {showCommissions && (
-                <TableCell className="text-primary font-semibold">
-                  ${sale.setterCommission.toLocaleString()}
-                </TableCell>
-              )}
-              {showCommissions && (
-                <TableCell className="text-accent font-semibold">
-                  ${sale.commission.toLocaleString()}
-                </TableCell>
-              )}
+              <TableCell className="text-primary font-semibold">
+                ${sale.setterCommission.toLocaleString()}
+              </TableCell>
+              <TableCell className="text-accent font-semibold">
+                ${sale.commission.toLocaleString()}
+              </TableCell>
               <TableCell>{getStatusBadge(sale.status)}</TableCell>
             </TableRow>
           ))}
