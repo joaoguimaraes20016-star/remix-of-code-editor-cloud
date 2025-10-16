@@ -121,7 +121,8 @@ export default function TeamSettings() {
         .select(`
           id,
           role,
-          profiles:user_id (
+          user_id,
+          profiles!team_members_user_id_fkey (
             email,
             full_name
           )
