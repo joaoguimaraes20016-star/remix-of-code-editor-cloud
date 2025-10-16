@@ -18,35 +18,58 @@ serve(async (req) => {
     );
 
     const { teamId } = await req.json();
+    console.log('Syncing appointments for team:', teamId);
 
     // Get the team's Google Sheets URL
     const { data: team, error: teamError } = await supabase
       .from('teams')
       .select('google_sheets_url')
       .eq('id', teamId)
-      .single();
+      .maybeSingle();
 
-    if (teamError || !team?.google_sheets_url) {
-      console.error('No Google Sheets URL configured:', teamError);
+    if (teamError) {
+      console.error('Error fetching team:', teamError);
       return new Response(
-        JSON.stringify({ error: 'No Google Sheets URL configured' }),
+        JSON.stringify({ error: 'Error fetching team data: ' + teamError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!team || !team.google_sheets_url) {
+      console.error('No Google Sheets URL configured for team:', teamId);
+      return new Response(
+        JSON.stringify({ error: 'No Google Sheets URL configured. Please add a URL in the Appointments settings.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('Fetching data from:', team.google_sheets_url);
+
     // Fetch data from Google Sheets published CSV
     const sheetsResponse = await fetch(team.google_sheets_url);
+    console.log('Sheets response status:', sheetsResponse.status);
+    
     if (!sheetsResponse.ok) {
-      throw new Error('Failed to fetch Google Sheets data');
+      const errorText = await sheetsResponse.text();
+      console.error('Failed to fetch Google Sheets. Status:', sheetsResponse.status, 'Body:', errorText);
+      throw new Error(`Failed to fetch Google Sheets (${sheetsResponse.status}). Make sure the URL is a published CSV link.`);
     }
 
     const csvText = await sheetsResponse.text();
     const rows = csvText.split('\n').slice(1); // Skip header row
+    console.log('CSV rows found:', rows.length);
     
     const appointments = rows
-      .filter(row => row.trim())
-      .map(row => {
-        const [leadName, leadEmail, startAtUtc] = row.split(',').map(cell => cell.trim());
+      .filter((row: string) => row.trim())
+      .map((row: string) => {
+        const cells = row.split(',').map((cell: string) => cell.trim().replace(/^"|"$/g, ''));
+        const [leadName, leadEmail, startAtUtc] = cells;
+        
+        if (!leadName || !leadEmail || !startAtUtc) {
+          console.warn('Skipping invalid row:', row);
+          return null;
+        }
+        
         return {
           team_id: teamId,
           lead_name: leadName,
@@ -54,14 +77,18 @@ serve(async (req) => {
           start_at_utc: new Date(startAtUtc).toISOString(),
           status: 'NEW',
         };
-      });
+      })
+      .filter((apt): apt is NonNullable<typeof apt> => apt !== null);
 
     if (appointments.length === 0) {
+      console.log('No valid appointments to import');
       return new Response(
-        JSON.stringify({ message: 'No appointments to import' }),
+        JSON.stringify({ success: true, count: 0, message: 'No appointments to import' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Inserting appointments:', appointments.length);
 
     // Insert appointments
     const { error: insertError } = await supabase
