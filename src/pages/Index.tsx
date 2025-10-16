@@ -119,14 +119,15 @@ const Index = () => {
 
   const loadAppointments = async () => {
     try {
+      // Load ALL appointments to calculate accurate metrics
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
-        .eq('team_id', teamId)
-        .eq('status', 'CLOSED') // Query for CLOSED status
-        .gt('revenue', 0);
+        .eq('team_id', teamId);
 
       if (error) throw error;
+      
+      // Set all appointments for metric calculations
       setAppointments(data || []);
     } catch (error: any) {
       console.error('Error loading appointments:', error);
@@ -238,71 +239,8 @@ const Index = () => {
     return repMatch && dateMatch;
   });
 
-  // Calculate metrics from appointments (CC revenue) - ONLY closed appointments with actual revenue
-  const totalCCRevenue = appointments
-    .filter(apt => {
-      if (!dateRange.from && !dateRange.to) return true;
-      const aptDate = new Date(apt.start_at_utc);
-      aptDate.setHours(0, 0, 0, 0);
-      if (dateRange.from && dateRange.to) {
-        return aptDate >= dateRange.from && aptDate <= dateRange.to;
-      } else if (dateRange.from) {
-        return aptDate >= dateRange.from;
-      } else if (dateRange.to) {
-        return aptDate <= dateRange.to;
-      }
-      return true;
-    })
-    .reduce((sum, apt) => sum + (Number(apt.cc_collected) || 0), 0);
-
-  // Calculate total MRR (sum of all monthly recurring revenue)
-  const totalMRR = appointments
-    .filter(apt => {
-      if (!dateRange.from && !dateRange.to) return true;
-      const aptDate = new Date(apt.start_at_utc);
-      aptDate.setHours(0, 0, 0, 0);
-      if (dateRange.from && dateRange.to) {
-        return aptDate >= dateRange.from && aptDate <= dateRange.to;
-      } else if (dateRange.from) {
-        return aptDate >= dateRange.from;
-      } else if (dateRange.to) {
-        return aptDate <= dateRange.to;
-      }
-      return true;
-    })
-    .reduce((sum, apt) => sum + ((Number(apt.mrr_amount) || 0) * (Number(apt.mrr_months) || 0)), 0);
-  
-  // Calculate total commissions from CLOSED appointments only (CC-based)
-  const totalCommissions = appointments
-    .filter(apt => {
-      if (!dateRange.from && !dateRange.to) return true;
-      const aptDate = new Date(apt.start_at_utc);
-      aptDate.setHours(0, 0, 0, 0);
-      if (dateRange.from && dateRange.to) {
-        return aptDate >= dateRange.from && aptDate <= dateRange.to;
-      } else if (dateRange.from) {
-        return aptDate >= dateRange.from;
-      } else if (dateRange.to) {
-        return aptDate <= dateRange.to;
-      }
-      return true;
-    })
-    .reduce((sum, apt) => {
-      const cc = Number(apt.cc_collected) || 0;
-      const closerComm = cc * 0.10; // 10% for closer
-      const setterComm = apt.setter_id ? cc * 0.05 : 0; // 5% for setter if assigned
-      return sum + closerComm + setterComm;
-    }, 0);
-  
-  // Calculate close rate from sales data
-  const closedSalesCount = filteredSales.filter(s => s.status === 'closed').length;
-  const totalSalesCount = filteredSales.length;
-  const closeRate = totalSalesCount > 0 
-    ? ((closedSalesCount / totalSalesCount) * 100).toFixed(1)
-    : '0';
-  
-  // Calculate show-up rate (appointments that are not NO_SHOW)
-  const allAppointmentsInRange = appointments.filter(apt => {
+  // Filter appointments by date range
+  const filteredAppointments = appointments.filter(apt => {
     if (!dateRange.from && !dateRange.to) return true;
     const aptDate = new Date(apt.start_at_utc);
     aptDate.setHours(0, 0, 0, 0);
@@ -315,18 +253,43 @@ const Index = () => {
     }
     return true;
   });
+
+  // Calculate metrics from CLOSED appointments only (actual deals closed)
+  const closedAppointments = filteredAppointments.filter(apt => apt.status === 'CLOSED' && (apt.cc_collected || 0) > 0);
   
-  const showedUpCount = allAppointmentsInRange.filter(apt => apt.status !== 'NO_SHOW').length;
-  const totalAppointmentsCount = allAppointmentsInRange.length;
-  const showUpRate = totalAppointmentsCount > 0
-    ? ((showedUpCount / totalAppointmentsCount) * 100).toFixed(1)
+  const totalCCRevenue = closedAppointments.reduce((sum, apt) => sum + (Number(apt.cc_collected) || 0), 0);
+  
+  const totalMRR = closedAppointments.reduce((sum, apt) => sum + ((Number(apt.mrr_amount) || 0) * (Number(apt.mrr_months) || 0)), 0);
+  
+  const totalCommissions = closedAppointments.reduce((sum, apt) => {
+    const cc = Number(apt.cc_collected) || 0;
+    const closerComm = cc * 0.10; // 10% for closer
+    const setterComm = apt.setter_id ? cc * 0.05 : 0; // 5% for setter if assigned
+    return sum + closerComm + setterComm;
+  }, 0);
+  
+  // Calculate appointment-based metrics
+  const showedAppointments = filteredAppointments.filter(apt => apt.status === 'SHOWED' || apt.status === 'CLOSED');
+  const noShowAppointments = filteredAppointments.filter(apt => apt.status === 'NO_SHOW');
+  const totalScheduledAppointments = filteredAppointments.length;
+  
+  // Close Rate: Deals CLOSED / Appointments that SHOWED (including those that got closed)
+  const closeRate = showedAppointments.length > 0 
+    ? ((closedAppointments.length / showedAppointments.length) * 100).toFixed(1)
+    : '0';
+  
+  // Show-Up Rate: Appointments that SHOWED / Total SCHEDULED
+  const showUpRate = totalScheduledAppointments > 0
+    ? ((showedAppointments.length / totalScheduledAppointments) * 100).toFixed(1)
     : '0';
 
-  // Calculate no-show rate
-  const noShowCount = allAppointmentsInRange.filter(apt => apt.status === 'NO_SHOW').length;
-  const noShowRate = totalAppointmentsCount > 0
-    ? ((noShowCount / totalAppointmentsCount) * 100).toFixed(1)
+  // No-Show Rate: NO_SHOW appointments / Total SCHEDULED
+  const noShowRate = totalScheduledAppointments > 0
+    ? ((noShowAppointments.length / totalScheduledAppointments) * 100).toFixed(1)
     : '0';
+
+  // Deals that showed but didn't close
+  const showedButNotClosed = showedAppointments.length - closedAppointments.length;
 
   // Calculate leaderboards
   const closedSales = filteredSales.filter(s => s.status === 'closed');
@@ -453,7 +416,7 @@ const Index = () => {
             title="CC Revenue"
             value={`$${totalCCRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={DollarSign}
-            trend={`${closedSalesCount} deals closed`}
+            trend={`${closedAppointments.length} deals closed`}
             trendUp
           />
           <MetricCard
@@ -474,24 +437,33 @@ const Index = () => {
             title="Close Rate"
             value={`${closeRate}%`}
             icon={Users}
-            trend={`${closedSalesCount}/${totalSalesCount} closed`}
-            trendUp
+            trend={`${closedAppointments.length}/${showedAppointments.length} showed closed`}
+            trendUp={Number(closeRate) >= 30}
           />
           <MetricCard
             title="Show Up Rate"
             value={`${showUpRate}%`}
             icon={Calendar}
-            trend={`${showedUpCount}/${totalAppointmentsCount} showed`}
+            trend={`${showedAppointments.length}/${totalScheduledAppointments} showed`}
             trendUp={Number(showUpRate) >= 70}
           />
           <MetricCard
             title="No-Show Rate"
             value={`${noShowRate}%`}
             icon={Calendar}
-            trend={`${noShowCount}/${totalAppointmentsCount} no-shows`}
+            trend={`${noShowAppointments.length}/${totalScheduledAppointments} no-shows`}
             trendUp={false}
           />
         </div>
+
+        {/* Not Closed Deals Alert */}
+        {showedButNotClosed > 0 && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              ⚠️ <strong>{showedButNotClosed}</strong> appointment{showedButNotClosed !== 1 ? 's' : ''} showed up but {showedButNotClosed !== 1 ? 'were' : 'was'} not closed yet
+            </p>
+          </div>
+        )}
 
         {/* MRR Dashboard */}
         <MRRDashboard teamId={teamId!} />
