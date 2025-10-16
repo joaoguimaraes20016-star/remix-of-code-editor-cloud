@@ -62,21 +62,40 @@ const Dashboard = () => {
 
     setCreating(true);
     try {
+      // Get current user to ensure auth is valid
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('Not authenticated');
+      }
+
+      console.log('Creating team with user ID:', currentUser.id);
+
       // Create team
       const { data: team, error: teamError } = await supabase
         .from('teams')
-        .insert({ name: newTeamName, created_by: user.id })
+        .insert({ name: newTeamName, created_by: currentUser.id })
         .select()
         .single();
 
-      if (teamError) throw teamError;
+      if (teamError) {
+        console.error('Team creation error:', teamError);
+        throw teamError;
+      }
+
+      console.log('Team created successfully:', team);
 
       // Add creator as owner
       const { error: memberError } = await supabase
         .from('team_members')
-        .insert({ team_id: team.id, user_id: user.id, role: 'owner' });
+        .insert({ team_id: team.id, user_id: currentUser.id, role: 'owner' });
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error('Team member creation error:', memberError);
+        throw memberError;
+      }
+
+      console.log('Team member added successfully');
 
       toast({
         title: 'Team created!',
