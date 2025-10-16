@@ -37,48 +37,138 @@ const Auth = () => {
     const token = params.get('invite');
     
     if (token) {
-      // Load invitation details
-      supabase
-        .from('team_invitations')
-        .select('*')
-        .eq('token', token)
-        .is('accepted_at', null)
-        .maybeSingle()
-        .then(({ data, error }) => {
-          if (error) {
+      // Check if user is already logged in
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (session?.user) {
+          // User is logged in, process invitation immediately
+          setLoading(true);
+          try {
+            const { data: invitation, error: inviteError } = await supabase
+              .from('team_invitations')
+              .select('*')
+              .eq('token', token)
+              .is('accepted_at', null)
+              .maybeSingle();
+
+            if (inviteError) throw inviteError;
+
+            if (!invitation) {
+              toast({
+                title: 'Invalid invitation',
+                description: 'This invitation link is not valid or has already been used.',
+                variant: 'destructive',
+              });
+              setLoading(false);
+              return;
+            }
+
+            // Check if invitation is expired
+            const expiresAt = new Date(invitation.expires_at);
+            if (expiresAt < new Date()) {
+              toast({
+                title: 'Invitation expired',
+                description: 'This invitation link has expired.',
+                variant: 'destructive',
+              });
+              setLoading(false);
+              return;
+            }
+
+            // Check if user is already a team member
+            const { data: existingMember } = await supabase
+              .from('team_members')
+              .select('id')
+              .eq('team_id', invitation.team_id)
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+
+            if (existingMember) {
+              toast({
+                title: 'Already a member',
+                description: 'You are already a member of this team.',
+              });
+              navigate(`/team/${invitation.team_id}`);
+              return;
+            }
+
+            // Add user to team
+            const { error: insertError } = await supabase.from('team_members').insert({
+              team_id: invitation.team_id,
+              user_id: session.user.id,
+              role: invitation.role,
+            });
+
+            if (insertError) throw insertError;
+
+            // Mark invitation as accepted
+            await supabase
+              .from('team_invitations')
+              .update({ accepted_at: new Date().toISOString() })
+              .eq('id', invitation.id);
+
             toast({
-              title: 'Error loading invitation',
-              description: error.message,
+              title: 'Welcome to the team!',
+              description: 'You have been added to the team successfully.',
+            });
+
+            setTimeout(() => {
+              navigate(`/team/${invitation.team_id}`);
+            }, 500);
+          } catch (err) {
+            console.error('Error processing invitation:', err);
+            toast({
+              title: 'Error joining team',
+              description: 'There was a problem adding you to the team. Please contact support.',
               variant: 'destructive',
             });
-            return;
+            setLoading(false);
           }
+          return;
+        }
 
-          if (!data) {
-            toast({
-              title: 'Invalid invitation',
-              description: 'This invitation link is not valid or has already been used.',
-              variant: 'destructive',
-            });
-            return;
-          }
+        // User not logged in, load invitation for signup
+        supabase
+          .from('team_invitations')
+          .select('*')
+          .eq('token', token)
+          .is('accepted_at', null)
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) {
+              toast({
+                title: 'Error loading invitation',
+                description: error.message,
+                variant: 'destructive',
+              });
+              return;
+            }
 
-          // Check if invitation is expired
-          const expiresAt = new Date(data.expires_at);
-          if (expiresAt < new Date()) {
-            toast({
-              title: 'Invitation expired',
-              description: 'This invitation link has expired.',
-              variant: 'destructive',
-            });
-            return;
-          }
+            if (!data) {
+              toast({
+                title: 'Invalid invitation',
+                description: 'This invitation link is not valid or has already been used.',
+                variant: 'destructive',
+              });
+              return;
+            }
 
-          setInviteToken(token);
-          setInviteEmail(data.email);
-          setSignUpData(prev => ({ ...prev, email: data.email }));
-          setActiveTab('signup');
-        });
+            // Check if invitation is expired
+            const expiresAt = new Date(data.expires_at);
+            if (expiresAt < new Date()) {
+              toast({
+                title: 'Invitation expired',
+                description: 'This invitation link has expired.',
+                variant: 'destructive',
+              });
+              return;
+            }
+
+            setInviteToken(token);
+            setInviteEmail(data.email);
+            setSignUpData(prev => ({ ...prev, email: data.email }));
+            setActiveTab('signup');
+          });
+      });
       return; // Don't process password reset if invitation is present
     }
 
