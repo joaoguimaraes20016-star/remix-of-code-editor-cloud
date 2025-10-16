@@ -142,14 +142,16 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     setAssigning(true);
     try {
       const selectedSetterMember = teamMembers.find(m => m.user_id === selectedSetter);
-      const selectedCloserMember = selectedCloser ? teamMembers.find(m => m.user_id === selectedCloser) : null;
+      const selectedCloserMember = selectedCloser && selectedCloser !== "none" 
+        ? teamMembers.find(m => m.user_id === selectedCloser) 
+        : null;
       
       const { error } = await supabase
         .from('appointments')
         .update({
           setter_id: selectedSetter,
           setter_name: selectedSetterMember?.profiles.full_name || "",
-          closer_id: selectedCloser || null,
+          closer_id: selectedCloser && selectedCloser !== "none" ? selectedCloser : null,
           closer_name: selectedCloserMember?.profiles.full_name || null,
           setter_notes: notes || null,
         })
@@ -269,7 +271,7 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
                     <SelectValue placeholder="Choose a closer..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {teamMembers.map((member) => (
                       <SelectItem key={member.user_id} value={member.user_id}>
                         {member.profiles.full_name}
