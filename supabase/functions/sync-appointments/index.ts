@@ -120,7 +120,20 @@ serve(async (req) => {
         }
         
         // Parse and validate the date
-        const parsedDate = new Date(startAtUtc);
+        let parsedDate: Date;
+        
+        // Check if it's an Excel serial date (number like 45945.85177)
+        const excelSerialDate = parseFloat(startAtUtc);
+        if (!isNaN(excelSerialDate) && startAtUtc === excelSerialDate.toString()) {
+          // Convert Excel serial date to JavaScript Date
+          // Excel serial date starts from 1900-01-01, and we need to subtract 1 because Excel incorrectly treats 1900 as a leap year
+          const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+          parsedDate = new Date(excelEpoch.getTime() + excelSerialDate * 86400000);
+        } else {
+          // Try parsing as regular date string
+          parsedDate = new Date(startAtUtc);
+        }
+        
         if (isNaN(parsedDate.getTime())) {
           console.warn('Invalid date in row:', row, 'Date value:', startAtUtc);
           return null;
