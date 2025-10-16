@@ -44,8 +44,8 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     
-    // Validate signup code
-    if (signUpData.signupCode !== 'GRWTHCO25') {
+    // Validate signup code (trim whitespace and compare case-insensitively)
+    if (signUpData.signupCode.trim().toUpperCase() !== 'GRWTHCO25') {
       toast({
         title: 'Invalid signup code',
         description: 'Please enter a valid signup code to create an account.',
