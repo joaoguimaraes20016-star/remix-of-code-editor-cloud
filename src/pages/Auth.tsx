@@ -36,7 +36,6 @@ const Auth = () => {
     const token = params.get('invite');
     
     if (token) {
-      console.log('Invitation token found:', token);
       // Load invitation details
       supabase
         .from('team_invitations')
@@ -45,10 +44,7 @@ const Auth = () => {
         .is('accepted_at', null)
         .maybeSingle()
         .then(({ data, error }) => {
-          console.log('Invitation query result:', { data, error });
-          
           if (error) {
-            console.error('Error fetching invitation:', error);
             toast({
               title: 'Error loading invitation',
               description: error.message,
@@ -77,7 +73,6 @@ const Auth = () => {
             return;
           }
 
-          console.log('Setting invitation data:', data.email);
           setInviteToken(token);
           setInviteEmail(data.email);
           setSignUpData(prev => ({ ...prev, email: data.email }));
