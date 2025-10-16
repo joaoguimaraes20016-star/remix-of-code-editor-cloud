@@ -145,10 +145,16 @@ serve(async (req) => {
         
         if (closerName && teamMembers) {
           console.log('Looking for closer:', closerName);
+          console.log('Available team members:', teamMembers.map((m: any) => {
+            const profiles = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+            return profiles?.full_name;
+          }));
+          
           const closerMember = teamMembers.find((m: any) => {
             const profiles = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-            const matches = profiles?.full_name?.toLowerCase() === closerName.toLowerCase();
-            if (matches) console.log('Found match:', profiles.full_name);
+            const memberName = profiles?.full_name;
+            const matches = memberName?.toLowerCase().trim() === closerName.toLowerCase().trim();
+            console.log(`Comparing "${memberName}" with "${closerName}": ${matches}`);
             return matches;
           });
           
