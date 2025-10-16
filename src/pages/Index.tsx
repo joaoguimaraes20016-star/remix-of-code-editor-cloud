@@ -14,6 +14,7 @@ import { NewAppointments } from "@/components/NewAppointments";
 import { AllClaimed } from "@/components/AllClaimed";
 import { MyClaimed } from "@/components/MyClaimed";
 import { CloserView } from "@/components/CloserView";
+import { MRRDashboard } from "@/components/MRRDashboard";
 import {
   Select,
   SelectContent,
@@ -381,6 +382,9 @@ const Index = () => {
             trendUp={false}
           />
         </div>
+
+        {/* MRR Dashboard */}
+        <MRRDashboard teamId={teamId!} />
 
         {/* Commission Breakdown */}
         <CommissionBreakdown sales={filteredSales} />

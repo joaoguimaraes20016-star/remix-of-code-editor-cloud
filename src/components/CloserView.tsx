@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { format, addMonths, startOfMonth } from "date-fns";
 import { DollarSign } from "lucide-react";
 
 interface Appointment {
@@ -44,7 +44,9 @@ export function CloserView({ teamId }: CloserViewProps) {
   const [userProfile, setUserProfile] = useState<{ full_name: string } | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [revenue, setRevenue] = useState("");
+  const [ccCollected, setCcCollected] = useState("");
+  const [mrrAmount, setMrrAmount] = useState("");
+  const [mrrMonths, setMrrMonths] = useState("");
 
   useEffect(() => {
     loadUserProfile();
@@ -106,24 +108,44 @@ export function CloserView({ teamId }: CloserViewProps) {
 
   const openCloseDialog = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
-    setRevenue("");
+    setCcCollected("");
+    setMrrAmount("");
+    setMrrMonths("");
     setCloseDialogOpen(true);
   };
 
   const handleClose = async () => {
     if (!user || !userProfile || !selectedAppointment) return;
 
-    const revenueAmount = parseFloat(revenue);
-    if (isNaN(revenueAmount) || revenueAmount <= 0) {
+    const cc = parseFloat(ccCollected);
+    const mrr = parseFloat(mrrAmount);
+    const months = parseInt(mrrMonths);
+
+    if (isNaN(cc) || cc <= 0) {
       toast({
-        title: 'Invalid amount',
-        description: 'Please enter a valid revenue amount',
+        title: 'Invalid CC amount',
+        description: 'Please enter a valid cash collected amount',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (mrr > 0 && (isNaN(months) || months <= 0)) {
+      toast({
+        title: 'Invalid MRR months',
+        description: 'Please enter a valid number of months for MRR',
         variant: 'destructive',
       });
       return;
     }
 
     try {
+      const totalRevenue = cc + (mrr * (months || 0));
+      
+      // Calculate commissions on CC
+      const closerCommission = cc * 0.10; // 10% for closer
+      const setterCommission = selectedAppointment.setter_id ? cc * 0.05 : 0; // 5% for setter if assigned
+
       // Update appointment to closed
       const { error: updateError } = await supabase
         .from('appointments')
@@ -131,32 +153,82 @@ export function CloserView({ teamId }: CloserViewProps) {
           status: 'CANCELLED', // Using CANCELLED to track closed deals
           closer_id: user.id,
           closer_name: userProfile.full_name,
-          revenue: revenueAmount,
+          revenue: totalRevenue,
+          cc_collected: cc,
+          mrr_amount: mrr || 0,
+          mrr_months: months || 0,
         })
         .eq('id', selectedAppointment.id);
 
       if (updateError) throw updateError;
 
-      // Create a sale record
+      // Create a sale record with CC commissions
       const { error: saleError } = await supabase
         .from('sales')
         .insert({
           team_id: teamId,
           customer_name: selectedAppointment.lead_name,
-          setter: selectedAppointment.setter_name || 'Unknown',
+          setter: selectedAppointment.setter_name || 'No Setter',
           sales_rep: userProfile.full_name,
           date: new Date().toISOString().split('T')[0],
-          revenue: revenueAmount,
-          commission: 0,
-          setter_commission: 0,
+          revenue: totalRevenue,
+          commission: closerCommission,
+          setter_commission: setterCommission,
           status: 'closed',
         });
 
       if (saleError) throw saleError;
 
+      // Create MRR commission records if MRR exists
+      if (mrr > 0 && months > 0) {
+        const mrrCommissions = [];
+        
+        for (let i = 1; i <= months; i++) {
+          const monthDate = startOfMonth(addMonths(new Date(), i));
+          
+          // Closer MRR commission (10%)
+          mrrCommissions.push({
+            team_id: teamId,
+            appointment_id: selectedAppointment.id,
+            team_member_id: user.id,
+            team_member_name: userProfile.full_name,
+            role: 'closer',
+            prospect_name: selectedAppointment.lead_name,
+            prospect_email: selectedAppointment.lead_email,
+            month_date: format(monthDate, 'yyyy-MM-dd'),
+            mrr_amount: mrr,
+            commission_amount: mrr * 0.10,
+            commission_percentage: 10,
+          });
+
+          // Setter MRR commission (5%) if there's a setter
+          if (selectedAppointment.setter_id && selectedAppointment.setter_name) {
+            mrrCommissions.push({
+              team_id: teamId,
+              appointment_id: selectedAppointment.id,
+              team_member_id: selectedAppointment.setter_id,
+              team_member_name: selectedAppointment.setter_name,
+              role: 'setter',
+              prospect_name: selectedAppointment.lead_name,
+              prospect_email: selectedAppointment.lead_email,
+              month_date: format(monthDate, 'yyyy-MM-dd'),
+              mrr_amount: mrr,
+              commission_amount: mrr * 0.05,
+              commission_percentage: 5,
+            });
+          }
+        }
+
+        const { error: mrrError } = await supabase
+          .from('mrr_commissions')
+          .insert(mrrCommissions);
+
+        if (mrrError) throw mrrError;
+      }
+
       toast({
         title: 'Deal closed',
-        description: `Successfully closed deal for $${revenueAmount.toLocaleString()}`,
+        description: `Successfully closed deal - CC: $${cc.toLocaleString()}, Total: $${totalRevenue.toLocaleString()}`,
       });
 
       setCloseDialogOpen(false);
@@ -293,19 +365,54 @@ export function CloserView({ teamId }: CloserViewProps) {
             </div>
             <div className="space-y-2">
               <Label>Setter</Label>
-              <p className="text-sm font-medium text-primary">{selectedAppointment?.setter_name || '-'}</p>
+              <p className="text-sm font-medium text-primary">{selectedAppointment?.setter_name || 'No Setter'}</p>
+              {selectedAppointment?.setter_name && (
+                <p className="text-xs text-muted-foreground">Setter will receive 5% commission on CC and MRR</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="revenue">Revenue Amount ($)</Label>
+              <Label htmlFor="cc">Cash Collected (CC) ($) *</Label>
               <Input
-                id="revenue"
+                id="cc"
                 type="number"
-                value={revenue}
-                onChange={(e) => setRevenue(e.target.value)}
-                placeholder="0.00"
+                value={ccCollected}
+                onChange={(e) => setCcCollected(e.target.value)}
+                placeholder="2000.00"
                 min="0"
                 step="0.01"
               />
+              <p className="text-xs text-muted-foreground">
+                Commissions: Closer 10%, Setter 5% on CC
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mrr">Monthly Recurring Revenue (MRR) ($)</Label>
+              <Input
+                id="mrr"
+                type="number"
+                value={mrrAmount}
+                onChange={(e) => setMrrAmount(e.target.value)}
+                placeholder="200.00"
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="months">Number of MRR Months</Label>
+              <Input
+                id="months"
+                type="number"
+                value={mrrMonths}
+                onChange={(e) => setMrrMonths(e.target.value)}
+                placeholder="5"
+                min="0"
+                step="1"
+              />
+              {parseFloat(mrrAmount) > 0 && parseInt(mrrMonths) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Total MRR: ${(parseFloat(mrrAmount) * parseInt(mrrMonths)).toFixed(2)} over {mrrMonths} months
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>

@@ -16,12 +16,15 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          cc_collected: number | null
           closer_id: string | null
           closer_name: string | null
           created_at: string | null
           id: string
           lead_email: string
           lead_name: string
+          mrr_amount: number | null
+          mrr_months: number | null
           revenue: number | null
           setter_id: string | null
           setter_name: string | null
@@ -32,12 +35,15 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cc_collected?: number | null
           closer_id?: string | null
           closer_name?: string | null
           created_at?: string | null
           id?: string
           lead_email: string
           lead_name: string
+          mrr_amount?: number | null
+          mrr_months?: number | null
           revenue?: number | null
           setter_id?: string | null
           setter_name?: string | null
@@ -48,12 +54,15 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cc_collected?: number | null
           closer_id?: string | null
           closer_name?: string | null
           created_at?: string | null
           id?: string
           lead_email?: string
           lead_name?: string
+          mrr_amount?: number | null
+          mrr_months?: number | null
           revenue?: number | null
           setter_id?: string | null
           setter_name?: string | null
@@ -101,6 +110,62 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mrr_commissions: {
+        Row: {
+          appointment_id: string | null
+          commission_amount: number
+          commission_percentage: number
+          created_at: string | null
+          id: string
+          month_date: string
+          mrr_amount: number
+          prospect_email: string
+          prospect_name: string
+          role: string
+          team_id: string
+          team_member_id: string
+          team_member_name: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          commission_amount: number
+          commission_percentage: number
+          created_at?: string | null
+          id?: string
+          month_date: string
+          mrr_amount: number
+          prospect_email: string
+          prospect_name: string
+          role: string
+          team_id: string
+          team_member_id: string
+          team_member_name: string
+        }
+        Update: {
+          appointment_id?: string | null
+          commission_amount?: number
+          commission_percentage?: number
+          created_at?: string | null
+          id?: string
+          month_date?: string
+          mrr_amount?: number
+          prospect_email?: string
+          prospect_name?: string
+          role?: string
+          team_id?: string
+          team_member_id?: string
+          team_member_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mrr_commissions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
             referencedColumns: ["id"]
           },
         ]
