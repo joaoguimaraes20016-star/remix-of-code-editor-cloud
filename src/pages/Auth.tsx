@@ -359,42 +359,75 @@ const Auth = () => {
     // If user signed up with an invitation, add them to the team
     if (inviteToken && signUpResult?.user) {
       console.log('Processing invitation for new user:', signUpResult.user.id);
+      
+      // Wait a moment for the session to be fully established
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get the current session to ensure we're authenticated
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      console.log('Current session after signup:', currentSession?.user?.id);
+      
+      if (!currentSession) {
+        toast({
+          title: 'Session error',
+          description: 'Please try signing in again to complete the invitation.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      
       try {
-        const { data: invitation } = await supabase
+        const { data: invitation, error: inviteError } = await supabase
           .from('team_invitations')
           .select('team_id, role, id')
           .eq('token', inviteToken)
           .maybeSingle();
 
-        if (invitation) {
-          // Insert team member
-          const { error: insertError } = await supabase.from('team_members').insert({
-            team_id: invitation.team_id,
-            user_id: signUpResult.user.id,
-            role: invitation.role,
-          });
+        console.log('Invitation data:', invitation, 'error:', inviteError);
 
-          if (insertError) {
-            console.error('Error inserting team member:', insertError);
-            throw insertError;
-          }
+        if (inviteError) throw inviteError;
 
-          // Mark invitation as accepted
-          await supabase
-            .from('team_invitations')
-            .update({ accepted_at: new Date().toISOString() })
-            .eq('id', invitation.id);
-
+        if (!invitation) {
           toast({
-            title: 'Welcome to the team!',
-            description: 'Your account has been created successfully.',
+            title: 'Invitation not found',
+            description: 'Could not find the invitation. Please contact the team owner.',
+            variant: 'destructive',
           });
-          
-          // Redirect to the team dashboard
-          setTimeout(() => {
-            navigate(`/team/${invitation.team_id}`);
-          }, 500);
+          setLoading(false);
+          return;
         }
+
+        // Insert team member
+        const { error: insertError } = await supabase.from('team_members').insert({
+          team_id: invitation.team_id,
+          user_id: currentSession.user.id,
+          role: invitation.role,
+        });
+
+        console.log('Insert team member error:', insertError);
+
+        if (insertError) {
+          console.error('Error inserting team member:', insertError);
+          throw insertError;
+        }
+
+
+        // Mark invitation as accepted
+        await supabase
+          .from('team_invitations')
+          .update({ accepted_at: new Date().toISOString() })
+          .eq('id', invitation.id);
+
+        toast({
+          title: 'Welcome to the team!',
+          description: 'Your account has been created successfully.',
+        });
+        
+        // Redirect to the team dashboard
+        setTimeout(() => {
+          navigate(`/team/${invitation.team_id}`);
+        }, 500);
       } catch (err) {
         console.error('Error processing invitation:', err);
         toast({
@@ -403,6 +436,8 @@ const Auth = () => {
           variant: 'destructive',
         });
       }
+      setLoading(false);
+      return;
     } else {
       toast({
         title: 'Check your email!',
