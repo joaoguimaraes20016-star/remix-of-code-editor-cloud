@@ -197,6 +197,9 @@ const Auth = () => {
 
           if (insertError) {
             console.error('Error inserting team member:', insertError);
+            console.error('Team ID:', invitation.team_id);
+            console.error('User ID:', signUpResult.user.id);
+            console.error('Role:', invitation.role);
             throw insertError;
           }
 
