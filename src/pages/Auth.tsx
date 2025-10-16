@@ -250,6 +250,14 @@ const Auth = () => {
     console.log('handleSignUp called, inviteToken:', inviteToken);
     setLoading(true);
     
+    // Show initial feedback
+    if (inviteToken) {
+      toast({
+        title: 'Creating your account...',
+        description: 'Please wait while we set up your profile.',
+      });
+    }
+    
     // Skip signup code validation if user has an invitation
     if (!inviteToken) {
       if (signUpData.signupCode.trim().toUpperCase() !== 'GRWTHCO25') {
@@ -366,8 +374,14 @@ const Auth = () => {
     if (inviteToken && signUpResult?.user) {
       console.log('Processing invitation for new user:', signUpResult.user.id);
       
+      // Show progress
+      toast({
+        title: 'Account created!',
+        description: 'Now adding you to the team...',
+      });
+      
       // Wait a moment for the session to be fully established
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Get the current session to ensure we're authenticated
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -426,14 +440,14 @@ const Auth = () => {
           .eq('id', invitation.id);
 
         toast({
-          title: 'Welcome to the team!',
-          description: 'Your account has been created successfully.',
+          title: '🎉 Welcome to the team!',
+          description: 'Taking you to your dashboard...',
         });
         
-        // Redirect to the team dashboard
+        // Redirect to the team dashboard with a delay for better UX
         setTimeout(() => {
           navigate(`/team/${invitation.team_id}`);
-        }, 500);
+        }, 1500);
       } catch (err) {
         console.error('Error processing invitation:', err);
         toast({
