@@ -322,7 +322,7 @@ const Index = () => {
           <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             {(canViewSetterScheduling || canViewCloserScheduling) && (
-              <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
+              <TabsTrigger value="scheduling">Appointments</TabsTrigger>
             )}
           </TabsList>
 
