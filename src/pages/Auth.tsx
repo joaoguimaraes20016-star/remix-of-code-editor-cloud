@@ -28,7 +28,8 @@ const Auth = () => {
   useEffect(() => {
     // Check if this is a password reset callback
     const checkPasswordReset = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      // Parse hash parameters from URL
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
       
