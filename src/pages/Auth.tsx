@@ -27,87 +27,65 @@ const Auth = () => {
   const [linkExpired, setLinkExpired] = useState(false);
 
 
+
   useEffect(() => {
-    const checkPasswordReset = async () => {
-      console.log('=== AUTH PAGE LOADED ===');
-      console.log('Full URL:', window.location.href);
-      console.log('Hash:', window.location.hash);
+    console.log('=== AUTH PAGE MOUNTED ===');
+    console.log('URL:', window.location.href);
+    
+    // Set up auth state listener to catch PASSWORD_RECOVERY event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔔 Auth State Change:', event);
+      console.log('Session:', session?.user?.email);
       
-      // Parse hash parameters (Supabase sends recovery link with hash params)
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('✅ PASSWORD_RECOVERY EVENT - Activating reset form!');
+        setIsResettingPassword(true);
+        setUserEmail(session?.user?.email || '');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    });
+
+    // Also check current state on mount
+    const checkCurrentState = async () => {
       const hash = window.location.hash;
-      if (hash) {
-        const hashParams = new URLSearchParams(hash.slice(1));
-        const type = hashParams.get('type');
-        const accessToken = hashParams.get('access_token');
-        const error = hashParams.get('error');
-        const errorCode = hashParams.get('error_code');
-        
-        console.log('Hash params:', {
-          type,
-          hasAccessToken: !!accessToken,
-          error,
-          errorCode,
-          allParams: Array.from(hashParams.entries())
-        });
-        
-        // Handle expired link
-        if (error === 'access_denied' && errorCode === 'otp_expired') {
-          console.log('Link expired!');
-          setShowResetForm(true);
-          toast({
-            title: 'Link expired',
-            description: 'The password reset link has expired. Please request a new one.',
-            variant: 'destructive',
-          });
-          window.history.replaceState({}, '', '/auth');
-          return;
-        }
-        
-        // Handle password recovery
-        if (type === 'recovery' && accessToken) {
-          console.log('✓ RECOVERY DETECTED - Getting session...');
-          
-          // Wait for session to be established
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
+      console.log('Current hash:', hash);
+      
+      if (hash.includes('type=recovery')) {
+        console.log('Recovery type in hash detected');
+        // Give Supabase time to process the session
+        setTimeout(async () => {
           const { data: { session } } = await supabase.auth.getSession();
-          console.log('Session after recovery:', session?.user?.email);
+          console.log('Session check:', session?.user?.email);
           
           if (session?.user?.email) {
-            console.log('✓ Showing password reset form');
+            console.log('✅ Activating password reset form');
             setIsResettingPassword(true);
             setUserEmail(session.user.email);
-            // Clear hash from URL
-            window.history.replaceState({}, '', '/auth');
-          } else {
-            console.error('✗ No session found after recovery!');
-            toast({
-              title: 'Session error',
-              description: 'Please try the password reset link again.',
-              variant: 'destructive',
-            });
           }
-          return;
-        }
+        }, 1000);
       }
       
-      // Check query params (from AuthCallback redirect)
-      const queryParams = new URLSearchParams(location.search);
-      const mode = queryParams.get('mode');
-      
-      if (mode === 'reset') {
-        console.log('Mode=reset detected');
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.email) {
-          setIsResettingPassword(true);
-          setUserEmail(session.user.email);
-          window.history.replaceState({}, '', '/auth');
-        }
+      // Check for errors
+      if (hash.includes('error=access_denied')) {
+        console.log('⚠️ Link expired or invalid');
+        setShowResetForm(true);
+        toast({
+          title: 'Link expired',
+          description: 'Please request a new password reset link.',
+          variant: 'destructive',
+        });
+        window.history.replaceState({}, '', '/auth');
       }
     };
     
-    checkPasswordReset();
-  }, [location, toast]);
+    checkCurrentState();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [toast]);
+
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
