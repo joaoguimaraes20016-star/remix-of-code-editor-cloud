@@ -98,12 +98,12 @@ export function CloserView({ teamId }: CloserViewProps) {
 
   const loadAppointments = async () => {
     try {
-      // Load new/confirmed appointments
+      // Load all appointments with setters (except closed)
       const { data: newData, error: newError } = await supabase
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
-        .in('status', ['NEW', 'CONFIRMED', 'SHOWED'])
+        .neq('status', 'CLOSED')
         .not('setter_id', 'is', null)
         .order('start_at_utc', { ascending: true });
 
