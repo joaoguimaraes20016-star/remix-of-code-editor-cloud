@@ -71,12 +71,20 @@ serve(async (req) => {
     const csvText = await sheetsResponse.text();
     const rows = csvText.split('\n').slice(1); // Skip header row
     console.log('CSV rows found:', rows.length);
+
+    // Get team members to map closer names
+    const { data: teamMembers } = await supabase
+      .from('team_members')
+      .select('user_id, profiles!inner(full_name)')
+      .eq('team_id', teamId);
+
+    console.log('Team members found:', teamMembers?.length || 0);
     
     const appointments = rows
       .filter((row: string) => row.trim())
       .map((row: string) => {
         const cells = row.split(',').map((cell: string) => cell.trim().replace(/^"|"$/g, ''));
-        const [leadName, leadEmail, startAtUtc] = cells;
+        const [leadName, leadEmail, startAtUtc, closerName] = cells;
         
         if (!leadName || !leadEmail || !startAtUtc) {
           console.warn('Skipping invalid row:', row);
@@ -89,12 +97,31 @@ serve(async (req) => {
           console.warn('Invalid date in row:', row, 'Date value:', startAtUtc);
           return null;
         }
+
+        // Find closer by name match
+        let closerId = null;
+        let closerFullName = null;
+        
+        if (closerName && teamMembers) {
+          const closerMember = teamMembers.find((m: any) => {
+            const profiles = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+            return profiles?.full_name?.toLowerCase() === closerName.toLowerCase();
+          });
+          
+          if (closerMember) {
+            closerId = closerMember.user_id;
+            const profiles = Array.isArray(closerMember.profiles) ? closerMember.profiles[0] : closerMember.profiles;
+            closerFullName = profiles?.full_name || null;
+          }
+        }
         
         return {
           team_id: teamId,
           lead_name: leadName,
           lead_email: leadEmail,
           start_at_utc: parsedDate.toISOString(),
+          closer_id: closerId,
+          closer_name: closerFullName,
           status: 'NEW',
         };
       })
