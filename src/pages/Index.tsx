@@ -37,6 +37,7 @@ const Index = () => {
   const { role: userRole, isOwner } = useTeamRole(teamId);
   
   const [sales, setSales] = useState<Sale[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
   const [selectedRep, setSelectedRep] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState("");
@@ -55,6 +56,7 @@ const Index = () => {
     }
     loadTeamData();
     loadSales();
+    loadAppointments();
   }, [user, teamId, navigate]);
 
   const loadTeamData = async () => {
@@ -112,6 +114,22 @@ const Index = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAppointments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('team_id', teamId)
+        .eq('status', 'CANCELLED') // Closed deals
+        .gt('revenue', 0);
+
+      if (error) throw error;
+      setAppointments(data || []);
+    } catch (error: any) {
+      console.error('Error loading appointments:', error);
     }
   };
 
@@ -220,14 +238,60 @@ const Index = () => {
     return repMatch && dateMatch;
   });
 
-  // Calculate metrics
-  const totalRevenue = filteredSales
-    .filter(s => s.status === 'closed')
-    .reduce((sum, sale) => sum + sale.revenue, 0);
+  // Calculate metrics from appointments (CC revenue)
+  const totalCCRevenue = appointments
+    .filter(apt => {
+      if (!dateRange.from && !dateRange.to) return true;
+      const aptDate = new Date(apt.start_at_utc);
+      aptDate.setHours(0, 0, 0, 0);
+      if (dateRange.from && dateRange.to) {
+        return aptDate >= dateRange.from && aptDate <= dateRange.to;
+      } else if (dateRange.from) {
+        return aptDate >= dateRange.from;
+      } else if (dateRange.to) {
+        return aptDate <= dateRange.to;
+      }
+      return true;
+    })
+    .reduce((sum, apt) => sum + (apt.cc_collected || 0), 0);
+
+  // Calculate total MRR
+  const totalMRR = appointments
+    .filter(apt => {
+      if (!dateRange.from && !dateRange.to) return true;
+      const aptDate = new Date(apt.start_at_utc);
+      aptDate.setHours(0, 0, 0, 0);
+      if (dateRange.from && dateRange.to) {
+        return aptDate >= dateRange.from && aptDate <= dateRange.to;
+      } else if (dateRange.from) {
+        return aptDate >= dateRange.from;
+      } else if (dateRange.to) {
+        return aptDate <= dateRange.to;
+      }
+      return true;
+    })
+    .reduce((sum, apt) => sum + ((apt.mrr_amount || 0) * (apt.mrr_months || 0)), 0);
   
-  const totalCommissions = filteredSales
-    .filter(s => s.status === 'closed')
-    .reduce((sum, sale) => sum + sale.commission + sale.setterCommission, 0);
+  const totalCommissions = appointments
+    .filter(apt => {
+      if (!dateRange.from && !dateRange.to) return true;
+      const aptDate = new Date(apt.start_at_utc);
+      aptDate.setHours(0, 0, 0, 0);
+      if (dateRange.from && dateRange.to) {
+        return aptDate >= dateRange.from && aptDate <= dateRange.to;
+      } else if (dateRange.from) {
+        return aptDate >= dateRange.from;
+      } else if (dateRange.to) {
+        return aptDate <= dateRange.to;
+      }
+      return true;
+    })
+    .reduce((sum, apt) => {
+      const cc = apt.cc_collected || 0;
+      const closerComm = cc * 0.10;
+      const setterComm = apt.setter_id ? cc * 0.05 : 0;
+      return sum + closerComm + setterComm;
+    }, 0);
   
   const closeRate = filteredSales.length > 0 
     ? ((filteredSales.filter(s => s.status === 'closed').length / filteredSales.length) * 100).toFixed(1)
@@ -357,12 +421,19 @@ const Index = () => {
             </Select>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <MetricCard
-            title="Total Revenue"
-            value={`$${totalRevenue.toLocaleString()}`}
+            title="CC Revenue"
+            value={`$${totalCCRevenue.toLocaleString()}`}
             icon={DollarSign}
             trend="+12.5% from last month"
+            trendUp
+          />
+          <MetricCard
+            title="Total MRR"
+            value={`$${totalMRR.toLocaleString()}`}
+            icon={DollarSign}
+            trend="+8.2% from last month"
             trendUp
           />
           <MetricCard
