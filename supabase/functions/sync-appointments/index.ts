@@ -69,7 +69,31 @@ serve(async (req) => {
     }
 
     const csvText = await sheetsResponse.text();
-    const rows = csvText.split('\n').slice(1); // Skip header row
+    const lines = csvText.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      console.log('No data rows in CSV');
+      return new Response(
+        JSON.stringify({ success: true, count: 0, message: 'No appointments to import' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Parse headers to find column indices
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+    const nameIndex = headers.findIndex(h => h.includes('name') || h.includes('lead'));
+    const emailIndex = headers.findIndex(h => h.includes('email'));
+    const dateIndex = headers.findIndex(h => h.includes('date') || h.includes('time') || h.includes('start'));
+    const closerIndex = headers.findIndex(h => h.includes('closer') || h.includes('meeting with') || h.includes('meeting_with'));
+
+    console.log('CSV headers:', headers);
+    console.log('Column indices - name:', nameIndex, 'email:', emailIndex, 'date:', dateIndex, 'closer:', closerIndex);
+
+    if (nameIndex === -1 || emailIndex === -1 || dateIndex === -1) {
+      throw new Error('CSV must have columns for name, email, and date/time');
+    }
+
+    const rows = lines.slice(1); // Skip header row
     console.log('CSV rows found:', rows.length);
 
     // Get team members to map closer names
@@ -84,7 +108,11 @@ serve(async (req) => {
       .filter((row: string) => row.trim())
       .map((row: string) => {
         const cells = row.split(',').map((cell: string) => cell.trim().replace(/^"|"$/g, ''));
-        const [leadName, leadEmail, startAtUtc, closerName] = cells;
+        
+        const leadName = cells[nameIndex];
+        const leadEmail = cells[emailIndex];
+        const startAtUtc = cells[dateIndex];
+        const closerName = closerIndex !== -1 ? cells[closerIndex] : null;
         
         if (!leadName || !leadEmail || !startAtUtc) {
           console.warn('Skipping invalid row:', row);
@@ -103,15 +131,21 @@ serve(async (req) => {
         let closerFullName = null;
         
         if (closerName && teamMembers) {
+          console.log('Looking for closer:', closerName);
           const closerMember = teamMembers.find((m: any) => {
             const profiles = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-            return profiles?.full_name?.toLowerCase() === closerName.toLowerCase();
+            const matches = profiles?.full_name?.toLowerCase() === closerName.toLowerCase();
+            if (matches) console.log('Found match:', profiles.full_name);
+            return matches;
           });
           
           if (closerMember) {
             closerId = closerMember.user_id;
             const profiles = Array.isArray(closerMember.profiles) ? closerMember.profiles[0] : closerMember.profiles;
             closerFullName = profiles?.full_name || null;
+            console.log('Assigned closer:', closerFullName);
+          } else {
+            console.warn('No team member found for closer name:', closerName);
           }
         }
         
