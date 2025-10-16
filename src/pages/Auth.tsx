@@ -28,21 +28,31 @@ const Auth = () => {
   useEffect(() => {
     // Check if this is a password reset callback
     const checkPasswordReset = async () => {
+      console.log('Full URL:', window.location.href);
+      console.log('Hash:', window.location.hash);
+      
       // Parse hash parameters from URL
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
       
-      console.log('Hash params:', { type, hasAccessToken: !!accessToken });
+      console.log('Parsed hash params:', { 
+        type, 
+        hasAccessToken: !!accessToken,
+        allParams: Object.fromEntries(hashParams.entries())
+      });
       
       if (type === 'recovery' && accessToken) {
+        console.log('Recovery mode detected, showing password reset form');
         setIsResettingPassword(true);
         // Get the user's email from the session
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('Session:', session);
+        console.log('Session data:', session);
         if (session?.user?.email) {
           setUserEmail(session.user.email);
         }
+      } else {
+        console.log('No recovery type detected, showing normal auth forms');
       }
     };
     
