@@ -36,6 +36,9 @@ const Auth = () => {
     const params = new URLSearchParams(location.search);
     const token = params.get('invite');
     
+    console.log('Checking for invitation token:', token);
+    console.log('Full URL:', window.location.href);
+    
     if (token) {
       // Check if user is already logged in
       supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -127,6 +130,7 @@ const Auth = () => {
         }
 
         // User not logged in, load invitation for signup
+        console.log('User not logged in, loading invitation for signup');
         supabase
           .from('team_invitations')
           .select('*')
@@ -134,6 +138,8 @@ const Auth = () => {
           .is('accepted_at', null)
           .maybeSingle()
           .then(({ data, error }) => {
+            console.log('Invitation query result:', { data, error });
+            
             if (error) {
               toast({
                 title: 'Error loading invitation',
