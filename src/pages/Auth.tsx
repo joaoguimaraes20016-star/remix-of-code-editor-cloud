@@ -27,18 +27,25 @@ const Auth = () => {
 
   useEffect(() => {
     // Check if this is a password reset callback
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type');
-    
-    if (type === 'recovery') {
-      setIsResettingPassword(true);
-      // Get the user's email from the session
-      supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkPasswordReset = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      
+      console.log('Hash params:', { type, hasAccessToken: !!accessToken });
+      
+      if (type === 'recovery' && accessToken) {
+        setIsResettingPassword(true);
+        // Get the user's email from the session
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Session:', session);
         if (session?.user?.email) {
           setUserEmail(session.user.email);
         }
-      });
-    }
+      }
+    };
+    
+    checkPasswordReset();
   }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
