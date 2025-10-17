@@ -648,24 +648,29 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center px-4 md:px-6 py-4 md:py-6">
           <CardTitle className="text-2xl md:text-3xl font-bold">
-            {inviteMode ? '🎉 Welcome!' : 'GRWTH'}
+            {inviteMode ? '🎉 Welcome to the Team!' : 'GRWTH'}
           </CardTitle>
           <CardDescription className="text-sm md:text-base">
             {isResettingPassword 
               ? 'Reset your password' 
               : inviteMode 
-              ? `You've been invited to join ${inviteTeamName}`
+              ? `Create your account for ${inviteTeamName}`
               : 'Track your sales performance'}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 md:px-6 py-4 md:py-6">
           {inviteMode ? (
             <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 space-y-3">
-                <h3 className="font-semibold text-base">Set up your account</h3>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p>📧 <strong>Email:</strong> {inviteEmail}</p>
-                  <p>👥 <strong>Team:</strong> {inviteTeamName}</p>
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 space-y-2">
+                <div className="space-y-1 text-sm">
+                  <p className="flex items-center gap-2">
+                    <span className="font-semibold">📧 Email:</span>
+                    <span className="text-muted-foreground">{inviteEmail}</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="font-semibold">👥 Team:</span>
+                    <span className="text-muted-foreground">{inviteTeamName}</span>
+                  </p>
                 </div>
               </div>
               
@@ -683,7 +688,7 @@ const Auth = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="invite-password">Create a Password</Label>
+                <Label htmlFor="invite-password">Choose Your Password</Label>
                 <Input
                   id="invite-password"
                   type="password"
@@ -693,21 +698,21 @@ const Auth = () => {
                   required
                   minLength={6}
                 />
-                <p className="text-xs text-muted-foreground">You'll use this to log in to your account</p>
+                <p className="text-xs text-muted-foreground">Create a secure password for your account</p>
               </div>
               
               <Button type="submit" className="w-full" disabled={loading} size="lg">
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin">⏳</span> 
-                    Setting up your account...
+                    Creating your account...
                   </span>
                 ) : (
-                  '✨ Create Account & Join Team'
+                  'Create Account & Join Team'
                 )}
               </Button>
               
-              <div className="text-center pt-2">
+              <div className="text-center pt-2 border-t">
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{' '}
                   <button
@@ -719,7 +724,7 @@ const Auth = () => {
                     }}
                     className="text-primary hover:underline font-medium"
                   >
-                    Sign in instead
+                    Sign in here
                   </button>
                 </p>
               </div>
