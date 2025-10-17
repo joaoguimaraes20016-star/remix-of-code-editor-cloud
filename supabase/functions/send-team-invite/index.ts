@@ -56,8 +56,9 @@ const handler = async (req: Request): Promise<Response> => {
       throw inviteError;
     }
 
-    // Generate invitation URL
-    const inviteUrl = `${req.headers.get("origin")}/auth?invite=${inviteToken}`;
+    // Generate invitation URL using the app URL
+    const appUrl = supabaseUrl.replace('inbvluddkutyfhsxfqco.supabase.co', 'sales-stats-spark.lovable.app');
+    const inviteUrl = `${appUrl}/auth?invite=${inviteToken}`;
     
     // Optional: Send email with Resend if API key is configured
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
