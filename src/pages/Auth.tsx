@@ -544,6 +544,8 @@ const Auth = () => {
     setLoading(false);
   };
 
+  console.log('Auth render - inviteMode:', inviteMode, 'inviteLoading:', inviteLoading, 'inviteToken:', inviteToken);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-3 md:p-4">
       <Card className="w-full max-w-md">
