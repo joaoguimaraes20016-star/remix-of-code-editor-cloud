@@ -770,28 +770,31 @@ const Auth = () => {
                   </div>
                 )}
                 {!isCreatorUpgrade && inviteToken && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                      <h3 className="font-semibold text-lg mb-2">🎉 You're Invited to Join a Team!</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Don't have an account? Create one below to join the team.
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Already have an account? Switch to the <strong>Sign In</strong> tab.
-                      </p>
+                  <>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                        <h3 className="font-semibold text-lg mb-2">🎉 You're Invited to Join a Team!</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Don't have an account? Create one below to join the team.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Already have an account? Switch to the <strong>Sign In</strong> tab.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="invite-email">Email Address</Label>
+                        <Input
+                          id="invite-email"
+                          type="email"
+                          value={inviteEmail}
+                          disabled
+                          className="bg-muted"
+                        />
+                        <p className="text-xs text-muted-foreground">This is the email that received the invitation</p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="invite-email">Email Address</Label>
-                      <Input
-                        id="invite-email"
-                        type="email"
-                        value={inviteEmail}
-                        disabled
-                        className="bg-muted"
-                      />
-                      <p className="text-xs text-muted-foreground">This is the email that received the invitation</p>
-                    </div>
-                  </div>
+                    <div className="hidden">DEBUG: inviteToken={inviteToken}, inviteEmail={inviteEmail}</div>
+                  </>
                 )}
                 {!isCreatorUpgrade && !inviteToken && (
                   <div className="space-y-2">
