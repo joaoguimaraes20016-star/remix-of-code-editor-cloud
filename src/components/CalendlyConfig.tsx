@@ -363,7 +363,7 @@ export function CalendlyConfig({
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
                 <Label className="text-sm font-medium">Event Type Filters</Label>
@@ -372,21 +372,22 @@ export function CalendlyConfig({
               {loadingEventTypes ? (
                 <p className="text-sm text-muted-foreground">Loading event types...</p>
               ) : availableEventTypes.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
                     Select which Calendly event types should create appointments:
                   </p>
-                  <div className="space-y-2 max-h-48 overflow-y-auto p-2 border rounded-md">
+                  <div className="space-y-3 max-h-48 overflow-y-auto p-3 border rounded-md">
                     {availableEventTypes.map((eventType) => (
-                      <div key={eventType.uri} className="flex items-center space-x-2">
+                      <div key={eventType.uri} className="flex items-center space-x-3 py-2 min-h-[44px]">
                         <Checkbox
                           id={eventType.uri}
                           checked={selectedEventTypes.includes(eventType.uri)}
                           onCheckedChange={() => handleEventTypeToggle(eventType.uri)}
+                          className="h-5 w-5"
                         />
                         <label
                           htmlFor={eventType.uri}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          className="text-sm font-medium leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                         >
                           {eventType.name}
                         </label>
@@ -397,7 +398,7 @@ export function CalendlyConfig({
                     onClick={handleSaveEventTypes}
                     disabled={savingEventTypes}
                     variant="outline"
-                    className="w-full"
+                    className="w-full min-h-[44px]"
                   >
                     {savingEventTypes ? "Saving..." : "Save Event Type Filters"}
                   </Button>
