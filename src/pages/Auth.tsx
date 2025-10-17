@@ -602,15 +602,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-3 md:p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold">GRWTH</CardTitle>
-          <CardDescription>
+        <CardHeader className="text-center px-4 md:px-6 py-4 md:py-6">
+          <CardTitle className="text-2xl md:text-3xl font-bold">GRWTH</CardTitle>
+          <CardDescription className="text-sm md:text-base">
             {isResettingPassword ? 'Reset your password' : 'Track your sales performance'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 md:px-6 py-4 md:py-6">
           {isResettingPassword ? (
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div className="space-y-2">
@@ -653,9 +653,9 @@ const Auth = () => {
             </form>
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-auto">
+              <TabsTrigger value="signin" className="text-sm md:text-base py-2 md:py-2.5">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" className="text-sm md:text-base py-2 md:py-2.5">Sign Up</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">

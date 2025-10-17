@@ -383,25 +383,25 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col gap-3 md:gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+              <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-xs md:text-sm">
+                <ArrowLeft className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                 Back
               </Button>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">{teamName}</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{teamName}</h1>
+            <p className="text-muted-foreground mt-1 text-sm md:text-base">
               Track your sales performance and commissions
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {isOwner && (
-              <Button variant="outline" onClick={() => navigate(`/team/${teamId}/settings`)}>
-                <Settings className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={() => navigate(`/team/${teamId}/settings`)} className="text-sm md:text-base w-full sm:w-auto">
+                <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
                 Settings
               </Button>
             )}
@@ -411,31 +411,31 @@ const Index = () => {
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-grid h-auto">
+            <TabsTrigger value="dashboard" className="text-xs md:text-sm py-2 md:py-2.5">Dashboard</TabsTrigger>
             {(canViewSetterScheduling || canViewCloserScheduling) && (
-              <TabsTrigger value="scheduling">Appointments</TabsTrigger>
+              <TabsTrigger value="scheduling" className="text-xs md:text-sm py-2 md:py-2.5">Appointments</TabsTrigger>
             )}
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6 mt-6">
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Date Range:</label>
+        <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-3 md:gap-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2">
+            <label className="text-xs md:text-sm font-medium">Date Range:</label>
             <DateRangeFilter onRangeChange={setDateRange} />
           </div>
 
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Sales Rep:</label>
+          <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2">
+            <label className="text-xs md:text-sm font-medium">Sales Rep:</label>
             <Select value={selectedRep} onValueChange={setSelectedRep}>
-              <SelectTrigger className="w-[200px] bg-card">
+              <SelectTrigger className="w-full md:w-[200px] bg-card text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-card">
                 {salesReps.map((rep) => (
-                  <SelectItem key={rep} value={rep}>
+                  <SelectItem key={rep} value={rep} className="text-sm">
                     {rep === 'all' ? 'All Sales Reps' : rep}
                   </SelectItem>
                 ))}
@@ -443,7 +443,7 @@ const Index = () => {
             </Select>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-6">
           <MetricCard
             title="CC Revenue"
             value={`$${totalCCRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}

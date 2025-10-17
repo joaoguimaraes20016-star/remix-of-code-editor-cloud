@@ -78,12 +78,12 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button className="text-sm md:text-base w-full sm:w-auto">
+          <Plus className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
           Add Sale
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
         <DialogHeader>
           <DialogTitle>Add New Sale</DialogTitle>
           <DialogDescription>
