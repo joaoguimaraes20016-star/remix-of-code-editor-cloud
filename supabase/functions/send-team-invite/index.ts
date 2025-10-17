@@ -56,9 +56,8 @@ const handler = async (req: Request): Promise<Response> => {
       throw inviteError;
     }
 
-    // Get the origin from the request headers to build the correct invite URL
-    // Use preview URL for testing
-    const inviteUrl = `https://58be05a2-2d12-4440-8371-6b03075eca7a.lovableproject.com/auth?invite=${inviteToken}`;
+    // Use custom domain for invite URLs
+    const inviteUrl = `https://grwthengine.com/auth?invite=${inviteToken}`;
     
     console.log('Generated invite URL:', inviteUrl);
     
