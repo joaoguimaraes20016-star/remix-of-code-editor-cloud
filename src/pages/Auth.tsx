@@ -39,11 +39,14 @@ const Auth = () => {
     const token = params.get('invite');
     const creatorParam = params.get('creator');
     
-    console.log('Checking for invitation token:', token);
+    console.log('=== AUTH PAGE LOADED ===');
+    console.log('Invite token from URL:', token);
+    console.log('Creator param:', creatorParam);
     console.log('Full URL:', window.location.href);
     
     // Check if this is a creator upgrade request
     if (creatorParam === 'true') {
+      console.log('Processing creator upgrade...');
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           setSignUpData({ email: session.user.email || '', password: '', fullName: '', signupCode: '' });
@@ -156,7 +159,7 @@ const Auth = () => {
         }
 
         // User not logged in, load invitation for signup
-        console.log('User not logged in, loading invitation for signup');
+        console.log('User not logged in, loading invitation data for token:', token);
         supabase
           .from('team_invitations')
           .select('*')
@@ -167,6 +170,7 @@ const Auth = () => {
             console.log('Invitation query result:', { data, error });
             
             if (error) {
+              console.error('Error loading invitation:', error);
               toast({
                 title: 'Error loading invitation',
                 description: error.message,
@@ -176,6 +180,7 @@ const Auth = () => {
             }
 
             if (!data) {
+              console.error('No invitation found for token:', token);
               toast({
                 title: 'Invalid invitation',
                 description: 'This invitation link is not valid or has already been used.',
@@ -187,6 +192,7 @@ const Auth = () => {
             // Check if invitation is expired
             const expiresAt = new Date(data.expires_at);
             if (expiresAt < new Date()) {
+              console.error('Invitation expired:', expiresAt);
               toast({
                 title: 'Invitation expired',
                 description: 'This invitation link has expired.',
@@ -195,10 +201,16 @@ const Auth = () => {
               return;
             }
 
+            console.log('Valid invitation found! Email:', data.email);
             setInviteToken(token);
             setInviteEmail(data.email);
             setSignUpData(prev => ({ ...prev, email: data.email }));
             setActiveTab('signup');
+            
+            toast({
+              title: 'Welcome!',
+              description: `You've been invited to join a team. Please create your account.`,
+            });
           });
       });
       return; // Don't process password reset if invitation is present
