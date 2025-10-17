@@ -15,7 +15,7 @@ import { AllClaimed } from "@/components/AllClaimed";
 import { MyClaimed } from "@/components/MyClaimed";
 import { CloserView } from "@/components/CloserView";
 import { MRRDashboard } from "@/components/MRRDashboard";
-import { GoogleSheetsConfig } from "@/components/GoogleSheetsConfig";
+import { CalendlyConfig } from "@/components/CalendlyConfig";
 import {
   Select,
   SelectContent,
@@ -41,7 +41,9 @@ const Index = () => {
   const [selectedRep, setSelectedRep] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState("");
-  const [googleSheetsUrl, setGoogleSheetsUrl] = useState<string | null>(null);
+  const [calendlyAccessToken, setCalendlyAccessToken] = useState<string | null>(null);
+  const [calendlyOrgUri, setCalendlyOrgUri] = useState<string | null>(null);
+  const [calendlyWebhookId, setCalendlyWebhookId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; preset: DateRangePreset }>({
@@ -59,33 +61,8 @@ const Index = () => {
     loadTeamData();
     loadSales();
     loadAppointments();
-
-    // Auto-refresh every 2 seconds for real-time sync
-    const refreshInterval = setInterval(() => {
-      loadSales();
-      loadAppointments();
-      loadTeamData();
-      syncGoogleSheets();
-    }, 2000);
-
-    return () => clearInterval(refreshInterval);
   }, [user, teamId, navigate]);
 
-  const syncGoogleSheets = async () => {
-    if (!teamId) return;
-    
-    try {
-      const { error } = await supabase.functions.invoke('sync-appointments', {
-        body: { teamId }
-      });
-      
-      if (error) {
-        console.error('Error syncing appointments:', error);
-      }
-    } catch (error) {
-      console.error('Error syncing appointments:', error);
-    }
-  };
 
   const loadUserProfile = async () => {
     try {
@@ -106,14 +83,16 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from('teams')
-        .select('name, google_sheets_url')
+        .select('name, calendly_access_token, calendly_organization_uri, calendly_webhook_id')
         .eq('id', teamId)
         .maybeSingle();
 
       if (error) throw error;
       if (data) {
         setTeamName(prev => prev !== data.name ? data.name : prev);
-        setGoogleSheetsUrl(prev => prev !== data.google_sheets_url ? data.google_sheets_url : prev);
+        setCalendlyAccessToken(prev => prev !== data.calendly_access_token ? data.calendly_access_token : prev);
+        setCalendlyOrgUri(prev => prev !== data.calendly_organization_uri ? data.calendly_organization_uri : prev);
+        setCalendlyWebhookId(prev => prev !== data.calendly_webhook_id ? data.calendly_webhook_id : prev);
       }
     } catch (error: any) {
       console.error('Error loading team:', error);
@@ -563,9 +542,11 @@ const Index = () => {
 
           <TabsContent value="scheduling" className="space-y-6 mt-6">
             {(userRole === "owner" || userRole === "admin") && (
-              <GoogleSheetsConfig 
+              <CalendlyConfig 
                 teamId={teamId!} 
-                currentUrl={googleSheetsUrl}
+                currentAccessToken={calendlyAccessToken}
+                currentOrgUri={calendlyOrgUri}
+                currentWebhookId={calendlyWebhookId}
                 onUpdate={loadTeamData}
               />
             )}
