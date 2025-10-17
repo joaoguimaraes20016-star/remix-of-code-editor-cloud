@@ -187,7 +187,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-scale-in">
+        <div className="grid gap-6 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-scale-in">
           {teams.map((team, index) => (
             <Card
               key={team.id}
@@ -196,7 +196,7 @@ const Dashboard = () => {
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <CardHeader className="relative">
+              <CardHeader className="relative py-6">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors duration-300">
                     <Users className="h-5 w-5 text-primary" />
@@ -216,7 +216,7 @@ const Dashboard = () => {
               <DialogTrigger asChild>
                 <Card className="group cursor-pointer hover:border-primary hover:shadow-glow transition-all duration-500 border-dashed border-2 bg-gradient-card backdrop-blur-sm overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <CardContent className="flex flex-col items-center justify-center h-full min-h-[185px] relative">
+                  <CardContent className="flex flex-col items-center justify-center h-full min-h-[200px] py-8 relative">
                     <div className="p-4 bg-primary/10 rounded-full mb-4 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
                       <Plus className="h-8 w-8 text-primary" />
                     </div>
