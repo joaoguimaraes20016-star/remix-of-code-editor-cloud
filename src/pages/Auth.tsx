@@ -654,11 +654,18 @@ const Auth = () => {
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin" disabled={!!inviteToken}>Sign In</TabsTrigger>
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
+              {inviteToken && (
+                <div className="mb-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                  <p className="text-sm">
+                    💡 <strong>Already have an account?</strong> Sign in below to join the team.
+                  </p>
+                </div>
+              )}
               {!showResetForm ? (
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
@@ -682,7 +689,7 @@ const Auth = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Signing in...' : 'Sign In'}
+                    {loading ? 'Signing in...' : inviteToken ? 'Sign In & Join Team' : 'Sign In'}
                   </Button>
                   <button
                     type="button"
@@ -767,7 +774,10 @@ const Auth = () => {
                     <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
                       <h3 className="font-semibold text-lg mb-2">🎉 You're Invited to Join a Team!</h3>
                       <p className="text-sm text-muted-foreground">
-                        You've been invited to join a team. Create your account below to get started.
+                        Don't have an account? Create one below to join the team.
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Already have an account? Switch to the <strong>Sign In</strong> tab.
                       </p>
                     </div>
                     <div className="space-y-2">
