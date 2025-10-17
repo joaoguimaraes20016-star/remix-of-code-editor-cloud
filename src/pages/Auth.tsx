@@ -68,10 +68,13 @@ const Auth = () => {
     
     if (token) {
       console.log('=== INVITATION TOKEN DETECTED ===');
+      // Set invite mode immediately
+      setInviteMode(true);
+      setInviteToken(token);
       setInviteLoading(true);
       setActiveTab('signup');
       
-      // Load invitation data - ignore login state
+      // Load invitation data
       supabase
         .from('team_invitations')
         .select('*, teams(name)')
@@ -88,6 +91,8 @@ const Auth = () => {
               description: 'This invitation link is not valid or has already been used.',
               variant: 'destructive',
             });
+            setInviteMode(false);
+            setInviteToken(null);
             setInviteLoading(false);
             return;
           }
@@ -99,15 +104,15 @@ const Auth = () => {
               description: 'This invitation link has expired.',
               variant: 'destructive',
             });
+            setInviteMode(false);
+            setInviteToken(null);
             setInviteLoading(false);
             return;
           }
 
-          // Set invitation mode
-          setInviteToken(token);
+          // Set invitation data
           setInviteEmail(data.email);
           setInviteTeamName((data.teams as any)?.name || 'the team');
-          setInviteMode(true);
           setSignUpData({ email: data.email, password: '', fullName: '', signupCode: '' });
           setInviteLoading(false);
           
