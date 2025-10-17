@@ -44,6 +44,7 @@ const Index = () => {
   const [calendlyAccessToken, setCalendlyAccessToken] = useState<string | null>(null);
   const [calendlyOrgUri, setCalendlyOrgUri] = useState<string | null>(null);
   const [calendlyWebhookId, setCalendlyWebhookId] = useState<string | null>(null);
+  const [calendlyEventTypes, setCalendlyEventTypes] = useState<string[] | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; preset: DateRangePreset }>({
@@ -83,7 +84,7 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from('teams')
-        .select('name, calendly_access_token, calendly_organization_uri, calendly_webhook_id')
+        .select('name, calendly_access_token, calendly_organization_uri, calendly_webhook_id, calendly_event_types')
         .eq('id', teamId)
         .maybeSingle();
 
@@ -93,6 +94,7 @@ const Index = () => {
         setCalendlyAccessToken(prev => prev !== data.calendly_access_token ? data.calendly_access_token : prev);
         setCalendlyOrgUri(prev => prev !== data.calendly_organization_uri ? data.calendly_organization_uri : prev);
         setCalendlyWebhookId(prev => prev !== data.calendly_webhook_id ? data.calendly_webhook_id : prev);
+        setCalendlyEventTypes(prev => JSON.stringify(prev) !== JSON.stringify(data.calendly_event_types) ? data.calendly_event_types : prev);
       }
     } catch (error: any) {
       console.error('Error loading team:', error);
@@ -547,6 +549,7 @@ const Index = () => {
                 currentAccessToken={calendlyAccessToken}
                 currentOrgUri={calendlyOrgUri}
                 currentWebhookId={calendlyWebhookId}
+                currentEventTypes={calendlyEventTypes}
                 onUpdate={loadTeamData}
               />
             )}
