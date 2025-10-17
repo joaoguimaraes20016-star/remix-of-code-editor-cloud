@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar, AlertCircle, CheckCircle2, Unplug, Settings } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -42,6 +43,7 @@ export function CalendlyConfig({
   const [loadingEventTypes, setLoadingEventTypes] = useState(false);
   const [savingEventTypes, setSavingEventTypes] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const isConnected = Boolean(currentAccessToken && currentOrgUri && currentWebhookId);
 
@@ -376,29 +378,60 @@ export function CalendlyConfig({
                   <p className="text-sm text-muted-foreground">
                     Select which Calendly event types should create appointments:
                   </p>
-                  <div className="space-y-3 max-h-48 overflow-y-auto p-3 border rounded-md">
-                    {availableEventTypes.map((eventType) => (
-                      <div key={eventType.uri} className="flex items-center space-x-3 py-2 min-h-[44px]">
-                        <Checkbox
-                          id={eventType.uri}
-                          checked={selectedEventTypes.includes(eventType.uri)}
-                          onCheckedChange={() => handleEventTypeToggle(eventType.uri)}
-                          className="h-5 w-5"
-                        />
-                        <label
-                          htmlFor={eventType.uri}
-                          className="text-sm font-medium leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                  
+                  {isMobile ? (
+                    <div className="space-y-3">
+                      {availableEventTypes.map((eventType) => (
+                        <Card 
+                          key={eventType.uri}
+                          className={`cursor-pointer transition-all ${
+                            selectedEventTypes.includes(eventType.uri)
+                              ? 'border-primary bg-primary/5'
+                              : 'hover:border-primary/50'
+                          }`}
+                          onClick={() => handleEventTypeToggle(eventType.uri)}
                         >
-                          {eventType.name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                          <CardContent className="p-4">
+                            <div className="flex items-center space-x-3">
+                              <Checkbox
+                                checked={selectedEventTypes.includes(eventType.uri)}
+                                onCheckedChange={() => handleEventTypeToggle(eventType.uri)}
+                                className="h-6 w-6"
+                              />
+                              <span className="text-sm font-medium flex-1">
+                                {eventType.name}
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-48 overflow-y-auto p-3 border rounded-md">
+                      {availableEventTypes.map((eventType) => (
+                        <div key={eventType.uri} className="flex items-center space-x-3 py-2">
+                          <Checkbox
+                            id={eventType.uri}
+                            checked={selectedEventTypes.includes(eventType.uri)}
+                            onCheckedChange={() => handleEventTypeToggle(eventType.uri)}
+                            className="h-5 w-5"
+                          />
+                          <label
+                            htmlFor={eventType.uri}
+                            className="text-sm font-medium leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                          >
+                            {eventType.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <Button 
                     onClick={handleSaveEventTypes}
                     disabled={savingEventTypes}
                     variant="outline"
-                    className="w-full min-h-[44px]"
+                    className="w-full min-h-[48px]"
                   >
                     {savingEventTypes ? "Saving..." : "Save Event Type Filters"}
                   </Button>
