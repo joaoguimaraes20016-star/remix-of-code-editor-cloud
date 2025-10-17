@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { Hand, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Appointment {
   id: string;
@@ -65,6 +66,7 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
   const [notes, setNotes] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
 
   useEffect(() => {
     loadTeamMembers();
@@ -195,15 +197,46 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     return <div className="p-4">Loading...</div>;
   }
 
-  const filteredAppointments = appointments.filter(apt => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      apt.lead_name.toLowerCase().includes(query) ||
-      apt.lead_email.toLowerCase().includes(query) ||
-      apt.closer_name?.toLowerCase().includes(query)
-    );
-  });
+  const getFilteredByDate = (appointments: Appointment[]) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    switch (dateFilter) {
+      case "today":
+        return appointments.filter(apt => {
+          const aptDate = new Date(apt.start_at_utc);
+          return aptDate >= today;
+        });
+      case "7days":
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        return appointments.filter(apt => {
+          const aptDate = new Date(apt.start_at_utc);
+          return aptDate >= sevenDaysAgo;
+        });
+      case "30days":
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        return appointments.filter(apt => {
+          const aptDate = new Date(apt.start_at_utc);
+          return aptDate >= thirtyDaysAgo;
+        });
+      default:
+        return appointments;
+    }
+  };
+
+  const filteredAppointments = appointments
+    .filter(apt => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        apt.lead_name.toLowerCase().includes(query) ||
+        apt.lead_email.toLowerCase().includes(query) ||
+        apt.closer_name?.toLowerCase().includes(query)
+      );
+    })
+    .filter(apt => getFilteredByDate(appointments).includes(apt));
 
   if (appointments.length === 0) {
     return (
@@ -215,14 +248,25 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by lead name, email, or closer..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by lead name, email, or closer..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        
+        <Tabs value={dateFilter} onValueChange={setDateFilter}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="today">Today</TabsTrigger>
+            <TabsTrigger value="7days">7 Days</TabsTrigger>
+            <TabsTrigger value="30days">30 Days</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       
       {filteredAppointments.length === 0 ? (
