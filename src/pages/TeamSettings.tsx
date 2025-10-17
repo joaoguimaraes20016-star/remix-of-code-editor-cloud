@@ -231,12 +231,14 @@ export default function TeamSettings() {
   const getRoleBadge = (role: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
       owner: 'default',
+      offer_owner: 'default',
       closer: 'secondary',
       setter: 'secondary',
       member: 'outline',
     };
 
-    return <Badge variant={variants[role] || 'outline'}>{role}</Badge>;
+    const displayName = role === 'offer_owner' ? 'Offer Owner' : role;
+    return <Badge variant={variants[role] || 'outline'}>{displayName}</Badge>;
   };
 
   if (loading || roleLoading) {
@@ -295,6 +297,7 @@ export default function TeamSettings() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="owner">Owner</SelectItem>
+                      <SelectItem value="offer_owner">Offer Owner</SelectItem>
                       <SelectItem value="closer">Closer</SelectItem>
                       <SelectItem value="setter">Setter</SelectItem>
                       <SelectItem value="member">Member</SelectItem>
@@ -333,7 +336,7 @@ export default function TeamSettings() {
                       <TableCell>{member.email}</TableCell>
                       <TableCell>{getRoleBadge(member.role)}</TableCell>
                       <TableCell className="text-right">
-                        {member.role !== 'owner' && (
+                        {member.role !== 'owner' && member.role !== 'offer_owner' && (
                           <Button
                             variant="ghost"
                             size="sm"

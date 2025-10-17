@@ -35,5 +35,5 @@ export function useTeamRole(teamId: string | undefined) {
     loadRole();
   }, [user, teamId]);
 
-  return { role, loading, isOwner: role === 'owner' };
+  return { role, loading, isOwner: role === 'owner' || role === 'offer_owner' };
 }
