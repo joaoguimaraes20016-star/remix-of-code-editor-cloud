@@ -41,47 +41,51 @@ const Auth = () => {
 
 
   useEffect(() => {
-    // Check for invitation token or creator upgrade in URL
-    const params = new URLSearchParams(location.search);
-    const token = params.get('invite');
-    const creatorParam = params.get('creator');
-    
-    console.log('=== AUTH PAGE LOADED ===');
-    console.log('Full URL:', window.location.href);
-    console.log('Search params:', location.search);
-    console.log('Invite token from URL:', token);
-    console.log('Creator param:', creatorParam);
-    
-    // Check if this is a creator upgrade request
-    if (creatorParam === 'true') {
-      console.log('Processing creator upgrade...');
-      supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkAuthAndInvite = async () => {
+      const params = new URLSearchParams(location.search);
+      const token = params.get('invite');
+      const creatorParam = params.get('creator');
+      
+      console.log('=== AUTH PAGE LOADED ===');
+      console.log('Full URL:', window.location.href);
+      console.log('Invite token:', token);
+      
+      // Get current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Handle creator upgrade
+      if (creatorParam === 'true') {
         if (session?.user) {
           setSignUpData({ email: session.user.email || '', password: '', fullName: '', signupCode: '' });
           setIsCreatorUpgrade(true);
           setActiveTab('signup');
         }
-      });
-      return;
-    }
-    
-    if (token) {
-      console.log('=== INVITATION TOKEN DETECTED ===');
+        return;
+      }
       
-      // Check if user is already logged in
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // If user is logged in and NO invite token, redirect to dashboard
+      if (session?.user && !token) {
+        console.log('Logged in user without invite, redirecting to dashboard');
+        navigate('/dashboard');
+        return;
+      }
+      
+      // If there's an invite token
+      if (token) {
+        // User is logged in with invite token - auto accept
         if (session?.user) {
-          console.log('User is already logged in, processing invitation...');
-          // User is logged in, accept invitation automatically
+          console.log('Logged in user with invite, auto-accepting...');
+          
           try {
-            const { data: invitation } = await supabase
+            const { data: invitation, error: inviteError } = await supabase
               .from('team_invitations')
-              .select('team_id, role, id, email')
+              .select('team_id, role, id, email, expires_at')
               .eq('token', token)
               .is('accepted_at', null)
               .maybeSingle();
 
-            if (!invitation) {
+            if (inviteError || !invitation) {
+              console.error('Invitation error:', inviteError);
               toast({
                 title: 'Invalid invitation',
                 description: 'This invitation link is not valid or has already been used.',
@@ -92,13 +96,7 @@ const Auth = () => {
             }
 
             // Check expiration
-            const { data: inviteData } = await supabase
-              .from('team_invitations')
-              .select('expires_at')
-              .eq('id', invitation.id)
-              .single();
-
-            if (inviteData && new Date(inviteData.expires_at) < new Date()) {
+            if (new Date(invitation.expires_at) < new Date()) {
               toast({
                 title: 'Invitation expired',
                 description: 'This invitation link has expired.',
@@ -108,7 +106,7 @@ const Auth = () => {
               return;
             }
 
-            // Check if user is already a team member
+            // Check if already a team member
             const { data: existingMember } = await supabase
               .from('team_members')
               .select('id')
@@ -117,33 +115,46 @@ const Auth = () => {
               .maybeSingle();
 
             if (!existingMember) {
-              // Add user to team
-              await supabase.from('team_members').insert({
-                team_id: invitation.team_id,
-                user_id: session.user.id,
-                role: invitation.role,
-              });
+              // Add to team
+              const { error: memberError } = await supabase
+                .from('team_members')
+                .insert({
+                  team_id: invitation.team_id,
+                  user_id: session.user.id,
+                  role: invitation.role,
+                });
 
-              // Mark invitation as accepted
+              if (memberError) {
+                console.error('Error adding team member:', memberError);
+                throw memberError;
+              }
+
+              // Mark as accepted
               await supabase
                 .from('team_invitations')
                 .update({ accepted_at: new Date().toISOString() })
                 .eq('id', invitation.id);
-            }
 
-            toast({
-              title: 'Welcome to the team!',
-              description: 'Taking you to your team dashboard...',
-            });
+              toast({
+                title: '🎉 Welcome to the team!',
+                description: 'Taking you to your team dashboard...',
+              });
+            } else {
+              toast({
+                title: 'Already a member',
+                description: 'You are already a member of this team.',
+              });
+            }
 
             setTimeout(() => {
               navigate(`/team/${invitation.team_id}`);
             }, 1000);
+            
           } catch (err) {
             console.error('Error processing invitation:', err);
             toast({
-              title: 'Error joining team',
-              description: 'There was a problem adding you to the team.',
+              title: 'Error',
+              description: 'Could not process invitation. Please try again.',
               variant: 'destructive',
             });
             navigate('/dashboard');
@@ -151,64 +162,60 @@ const Auth = () => {
           return;
         }
 
-        // User not logged in, show signup form
+        // User NOT logged in with invite - show signup form
+        console.log('Not logged in, showing invite signup form');
         setInviteMode(true);
         setInviteToken(token);
         setInviteLoading(true);
         setActiveTab('signup');
         
-        // Load invitation data
-        supabase
+        const { data, error } = await supabase
           .from('team_invitations')
           .select('*, teams(name)')
           .eq('token', token)
           .is('accepted_at', null)
-          .maybeSingle()
-          .then(({ data, error }) => {
-            console.log('=== INVITATION QUERY RESULT ===');
-            console.log('Data:', data);
-            
-            if (error || !data) {
-              toast({
-                title: 'Invalid invitation',
-                description: 'This invitation link is not valid or has already been used.',
-                variant: 'destructive',
-              });
-              setInviteMode(false);
-              setInviteToken(null);
-              setInviteLoading(false);
-              return;
-            }
-
-            // Check expiration
-            if (new Date(data.expires_at) < new Date()) {
-              toast({
-                title: 'Invitation expired',
-                description: 'This invitation link has expired.',
-                variant: 'destructive',
-              });
-              setInviteMode(false);
-              setInviteToken(null);
-              setInviteLoading(false);
-              return;
-            }
-
-            // Set invitation data
-            setInviteEmail(data.email);
-            setInviteTeamName((data.teams as any)?.name || 'the team');
-            setSignUpData({ email: data.email, password: '', fullName: '', signupCode: '' });
-            setInviteLoading(false);
-            
-            toast({
-              title: 'Welcome!',
-              description: `You've been invited to join ${(data.teams as any)?.name}`,
-            });
+          .maybeSingle();
+        
+        if (error || !data) {
+          toast({
+            title: 'Invalid invitation',
+            description: 'This invitation link is not valid or has already been used.',
+            variant: 'destructive',
           });
-      });
-      return;
-    }
+          setInviteMode(false);
+          setInviteToken(null);
+          setInviteLoading(false);
+          return;
+        }
 
-    // Set up auth state listener to catch PASSWORD_RECOVERY event
+        if (new Date(data.expires_at) < new Date()) {
+          toast({
+            title: 'Invitation expired',
+            description: 'This invitation link has expired.',
+            variant: 'destructive',
+          });
+          setInviteMode(false);
+          setInviteToken(null);
+          setInviteLoading(false);
+          return;
+        }
+
+        setInviteEmail(data.email);
+        setInviteTeamName((data.teams as any)?.name || 'the team');
+        setSignUpData({ email: data.email, password: '', fullName: '', signupCode: '' });
+        setInviteLoading(false);
+        
+        toast({
+          title: 'Welcome!',
+          description: `You've been invited to join ${(data.teams as any)?.name}`,
+        });
+        return;
+      }
+    };
+
+    checkAuthAndInvite();
+
+    // Set up auth state listener for password recovery
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsResettingPassword(true);
@@ -218,7 +225,7 @@ const Auth = () => {
       }
     });
 
-    // Also check current state on mount
+    // Check for password recovery in hash
     const checkCurrentState = async () => {
       const hash = window.location.hash;
       
