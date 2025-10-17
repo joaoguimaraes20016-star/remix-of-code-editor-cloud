@@ -39,14 +39,14 @@ const Dashboard = () => {
   const checkUserRole = async () => {
     if (!user) return;
     
-    // Only allow creating teams if user is a team owner or has no teams yet
-    const { data: memberships } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'owner');
+    // Only allow creating teams if user is a creator
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('account_type')
+      .eq('id', user.id)
+      .single();
     
-    setCanCreateTeams(teams.length === 0 || (memberships && memberships.length > 0));
+    setCanCreateTeams(profile?.account_type === 'creator');
   };
 
   const loadTeams = async () => {
