@@ -56,10 +56,8 @@ const handler = async (req: Request): Promise<Response> => {
       throw inviteError;
     }
 
-    // Generate invitation URL using the request origin or fallback to production URL
-    const origin = req.headers.get("origin") || req.headers.get("referer")?.split('/').slice(0, 3).join('/');
-    const baseUrl = origin || "https://sales-stats-spark.lovable.app";
-    const inviteUrl = `${baseUrl}/auth?invite=${inviteToken}`;
+    // Use the production app URL directly for invitations
+    const inviteUrl = `https://sales-stats-spark.lovable.app/auth?invite=${inviteToken}`;
     
     // Optional: Send email with Resend if API key is configured
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
