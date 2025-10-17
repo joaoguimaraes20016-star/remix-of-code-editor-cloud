@@ -489,7 +489,7 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
                   className="flex-1 h-10 text-sm"
                 >
                   <Hand className="h-3.5 w-3.5 mr-1.5" />
-                  Claim
+                  Assign
                 </Button>
                 <Button
                   size="sm"
@@ -581,9 +581,9 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
         <Drawer open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
           <DrawerContent className="max-h-[90vh]">
             <DrawerHeader>
-              <DrawerTitle>Claim Appointment</DrawerTitle>
+              <DrawerTitle>Assign Appointment</DrawerTitle>
               <DrawerDescription>
-                Assign yourself and optionally select a closer
+                Assign this appointment to a setter and closer
               </DrawerDescription>
             </DrawerHeader>
             
@@ -647,7 +647,7 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
 
             <DrawerFooter className="px-4 pt-4">
               <Button onClick={handleAssign} disabled={assigning || !selectedSetter} className="h-11 text-base">
-                {assigning ? "Assigning..." : "Claim Appointment"}
+                {assigning ? "Assigning..." : "Assign Appointment"}
               </Button>
               <DrawerClose asChild>
                 <Button variant="outline" className="h-11 text-base">Cancel</Button>
