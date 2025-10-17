@@ -47,6 +47,8 @@ const Auth = () => {
     const creatorParam = params.get('creator');
     
     console.log('=== AUTH PAGE LOADED ===');
+    console.log('Full URL:', window.location.href);
+    console.log('Search params:', location.search);
     console.log('Invite token from URL:', token);
     console.log('Creator param:', creatorParam);
     console.log('Full URL:', window.location.href);
