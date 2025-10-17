@@ -380,25 +380,25 @@ export function CalendlyConfig({
                   </p>
                   
                   {isMobile ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {availableEventTypes.map((eventType) => (
                         <Card 
                           key={eventType.uri}
-                          className={`cursor-pointer transition-all ${
+                          className={`cursor-pointer transition-all min-h-[60px] ${
                             selectedEventTypes.includes(eventType.uri)
                               ? 'border-primary bg-primary/5'
                               : 'hover:border-primary/50'
                           }`}
                           onClick={() => handleEventTypeToggle(eventType.uri)}
                         >
-                          <CardContent className="p-4">
-                            <div className="flex items-center space-x-3">
+                          <CardContent className="p-5">
+                            <div className="flex items-center space-x-4">
                               <Checkbox
                                 checked={selectedEventTypes.includes(eventType.uri)}
                                 onCheckedChange={() => handleEventTypeToggle(eventType.uri)}
-                                className="h-6 w-6"
+                                className="h-6 w-6 border-2"
                               />
-                              <span className="text-sm font-medium flex-1">
+                              <span className="text-base font-medium flex-1 leading-relaxed">
                                 {eventType.name}
                               </span>
                             </div>
@@ -431,7 +431,7 @@ export function CalendlyConfig({
                     onClick={handleSaveEventTypes}
                     disabled={savingEventTypes}
                     variant="outline"
-                    className="w-full min-h-[48px]"
+                    className="w-full min-h-[52px] text-base font-semibold"
                   >
                     {savingEventTypes ? "Saving..." : "Save Event Type Filters"}
                   </Button>
