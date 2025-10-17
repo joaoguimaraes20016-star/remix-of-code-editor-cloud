@@ -465,9 +465,9 @@ export function CloserView({ teamId }: CloserViewProps) {
 
   return (
     <>
-      <Tabs defaultValue="all-new" className="w-full">
-        <div className="overflow-x-auto">
-          <TabsList className="w-full md:w-auto inline-flex">
+      <Tabs defaultValue="all-new" className="w-full overflow-x-hidden">
+        <div className="-mx-3 px-3 md:mx-0 md:px-0 overflow-x-auto">
+          <TabsList className="w-full md:w-auto inline-flex min-w-max">
             <TabsTrigger value="all-new" className="text-xs md:text-sm whitespace-nowrap">All Appointments ({allNewAppointments.length})</TabsTrigger>
             <TabsTrigger value="my-new" className="text-xs md:text-sm whitespace-nowrap">My Meetings ({myNewAppointments.length})</TabsTrigger>
             <TabsTrigger value="all-closed" className="text-xs md:text-sm whitespace-nowrap">All Closed ({allClosedAppointments.length})</TabsTrigger>

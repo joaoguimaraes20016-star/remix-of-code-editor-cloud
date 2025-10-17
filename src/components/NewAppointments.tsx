@@ -390,14 +390,14 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
           />
         </div>
         
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="-mx-3 px-3 md:mx-0 md:px-0 overflow-x-auto">
           <Tabs value={dateFilter} onValueChange={(value) => {
             setDateFilter(value);
             if (value === "custom" && isMobile) {
               setDateDrawerOpen(true);
             }
           }}>
-            <TabsList className="w-full md:w-auto">
+            <TabsList className="w-full md:w-auto inline-flex min-w-max">
               <TabsTrigger value="all" className="text-xs md:text-sm">All</TabsTrigger>
               <TabsTrigger value="today" className="text-xs md:text-sm">Today</TabsTrigger>
               <TabsTrigger value="7days" className="text-xs md:text-sm">7 Days</TabsTrigger>

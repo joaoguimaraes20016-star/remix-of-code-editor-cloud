@@ -382,8 +382,8 @@ const Index = () => {
   const canViewCloserScheduling = userRole === 'closer' || userRole === 'admin' || isOwner;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      <div className="container mx-auto p-3 md:p-6 space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
         {/* Header */}
         <div className="flex flex-col gap-3 md:gap-4">
           <div>
@@ -551,13 +551,15 @@ const Index = () => {
               />
             )}
             
-            <Tabs defaultValue={canViewSetterScheduling ? "new" : "closer"} className="w-full">
-              <TabsList>
-                {canViewSetterScheduling && <TabsTrigger value="new">New Appointments</TabsTrigger>}
-                {canViewSetterScheduling && <TabsTrigger value="claimed">All Assigned</TabsTrigger>}
-                {canViewSetterScheduling && <TabsTrigger value="my-claimed">My Assigned</TabsTrigger>}
-                {canViewCloserScheduling && <TabsTrigger value="closer">Closer View</TabsTrigger>}
-              </TabsList>
+            <Tabs defaultValue={canViewSetterScheduling ? "new" : "closer"} className="w-full overflow-x-hidden">
+              <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
+                <TabsList className="w-full md:w-auto inline-flex">
+                  {canViewSetterScheduling && <TabsTrigger value="new" className="text-xs md:text-sm whitespace-nowrap">New Appointments</TabsTrigger>}
+                  {canViewSetterScheduling && <TabsTrigger value="claimed" className="text-xs md:text-sm whitespace-nowrap">All Assigned</TabsTrigger>}
+                  {canViewSetterScheduling && <TabsTrigger value="my-claimed" className="text-xs md:text-sm whitespace-nowrap">My Assigned</TabsTrigger>}
+                  {canViewCloserScheduling && <TabsTrigger value="closer" className="text-xs md:text-sm whitespace-nowrap">Closer View</TabsTrigger>}
+                </TabsList>
+              </div>
 
               {canViewSetterScheduling && (
                 <>
