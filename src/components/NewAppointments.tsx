@@ -29,7 +29,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
-import { Hand, Search, CalendarIcon } from "lucide-react";
+import { Hand, Search, CalendarIcon, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -74,6 +84,9 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     from: Date | undefined;
     to: Date | undefined;
   }>({ from: undefined, to: undefined });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadTeamMembers();
@@ -193,6 +206,41 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
       });
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const handleOpenDeleteDialog = (appointment: Appointment) => {
+    setAppointmentToDelete(appointment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!appointmentToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Appointment deleted',
+        description: `Deleted appointment for ${appointmentToDelete.lead_name}`,
+      });
+
+      setDeleteDialogOpen(false);
+      loadAppointments();
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting appointment',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -346,7 +394,7 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
             <TableHead>Email</TableHead>
             <TableHead>Closer</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Action</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -366,17 +414,27 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
                 <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                   {apt.status}
                 </span>
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="sm"
-                  onClick={() => handleOpenAssignDialog(apt)}
-                  className="flex items-center gap-1"
-                >
-                  <Hand className="h-3 w-3" />
-                  Assign
-                </Button>
-              </TableCell>
+               </TableCell>
+               <TableCell>
+                 <div className="flex gap-2">
+                   <Button
+                     size="sm"
+                     onClick={() => handleOpenAssignDialog(apt)}
+                     className="flex items-center gap-1"
+                   >
+                     <Hand className="h-3 w-3" />
+                     Assign
+                   </Button>
+                   <Button
+                     size="sm"
+                     variant="destructive"
+                     onClick={() => handleOpenDeleteDialog(apt)}
+                     className="flex items-center gap-1"
+                   >
+                     <Trash2 className="h-3 w-3" />
+                   </Button>
+                 </div>
+               </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -464,6 +522,28 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Appointment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this appointment for{" "}
+              <strong>{appointmentToDelete?.lead_name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

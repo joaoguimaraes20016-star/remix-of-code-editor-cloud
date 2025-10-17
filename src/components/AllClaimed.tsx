@@ -9,7 +9,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
+import { Trash2 } from "lucide-react";
 
 interface Appointment {
   id: string;
@@ -29,6 +41,9 @@ export function AllClaimed({ teamId }: AllClaimedProps) {
   const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadAppointments();
@@ -77,6 +92,41 @@ export function AllClaimed({ teamId }: AllClaimedProps) {
     }
   };
 
+  const handleOpenDeleteDialog = (appointment: Appointment) => {
+    setAppointmentToDelete(appointment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!appointmentToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Appointment deleted',
+        description: `Deleted appointment for ${appointmentToDelete.lead_name}`,
+      });
+
+      setDeleteDialogOpen(false);
+      loadAppointments();
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting appointment',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const formatLocalTime = (utcTime: string) => {
     return format(new Date(utcTime), 'MMM d, yyyy h:mm a');
   };
@@ -104,6 +154,7 @@ export function AllClaimed({ teamId }: AllClaimedProps) {
             <TableHead>Setter</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Setter Notes</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -123,12 +174,44 @@ export function AllClaimed({ teamId }: AllClaimedProps) {
                 }`}>
                   {apt.status}
                 </span>
-              </TableCell>
-              <TableCell className="max-w-xs truncate">{apt.setter_notes || '-'}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
+               </TableCell>
+               <TableCell className="max-w-xs truncate">{apt.setter_notes || '-'}</TableCell>
+               <TableCell>
+                 <Button
+                   size="sm"
+                   variant="destructive"
+                   onClick={() => handleOpenDeleteDialog(apt)}
+                   className="flex items-center gap-1"
+                 >
+                   <Trash2 className="h-3 w-3" />
+                 </Button>
+               </TableCell>
+             </TableRow>
+           ))}
+         </TableBody>
+       </Table>
+       
+       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+         <AlertDialogContent>
+           <AlertDialogHeader>
+             <AlertDialogTitle>Delete Appointment</AlertDialogTitle>
+             <AlertDialogDescription>
+               Are you sure you want to delete this appointment for{" "}
+               <strong>{appointmentToDelete?.lead_name}</strong>? This action cannot be undone.
+             </AlertDialogDescription>
+           </AlertDialogHeader>
+           <AlertDialogFooter>
+             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+             <AlertDialogAction
+               onClick={handleDelete}
+               disabled={deleting}
+               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+             >
+               {deleting ? "Deleting..." : "Delete"}
+             </AlertDialogAction>
+           </AlertDialogFooter>
+         </AlertDialogContent>
+       </AlertDialog>
+     </div>
+   );
+ }
