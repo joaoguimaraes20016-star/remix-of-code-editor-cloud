@@ -29,6 +29,7 @@ const Auth = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteTeamName, setInviteTeamName] = useState('');
   const [inviteMode, setInviteMode] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
   // Check URL params immediately to set initial tab
   const urlParams = new URLSearchParams(location.search);
   const hasInvite = urlParams.get('invite');
@@ -171,6 +172,8 @@ const Auth = () => {
         console.log('=== USER NOT LOGGED IN - LOADING INVITATION DATA ===');
         console.log('Token:', token);
         
+        setInviteLoading(true);
+        
         supabase
           .from('team_invitations')
           .select('*, teams(name)')
@@ -189,6 +192,7 @@ const Auth = () => {
                 description: error.message,
                 variant: 'destructive',
               });
+              setInviteLoading(false);
               return;
             }
 
@@ -199,6 +203,7 @@ const Auth = () => {
                 description: 'This invitation link is not valid or has already been used.',
                 variant: 'destructive',
               });
+              setInviteLoading(false);
               return;
             }
 
@@ -211,6 +216,7 @@ const Auth = () => {
                 description: 'This invitation link has expired.',
                 variant: 'destructive',
               });
+              setInviteLoading(false);
               return;
             }
 
@@ -224,6 +230,7 @@ const Auth = () => {
             setInviteTeamName((data.teams as any)?.name || 'the team');
             setInviteMode(true);
             setSignUpData(prev => ({ ...prev, email: data.email }));
+            setInviteLoading(false);
             
             toast({
               title: 'Welcome!',
@@ -666,11 +673,17 @@ const Auth = () => {
               ? 'Reset your password' 
               : inviteMode 
               ? `Create your account for ${inviteTeamName}`
+              : inviteLoading
+              ? 'Loading invitation...'
               : 'Track your sales performance'}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 md:px-6 py-4 md:py-6">
-          {inviteMode ? (
+          {inviteLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin text-4xl">⏳</div>
+            </div>
+          ) : inviteMode ? (
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 space-y-2">
                 <div className="space-y-1 text-sm">
