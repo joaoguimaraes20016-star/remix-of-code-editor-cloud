@@ -381,6 +381,8 @@ export default function TeamSettings() {
               <SetterBookingLinks
                 teamId={teamId!}
                 calendlyEventTypes={calendlyEventTypes}
+                calendlyAccessToken={calendlyAccessToken}
+                calendlyOrgUri={calendlyOrgUri}
                 onRefresh={loadTeamData}
               />
             );

@@ -19,14 +19,17 @@ interface TeamMemberWithBooking {
 interface SetterBookingLinksProps {
   teamId: string;
   calendlyEventTypes: string[];
+  calendlyAccessToken?: string | null;
+  calendlyOrgUri?: string | null;
   onRefresh?: () => void;
 }
 
-export function SetterBookingLinks({ teamId, calendlyEventTypes, onRefresh }: SetterBookingLinksProps) {
+export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessToken, calendlyOrgUri, onRefresh }: SetterBookingLinksProps) {
   const [members, setMembers] = useState<TeamMemberWithBooking[]>([]);
   const [editingCodes, setEditingCodes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -121,7 +124,63 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, onRefresh }: Se
     // Extract readable name from Calendly URL
     // e.g., "https://calendly.com/user/30min" -> "30min"
     const parts = url.split('/');
-    return parts[parts.length - 1] || 'Event';
+    return parts[parts.length - 1]?.split('?')[0] || 'Event';
+  };
+
+  const handleRefreshLinks = async () => {
+    if (!calendlyAccessToken || !calendlyOrgUri) {
+      toast({
+        title: 'Error',
+        description: 'Calendly is not connected. Please set up Calendly integration first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      // Fetch fresh event types from Calendly API
+      const response = await fetch(`https://api.calendly.com/event_types?organization=${encodeURIComponent(calendlyOrgUri)}&active=true`, {
+        headers: {
+          'Authorization': `Bearer ${calendlyAccessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch event types from Calendly');
+      }
+
+      const data = await response.json();
+      const schedulingUrls = data.collection.map((et: any) => et.scheduling_url);
+
+      // Update the database with fresh scheduling URLs
+      const { error } = await supabase
+        .from('teams')
+        .update({ calendly_event_types: schedulingUrls })
+        .eq('id', teamId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Booking links refreshed successfully',
+      });
+
+      // Trigger parent refresh
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error: any) {
+      console.error('Error refreshing links:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh booking links. Please check your Calendly connection.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -176,10 +235,11 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, onRefresh }: Se
             <Button
               variant="outline"
               size="sm"
-              onClick={onRefresh}
+              onClick={handleRefreshLinks}
+              disabled={refreshing}
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Links
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh Links'}
             </Button>
           )}
         </div>
