@@ -72,19 +72,13 @@ export function CalendlyConfig({
 
       if (response.status === 401) {
         setTokenValidationFailed(true);
-        // Only show error once, not on every page load
-        if (!tokenValidationFailed) {
-          toast({
-            title: "Calendly Token Expired",
-            description: "Your Calendly access token has expired. Please reconnect your Calendly account.",
-            variant: "destructive",
-          });
-        }
+        console.warn('Calendly token validation failed - token may be expired');
         return;
       }
 
       if (!response.ok) {
-        throw new Error('Failed to fetch event types from Calendly');
+        console.error('Failed to fetch Calendly event types:', response.status);
+        return;
       }
 
       const data = await response.json();
@@ -98,7 +92,7 @@ export function CalendlyConfig({
       setTokenValidationFailed(false); // Reset if successful
     } catch (error: any) {
       console.error('Error fetching event types:', error);
-      // Don't show toast on every page load, only log to console
+      // Don't show error toast - this is a background operation
     } finally {
       setLoadingEventTypes(false);
     }
