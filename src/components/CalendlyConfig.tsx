@@ -179,7 +179,12 @@ export function CalendlyConfig({
 
       if (error) throw error;
 
-      if (data.error) {
+      // Check if the response contains a Calendly API error
+      if (data?.title === 'Unauthenticated' || data?.message?.includes('access token is invalid')) {
+        throw new Error('Invalid Calendly access token. Please check your credentials.');
+      }
+
+      if (data?.error) {
         throw new Error(data.error);
       }
 
@@ -193,9 +198,16 @@ export function CalendlyConfig({
       onUpdate();
     } catch (error: any) {
       console.error('Connection error:', error);
+      
+      // Don't show the raw Calendly error
+      let errorMessage = error.message || "Failed to connect Calendly integration";
+      if (errorMessage.includes('Unauthenticated') || errorMessage.includes('access token is invalid')) {
+        errorMessage = 'Invalid Calendly access token. Please verify your credentials and try again.';
+      }
+      
       toast({
         title: "Connection Failed",
-        description: error.message || "Failed to connect Calendly integration",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
