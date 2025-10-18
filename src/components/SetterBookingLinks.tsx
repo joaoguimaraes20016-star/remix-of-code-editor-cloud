@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, ExternalLink, Save } from 'lucide-react';
+import { Copy, ExternalLink, Save, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TeamMemberWithBooking {
@@ -19,9 +19,10 @@ interface TeamMemberWithBooking {
 interface SetterBookingLinksProps {
   teamId: string;
   calendlyEventTypes: string[];
+  onRefresh?: () => void;
 }
 
-export function SetterBookingLinks({ teamId, calendlyEventTypes }: SetterBookingLinksProps) {
+export function SetterBookingLinks({ teamId, calendlyEventTypes, onRefresh }: SetterBookingLinksProps) {
   const [members, setMembers] = useState<TeamMemberWithBooking[]>([]);
   const [editingCodes, setEditingCodes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -164,10 +165,24 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes }: SetterBooking
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Setter Booking Links</CardTitle>
-        <CardDescription>
-          Create personalized booking links that automatically assign appointments to specific team members
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Setter Booking Links</CardTitle>
+            <CardDescription>
+              Create personalized booking links that automatically assign appointments to specific team members
+            </CardDescription>
+          </div>
+          {onRefresh && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefresh}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Links
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {members.map((member) => {
