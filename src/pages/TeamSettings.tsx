@@ -57,6 +57,7 @@ export default function TeamSettings() {
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberRole, setNewMemberRole] = useState<string>('member');
   const [loading, setLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [calendlyAccessToken, setCalendlyAccessToken] = useState<string | null>(null);
   const [calendlyOrgUri, setCalendlyOrgUri] = useState<string | null>(null);
   const [calendlyWebhookId, setCalendlyWebhookId] = useState<string | null>(null);
@@ -68,7 +69,9 @@ export default function TeamSettings() {
       return;
     }
     
-    if (!roleLoading && !isOwner) {
+    checkSuperAdmin();
+    
+    if (!roleLoading && !isOwner && !isSuperAdmin) {
       toast({
         title: 'Access denied',
         description: 'Only team owners can access settings',
@@ -101,7 +104,24 @@ export default function TeamSettings() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, teamId, isOwner, roleLoading, navigate]);
+  }, [user, teamId, isOwner, roleLoading, navigate, isSuperAdmin]);
+
+  const checkSuperAdmin = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'super_admin')
+        .maybeSingle();
+      
+      setIsSuperAdmin(!!data);
+    } catch (error) {
+      console.error('Error checking super admin status:', error);
+    }
+  };
 
   const loadTeamData = async () => {
     try {
@@ -278,6 +298,7 @@ export default function TeamSettings() {
       closer: 'secondary',
       setter: 'secondary',
       member: 'outline',
+      admin: 'default',
     };
 
     const displayName = role === 'owner' ? 'Admin' : role === 'offer_owner' ? 'Offer Owner' : role;
@@ -383,7 +404,7 @@ export default function TeamSettings() {
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
-                        {member.is_super_admin && !member.is_current_user ? (
+                        {isSuperAdmin && !member.is_super_admin ? (
                           <Select
                             value={member.role}
                             onValueChange={(value) => handleRoleChange(member.id, value)}

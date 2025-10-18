@@ -17,7 +17,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
 
   const [signInData, setSignInData] = useState({ email: '', password: '' });
-  const [signUpData, setSignUpData] = useState({ email: '', password: '', fullName: '', signupCode: '' });
+  const [signUpData, setSignUpData] = useState({ email: '', password: '', fullName: '', creatorCode: '' });
   const [resetEmail, setResetEmail] = useState('');
   const [showResetForm, setShowResetForm] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
@@ -56,7 +56,7 @@ const Auth = () => {
       // Handle creator upgrade
       if (creatorParam === 'true') {
         if (session?.user) {
-          setSignUpData({ email: session.user.email || '', password: '', fullName: '', signupCode: '' });
+          setSignUpData({ email: session.user.email || '', password: '', fullName: '', creatorCode: '' });
           setIsCreatorUpgrade(true);
           setActiveTab('signup');
         }
@@ -202,7 +202,7 @@ const Auth = () => {
 
         setInviteEmail(data.email);
         setInviteTeamName((data.teams as any)?.name || 'the team');
-        setSignUpData({ email: data.email, password: '', fullName: '', signupCode: '' });
+        setSignUpData({ email: data.email, password: '', fullName: '', creatorCode: '' });
         setInviteLoading(false);
         
         toast({
@@ -376,26 +376,28 @@ const Auth = () => {
       });
     }
     
-    // Skip signup code validation if user has an invitation
-    if (!inviteToken) {
-      // Validate creator code from database
+    // Validate creator code if provided
+    let hasCreatorCode = false;
+    if (signUpData.creatorCode && signUpData.creatorCode.trim()) {
       const { data: validCode, error: codeError } = await supabase
         .from('creator_codes')
         .select('id, uses_count')
-        .eq('code', signUpData.signupCode.trim().toUpperCase())
+        .eq('code', signUpData.creatorCode.trim().toUpperCase())
         .eq('is_active', true)
         .maybeSingle();
 
       if (codeError || !validCode) {
         toast({
-          title: 'Invalid signup code',
-          description: 'Please enter a valid signup code to create an account.',
+          title: 'Invalid creator code',
+          description: 'The creator code you entered is not valid.',
           variant: 'destructive',
         });
         setLoading(false);
         return;
       }
 
+      hasCreatorCode = true;
+      
       // Increment uses count
       await supabase
         .from('creator_codes')
@@ -403,7 +405,7 @@ const Auth = () => {
         .eq('id', validCode.id);
     }
     
-    const { data: signUpResult, error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName);
+    const { data: signUpResult, error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName, signUpData.creatorCode || undefined);
     
     console.log('signUp result:', { signUpResult, error });
     
@@ -930,15 +932,15 @@ const Auth = () => {
                 )}
                 {!isCreatorUpgrade && !inviteToken && (
                   <div className="space-y-2">
-                    <Label htmlFor="signup-code">Signup Code</Label>
+                    <Label htmlFor="creator-code">Creator Code (Optional)</Label>
                     <Input
-                      id="signup-code"
+                      id="creator-code"
                       type="text"
-                      placeholder="Enter your signup code"
-                      value={signUpData.signupCode}
-                      onChange={(e) => setSignUpData({ ...signUpData, signupCode: e.target.value })}
-                      required
+                      placeholder="Enter creator code to create teams"
+                      value={signUpData.creatorCode}
+                      onChange={(e) => setSignUpData({ ...signUpData, creatorCode: e.target.value })}
                     />
+                    <p className="text-xs text-muted-foreground">Leave blank if you were invited to a team</p>
                   </div>
                 )}
                 {!isCreatorUpgrade && (

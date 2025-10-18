@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ data: any; error: any }>;
+  signUp: (email: string, password: string, fullName: string, creatorCode?: string) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
 }
@@ -46,8 +46,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, creatorCode?: string) => {
     const redirectUrl = `${window.location.origin}/`;
+    
+    // Check if creator code is provided and valid
+    if (creatorCode) {
+      const { data: codeData, error: codeError } = await supabase
+        .from('creator_codes')
+        .select('code, is_active')
+        .eq('code', creatorCode.toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (codeError || !codeData) {
+        return { data: null, error: { message: 'Invalid creator code' } };
+      }
+    }
     
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -56,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
+          creator_code: creatorCode || null,
         }
       }
     });
