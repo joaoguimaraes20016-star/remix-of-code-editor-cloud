@@ -425,7 +425,7 @@ export default function TeamSettings() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {!isSuperAdmin && !member.is_super_admin && member.role !== 'owner' && member.role !== 'offer_owner' && (
+                        {((isSuperAdmin && !member.is_current_user) || (!member.is_super_admin && member.role !== 'owner' && member.role !== 'offer_owner')) && (
                           <Button
                             variant="ghost"
                             size="sm"
