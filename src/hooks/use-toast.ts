@@ -135,6 +135,21 @@ function dispatch(action: Action) {
 type Toast = Omit<ToasterToast, "id">;
 
 function toast({ ...props }: Toast) {
+  // Filter out Calendly authentication errors
+  const title = typeof props.title === 'string' ? props.title : '';
+  const description = typeof props.description === 'string' ? props.description : '';
+  
+  if (title === 'Unauthenticated' || 
+      description.includes('access token is invalid') ||
+      description.includes('Unauthenticated')) {
+    console.warn('Suppressed Calendly auth error toast:', { title, description });
+    return {
+      id: '',
+      dismiss: () => {},
+      update: () => {},
+    };
+  }
+  
   const id = genId();
 
   const update = (props: ToasterToast) =>
