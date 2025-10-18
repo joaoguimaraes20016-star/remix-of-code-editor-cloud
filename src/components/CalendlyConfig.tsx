@@ -41,7 +41,6 @@ export function CalendlyConfig({
   const [availableEventTypes, setAvailableEventTypes] = useState<EventType[]>([]);
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>(currentEventTypes || []);
   const [loadingEventTypes, setLoadingEventTypes] = useState(false);
-  const [savingEventTypes, setSavingEventTypes] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -93,40 +92,39 @@ export function CalendlyConfig({
     }
   };
 
-  const handleEventTypeToggle = (eventTypeUri: string) => {
-    setSelectedEventTypes(prev => 
-      prev.includes(eventTypeUri)
-        ? prev.filter(uri => uri !== eventTypeUri)
-        : [...prev, eventTypeUri]
-    );
-  };
-
-  const handleSaveEventTypes = async () => {
-    setSavingEventTypes(true);
+  const handleEventTypeToggle = async (eventTypeUri: string) => {
+    const newSelection = selectedEventTypes.includes(eventTypeUri)
+      ? selectedEventTypes.filter(uri => uri !== eventTypeUri)
+      : [...selectedEventTypes, eventTypeUri];
+    
+    setSelectedEventTypes(newSelection);
+    
+    // Auto-save the selection
     try {
       const { error } = await supabase
         .from("teams")
-        .update({ calendly_event_types: selectedEventTypes })
+        .update({ calendly_event_types: newSelection })
         .eq("id", teamId);
 
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Event type filters saved successfully",
+        title: "Saved",
+        description: "Event type filters updated",
       });
       
       onUpdate();
     } catch (error: any) {
+      // Revert on error
+      setSelectedEventTypes(selectedEventTypes);
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setSavingEventTypes(false);
     }
   };
+
 
   const handleConnect = async () => {
     if (!accessToken || !organizationUri) {
@@ -430,14 +428,6 @@ export function CalendlyConfig({
                     </div>
                   </div>
                   
-                  <Button 
-                    onClick={handleSaveEventTypes}
-                    disabled={savingEventTypes}
-                    variant="outline"
-                    className="w-full min-h-[56px] text-base font-bold"
-                  >
-                    {savingEventTypes ? "Saving..." : "Save Event Type Filters"}
-                  </Button>
                   {selectedEventTypes.length === 0 && (
                     <p className="text-xs text-amber-600 font-medium">
                       ⚠️ No event types selected. All appointments will be synced.
