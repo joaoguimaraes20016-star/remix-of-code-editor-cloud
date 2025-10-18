@@ -79,7 +79,7 @@ serve(async (req) => {
       if (errorData.title === 'Already Exists' || errorData.message?.includes('already exists')) {
         console.log('Webhook already exists, fetching existing webhooks...');
         
-        const listResponse = await fetch(`https://api.calendly.com/webhook_subscriptions?organization=${encodeURIComponent(organizationUri)}`, {
+        const listResponse = await fetch(`https://api.calendly.com/webhook_subscriptions?organization=${encodeURIComponent(organizationUri)}&scope=organization`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
