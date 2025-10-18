@@ -26,6 +26,7 @@ interface AddSaleDialogProps {
     setter: string;
     salesRep: string;
     offerOwner: string;
+    productName: string;
     date: string;
     revenue: number;
     setterCommission: number;
@@ -38,6 +39,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
   const [open, setOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [offerOwner, setOfferOwner] = useState("");
+  const [productName, setProductName] = useState("");
   const [setter, setSetter] = useState("");
   const [salesRep, setSalesRep] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -53,6 +55,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
       setter,
       salesRep,
       offerOwner,
+      productName,
       date,
       revenue: parseFloat(revenue),
       setterCommission: parseFloat(setterCommission),
@@ -66,6 +69,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
   const resetForm = () => {
     setCustomerName("");
     setOfferOwner("");
+    setProductName("");
     setSetter("");
     setSalesRep("");
     setDate(new Date().toISOString().split('T')[0]);
@@ -110,6 +114,17 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
                 value={offerOwner}
                 onChange={(e) => setOfferOwner(e.target.value)}
                 placeholder="Jane Smith"
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="productName">Product Name</Label>
+              <Input
+                id="productName"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder="Premium Coaching Program"
                 required
               />
             </div>

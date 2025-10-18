@@ -45,6 +45,7 @@ interface Appointment {
   cc_collected?: number;
   mrr_amount?: number;
   mrr_months?: number;
+  product_name?: string;
 }
 
 interface CloserViewProps {
@@ -66,6 +67,7 @@ export function CloserView({ teamId }: CloserViewProps) {
   const [ccCollected, setCcCollected] = useState("");
   const [mrrAmount, setMrrAmount] = useState("");
   const [mrrMonths, setMrrMonths] = useState("");
+  const [productName, setProductName] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
@@ -223,6 +225,7 @@ export function CloserView({ teamId }: CloserViewProps) {
           cc_collected: cc,
           mrr_amount: mrr || 0,
           mrr_months: months || 0,
+          product_name: productName || null,
         })
         .eq('id', selectedAppointment.id);
 
@@ -234,6 +237,7 @@ export function CloserView({ teamId }: CloserViewProps) {
         .insert({
           team_id: teamId,
           customer_name: selectedAppointment.lead_name,
+          product_name: productName || null,
           setter: selectedAppointment.setter_name || 'No Setter',
           sales_rep: userProfile.full_name,
           date: new Date().toISOString().split('T')[0],
@@ -990,6 +994,16 @@ export function CloserView({ teamId }: CloserViewProps) {
               {selectedAppointment?.setter_name && (
                 <p className="text-xs text-muted-foreground">Setter will receive 5% commission on CC and MRR</p>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="productName">Product Name *</Label>
+              <Input
+                id="productName"
+                type="text"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder="Premium Coaching Program"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="cc">Cash Collected (CC) ($) *</Label>

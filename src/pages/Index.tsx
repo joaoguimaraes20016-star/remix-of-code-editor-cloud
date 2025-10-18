@@ -195,6 +195,7 @@ const Index = () => {
     setter: string;
     salesRep: string;
     offerOwner: string;
+    productName: string;
     date: string;
     revenue: number;
     setterCommission: number;
@@ -208,6 +209,7 @@ const Index = () => {
           team_id: teamId,
           customer_name: newSale.customerName,
           offer_owner: newSale.offerOwner,
+          product_name: newSale.productName,
           setter: newSale.setter,
           sales_rep: newSale.salesRep,
           date: newSale.date,

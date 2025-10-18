@@ -25,6 +25,7 @@ export type Database = {
           lead_name: string
           mrr_amount: number | null
           mrr_months: number | null
+          product_name: string | null
           revenue: number | null
           setter_id: string | null
           setter_name: string | null
@@ -44,6 +45,7 @@ export type Database = {
           lead_name: string
           mrr_amount?: number | null
           mrr_months?: number | null
+          product_name?: string | null
           revenue?: number | null
           setter_id?: string | null
           setter_name?: string | null
@@ -63,6 +65,7 @@ export type Database = {
           lead_name?: string
           mrr_amount?: number | null
           mrr_months?: number | null
+          product_name?: string | null
           revenue?: number | null
           setter_id?: string | null
           setter_name?: string | null
@@ -236,6 +239,7 @@ export type Database = {
           date: string
           id: string
           offer_owner: string | null
+          product_name: string | null
           revenue: number | null
           sales_rep: string
           setter: string
@@ -252,6 +256,7 @@ export type Database = {
           date: string
           id?: string
           offer_owner?: string | null
+          product_name?: string | null
           revenue?: number | null
           sales_rep: string
           setter: string
@@ -268,6 +273,7 @@ export type Database = {
           date?: string
           id?: string
           offer_owner?: string | null
+          product_name?: string | null
           revenue?: number | null
           sales_rep?: string
           setter?: string
