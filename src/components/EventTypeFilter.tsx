@@ -162,7 +162,7 @@ export function EventTypeFilter({
     }
   };
 
-  if (loading || eventTypes.length === 0) {
+  if (loading) {
     return null;
   }
 
