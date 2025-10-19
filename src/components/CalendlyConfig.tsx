@@ -49,6 +49,31 @@ export function CalendlyConfig({
   const isConnected = Boolean(currentAccessToken && currentOrgUri && currentWebhookId);
   const [tokenValidationFailed, setTokenValidationFailed] = useState(false);
 
+  // Handle OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthSuccess = params.get('calendly_oauth_success');
+    const oauthError = params.get('calendly_oauth_error');
+
+    if (oauthSuccess === 'true') {
+      toast({
+        title: "Success",
+        description: "Calendly connected successfully via OAuth!",
+      });
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      onUpdate();
+    } else if (oauthError) {
+      toast({
+        title: "Connection Failed",
+        description: decodeURIComponent(oauthError),
+        variant: "destructive",
+      });
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   useEffect(() => {
     if (isConnected && currentAccessToken && currentOrgUri && !tokenValidationFailed) {
       fetchEventTypes();
@@ -169,6 +194,32 @@ export function CalendlyConfig({
       setSavingEventTypes(false);
     }
   };
+
+  const handleOAuthConnect = async () => {
+    setConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("calendly-oauth-start", {
+        body: { teamId },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      // Redirect to Calendly OAuth page
+      window.location.href = data.authUrl;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start OAuth flow",
+        variant: "destructive",
+      });
+      setConnecting(false);
+    }
+  };
+
   const handleConnect = async () => {
     if (!accessToken || !organizationUri) {
       toast({
@@ -334,6 +385,34 @@ export function CalendlyConfig({
 
         {!isConnected && (
           <>
+            {/* OAuth Quick Connect */}
+            <div className="space-y-2">
+              <Button 
+                onClick={handleOAuthConnect} 
+                disabled={connecting}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                {connecting ? "Connecting..." : "Quick Connect with Calendly"}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Recommended: One-click setup via OAuth
+              </p>
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or use manual setup
+                </span>
+              </div>
+            </div>
+
+            {/* Manual Token Setup */}
             <div className="space-y-2">
               <Label htmlFor="access-token">Personal Access Token</Label>
               <Input
