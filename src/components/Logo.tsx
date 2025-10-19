@@ -23,13 +23,13 @@ export const Logo = ({ size = "medium", className, showText = false }: LogoProps
       )}>
         <img 
           src={logo} 
-          alt="GRWTH Engine Logo" 
+          alt="GRWTH OP Logo" 
           className="w-full h-full object-contain"
         />
       </div>
       {showText && (
         <span className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-          GRWTH Engine
+          GRWTH OP
         </span>
       )}
     </div>
