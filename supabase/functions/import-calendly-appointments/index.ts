@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     // Fetch team's Calendly credentials
     const { data: team, error: teamError } = await supabaseClient
       .from('teams')
-      .select('calendly_access_token, calendly_organization_uri')
+      .select('calendly_access_token, calendly_refresh_token, calendly_token_expires_at, calendly_organization_uri')
       .eq('id', teamId)
       .single();
 
@@ -89,7 +89,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    const accessToken = team.calendly_access_token;
+    // Check if token is expired or about to expire (within 5 minutes)
+    let accessToken = team.calendly_access_token;
+    if (team.calendly_token_expires_at) {
+      const expiresAt = new Date(team.calendly_token_expires_at);
+      const now = new Date();
+      const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+
+      if (expiresAt < fiveMinutesFromNow) {
+        console.log('Access token expired or expiring soon, refreshing...');
+        
+        // Call refresh function
+        const refreshResponse = await supabaseClient.functions.invoke('refresh-calendly-token', {
+          body: { teamId }
+        });
+
+        if (refreshResponse.error || refreshResponse.data?.error) {
+          console.error('Token refresh failed:', refreshResponse.error || refreshResponse.data?.error);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Calendly token expired. Please reconnect Calendly.',
+              needsReauth: true 
+            }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Fetch updated token
+        const { data: updatedTeam } = await supabaseClient
+          .from('teams')
+          .select('calendly_access_token')
+          .eq('id', teamId)
+          .single();
+        
+        accessToken = updatedTeam?.calendly_access_token || accessToken;
+        console.log('Token refreshed successfully');
+      }
+    }
+
     const organizationUri = team.calendly_organization_uri;
 
     // Fetch scheduled events from Calendly (past 6 months + future)

@@ -23,7 +23,7 @@ serve(async (req) => {
       }
     );
 
-    const { teamId, accessToken, organizationUri } = await req.json();
+    const { teamId, accessToken, refreshToken, expiresAt, organizationUri } = await req.json();
 
     // Check if this is a service role call (from OAuth callback)
     const authHeader = req.headers.get('Authorization');
@@ -162,6 +162,8 @@ serve(async (req) => {
       .from('teams')
       .update({
         calendly_access_token: accessToken,
+        calendly_refresh_token: refreshToken,
+        calendly_token_expires_at: expiresAt,
         calendly_organization_uri: organizationUri,
         calendly_webhook_id: webhookId,
         calendly_signing_key: signingKey, // Will be null if not available

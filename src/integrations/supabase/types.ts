@@ -423,7 +423,9 @@ export type Database = {
           calendly_access_token: string | null
           calendly_event_types: string[] | null
           calendly_organization_uri: string | null
+          calendly_refresh_token: string | null
           calendly_signing_key: string | null
+          calendly_token_expires_at: string | null
           calendly_webhook_id: string | null
           created_at: string | null
           created_by: string
@@ -436,7 +438,9 @@ export type Database = {
           calendly_access_token?: string | null
           calendly_event_types?: string[] | null
           calendly_organization_uri?: string | null
+          calendly_refresh_token?: string | null
           calendly_signing_key?: string | null
+          calendly_token_expires_at?: string | null
           calendly_webhook_id?: string | null
           created_at?: string | null
           created_by: string
@@ -449,7 +453,9 @@ export type Database = {
           calendly_access_token?: string | null
           calendly_event_types?: string[] | null
           calendly_organization_uri?: string | null
+          calendly_refresh_token?: string | null
           calendly_signing_key?: string | null
+          calendly_token_expires_at?: string | null
           calendly_webhook_id?: string | null
           created_at?: string | null
           created_by?: string

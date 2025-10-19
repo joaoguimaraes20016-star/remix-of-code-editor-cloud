@@ -98,6 +98,8 @@ Deno.serve(async (req) => {
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
+    const refreshToken = tokenData.refresh_token;
+    const expiresIn = tokenData.expires_in; // seconds until expiration
 
     if (!accessToken) {
       console.error('No access token in response');
@@ -107,7 +109,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Access token obtained successfully');
+    // Calculate token expiration time
+    const expiresAt = new Date(Date.now() + (expiresIn * 1000)).toISOString();
+
+    console.log('Access token obtained successfully, expires at:', expiresAt);
 
     // Fetch organization URI using the access token
     console.log('Fetching organization URI...');
@@ -151,6 +156,8 @@ Deno.serve(async (req) => {
       body: {
         teamId,
         accessToken,
+        refreshToken,
+        expiresAt,
         organizationUri,
       },
     });
