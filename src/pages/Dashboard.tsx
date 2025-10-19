@@ -219,8 +219,7 @@ const Dashboard = () => {
       
       <div className="container mx-auto p-4 md:p-6 space-y-6 md:space-y-8 relative z-10">
 
-        <div className="bg-black/40 backdrop-blur-sm rounded-lg p-4 md:p-6">
-          <div className="grid gap-8 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-scale-in">
+        <div className="grid gap-8 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-scale-in">
             {teams.map((team, index) => (
               <Card
                 key={team.id}
@@ -311,21 +310,18 @@ const Dashboard = () => {
                 </Button>
               </form>
             </DialogContent>
-            </Dialog>
-            )}
-          </div>
+          </Dialog>
+          )}
         </div>
 
         {teams.length === 0 && !canCreateTeams && (
-          <div className="bg-black/40 backdrop-blur-sm rounded-lg p-4 md:p-6">
-            <Card className="mt-4 border-primary/50">
-              <CardContent className="py-8 text-center">
-                <p className="text-muted-foreground">
-                  You haven't been invited to any teams yet. Contact your administrator to be added to a team.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="mt-4 border-primary/50">
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">
+                You haven't been invited to any teams yet. Contact your administrator to be added to a team.
+              </p>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
