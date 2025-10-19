@@ -171,19 +171,36 @@ Deno.serve(async (req) => {
 
     console.log('Calendly OAuth setup completed successfully');
 
-    // Return minimal HTML to close popup and notify parent
-    return new Response(
-      `<html><body><script>
-if(window.opener){window.opener.postMessage({type:'calendly-oauth-success'},'*');window.close();}
-else{window.location.href='${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/team/${teamId}?calendly_oauth_success=true';}
-</script></body></html>`,
-      { 
-        headers: { 
-          'Content-Type': 'text/html',
-          ...corsHeaders 
-        } 
+    // Return properly formatted HTML that will execute JavaScript
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Calendly Connected</title>
+</head>
+<body>
+<script type="text/javascript">
+(function(){
+if(window.opener){
+window.opener.postMessage({type:'calendly-oauth-success'},'*');
+window.close();
+}else{
+window.location.href='${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/team/${teamId}?calendly_oauth_success=true';
+}
+})();
+</script>
+</body>
+</html>`;
+
+    return new Response(html, {
+      status: 200,
+      headers: { 
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        ...corsHeaders 
       }
-    );
+    });
   } catch (error) {
     console.error('Error in calendly-oauth-callback:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
