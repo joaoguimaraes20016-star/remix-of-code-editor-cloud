@@ -53,7 +53,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -417,164 +416,110 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
           />
         </div>
         
-        <div className="overflow-x-auto pb-2">
-          <Tabs value={dateFilter} onValueChange={(value) => {
+        <div className="flex gap-2 items-center flex-wrap">
+          <Select value={dateFilter} onValueChange={(value) => {
             setDateFilter(value);
-            if (value === "custom" && isMobile) {
-              setDateDrawerOpen(true);
+            if (value === "custom") {
+              if (isMobile) {
+                setDateDrawerOpen(true);
+              }
             }
           }}>
-            <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
-              <TabsTrigger value="all" className="text-xs md:text-sm flex-1 md:flex-none">All Time</TabsTrigger>
-              <TabsTrigger value="last7days" className="text-xs md:text-sm flex-1 md:flex-none">Last 7 Days</TabsTrigger>
-              <TabsTrigger value="last30days" className="text-xs md:text-sm flex-1 md:flex-none">Last 30 Days</TabsTrigger>
-              <TabsTrigger value="next7days" className="text-xs md:text-sm flex-1 md:flex-none">Next 7 Days</TabsTrigger>
-              <TabsTrigger value="next30days" className="text-xs md:text-sm flex-1 md:flex-none">Next 30 Days</TabsTrigger>
-              <TabsTrigger value="custom" className="text-xs md:text-sm flex-1 md:flex-none">Custom</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="last7days">Last 7 Days</SelectItem>
+              <SelectItem value="last30days">Last 30 Days</SelectItem>
+              <SelectItem value="next7days">Next 7 Days</SelectItem>
+              <SelectItem value="next30days">Next 30 Days</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
+            
           {dateFilter === "custom" && !isMobile && (
-            <>
-              {isMobile ? (
-                <Drawer open={dateDrawerOpen} onOpenChange={setDateDrawerOpen}>
-                  <DrawerTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "justify-start text-left font-normal text-sm",
-                        !customDateRange.from && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {customDateRange.from ? (
-                        customDateRange.to ? (
-                          <>
-                            {format(customDateRange.from, "MMM dd")} - {format(customDateRange.to, "MMM dd")}
-                          </>
-                        ) : (
-                          format(customDateRange.from, "MMM dd, y")
-                        )
-                      ) : (
-                        <span>Pick dates</span>
-                      )}
-                    </Button>
-                  </DrawerTrigger>
-                  <DrawerContent>
-                    <DrawerHeader>
-                      <DrawerTitle>Select Date Range</DrawerTitle>
-                      <DrawerDescription>
-                        Choose a custom date range to filter appointments
-                      </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="w-full px-2 pb-4">
-                      <Calendar
-                        mode="range"
-                        selected={{
-                          from: customDateRange.from,
-                          to: customDateRange.to,
-                        }}
-                        onSelect={(range) =>
-                          setCustomDateRange({
-                            from: range?.from,
-                            to: range?.to,
-                          })
-                        }
-                        numberOfMonths={1}
-                        className={cn("pointer-events-auto w-full scale-95 origin-center")}
-                      />
-                    </div>
-                    <DrawerFooter>
-                      <DrawerClose asChild>
-                        <Button variant="outline">Done</Button>
-                      </DrawerClose>
-                    </DrawerFooter>
-                  </DrawerContent>
-                </Drawer>
-              ) : (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "justify-start text-left font-normal",
-                        !customDateRange.from && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {customDateRange.from ? (
-                        customDateRange.to ? (
-                          <>
-                            {format(customDateRange.from, "LLL dd, y")} -{" "}
-                            {format(customDateRange.to, "LLL dd, y")}
-                          </>
-                        ) : (
-                          format(customDateRange.from, "LLL dd, y")
-                        )
-                      ) : (
-                        <span>Pick a date range</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="range"
-                      selected={{
-                        from: customDateRange.from,
-                        to: customDateRange.to,
-                      }}
-                      onSelect={(range) =>
-                        setCustomDateRange({
-                          from: range?.from,
-                          to: range?.to,
-                        })
-                      }
-                      numberOfMonths={2}
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              )}
-            </>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !customDateRange.from && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {customDateRange.from ? (
+                    customDateRange.to ? (
+                      <>
+                        {format(customDateRange.from, "LLL dd, y")} -{" "}
+                        {format(customDateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(customDateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date range</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{
+                    from: customDateRange.from,
+                    to: customDateRange.to,
+                  }}
+                  onSelect={(range) =>
+                    setCustomDateRange({
+                      from: range?.from,
+                      to: range?.to,
+                    })
+                  }
+                  numberOfMonths={2}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {dateFilter === "custom" && isMobile && (
+            <Drawer open={dateDrawerOpen} onOpenChange={setDateDrawerOpen}>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Select Date Range</DrawerTitle>
+                  <DrawerDescription>
+                    Choose a custom date range to filter appointments
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="w-full px-2 pb-4">
+                  <Calendar
+                    mode="range"
+                    selected={{
+                      from: customDateRange.from,
+                      to: customDateRange.to,
+                    }}
+                    onSelect={(range) =>
+                      setCustomDateRange({
+                        from: range?.from,
+                        to: range?.to,
+                      })
+                    }
+                    numberOfMonths={1}
+                    className={cn("pointer-events-auto w-full scale-95 origin-center")}
+                  />
+                </div>
+                <DrawerFooter>
+                  <DrawerClose asChild>
+                    <Button variant="outline">Done</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
           )}
         </div>
       </div>
       
-      {/* Mobile Date Range Drawer */}
-      {isMobile && dateFilter === "custom" && (
-        <Drawer open={dateDrawerOpen} onOpenChange={setDateDrawerOpen}>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Select Date Range</DrawerTitle>
-              <DrawerDescription>
-                Choose a custom date range to filter appointments
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="w-full px-2 pb-4">
-              <Calendar
-                mode="range"
-                selected={{
-                  from: customDateRange.from,
-                  to: customDateRange.to,
-                }}
-                onSelect={(range) =>
-                  setCustomDateRange({
-                    from: range?.from,
-                    to: range?.to,
-                  })
-                }
-                numberOfMonths={1}
-                className={cn("pointer-events-auto w-full scale-95 origin-center")}
-              />
-            </div>
-            <DrawerFooter>
-              <DrawerClose asChild>
-                <Button variant="outline">Done</Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      )}
       
       {filteredAppointments.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground border rounded-md">
