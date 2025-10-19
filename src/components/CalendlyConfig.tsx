@@ -565,24 +565,26 @@ export function CalendlyConfig({
 
         {!isConnected && (
           <>
-            <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-sm space-y-2">
-                <div>
-                  <strong>⚠️ Important: Account Auto-Login</strong>
+            <Collapsible className="border border-border rounded-lg">
+              <CollapsibleTrigger className="w-full p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors">
+                <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium">Why does it keep auto-logging me into my account when I click connect?</p>
                 </div>
-                <div className="text-xs">
-                  When you click "Connect with Calendly" below, it will automatically use whichever Calendly account you're currently logged into. This will happen every time unless you:
+                <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="px-4 pb-4">
+                <div className="pl-8 space-y-2 text-sm text-muted-foreground">
+                  <p>Calendly automatically uses whichever account you're currently logged into in your browser.</p>
+                  <p className="font-medium text-foreground">To connect a different account:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-2">
+                    <li>Log out of your current Calendly account in your browser</li>
+                    <li>Come back here and click "Connect with Calendly"</li>
+                    <li>Log in with the account you want to use</li>
+                  </ol>
                 </div>
-                <ul className="list-disc list-inside space-y-1 text-xs ml-2">
-                  <li>Log out of Calendly in your browser</li>
-                  <li>Switch accounts in your Calendly settings</li>
-                </ul>
-                <div className="text-xs font-semibold text-blue-700 dark:text-blue-400">
-                  To connect a different account now: Go to Calendly → Profile → Sign out, then return here.
-                </div>
-              </AlertDescription>
-            </Alert>
+              </CollapsibleContent>
+            </Collapsible>
 
             <div className="space-y-4">
               <Button 
