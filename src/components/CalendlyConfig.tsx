@@ -407,36 +407,41 @@ export function CalendlyConfig({
     }
   };
 
-  const handleSyncAppointments = async () => {
+  const handleSyncAppointments = () => {
     setSyncing(true);
-    try {
-      toast({
-        title: "Syncing Appointments",
-        description: "Importing existing appointments from Calendly...",
-      });
+    
+    toast({
+      title: "Import Started",
+      description: "Syncing appointments in the background. You can continue using the app.",
+    });
 
-      const { data, error } = await supabase.functions.invoke("import-calendly-appointments", {
-        body: { teamId },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      toast({
-        title: "Sync Complete",
-        description: `Successfully imported ${data.imported} appointments (${data.skipped} skipped as duplicates)`,
-      });
+    // Run import in background without blocking UI
+    supabase.functions.invoke("import-calendly-appointments", {
+      body: { teamId },
+    }).then(({ data, error }) => {
+      setSyncing(false);
       
-      onUpdate();
-    } catch (error: any) {
+      if (error || data?.error) {
+        toast({
+          title: "Sync Failed",
+          description: error?.message || data?.error || "Failed to import appointments",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Sync Complete",
+          description: `Imported ${data.imported} appointments (${data.skipped} skipped)`,
+        });
+        onUpdate();
+      }
+    }).catch((error: any) => {
+      setSyncing(false);
       toast({
         title: "Sync Failed",
         description: error.message || "Failed to sync appointments",
         variant: "destructive",
       });
-    } finally {
-      setSyncing(false);
-    }
+    });
   };
 
   const handleDisconnect = async () => {

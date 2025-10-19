@@ -145,6 +145,7 @@ Deno.serve(async (req) => {
 
     let importedCount = 0;
     let skippedCount = 0;
+    const appointmentsToInsert: any[] = [];
 
     // Fetch all closers for this team (same logic as webhook)
     const { data: closerMembers } = await supabaseClient
@@ -341,36 +342,43 @@ Deno.serve(async (req) => {
             appointmentStatus = 'CONFIRMED';
           }
 
-          console.log(`Event status for ${invitee.name} at ${event.start_time}: ${appointmentStatus} (past: ${isPastEvent})`);
-
-          // Insert appointment with same data structure as webhook
-          const { error: insertError } = await supabaseClient
-            .from('appointments')
-            .insert({
-              team_id: teamId,
-              lead_name: invitee.name,
-              lead_email: invitee.email,
-              start_at_utc: event.start_time,
-              closer_id: closerId,
-              closer_name: closerName,
-              setter_id: setterId,
-              setter_name: setterName,
-              event_type_uri: event.event_type,
-              event_type_name: eventTypeName,
-              status: appointmentStatus,
-            });
-
-          if (insertError) {
-            console.error(`Error inserting appointment: ${insertError.message}`);
-          } else {
-            importedCount++;
-            console.log(`✓ Imported: ${invitee.name} (${invitee.email}) at ${event.start_time}`);
-          }
+          // Add to batch instead of inserting one by one
+          appointmentsToInsert.push({
+            team_id: teamId,
+            lead_name: invitee.name,
+            lead_email: invitee.email,
+            start_at_utc: event.start_time,
+            closer_id: closerId,
+            closer_name: closerName,
+            setter_id: setterId,
+            setter_name: setterName,
+            event_type_uri: event.event_type,
+            event_type_name: eventTypeName,
+            status: appointmentStatus,
+          });
+          importedCount++;
         }
       } catch (eventError) {
         console.error(`Error processing event ${event.uri}:`, eventError);
         continue;
       }
+    }
+
+    // Batch insert all appointments at once (much faster, triggers realtime only once)
+    if (appointmentsToInsert.length > 0) {
+      console.log(`Batch inserting ${appointmentsToInsert.length} appointments...`);
+      const { error: batchError } = await supabaseClient
+        .from('appointments')
+        .insert(appointmentsToInsert);
+
+      if (batchError) {
+        console.error('Batch insert error:', batchError);
+        return new Response(
+          JSON.stringify({ error: `Failed to insert appointments: ${batchError.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log(`✓ Successfully inserted ${appointmentsToInsert.length} appointments`);
     }
 
     console.log(`Import complete: ${importedCount} imported, ${skippedCount} skipped`);
