@@ -178,7 +178,7 @@ const Dashboard = () => {
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
       
       <div className="container mx-auto p-4 md:p-6 space-y-6 md:space-y-8 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-fade-in">
+        <div className="bg-black rounded-lg p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-fade-in">
           <div className="space-y-2 w-full md:w-auto">
             <div className="flex items-center gap-2 md:gap-3">
               <div className="bg-black p-2 rounded-lg">
