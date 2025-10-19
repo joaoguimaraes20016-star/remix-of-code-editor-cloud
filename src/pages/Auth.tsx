@@ -655,7 +655,7 @@ const Auth = () => {
             <Logo size="xlarge" />
           </div>
           <CardTitle className="text-2xl md:text-3xl font-bold">
-            {inviteMode ? '🎉 Welcome to the Team!' : 'GRWTH'}
+            {inviteMode ? '🎉 Welcome to the Team!' : 'GRWTH OP'}
           </CardTitle>
           <CardDescription className="text-sm md:text-base">
             {isResettingPassword 
