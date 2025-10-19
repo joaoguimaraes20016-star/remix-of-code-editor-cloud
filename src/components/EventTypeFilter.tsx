@@ -98,14 +98,13 @@ export function EventTypeFilter({
       <SelectContent>
         <SelectItem value="all">All Event Types</SelectItem>
         {eventTypes.map((et) => {
-          const icon = et.pooling_type === 'round_robin' ? '🔄' : et.pooling_type === 'collective' ? '👥' : '👤';
-          const ownerName = et.profile?.name || '';
+          const isRoundRobin = et.pooling_type === 'round_robin';
+          const isTeam = et.pooling_type === 'collective';
+          const typeLabel = isRoundRobin ? ' (Round Robin)' : isTeam ? ' (Team)' : '';
           
           return (
             <SelectItem key={et.uri} value={et.uri}>
-              <span className="mr-2">{icon}</span>
-              {et.name}
-              {ownerName && <span className="text-xs text-muted-foreground ml-2">({ownerName})</span>}
+              {et.name}{typeLabel}
             </SelectItem>
           );
         })}

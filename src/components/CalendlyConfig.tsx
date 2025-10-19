@@ -582,7 +582,7 @@ export function CalendlyConfig({
                       const isRoundRobin = eventType.pooling_type === 'round_robin';
                       const isTeam = eventType.pooling_type === 'collective';
                       const ownerName = eventType.profile?.name || 'Unknown';
-                      const icon = isRoundRobin ? '🔄' : isTeam ? '👥' : '👤';
+                      const typeLabel = isRoundRobin ? 'Round Robin' : isTeam ? 'Team Event' : 'Individual';
                       
                       return (
                         <div key={eventType.uri} className="md:hidden">
@@ -602,14 +602,11 @@ export function CalendlyConfig({
                                   className="h-7 w-7 border-2"
                                 />
                                 <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span>{icon}</span>
-                                    <span className="text-base font-semibold leading-relaxed">
-                                      {eventType.name}
-                                    </span>
+                                  <div className="text-base font-semibold leading-relaxed">
+                                    {eventType.name}
                                   </div>
                                   <p className="text-xs text-muted-foreground mt-1">
-                                    Owner: {ownerName}
+                                    {typeLabel} • {ownerName}
                                     {!eventType.active && ' • Inactive'}
                                   </p>
                                 </div>
@@ -628,7 +625,7 @@ export function CalendlyConfig({
                         const isRoundRobin = eventType.pooling_type === 'round_robin';
                         const isTeam = eventType.pooling_type === 'collective';
                         const ownerName = eventType.profile?.name || 'Unknown';
-                        const icon = isRoundRobin ? '🔄' : isTeam ? '👥' : '👤';
+                        const typeLabel = isRoundRobin ? 'Round Robin' : isTeam ? 'Team Event' : 'Individual';
                         
                         return (
                           <div key={eventType.uri} className="flex items-start space-x-3 p-2 rounded hover:bg-muted/50">
@@ -642,11 +639,10 @@ export function CalendlyConfig({
                                 htmlFor={eventType.uri}
                                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                               >
-                                <span className="mr-2">{icon}</span>
                                 {eventType.name}
                               </label>
                               <p className="text-xs text-muted-foreground mt-1">
-                                Owner: {ownerName}
+                                {typeLabel} • {ownerName}
                                 {!eventType.active && ' • Inactive'}
                               </p>
                             </div>
