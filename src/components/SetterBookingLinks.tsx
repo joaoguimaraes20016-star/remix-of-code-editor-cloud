@@ -66,6 +66,8 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
         name: et.name,
       }));
       
+      console.log('Fetched event type details:', details);
+      console.log('Database event types:', calendlyEventTypes);
       setEventTypeDetails(details);
     } catch (error) {
       console.error('Error fetching event type names:', error);
@@ -157,17 +159,21 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
   };
 
   const getEventTypeName = (url: string): string => {
+    console.log('Getting name for URL:', url);
     // Try to match by scheduling URL or API URI
     const detail = eventTypeDetails.find(et => 
       et.scheduling_url === url || et.uri === url
     );
+    console.log('Found detail:', detail);
     if (detail) return detail.name;
     
     // Fallback: Extract readable name from Calendly URL
     const parts = url.split('/');
     const slug = parts[parts.length - 1]?.split('?')[0] || 'Event';
     // Convert slug to readable format (e.g., "30-min-call" -> "30 Min Call")
-    return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    const fallbackName = slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    console.log('Using fallback name:', fallbackName);
+    return fallbackName;
   };
 
   const handleRefreshLinks = async () => {
