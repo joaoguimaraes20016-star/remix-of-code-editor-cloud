@@ -12,6 +12,11 @@ interface EventTypeDetails {
   uri: string;
   scheduling_url: string;
   name: string;
+  profile?: {
+    name: string;
+    owner: string;
+  };
+  pooling_type?: string | null;
 }
 
 interface EventTypeFilterProps {
@@ -43,7 +48,7 @@ export function EventTypeFilter({
 
     try {
       const response = await fetch(
-        `https://api.calendly.com/event_types?organization=${encodeURIComponent(calendlyOrgUri)}&active=true`,
+        `https://api.calendly.com/event_types?organization=${encodeURIComponent(calendlyOrgUri)}`,
         {
           headers: {
             'Authorization': `Bearer ${calendlyAccessToken}`,
@@ -63,6 +68,8 @@ export function EventTypeFilter({
         uri: et.uri,
         scheduling_url: et.scheduling_url,
         name: et.name,
+        profile: et.profile,
+        pooling_type: et.pooling_type,
       }));
 
       console.log('Loaded event types for filter:', details);
@@ -90,11 +97,18 @@ export function EventTypeFilter({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">All Event Types</SelectItem>
-        {eventTypes.map((et) => (
-          <SelectItem key={et.uri} value={et.uri}>
-            {et.name}
-          </SelectItem>
-        ))}
+        {eventTypes.map((et) => {
+          const icon = et.pooling_type === 'round_robin' ? '🔄' : et.pooling_type === 'collective' ? '👥' : '👤';
+          const ownerName = et.profile?.name || '';
+          
+          return (
+            <SelectItem key={et.uri} value={et.uri}>
+              <span className="mr-2">{icon}</span>
+              {et.name}
+              {ownerName && <span className="text-xs text-muted-foreground ml-2">({ownerName})</span>}
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );

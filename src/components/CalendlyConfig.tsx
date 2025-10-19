@@ -24,6 +24,12 @@ interface EventType {
   name: string;
   active: boolean;
   scheduling_url: string;
+  profile?: {
+    name: string;
+    owner: string;
+  };
+  pooling_type?: string | null;
+  type?: string;
 }
 
 export function CalendlyConfig({ 
@@ -117,7 +123,7 @@ export function CalendlyConfig({
 
     setLoadingEventTypes(true);
     try {
-      const response = await fetch(`https://api.calendly.com/event_types?organization=${encodeURIComponent(currentOrgUri)}&active=true`, {
+      const response = await fetch(`https://api.calendly.com/event_types?organization=${encodeURIComponent(currentOrgUri)}`, {
         headers: {
           'Authorization': `Bearer ${currentAccessToken}`,
           'Content-Type': 'application/json',
@@ -147,6 +153,9 @@ export function CalendlyConfig({
         name: et.name,
         active: et.active,
         scheduling_url: et.scheduling_url,
+        profile: et.profile,
+        pooling_type: et.pooling_type,
+        type: et.type,
       }));
       
       setAvailableEventTypes(eventTypes);
@@ -569,52 +578,81 @@ export function CalendlyConfig({
                   
                   {/* Always use card view on small screens */}
                   <div className="space-y-4 md:space-y-0">
-                    {availableEventTypes.map((eventType) => (
-                      <div key={eventType.uri} className="md:hidden">
-                        <Card 
-                          className={`cursor-pointer transition-all min-h-[68px] ${
-                            selectedEventTypes.includes(eventType.scheduling_url)
-                              ? 'border-primary bg-primary/5 shadow-sm'
-                              : 'hover:border-primary/50'
-                          }`}
-                          onClick={() => handleEventTypeToggle(eventType.scheduling_url)}
-                        >
-                          <CardContent className="p-6">
-                            <div className="flex items-center space-x-4">
-                              <Checkbox
-                                checked={selectedEventTypes.includes(eventType.scheduling_url)}
-                                onCheckedChange={() => handleEventTypeToggle(eventType.scheduling_url)}
-                                className="h-7 w-7 border-2"
-                              />
-                              <span className="text-base font-semibold flex-1 leading-relaxed">
-                                {eventType.name}
-                              </span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
+                    {availableEventTypes.map((eventType) => {
+                      const isRoundRobin = eventType.pooling_type === 'round_robin';
+                      const isTeam = eventType.pooling_type === 'collective';
+                      const ownerName = eventType.profile?.name || 'Unknown';
+                      const icon = isRoundRobin ? '🔄' : isTeam ? '👥' : '👤';
+                      
+                      return (
+                        <div key={eventType.uri} className="md:hidden">
+                          <Card 
+                            className={`cursor-pointer transition-all min-h-[68px] ${
+                              selectedEventTypes.includes(eventType.scheduling_url)
+                                ? 'border-primary bg-primary/5 shadow-sm'
+                                : 'hover:border-primary/50'
+                            }`}
+                            onClick={() => handleEventTypeToggle(eventType.scheduling_url)}
+                          >
+                            <CardContent className="p-6">
+                              <div className="flex items-center space-x-4">
+                                <Checkbox
+                                  checked={selectedEventTypes.includes(eventType.scheduling_url)}
+                                  onCheckedChange={() => handleEventTypeToggle(eventType.scheduling_url)}
+                                  className="h-7 w-7 border-2"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span>{icon}</span>
+                                    <span className="text-base font-semibold leading-relaxed">
+                                      {eventType.name}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Owner: {ownerName}
+                                    {!eventType.active && ' • Inactive'}
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      );
+                    })}
                   </div>
                   
                   {/* Desktop List View */}
                   <div className="hidden md:block">
                     <div className="space-y-3 max-h-48 overflow-y-auto p-3 border rounded-md">
-                      {availableEventTypes.map((eventType) => (
-                        <div key={eventType.uri} className="flex items-center space-x-3 py-2">
-                          <Checkbox
-                            id={eventType.uri}
-                            checked={selectedEventTypes.includes(eventType.scheduling_url)}
-                            onCheckedChange={() => handleEventTypeToggle(eventType.scheduling_url)}
-                            className="h-5 w-5"
-                          />
-                          <label
-                            htmlFor={eventType.uri}
-                            className="text-sm font-medium leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                          >
-                            {eventType.name}
-                          </label>
-                        </div>
-                      ))}
+                      {availableEventTypes.map((eventType) => {
+                        const isRoundRobin = eventType.pooling_type === 'round_robin';
+                        const isTeam = eventType.pooling_type === 'collective';
+                        const ownerName = eventType.profile?.name || 'Unknown';
+                        const icon = isRoundRobin ? '🔄' : isTeam ? '👥' : '👤';
+                        
+                        return (
+                          <div key={eventType.uri} className="flex items-start space-x-3 p-2 rounded hover:bg-muted/50">
+                            <Checkbox
+                              id={eventType.uri}
+                              checked={selectedEventTypes.includes(eventType.scheduling_url)}
+                              onCheckedChange={() => handleEventTypeToggle(eventType.scheduling_url)}
+                            />
+                            <div className="flex-1">
+                              <label
+                                htmlFor={eventType.uri}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                <span className="mr-2">{icon}</span>
+                                {eventType.name}
+                              </label>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Owner: {ownerName}
+                                {!eventType.active && ' • Inactive'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                   
