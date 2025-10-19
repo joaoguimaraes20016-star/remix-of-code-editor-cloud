@@ -186,7 +186,9 @@ const Dashboard = () => {
                 <div className="bg-black p-2 rounded-lg">
                   <Logo size="large" />
                 </div>
-                <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent" style={{
+                  filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.4)) drop-shadow(0 2px 4px rgba(212, 175, 55, 0.2))'
+                }}>
                   GRWTH OP Dashboard
                 </h1>
               </div>
