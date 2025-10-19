@@ -404,7 +404,7 @@ export default function TeamSettings() {
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
-                        {isSuperAdmin && !member.is_super_admin ? (
+                        {(isSuperAdmin || isOwner) && !member.is_super_admin ? (
                           <Select
                             value={member.role}
                             onValueChange={(value) => handleRoleChange(member.id, value)}
@@ -463,7 +463,7 @@ export default function TeamSettings() {
         })()}
 
         {/* Setter Booking Links */}
-        {(role === 'owner' || role === 'admin') && calendlyEventTypes && calendlyEventTypes.length > 0 && (() => {
+        {isOwner && calendlyEventTypes && calendlyEventTypes.length > 0 && (() => {
           try {
             return (
               <SetterBookingLinks
