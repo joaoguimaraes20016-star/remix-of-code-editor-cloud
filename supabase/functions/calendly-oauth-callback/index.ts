@@ -171,36 +171,32 @@ Deno.serve(async (req) => {
 
     console.log('Calendly OAuth setup completed successfully');
 
-    // Return properly formatted HTML that will execute JavaScript
-    const html = `<!DOCTYPE html>
+    // Return properly formatted HTML without CORS headers (HTML doesn't need them)
+    return new Response(
+      `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Calendly Connected</title>
+<title>Connected</title>
 </head>
 <body>
-<script type="text/javascript">
-(function(){
+<script>
 if(window.opener){
-window.opener.postMessage({type:'calendly-oauth-success'},'*');
-window.close();
-}else{
-window.location.href='${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/team/${teamId}?calendly_oauth_success=true';
+  window.opener.postMessage({type:'calendly-oauth-success'},'*');
+  window.close();
+} else {
+  window.location.href='${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/team/${teamId}?calendly_oauth_success=true';
 }
-})();
 </script>
 </body>
-</html>`;
-
-    return new Response(html, {
-      status: 200,
-      headers: { 
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        ...corsHeaders 
+</html>`,
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8'
+        }
       }
-    });
+    );
   } catch (error) {
     console.error('Error in calendly-oauth-callback:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
