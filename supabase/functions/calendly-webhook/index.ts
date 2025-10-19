@@ -214,19 +214,65 @@ serve(async (req) => {
       if (eventResponse.ok) {
         const eventData = await eventResponse.json();
         const organizerEmail = eventData.resource?.event_memberships?.[0]?.user_email;
+        const organizerName = eventData.resource?.event_memberships?.[0]?.user_name;
+        console.log('Event data received:', JSON.stringify(eventData, null, 2));
 
         if (organizerEmail) {
-          // Find team member by email
-          const { data: profiles } = await supabase
+          console.log('Organizer details:', { email: organizerEmail, name: organizerName });
+          
+          // Method 1: Try exact email match first
+          let profiles = await supabase
             .from('profiles')
-            .select('id, full_name')
+            .select('id, full_name, email')
             .eq('email', organizerEmail)
-            .maybeSingle();
+            .maybeSingle()
+            .then(({ data }) => data);
+
+          // Method 2: Try partial email match (username part)
+          if (!profiles && organizerEmail.includes('@')) {
+            const emailUsername = organizerEmail.split('@')[0];
+            const { data: partialMatches } = await supabase
+              .from('profiles')
+              .select('id, full_name, email')
+              .ilike('email', `${emailUsername}%`);
+            
+            profiles = partialMatches?.[0] || null;
+            if (profiles) {
+              console.log(`✓ Matched by partial email: "${organizerEmail}" → "${profiles.email}"`);
+            }
+          }
+
+          // Method 3: Try name matching (case-insensitive, partial)
+          if (!profiles && organizerName) {
+            const nameParts = organizerName.toLowerCase().split(' ');
+            const { data: nameMatches } = await supabase
+              .from('profiles')
+              .select('id, full_name, email');
+            
+            // Find best name match
+            if (nameMatches && nameMatches.length > 0) {
+              const scored = nameMatches.map(profile => {
+                const profileNameLower = profile.full_name.toLowerCase();
+                const matches = nameParts.filter((part: string) => 
+                  profileNameLower.includes(part) && part.length > 2
+                ).length;
+                return { profile, score: matches };
+              });
+              
+              const best = scored.sort((a, b) => b.score - a.score)[0];
+              if (best && best.score > 0) {
+                profiles = best.profile;
+                console.log(`✓ Matched by name: "${organizerName}" → "${profiles.full_name}" (score: ${best.score})`);
+              }
+            }
+          }
 
           if (profiles) {
             closerId = profiles.id;
             closerName = profiles.full_name;
-            console.log(`Matched organizer ${organizerEmail} to team member ${closerName}`);
+            console.log(`✓ Final match: ${closerName} (${profiles.email})`);
+          } else {
+            console.log('✗ No closer match found');
           }
         }
       }
