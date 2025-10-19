@@ -55,10 +55,36 @@ serve(async (req) => {
       }
     }
 
+    // For OAuth apps, the signing key is at the application level, not per webhook
+    // We need to retrieve it from the OAuth application details
+    console.log('Fetching OAuth application details to get signing key...');
+    
+    const appResponse = await fetch('https://api.calendly.com/oauth/applications', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    let signingKey = null;
+    if (appResponse.ok) {
+      const appData = await appResponse.json();
+      console.log('OAuth app response:', JSON.stringify(appData, null, 2));
+      
+      // The signing key should be in the application details
+      // However, Calendly doesn't expose it via API for security reasons
+      // It's only shown once in the Developer Console
+      signingKey = appData.resource?.webhook_signing_key || appData.webhook_signing_key;
+      
+      if (signingKey) {
+        console.log('Found signing key in OAuth app details');
+      }
+    }
+    
     // Register webhook with Calendly - include team ID in URL
     const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/calendly-webhook?team_id=${teamId}`;
     
-    // First, check if webhook already exists and delete it to get a fresh signing key
+    // First, check if webhook already exists and delete it
     console.log('Checking for existing webhooks...');
     const listResponse = await fetch(`https://api.calendly.com/webhook_subscriptions?organization=${encodeURIComponent(organizationUri)}&scope=organization`, {
       headers: {
@@ -72,7 +98,7 @@ serve(async (req) => {
       const existingWebhook = listData.collection?.find((w: any) => w.callback_url === webhookUrl);
       
       if (existingWebhook) {
-        console.log('Deleting existing webhook to get fresh signing key:', existingWebhook.uri);
+        console.log('Deleting existing webhook:', existingWebhook.uri);
         await fetch(existingWebhook.uri, {
           method: 'DELETE',
           headers: {
@@ -82,7 +108,7 @@ serve(async (req) => {
       }
     }
     
-    // Create new webhook to get signing key
+    // Create new webhook
     console.log('Creating new webhook...');
     const webhookResponse = await fetch('https://api.calendly.com/webhook_subscriptions', {
       method: 'POST',
@@ -111,36 +137,23 @@ serve(async (req) => {
     }
     
     const webhookData = await webhookResponse.json();
-    console.log('Full webhook response:', JSON.stringify(webhookData, null, 2));
-    
     const webhookId = webhookData.resource?.uri;
-    const signingKey = webhookData.resource?.signing_key;
     
     console.log('Webhook created successfully with ID:', webhookId);
-    console.log('Signing key from response:', signingKey);
-    console.log('Resource object:', JSON.stringify(webhookData.resource, null, 2));
     
+    // For OAuth apps, the signing key is NOT in the webhook response
+    // It must be retrieved from environment secrets where it was manually set
+    // from the Calendly Developer Console
     if (!signingKey) {
-      console.error('Warning: No signing key received from Calendly');
-      console.error('This may be because Calendly changed their API or the key is in a different location');
-    }
-
-    // Store signing key in Supabase secrets using admin client
-    if (signingKey) {
-      try {
-        const adminSupabase = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
-        
-        // Store as secret - note: we'll store it in an env var format
-        // This will make it available to the webhook function
-        console.log('Storing signing key in secrets...');
-        
-        // For now, we'll need to update the CALENDLY_WEBHOOK_SIGNING_KEY manually
-        // or store it in the database as an alternative
-      } catch (err) {
-        console.error('Failed to store signing key:', err);
+      // Try to get it from env (it should be manually configured from Calendly Developer Console)
+      signingKey = Deno.env.get('CALENDLY_WEBHOOK_SIGNING_KEY');
+      
+      if (signingKey) {
+        console.log('Using signing key from environment variable');
+      } else {
+        console.warn('No signing key available - webhooks will not be verified');
+        console.warn('To enable webhook verification, set CALENDLY_WEBHOOK_SIGNING_KEY in your environment');
+        console.warn('Get the signing key from: https://developer.calendly.com/console/apps');
       }
     }
     
@@ -151,7 +164,7 @@ serve(async (req) => {
         calendly_access_token: accessToken,
         calendly_organization_uri: organizationUri,
         calendly_webhook_id: webhookId,
-        calendly_signing_key: signingKey, // Store it in the database for now
+        calendly_signing_key: signingKey, // Will be null if not available
       })
       .eq('id', teamId);
 
