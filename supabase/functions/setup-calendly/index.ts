@@ -23,30 +23,36 @@ serve(async (req) => {
       }
     );
 
-    // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const { teamId, accessToken, organizationUri } = await req.json();
 
-    // Verify user is team owner or offer owner
-    const { data: membership } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('team_id', teamId)
-      .eq('user_id', user.id)
-      .single();
+    // Check if this is a service role call (from OAuth callback)
+    const authHeader = req.headers.get('Authorization');
+    const isServiceRole = authHeader?.includes(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || 'xxx');
 
-    if (membership?.role !== 'owner' && membership?.role !== 'offer_owner') {
-      return new Response(JSON.stringify({ error: 'Only team owners and offer owners can setup Calendly' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // For non-service-role calls, verify user authentication and permissions
+    if (!isServiceRole) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Verify user is team owner or offer owner
+      const { data: membership } = await supabase
+        .from('team_members')
+        .select('role')
+        .eq('team_id', teamId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (membership?.role !== 'owner' && membership?.role !== 'offer_owner') {
+        return new Response(JSON.stringify({ error: 'Only team owners and offer owners can setup Calendly' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Register webhook with Calendly - include team ID in URL
