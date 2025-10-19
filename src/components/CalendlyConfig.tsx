@@ -226,42 +226,8 @@ export function CalendlyConfig({
   const handleOAuthConnect = async () => {
     setConnecting(true);
     
-    // Open popup IMMEDIATELY (synchronously) to avoid popup blockers
-    const width = 600;
-    const height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    
-    const popup = window.open(
-      'about:blank',
-      'calendly-oauth',
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    );
-
-    if (!popup) {
-      toast({
-        title: "Popup Blocked",
-        description: "Please allow popups for this site and try again.",
-        variant: "destructive",
-      });
-      setConnecting(false);
-      return;
-    }
-
-    // Show loading in popup
-    popup.document.write(`
-      <html>
-        <head><title>Connecting...</title></head>
-        <body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;background:#f5f5f5;">
-          <div style="text-align:center;">
-            <div style="font-size:48px;margin-bottom:16px;">🔄</div>
-            <p style="color:#666;">Connecting to Calendly...</p>
-          </div>
-        </body>
-      </html>
-    `);
-
     try {
+      // First get the OAuth URL
       const { data, error } = await supabase.functions.invoke("calendly-oauth-start", {
         body: { teamId },
       });
@@ -271,11 +237,26 @@ export function CalendlyConfig({
 
       console.log('OAuth URL received:', data.authUrl);
 
-      // Redirect popup to OAuth URL - use replace to avoid popup issues
-      if (popup && !popup.closed) {
-        popup.location.replace(data.authUrl);
-      } else {
-        throw new Error('Popup was closed or blocked');
+      // Now open popup directly with the OAuth URL
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        data.authUrl,
+        'calendly-oauth',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+      );
+
+      if (!popup) {
+        toast({
+          title: "Popup Blocked",
+          description: "Please allow popups for this site and try again.",
+          variant: "destructive",
+        });
+        setConnecting(false);
+        return;
       }
 
       // Monitor popup closure
@@ -288,9 +269,6 @@ export function CalendlyConfig({
 
     } catch (error: any) {
       console.error('OAuth error:', error);
-      if (popup && !popup.closed) {
-        popup.close();
-      }
       toast({
         title: "Error",
         description: error.message || "Failed to start OAuth flow",
