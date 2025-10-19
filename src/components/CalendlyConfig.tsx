@@ -207,18 +207,6 @@ export function CalendlyConfig({
   const handleOAuthConnect = async () => {
     setConnecting(true);
     try {
-      // First, logout from Calendly to force account selection
-      const logoutWindow = window.open('https://calendly.com/logout', '_blank', 'width=1,height=1');
-      
-      // Wait for logout to complete
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Close the logout popup
-      if (logoutWindow && !logoutWindow.closed) {
-        logoutWindow.close();
-      }
-      
-      // Now get the OAuth URL
       const { data, error } = await supabase.functions.invoke("calendly-oauth-start", {
         body: { teamId },
       });
@@ -229,7 +217,7 @@ export function CalendlyConfig({
         throw new Error(data.error);
       }
 
-      // Redirect to Calendly OAuth page - user will now see login screen
+      // Redirect to Calendly OAuth page
       window.location.href = data.authUrl;
     } catch (error: any) {
       toast({
@@ -239,6 +227,16 @@ export function CalendlyConfig({
       });
       setConnecting(false);
     }
+  };
+
+  const handleManualLogout = () => {
+    // Open Calendly logout in new tab
+    window.open('https://calendly.com/logout', '_blank');
+    toast({
+      title: "Logout Page Opened",
+      description: "After logging out, close that tab and click 'Connect' again.",
+      duration: 5000,
+    });
   };
 
   const handleConnect = async () => {
@@ -406,18 +404,38 @@ export function CalendlyConfig({
 
         {!isConnected && (
           <>
+            {/* Important Note */}
+            <Alert className="border-blue-200 bg-blue-50">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm">
+                <strong>Connecting a Different Account?</strong>
+                <br />
+                If you're already logged into Calendly and want to connect a different account, 
+                please logout of Calendly first, then click Connect below.
+              </AlertDescription>
+            </Alert>
+
             {/* OAuth Quick Connect */}
-            <div className="space-y-2">
-              <Button 
-                onClick={handleOAuthConnect} 
-                disabled={connecting}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                {connecting ? "Connecting..." : "Quick Connect with Calendly"}
-              </Button>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleOAuthConnect} 
+                  disabled={connecting}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {connecting ? "Connecting..." : "Connect with Calendly"}
+                </Button>
+                <Button
+                  onClick={handleManualLogout}
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                >
+                  Logout First
+                </Button>
+              </div>
               <p className="text-xs text-center text-muted-foreground">
-                Recommended: One-click setup via OAuth
+                Click "Logout First" if you need to switch Calendly accounts
               </p>
             </div>
 
