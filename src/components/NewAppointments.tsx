@@ -407,13 +407,6 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
             className="pl-9"
           />
         </div>
-
-        <EventTypeFilter 
-          teamId={teamId}
-          calendlyAccessToken={teamData?.calendly_access_token}
-          calendlyOrgUri={teamData?.calendly_organization_uri}
-          onFilterChange={setEventTypeFilter}
-        />
         
         <div className="overflow-x-auto pb-2">
           <Tabs value={dateFilter} onValueChange={(value) => {
