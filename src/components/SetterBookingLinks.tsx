@@ -17,7 +17,8 @@ interface TeamMemberWithBooking {
 }
 
 interface EventTypeDetails {
-  url: string;
+  uri: string;
+  scheduling_url: string;
   name: string;
 }
 
@@ -60,7 +61,8 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
 
       const data = await response.json();
       const details: EventTypeDetails[] = data.collection.map((et: any) => ({
-        url: et.scheduling_url,
+        uri: et.uri,
+        scheduling_url: et.scheduling_url,
         name: et.name,
       }));
       
@@ -155,8 +157,10 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
   };
 
   const getEventTypeName = (url: string): string => {
-    // First try to find the name from fetched event type details
-    const detail = eventTypeDetails.find(et => et.url === url);
+    // Try to match by scheduling URL or API URI
+    const detail = eventTypeDetails.find(et => 
+      et.scheduling_url === url || et.uri === url
+    );
     if (detail) return detail.name;
     
     // Fallback: Extract readable name from Calendly URL
@@ -237,10 +241,21 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
     return <div className="text-sm text-muted-foreground">Loading booking links...</div>;
   }
 
-  // Filter to only show public booking URLs (not API endpoints)
-  const validBookingUrls = calendlyEventTypes.filter(url => 
-    url.startsWith('https://calendly.com/') && !url.includes('/event_types/')
-  );
+  // Convert API URIs to scheduling URLs and filter valid ones
+  const validBookingUrls = calendlyEventTypes
+    .map(url => {
+      // If it's an API URI, find the corresponding scheduling URL
+      if (url.includes('api.calendly.com/event_types/')) {
+        const detail = eventTypeDetails.find(et => et.uri === url);
+        return detail?.scheduling_url || null;
+      }
+      // If it's already a scheduling URL, keep it
+      if (url.startsWith('https://calendly.com/') && !url.includes('/event_types/')) {
+        return url;
+      }
+      return null;
+    })
+    .filter((url): url is string => url !== null);
 
   if (!validBookingUrls.length) {
     return (
