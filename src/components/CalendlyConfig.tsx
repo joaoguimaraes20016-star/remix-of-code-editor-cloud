@@ -407,7 +407,10 @@ export function CalendlyConfig({
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
-      // Use edge function to properly clear the connection
+      // Open Calendly logout in new tab to clear browser session
+      window.open('https://calendly.com/app/logout', '_blank');
+      
+      // Use edge function to revoke token and clear the connection
       const { data, error } = await supabase.functions.invoke("reset-calendly", {
         body: { teamId },
       });
@@ -417,7 +420,8 @@ export function CalendlyConfig({
 
       toast({
         title: "Disconnected",
-        description: "Calendly integration has been disconnected",
+        description: "Calendly has been disconnected. Please complete the logout in the opened tab to switch accounts.",
+        duration: 7000,
       });
       
       onUpdate();

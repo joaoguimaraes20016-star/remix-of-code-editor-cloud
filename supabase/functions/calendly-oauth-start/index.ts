@@ -96,7 +96,6 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('state', state);
-    authUrl.searchParams.set('prompt', 'login'); // Force account selection
 
     console.log('OAuth URL generated successfully');
 
