@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     // Revoke the Calendly OAuth token to force fresh login on reconnect
     if (team?.calendly_access_token) {
       try {
-        const revokeResponse = await fetch('https://auth.calendly.com/oauth/token/revoke', {
+        const revokeResponse = await fetch('https://auth.calendly.com/oauth/revoke', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -83,6 +83,8 @@ Deno.serve(async (req) => {
 
         if (!revokeResponse.ok) {
           console.error('Failed to revoke Calendly token:', await revokeResponse.text());
+        } else {
+          console.log('Successfully revoked Calendly token');
         }
       } catch (revokeError) {
         console.error('Error revoking Calendly token:', revokeError);
