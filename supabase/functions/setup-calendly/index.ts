@@ -111,14 +111,18 @@ serve(async (req) => {
     }
     
     const webhookData = await webhookResponse.json();
+    console.log('Full webhook response:', JSON.stringify(webhookData, null, 2));
+    
     const webhookId = webhookData.resource?.uri;
     const signingKey = webhookData.resource?.signing_key;
     
     console.log('Webhook created successfully with ID:', webhookId);
-    console.log('Signing key captured:', signingKey ? 'Yes' : 'No');
+    console.log('Signing key from response:', signingKey);
+    console.log('Resource object:', JSON.stringify(webhookData.resource, null, 2));
     
     if (!signingKey) {
       console.error('Warning: No signing key received from Calendly');
+      console.error('This may be because Calendly changed their API or the key is in a different location');
     }
 
     // Store signing key in Supabase secrets using admin client
