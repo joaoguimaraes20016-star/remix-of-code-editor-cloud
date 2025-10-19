@@ -362,7 +362,7 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     }
   };
 
-  const filteredAppointments = appointments
+  const filteredAppointments = getFilteredByDate(appointments)
     .filter(apt => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
@@ -376,8 +376,7 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     .filter(apt => {
       if (!eventTypeFilter) return true;
       return apt.event_type_uri === eventTypeFilter;
-    })
-    .filter(apt => getFilteredByDate(appointments).includes(apt));
+    });
 
   return (
     <div className="space-y-4">
