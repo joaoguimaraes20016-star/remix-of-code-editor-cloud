@@ -34,7 +34,7 @@ serve(async (req) => {
 
     const { teamId, accessToken, organizationUri } = await req.json();
 
-    // Verify user is team owner
+    // Verify user is team owner or offer owner
     const { data: membership } = await supabase
       .from('team_members')
       .select('role')
@@ -42,8 +42,8 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (membership?.role !== 'owner') {
-      return new Response(JSON.stringify({ error: 'Only team owners can setup Calendly' }), {
+    if (membership?.role !== 'owner' && membership?.role !== 'offer_owner') {
+      return new Response(JSON.stringify({ error: 'Only team owners and offer owners can setup Calendly' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
