@@ -49,30 +49,39 @@ export function CalendlyConfig({
   const isConnected = Boolean(currentAccessToken && currentOrgUri && currentWebhookId);
   const [tokenValidationFailed, setTokenValidationFailed] = useState(false);
 
-  // Handle OAuth callback
+  // Handle OAuth callback with better visibility
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const oauthSuccess = params.get('calendly_oauth_success');
     const oauthError = params.get('calendly_oauth_error');
 
     if (oauthSuccess === 'true') {
+      // Show success toast
       toast({
-        title: "Success",
-        description: "Calendly connected successfully via OAuth!",
+        title: "🎉 Connected Successfully!",
+        description: "Calendly has been connected to your team. Appointments will now sync automatically.",
+        duration: 5000,
       });
-      // Clean URL
-      window.history.replaceState({}, '', window.location.pathname);
-      onUpdate();
+      
+      // Clean URL immediately
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, '', cleanUrl);
+      
+      // Reload team data to show connected state
+      setTimeout(() => {
+        onUpdate();
+      }, 100);
     } else if (oauthError) {
       toast({
         title: "Connection Failed",
         description: decodeURIComponent(oauthError),
         variant: "destructive",
+        duration: 7000,
       });
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, []);
+  }, [toast, onUpdate]);
 
   useEffect(() => {
     if (isConnected && currentAccessToken && currentOrgUri && !tokenValidationFailed) {
