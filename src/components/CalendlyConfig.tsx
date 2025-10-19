@@ -217,32 +217,42 @@ export function CalendlyConfig({
 
   const handleOAuthConnect = async () => {
     setConnecting(true);
+    
+    // Open popup IMMEDIATELY (synchronously) to avoid popup blockers
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    const popup = window.open(
+      'about:blank',
+      'calendly-oauth',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+
+    if (!popup) {
+      toast({
+        title: "Popup Blocked",
+        description: "Please allow popups for this site and try again.",
+        variant: "destructive",
+      });
+      setConnecting(false);
+      return;
+    }
+
+    // Show loading message in popup
+    popup.document.write('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;"><p>Loading Calendly...</p></body></html>');
+
     try {
       const { data, error } = await supabase.functions.invoke("calendly-oauth-start", {
         body: { teamId },
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      // Open OAuth in a centered popup window
-      const width = 600;
-      const height = 700;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      
-      const popup = window.open(
-        data.authUrl,
-        'calendly-oauth',
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-      );
-
-      if (!popup) {
-        throw new Error('Popup blocked. Please allow popups for this site.');
-      }
+      // Now redirect the popup to the OAuth URL
+      popup.location.href = data.authUrl;
 
       // Monitor popup
       const checkClosed = setInterval(() => {
@@ -253,6 +263,7 @@ export function CalendlyConfig({
       }, 500);
 
     } catch (error: any) {
+      popup.close();
       toast({
         title: "Error",
         description: error.message || "Failed to start OAuth flow",
