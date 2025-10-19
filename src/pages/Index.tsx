@@ -170,11 +170,12 @@ const Index = () => {
 
   const loadAppointments = async () => {
     try {
-      // Load ALL appointments to calculate accurate metrics
+      // Load ALL appointments (past and future) for comprehensive filtering
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
-        .eq('team_id', teamId);
+        .eq('team_id', teamId)
+        .order('start_at_utc', { ascending: false });
 
       if (error) throw error;
       

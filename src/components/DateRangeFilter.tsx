@@ -23,6 +23,8 @@ export type DateRangePreset =
   | "last4weeks"
   | "last3months"
   | "last12months"
+  | "next7days"
+  | "next30days"
   | "alltime"
   | "custom";
 
@@ -46,6 +48,10 @@ export function DateRangeFilter({ onRangeChange }: DateRangeFilterProps) {
         return { from: subMonths(today, 3), to: today };
       case "last12months":
         return { from: subMonths(today, 12), to: today };
+      case "next7days":
+        return { from: today, to: subDays(today, -7) };
+      case "next30days":
+        return { from: today, to: subDays(today, -30) };
       case "alltime":
         return { from: null, to: null };
       case "custom":
@@ -88,6 +94,8 @@ export function DateRangeFilter({ onRangeChange }: DateRangeFilterProps) {
       last4weeks: "Last 4 Weeks",
       last3months: "Last 3 Months",
       last12months: "Last 12 Months",
+      next7days: "Next 7 Days",
+      next30days: "Next 30 Days",
       alltime: "All Time",
       custom: "Custom Range"
     };
@@ -106,6 +114,8 @@ export function DateRangeFilter({ onRangeChange }: DateRangeFilterProps) {
           <SelectItem value="last4weeks">Last 4 Weeks</SelectItem>
           <SelectItem value="last3months">Last 3 Months</SelectItem>
           <SelectItem value="last12months">Last 12 Months</SelectItem>
+          <SelectItem value="next7days">Next 7 Days</SelectItem>
+          <SelectItem value="next30days">Next 30 Days</SelectItem>
           <SelectItem value="alltime">All Time</SelectItem>
           <SelectItem value="custom">Custom Range</SelectItem>
         </SelectContent>
