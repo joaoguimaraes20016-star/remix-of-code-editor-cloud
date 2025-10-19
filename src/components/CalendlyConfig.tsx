@@ -670,19 +670,10 @@ export function CalendlyConfig({
 
         {isConnected && (
           <div className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Status</span>
-                <span className="text-sm text-green-600 flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Active
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Organization</span>
-                <span className="text-sm text-muted-foreground truncate max-w-[200px]">
-                  {currentOrgUri}
-                </span>
+            <div className="p-4 bg-muted rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium">Connected to Calendly</span>
               </div>
             </div>
 
