@@ -184,39 +184,9 @@ serve(async (req) => {
     const event = payload.event;
     const inviteeUri = payload.payload?.uri;
 
-    // Check if event type filtering is enabled (only if filters are set)
+    // Event type filtering temporarily disabled - accepting all appointments
     const eventTypeUri = payload.payload?.scheduled_event?.event_type;
-    if (allowedEventTypes && allowedEventTypes.length > 0 && eventTypeUri && accessToken) {
-      // Fetch the event type to get its scheduling_url for comparison
-      try {
-        const eventTypeResponse = await fetch(eventTypeUri, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (eventTypeResponse.ok) {
-          const eventTypeData = await eventTypeResponse.json();
-          const schedulingUrl = eventTypeData.resource?.scheduling_url;
-          
-          if (schedulingUrl && !allowedEventTypes.includes(schedulingUrl)) {
-            console.log(`Event scheduling URL ${schedulingUrl} not in allowed list (${allowedEventTypes.length} filters active). Skipping.`);
-            return new Response(JSON.stringify({ success: true, message: 'Event type not tracked' }), {
-              status: 200,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to fetch event type for filtering:', error);
-        // Continue processing if we can't verify the filter
-      }
-    } else if (allowedEventTypes && allowedEventTypes.length > 0) {
-      console.log(`Event type filters configured but cannot verify (missing eventTypeUri or accessToken)`);
-    } else {
-      console.log(`No event type filters configured. Accepting all appointments.`);
-    }
+    console.log(`Processing appointment from event type: ${eventTypeUri}`);
 
     // Get invitee details - the payload.payload IS the invitee data
     const inviteeData = payload.payload;
