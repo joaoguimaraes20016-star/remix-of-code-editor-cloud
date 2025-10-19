@@ -92,10 +92,10 @@ Deno.serve(async (req) => {
     const accessToken = team.calendly_access_token;
     const organizationUri = team.calendly_organization_uri;
 
-    // Fetch scheduled events from Calendly (past 12 months + future)
+    // Fetch scheduled events from Calendly (past 6 months + future)
     const now = new Date();
-    const twelveMonthsAgo = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000)).toISOString();
-    const calendlyEventsUrl = `https://api.calendly.com/scheduled_events?organization=${encodeURIComponent(organizationUri)}&status=active&min_start_time=${encodeURIComponent(twelveMonthsAgo)}&count=100`;
+    const sixMonthsAgo = new Date(now.getTime() - (180 * 24 * 60 * 60 * 1000)).toISOString();
+    const calendlyEventsUrl = `https://api.calendly.com/scheduled_events?organization=${encodeURIComponent(organizationUri)}&status=active&min_start_time=${encodeURIComponent(sixMonthsAgo)}&count=100`;
 
     console.log('Fetching scheduled events from Calendly...');
     const eventsResponse = await fetch(calendlyEventsUrl, {
@@ -172,6 +172,19 @@ Deno.serve(async (req) => {
       .select('id, full_name')
       .in('id', teamMembers?.map(m => m.user_id) || []);
 
+    // Fetch ALL existing appointments at once to avoid repeated DB queries
+    const { data: existingAppointments } = await supabaseClient
+      .from('appointments')
+      .select('lead_email, start_at_utc')
+      .eq('team_id', teamId);
+
+    // Create a Set for O(1) duplicate lookups
+    const existingAppointmentKeys = new Set(
+      existingAppointments?.map(a => `${a.lead_email}|${a.start_at_utc}`) || []
+    );
+
+    console.log(`Found ${existingAppointmentKeys.size} existing appointments in database`);
+
     // Process each event
     for (const event of allEvents) {
       try {
@@ -193,20 +206,9 @@ Deno.serve(async (req) => {
         const invitees: CalendlyInvitee[] = inviteesData.collection || [];
 
         for (const invitee of invitees) {
-          if (invitee.status !== 'active') {
-            continue; // Skip cancelled invitees
-          }
-
-          // Check for duplicate
-          const { data: existingAppointment } = await supabaseClient
-            .from('appointments')
-            .select('id')
-            .eq('lead_email', invitee.email)
-            .eq('start_at_utc', event.start_time)
-            .eq('team_id', teamId)
-            .maybeSingle();
-
-          if (existingAppointment) {
+          // Skip cancelled invitees and check for duplicates using Set (fast)
+          const appointmentKey = `${invitee.email}|${event.start_time}`;
+          if (existingAppointmentKeys.has(appointmentKey)) {
             console.log(`Skipping duplicate: ${invitee.email} at ${event.start_time}`);
             skippedCount++;
             continue;
