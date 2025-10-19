@@ -567,14 +567,16 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="scheduling" className="space-y-6 mt-6">
-            <CalendlyConfig 
-              teamId={teamId!} 
-              currentAccessToken={calendlyAccessToken}
-              currentOrgUri={calendlyOrgUri}
-              currentWebhookId={calendlyWebhookId}
-              currentEventTypes={calendlyEventTypes}
-              onUpdate={loadTeamData}
-            />
+            {(userRole === "owner" || userRole === "offer_owner" || userRole === "admin") && (
+              <CalendlyConfig 
+                teamId={teamId!} 
+                currentAccessToken={calendlyAccessToken}
+                currentOrgUri={calendlyOrgUri}
+                currentWebhookId={calendlyWebhookId}
+                currentEventTypes={calendlyEventTypes}
+                onUpdate={loadTeamData}
+              />
+            )}
             
             <Tabs defaultValue={canViewSetterScheduling ? "new" : "closer"} className="w-full">
               <div className="overflow-x-auto pb-2">

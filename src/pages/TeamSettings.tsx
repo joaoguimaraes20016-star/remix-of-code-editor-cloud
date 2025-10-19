@@ -444,7 +444,7 @@ export default function TeamSettings() {
         </Card>
 
         {/* Calendly Integration */}
-        {(() => {
+        {(isOwner || role === "offer_owner" || role === "admin") && (() => {
           try {
             return (
               <CalendlyConfig 
