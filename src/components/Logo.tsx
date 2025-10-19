@@ -16,15 +16,16 @@ export const Logo = ({ size = "medium", className, showText = false }: LogoProps
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <img 
-        src={logo} 
-        alt="GRWTH Engine Logo" 
-        className={cn(sizeClasses[size], "object-contain drop-shadow-lg")}
-        style={{ 
-          mixBlendMode: 'lighten',
-          filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.3))'
-        }}
-      />
+      <div className={cn(
+        sizeClasses[size],
+        "bg-black rounded-lg flex items-center justify-center p-1"
+      )}>
+        <img 
+          src={logo} 
+          alt="GRWTH Engine Logo" 
+          className="w-full h-full object-contain"
+        />
+      </div>
       {showText && (
         <span className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
           GRWTH Engine
