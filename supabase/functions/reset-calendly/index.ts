@@ -59,7 +59,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Clear Calendly connection
+    // Get current Calendly access token to revoke it
+    const { data: team } = await supabase
+      .from('teams')
+      .select('calendly_access_token')
+      .eq('id', teamId)
+      .single();
+
+    // Revoke the Calendly OAuth token to force fresh login on reconnect
+    if (team?.calendly_access_token) {
+      try {
+        const revokeResponse = await fetch('https://auth.calendly.com/oauth/token/revoke', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            token: team.calendly_access_token,
+            client_id: Deno.env.get('CALENDLY_CLIENT_ID') ?? '',
+            client_secret: Deno.env.get('CALENDLY_CLIENT_SECRET') ?? '',
+          }),
+        });
+
+        if (!revokeResponse.ok) {
+          console.error('Failed to revoke Calendly token:', await revokeResponse.text());
+        }
+      } catch (revokeError) {
+        console.error('Error revoking Calendly token:', revokeError);
+        // Continue with reset even if revocation fails
+      }
+    }
+
+    // Clear Calendly connection from database
     const { error: updateError } = await supabase
       .from('teams')
       .update({
