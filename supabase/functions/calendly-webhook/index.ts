@@ -204,7 +204,6 @@ serve(async (req) => {
     let closerName = null;
 
     if (eventUri && accessToken) {
-      console.log('Fetching event details from:', eventUri);
       const eventResponse = await fetch(eventUri, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -214,82 +213,23 @@ serve(async (req) => {
 
       if (eventResponse.ok) {
         const eventData = await eventResponse.json();
-        console.log('Event data received:', JSON.stringify(eventData, null, 2));
         const organizerEmail = eventData.resource?.event_memberships?.[0]?.user_email;
-        const organizerName = eventData.resource?.event_memberships?.[0]?.user_name;
-        console.log('Organizer details:', { email: organizerEmail, name: organizerName });
 
-        if (organizerEmail || organizerName) {
-          let profiles = null;
-
-          // Method 1: Try exact email match
-          if (organizerEmail) {
-            const { data } = await supabase
-              .from('profiles')
-              .select('id, full_name, email')
-              .eq('email', organizerEmail.toLowerCase())
-              .maybeSingle();
-            
-            if (data) {
-              profiles = data;
-              console.log(`✓ Matched by exact email: ${organizerEmail}`);
-            }
-          }
-
-          // Method 2: Try partial email match (username before @)
-          if (!profiles && organizerEmail) {
-            const emailUsername = organizerEmail.split('@')[0].toLowerCase();
-            const { data: partialMatches } = await supabase
-              .from('profiles')
-              .select('id, full_name, email')
-              .ilike('email', `${emailUsername}%`);
-            
-            if (partialMatches && partialMatches.length > 0) {
-              profiles = partialMatches[0];
-              console.log(`✓ Matched by partial email: ${organizerEmail} → ${profiles.email}`);
-            }
-          }
-
-          // Method 3: Try name matching (case-insensitive, partial)
-          if (!profiles && organizerName) {
-            const nameParts = organizerName.toLowerCase().split(' ');
-            const { data: nameMatches } = await supabase
-              .from('profiles')
-              .select('id, full_name, email');
-            
-            // Find best name match
-            if (nameMatches && nameMatches.length > 0) {
-              const scored = nameMatches.map(profile => {
-                const profileNameLower = profile.full_name.toLowerCase();
-                const matches = nameParts.filter((part: string) => 
-                  profileNameLower.includes(part) && part.length > 2
-                ).length;
-                return { profile, score: matches };
-              });
-              
-              const best = scored.sort((a, b) => b.score - a.score)[0];
-              if (best && best.score > 0) {
-                profiles = best.profile;
-                console.log(`✓ Matched by name: "${organizerName}" → "${profiles.full_name}" (score: ${best.score})`);
-              }
-            }
-          }
+        if (organizerEmail) {
+          // Find team member by email
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('email', organizerEmail)
+            .maybeSingle();
 
           if (profiles) {
             closerId = profiles.id;
             closerName = profiles.full_name;
-            console.log(`✓ Final match: ${closerName} (${profiles.email})`);
-          } else {
-            console.log(`✗ No match found for organizer: ${organizerName} <${organizerEmail}>`);
+            console.log(`Matched organizer ${organizerEmail} to team member ${closerName}`);
           }
-        } else {
-          console.log('No organizer email or name found in event data');
         }
-      } else {
-        console.error('Failed to fetch event details:', eventResponse.status, await eventResponse.text());
       }
-    } else {
-      console.log('Missing eventUri or accessToken for closer lookup', { hasEventUri: !!eventUri, hasAccessToken: !!accessToken });
     }
 
     // Handle different event types
