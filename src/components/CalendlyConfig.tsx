@@ -277,33 +277,15 @@ export function CalendlyConfig({
   };
 
   const handleDisconnect = async () => {
-    if (!currentAccessToken || !currentWebhookId) return;
-
     setDisconnecting(true);
     try {
-      // Delete webhook from Calendly
-      const webhookResponse = await fetch(currentWebhookId, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${currentAccessToken}`,
-        },
+      // Use edge function to properly clear the connection
+      const { data, error } = await supabase.functions.invoke("reset-calendly", {
+        body: { teamId },
       });
 
-      if (!webhookResponse.ok) {
-        console.warn('Failed to delete webhook from Calendly');
-      }
-
-      // Clear from database
-      const { error } = await supabase
-        .from("teams")
-        .update({ 
-          calendly_access_token: null,
-          calendly_organization_uri: null,
-          calendly_webhook_id: null,
-        })
-        .eq("id", teamId);
-
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Disconnected",
