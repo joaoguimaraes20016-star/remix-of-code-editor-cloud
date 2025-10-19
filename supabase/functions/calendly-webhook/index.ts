@@ -219,14 +219,28 @@ serve(async (req) => {
         console.log('Organizer email from event:', organizerEmail);
 
         if (organizerEmail) {
-          // Find team member by email
-          const { data: profiles, error: profileError } = await supabase
+          // Find team member by email - try exact match first, then partial match
+          let { data: profiles, error: profileError } = await supabase
             .from('profiles')
             .select('id, full_name, email')
-            .eq('email', organizerEmail)
+            .eq('email', organizerEmail.toLowerCase())
             .maybeSingle();
 
-          console.log('Profile lookup result:', { profiles, profileError });
+          // If no exact match, try finding by username (part before @)
+          if (!profiles) {
+            const emailUsername = organizerEmail.split('@')[0];
+            const { data: partialProfiles } = await supabase
+              .from('profiles')
+              .select('id, full_name, email')
+              .ilike('email', `${emailUsername}%`);
+            
+            if (partialProfiles && partialProfiles.length > 0) {
+              profiles = partialProfiles[0];
+              console.log(`Matched organizer ${organizerEmail} to ${profiles.email} using partial match`);
+            }
+          }
+
+          console.log('Profile lookup result:', { profiles, profileError, searchedEmail: organizerEmail });
 
           if (profiles) {
             closerId = profiles.id;
