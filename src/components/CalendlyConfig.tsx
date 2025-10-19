@@ -56,18 +56,15 @@ export function CalendlyConfig({
     const oauthError = params.get('calendly_oauth_error');
 
     if (oauthSuccess === 'true') {
-      // Show success toast
       toast({
         title: "🎉 Connected Successfully!",
         description: "Calendly has been connected to your team. Appointments will now sync automatically.",
         duration: 5000,
       });
       
-      // Clean URL immediately
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, '', cleanUrl);
       
-      // Reload team data to show connected state
       setTimeout(() => {
         onUpdate();
       }, 100);
@@ -78,9 +75,23 @@ export function CalendlyConfig({
         variant: "destructive",
         duration: 7000,
       });
-      // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
+
+    // Listen for messages from OAuth popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'calendly-oauth-success') {
+        toast({
+          title: "🎉 Connected Successfully!",
+          description: "Calendly has been connected. Appointments will now sync automatically.",
+          duration: 5000,
+        });
+        onUpdate();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, [toast, onUpdate]);
 
   useEffect(() => {
@@ -217,8 +228,30 @@ export function CalendlyConfig({
         throw new Error(data.error);
       }
 
-      // Redirect to Calendly OAuth page
-      window.location.href = data.authUrl;
+      // Open OAuth in a centered popup window
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        data.authUrl,
+        'calendly-oauth',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+      );
+
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups for this site.');
+      }
+
+      // Monitor popup
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          setConnecting(false);
+        }
+      }, 500);
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -227,16 +260,6 @@ export function CalendlyConfig({
       });
       setConnecting(false);
     }
-  };
-
-  const handleManualLogout = () => {
-    // Open Calendly logout in new tab
-    window.open('https://calendly.com/logout', '_blank');
-    toast({
-      title: "Logout Page Opened",
-      description: "After logging out, close that tab and click 'Connect' again.",
-      duration: 5000,
-    });
   };
 
   const handleConnect = async () => {
@@ -406,32 +429,18 @@ export function CalendlyConfig({
           <>
             {/* OAuth Quick Connect */}
             <div className="space-y-4">
-              <Alert className="bg-blue-50 border-blue-200">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-sm text-blue-900">
-                  <strong>Need to switch accounts?</strong> Click "Logout from Calendly" first, then connect.
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  onClick={handleOAuthConnect} 
-                  disabled={connecting}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  size="lg"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {connecting ? "Connecting..." : "Connect with Calendly"}
-                </Button>
-                <Button
-                  onClick={handleManualLogout}
-                  variant="outline"
-                  size="lg"
-                  className="sm:w-auto"
-                >
-                  Logout from Calendly
-                </Button>
-              </div>
+              <Button 
+                onClick={handleOAuthConnect} 
+                disabled={connecting}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                size="lg"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                {connecting ? "Connecting..." : "Connect with Calendly"}
+              </Button>
+              <p className="text-sm text-center text-muted-foreground">
+                A popup will open for you to authorize Calendly
+              </p>
             </div>
 
             {/* Divider */}

@@ -171,10 +171,26 @@ Deno.serve(async (req) => {
 
     console.log('Calendly OAuth setup completed successfully');
 
-    // Redirect back to team settings page with success
-    return Response.redirect(
-      `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com') || 'https://58be05a2-2d12-4440-8371-6b03075eca7a.lovableproject.com'}/team/${teamId}?calendly_oauth_success=true`,
-      302
+    // For popup flow, close the popup and notify parent
+    return new Response(
+      `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Success</title></head>
+        <body>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({ type: 'calendly-oauth-success' }, '*');
+              window.close();
+            } else {
+              window.location.href = '${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com') || 'https://58be05a2-2d12-4440-8371-6b03075eca7a.lovableproject.com'}/team/${teamId}?calendly_oauth_success=true';
+            }
+          </script>
+          <p>Authorization successful! This window will close automatically...</p>
+        </body>
+      </html>
+      `,
+      { status: 200, headers: { 'Content-Type': 'text/html' } }
     );
   } catch (error) {
     console.error('Error in calendly-oauth-callback:', error);
