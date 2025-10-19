@@ -481,14 +481,19 @@ export function CalendlyConfig({
           type: matchedEventType.type,
         };
 
-        // Check if it already exists
-        const exists = availableEventTypes.some(et => et.uri === eventTypeDetail.uri);
+        // Check if the exact same event type (by URI or scheduling URL) already exists
+        const exists = availableEventTypes.some(et => 
+          et.uri === eventTypeDetail.uri || 
+          et.scheduling_url === eventTypeDetail.scheduling_url
+        );
+        
         if (!exists) {
+          // Add new event type and automatically select it
           setAvailableEventTypes(prev => [...prev, eventTypeDetail]);
           setSelectedEventTypes(prev => [...prev, eventTypeDetail.scheduling_url]);
           toast({
             title: "Success",
-            description: `Added: ${eventTypeDetail.name}`,
+            description: `Added and selected: ${eventTypeDetail.name}`,
           });
         } else {
           // If it exists but isn't selected, select it
@@ -501,7 +506,7 @@ export function CalendlyConfig({
           } else {
             toast({
               title: "Already added",
-              description: "This event type is already in your list",
+              description: "This exact event type URL is already in your list and selected",
             });
           }
         }
