@@ -176,12 +176,6 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
         .order('start_at_utc', { ascending: false });
 
       if (error) throw error;
-      console.log('Loaded appointments:', data?.length);
-      console.log('Sample appointment dates:', data?.slice(0, 5).map(a => ({
-        name: a.lead_name,
-        date: a.start_at_utc,
-        parsed: new Date(a.start_at_utc)
-      })));
       setAppointments(data || []);
     } catch (error: any) {
       toast({
@@ -325,30 +319,20 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
-    console.log('Date Filter Applied:', dateFilter);
-    console.log('Current Date:', now);
-    console.log('Total Appointments:', appointments.length);
-    
     switch (dateFilter) {
       case "last7days":
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(today.getDate() - 7);
-        console.log('Last 7 Days Range:', sevenDaysAgo, 'to', now);
         return appointments.filter(apt => {
           const aptDate = new Date(apt.start_at_utc);
-          const inRange = aptDate >= sevenDaysAgo && aptDate <= now;
-          console.log('Appointment Date:', aptDate, 'In Range:', inRange);
-          return inRange;
+          return aptDate >= sevenDaysAgo && aptDate <= now;
         });
       case "last30days":
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
-        console.log('Last 30 Days Range:', thirtyDaysAgo, 'to', now);
         return appointments.filter(apt => {
           const aptDate = new Date(apt.start_at_utc);
-          const inRange = aptDate >= thirtyDaysAgo && aptDate <= now;
-          console.log('Appointment Date:', aptDate, 'In Range:', inRange);
-          return inRange;
+          return aptDate >= thirtyDaysAgo && aptDate <= now;
         });
       case "next7days":
         const sevenDaysFromNow = new Date(today);
