@@ -168,6 +168,26 @@ serve(async (req) => {
 
     // Handle different event types
     if (event === 'invitee.created') {
+      // Fetch event type name from Calendly API
+      let eventTypeName = null;
+      if (eventTypeUri && accessToken) {
+        try {
+          const eventTypeResponse = await fetch(eventTypeUri, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (eventTypeResponse.ok) {
+            const eventTypeData = await eventTypeResponse.json();
+            eventTypeName = eventTypeData.resource?.name;
+            console.log(`Event type: ${eventTypeName}`);
+          }
+        } catch (error) {
+          console.warn('Failed to fetch event type name:', error);
+        }
+      }
+
       // Prepare appointment data with optional auto-assignment
       const appointmentData: any = {
         lead_name: leadName,
@@ -177,6 +197,8 @@ serve(async (req) => {
         closer_name: closerName,
         status: 'NEW',
         team_id: teamId,
+        event_type_uri: eventTypeUri,
+        event_type_name: eventTypeName,
       };
 
       // Try to auto-assign based on UTM tracking parameter

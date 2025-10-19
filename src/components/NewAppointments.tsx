@@ -58,6 +58,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { EventTypeFilter } from "@/components/EventTypeFilter";
 
 interface Appointment {
   id: string;
@@ -66,6 +67,8 @@ interface Appointment {
   lead_email: string;
   status: string;
   closer_name: string | null;
+  event_type_uri: string | null;
+  event_type_name: string | null;
 }
 
 interface TeamMember {
@@ -103,8 +106,11 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
   const [deleting, setDeleting] = useState(false);
   const [selectedAppointments, setSelectedAppointments] = useState<Set<string>>(new Set());
   const [dateDrawerOpen, setDateDrawerOpen] = useState(false);
+  const [eventTypeFilter, setEventTypeFilter] = useState<string | null>(null);
+  const [teamData, setTeamData] = useState<{ calendly_access_token: string | null; calendly_organization_uri: string | null } | null>(null);
 
   useEffect(() => {
+    loadTeamData();
     loadTeamMembers();
     loadAppointments();
 
@@ -132,6 +138,21 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
       supabase.removeChannel(channel);
     };
   }, [teamId, user]);
+
+  const loadTeamData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('calendly_access_token, calendly_organization_uri')
+        .eq('id', teamId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setTeamData(data);
+    } catch (error: any) {
+      console.error('Error loading team data:', error);
+    }
+  };
 
   const loadTeamMembers = async () => {
     try {
@@ -340,8 +361,13 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
       return (
         apt.lead_name.toLowerCase().includes(query) ||
         apt.lead_email.toLowerCase().includes(query) ||
-        apt.closer_name?.toLowerCase().includes(query)
+        apt.closer_name?.toLowerCase().includes(query) ||
+        apt.event_type_name?.toLowerCase().includes(query)
       );
+    })
+    .filter(apt => {
+      if (!eventTypeFilter) return true;
+      return apt.event_type_uri === eventTypeFilter;
     })
     .filter(apt => getFilteredByDate(appointments).includes(apt));
 
@@ -383,12 +409,19 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by lead name, email, or closer..."
+            placeholder="Search by lead, email, closer, or event type..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
+
+        <EventTypeFilter 
+          teamId={teamId}
+          calendlyAccessToken={teamData?.calendly_access_token}
+          calendlyOrgUri={teamData?.calendly_organization_uri}
+          onFilterChange={setEventTypeFilter}
+        />
         
         <div className="overflow-x-auto pb-2">
           <Tabs value={dateFilter} onValueChange={(value) => {

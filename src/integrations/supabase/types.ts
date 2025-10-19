@@ -20,6 +20,8 @@ export type Database = {
           closer_id: string | null
           closer_name: string | null
           created_at: string | null
+          event_type_name: string | null
+          event_type_uri: string | null
           id: string
           lead_email: string
           lead_name: string
@@ -40,6 +42,8 @@ export type Database = {
           closer_id?: string | null
           closer_name?: string | null
           created_at?: string | null
+          event_type_name?: string | null
+          event_type_uri?: string | null
           id?: string
           lead_email: string
           lead_name: string
@@ -60,6 +64,8 @@ export type Database = {
           closer_id?: string | null
           closer_name?: string | null
           created_at?: string | null
+          event_type_name?: string | null
+          event_type_uri?: string | null
           id?: string
           lead_email?: string
           lead_name?: string
