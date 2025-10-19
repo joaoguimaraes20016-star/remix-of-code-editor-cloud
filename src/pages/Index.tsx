@@ -589,7 +589,7 @@ const Index = () => {
                 <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
                   {canViewSetterScheduling && <TabsTrigger value="all-new" className="text-xs md:text-sm flex-1 md:flex-none">New Appointments</TabsTrigger>}
                   {canViewSetterScheduling && <TabsTrigger value="unassigned" className="text-xs md:text-sm flex-1 md:flex-none">Unassigned Appointments</TabsTrigger>}
-                  {canViewSetterScheduling && <TabsTrigger value="claimed" className="text-xs md:text-sm flex-1 md:flex-none">All Assigned Appointments</TabsTrigger>}
+                  {canViewSetterScheduling && <TabsTrigger value="claimed" className="text-xs md:text-sm flex-1 md:flex-none">Assigned Appointments</TabsTrigger>}
                   {canViewSetterScheduling && <TabsTrigger value="my-claimed" className="text-xs md:text-sm flex-1 md:flex-none">My Assigned</TabsTrigger>}
                   {canViewCloserScheduling && <TabsTrigger value="closer" className="text-xs md:text-sm flex-1 md:flex-none">Closer View</TabsTrigger>}
                 </TabsList>
@@ -619,7 +619,7 @@ const Index = () => {
 
                   <TabsContent value="claimed" className="mt-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-4">All Assigned Appointments</h2>
+                      <h2 className="text-2xl font-semibold mb-4">Assigned Appointments</h2>
                       <p className="text-sm text-muted-foreground mb-4">
                         View all appointments assigned to setters
                       </p>
