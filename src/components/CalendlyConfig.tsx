@@ -404,24 +404,21 @@ export function CalendlyConfig({
 
         {!isConnected && (
           <>
-            {/* Important Note */}
-            <Alert className="border-blue-200 bg-blue-50">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-sm">
-                <strong>Connecting a Different Account?</strong>
-                <br />
-                If you're already logged into Calendly and want to connect a different account, 
-                please logout of Calendly first, then click Connect below.
-              </AlertDescription>
-            </Alert>
-
             {/* OAuth Quick Connect */}
-            <div className="space-y-3">
-              <div className="flex gap-2">
+            <div className="space-y-4">
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-sm text-blue-900">
+                  <strong>Need to switch accounts?</strong> Click "Logout from Calendly" first, then connect.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
                   onClick={handleOAuthConnect} 
                   disabled={connecting}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  size="lg"
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   {connecting ? "Connecting..." : "Connect with Calendly"}
@@ -429,14 +426,12 @@ export function CalendlyConfig({
                 <Button
                   onClick={handleManualLogout}
                   variant="outline"
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  size="lg"
+                  className="sm:w-auto"
                 >
-                  Logout First
+                  Logout from Calendly
                 </Button>
               </div>
-              <p className="text-xs text-center text-muted-foreground">
-                Click "Logout First" if you need to switch Calendly accounts
-              </p>
             </div>
 
             {/* Divider */}
