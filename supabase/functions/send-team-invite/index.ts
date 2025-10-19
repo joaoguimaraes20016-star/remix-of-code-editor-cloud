@@ -57,7 +57,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Use custom domain for invite URLs - point directly to auth page
-    const inviteUrl = `https://grwthengine.com/auth?invite=${inviteToken}`;
+    const inviteUrl = `https://grwthop.com/auth?invite=${inviteToken}`;
     
     console.log('Generated invite URL:', inviteUrl);
     

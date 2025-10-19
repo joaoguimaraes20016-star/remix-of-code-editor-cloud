@@ -63,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate reset link
-    const resetLink = `${Deno.env.get("SITE_URL") || "https://grwthengine.com"}/reset-password?token=${token}`;
+    const resetLink = `${Deno.env.get("SITE_URL") || "https://grwthop.com"}/reset-password?token=${token}`;
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
