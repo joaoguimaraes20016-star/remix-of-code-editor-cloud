@@ -65,6 +65,7 @@ export function EventTypeFilter({
         name: et.name,
       }));
 
+      console.log('Loaded event types for filter:', details);
       setEventTypes(details);
     } catch (error) {
       console.error('Error loading event types:', error);
