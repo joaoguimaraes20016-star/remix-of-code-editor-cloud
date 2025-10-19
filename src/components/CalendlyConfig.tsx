@@ -566,6 +566,23 @@ export function CalendlyConfig({
 
         {!isConnected && (
           <>
+            <Alert className="border-orange-500/50 bg-orange-50 dark:bg-orange-950/20">
+              <AlertCircle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-sm">
+                <strong>Switching Calendly accounts?</strong>
+                <br />
+                First log out of Calendly, then click "Connect with Calendly" below.
+                <br />
+                <Button 
+                  variant="link" 
+                  className="h-auto p-0 text-orange-600 hover:text-orange-700"
+                  onClick={() => window.open('https://calendly.com/app/logout', '_blank')}
+                >
+                  Click here to logout of Calendly →
+                </Button>
+              </AlertDescription>
+            </Alert>
+
             <div className="space-y-4">
               <Button 
                 onClick={handleOAuthConnect} 
@@ -577,7 +594,7 @@ export function CalendlyConfig({
               {connecting ? "Connecting..." : "Connect with Calendly"}
             </Button>
             <p className="text-sm text-center text-muted-foreground">
-              A popup will open for you to choose your Calendly account
+              A popup will open to connect your Calendly account
             </p>
           </div>
 
