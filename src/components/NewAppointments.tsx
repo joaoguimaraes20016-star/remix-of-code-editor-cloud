@@ -320,14 +320,22 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
+    console.log('Date Filter Applied:', dateFilter);
+    console.log('Current Date:', now);
+    console.log('Total Appointments:', appointments.length);
+    
     switch (dateFilter) {
       case "last7days":
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(today.getDate() - 7);
-        return appointments.filter(apt => {
+        console.log('Last 7 Days Range:', sevenDaysAgo, 'to', now);
+        const last7 = appointments.filter(apt => {
           const aptDate = new Date(apt.start_at_utc);
+          console.log('Appointment Date:', aptDate, 'In Range:', aptDate >= sevenDaysAgo && aptDate <= now);
           return aptDate >= sevenDaysAgo && aptDate <= now;
         });
+        console.log('Filtered Count (Last 7):', last7.length);
+        return last7;
       case "last30days":
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
