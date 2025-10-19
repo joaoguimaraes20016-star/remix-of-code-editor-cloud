@@ -334,19 +334,21 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(today.getDate() - 7);
         console.log('Last 7 Days Range:', sevenDaysAgo, 'to', now);
-        const last7 = appointments.filter(apt => {
+        return appointments.filter(apt => {
           const aptDate = new Date(apt.start_at_utc);
-          console.log('Appointment Date:', aptDate, 'In Range:', aptDate >= sevenDaysAgo && aptDate <= now);
-          return aptDate >= sevenDaysAgo && aptDate <= now;
+          const inRange = aptDate >= sevenDaysAgo && aptDate <= now;
+          console.log('Appointment Date:', aptDate, 'In Range:', inRange);
+          return inRange;
         });
-        console.log('Filtered Count (Last 7):', last7.length);
-        return last7;
       case "last30days":
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
+        console.log('Last 30 Days Range:', thirtyDaysAgo, 'to', now);
         return appointments.filter(apt => {
           const aptDate = new Date(apt.start_at_utc);
-          return aptDate >= thirtyDaysAgo && aptDate <= now;
+          const inRange = aptDate >= thirtyDaysAgo && aptDate <= now;
+          console.log('Appointment Date:', aptDate, 'In Range:', inRange);
+          return inRange;
         });
       case "next7days":
         const sevenDaysFromNow = new Date(today);
