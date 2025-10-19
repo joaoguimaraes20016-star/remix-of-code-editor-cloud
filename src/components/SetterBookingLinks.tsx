@@ -28,9 +28,11 @@ interface SetterBookingLinksProps {
   calendlyAccessToken?: string | null;
   calendlyOrgUri?: string | null;
   onRefresh?: () => void;
+  currentUserId?: string;
+  isOwner?: boolean;
 }
 
-export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessToken, calendlyOrgUri, onRefresh }: SetterBookingLinksProps) {
+export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessToken, calendlyOrgUri, onRefresh, currentUserId, isOwner = false }: SetterBookingLinksProps) {
   const [members, setMembers] = useState<TeamMemberWithBooking[]>([]);
   const [editingCodes, setEditingCodes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -289,13 +291,18 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
     );
   }
 
-  if (!members.length) {
+  // Filter members based on role - owners see all, setters see only themselves
+  const filteredMembers = isOwner 
+    ? members 
+    : members.filter(m => m.user_id === currentUserId);
+
+  if (!filteredMembers.length) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Setter Booking Links</CardTitle>
           <CardDescription>
-            No team members with setter, closer, or admin roles found
+            No booking links available for you
           </CardDescription>
         </CardHeader>
       </Card>
@@ -326,7 +333,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {members.map((member) => {
+        {filteredMembers.map((member) => {
           const currentCode = editingCodes[member.user_id] ?? member.booking_code ?? '';
           const hasBookingCode = !!member.booking_code;
 
@@ -354,29 +361,34 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
                       }))
                     }
                     className="flex-1"
+                    disabled={!isOwner && member.user_id !== currentUserId}
                   />
-                  <Button
-                    size="sm"
-                    onClick={() => handleSaveCode(member.user_id, currentCode)}
-                    disabled={saving === member.user_id || currentCode === member.booking_code}
-                  >
-                    <Save className="h-4 w-4 mr-1" />
-                    Save
-                  </Button>
-                  {!member.booking_code && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        const generated = generateCodeFromName(member.profiles.full_name);
-                        setEditingCodes((prev) => ({
-                          ...prev,
-                          [member.user_id]: generated,
-                        }));
-                      }}
-                    >
-                      Auto-generate
-                    </Button>
+                  {(isOwner || member.user_id === currentUserId) && (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveCode(member.user_id, currentCode)}
+                        disabled={saving === member.user_id || currentCode === member.booking_code}
+                      >
+                        <Save className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                      {!member.booking_code && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const generated = generateCodeFromName(member.profiles.full_name);
+                            setEditingCodes((prev) => ({
+                              ...prev,
+                              [member.user_id]: generated,
+                            }));
+                          }}
+                        >
+                          Auto-generate
+                        </Button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

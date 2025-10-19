@@ -71,10 +71,11 @@ export default function TeamSettings() {
     
     checkSuperAdmin();
     
-    if (!roleLoading && !isOwner && !isSuperAdmin) {
+    // Allow owners, super admins, and setters to access settings
+    if (!roleLoading && !isOwner && !isSuperAdmin && role !== 'setter') {
       toast({
         title: 'Access denied',
-        description: 'Only team owners can access settings',
+        description: 'You do not have permission to access settings',
         variant: 'destructive',
       });
       navigate(`/team/${teamId}`);
@@ -462,8 +463,8 @@ export default function TeamSettings() {
           }
         })()}
 
-        {/* Setter Booking Links */}
-        {isOwner && calendlyEventTypes && calendlyEventTypes.length > 0 && (() => {
+        {/* Setter Booking Links - visible to owners and setters */}
+        {(isOwner || role === 'setter') && calendlyEventTypes && calendlyEventTypes.length > 0 && (() => {
           try {
             return (
               <SetterBookingLinks
@@ -472,6 +473,8 @@ export default function TeamSettings() {
                 calendlyAccessToken={calendlyAccessToken}
                 calendlyOrgUri={calendlyOrgUri}
                 onRefresh={loadTeamData}
+                currentUserId={user?.id}
+                isOwner={isOwner}
               />
             );
           } catch (error) {
