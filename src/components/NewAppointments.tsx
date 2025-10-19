@@ -322,24 +322,33 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     switch (dateFilter) {
-      case "today":
-        return appointments.filter(apt => {
-          const aptDate = new Date(apt.start_at_utc);
-          return aptDate >= today;
-        });
-      case "7days":
+      case "last7days":
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(today.getDate() - 7);
         return appointments.filter(apt => {
           const aptDate = new Date(apt.start_at_utc);
-          return aptDate >= sevenDaysAgo;
+          return aptDate >= sevenDaysAgo && aptDate <= now;
         });
-      case "30days":
+      case "last30days":
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
         return appointments.filter(apt => {
           const aptDate = new Date(apt.start_at_utc);
-          return aptDate >= thirtyDaysAgo;
+          return aptDate >= thirtyDaysAgo && aptDate <= now;
+        });
+      case "next7days":
+        const sevenDaysFromNow = new Date(today);
+        sevenDaysFromNow.setDate(today.getDate() + 7);
+        return appointments.filter(apt => {
+          const aptDate = new Date(apt.start_at_utc);
+          return aptDate >= now && aptDate <= sevenDaysFromNow;
+        });
+      case "next30days":
+        const thirtyDaysFromNow = new Date(today);
+        thirtyDaysFromNow.setDate(today.getDate() + 30);
+        return appointments.filter(apt => {
+          const aptDate = new Date(apt.start_at_utc);
+          return aptDate >= now && aptDate <= thirtyDaysFromNow;
         });
       case "custom":
         if (!customDateRange.from) return appointments;
@@ -416,10 +425,11 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
             }
           }}>
             <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
-              <TabsTrigger value="all" className="text-xs md:text-sm flex-1 md:flex-none">All</TabsTrigger>
-              <TabsTrigger value="today" className="text-xs md:text-sm flex-1 md:flex-none">Today</TabsTrigger>
-              <TabsTrigger value="7days" className="text-xs md:text-sm flex-1 md:flex-none">7 Days</TabsTrigger>
-              <TabsTrigger value="30days" className="text-xs md:text-sm flex-1 md:flex-none">30 Days</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs md:text-sm flex-1 md:flex-none">All Time</TabsTrigger>
+              <TabsTrigger value="last7days" className="text-xs md:text-sm flex-1 md:flex-none">Last 7 Days</TabsTrigger>
+              <TabsTrigger value="last30days" className="text-xs md:text-sm flex-1 md:flex-none">Last 30 Days</TabsTrigger>
+              <TabsTrigger value="next7days" className="text-xs md:text-sm flex-1 md:flex-none">Next 7 Days</TabsTrigger>
+              <TabsTrigger value="next30days" className="text-xs md:text-sm flex-1 md:flex-none">Next 30 Days</TabsTrigger>
               <TabsTrigger value="custom" className="text-xs md:text-sm flex-1 md:flex-none">Custom</TabsTrigger>
             </TabsList>
           </Tabs>

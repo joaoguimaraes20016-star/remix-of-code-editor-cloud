@@ -110,14 +110,14 @@ export function DateRangeFilter({ onRangeChange }: DateRangeFilterProps) {
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-card">
-          <SelectItem value="last7days">📅 Last 7 Days</SelectItem>
-          <SelectItem value="last4weeks">📅 Last 4 Weeks</SelectItem>
-          <SelectItem value="last3months">📅 Last 3 Months</SelectItem>
-          <SelectItem value="last12months">📅 Last 12 Months</SelectItem>
-          <SelectItem value="next7days">⏭️ Next 7 Days</SelectItem>
-          <SelectItem value="next30days">⏭️ Next 30 Days</SelectItem>
-          <SelectItem value="alltime">🌐 All Time</SelectItem>
-          <SelectItem value="custom">🗓️ Custom Range</SelectItem>
+          <SelectItem value="last7days">Last 7 Days</SelectItem>
+          <SelectItem value="last4weeks">Last 4 Weeks</SelectItem>
+          <SelectItem value="last3months">Last 3 Months</SelectItem>
+          <SelectItem value="last12months">Last 12 Months</SelectItem>
+          <SelectItem value="next7days">Next 7 Days</SelectItem>
+          <SelectItem value="next30days">Next 30 Days</SelectItem>
+          <SelectItem value="alltime">All Time</SelectItem>
+          <SelectItem value="custom">Custom Range</SelectItem>
         </SelectContent>
       </Select>
 
