@@ -92,9 +92,10 @@ Deno.serve(async (req) => {
     const accessToken = team.calendly_access_token;
     const organizationUri = team.calendly_organization_uri;
 
-    // Fetch upcoming scheduled events from Calendly
-    const now = new Date().toISOString();
-    const calendlyEventsUrl = `https://api.calendly.com/scheduled_events?organization=${encodeURIComponent(organizationUri)}&status=active&min_start_time=${encodeURIComponent(now)}&count=100`;
+    // Fetch scheduled events from Calendly (past 12 months + future)
+    const now = new Date();
+    const twelveMonthsAgo = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000)).toISOString();
+    const calendlyEventsUrl = `https://api.calendly.com/scheduled_events?organization=${encodeURIComponent(organizationUri)}&status=active&min_start_time=${encodeURIComponent(twelveMonthsAgo)}&count=100`;
 
     console.log('Fetching scheduled events from Calendly...');
     const eventsResponse = await fetch(calendlyEventsUrl, {
@@ -113,10 +114,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    const eventsData = await eventsResponse.json();
-    const events: CalendlyEvent[] = eventsData.collection || [];
+    // Fetch all pages of events (pagination support)
+    let allEvents: CalendlyEvent[] = [];
+    let nextPageUrl: string | null = calendlyEventsUrl;
+
+    while (nextPageUrl) {
+      const pageResponse: Response = await fetch(nextPageUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!pageResponse.ok) {
+        console.error('Calendly API error on pagination');
+        break;
+      }
+
+      const pageData: any = await pageResponse.json();
+      const pageEvents: CalendlyEvent[] = pageData.collection || [];
+      allEvents = allEvents.concat(pageEvents);
+      
+      // Check for next page
+      nextPageUrl = pageData.pagination?.next_page || null;
+      
+      console.log(`Fetched ${pageEvents.length} events, total so far: ${allEvents.length}`);
+    }
     
-    console.log(`Found ${events.length} scheduled events`);
+    console.log(`Found ${allEvents.length} total scheduled events`);
 
     let importedCount = 0;
     let skippedCount = 0;
@@ -148,7 +173,7 @@ Deno.serve(async (req) => {
       .in('id', teamMembers?.map(m => m.user_id) || []);
 
     // Process each event
-    for (const event of events) {
+    for (const event of allEvents) {
       try {
         // Fetch invitees for this event
         const inviteesUrl = `${event.uri}/invitees`;
@@ -294,6 +319,27 @@ Deno.serve(async (req) => {
             }
           }
 
+          // Determine status based on event timing and Calendly data
+          let appointmentStatus: 'NEW' | 'CONFIRMED' | 'NO_SHOW' | 'CANCELLED' = 'NEW';
+
+          const eventStartTime = new Date(event.start_time);
+          const isPastEvent = eventStartTime < now;
+
+          // Check if event was cancelled in Calendly (invitee status is 'active' or 'canceled')
+          if (invitee.status !== 'active' || event.status !== 'active') {
+            appointmentStatus = 'CANCELLED';
+          } 
+          // For past events without cancellation, mark as NO_SHOW by default
+          else if (isPastEvent) {
+            appointmentStatus = 'NO_SHOW';
+          } 
+          // For future events, mark as CONFIRMED if invitee confirmed
+          else if (invitee.status === 'active') {
+            appointmentStatus = 'CONFIRMED';
+          }
+
+          console.log(`Event status for ${invitee.name} at ${event.start_time}: ${appointmentStatus} (past: ${isPastEvent})`);
+
           // Insert appointment with same data structure as webhook
           const { error: insertError } = await supabaseClient
             .from('appointments')
@@ -308,7 +354,7 @@ Deno.serve(async (req) => {
               setter_name: setterName,
               event_type_uri: event.event_type,
               event_type_name: eventTypeName,
-              status: 'NEW',
+              status: appointmentStatus,
             });
 
           if (insertError) {
@@ -331,7 +377,7 @@ Deno.serve(async (req) => {
         success: true, 
         imported: importedCount,
         skipped: skippedCount,
-        total: events.length
+        total: allEvents.length
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

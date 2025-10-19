@@ -174,6 +174,8 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
         .select('*')
         .eq('team_id', teamId)
         .is('setter_id', null)
+        .gte('start_at_utc', new Date().toISOString())
+        .in('status', ['NEW', 'CONFIRMED'])
         .order('start_at_utc', { ascending: false });
 
       if (error) throw error;
