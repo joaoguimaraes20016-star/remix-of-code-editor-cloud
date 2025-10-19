@@ -371,14 +371,6 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
     })
     .filter(apt => getFilteredByDate(appointments).includes(apt));
 
-  if (appointments.length === 0) {
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        No unassigned appointments available
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {selectedAppointments.size > 0 && (
