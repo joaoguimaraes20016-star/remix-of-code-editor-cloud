@@ -73,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Team Invites <invites@notifications.grwthengine.org>",
+            from: "GRWTH OP <invites@notifications.grwthengine.org>",
             to: [email],
             subject: `You've been invited to join ${teamName}`,
             html: `
@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <head>
                   <meta charset="utf-8">
                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Team Invitation - GRWTH Engine</title>
+                  <title>Team Invitation - GRWTH OP</title>
                 </head>
                 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
                   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
@@ -93,7 +93,7 @@ const handler = async (req: Request): Promise<Response> => {
                           <!-- Logo Header -->
                           <tr>
                             <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #000000; border-radius: 12px 12px 0 0;">
-                              <img src="https://grwthengine.com/logo.png" alt="GRWTH Engine Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
+                              <img src="https://grwthengine.com/logo.png" alt="GRWTH OP Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
                               <h1 style="margin: 0; color: #ffc107; font-size: 32px; font-weight: 700; text-shadow: 0 0 20px rgba(255, 193, 7, 0.3);">You're Invited!</h1>
                             </td>
                           </tr>
@@ -102,7 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
                           <tr>
                             <td style="padding: 20px 40px 40px 40px; background-color: #000000;">
                               <p style="margin: 0 0 20px 0; color: #e0e0e0; font-size: 17px; line-height: 26px;">
-                                You've been invited to join <strong style="color: #ffc107;">${teamName}</strong> on GRWTH Engine as a <strong style="color: #ffc107;">${role}</strong>.
+                                You've been invited to join <strong style="color: #ffc107;">${teamName}</strong> on GRWTH OP as a <strong style="color: #ffc107;">${role}</strong>.
                               </p>
                               <p style="margin: 0 0 30px 0; color: #b0b0b0; font-size: 16px; line-height: 24px;">
                                 Click the button below to accept your invitation and start tracking your sales performance:
@@ -142,10 +142,10 @@ const handler = async (req: Request): Promise<Response> => {
                           <tr>
                             <td style="padding: 30px 40px 40px 40px; border-top: 2px solid #ffc107; background-color: #000000; border-radius: 0 0 12px 12px;">
                               <p style="margin: 0 0 10px 0; color: #ffc107; font-size: 16px; line-height: 24px; text-align: center; font-weight: 600;">
-                                GRWTH Engine
+                                GRWTH OP
                               </p>
                               <p style="margin: 0; color: #606060; font-size: 12px; line-height: 18px; text-align: center;">
-                                © ${new Date().getFullYear()} GRWTH Engine. All rights reserved.
+                                © ${new Date().getFullYear()} GRWTH OP. All rights reserved.
                               </p>
                             </td>
                           </tr>

@@ -67,9 +67,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "GRWTH Engine <onboarding@resend.dev>",
+      from: "GRWTH OP <onboarding@resend.dev>",
       to: [email],
-      subject: "Reset Your GRWTH Engine Password",
+      subject: "Reset Your GRWTH OP Password",
       html: `
         <!DOCTYPE html>
         <html>
@@ -94,7 +94,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td style="padding: 0 40px 30px 40px;">
                         <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 24px;">
-                          We received a request to reset your password for your GRWTH Engine account.
+                          We received a request to reset your password for your GRWTH OP account.
                         </p>
                         <p style="margin: 0 0 30px 0; color: #4a4a4a; font-size: 16px; line-height: 24px;">
                           Click the button below to reset your password:
@@ -132,7 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td style="padding: 30px 40px 40px 40px; border-top: 1px solid #e5e5e5;">
                         <p style="margin: 0; color: #999999; font-size: 12px; line-height: 18px; text-align: center;">
-                          © ${new Date().getFullYear()} GRWTH Engine. All rights reserved.
+                          © ${new Date().getFullYear()} GRWTH OP. All rights reserved.
                         </p>
                       </td>
                     </tr>
