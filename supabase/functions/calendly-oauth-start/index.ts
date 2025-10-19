@@ -87,13 +87,16 @@ Deno.serve(async (req) => {
     // Generate state parameter (includes team_id for callback)
     const state = btoa(JSON.stringify({ teamId, userId: user.id }));
 
-    // Construct Calendly OAuth authorization URL with prompt to force account selection
+    // Construct Calendly OAuth authorization URL
+    // Force account selection by revoking any existing session first
     const authUrl = new URL('https://auth.calendly.com/oauth/authorize');
     authUrl.searchParams.set('client_id', clientId);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('state', state);
-    authUrl.searchParams.set('prompt', 'login'); // Force Calendly account selection
+    // Force fresh login - Calendly doesn't support prompt parameter, so we revoke the session
+    authUrl.searchParams.set('approval_prompt', 'force'); // Force consent screen
+    authUrl.searchParams.set('access_type', 'offline'); // Request refresh token
 
     console.log('OAuth URL generated successfully');
 

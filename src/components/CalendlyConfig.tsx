@@ -207,6 +207,18 @@ export function CalendlyConfig({
   const handleOAuthConnect = async () => {
     setConnecting(true);
     try {
+      // First, logout from Calendly to force account selection
+      const logoutWindow = window.open('https://calendly.com/logout', '_blank', 'width=1,height=1');
+      
+      // Wait for logout to complete
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Close the logout popup
+      if (logoutWindow && !logoutWindow.closed) {
+        logoutWindow.close();
+      }
+      
+      // Now get the OAuth URL
       const { data, error } = await supabase.functions.invoke("calendly-oauth-start", {
         body: { teamId },
       });
@@ -217,7 +229,7 @@ export function CalendlyConfig({
         throw new Error(data.error);
       }
 
-      // Redirect to Calendly OAuth page
+      // Redirect to Calendly OAuth page - user will now see login screen
       window.location.href = data.authUrl;
     } catch (error: any) {
       toast({
