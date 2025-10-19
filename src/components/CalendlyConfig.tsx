@@ -672,10 +672,11 @@ export function CalendlyConfig({
           <div className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
               <div className="flex items-center gap-3">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" fill="#006BFF"/>
-                  <path d="M12 7v5l3.5 3.5" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
+                <img 
+                  src="https://assets.calendly.com/assets/frontend/media/logo-square-cd364a3c33976d32792d.png" 
+                  alt="Calendly" 
+                  className="w-5 h-5"
+                />
                 <span className="text-sm font-medium">Connected to Calendly</span>
                 <CheckCircle2 className="w-4 h-4 text-green-600 ml-auto" />
               </div>
