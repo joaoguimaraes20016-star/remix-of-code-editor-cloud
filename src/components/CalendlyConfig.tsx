@@ -226,8 +226,30 @@ export function CalendlyConfig({
   const handleOAuthConnect = async () => {
     setConnecting(true);
     
+    // Open popup SYNCHRONOUSLY first to avoid blocker
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    const popup = window.open(
+      '',
+      'calendly-oauth',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+
+    if (!popup) {
+      toast({
+        title: "Popup Blocked",
+        description: "Please allow popups for this site and try again.",
+        variant: "destructive",
+      });
+      setConnecting(false);
+      return;
+    }
+
     try {
-      // Fetch OAuth URL FIRST
+      // Fetch OAuth URL
       const { data, error } = await supabase.functions.invoke("calendly-oauth-start", {
         body: { teamId },
       });
@@ -235,40 +257,19 @@ export function CalendlyConfig({
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      console.log('Opening Calendly at:', data.authUrl);
+      console.log('Redirecting to Calendly:', data.authUrl);
 
-      // Open popup with immediate meta refresh to Calendly
-      const width = 600;
-      const height = 700;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      
-      const htmlContent = `<!DOCTYPE html>
+      // Write HTML with immediate redirect to popup
+      popup.document.write(`<!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv="refresh" content="0;url=${data.authUrl}">
-<title>Redirecting to Calendly...</title>
 </head>
 <body>
-<p>Redirecting to Calendly...</p>
+<p>Connecting to Calendly...</p>
 </body>
-</html>`;
-      
-      const popup = window.open(
-        'data:text/html,' + encodeURIComponent(htmlContent),
-        'calendly-oauth',
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-      );
-
-      if (!popup) {
-        toast({
-          title: "Popup Blocked",
-          description: "Please allow popups for this site and try again.",
-          variant: "destructive",
-        });
-        setConnecting(false);
-        return;
-      }
+</html>`);
+      popup.document.close();
 
       // Monitor popup closure
       const checkClosed = setInterval(() => {
@@ -280,6 +281,9 @@ export function CalendlyConfig({
 
     } catch (error: any) {
       console.error('OAuth error:', error);
+      if (popup && !popup.closed) {
+        popup.close();
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to start OAuth flow",
