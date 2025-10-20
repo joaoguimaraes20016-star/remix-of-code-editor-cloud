@@ -47,9 +47,10 @@ interface AddSaleDialogProps {
     setterCommissionPct: number;
     closerCommissionPct: number;
   }) => void;
+  preselectedOfferOwner?: string | null;
 }
 
-export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
+export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialogProps) {
   const { teamId } = useParams();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -75,12 +76,18 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
   }, [open, teamId]);
 
   useEffect(() => {
-    // Auto-select if there's only one offer owner
+    // Auto-select if preselected or if there's only one offer owner
     const offerOwners = teamMembers.filter(m => m.role === 'offer_owner' || m.role === 'owner');
-    if (offerOwners.length === 1 && !offerOwnerId) {
+    
+    if (preselectedOfferOwner && !offerOwnerId) {
+      const preselected = offerOwners.find(o => o.full_name === preselectedOfferOwner);
+      if (preselected) {
+        setOfferOwnerId(preselected.user_id);
+      }
+    } else if (offerOwners.length === 1 && !offerOwnerId) {
       setOfferOwnerId(offerOwners[0].user_id);
     }
-  }, [teamMembers, offerOwnerId]);
+  }, [teamMembers, offerOwnerId, preselectedOfferOwner]);
 
   const loadTeamSettings = async () => {
     try {

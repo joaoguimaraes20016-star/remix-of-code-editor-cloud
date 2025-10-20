@@ -648,7 +648,7 @@ const Index = () => {
                 Settings
               </Button>
             )}
-            <AddSaleDialog onAddSale={handleAddSale} />
+            <AddSaleDialog onAddSale={handleAddSale} preselectedOfferOwner={userRole === 'offer_owner' ? currentUserName : undefined} />
           </div>
         </div>
 
@@ -785,6 +785,7 @@ const Index = () => {
                 sales={filteredSales} 
                 userRole={userRole}
                 currentUserName={currentUserName}
+                teamMembers={teamMembers}
                 onSaleDeleted={() => {
                   loadSales();
                   loadAppointments();

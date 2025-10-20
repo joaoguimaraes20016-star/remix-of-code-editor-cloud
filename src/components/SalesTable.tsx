@@ -22,6 +22,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface Sale {
   id: string;
@@ -41,13 +48,15 @@ interface SalesTableProps {
   userRole?: string | null;
   currentUserName?: string | null;
   onSaleDeleted?: () => void;
+  teamMembers?: Array<{ id: string; name: string }>;
 }
 
-export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted }: SalesTableProps) {
+export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, teamMembers = [] }: SalesTableProps) {
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editingSetter, setEditingSetter] = useState<string | null>(null);
 
   const canDelete = (sale: Sale) => {
     return userRole === 'admin' || userRole === 'owner' || sale.offerOwner === currentUserName;
@@ -98,6 +107,31 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted }: 
     }
   };
 
+  const handleSetterChange = async (saleId: string, newSetter: string) => {
+    try {
+      const { error } = await supabase
+        .from('sales')
+        .update({ setter: newSetter })
+        .eq('id', saleId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Setter updated',
+        description: 'The setter has been updated successfully',
+      });
+
+      setEditingSetter(null);
+      onSaleDeleted?.(); // Refresh data
+    } catch (error: any) {
+      toast({
+        title: 'Error updating setter',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getStatusBadge = (status: Sale['status']) => {
     const variants = {
       closed: 'default',
@@ -143,7 +177,32 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted }: 
               <TableRow key={sale.id}>
                 <TableCell className="font-medium">{sale.customerName}</TableCell>
                 <TableCell>{sale.offerOwner}</TableCell>
-                <TableCell>{sale.setter}</TableCell>
+                <TableCell>
+                  {userRole === 'admin' && editingSetter === sale.id ? (
+                    <Select
+                      value={sale.setter}
+                      onValueChange={(value) => handleSetterChange(sale.id, value)}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teamMembers.map((member) => (
+                          <SelectItem key={member.id} value={member.name}>
+                            {member.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div 
+                      onClick={() => userRole === 'admin' && setEditingSetter(sale.id)}
+                      className={userRole === 'admin' ? 'cursor-pointer hover:text-primary' : ''}
+                    >
+                      {sale.setter}
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>{sale.salesRep}</TableCell>
                 <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
                 <TableCell>${sale.revenue.toLocaleString()}</TableCell>
