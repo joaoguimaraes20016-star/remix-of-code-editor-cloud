@@ -389,25 +389,62 @@ const Index = () => {
     }
   };
 
-  // Get unique sales reps - combine team members, sales reps, closers, and setters
-  const allNames = new Set<string>();
+  // Get unique sales reps - use Set to avoid duplicates, prioritize team members
+  const allNamesMap = new Map<string, boolean>();
   
-  // Add all team members
-  teamMembers.forEach(member => allNames.add(member.name));
+  // First add all team members (these are the canonical names)
+  teamMembers.forEach(member => {
+    const nameLower = member.name.toLowerCase().trim();
+    if (!allNamesMap.has(nameLower)) {
+      allNamesMap.set(nameLower, true);
+    }
+  });
   
-  // Add sales reps from sales table
+  // Then add any names from sales/appointments that aren't already there
   sales.forEach(s => {
-    if (s.salesRep) allNames.add(s.salesRep);
-    if (s.setter) allNames.add(s.setter);
+    if (s.salesRep) {
+      const nameLower = s.salesRep.toLowerCase().trim();
+      if (!allNamesMap.has(nameLower)) allNamesMap.set(nameLower, true);
+    }
+    if (s.setter) {
+      const nameLower = s.setter.toLowerCase().trim();
+      if (!allNamesMap.has(nameLower)) allNamesMap.set(nameLower, true);
+    }
   });
   
-  // Add closers and setters from appointments
   appointments.forEach(apt => {
-    if (apt.closer_name) allNames.add(apt.closer_name);
-    if (apt.setter_name) allNames.add(apt.setter_name);
+    if (apt.closer_name) {
+      const nameLower = apt.closer_name.toLowerCase().trim();
+      if (!allNamesMap.has(nameLower)) allNamesMap.set(nameLower, true);
+    }
+    if (apt.setter_name) {
+      const nameLower = apt.setter_name.toLowerCase().trim();
+      if (!allNamesMap.has(nameLower)) allNamesMap.set(nameLower, true);
+    }
   });
   
-  const salesReps = ['all', ...Array.from(allNames).sort()];
+  // Get proper casing from team members or use the first occurrence
+  const uniqueNames = Array.from(allNamesMap.keys()).map(nameLower => {
+    const teamMember = teamMembers.find(m => m.name.toLowerCase().trim() === nameLower);
+    if (teamMember) return teamMember.name;
+    
+    // Find first occurrence in data
+    const fromSale = sales.find(s => 
+      s.salesRep?.toLowerCase().trim() === nameLower || 
+      s.setter?.toLowerCase().trim() === nameLower
+    );
+    if (fromSale) return fromSale.salesRep?.toLowerCase().trim() === nameLower ? fromSale.salesRep : fromSale.setter;
+    
+    const fromApt = appointments.find(a => 
+      a.closer_name?.toLowerCase().trim() === nameLower || 
+      a.setter_name?.toLowerCase().trim() === nameLower
+    );
+    if (fromApt) return fromApt.closer_name?.toLowerCase().trim() === nameLower ? fromApt.closer_name : fromApt.setter_name;
+    
+    return nameLower;
+  });
+  
+  const salesReps = ['all', ...uniqueNames.sort()];
 
   // Filter sales by selected rep and date range
   const filteredSales = sales.filter(s => {

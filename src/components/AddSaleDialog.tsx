@@ -54,7 +54,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
-  const [offerOwner, setOfferOwner] = useState("");
+  const [offerOwnerId, setOfferOwnerId] = useState("");
   const [productName, setProductName] = useState("");
   const [setterId, setSetterId] = useState("");
   const [salesRepId, setSalesRepId] = useState("");
@@ -125,6 +125,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
     
     const selectedSetter = teamMembers.find(m => m.user_id === setterId);
     const selectedCloser = teamMembers.find(m => m.user_id === salesRepId);
+    const selectedOfferOwner = teamMembers.find(m => m.user_id === offerOwnerId);
     
     onAddSale({
       customerName,
@@ -132,7 +133,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
       setter: selectedSetter?.full_name || '',
       salesRepId,
       salesRep: selectedCloser?.full_name || '',
-      offerOwner,
+      offerOwner: selectedOfferOwner?.full_name || '',
       productName,
       date,
       ccCollected: parseFloat(ccCollected) || 0,
@@ -148,7 +149,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
 
   const resetForm = () => {
     setCustomerName("");
-    setOfferOwner("");
+    setOfferOwnerId("");
     setProductName("");
     setSetterId("");
     setSalesRepId("");
@@ -189,13 +190,20 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
 
             <div className="grid gap-2">
               <Label htmlFor="offerOwner">Offer Owner</Label>
-              <Input
-                id="offerOwner"
-                value={offerOwner}
-                onChange={(e) => setOfferOwner(e.target.value)}
-                placeholder="Jane Smith"
-                required
-              />
+              <Select value={offerOwnerId} onValueChange={setOfferOwnerId} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select offer owner" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border z-50">
+                  {teamMembers
+                    .filter(m => m.role === 'offer_owner' || m.role === 'owner')
+                    .map(member => (
+                      <SelectItem key={member.user_id} value={member.user_id}>
+                        {member.full_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-2">
@@ -215,7 +223,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
                 <SelectTrigger>
                   <SelectValue placeholder="Select setter" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border-border z-50">
                   {teamMembers
                     .filter(m => m.role === 'setter' || m.role === 'admin' || m.role === 'owner')
                     .map(member => (
@@ -233,7 +241,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
                 <SelectTrigger>
                   <SelectValue placeholder="Select closer" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border-border z-50">
                   {teamMembers
                     .filter(m => m.role === 'closer' || m.role === 'admin' || m.role === 'owner')
                     .map(member => (
@@ -298,7 +306,7 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border-border z-50">
                   <SelectItem value="closed">Closed</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="no-show">No Show</SelectItem>
