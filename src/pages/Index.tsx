@@ -57,6 +57,7 @@ const Index = () => {
   });
   const [setterCommissionPct, setSetterCommissionPct] = useState(5);
   const [closerCommissionPct, setCloserCommissionPct] = useState(10);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     if (!user || !teamId) {
@@ -66,6 +67,7 @@ const Index = () => {
     loadUserProfile();
     loadTeamData();
     loadTeamSettings();
+    loadTeamMembers();
     loadSales();
     loadAppointments();
 
@@ -149,6 +151,33 @@ const Index = () => {
       }
     } catch (error: any) {
       console.error('Error loading commission settings:', error);
+    }
+  };
+
+  const loadTeamMembers = async () => {
+    try {
+      const { data: members, error } = await supabase
+        .from('team_members')
+        .select('user_id')
+        .eq('team_id', teamId);
+
+      if (error) throw error;
+
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        if (profiles) {
+          setTeamMembers(profiles.map(p => ({ id: p.id, name: p.full_name || 'Unknown' })));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading team members:', error);
     }
   };
 
@@ -360,8 +389,25 @@ const Index = () => {
     }
   };
 
-  // Get unique sales reps
-  const salesReps = ['all', ...new Set(sales.map(s => s.salesRep))];
+  // Get unique sales reps - combine team members, sales reps, closers, and setters
+  const allNames = new Set<string>();
+  
+  // Add all team members
+  teamMembers.forEach(member => allNames.add(member.name));
+  
+  // Add sales reps from sales table
+  sales.forEach(s => {
+    if (s.salesRep) allNames.add(s.salesRep);
+    if (s.setter) allNames.add(s.setter);
+  });
+  
+  // Add closers and setters from appointments
+  appointments.forEach(apt => {
+    if (apt.closer_name) allNames.add(apt.closer_name);
+    if (apt.setter_name) allNames.add(apt.setter_name);
+  });
+  
+  const salesReps = ['all', ...Array.from(allNames).sort()];
 
   // Filter sales by selected rep and date range
   const filteredSales = sales.filter(s => {
@@ -571,7 +617,7 @@ const Index = () => {
               <SelectTrigger className="w-full md:w-[200px] bg-card text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-card">
+              <SelectContent className="bg-popover border-border z-50">
                 {salesReps.map((rep) => (
                   <SelectItem key={rep} value={rep} className="text-sm">
                     {rep === 'all' ? 'All Sales Reps' : rep}
