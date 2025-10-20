@@ -648,7 +648,7 @@ const Index = () => {
                   <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
                   Settings
                 </Button>
-                <FixCommissionsButton teamId={teamId || ''} onFixed={loadSales} />
+                <FixCommissionsButton teamId={teamId || ''} onComplete={loadSales} />
               </>
             )}
             <AddSaleDialog onAddSale={handleAddSale} />

@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.complete-password-reset]
 verify_jwt = false
+
+[functions.cleanup-duplicates]
+verify_jwt = true

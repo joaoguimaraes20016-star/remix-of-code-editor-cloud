@@ -1,98 +1,44 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface FixCommissionsButtonProps {
   teamId: string;
-  onFixed?: () => void;
+  onComplete: () => void;
 }
 
-export function FixCommissionsButton({ teamId, onFixed }: FixCommissionsButtonProps) {
+export function FixCommissionsButton({ teamId, onComplete }: FixCommissionsButtonProps) {
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
-  const [fixing, setFixing] = useState(false);
 
-  const handleFix = async () => {
-    setFixing(true);
+  const handleCleanup = async () => {
+    setIsProcessing(true);
     try {
-      // Load commission settings first
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .select('setter_commission_percentage, closer_commission_percentage')
-        .eq('id', teamId)
-        .single();
-
-      if (teamError) throw teamError;
-
-      const setterPct = Number(teamData?.setter_commission_percentage) || 5;
-      const closerPct = Number(teamData?.closer_commission_percentage) || 10;
-
-      // Get all sales for this team
-      const { data: sales, error: fetchError } = await supabase
-        .from('sales')
-        .select('id, revenue, setter, commission, setter_commission')
-        .eq('team_id', teamId);
-
-      if (fetchError) throw fetchError;
-
-      let fixed = 0;
-      let errors = 0;
-
-      // Recalculate commissions for each sale using configured percentages
-      for (const sale of sales || []) {
-        const revenue = Number(sale.revenue) || 0;
-        const correctCloserCommission = revenue * (closerPct / 100);
-        const correctSetterCommission = sale.setter && sale.setter !== 'No Setter' ? revenue * (setterPct / 100) : 0;
-
-        // Check if commissions need fixing (allowing small floating point differences)
-        const needsFix = 
-          Math.abs((sale.commission || 0) - correctCloserCommission) > 0.01 ||
-          Math.abs((sale.setter_commission || 0) - correctSetterCommission) > 0.01;
-
-        if (needsFix) {
-          const { error: updateError } = await supabase
-            .from('sales')
-            .update({
-              commission: correctCloserCommission,
-              setter_commission: correctSetterCommission,
-            })
-            .eq('id', sale.id);
-
-          if (updateError) {
-            console.error(`Error updating sale ${sale.id}:`, updateError);
-            errors++;
-          } else {
-            fixed++;
-          }
-        }
-      }
-
-      toast({
-        title: 'Commission Fix Complete',
-        description: `Fixed ${fixed} sales${errors > 0 ? `, ${errors} errors` : ''}`,
+      const { data, error } = await supabase.functions.invoke('cleanup-duplicates', {
+        body: { teamId }
       });
 
-      onFixed?.();
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Cleanup Complete",
+          description: `Removed ${data.deletedCount} duplicate sales. ${data.remainingCount} unique sales remaining.`,
+        });
+        onComplete();
+      }
     } catch (error: any) {
+      console.error('Cleanup error:', error);
       toast({
-        title: 'Error fixing commissions',
-        description: error.message,
-        variant: 'destructive',
+        title: "Cleanup Failed",
+        description: error.message || "Error cleaning up duplicates",
+        variant: "destructive",
       });
     } finally {
-      setFixing(false);
+      setIsProcessing(false);
     }
   };
 
@@ -100,22 +46,21 @@ export function FixCommissionsButton({ teamId, onFixed }: FixCommissionsButtonPr
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Recalculate Commissions
+          <Trash2 className="mr-2 h-4 w-4" />
+          Remove Duplicates
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Recalculate All Commissions</AlertDialogTitle>
+          <AlertDialogTitle>Remove Duplicate Sales</AlertDialogTitle>
           <AlertDialogDescription>
-            This will recalculate all commission values based on the current commission rates configured in your team settings. 
-            This fixes any sales that may have incorrect commission values.
+            This will remove duplicate sales records (same customer, date, and sales rep), keeping only the first occurrence of each sale.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={fixing}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleFix} disabled={fixing}>
-            {fixing ? 'Fixing...' : 'Fix Commissions'}
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleCleanup} disabled={isProcessing}>
+            {isProcessing ? "Cleaning..." : "Remove Duplicates"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
