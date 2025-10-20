@@ -115,9 +115,14 @@ Deno.serve(async (req) => {
           console.log('Number of columns:', columns.length);
         }
 
-        const customerName = customerIdx >= 0 ? columns[customerIdx] : '';
-        const rawSetter = setterIdx >= 0 ? columns[setterIdx] : '';
-        const rawCloser = closerIdx >= 0 ? columns[closerIdx] : '';
+        const customerName = customerIdx >= 0 ? columns[customerIdx]?.trim() : '';
+        const rawSetter = setterIdx >= 0 ? columns[setterIdx]?.trim() : '';
+        const rawCloser = closerIdx >= 0 ? columns[closerIdx]?.trim() : '';
+        
+        // Skip empty rows entirely
+        if (!customerName && !rawCloser && !rawSetter) {
+          continue;
+        }
         
         // Match names to team members (case-insensitive partial match)
         const findTeamMember = (name: string) => {
