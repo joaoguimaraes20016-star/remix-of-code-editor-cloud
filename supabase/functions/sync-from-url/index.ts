@@ -190,19 +190,13 @@ Deno.serve(async (req) => {
         }
 
         const revenue = revenueIdx >= 0 ? parseFloat(columns[revenueIdx]?.replace(/[^0-9.-]/g, '')) || 0 : 0;
-        const csvSetterCommission = setterCommissionIdx >= 0 ? parseFloat(columns[setterCommissionIdx]?.replace(/[^0-9.-]/g, '')) || 0 : 0;
-        const csvCloserCommission = closerCommissionIdx >= 0 ? parseFloat(columns[closerCommissionIdx]?.replace(/[^0-9.-]/g, '')) || 0 : 0;
         const ccCollected = ccCollectedIdx >= 0 ? parseFloat(columns[ccCollectedIdx]?.replace(/[^0-9.-]/g, '')) || 0 : 0;
         
-        // Calculate commissions based on revenue if not provided in CSV
+        // ALWAYS calculate commissions based on team settings, not CSV
         // Use the actual revenue amount (revenue or ccCollected, whichever is greater)
         const baseAmount = Math.max(revenue, ccCollected);
-        const setterCommission = csvSetterCommission > 0 
-          ? csvSetterCommission 
-          : (setter ? baseAmount * (setterCommissionPct / 100) : 0);
-        const closerCommission = csvCloserCommission > 0 
-          ? csvCloserCommission 
-          : baseAmount * (closerCommissionPct / 100);
+        const setterCommission = setter ? baseAmount * (setterCommissionPct / 100) : 0;
+        const closerCommission = baseAmount * (closerCommissionPct / 100);
         
         const rawStatus = statusIdx >= 0 ? columns[statusIdx]?.toLowerCase().trim() : 'closed';
         // Map CSV status values to database allowed values: closed, pending, no-show

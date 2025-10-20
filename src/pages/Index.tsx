@@ -643,13 +643,10 @@ const Index = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {isOwner && (
-              <>
-                <Button variant="outline" onClick={() => navigate(`/team/${teamId}/settings`)} className="text-sm md:text-base w-full sm:w-auto">
-                  <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-                  Settings
-                </Button>
-                <FixCommissionsButton teamId={teamId || ''} onComplete={loadSales} />
-              </>
+              <Button variant="outline" onClick={() => navigate(`/team/${teamId}/settings`)} className="text-sm md:text-base w-full sm:w-auto">
+                <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+                Settings
+              </Button>
             )}
             <AddSaleDialog onAddSale={handleAddSale} />
           </div>
@@ -773,6 +770,7 @@ const Index = () => {
                   {selectedRep === 'all' ? 'All Sales' : `${selectedRep}'s Sales`}
                 </h2>
                 <div className="flex gap-2">
+                  {isOwner && <FixCommissionsButton teamId={teamId || ''} onComplete={loadSales} />}
                   <ImportSpreadsheet teamId={teamId!} onImport={() => {
                     loadSales();
                     loadAppointments();
