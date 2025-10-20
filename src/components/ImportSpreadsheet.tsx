@@ -148,62 +148,74 @@ export function ImportSpreadsheet({ teamId, onImport }: ImportSpreadsheetProps) 
             continue;
           }
 
-          // Insert into sales table
-          const { data: saleData, error: saleError } = await supabase
-            .from('sales')
-            .insert({
-              team_id: teamId,
-              customer_name: customerName,
-              offer_owner: offerOwner,
-              setter: setter || null,
-              sales_rep: closer,
-              date: date,
-              revenue: revenue,
-              setter_commission: setterCommission,
-              commission: closerCommission,
-              status: status,
-            })
-            .select()
-            .single();
-
-          if (saleError) {
-            console.error('Sale insert error:', saleError.message, 'for customer:', customerName, 'date:', date);
-            errorCount++;
-            continue;
-          }
-
-          // Create appointment record if we have email
-          if (email && saleData) {
-            const { data: teamMembers } = await supabase
-              .from('team_members')
-              .select('user_id, profiles(full_name)')
-              .eq('team_id', teamId);
-
-            const closerMember = teamMembers?.find(
-              tm => (tm.profiles as any)?.full_name?.toLowerCase() === closer.toLowerCase()
-            );
-
-            const { error: appointmentError } = await supabase
-              .from('appointments')
-              .insert([{
+          // Insert into sales table with detailed error catching
+          try {
+            const { data: saleData, error: saleError } = await supabase
+              .from('sales')
+              .insert({
                 team_id: teamId,
-                lead_name: customerName,
-                lead_email: email,
-                start_at_utc: new Date(date).toISOString(),
-                event_type_name: 'Imported',
-                closer_id: closerMember?.user_id || null,
-                closer_name: closer,
-                status: 'CLOSED' as const,
+                customer_name: customerName,
+                offer_owner: offerOwner,
+                setter: setter || null,
+                sales_rep: closer,
+                date: date,
                 revenue: revenue,
-                mrr_amount: mrr > 0 ? mrr : null,
-                mrr_months: mrrMonths > 0 ? mrrMonths : null,
-              }]);
+                setter_commission: setterCommission,
+                commission: closerCommission,
+                status: status,
+              })
+              .select()
+              .single();
 
-            if (appointmentError) console.error('Appointment insert error:', appointmentError);
-          }
+            if (saleError) {
+              console.error('Sale insert error:', saleError.message);
+              console.error('Data that failed:', { customerName, date, closer, setter, offerOwner, revenue });
+              toast({
+                title: "Row Import Failed",
+                description: `Error for ${customerName}: ${saleError.message}. Date value: "${date}"`,
+                variant: "destructive",
+              });
+              errorCount++;
+              continue;
+            }
+            
+            if (!saleData) {
+              errorCount++;
+              continue;
+            }
 
-          // Create MRR commission records if MRR data exists
-          if (mrr > 0 && mrrMonths > 0 && saleData) {
+            // Create appointment record if we have email
+            if (email && saleData) {
+              const { data: teamMembers } = await supabase
+                .from('team_members')
+                .select('user_id, profiles(full_name)')
+                .eq('team_id', teamId);
+
+              const closerMember = teamMembers?.find(
+                tm => (tm.profiles as any)?.full_name?.toLowerCase() === closer.toLowerCase()
+              );
+
+              const { error: appointmentError } = await supabase
+                .from('appointments')
+                .insert([{
+                  team_id: teamId,
+                  lead_name: customerName,
+                  lead_email: email,
+                  start_at_utc: new Date(date).toISOString(),
+                  event_type_name: 'Imported',
+                  closer_id: closerMember?.user_id || null,
+                  closer_name: closer,
+                  status: 'CLOSED' as const,
+                  revenue: revenue,
+                  mrr_amount: mrr > 0 ? mrr : null,
+                  mrr_months: mrrMonths > 0 ? mrrMonths : null,
+                }]);
+
+              if (appointmentError) console.error('Appointment insert error:', appointmentError);
+            }
+
+            // Create MRR commission records if MRR data exists
+            if (mrr > 0 && mrrMonths > 0 && saleData) {
             const { startOfMonth, addMonths, format } = await import('date-fns');
             const mrrCommissions = [];
             
@@ -253,6 +265,16 @@ export function ImportSpreadsheet({ teamId, onImport }: ImportSpreadsheetProps) 
           }
 
           successCount++;
+          } catch (insertError: any) {
+            console.error('Database insert error:', insertError);
+            console.error('Failed data:', { customerName, date, closer, setter });
+            toast({
+              title: "Row Failed",
+              description: `${customerName}: ${insertError.message || 'Database error'}`,
+              variant: "destructive",
+            });
+            errorCount++;
+          }
         } catch (rowError: any) {
           console.error('Error processing row:', rowError);
           errorCount++;
