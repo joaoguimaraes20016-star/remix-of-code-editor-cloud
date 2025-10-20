@@ -688,6 +688,17 @@ export function CloserView({ teamId }: CloserViewProps) {
                       <p className="text-xs text-muted-foreground line-clamp-2">{apt.setter_notes}</p>
                     )}
                   </CardContent>
+                  
+                  <CardFooter className="p-3 pt-0">
+                    <Button
+                      size="sm"
+                      onClick={() => openCloseDialog(apt)}
+                      className="w-full h-10 text-sm"
+                    >
+                      <DollarSign className="h-3.5 w-3.5 mr-1.5" />
+                      Close Deal
+                    </Button>
+                  </CardFooter>
                 </Card>
               ))}
             </div>
@@ -704,6 +715,7 @@ export function CloserView({ teamId }: CloserViewProps) {
                     <TableHead>Setter</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Setter Notes</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -749,6 +761,16 @@ export function CloserView({ teamId }: CloserViewProps) {
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          onClick={() => openCloseDialog(apt)}
+                          className="flex items-center gap-1"
+                        >
+                          <DollarSign className="h-3 w-3" />
+                          Close Deal
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
