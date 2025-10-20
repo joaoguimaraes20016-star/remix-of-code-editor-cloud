@@ -245,10 +245,22 @@ export function CloserView({ teamId }: CloserViewProps) {
       
       const isOfferOwner = teamMemberData?.role === 'offer_owner';
       
+      // Check if setter is offer owner
+      let isSetterOfferOwner = false;
+      if (selectedAppointment.setter_id) {
+        const { data: setterData } = await supabase
+          .from('team_members')
+          .select('role')
+          .eq('user_id', selectedAppointment.setter_id)
+          .eq('team_id', teamId)
+          .single();
+        isSetterOfferOwner = setterData?.role === 'offer_owner';
+      }
+      
       // Calculate commissions on CC using configured percentages
       // Offer owners don't get commissions on their own deals
       const closerCommission = isOfferOwner ? 0 : cc * (closerCommissionPct / 100);
-      const setterCommission = selectedAppointment.setter_id ? cc * (setterCommissionPct / 100) : 0;
+      const setterCommission = (selectedAppointment.setter_id && !isSetterOfferOwner) ? cc * (setterCommissionPct / 100) : 0;
       
       console.log('Calculated commissions - Closer:', closerCommission, 'Setter:', setterCommission, 'Is offer owner:', isOfferOwner);
 
@@ -317,7 +329,7 @@ export function CloserView({ teamId }: CloserViewProps) {
             });
           }
 
-          // Setter MRR commission if there's a setter
+          // Setter MRR commission if there's a setter (track MRR even for offer owners)
           if (selectedAppointment.setter_id && selectedAppointment.setter_name) {
             mrrCommissions.push({
               team_id: teamId,

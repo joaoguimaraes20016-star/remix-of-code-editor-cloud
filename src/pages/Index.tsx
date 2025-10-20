@@ -269,10 +269,12 @@ const Index = () => {
       
       // Check if closer is the offer owner - if so, no closer commission
       const isCloserOfferOwner = newSale.salesRep === newSale.offerOwner;
+      // Check if setter is the offer owner - if so, no setter commission
+      const isSetterOfferOwner = newSale.setter === newSale.offerOwner;
       
       // Calculate commissions on CC using configured percentages
       const closerCommission = isCloserOfferOwner ? 0 : newSale.ccCollected * (newSale.closerCommissionPct / 100);
-      const setterCommission = newSale.setterId ? newSale.ccCollected * (newSale.setterCommissionPct / 100) : 0;
+      const setterCommission = (newSale.setterId && !isSetterOfferOwner) ? newSale.ccCollected * (newSale.setterCommissionPct / 100) : 0;
       
       console.log('Calculated commissions - Closer:', closerCommission, 'Setter:', setterCommission, 'Is offer owner:', isCloserOfferOwner);
 
@@ -322,7 +324,7 @@ const Index = () => {
             });
           }
 
-          // Setter MRR commission if there's a setter
+          // Setter MRR commission if there's a setter (track MRR even for offer owners)
           if (newSale.setterId) {
             mrrCommissions.push({
               team_id: teamId,
