@@ -67,7 +67,8 @@ export function ImportSpreadsheet({ teamId, onImport }: ImportSpreadsheetProps) 
 
       for (const line of dataLines) {
         try {
-          const columns = line.split(',').map(s => s.trim());
+          // Handle CSV parsing with proper quote handling
+          const columns = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g)?.map(s => s.trim().replace(/^"|"$/g, '')) || [];
           
           const customerName = customerIdx >= 0 ? columns[customerIdx] : '';
           const setter = setterIdx >= 0 ? columns[setterIdx] : '';
@@ -80,24 +81,30 @@ export function ImportSpreadsheet({ teamId, onImport }: ImportSpreadsheetProps) 
 
           const offerOwner = offerOwnerIdx >= 0 ? columns[offerOwnerIdx] : '';
           
-          // Validate date - skip row if date is invalid text like "Deposit"
+          // Validate and parse date with robust error handling
           let date = new Date().toISOString().split('T')[0];
           if (dateIdx >= 0 && columns[dateIdx]) {
             const dateValue = columns[dateIdx].trim();
-            // Skip this row if date column contains only letters (like "Deposit")
-            if (/^[a-zA-Z]+$/.test(dateValue)) {
-              console.log('Skipping row with invalid date:', dateValue);
+            
+            // Skip row if date is clearly invalid (only letters, empty, or placeholder text)
+            if (!dateValue || /^[a-zA-Z\s]+$/.test(dateValue) || dateValue.toLowerCase() === 'deposit') {
+              console.log('Skipping row - invalid date value:', dateValue, 'for customer:', customerName);
               errorCount++;
               continue;
             }
-            // Try to parse date if it contains numbers
-            if (dateValue) {
-              const parsedDate = new Date(dateValue);
-              if (!isNaN(parsedDate.getTime())) {
-                date = parsedDate.toISOString().split('T')[0];
-              }
+            
+            // Try to parse date
+            const parsedDate = new Date(dateValue);
+            if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 1900) {
+              date = parsedDate.toISOString().split('T')[0];
+            } else {
+              console.log('Skipping row - unparseable date:', dateValue);
+              errorCount++;
+              continue;
             }
           }
+          
+          console.log('Processing row:', { customerName, closer, date });
           
           const revenue = revenueIdx >= 0 ? parseFloat(columns[revenueIdx]) || 0 : 0;
           const setterCommission = setterCommissionIdx >= 0 ? parseFloat(columns[setterCommissionIdx]) || 0 : 0;
