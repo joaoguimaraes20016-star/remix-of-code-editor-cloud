@@ -389,45 +389,67 @@ const Index = () => {
     }
   };
 
-  // Get unique sales reps - use Map to remove exact duplicates only (case-insensitive)
+  // Get unique sales reps - use Map to deduplicate, match partial names to full names
   const allNamesMap = new Map<string, string>();
   
-  // Add all team members (use lowercase as key, preserve original casing as value)
+  // First, add all team members with their full names (canonical source)
   teamMembers.forEach(member => {
     const nameLower = member.name.toLowerCase();
-    if (!allNamesMap.has(nameLower)) {
-      allNamesMap.set(nameLower, member.name);
-    }
+    allNamesMap.set(nameLower, member.name);
   });
   
-  // Add names from sales
+  // Helper function to find best match for a name
+  const findBestMatch = (name: string): string => {
+    const nameLower = name.toLowerCase();
+    
+    // Check for exact match first
+    if (allNamesMap.has(nameLower)) {
+      return allNamesMap.get(nameLower)!;
+    }
+    
+    // Check if this name is a partial match (first name only) of a team member
+    for (const [fullNameLower, fullName] of allNamesMap.entries()) {
+      const firstName = fullNameLower.split(' ')[0];
+      if (firstName === nameLower || fullNameLower.includes(nameLower)) {
+        return fullName; // Return the full name from team members
+      }
+    }
+    
+    return name; // Return original if no match found
+  };
+  
+  // Add names from sales, matching to full names where possible
   sales.forEach(s => {
     if (s.salesRep) {
-      const nameLower = s.salesRep.toLowerCase();
+      const bestMatch = findBestMatch(s.salesRep);
+      const nameLower = bestMatch.toLowerCase();
       if (!allNamesMap.has(nameLower)) {
-        allNamesMap.set(nameLower, s.salesRep);
+        allNamesMap.set(nameLower, bestMatch);
       }
     }
     if (s.setter) {
-      const nameLower = s.setter.toLowerCase();
+      const bestMatch = findBestMatch(s.setter);
+      const nameLower = bestMatch.toLowerCase();
       if (!allNamesMap.has(nameLower)) {
-        allNamesMap.set(nameLower, s.setter);
+        allNamesMap.set(nameLower, bestMatch);
       }
     }
   });
   
-  // Add names from appointments
+  // Add names from appointments, matching to full names where possible
   appointments.forEach(apt => {
     if (apt.closer_name) {
-      const nameLower = apt.closer_name.toLowerCase();
+      const bestMatch = findBestMatch(apt.closer_name);
+      const nameLower = bestMatch.toLowerCase();
       if (!allNamesMap.has(nameLower)) {
-        allNamesMap.set(nameLower, apt.closer_name);
+        allNamesMap.set(nameLower, bestMatch);
       }
     }
     if (apt.setter_name) {
-      const nameLower = apt.setter_name.toLowerCase();
+      const bestMatch = findBestMatch(apt.setter_name);
+      const nameLower = bestMatch.toLowerCase();
       if (!allNamesMap.has(nameLower)) {
-        allNamesMap.set(nameLower, apt.setter_name);
+        allNamesMap.set(nameLower, bestMatch);
       }
     }
   });
