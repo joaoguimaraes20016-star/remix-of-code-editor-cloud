@@ -95,11 +95,19 @@ export function SyncFromUrl({ teamId, onSync }: SyncFromUrlProps) {
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv"
+              placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
             />
-            <p className="text-xs text-muted-foreground">
-              For Google Sheets: File → Share → Publish to web → Select CSV
-            </p>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p className="font-semibold">For Google Sheets:</p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li>File → Share → Publish to web</li>
+                <li>Select "Comma-separated values (.csv)"</li>
+                <li>Click Publish and copy the URL</li>
+              </ol>
+              <p className="text-amber-600 dark:text-amber-400 mt-2">
+                ⚠️ Don't use the edit link - it won't work!
+              </p>
+            </div>
           </div>
 
           <div className="bg-secondary/50 p-4 rounded-lg">
