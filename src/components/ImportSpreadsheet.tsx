@@ -134,6 +134,16 @@ export function ImportSpreadsheet({ teamId, onImport }: ImportSpreadsheetProps) 
           const mrrMonths = mrrMonthsIdx >= 0 ? parseInt(columns[mrrMonthsIdx]) || 0 : 0;
           const email = emailIdx >= 0 ? columns[emailIdx] : '';
 
+          // Absolute final check before insert - log everything
+          console.log('About to insert with date:', date, 'Customer:', customerName);
+          
+          // Verify date format one more time
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            console.error('Date format invalid, skipping:', date);
+            errorCount++;
+            continue;
+          }
+
           // Insert into sales table
           const { data: saleData, error: saleError } = await supabase
             .from('sales')
@@ -152,7 +162,11 @@ export function ImportSpreadsheet({ teamId, onImport }: ImportSpreadsheetProps) 
             .select()
             .single();
 
-          if (saleError) throw saleError;
+          if (saleError) {
+            console.error('Sale insert error:', saleError.message, 'for customer:', customerName, 'date:', date);
+            errorCount++;
+            continue;
+          }
 
           // Create appointment record if we have email
           if (email && saleData) {
