@@ -1,0 +1,197 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { url, teamId } = await req.json();
+
+    if (!url || !teamId) {
+      throw new Error('URL and teamId are required');
+    }
+
+    console.log('Fetching CSV from URL:', url);
+
+    // Fetch the CSV file
+    const csvResponse = await fetch(url);
+    if (!csvResponse.ok) {
+      throw new Error(`Failed to fetch CSV: ${csvResponse.statusText}`);
+    }
+
+    const csvText = await csvResponse.text();
+    const lines = csvText.split('\n').filter(line => line.trim());
+
+    if (lines.length < 2) {
+      throw new Error('CSV file is empty or has no data rows');
+    }
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Parse header and data
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    const dataLines = lines.slice(1);
+
+    // Find column indices
+    const getColumnIndex = (possibleNames: string[]) => {
+      return possibleNames
+        .map(name => headers.indexOf(name))
+        .find(idx => idx !== -1) ?? -1;
+    };
+
+    const customerIdx = getColumnIndex(['customer name', 'customer', 'prospect name', 'prospect']);
+    const offerOwnerIdx = getColumnIndex(['offer owner', 'owner']);
+    const setterIdx = getColumnIndex(['setter', 'setter name']);
+    const closerIdx = getColumnIndex(['closer', 'closer name', 'sales rep', 'salesrep']);
+    const dateIdx = getColumnIndex(['date', 'close date', 'closed date']);
+    const revenueIdx = getColumnIndex(['revenue', 'amount', 'deal value']);
+    const setterCommissionIdx = getColumnIndex(['setter commission', 'setter comm']);
+    const closerCommissionIdx = getColumnIndex(['closer commission', 'closer comm', 'commission']);
+    const statusIdx = getColumnIndex(['status']);
+    const mrrIdx = getColumnIndex(['mrr', 'mrr amount', 'monthly recurring']);
+    const mrrMonthsIdx = getColumnIndex(['mrr months', 'months', 'duration']);
+    const emailIdx = getColumnIndex(['email', 'prospect email', 'customer email']);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const line of dataLines) {
+      try {
+        // Parse CSV line properly handling quotes
+        const columns = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            columns.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        columns.push(current.trim());
+
+        const customerName = customerIdx >= 0 ? columns[customerIdx] : '';
+        const setter = setterIdx >= 0 ? columns[setterIdx] : '';
+        const closer = closerIdx >= 0 ? columns[closerIdx] : '';
+
+        if (!customerName || !closer) {
+          errorCount++;
+          continue;
+        }
+
+        const offerOwner = offerOwnerIdx >= 0 ? columns[offerOwnerIdx] : '';
+        
+        // Parse date - skip row if invalid
+        const rawDateValue = dateIdx >= 0 ? columns[dateIdx]?.trim() : '';
+        if (rawDateValue && /^[a-zA-Z\s]+$/.test(rawDateValue)) {
+          console.log('Skipping row with text date:', rawDateValue);
+          errorCount++;
+          continue;
+        }
+
+        let date = new Date().toISOString().split('T')[0];
+        if (rawDateValue) {
+          const parsedDate = new Date(rawDateValue);
+          if (!isNaN(parsedDate.getTime())) {
+            date = parsedDate.toISOString().split('T')[0];
+          }
+        }
+
+        const revenue = revenueIdx >= 0 ? parseFloat(columns[revenueIdx]) || 0 : 0;
+        const setterCommission = setterCommissionIdx >= 0 ? parseFloat(columns[setterCommissionIdx]) || 0 : 0;
+        const closerCommission = closerCommissionIdx >= 0 ? parseFloat(columns[closerCommissionIdx]) || 0 : 0;
+        const status = statusIdx >= 0 ? columns[statusIdx] : 'closed';
+        const mrr = mrrIdx >= 0 ? parseFloat(columns[mrrIdx]) || 0 : 0;
+        const mrrMonths = mrrMonthsIdx >= 0 ? parseInt(columns[mrrMonthsIdx]) || 0 : 0;
+        const email = emailIdx >= 0 ? columns[emailIdx] : '';
+
+        // Insert sale
+        const { data: saleData, error: saleError } = await supabase
+          .from('sales')
+          .insert({
+            team_id: teamId,
+            customer_name: customerName,
+            offer_owner: offerOwner,
+            setter: setter || null,
+            sales_rep: closer,
+            date: date,
+            revenue: revenue,
+            setter_commission: setterCommission,
+            commission: closerCommission,
+            status: status,
+          })
+          .select()
+          .single();
+
+        if (saleError) {
+          console.error('Sale insert error:', saleError);
+          errorCount++;
+          continue;
+        }
+
+        // Create appointment if email exists
+        if (email && saleData) {
+          const { data: teamMembers } = await supabase
+            .from('team_members')
+            .select('user_id, profiles(full_name)')
+            .eq('team_id', teamId);
+
+          const closerMember = teamMembers?.find(
+            (tm: any) => tm.profiles?.full_name?.toLowerCase() === closer.toLowerCase()
+          );
+
+          await supabase.from('appointments').insert([{
+            team_id: teamId,
+            lead_name: customerName,
+            lead_email: email,
+            start_at_utc: new Date(date).toISOString(),
+            event_type_name: 'Imported',
+            closer_id: closerMember?.user_id || null,
+            closer_name: closer,
+            status: 'CLOSED',
+            revenue: revenue,
+            mrr_amount: mrr > 0 ? mrr : null,
+            mrr_months: mrrMonths > 0 ? mrrMonths : null,
+          }]);
+        }
+
+        successCount++;
+      } catch (rowError) {
+        console.error('Error processing row:', rowError);
+        errorCount++;
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        successCount,
+        errorCount,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Sync error:', error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    );
+  }
+});

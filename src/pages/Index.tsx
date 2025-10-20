@@ -10,6 +10,7 @@ import { RevenueChart } from "@/components/RevenueChart";
 import { CommissionBreakdown } from "@/components/CommissionBreakdown";
 import { Leaderboard } from "@/components/Leaderboard";
 import { ImportSpreadsheet } from "@/components/ImportSpreadsheet";
+import { SyncFromUrl } from "@/components/SyncFromUrl";
 import { DateRangeFilter, DateRangePreset } from "@/components/DateRangeFilter";
 import { NewAppointments } from "@/components/NewAppointments";
 import { AllNewAppointments } from "@/components/AllNewAppointments";
@@ -771,10 +772,16 @@ const Index = () => {
                 <h2 className="text-2xl font-semibold">
                   {selectedRep === 'all' ? 'All Sales' : `${selectedRep}'s Sales`}
                 </h2>
-                <ImportSpreadsheet teamId={teamId!} onImport={() => {
-                  loadSales();
-                  loadAppointments();
-                }} />
+                <div className="flex gap-2">
+                  <ImportSpreadsheet teamId={teamId!} onImport={() => {
+                    loadSales();
+                    loadAppointments();
+                  }} />
+                  <SyncFromUrl teamId={teamId!} onSync={() => {
+                    loadSales();
+                    loadAppointments();
+                  }} />
+                </div>
               </div>
               <SalesTable 
                 sales={filteredSales} 
