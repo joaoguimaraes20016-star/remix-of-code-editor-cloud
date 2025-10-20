@@ -5,7 +5,18 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Percent } from "lucide-react";
+import { Percent, RefreshCcw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface CommissionSettingsProps {
   teamId: string;
@@ -15,6 +26,7 @@ export function CommissionSettings({ teamId }: CommissionSettingsProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
   const [setterPercentage, setSetterPercentage] = useState("5");
   const [closerPercentage, setCloserPercentage] = useState("10");
 
@@ -92,6 +104,61 @@ export function CommissionSettings({ teamId }: CommissionSettingsProps) {
     }
   };
 
+  const handleRecalculate = async () => {
+    setRecalculating(true);
+    try {
+      // Get current commission percentages
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .select('setter_commission_percentage, closer_commission_percentage')
+        .eq('id', teamId)
+        .single();
+
+      if (teamError) throw teamError;
+
+      const setterPct = Number(teamData.setter_commission_percentage) || 5;
+      const closerPct = Number(teamData.closer_commission_percentage) || 10;
+
+      // Get all sales for this team
+      const { data: sales, error: salesError } = await supabase
+        .from('sales')
+        .select('*')
+        .eq('team_id', teamId);
+
+      if (salesError) throw salesError;
+
+      // Recalculate commissions for each sale
+      const updates = sales.map((sale: any) => {
+        const revenue = Number(sale.revenue) || 0;
+        const setterCommission = sale.setter ? revenue * (setterPct / 100) : 0;
+        const closerCommission = revenue * (closerPct / 100);
+
+        return supabase
+          .from('sales')
+          .update({
+            setter_commission: setterCommission,
+            commission: closerCommission,
+          })
+          .eq('id', sale.id);
+      });
+
+      await Promise.all(updates);
+
+      toast({
+        title: 'Commissions recalculated',
+        description: `Updated ${sales.length} sales based on current commission rates`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error recalculating commissions',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   if (loading) {
     return <div>Loading commission settings...</div>;
   }
@@ -144,10 +211,33 @@ export function CommissionSettings({ teamId }: CommissionSettingsProps) {
           </div>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-4 flex gap-2">
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Commission Rates'}
           </Button>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={recalculating}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                {recalculating ? 'Recalculating...' : 'Recalculate All Commissions'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Recalculate All Commissions</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will recalculate commissions for ALL existing sales based on the current commission rates ({setterPercentage}% setter, {closerPercentage}% closer) and the revenue amount. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRecalculate} disabled={recalculating}>
+                  Recalculate
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         <div className="rounded-lg bg-muted p-4 text-sm">
