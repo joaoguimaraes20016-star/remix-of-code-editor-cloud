@@ -25,6 +25,7 @@ import {
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Trash2, Clock, Mail, User } from "lucide-react";
+import { CloseDealDialog } from "@/components/CloseDealDialog";
 
 interface Appointment {
   id: string;
@@ -34,13 +35,16 @@ interface Appointment {
   status: string;
   setter_name: string | null;
   setter_notes: string | null;
+  setter_id: string | null;
 }
 
 interface AllClaimedProps {
   teamId: string;
+  closerCommissionPct: number;
+  setterCommissionPct: number;
 }
 
-export function AllClaimed({ teamId }: AllClaimedProps) {
+export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }: AllClaimedProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -49,6 +53,8 @@ export function AllClaimed({ teamId }: AllClaimedProps) {
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedAppointments, setSelectedAppointments] = useState<Set<string>>(new Set());
+  const [closeDealOpen, setCloseDealOpen] = useState(false);
+  const [closeDealAppointment, setCloseDealAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     loadAppointments();
@@ -349,7 +355,17 @@ export function AllClaimed({ teamId }: AllClaimedProps) {
              </AlertDialogAction>
            </AlertDialogFooter>
          </AlertDialogContent>
-       </AlertDialog>
-     </div>
-   );
- }
+        </AlertDialog>
+
+        <CloseDealDialog
+          appointment={closeDealAppointment}
+          teamId={teamId}
+          open={closeDealOpen}
+          onOpenChange={setCloseDealOpen}
+          onSuccess={loadAppointments}
+          closerCommissionPct={closerCommissionPct}
+          setterCommissionPct={setterCommissionPct}
+        />
+      </div>
+    );
+  }

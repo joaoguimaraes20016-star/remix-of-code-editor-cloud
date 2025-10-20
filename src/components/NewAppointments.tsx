@@ -58,6 +58,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { EventTypeFilter } from "@/components/EventTypeFilter";
+import { CloseDealDialog } from "@/components/CloseDealDialog";
 
 interface Appointment {
   id: string;
@@ -69,6 +70,7 @@ interface Appointment {
   event_type_uri: string | null;
   event_type_name: string | null;
   setter_id: string | null;
+  setter_name: string | null;
 }
 
 interface TeamMember {
@@ -80,9 +82,11 @@ interface TeamMember {
 
 interface NewAppointmentsProps {
   teamId: string;
+  closerCommissionPct: number;
+  setterCommissionPct: number;
 }
 
-export function NewAppointments({ teamId }: NewAppointmentsProps) {
+export function NewAppointments({ teamId, closerCommissionPct, setterCommissionPct }: NewAppointmentsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -108,6 +112,8 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
   const [dateDrawerOpen, setDateDrawerOpen] = useState(false);
   const [eventTypeFilter, setEventTypeFilter] = useState<string | null>(null);
   const [teamData, setTeamData] = useState<{ calendly_access_token: string | null; calendly_organization_uri: string | null } | null>(null);
+  const [closeDealOpen, setCloseDealOpen] = useState(false);
+  const [closeDealAppointment, setCloseDealAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     loadTeamData();
@@ -842,6 +848,16 @@ export function NewAppointments({ teamId }: NewAppointmentsProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CloseDealDialog
+        appointment={closeDealAppointment}
+        teamId={teamId}
+        open={closeDealOpen}
+        onOpenChange={setCloseDealOpen}
+        onSuccess={loadAppointments}
+        closerCommissionPct={closerCommissionPct}
+        setterCommissionPct={setterCommissionPct}
+      />
     </div>
   );
 }

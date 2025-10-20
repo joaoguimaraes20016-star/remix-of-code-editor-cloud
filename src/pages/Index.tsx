@@ -15,7 +15,6 @@ import { NewAppointments } from "@/components/NewAppointments";
 import { AllNewAppointments } from "@/components/AllNewAppointments";
 import { AllClaimed } from "@/components/AllClaimed";
 import { MyClaimed } from "@/components/MyClaimed";
-import { CloserView } from "@/components/CloserView";
 import { MRRDashboard } from "@/components/MRRDashboard";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import {
@@ -619,7 +618,6 @@ const Index = () => {
   }
 
   const canViewSetterScheduling = userRole === 'setter' || userRole === 'admin' || isOwner;
-  const canViewCloserScheduling = true; // All team members can close deals
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -659,7 +657,7 @@ const Index = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-grid h-auto">
             <TabsTrigger value="dashboard" className="text-xs md:text-sm py-2 md:py-2.5">Dashboard</TabsTrigger>
-            {(canViewSetterScheduling || canViewCloserScheduling) && (
+            {canViewSetterScheduling && (
               <TabsTrigger value="scheduling" className="text-xs md:text-sm py-2 md:py-2.5">Appointments</TabsTrigger>
             )}
           </TabsList>
@@ -798,14 +796,13 @@ const Index = () => {
               />
             )}
             
-            <Tabs defaultValue={canViewSetterScheduling ? "all-new" : "closer"} className="w-full">
+            <Tabs defaultValue="all-new" className="w-full">
               <div className="overflow-x-auto pb-2">
                 <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
                   {canViewSetterScheduling && <TabsTrigger value="all-new" className="text-xs md:text-sm flex-1 md:flex-none">New Appointments</TabsTrigger>}
                   {canViewSetterScheduling && <TabsTrigger value="unassigned" className="text-xs md:text-sm flex-1 md:flex-none">Unassigned Appointments</TabsTrigger>}
                   {canViewSetterScheduling && <TabsTrigger value="claimed" className="text-xs md:text-sm flex-1 md:flex-none">Assigned Appointments</TabsTrigger>}
                   {canViewSetterScheduling && <TabsTrigger value="my-claimed" className="text-xs md:text-sm flex-1 md:flex-none">My Assigned</TabsTrigger>}
-                  {canViewCloserScheduling && <TabsTrigger value="closer" className="text-xs md:text-sm flex-1 md:flex-none">Closer View</TabsTrigger>}
                 </TabsList>
               </div>
 
@@ -815,9 +812,13 @@ const Index = () => {
                     <div>
                       <h3 className="text-lg font-semibold mb-4">New Appointments</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        All newly booked appointments (assigned and unassigned)
+                        View all new appointments in the system
                       </p>
-                      <AllNewAppointments teamId={teamId!} key={`all-new-${Date.now()}`} />
+                      <AllNewAppointments 
+                        teamId={teamId!} 
+                        closerCommissionPct={closerCommissionPct}
+                        setterCommissionPct={setterCommissionPct}
+                      />
                     </div>
                   </TabsContent>
 
@@ -825,44 +826,44 @@ const Index = () => {
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Unassigned Appointments</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Click "Assign" to add an appointment to your list
+                        Assign setters and closers to new appointments
                       </p>
-                      <NewAppointments teamId={teamId!} key={`new-${Date.now()}`} />
+                      <NewAppointments 
+                        teamId={teamId!}
+                        closerCommissionPct={closerCommissionPct}
+                        setterCommissionPct={setterCommissionPct}
+                      />
                     </div>
                   </TabsContent>
 
                   <TabsContent value="claimed" className="mt-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-4">Assigned Appointments</h2>
+                      <h3 className="text-lg font-semibold mb-4">Assigned Appointments</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        View all appointments assigned to setters
+                        View all assigned appointments in the system
                       </p>
-                      <AllClaimed teamId={teamId!} />
+                      <AllClaimed 
+                        teamId={teamId!}
+                        closerCommissionPct={closerCommissionPct}
+                        setterCommissionPct={setterCommissionPct}
+                      />
                     </div>
                   </TabsContent>
 
                   <TabsContent value="my-claimed" className="mt-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-4">My Assigned Appointments</h2>
+                      <h3 className="text-lg font-semibold mb-4">My Assigned Appointments</h3>
                       <p className="text-sm text-muted-foreground mb-4">
                         Manage your assigned appointments and add notes
                       </p>
-                      <MyClaimed teamId={teamId!} />
+                      <MyClaimed 
+                        teamId={teamId!}
+                        closerCommissionPct={closerCommissionPct}
+                        setterCommissionPct={setterCommissionPct}
+                      />
                     </div>
                   </TabsContent>
                 </>
-              )}
-
-              {canViewCloserScheduling && (
-                <TabsContent value="closer" className="mt-6">
-                  <div>
-                    <h2 className="text-2xl font-semibold mb-4">Closer Dashboard</h2>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Close deals and track your closed appointments
-                    </p>
-                    <CloserView teamId={teamId!} />
-                  </div>
-                </TabsContent>
               )}
             </Tabs>
           </TabsContent>

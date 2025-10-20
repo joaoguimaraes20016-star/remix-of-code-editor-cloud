@@ -38,6 +38,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { EventTypeFilter } from "@/components/EventTypeFilter";
+import { CloseDealDialog } from "@/components/CloseDealDialog";
 import {
   Drawer,
   DrawerContent,
@@ -61,9 +62,11 @@ interface Appointment {
 
 interface AllNewAppointmentsProps {
   teamId: string;
+  closerCommissionPct: number;
+  setterCommissionPct: number;
 }
 
-export function AllNewAppointments({ teamId }: AllNewAppointmentsProps) {
+export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissionPct }: AllNewAppointmentsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -82,6 +85,8 @@ export function AllNewAppointments({ teamId }: AllNewAppointmentsProps) {
   const [dateDrawerOpen, setDateDrawerOpen] = useState(false);
   const [eventTypeFilter, setEventTypeFilter] = useState<string | null>(null);
   const [teamData, setTeamData] = useState<{ calendly_access_token: string | null; calendly_organization_uri: string | null } | null>(null);
+  const [closeDealOpen, setCloseDealOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     loadTeamData();
@@ -210,6 +215,11 @@ export function AllNewAppointments({ teamId }: AllNewAppointmentsProps) {
   const handleBulkDelete = () => {
     setAppointmentToDelete(null);
     setDeleteDialogOpen(true);
+  };
+
+  const handleOpenCloseDeal = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setCloseDealOpen(true);
   };
 
   const formatLocalTime = (utcTime: string) => {
@@ -479,6 +489,13 @@ export function AllNewAppointments({ teamId }: AllNewAppointmentsProps) {
                 <div className="flex gap-2 pt-2">
                   <Button
                     size="sm"
+                    onClick={() => handleOpenCloseDeal(apt)}
+                    className="flex items-center gap-1 flex-1"
+                  >
+                    Close Deal
+                  </Button>
+                  <Button
+                    size="sm"
                     variant="destructive"
                     onClick={() => handleOpenDeleteDialog(apt)}
                     className="flex items-center gap-1"
@@ -527,13 +544,21 @@ export function AllNewAppointments({ teamId }: AllNewAppointmentsProps) {
                   <TableCell>{apt.setter_name || 'Unassigned'}</TableCell>
                   <TableCell>{apt.closer_name || 'N/A'}</TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleOpenDeleteDialog(apt)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenCloseDeal(apt)}
+                      >
+                        Close Deal
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleOpenDeleteDialog(apt)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -558,6 +583,16 @@ export function AllNewAppointments({ teamId }: AllNewAppointmentsProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CloseDealDialog
+        appointment={selectedAppointment}
+        teamId={teamId}
+        open={closeDealOpen}
+        onOpenChange={setCloseDealOpen}
+        onSuccess={loadAppointments}
+        closerCommissionPct={closerCommissionPct}
+        setterCommissionPct={setterCommissionPct}
+      />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare, Clock, Mail } from "lucide-react";
 import { format } from "date-fns";
+import { CloseDealDialog } from "@/components/CloseDealDialog";
 
 interface Appointment {
   id: string;
@@ -33,19 +34,25 @@ interface Appointment {
   lead_email: string;
   status: 'NEW' | 'CONFIRMED' | 'CANCELLED' | 'RESCHEDULED' | 'CLOSED';
   setter_notes: string | null;
+  setter_id: string | null;
+  setter_name: string | null;
 }
 
 interface MyClaimedProps {
   teamId: string;
+  closerCommissionPct: number;
+  setterCommissionPct: number;
 }
 
-export function MyClaimed({ teamId }: MyClaimedProps) {
+export function MyClaimed({ teamId, closerCommissionPct, setterCommissionPct }: MyClaimedProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
+  const [closeDealOpen, setCloseDealOpen] = useState(false);
+  const [closeDealAppointment, setCloseDealAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     loadAppointments();
@@ -305,6 +312,16 @@ export function MyClaimed({ teamId }: MyClaimedProps) {
           ))}
         </TableBody>
       </Table>
+
+      <CloseDealDialog
+        appointment={closeDealAppointment}
+        teamId={teamId}
+        open={closeDealOpen}
+        onOpenChange={setCloseDealOpen}
+        onSuccess={loadAppointments}
+        closerCommissionPct={closerCommissionPct}
+        setterCommissionPct={setterCommissionPct}
+      />
     </div>
   );
 }
