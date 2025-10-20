@@ -80,16 +80,16 @@ export function ImportSpreadsheet({ teamId, onImport }: ImportSpreadsheetProps) 
 
           const offerOwner = offerOwnerIdx >= 0 ? columns[offerOwnerIdx] : '';
           
-          // Parse and validate date - ensure we always have a valid date
+          // Parse and validate date - use today as default for any invalid dates
           const today = new Date();
           let date = today.toISOString().split('T')[0];
           
           if (dateIdx >= 0 && columns[dateIdx]) {
             const dateValue = columns[dateIdx].trim();
-            // Skip if it's clearly not a date (contains letters other than month names)
-            if (!/^[a-zA-Z]+$/.test(dateValue) || dateValue.length < 3) {
+            // Only try to parse if it looks like a date (contains numbers or dashes/slashes)
+            if (/\d/.test(dateValue)) {
               const parsedDate = new Date(dateValue);
-              // Validate it's a real date and not in the far future/past
+              // Validate it's a real date
               if (!isNaN(parsedDate.getTime()) && 
                   parsedDate.getFullYear() > 2000 && 
                   parsedDate.getFullYear() < 2100) {
