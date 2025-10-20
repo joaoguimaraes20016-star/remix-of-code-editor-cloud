@@ -106,6 +106,14 @@ export function ImportSpreadsheet({ teamId, onImport }: ImportSpreadsheetProps) 
           
           console.log('Processing row:', { customerName, closer, date });
           
+          // Final date validation before database insert
+          const finalDate = new Date(date);
+          if (isNaN(finalDate.getTime())) {
+            console.error('Invalid date detected before insert, skipping row:', date);
+            errorCount++;
+            continue;
+          }
+          
           const revenue = revenueIdx >= 0 ? parseFloat(columns[revenueIdx]) || 0 : 0;
           const setterCommission = setterCommissionIdx >= 0 ? parseFloat(columns[setterCommissionIdx]) || 0 : 0;
           const closerCommission = closerCommissionIdx >= 0 ? parseFloat(columns[closerCommissionIdx]) || 0 : 0;
