@@ -800,7 +800,7 @@ const Index = () => {
             <Tabs defaultValue="all-new" className="w-full">
               <div className="overflow-x-auto pb-2">
                 <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
-                  {canViewSetterScheduling && <TabsTrigger value="all-new" className="text-xs md:text-sm flex-1 md:flex-none">ALL APPOINTMENTS</TabsTrigger>}
+                  {canViewSetterScheduling && <TabsTrigger value="all-new" className="text-xs md:text-sm flex-1 md:flex-none">All Appointments</TabsTrigger>}
                   {canViewSetterScheduling && <TabsTrigger value="unassigned" className="text-xs md:text-sm flex-1 md:flex-none">Unassigned Appointments</TabsTrigger>}
                   {canViewSetterScheduling && <TabsTrigger value="claimed" className="text-xs md:text-sm flex-1 md:flex-none">Assigned Appointments</TabsTrigger>}
                   {canViewSetterScheduling && <TabsTrigger value="my-claimed" className="text-xs md:text-sm flex-1 md:flex-none">My Assigned</TabsTrigger>}
@@ -812,7 +812,7 @@ const Index = () => {
                 <>
                   <TabsContent value="all-new" className="mt-6">
                     <div>
-                      <h3 className="text-lg font-semibold mb-4">ALL APPOINTMENTS</h3>
+                      <h3 className="text-lg font-semibold mb-4">All Appointments</h3>
                       <p className="text-sm text-muted-foreground mb-4">
                         View all appointments in the system
                       </p>
