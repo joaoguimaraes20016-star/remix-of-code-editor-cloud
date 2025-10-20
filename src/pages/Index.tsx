@@ -691,7 +691,7 @@ const Index = () => {
             title="CC Revenue"
             value={`$${totalCCRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={DollarSign}
-            trend={`${closedAppointments.length} deals closed`}
+            trend={`${totalClosedDeals} deals closed`}
             trendUp
           />
           <MetricCard
