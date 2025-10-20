@@ -427,11 +427,13 @@ export type Database = {
           calendly_signing_key: string | null
           calendly_token_expires_at: string | null
           calendly_webhook_id: string | null
+          closer_commission_percentage: number | null
           created_at: string | null
           created_by: string
           google_sheets_url: string | null
           id: string
           name: string
+          setter_commission_percentage: number | null
           updated_at: string | null
         }
         Insert: {
@@ -442,11 +444,13 @@ export type Database = {
           calendly_signing_key?: string | null
           calendly_token_expires_at?: string | null
           calendly_webhook_id?: string | null
+          closer_commission_percentage?: number | null
           created_at?: string | null
           created_by: string
           google_sheets_url?: string | null
           id?: string
           name: string
+          setter_commission_percentage?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -457,11 +461,13 @@ export type Database = {
           calendly_signing_key?: string | null
           calendly_token_expires_at?: string | null
           calendly_webhook_id?: string | null
+          closer_commission_percentage?: number | null
           created_at?: string | null
           created_by?: string
           google_sheets_url?: string | null
           id?: string
           name?: string
+          setter_commission_percentage?: number | null
           updated_at?: string | null
         }
         Relationships: [

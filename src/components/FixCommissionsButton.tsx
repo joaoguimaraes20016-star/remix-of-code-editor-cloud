@@ -27,6 +27,18 @@ export function FixCommissionsButton({ teamId, onFixed }: FixCommissionsButtonPr
   const handleFix = async () => {
     setFixing(true);
     try {
+      // Load commission settings first
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .select('setter_commission_percentage, closer_commission_percentage')
+        .eq('id', teamId)
+        .single();
+
+      if (teamError) throw teamError;
+
+      const setterPct = Number(teamData?.setter_commission_percentage) || 5;
+      const closerPct = Number(teamData?.closer_commission_percentage) || 10;
+
       // Get all sales for this team
       const { data: sales, error: fetchError } = await supabase
         .from('sales')
@@ -38,11 +50,11 @@ export function FixCommissionsButton({ teamId, onFixed }: FixCommissionsButtonPr
       let fixed = 0;
       let errors = 0;
 
-      // Recalculate commissions for each sale
+      // Recalculate commissions for each sale using configured percentages
       for (const sale of sales || []) {
         const revenue = Number(sale.revenue) || 0;
-        const correctCloserCommission = revenue * 0.10; // 10%
-        const correctSetterCommission = sale.setter && sale.setter !== 'No Setter' ? revenue * 0.05 : 0; // 5%
+        const correctCloserCommission = revenue * (closerPct / 100);
+        const correctSetterCommission = sale.setter && sale.setter !== 'No Setter' ? revenue * (setterPct / 100) : 0;
 
         // Check if commissions need fixing (allowing small floating point differences)
         const needsFix = 
@@ -96,7 +108,7 @@ export function FixCommissionsButton({ teamId, onFixed }: FixCommissionsButtonPr
         <AlertDialogHeader>
           <AlertDialogTitle>Recalculate All Commissions</AlertDialogTitle>
           <AlertDialogDescription>
-            This will recalculate all commission values based on the current rules (10% for closers, 5% for setters on CC). 
+            This will recalculate all commission values based on the current commission rates configured in your team settings. 
             This fixes any sales that may have incorrect commission values.
           </AlertDialogDescription>
         </AlertDialogHeader>

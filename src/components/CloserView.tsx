@@ -72,9 +72,12 @@ export function CloserView({ teamId }: CloserViewProps) {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [dateFilter, setDateFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [setterCommissionPct, setSetterCommissionPct] = useState(5);
+  const [closerCommissionPct, setCloserCommissionPct] = useState(10);
 
   useEffect(() => {
     loadUserProfile();
+    loadTeamSettings();
     loadAppointments();
 
     // Set up realtime subscription
@@ -113,6 +116,24 @@ export function CloserView({ teamId }: CloserViewProps) {
       setUserProfile(data);
     } catch (error: any) {
       // Error loading profile - no action needed as it's not critical
+    }
+  };
+
+  const loadTeamSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('setter_commission_percentage, closer_commission_percentage')
+        .eq('id', teamId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setSetterCommissionPct(Number(data.setter_commission_percentage) || 5);
+        setCloserCommissionPct(Number(data.closer_commission_percentage) || 10);
+      }
+    } catch (error: any) {
+      console.error('Error loading commission settings:', error);
     }
   };
 
@@ -214,9 +235,9 @@ export function CloserView({ teamId }: CloserViewProps) {
     try {
       console.log('Closing deal - CC:', cc, 'MRR:', mrr, 'Months:', months);
       
-      // Calculate commissions on CC
-      const closerCommission = cc * 0.10; // 10% for closer
-      const setterCommission = selectedAppointment.setter_id ? cc * 0.05 : 0; // 5% for setter if assigned
+      // Calculate commissions on CC using configured percentages
+      const closerCommission = cc * (closerCommissionPct / 100);
+      const setterCommission = selectedAppointment.setter_id ? cc * (setterCommissionPct / 100) : 0;
       
       console.log('Calculated commissions - Closer:', closerCommission, 'Setter:', setterCommission);
 
@@ -262,7 +283,7 @@ export function CloserView({ teamId }: CloserViewProps) {
         for (let i = 1; i <= months; i++) {
           const monthDate = startOfMonth(addMonths(new Date(), i));
           
-          // Closer MRR commission (10%)
+          // Closer MRR commission
           mrrCommissions.push({
             team_id: teamId,
             appointment_id: selectedAppointment.id,
@@ -273,11 +294,11 @@ export function CloserView({ teamId }: CloserViewProps) {
             prospect_email: selectedAppointment.lead_email,
             month_date: format(monthDate, 'yyyy-MM-dd'),
             mrr_amount: mrr,
-            commission_amount: mrr * 0.10,
-            commission_percentage: 10,
+            commission_amount: mrr * (closerCommissionPct / 100),
+            commission_percentage: closerCommissionPct,
           });
 
-          // Setter MRR commission (5%) if there's a setter
+          // Setter MRR commission if there's a setter
           if (selectedAppointment.setter_id && selectedAppointment.setter_name) {
             mrrCommissions.push({
               team_id: teamId,
@@ -289,8 +310,8 @@ export function CloserView({ teamId }: CloserViewProps) {
               prospect_email: selectedAppointment.lead_email,
               month_date: format(monthDate, 'yyyy-MM-dd'),
               mrr_amount: mrr,
-              commission_amount: mrr * 0.05,
-              commission_percentage: 5,
+              commission_amount: mrr * (setterCommissionPct / 100),
+              commission_percentage: setterCommissionPct,
             });
           }
         }
@@ -353,8 +374,8 @@ export function CloserView({ teamId }: CloserViewProps) {
     }
 
     try {
-      const closerCommission = cc * 0.10;
-      const setterCommission = editingAppointment.setter_id ? cc * 0.05 : 0;
+      const closerCommission = cc * (closerCommissionPct / 100);
+      const setterCommission = editingAppointment.setter_id ? cc * (setterCommissionPct / 100) : 0;
 
       // Update appointment - revenue is just CC
       const { error: updateError } = await supabase
@@ -405,8 +426,8 @@ export function CloserView({ teamId }: CloserViewProps) {
             prospect_email: editingAppointment.lead_email,
             month_date: format(monthDate, 'yyyy-MM-dd'),
             mrr_amount: mrr,
-            commission_amount: mrr * 0.10,
-            commission_percentage: 10,
+            commission_amount: mrr * (closerCommissionPct / 100),
+            commission_percentage: closerCommissionPct,
           });
 
           if (editingAppointment.setter_id && editingAppointment.setter_name) {
@@ -420,8 +441,8 @@ export function CloserView({ teamId }: CloserViewProps) {
               prospect_email: editingAppointment.lead_email,
               month_date: format(monthDate, 'yyyy-MM-dd'),
               mrr_amount: mrr,
-              commission_amount: mrr * 0.05,
-              commission_percentage: 5,
+              commission_amount: mrr * (setterCommissionPct / 100),
+              commission_percentage: setterCommissionPct,
             });
           }
         }

@@ -55,6 +55,8 @@ const Index = () => {
     to: new Date(),
     preset: "last7days"
   });
+  const [setterCommissionPct, setSetterCommissionPct] = useState(5);
+  const [closerCommissionPct, setCloserCommissionPct] = useState(10);
 
   useEffect(() => {
     if (!user || !teamId) {
@@ -63,6 +65,7 @@ const Index = () => {
     }
     loadUserProfile();
     loadTeamData();
+    loadTeamSettings();
     loadSales();
     loadAppointments();
 
@@ -128,6 +131,24 @@ const Index = () => {
         description: error.message,
         variant: 'destructive',
       });
+    }
+  };
+
+  const loadTeamSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('setter_commission_percentage, closer_commission_percentage')
+        .eq('id', teamId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        setSetterCommissionPct(Number(data.setter_commission_percentage) || 5);
+        setCloserCommissionPct(Number(data.closer_commission_percentage) || 10);
+      }
+    } catch (error: any) {
+      console.error('Error loading commission settings:', error);
     }
   };
 
@@ -207,13 +228,15 @@ const Index = () => {
     mrrAmount: number;
     mrrMonths: number;
     status: 'closed' | 'pending' | 'no-show';
+    setterCommissionPct: number;
+    closerCommissionPct: number;
   }) => {
     try {
       console.log('Adding manual sale - CC:', newSale.ccCollected, 'MRR:', newSale.mrrAmount, 'Months:', newSale.mrrMonths);
       
-      // Calculate commissions on CC
-      const closerCommission = newSale.ccCollected * 0.10; // 10% for closer
-      const setterCommission = newSale.setterId ? newSale.ccCollected * 0.05 : 0; // 5% for setter if assigned
+      // Calculate commissions on CC using configured percentages
+      const closerCommission = newSale.ccCollected * (newSale.closerCommissionPct / 100);
+      const setterCommission = newSale.setterId ? newSale.ccCollected * (newSale.setterCommissionPct / 100) : 0;
       
       console.log('Calculated commissions - Closer:', closerCommission, 'Setter:', setterCommission);
 
@@ -244,7 +267,7 @@ const Index = () => {
         for (let i = 1; i <= newSale.mrrMonths; i++) {
           const monthDate = startOfMonth(addMonths(new Date(), i));
           
-          // Closer MRR commission (10%)
+          // Closer MRR commission
           mrrCommissions.push({
             team_id: teamId,
             team_member_id: newSale.salesRepId,
@@ -254,11 +277,11 @@ const Index = () => {
             prospect_email: '', // Not available for manual sales
             month_date: format(monthDate, 'yyyy-MM-dd'),
             mrr_amount: newSale.mrrAmount,
-            commission_amount: newSale.mrrAmount * 0.10,
-            commission_percentage: 10,
+            commission_amount: newSale.mrrAmount * (newSale.closerCommissionPct / 100),
+            commission_percentage: newSale.closerCommissionPct,
           });
 
-          // Setter MRR commission (5%) if there's a setter
+          // Setter MRR commission if there's a setter
           if (newSale.setterId) {
             mrrCommissions.push({
               team_id: teamId,
@@ -269,8 +292,8 @@ const Index = () => {
               prospect_email: '', // Not available for manual sales
               month_date: format(monthDate, 'yyyy-MM-dd'),
               mrr_amount: newSale.mrrAmount,
-              commission_amount: newSale.mrrAmount * 0.05,
-              commission_percentage: 5,
+              commission_amount: newSale.mrrAmount * (newSale.setterCommissionPct / 100),
+              commission_percentage: newSale.setterCommissionPct,
             });
           }
         }
@@ -382,8 +405,8 @@ const Index = () => {
   
   const totalCommissions = closedAppointments.reduce((sum, apt) => {
     const cc = Number(apt.cc_collected) || 0;
-    const closerComm = cc * 0.10; // 10% for closer
-    const setterComm = apt.setter_id ? cc * 0.05 : 0; // 5% for setter if assigned
+    const closerComm = cc * (closerCommissionPct / 100);
+    const setterComm = apt.setter_id ? cc * (setterCommissionPct / 100) : 0;
     return sum + closerComm + setterComm;
   }, 0);
   

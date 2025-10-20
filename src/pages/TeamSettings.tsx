@@ -33,6 +33,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { CalendlyConfig } from '@/components/CalendlyConfig';
 import { SetterBookingLinks } from '@/components/SetterBookingLinks';
+import { CommissionSettings } from '@/components/CommissionSettings';
 import { getUserFriendlyError } from '@/lib/errorUtils';
 
 interface TeamMember {
@@ -469,6 +470,11 @@ export default function TeamSettings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Commission Settings - visible to owners only */}
+        {isOwner && (
+          <CommissionSettings teamId={teamId!} />
+        )}
 
         {/* Calendly Integration */}
         {(isOwner || role === "offer_owner" || role === "admin") && (() => {

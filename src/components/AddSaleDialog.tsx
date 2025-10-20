@@ -44,6 +44,8 @@ interface AddSaleDialogProps {
     mrrAmount: number;
     mrrMonths: number;
     status: 'closed' | 'pending' | 'no-show';
+    setterCommissionPct: number;
+    closerCommissionPct: number;
   }) => void;
 }
 
@@ -62,12 +64,32 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
   const [mrrMonths, setMrrMonths] = useState("");
   const [status, setStatus] = useState<'closed' | 'pending' | 'no-show'>("closed");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [setterCommissionPct, setSetterCommissionPct] = useState(5);
+  const [closerCommissionPct, setCloserCommissionPct] = useState(10);
 
   useEffect(() => {
     if (open && teamId) {
       loadTeamMembers();
+      loadTeamSettings();
     }
   }, [open, teamId]);
+
+  const loadTeamSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('setter_commission_percentage, closer_commission_percentage')
+        .eq('id', teamId);
+
+      if (error) throw error;
+      if (data && data[0]) {
+        setSetterCommissionPct(Number(data[0].setter_commission_percentage) || 5);
+        setCloserCommissionPct(Number(data[0].closer_commission_percentage) || 10);
+      }
+    } catch (error: any) {
+      console.error('Error loading commission settings:', error);
+    }
+  };
 
   const loadTeamMembers = async () => {
     try {
@@ -117,6 +139,8 @@ export function AddSaleDialog({ onAddSale }: AddSaleDialogProps) {
       mrrAmount: parseFloat(mrrAmount) || 0,
       mrrMonths: parseInt(mrrMonths) || 0,
       status,
+      setterCommissionPct,
+      closerCommissionPct,
     });
     setOpen(false);
     resetForm();
