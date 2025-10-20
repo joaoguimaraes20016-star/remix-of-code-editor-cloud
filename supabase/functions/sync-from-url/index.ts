@@ -100,12 +100,27 @@ Deno.serve(async (req) => {
         }
         columns.push(current.trim());
 
+        // Log first row for debugging
+        if (dataLines.indexOf(line) === 0) {
+          console.log('First row columns:', columns);
+          console.log('Number of columns:', columns.length);
+        }
+
         const customerName = customerIdx >= 0 ? columns[customerIdx] : '';
         const setter = setterIdx >= 0 ? columns[setterIdx] : '';
         const closer = closerIdx >= 0 ? columns[closerIdx] : '';
 
         if (!customerName || !closer) {
-          console.log('Skipping row - missing required fields:', { customerName, closer });
+          if (dataLines.indexOf(line) < 3) {
+            console.log('Row', dataLines.indexOf(line), 'data:', { 
+              customerName, 
+              closer,
+              customerIdx,
+              closerIdx,
+              columnsLength: columns.length,
+              sample: columns.slice(0, 5)
+            });
+          }
           errorCount++;
           continue;
         }
