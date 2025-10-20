@@ -170,6 +170,12 @@ export function CloseDealDialog({
 
       // Create MRR commission records if MRR exists
       if (mrr > 0 && months > 0 && saleData) {
+        // Delete any existing MRR commissions for this appointment
+        await supabase
+          .from('mrr_commissions')
+          .delete()
+          .eq('appointment_id', appointment.id);
+
         const mrrCommissions = [];
         
         for (let i = 1; i <= months; i++) {
