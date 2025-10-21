@@ -30,20 +30,8 @@ serve(async (req) => {
     if (existingUser) {
       console.log('User already exists:', existingUser.id);
       userId = existingUser.id;
-      
-      // Verify password by attempting to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (signInError) {
-        console.error('Password verification failed:', signInError);
-        return new Response(
-          JSON.stringify({ error: 'Email already registered with a different password. Please use the correct password or contact support.' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      isNewUser = false;
+      // Note: Password verification will happen on the frontend during sign-in
     } else {
       // Create new user account
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
