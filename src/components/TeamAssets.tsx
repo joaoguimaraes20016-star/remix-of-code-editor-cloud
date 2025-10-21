@@ -266,9 +266,12 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
       >
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute -top-8 -right-8 opacity-10 group-hover:opacity-20 transition-opacity">
+          <TrendingUp className="h-56 w-56 text-primary-foreground" />
+        </div>
         <div className="relative z-10">
           <div className="flex items-center gap-6 mb-4">
-            <div className="p-4 rounded-xl bg-primary-foreground/20 border border-primary-foreground/30">
+            <div className="p-4 rounded-xl bg-primary-foreground/20 border border-primary-foreground/30 group-hover:bg-primary-foreground/30 transition-colors">
               <BarChart3 className="h-8 w-8 text-primary-foreground" />
             </div>
             <h3 className="text-4xl font-bold uppercase tracking-wide text-primary-foreground">
@@ -278,6 +281,12 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
           <p className="text-xl text-primary-foreground/90 ml-20">
             Track performance, view analytics & manage your sales pipeline
           </p>
+          <div className="flex items-center gap-3 mt-6 ml-20 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="px-5 py-2 rounded-full bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/30">
+              <span className="text-base font-semibold text-primary-foreground">View Dashboard</span>
+            </div>
+            <span className="text-primary-foreground text-xl">→</span>
+          </div>
         </div>
       </button>
 
