@@ -24,15 +24,19 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public route - no auth required */}
+            <Route path="/onboard/:token" element={<OnboardingForm />} />
+            
+            {/* Authenticated routes */}
             <Route path="/" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/confirm" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/client-assets" element={<ClientAssets />} />
-            <Route path="/onboard/:token" element={<OnboardingForm />} />
             <Route path="/team/:teamId" element={<Index />} />
             <Route path="/team/:teamId/settings" element={<TeamSettings />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

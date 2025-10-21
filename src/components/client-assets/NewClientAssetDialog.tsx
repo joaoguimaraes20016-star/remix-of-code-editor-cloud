@@ -111,7 +111,34 @@ export function NewClientAssetDialog({
       const link = `${window.location.origin}/onboard/${accessToken}`;
       setGeneratedLink(link);
 
-      toast.success('Client asset created successfully');
+      // Get team name
+      const { data: team } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', teamId)
+        .single();
+
+      // Send onboarding email
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-onboarding-email', {
+          body: {
+            clientName,
+            clientEmail,
+            onboardingUrl: link,
+            teamName: team?.name || 'Our Team',
+          },
+        });
+
+        if (emailError) {
+          console.error('Email error:', emailError);
+          toast.warning('Link created but email failed to send. Copy the link below.');
+        } else {
+          toast.success(`Onboarding email sent to ${clientEmail}`);
+        }
+      } catch (emailError) {
+        console.error('Email error:', emailError);
+        toast.warning('Link created but email failed to send. Copy the link below.');
+      }
     } catch (error) {
       console.error('Error creating client asset:', error);
       toast.error(getUserFriendlyError(error));

@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.cleanup-duplicates]
 verify_jwt = true
+
+[functions.send-onboarding-email]
+verify_jwt = true
