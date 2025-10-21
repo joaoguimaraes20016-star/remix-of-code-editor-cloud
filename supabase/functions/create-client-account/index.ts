@@ -20,60 +20,102 @@ serve(async (req) => {
 
     console.log('Creating client account for:', email);
 
-    // Create the user account
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm email
-      user_metadata: {
-        full_name: fullName,
-      },
-    });
+    let userId: string;
+    let isNewUser = false;
 
-    if (authError) {
-      console.error('Auth error:', authError);
-      return new Response(
-        JSON.stringify({ error: authError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Check if user already exists
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(u => u.email === email);
 
-    const userId = authData.user.id;
-    console.log('User created:', userId);
-
-    // Create the team
-    const { data: teamData, error: teamError } = await supabase
-      .from('teams')
-      .insert({
-        name: `${fullName}'s Team`,
-        created_by: userId,
-      })
-      .select()
-      .single();
-
-    if (teamError) {
-      console.error('Team creation error:', teamError);
-      throw teamError;
-    }
-
-    const teamId = teamData.id;
-    console.log('Team created:', teamId);
-
-    // Add user to team as offer_owner (which includes owner permissions)
-    const { error: memberError } = await supabase
-      .from('team_members')
-      .insert({
-        team_id: teamId,
-        user_id: userId,
-        role: 'offer_owner',
+    if (existingUser) {
+      console.log('User already exists:', existingUser.id);
+      userId = existingUser.id;
+      
+      // Verify password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (signInError) {
+        console.error('Password verification failed:', signInError);
+        return new Response(
+          JSON.stringify({ error: 'Email already registered with a different password. Please use the correct password or contact support.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      // Create new user account
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+        },
       });
 
-    if (memberError) {
-      console.error('Team member error:', memberError);
-      throw memberError;
+      if (authError) {
+        console.error('Auth error:', authError);
+        return new Response(
+          JSON.stringify({ error: authError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      userId = authData.user.id;
+      isNewUser = true;
+      console.log('User created:', userId);
     }
 
-    console.log('User assigned as offer_owner');
+    // Check if user already has a team
+    const { data: existingMembership } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', userId)
+      .single();
+
+    let teamId: string;
+
+    if (existingMembership?.team_id) {
+      // User already has a team
+      teamId = existingMembership.team_id;
+      console.log('Using existing team:', teamId);
+    } else {
+      // Create a new team
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .insert({
+          name: `${fullName}'s Team`,
+          created_by: userId,
+        })
+        .select()
+        .single();
+
+      if (teamError) {
+        console.error('Team creation error:', teamError);
+        throw teamError;
+      }
+
+      teamId = teamData.id;
+      console.log('Team created:', teamId);
+
+      // Add user to team as offer_owner
+      const { error: memberError } = await supabase
+        .from('team_members')
+        .insert({
+          team_id: teamId,
+          user_id: userId,
+          role: 'offer_owner',
+        });
+
+      if (memberError) {
+        console.error('Team member error:', memberError);
+        throw memberError;
+      }
+
+      console.log('User assigned as offer_owner');
+    }
 
     // Update the client asset to link to this team and user
     const { error: assetError } = await supabase
@@ -108,7 +150,8 @@ serve(async (req) => {
         success: true, 
         userId,
         teamId,
-        message: 'Account created successfully' 
+        isNewUser,
+        message: isNewUser ? 'Account created successfully' : 'Account linked successfully' 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

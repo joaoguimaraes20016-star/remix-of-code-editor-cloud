@@ -46,7 +46,13 @@ export function AccountCreation({ assetId, clientName, clientEmail }: AccountCre
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'Failed to create account');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       console.log('Account creation response:', data);
       
@@ -60,7 +66,8 @@ export function AccountCreation({ assetId, clientName, clientEmail }: AccountCre
         toast.error('Account created but failed to sign in. Please try logging in manually.');
       } else {
         setAccountCreated(true);
-        toast.success('Account created successfully!');
+        const message = data?.isNewUser ? 'Account created successfully!' : 'Welcome back! Your account has been linked.';
+        toast.success(message);
         
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {
@@ -69,7 +76,8 @@ export function AccountCreation({ assetId, clientName, clientEmail }: AccountCre
       }
     } catch (error: any) {
       console.error('Account creation error:', error);
-      toast.error(error.message || 'Failed to create account');
+      const errorMessage = error.message || 'Failed to create account. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setCreating(false);
     }
