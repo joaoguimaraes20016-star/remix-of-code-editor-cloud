@@ -45,12 +45,20 @@ Deno.serve(async (req) => {
     }
 
     // Verify user has permission to modify this team
-    const { data: membership } = await supabase
+    const { data: membership, error: membershipError } = await supabase
       .from('team_members')
       .select('role')
       .eq('team_id', teamId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (membershipError) {
+      console.error('Error fetching membership:', membershipError);
+      return new Response(JSON.stringify({ error: 'Failed to verify team membership' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!membership || !['owner', 'offer_owner'].includes(membership.role)) {
       return new Response(JSON.stringify({ error: 'Unauthorized to modify this team' }), {
@@ -60,11 +68,19 @@ Deno.serve(async (req) => {
     }
 
     // Get current Calendly access token to revoke it
-    const { data: team } = await supabase
+    const { data: team, error: teamError } = await supabase
       .from('teams')
       .select('calendly_access_token')
       .eq('id', teamId)
-      .single();
+      .maybeSingle();
+
+    if (teamError) {
+      console.error('Error fetching team:', teamError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch team data' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Revoke the Calendly OAuth token to force fresh login on reconnect
     if (team?.calendly_access_token) {
