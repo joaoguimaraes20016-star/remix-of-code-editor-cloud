@@ -26,6 +26,7 @@ export default function ClientAssets() {
   const [loading, setLoading] = useState(true);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [hasOwnAsset, setHasOwnAsset] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -38,6 +39,15 @@ export default function ClientAssets() {
 
   const loadTeams = async () => {
     try {
+      // Check if user has creator global role (signed up with creator code)
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      setIsCreator(userRole?.role === 'creator' as any);
+
       // Get all teams for the user
       const { data: teamMembers, error } = await supabase
         .from('team_members')
@@ -110,14 +120,9 @@ export default function ClientAssets() {
     );
   }
 
-  // Check if user is a growth operator (offer_owner, admin, or owner)
-  const isGrowthOperator = teams.some(t => 
-    ['owner', 'admin', 'offer_owner'].includes(t.role)
-  );
-
-  // If user has their own client asset (was invited as a client), show My Assets view
-  // regardless of their role
-  if (hasOwnAsset || !isGrowthOperator) {
+  // Only show agency management interface to creators (users who signed up with creator code)
+  // Everyone else sees the My Assets (client) view
+  if (!isCreator || hasOwnAsset) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
         <div className="container mx-auto px-4 py-6 space-y-6">
