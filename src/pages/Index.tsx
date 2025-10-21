@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, Users, Calendar, ArrowLeft, Settings, FolderKey } from "lucide-react";
+import { DollarSign, TrendingUp, Users, Calendar, ArrowLeft, Settings } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useTeamRole } from "@/hooks/useTeamRole";
@@ -642,12 +642,6 @@ const Index = () => {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {(userRole === 'offer_owner' || userRole === 'admin' || isOwner) && (
-              <Button variant="outline" onClick={() => navigate(`/team/${teamId}/client-assets`)} className="text-sm md:text-base w-full sm:w-auto">
-                <FolderKey className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-                Client Assets
-              </Button>
-            )}
             {isOwner && (
               <Button variant="outline" onClick={() => navigate(`/team/${teamId}/settings`)} className="text-sm md:text-base w-full sm:w-auto">
                 <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />

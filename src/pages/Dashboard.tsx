@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Users, TrendingUp, Trash2 } from "lucide-react";
+import { Plus, Users, TrendingUp, Trash2, FolderKey } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -222,6 +222,26 @@ const Dashboard = () => {
       <div className="container mx-auto p-4 md:p-6 space-y-6 md:space-y-8 relative z-10">
 
         <div className="grid gap-8 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-scale-in">
+            {/* Client Assets Card */}
+            <Card
+              className="group hover:border-primary hover:shadow-glow transition-all duration-500 bg-gradient-card backdrop-blur-sm border-2 border-primary/50 overflow-hidden relative cursor-pointer"
+              onClick={() => navigate('/client-assets')}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <CardHeader className="relative py-8 md:py-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors duration-300">
+                    <FolderKey className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="group-hover:text-primary transition-colors duration-300">Client Assets</CardTitle>
+                </div>
+                <CardDescription className="flex items-center gap-2">
+                  Secure client onboarding & credentials
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">→</span>
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
             {teams.map((team, index) => (
               <Card
                 key={team.id}

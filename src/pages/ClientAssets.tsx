@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useTeamRole } from '@/hooks/useTeamRole';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, FolderKey, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClientAssetsDashboard } from '@/components/client-assets/ClientAssetsDashboard';
 import { ClientAssetsList } from '@/components/client-assets/ClientAssetsList';
 import { NewClientAssetDialog } from '@/components/client-assets/NewClientAssetDialog';
 
+interface Team {
+  id: string;
+  name: string;
+  role: string;
+}
+
 export default function ClientAssets() {
   const navigate = useNavigate();
-  const { teamId } = useParams<{ teamId: string }>();
   const { user } = useAuth();
-  const { role, isOwner, loading: roleLoading } = useTeamRole(teamId);
-  const [teamName, setTeamName] = useState<string>('');
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showNewDialog, setShowNewDialog] = useState(false);
 
   useEffect(() => {
@@ -25,40 +31,75 @@ export default function ClientAssets() {
       return;
     }
 
-    // Check if user has permission (offer_owner, admin, or owner)
-    if (!roleLoading && role !== 'offer_owner' && role !== 'admin' && !isOwner) {
-      toast.error('Access denied. Only offer owners and admins can access client assets.');
-      navigate(`/team/${teamId}`);
-      return;
-    }
+    loadTeams();
+  }, [user, navigate]);
 
-    const loadTeam = async () => {
-      if (!teamId) return;
+  const loadTeams = async () => {
+    try {
+      // Get teams where user is offer_owner, admin, or owner
+      const { data: teamMembers, error } = await supabase
+        .from('team_members')
+        .select('team_id, role, teams(id, name)')
+        .eq('user_id', user?.id)
+        .in('role', ['owner', 'admin', 'offer_owner']);
 
-      const { data, error } = await supabase
-        .from('teams')
-        .select('name')
-        .eq('id', teamId)
-        .single();
+      if (error) throw error;
 
-      if (error) {
-        console.error('Error loading team:', error);
-        toast.error('Failed to load team');
-        return;
+      const teamsData = teamMembers
+        ?.map((tm) => ({
+          id: (tm.teams as any).id,
+          name: (tm.teams as any).name,
+          role: tm.role,
+        }))
+        .filter((t) => t.id && t.name) || [];
+
+      setTeams(teamsData);
+      
+      // Auto-select first team if available
+      if (teamsData.length > 0 && !selectedTeam) {
+        setSelectedTeam(teamsData[0]);
       }
+    } catch (error) {
+      console.error('Error loading teams:', error);
+      toast.error('Failed to load teams');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      setTeamName(data.name);
-    };
-
-    loadTeam();
-  }, [user, teamId, navigate, role, isOwner, roleLoading]);
-
-  if (roleLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (teams.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
+        <div className="container mx-auto px-4 py-6 space-y-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="w-fit"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+
+          <Card className="bg-card/50 backdrop-blur-sm border-2 border-border">
+            <CardContent className="py-12 text-center">
+              <FolderKey className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">No Access</h2>
+              <p className="text-muted-foreground">
+                You need to be an owner, admin, or offer owner to access Client Assets.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -71,11 +112,11 @@ export default function ClientAssets() {
         <div className="flex flex-col gap-4">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/team/${teamId}`)}
+            onClick={() => navigate('/dashboard')}
             className="w-fit"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Sales Dashboard
+            Back to Dashboard
           </Button>
 
           <div className="bg-card/50 backdrop-blur-sm border-2 border-primary/20 rounded-xl p-6 shadow-lg">
@@ -89,7 +130,7 @@ export default function ClientAssets() {
                     Client Assets Management
                   </h1>
                   <p className="text-muted-foreground mt-1">
-                    Securely collect and manage client onboarding information for {teamName}
+                    Securely collect and manage client onboarding information
                   </p>
                 </div>
               </div>
@@ -100,30 +141,50 @@ export default function ClientAssets() {
               </Button>
             </div>
           </div>
+
+          {/* Team Selector */}
+          {teams.length > 1 && (
+            <div className="flex gap-2 flex-wrap">
+              {teams.map((team) => (
+                <Button
+                  key={team.id}
+                  variant={selectedTeam?.id === team.id ? 'default' : 'outline'}
+                  onClick={() => setSelectedTeam(team)}
+                  className="gap-2"
+                >
+                  {team.name}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-card/50 backdrop-blur-sm border border-border">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="clients">Active Clients</TabsTrigger>
-          </TabsList>
+        {selectedTeam && (
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="bg-card/50 backdrop-blur-sm border border-border">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="clients">Active Clients</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <ClientAssetsDashboard teamId={teamId!} />
-          </TabsContent>
+            <TabsContent value="overview" className="space-y-6">
+              <ClientAssetsDashboard teamId={selectedTeam.id} />
+            </TabsContent>
 
-          <TabsContent value="clients" className="space-y-6">
-            <ClientAssetsList teamId={teamId!} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="clients" className="space-y-6">
+              <ClientAssetsList teamId={selectedTeam.id} />
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
 
-      <NewClientAssetDialog
-        open={showNewDialog}
-        onOpenChange={setShowNewDialog}
-        teamId={teamId!}
-      />
+      {selectedTeam && (
+        <NewClientAssetDialog
+          open={showNewDialog}
+          onOpenChange={setShowNewDialog}
+          teamId={selectedTeam.id}
+        />
+      )}
     </div>
   );
 }

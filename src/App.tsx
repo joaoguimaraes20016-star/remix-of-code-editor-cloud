@@ -28,9 +28,9 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/confirm" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/client-assets" element={<ClientAssets />} />
             <Route path="/team/:teamId" element={<Index />} />
             <Route path="/team/:teamId/settings" element={<TeamSettings />} />
-            <Route path="/team/:teamId/client-assets" element={<ClientAssets />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
