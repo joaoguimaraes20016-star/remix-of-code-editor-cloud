@@ -12,22 +12,27 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseClient = createClient(
+    // Initialize Supabase client with service role for auth check
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get the user from the request
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser();
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - no auth header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Extract the JWT token
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the user using service role
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !user) {
       console.error('User authentication failed:', userError);
@@ -36,6 +41,8 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Authenticated user:', user.id);
 
     // Get request body
     const { teamId } = await req.json();
@@ -50,15 +57,23 @@ Deno.serve(async (req) => {
     console.log('Starting OAuth flow for user:', user.id, 'team:', teamId);
 
     // Verify user is owner or offer_owner of this team
-    const { data: membership, error: membershipError } = await supabaseClient
+    const { data: membership, error: membershipError } = await supabaseAdmin
       .from('team_members')
       .select('role')
       .eq('team_id', teamId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (membershipError || !membership) {
+    if (membershipError) {
       console.error('Membership check failed:', membershipError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to verify team membership' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!membership) {
+      console.error('No membership found for user:', user.id, 'in team:', teamId);
       return new Response(
         JSON.stringify({ error: 'You are not a member of this team' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

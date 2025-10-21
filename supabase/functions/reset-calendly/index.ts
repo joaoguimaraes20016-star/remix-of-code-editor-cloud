@@ -11,11 +11,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Use service role for all database operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
 
-    // Get user from auth header
+    // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
@@ -24,16 +26,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    // Extract and verify JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !user) {
+      console.error('User authentication failed:', userError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('Authenticated user:', user.id);
 
     const { teamId } = await req.json();
 
@@ -44,8 +49,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log('Disconnecting Calendly for team:', teamId);
+
     // Verify user has permission to modify this team
-    const { data: membership, error: membershipError } = await supabase
+    const { data: membership, error: membershipError } = await supabaseAdmin
       .from('team_members')
       .select('role')
       .eq('team_id', teamId)
@@ -68,7 +75,7 @@ Deno.serve(async (req) => {
     }
 
     // Get current Calendly access token to revoke it
-    const { data: team, error: teamError } = await supabase
+    const { data: team, error: teamError } = await supabaseAdmin
       .from('teams')
       .select('calendly_access_token')
       .eq('id', teamId)
@@ -118,7 +125,7 @@ Deno.serve(async (req) => {
 
     // Clear Calendly connection from database
     console.log('Clearing Calendly connection for team:', teamId);
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('teams')
       .update({
         calendly_access_token: null,
