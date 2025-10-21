@@ -262,32 +262,22 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
       {/* Sales Dashboard Flashcard */}
       <button
         onClick={() => navigate(`/sales-dashboard/${teamId}`)}
-        className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 border-2 border-primary/50 p-12 shadow-2xl hover:shadow-3xl transition-all hover:scale-[1.02] text-left"
+        className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 border border-primary/50 p-12 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] text-left w-full"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="absolute top-4 right-4 opacity-20">
-          <TrendingUp className="h-32 w-32 text-primary-foreground" />
-        </div>
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
         <div className="relative z-10">
-          <div className="flex items-center gap-6 mb-6">
-            <div className="p-5 rounded-2xl bg-primary-foreground/20 border-2 border-primary-foreground/30 backdrop-blur-sm">
-              <BarChart3 className="h-12 w-12 text-primary-foreground" />
+          <div className="flex items-center gap-6 mb-4">
+            <div className="p-4 rounded-xl bg-primary-foreground/20 border border-primary-foreground/30">
+              <BarChart3 className="h-8 w-8 text-primary-foreground" />
             </div>
-            <div>
-              <h3 className="text-5xl font-bold text-primary-foreground mb-2">
-                Sales Dashboard
-              </h3>
-              <p className="text-xl text-primary-foreground/90">
-                Track performance, view analytics & manage your sales pipeline
-              </p>
-            </div>
+            <h3 className="text-4xl font-bold uppercase tracking-wide text-primary-foreground">
+              Sales Dashboard
+            </h3>
           </div>
-          <div className="flex items-center gap-4 mt-8">
-            <div className="px-6 py-3 rounded-full bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/30">
-              <span className="text-lg font-semibold text-primary-foreground">View Dashboard</span>
-            </div>
-            <div className="text-primary-foreground/80 text-lg">→</div>
-          </div>
+          <p className="text-xl text-primary-foreground/90 ml-20">
+            Track performance, view analytics & manage your sales pipeline
+          </p>
         </div>
       </button>
 
