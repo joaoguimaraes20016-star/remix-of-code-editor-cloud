@@ -64,10 +64,22 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
 
   const loadAssets = async () => {
     setLoading(true);
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // Load assets that either:
+    // 1. Have team_id matching user's teams
+    // 2. Were created by the user and have no team_id yet (pending account creation)
     const { data, error } = await supabase
       .from('client_assets')
       .select('*')
-      .in('team_id', teamIds)
+      .or(`team_id.in.(${teamIds.join(',')}),and(created_by.eq.${user.id},team_id.is.null)`)
       .order('created_at', { ascending: false });
 
     if (error) {
