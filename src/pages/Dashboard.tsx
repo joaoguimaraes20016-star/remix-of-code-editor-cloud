@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Users, TrendingUp, Trash2, FolderKey } from "lucide-react";
+import { Plus, Users, TrendingUp, Trash2, FolderKey, DollarSign, Calendar, BarChart3 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -220,9 +221,70 @@ const Dashboard = () => {
       </div>
       
       <div className="container mx-auto p-4 md:p-6 space-y-6 md:space-y-8 relative z-10">
+        
+        {/* Welcome Section */}
+        <div className="animate-fade-in space-y-2">
+          <h2 className="text-3xl font-bold">Welcome back!</h2>
+          <p className="text-muted-foreground text-lg">Choose a workspace to get started with your operations</p>
+        </div>
 
-        <div className="grid gap-8 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-scale-in">
-            {/* Client Assets Card */}
+        {/* Client Assets Section */}
+        <div className="space-y-4 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <FolderKey className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold">Client Onboarding</h3>
+              <p className="text-sm text-muted-foreground">Manage client credentials, assets, and onboarding workflows</p>
+            </div>
+          </div>
+          
+          <Card
+            className="group hover:border-primary hover:shadow-glow transition-all duration-300 cursor-pointer bg-gradient-card backdrop-blur-sm border-2 border-primary/50"
+            onClick={() => navigate('/client-assets')}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1 flex-1">
+                  <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
+                    <FolderKey className="h-5 w-5" />
+                    Client Assets Dashboard
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    Access secure client information, track onboarding progress, and manage credentials
+                  </CardDescription>
+                </div>
+                <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  →
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="px-2 py-1 bg-primary/10 rounded">Onboarding Forms</span>
+                <span className="px-2 py-1 bg-primary/10 rounded">Asset Management</span>
+                <span className="px-2 py-1 bg-primary/10 rounded">Client Portal</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Separator className="my-8" />
+
+        {/* Sales Teams Section */}
+        <div className="space-y-4 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold">Sales Teams</h3>
+              <p className="text-sm text-muted-foreground">Track performance, manage appointments, and monitor commissions</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">{/* Team Cards Container */}
             <Card
               className="group hover:border-primary hover:shadow-glow transition-all duration-500 bg-gradient-card backdrop-blur-sm border-2 border-primary/50 overflow-hidden relative cursor-pointer"
               onClick={() => navigate('/client-assets')}
@@ -245,73 +307,97 @@ const Dashboard = () => {
             {teams.map((team, index) => (
               <Card
                 key={team.id}
-                className="group hover:border-primary hover:shadow-glow transition-all duration-500 bg-gradient-card backdrop-blur-sm border-2 border-primary/50 overflow-hidden relative cursor-pointer"
+                className="group hover:border-primary hover:shadow-glow transition-all duration-300 cursor-pointer bg-gradient-card backdrop-blur-sm border-2 border-primary/50"
                 style={{ animationDelay: `${index * 100}ms` }}
+                onClick={() => navigate(`/team/${team.id}/sales`)}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <CardHeader className="relative py-8 md:py-6 cursor-pointer" onClick={() => navigate(`/team/${team.id}/sales`)}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors duration-300">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
                         <TrendingUp className="h-5 w-5 text-primary" />
+                        <CardTitle className="group-hover:text-primary transition-colors">
+                          {team.name}
+                        </CardTitle>
                       </div>
-                      <CardTitle className="group-hover:text-primary transition-colors duration-300">{team.name}</CardTitle>
+                      <CardDescription>
+                        View sales metrics, appointments, and team performance
+                      </CardDescription>
                     </div>
-                    {canCreateTeams && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Team</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{team.name}"? This action cannot be undone and will remove all team data.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteTeam(team.id, team.name)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    <div className="flex items-center gap-2">
+                      <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                        →
+                      </div>
+                      {canCreateTeams && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Team</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{team.name}"? This action cannot be undone and will remove all team data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteTeam(team.id, team.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
                   </div>
-                  <CardDescription className="flex items-center gap-2">
-                    Sales tracking & team performance
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">→</span>
-                  </CardDescription>
                 </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="px-2 py-1 bg-primary/10 rounded flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
+                      Revenue Tracking
+                    </span>
+                    <span className="px-2 py-1 bg-primary/10 rounded flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Appointments
+                    </span>
+                    <span className="px-2 py-1 bg-primary/10 rounded flex items-center gap-1">
+                      <BarChart3 className="h-3 w-3" />
+                      Leaderboards
+                    </span>
+                  </div>
+                </CardContent>
               </Card>
             ))}
 
             {canCreateTeams && (
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Card className="group cursor-pointer hover:border-primary hover:shadow-glow transition-all duration-500 border-dashed border-2 border-primary/50 bg-gradient-card backdrop-blur-sm overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <CardContent className="flex flex-col items-center justify-center h-full min-h-[220px] py-10 md:py-8 relative">
-                      <div className="p-4 bg-primary/10 rounded-full mb-4 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-                        <Plus className="h-8 w-8 text-primary" />
-                      </div>
-                      <p className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors duration-300">
-                        Create New Team
-                      </p>
-                    </CardContent>
-                  </Card>
-                </DialogTrigger>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Card className="group cursor-pointer hover:border-primary hover:shadow-glow transition-all duration-300 border-dashed border-2 border-primary/50 bg-gradient-card backdrop-blur-sm">
+                  <CardContent className="flex flex-col items-center justify-center h-full min-h-[180px] py-8">
+                    <div className="p-3 bg-primary/10 rounded-full mb-3 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                      <Plus className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                      Create New Team
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Add a new sales team workspace
+                    </p>
+                  </CardContent>
+                </Card>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New Team</DialogTitle>
@@ -331,20 +417,23 @@ const Dashboard = () => {
                   {creating ? 'Creating...' : 'Create Team'}
                 </Button>
               </form>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+            )}
+          </div>
+
+          {teams.length === 0 && !canCreateTeams && (
+            <Card className="border-primary/50 bg-muted/50">
+              <CardContent className="py-8 text-center space-y-2">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-lg font-medium">No Teams Yet</p>
+                <p className="text-muted-foreground">
+                  You haven't been invited to any sales teams. Contact your administrator to be added to a team.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
-
-        {teams.length === 0 && !canCreateTeams && (
-          <Card className="mt-4 border-primary/50">
-            <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">
-                You haven't been invited to any teams yet. Contact your administrator to be added to a team.
-              </p>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
