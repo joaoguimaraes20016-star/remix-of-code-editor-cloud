@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeamRole } from '@/hooks/useTeamRole';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Video, Link as LinkIcon, Download, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, FileText, Video, Link as LinkIcon, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AssetUploadDialog from './AssetUploadDialog';
 
@@ -19,14 +18,6 @@ interface TeamAsset {
   external_url: string | null;
   created_at: string;
 }
-
-const CATEGORIES = [
-  { id: 'scripts', label: 'Scripts', icon: FileText },
-  { id: 'onboarding', label: 'Onboarding', icon: FileText },
-  { id: 'training', label: 'Training', icon: Video },
-  { id: 'tracking', label: 'Tracking', icon: LinkIcon },
-  { id: 'offer', label: 'Complete Offer', icon: FileText },
-];
 
 interface TeamAssetsProps {
   teamId: string;
@@ -111,13 +102,6 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
     }
   };
 
-  const getAssetIcon = (asset: TeamAsset) => {
-    if (asset.file_type?.includes('video')) return Video;
-    if (asset.loom_url) return Video;
-    if (asset.external_url) return LinkIcon;
-    return FileText;
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -126,115 +110,249 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
     );
   }
 
+  const offerAssets = assets.filter((a) => a.category === 'offer');
+  const scriptAssets = assets.filter((a) => a.category === 'scripts');
+  const onboardingAssets = assets.filter((a) => a.category === 'onboarding');
+  const trackingAssets = assets.filter((a) => a.category === 'tracking');
+  const trainingAssets = assets.filter((a) => a.category === 'training');
+
+  const handleAssetClick = (asset: TeamAsset) => {
+    if (asset.file_path) {
+      handleDownload(asset.file_path, asset.title);
+    } else if (asset.loom_url) {
+      window.open(asset.loom_url, '_blank');
+    } else if (asset.external_url) {
+      window.open(asset.external_url, '_blank');
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header with gradient */}
-      <div className="flex items-center justify-between p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
-        <div>
-          <h2 className="text-2xl font-bold mb-1">Team Assets</h2>
-          <p className="text-muted-foreground">Manage training materials, SOPs, and resources</p>
+    <div className="space-y-12 max-w-5xl">
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 p-8">
+        <div className="relative z-10">
+          <h2 className="text-3xl font-bold mb-2 flex items-center gap-3">
+            <span className="text-4xl">👋</span>
+            Welcome to your team!
+          </h2>
+          {isOwner && (
+            <Button
+              onClick={() => setUploadDialogOpen(true)}
+              variant="outline"
+              className="mt-4 bg-background/80 backdrop-blur-sm hover:bg-background"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Asset
+            </Button>
+          )}
         </div>
-        {isOwner && (
-          <Button 
-            onClick={() => setUploadDialogOpen(true)}
-            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:scale-105"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Asset
-          </Button>
-        )}
       </div>
 
-      {/* Categories */}
-      {CATEGORIES.map((category) => {
-        const categoryAssets = assets.filter((a) => a.category === category.id);
-        if (categoryAssets.length === 0 && !isOwner) return null;
-
-        return (
-          <Card key={category.id} className="overflow-hidden border-muted/40 hover:border-primary/30 transition-colors">
-            <CardHeader className="bg-gradient-to-r from-muted/30 to-transparent">
-              <CardTitle className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <category.icon className="h-5 w-5 text-primary" />
-                </div>
-                <span>{category.label}</span>
-              </CardTitle>
-              {categoryAssets.length === 0 && (
-                <CardDescription className="ml-14">No assets yet. Click "Add Asset" to get started.</CardDescription>
-              )}
-            </CardHeader>
-            {categoryAssets.length > 0 && (
-              <CardContent className="space-y-2 p-6">
-                {categoryAssets.map((asset) => {
-                  const Icon = getAssetIcon(asset);
-                  return (
-                    <div
-                      key={asset.id}
-                      className="group flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-muted/30 hover:border-primary/30 transition-all hover:shadow-md"
+      {/* Complete Offer Section */}
+      {(offerAssets.length > 0 || isOwner) && (
+        <div className="space-y-4">
+          <div className="p-6 rounded-2xl bg-muted/30 border border-border">
+            <h3 className="text-xl font-bold mb-4 uppercase tracking-wide">
+              Complete Offer (Click Below)
+            </h3>
+            <div className="space-y-2">
+              {offerAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => handleAssetClick(asset)}
+                  className="group w-full text-left px-4 py-3 rounded-lg hover:bg-primary/10 transition-all flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="text-lg text-primary hover:underline">
+                      {asset.title}
+                    </span>
+                  </div>
+                  {isOwner && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(asset.id, asset.file_path);
+                      }}
                     >
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
-                          <Icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate text-foreground">{asset.title}</p>
-                          {asset.description && (
-                            <p className="text-sm text-muted-foreground truncate">
-                              {asset.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {asset.file_path && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-primary/10 hover:text-primary"
-                            onClick={() => handleDownload(asset.file_path!, asset.title)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {asset.loom_url && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-primary/10 hover:text-primary"
-                            onClick={() => window.open(asset.loom_url!, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {asset.external_url && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-primary/10 hover:text-primary"
-                            onClick={() => window.open(asset.external_url!, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {isOwner && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => handleDelete(asset.id, asset.file_path)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            )}
-          </Card>
-        );
-      })}
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </button>
+              ))}
+              {offerAssets.length === 0 && isOwner && (
+                <p className="text-sm text-muted-foreground px-4">No assets yet. Click "Add New Asset" above.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Two Column Layout for other sections */}
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Scripts Section */}
+        {(scriptAssets.length > 0 || isOwner) && (
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold uppercase tracking-wide underline decoration-primary/30 underline-offset-8">
+              Scripts
+            </h3>
+            <div className="space-y-3">
+              {scriptAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => handleAssetClick(asset)}
+                  className="group w-full text-left block"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg text-primary/80 hover:text-primary hover:underline uppercase tracking-wide transition-colors">
+                      {asset.title} (Click Here)
+                    </span>
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(asset.id, asset.file_path);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {scriptAssets.length === 0 && isOwner && (
+                <p className="text-sm text-muted-foreground">No scripts yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Onboarding Section */}
+        {(onboardingAssets.length > 0 || isOwner) && (
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold uppercase tracking-wide underline decoration-primary/30 underline-offset-8">
+              Onboarding
+            </h3>
+            <div className="space-y-3">
+              {onboardingAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => handleAssetClick(asset)}
+                  className="group w-full text-left block"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg text-primary/80 hover:text-primary hover:underline uppercase tracking-wide transition-colors">
+                      {asset.title} (Click Here)
+                    </span>
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(asset.id, asset.file_path);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {onboardingAssets.length === 0 && isOwner && (
+                <p className="text-sm text-muted-foreground">No onboarding materials yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tracking Sheets Section */}
+        {(trackingAssets.length > 0 || isOwner) && (
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold uppercase tracking-wide underline decoration-primary/30 underline-offset-8">
+              Tracking Sheets
+            </h3>
+            <div className="space-y-3">
+              {trackingAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => handleAssetClick(asset)}
+                  className="group w-full text-left block"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg text-primary/80 hover:text-primary hover:underline uppercase tracking-wide transition-colors">
+                      {asset.title} (Click Here)
+                    </span>
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(asset.id, asset.file_path);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {trackingAssets.length === 0 && isOwner && (
+                <p className="text-sm text-muted-foreground">No tracking sheets yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Training Section */}
+        {(trainingAssets.length > 0 || isOwner) && (
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold uppercase tracking-wide underline decoration-primary/30 underline-offset-8">
+              Training
+            </h3>
+            <div className="space-y-3">
+              {trainingAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => handleAssetClick(asset)}
+                  className="group w-full text-left block"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg text-primary/80 hover:text-primary hover:underline uppercase tracking-wide transition-colors">
+                      {asset.title} (Click Here)
+                    </span>
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(asset.id, asset.file_path);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {trainingAssets.length === 0 && isOwner && (
+                <p className="text-sm text-muted-foreground">No training materials yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       <AssetUploadDialog
         open={uploadDialogOpen}

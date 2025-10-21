@@ -114,7 +114,7 @@ export default function TeamHub() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="assets" className="space-y-4 animate-fade-in">
+          <TabsContent value="assets" className="animate-fade-in flex justify-center">
             <TeamAssets teamId={teamId!} />
           </TabsContent>
 
