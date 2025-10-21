@@ -283,7 +283,8 @@ export default function OnboardingForm() {
         {/* Header */}
         <Card className="bg-card/50 backdrop-blur-sm border-2 border-primary/20">
           <CardHeader>
-            <CardTitle className="text-2xl">Welcome, {asset?.client_name}!</CardTitle>
+            <CardTitle className="text-3xl font-bold text-center mb-2">MASTER ONBOARDING SURVEY</CardTitle>
+            <CardTitle className="text-xl">Welcome, {asset?.client_name}!</CardTitle>
             <p className="text-muted-foreground mt-2">
               Please fill in your information below. Your progress is automatically saved.
             </p>
