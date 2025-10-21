@@ -66,14 +66,21 @@ const Dashboard = () => {
   const checkUserRole = async () => {
     if (!user) return;
     
-    // Check if user has 'creator' global role via user_roles table
-    const { data: userRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
+    // Check both user_roles table and profiles table for creator status
+    const [{ data: userRole }, { data: profile }] = await Promise.all([
+      supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single(),
+      supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('id', user.id)
+        .single()
+    ]);
     
-    const isCreator = userRole?.role === 'creator';
+    const isCreator = userRole?.role === 'creator' || profile?.account_type === 'creator';
     setCanCreateTeams(isCreator);
     setIsGrowthOperator(isCreator);
   };
