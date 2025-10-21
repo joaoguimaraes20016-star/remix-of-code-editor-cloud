@@ -46,7 +46,13 @@ export function MyAssets() {
 
   const loadMyAsset = async () => {
     try {
-      if (!user?.email) return;
+      if (!user?.email) {
+        console.log('No user email found');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Loading asset for email:', user.email);
 
       // Get the client asset by email
       const { data: assetData, error: assetError } = await supabase
@@ -55,8 +61,11 @@ export function MyAssets() {
         .eq('client_email', user.email)
         .maybeSingle();
 
+      console.log('Asset query result:', { assetData, assetError });
+
       if (assetError) throw assetError;
       if (!assetData) {
+        console.log('No asset found for this email');
         setLoading(false);
         return;
       }
@@ -69,6 +78,8 @@ export function MyAssets() {
         .select('*')
         .eq('client_asset_id', assetData.id)
         .order('order_index');
+
+      console.log('Fields query result:', { fieldsData, fieldsError });
 
       if (fieldsError) throw fieldsError;
 
