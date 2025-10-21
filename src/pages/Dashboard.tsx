@@ -263,71 +263,56 @@ const Dashboard = () => {
           <p className="text-muted-foreground text-lg">Choose a workspace to get started with your operations</p>
         </div>
 
-        {/* Client Assets Section */}
-        <div className="space-y-4 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <FolderKey className="h-5 w-5 text-primary" />
+        {/* Client Assets Section - Only show if user is a growth operator */}
+        {isGrowthOperator && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FolderKey className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">Client Onboarding</h3>
+                <p className="text-sm text-muted-foreground">
+                  Manage client credentials, assets, and onboarding workflows
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-semibold">
-                {isGrowthOperator ? 'Client Onboarding' : 'My Information'}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {isGrowthOperator 
-                  ? 'Manage client credentials, assets, and onboarding workflows'
-                  : 'View and update your onboarding information'
-                }
-              </p>
-            </div>
+            
+            <Card
+              className="group hover:border-primary hover:shadow-glow transition-all duration-300 cursor-pointer bg-gradient-card backdrop-blur-sm border-2 border-primary/50"
+              onClick={() => navigate('/client-assets')}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1 flex-1">
+                    <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
+                      <FolderKey className="h-5 w-5" />
+                      Client Assets Dashboard
+                    </CardTitle>
+                    <CardDescription className="text-base">
+                      Access secure client information, track onboarding progress, and manage credentials
+                    </CardDescription>
+                  </div>
+                  <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    →
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span className="px-2 py-1 bg-primary/10 rounded">Onboarding Forms</span>
+                  <span className="px-2 py-1 bg-primary/10 rounded">Asset Management</span>
+                  <span className="px-2 py-1 bg-primary/10 rounded">Client Portal</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          
-          <Card
-            className="group hover:border-primary hover:shadow-glow transition-all duration-300 cursor-pointer bg-gradient-card backdrop-blur-sm border-2 border-primary/50"
-            onClick={() => navigate('/client-assets')}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1 flex-1">
-                  <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
-                    <FolderKey className="h-5 w-5" />
-                    {isGrowthOperator ? 'Client Assets Dashboard' : 'My Information'}
-                  </CardTitle>
-                  <CardDescription className="text-base">
-                    {isGrowthOperator
-                      ? 'Access secure client information, track onboarding progress, and manage credentials'
-                      : 'View your profile, update information, and track your onboarding completion'
-                    }
-                  </CardDescription>
-                </div>
-                <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                  →
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                {isGrowthOperator ? (
-                  <>
-                    <span className="px-2 py-1 bg-primary/10 rounded">Onboarding Forms</span>
-                    <span className="px-2 py-1 bg-primary/10 rounded">Asset Management</span>
-                    <span className="px-2 py-1 bg-primary/10 rounded">Client Portal</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="px-2 py-1 bg-primary/10 rounded">Profile Info</span>
-                    <span className="px-2 py-1 bg-primary/10 rounded">Edit Details</span>
-                    <span className="px-2 py-1 bg-primary/10 rounded">Track Progress</span>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        )}
 
-        <Separator className="my-8" />
+        {isGrowthOperator && <Separator className="my-8" />}
 
-        {/* Sales Teams Section */}
+        {/* Sales Teams Section - Only show if user has teams */}
+        {teams.length > 0 && (
         <div className="space-y-4 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -470,6 +455,20 @@ const Dashboard = () => {
             </Card>
           )}
         </div>
+        )}
+
+        {/* Empty state when user has no teams and is not a growth operator */}
+        {teams.length === 0 && !isGrowthOperator && (
+          <Card className="border-primary/50 bg-muted/50">
+            <CardContent className="py-12 text-center space-y-2">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-lg font-medium">No Information or Teams Yet</p>
+              <p className="text-muted-foreground">
+                You haven't been added to any teams yet. Contact your administrator to get started.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
