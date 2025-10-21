@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeamRole } from '@/hooks/useTeamRole';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText, Video, Link as LinkIcon, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, FileText, Video, Link as LinkIcon, Trash2, Pencil, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import AssetUploadDialog from './AssetUploadDialog';
 
@@ -29,6 +30,24 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
   const [assets, setAssets] = useState<TeamAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [teamName, setTeamName] = useState('Team Hub');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+
+  const loadTeamData = async () => {
+    try {
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', teamId)
+        .single();
+
+      if (teamError) throw teamError;
+      setTeamName(teamData.name || 'Team Hub');
+    } catch (error) {
+      console.error('Error loading team data:', error);
+    }
+  };
 
   const loadAssets = async () => {
     try {
@@ -50,6 +69,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
   };
 
   useEffect(() => {
+    loadTeamData();
     loadAssets();
   }, [teamId]);
 
@@ -126,19 +146,90 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
     }
   };
 
+  const handleStartEdit = () => {
+    setEditedName(teamName);
+    setIsEditingName(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingName(false);
+    setEditedName('');
+  };
+
+  const handleSaveName = async () => {
+    if (!editedName.trim()) {
+      toast.error('Team name cannot be empty');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ name: editedName.trim() })
+        .eq('id', teamId);
+
+      if (error) throw error;
+
+      setTeamName(editedName.trim());
+      setIsEditingName(false);
+      toast.success('Team name updated');
+    } catch (error) {
+      console.error('Error updating team name:', error);
+      toast.error('Failed to update team name');
+    }
+  };
+
   return (
     <div className="space-y-12 max-w-7xl">
       {/* Welcome Banner with Stats */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 border border-primary/40 p-16 shadow-xl shadow-primary/10">
         <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
         <div className="relative z-10 flex items-start justify-between">
-          <div>
-            <h2 className="text-6xl font-bold mb-6 flex items-center gap-6">
-              <span className="text-7xl">🚀</span>
-              <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                Team Hub
-              </span>
-            </h2>
+          <div className="flex-1">
+            {isEditingName ? (
+              <div className="flex items-center gap-4 mb-6">
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="text-5xl font-bold h-auto py-4 bg-background/50 border-primary/40"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName();
+                    if (e.key === 'Escape') handleCancelEdit();
+                  }}
+                />
+                <Button
+                  onClick={handleSaveName}
+                  size="lg"
+                  className="bg-green-500 hover:bg-green-600"
+                >
+                  <Check className="h-6 w-6" />
+                </Button>
+                <Button
+                  onClick={handleCancelEdit}
+                  size="lg"
+                  variant="outline"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+            ) : (
+              <h2 className="text-6xl font-bold mb-6 flex items-center gap-4">
+                <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  {teamName}
+                </span>
+                {isOwner && (
+                  <Button
+                    onClick={handleStartEdit}
+                    variant="ghost"
+                    size="lg"
+                    className="hover:bg-background/50"
+                  >
+                    <Pencil className="h-6 w-6" />
+                  </Button>
+                )}
+              </h2>
+            )}
             <p className="text-2xl text-muted-foreground mb-6">
               Everything you need to succeed, all in one place
             </p>
