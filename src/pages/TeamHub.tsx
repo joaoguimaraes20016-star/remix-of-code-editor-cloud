@@ -52,26 +52,30 @@ export default function TeamHub() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header with glass effect */}
+      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
+                className="hover:bg-primary/10 hover:text-primary transition-all"
                 onClick={() => navigate('/dashboard')}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">{teamName}</h1>
-                <p className="text-sm text-muted-foreground">Team Hub</p>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  {teamName}
+                </h1>
+                <p className="text-sm text-muted-foreground font-medium">Team Hub</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Button
-                variant="default"
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
                 onClick={() => navigate(`/team/${teamId}/sales`)}
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
@@ -81,6 +85,7 @@ export default function TeamHub() {
                 <Button
                   variant="outline"
                   size="icon"
+                  className="hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all"
                   onClick={() => navigate(`/team/${teamId}/settings`)}
                 >
                   <Settings className="h-4 w-4" />
@@ -91,18 +96,29 @@ export default function TeamHub() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="assets" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="assets">Team Assets</TabsTrigger>
-            <TabsTrigger value="chat">Team Chat</TabsTrigger>
+      {/* Main content */}
+      <main className="container mx-auto px-4 py-8">
+        <Tabs defaultValue="assets" className="space-y-8">
+          <TabsList className="bg-muted/50 backdrop-blur-sm p-1">
+            <TabsTrigger 
+              value="assets"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all"
+            >
+              Team Assets
+            </TabsTrigger>
+            <TabsTrigger 
+              value="chat"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all"
+            >
+              Team Chat
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="assets" className="space-y-4">
+          <TabsContent value="assets" className="space-y-4 animate-fade-in">
             <TeamAssets teamId={teamId!} />
           </TabsContent>
 
-          <TabsContent value="chat" className="space-y-4">
+          <TabsContent value="chat" className="space-y-4 animate-fade-in">
             <TeamChat teamId={teamId!} />
           </TabsContent>
         </Tabs>

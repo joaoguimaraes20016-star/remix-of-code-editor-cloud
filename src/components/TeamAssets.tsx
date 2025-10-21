@@ -128,47 +128,56 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header with gradient */}
+      <div className="flex items-center justify-between p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
         <div>
-          <h2 className="text-2xl font-bold">Team Assets</h2>
+          <h2 className="text-2xl font-bold mb-1">Team Assets</h2>
           <p className="text-muted-foreground">Manage training materials, SOPs, and resources</p>
         </div>
         {isOwner && (
-          <Button onClick={() => setUploadDialogOpen(true)}>
+          <Button 
+            onClick={() => setUploadDialogOpen(true)}
+            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:scale-105"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Asset
           </Button>
         )}
       </div>
 
+      {/* Categories */}
       {CATEGORIES.map((category) => {
         const categoryAssets = assets.filter((a) => a.category === category.id);
         if (categoryAssets.length === 0 && !isOwner) return null;
 
         return (
-          <Card key={category.id}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <category.icon className="h-5 w-5" />
-                {category.label}
+          <Card key={category.id} className="overflow-hidden border-muted/40 hover:border-primary/30 transition-colors">
+            <CardHeader className="bg-gradient-to-r from-muted/30 to-transparent">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <category.icon className="h-5 w-5 text-primary" />
+                </div>
+                <span>{category.label}</span>
               </CardTitle>
               {categoryAssets.length === 0 && (
-                <CardDescription>No assets yet. Click "Add Asset" to get started.</CardDescription>
+                <CardDescription className="ml-14">No assets yet. Click "Add Asset" to get started.</CardDescription>
               )}
             </CardHeader>
             {categoryAssets.length > 0 && (
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2 p-6">
                 {categoryAssets.map((asset) => {
                   const Icon = getAssetIcon(asset);
                   return (
                     <div
                       key={asset.id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                      className="group flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-muted/30 hover:border-primary/30 transition-all hover:shadow-md"
                     >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Icon className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+                          <Icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{asset.title}</p>
+                          <p className="font-medium truncate text-foreground">{asset.title}</p>
                           {asset.description && (
                             <p className="text-sm text-muted-foreground truncate">
                               {asset.description}
@@ -176,11 +185,12 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         {asset.file_path && (
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="hover:bg-primary/10 hover:text-primary"
                             onClick={() => handleDownload(asset.file_path!, asset.title)}
                           >
                             <Download className="h-4 w-4" />
@@ -190,6 +200,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="hover:bg-primary/10 hover:text-primary"
                             onClick={() => window.open(asset.loom_url!, '_blank')}
                           >
                             <ExternalLink className="h-4 w-4" />
@@ -199,6 +210,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="hover:bg-primary/10 hover:text-primary"
                             onClick={() => window.open(asset.external_url!, '_blank')}
                           >
                             <ExternalLink className="h-4 w-4" />
@@ -208,6 +220,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => handleDelete(asset.id, asset.file_path)}
                           >
                             <Trash2 className="h-4 w-4" />
