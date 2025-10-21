@@ -19,10 +19,10 @@ interface ClientAsset {
 }
 
 interface ClientAssetsListProps {
-  teamId: string;
+  teamIds: string[];
 }
 
-export function ClientAssetsList({ teamId }: ClientAssetsListProps) {
+export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
   const [assets, setAssets] = useState<ClientAsset[]>([]);
   const [filteredAssets, setFilteredAssets] = useState<ClientAsset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,6 @@ export function ClientAssetsList({ teamId }: ClientAssetsListProps) {
           event: '*',
           schema: 'public',
           table: 'client_assets',
-          filter: `team_id=eq.${teamId}`,
         },
         () => {
           loadAssets();
@@ -52,7 +51,7 @@ export function ClientAssetsList({ teamId }: ClientAssetsListProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId]);
+  }, [teamIds]);
 
   useEffect(() => {
     const filtered = assets.filter(
@@ -68,7 +67,7 @@ export function ClientAssetsList({ teamId }: ClientAssetsListProps) {
     const { data, error } = await supabase
       .from('client_assets')
       .select('*')
-      .eq('team_id', teamId)
+      .in('team_id', teamIds)
       .order('created_at', { ascending: false });
 
     if (error) {

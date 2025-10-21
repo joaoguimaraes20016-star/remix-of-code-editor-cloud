@@ -12,10 +12,10 @@ interface DashboardStats {
 }
 
 interface ClientAssetsDashboardProps {
-  teamId: string;
+  teamIds: string[];
 }
 
-export function ClientAssetsDashboard({ teamId }: ClientAssetsDashboardProps) {
+export function ClientAssetsDashboard({ teamIds }: ClientAssetsDashboardProps) {
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
     complete: 0,
@@ -37,7 +37,6 @@ export function ClientAssetsDashboard({ teamId }: ClientAssetsDashboardProps) {
           event: '*',
           schema: 'public',
           table: 'client_assets',
-          filter: `team_id=eq.${teamId}`,
         },
         () => {
           loadStats();
@@ -48,15 +47,15 @@ export function ClientAssetsDashboard({ teamId }: ClientAssetsDashboardProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId]);
+  }, [teamIds]);
 
   const loadStats = async () => {
     setLoading(true);
-    console.log('Loading stats for team:', teamId);
+    console.log('Loading stats for teams:', teamIds);
     const { data, error } = await supabase
       .from('client_assets')
       .select('status')
-      .eq('team_id', teamId);
+      .in('team_id', teamIds);
 
     console.log('Stats query result:', { data, error, dataLength: data?.length });
 

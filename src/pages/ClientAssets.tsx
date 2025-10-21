@@ -150,15 +150,11 @@ export default function ClientAssets() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              {teams.map((team) => (
-                <ClientAssetsDashboard key={team.id} teamId={team.id} />
-              ))}
+              <ClientAssetsDashboard teamIds={teams.map(t => t.id)} />
             </TabsContent>
 
             <TabsContent value="clients" className="space-y-6">
-              {teams.map((team) => (
-                <ClientAssetsList key={team.id} teamId={team.id} />
-              ))}
+              <ClientAssetsList teamIds={teams.map(t => t.id)} />
             </TabsContent>
 
             {teams.length === 1 && (
