@@ -46,25 +46,20 @@ export function MyAssets() {
 
   const loadMyAsset = async () => {
     try {
-      if (!user) return;
+      if (!user?.email) return;
 
-      // Get the user's team
-      const { data: teamMember } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!teamMember) return;
-
-      // Get the client asset for this team
+      // Get the client asset by email
       const { data: assetData, error: assetError } = await supabase
         .from('client_assets')
         .select('*')
-        .eq('team_id', teamMember.team_id)
-        .single();
+        .eq('client_email', user.email)
+        .maybeSingle();
 
       if (assetError) throw assetError;
+      if (!assetData) {
+        setLoading(false);
+        return;
+      }
 
       setAsset(assetData);
 
