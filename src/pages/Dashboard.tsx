@@ -80,7 +80,16 @@ const Dashboard = () => {
         .single()
     ]);
     
+    console.log('=== USER ROLE CHECK ===');
+    console.log('User ID:', user.id);
+    console.log('User Email:', user.email);
+    console.log('User Role from user_roles:', userRole?.role);
+    console.log('Account Type from profiles:', profile?.account_type);
+    
     const isCreator = userRole?.role === 'creator' || profile?.account_type === 'creator';
+    console.log('Is Creator?', isCreator);
+    console.log('=====================');
+    
     setCanCreateTeams(isCreator);
     setIsGrowthOperator(isCreator);
   };
