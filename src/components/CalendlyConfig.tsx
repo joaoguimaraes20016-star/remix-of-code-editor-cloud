@@ -284,15 +284,27 @@ export function CalendlyConfig({
     setConnecting(true);
     
     try {
+      console.log('Starting Calendly OAuth connection for team:', teamId);
+      
       // Fetch OAuth URL first
       const { data, error } = await supabase.functions.invoke("calendly-oauth-start", {
         body: { teamId },
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      console.log('OAuth start response:', { data, error });
+
+      if (error) {
+        console.error('OAuth start error:', error);
+        throw new Error(error.message || 'Failed to start OAuth flow');
+      }
+      
+      if (data?.error) {
+        console.error('OAuth start data error:', data.error);
+        throw new Error(data.error);
+      }
 
       if (!data?.authUrl) {
+        console.error('No auth URL in response:', data);
         throw new Error("No authorization URL received");
       }
 
