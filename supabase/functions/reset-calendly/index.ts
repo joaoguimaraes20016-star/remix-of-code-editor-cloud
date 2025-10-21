@@ -117,6 +117,7 @@ Deno.serve(async (req) => {
     }
 
     // Clear Calendly connection from database
+    console.log('Clearing Calendly connection for team:', teamId);
     const { error: updateError } = await supabase
       .from('teams')
       .update({
@@ -128,8 +129,14 @@ Deno.serve(async (req) => {
       .eq('id', teamId);
 
     if (updateError) {
-      throw updateError;
+      console.error('Error clearing Calendly connection:', updateError);
+      return new Response(JSON.stringify({ error: 'Failed to clear Calendly connection', details: updateError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    console.log('Successfully cleared Calendly connection');
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
