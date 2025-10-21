@@ -66,25 +66,16 @@ const Dashboard = () => {
   const checkUserRole = async () => {
     if (!user) return;
     
-    // Only allow creating teams if user is a creator
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('account_type')
-      .eq('id', user.id)
+    // Check if user has 'creator' global role via user_roles table
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
       .single();
     
-    setCanCreateTeams(profile?.account_type === 'creator');
-
-    // Check if user is a growth operator (offer_owner, admin, or owner)
-    const { data: teamMembers } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('user_id', user.id);
-
-    const hasGrowthRole = teamMembers?.some(tm => 
-      ['owner', 'admin', 'offer_owner'].includes(tm.role)
-    );
-    setIsGrowthOperator(hasGrowthRole || false);
+    const isCreator = userRole?.role === 'creator';
+    setCanCreateTeams(isCreator);
+    setIsGrowthOperator(isCreator);
   };
 
   const loadTeams = async () => {
