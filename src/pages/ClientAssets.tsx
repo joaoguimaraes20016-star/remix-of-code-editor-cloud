@@ -144,9 +144,7 @@ export default function ClientAssets() {
             <TabsList className="bg-card/50 backdrop-blur-sm border border-border">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="clients">Active Clients</TabsTrigger>
-              {teams.length === 1 && (
-                <TabsTrigger value="templates">Form Templates</TabsTrigger>
-              )}
+              <TabsTrigger value="templates">Form Templates</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -157,11 +155,16 @@ export default function ClientAssets() {
               <ClientAssetsList teamIds={teams.map(t => t.id)} />
             </TabsContent>
 
-            {teams.length === 1 && (
-              <TabsContent value="templates" className="space-y-6">
-                <OnboardingTemplateManager teamId={teams[0].id} />
-              </TabsContent>
-            )}
+            <TabsContent value="templates" className="space-y-6">
+              {teams.map((team) => (
+                <div key={team.id} className="space-y-4">
+                  {teams.length > 1 && (
+                    <h3 className="text-lg font-semibold">{team.name}</h3>
+                  )}
+                  <OnboardingTemplateManager teamId={team.id} />
+                </div>
+              ))}
+            </TabsContent>
           </Tabs>
         )}
       </div>
