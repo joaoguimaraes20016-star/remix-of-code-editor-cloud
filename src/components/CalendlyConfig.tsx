@@ -286,21 +286,20 @@ export function CalendlyConfig({
     try {
       console.log('Starting Calendly OAuth connection for team:', teamId);
       
-      // Get current session explicitly
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (sessionError || !session) {
-        console.error('No active session:', sessionError);
-        throw new Error('Please refresh the page and try again - session expired');
+      if (!user) {
+        throw new Error('Please log in to continue');
       }
       
-      console.log('Session found, calling OAuth start...');
+      console.log('User authenticated, calling OAuth start...');
       
-      // Fetch OAuth URL with explicit Authorization header
+      // Fetch OAuth URL - pass userId in body instead of relying on auth header
       const { data, error } = await supabase.functions.invoke("calendly-oauth-start", {
-        body: { teamId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
+        body: { 
+          teamId,
+          userId: user.id 
         }
       });
 
@@ -515,19 +514,18 @@ export function CalendlyConfig({
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
-      // Get current session explicitly
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (sessionError || !session) {
-        console.error('No active session:', sessionError);
-        throw new Error('Please refresh the page and try again - session expired');
+      if (!user) {
+        throw new Error('Please log in to continue');
       }
       
-      // Use edge function to revoke token with explicit Authorization header
+      // Use edge function to revoke token - pass userId in body
       const { data, error } = await supabase.functions.invoke("reset-calendly", {
-        body: { teamId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
+        body: { 
+          teamId,
+          userId: user.id 
         }
       });
 

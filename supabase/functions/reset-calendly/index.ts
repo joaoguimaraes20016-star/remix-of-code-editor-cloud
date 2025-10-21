@@ -17,46 +17,23 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Get authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const { teamId, userId } = await req.json();
 
-    // Extract and verify JWT token
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    console.log('Disconnecting Calendly for team:', teamId, 'user:', userId);
 
-    if (userError || !user) {
-      console.error('User authentication failed:', userError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Authenticated user:', user.id);
-
-    const { teamId } = await req.json();
-
-    if (!teamId) {
-      return new Response(JSON.stringify({ error: 'teamId is required' }), {
+    if (!teamId || !userId) {
+      return new Response(JSON.stringify({ error: 'teamId and userId are required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    console.log('Disconnecting Calendly for team:', teamId);
 
     // Verify user has permission to modify this team
     const { data: membership, error: membershipError } = await supabaseAdmin
       .from('team_members')
       .select('role')
       .eq('team_id', teamId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (membershipError) {

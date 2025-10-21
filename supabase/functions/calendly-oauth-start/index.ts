@@ -12,72 +12,30 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client with service role for auth check
+    // Initialize Supabase client with service role
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get the authorization header - supabase.functions.invoke() automatically includes it
-    const authHeader = req.headers.get('Authorization');
-    
-    console.log('=== AUTH DEBUG ===');
-    console.log('Auth header present:', !!authHeader);
-    console.log('All headers:', JSON.stringify([...req.headers.entries()]));
-    console.log('==================');
-    
-    if (!authHeader) {
-      console.error('No authorization header provided');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - no auth header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Extract the JWT token
-    const token = authHeader.replace('Bearer ', '');
-    console.log('Token extracted, length:', token?.length || 0);
-    
-    if (!token || token.length < 10) {
-      console.error('Invalid token extracted from auth header');
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    // Verify the user using service role
-    console.log('Verifying user token...');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-
-    if (userError || !user) {
-      console.error('User authentication failed:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Authenticated user:', user.id);
-
     // Get request body
-    const { teamId } = await req.json();
+    const { teamId, userId } = await req.json();
 
-    if (!teamId) {
+    console.log('Starting OAuth flow for teamId:', teamId, 'userId:', userId);
+
+    if (!teamId || !userId) {
       return new Response(
-        JSON.stringify({ error: 'Team ID is required' }),
+        JSON.stringify({ error: 'Team ID and User ID are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('Starting OAuth flow for user:', user.id, 'team:', teamId);
 
     // Verify user is owner or offer_owner of this team
     const { data: membership, error: membershipError } = await supabaseAdmin
       .from('team_members')
       .select('role')
       .eq('team_id', teamId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (membershipError) {
@@ -89,7 +47,7 @@ Deno.serve(async (req) => {
     }
 
     if (!membership) {
-      console.error('No membership found for user:', user.id, 'in team:', teamId);
+      console.error('No membership found for user:', userId, 'in team:', teamId);
       return new Response(
         JSON.stringify({ error: 'You are not a member of this team' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -121,8 +79,8 @@ Deno.serve(async (req) => {
     // Get the origin from the request headers to redirect back correctly
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || '';
 
-    // Generate state parameter (includes team_id and origin for callback)
-    const state = btoa(JSON.stringify({ teamId, userId: user.id, origin }));
+    // Generate state parameter (includes team_id, user_id, and origin for callback)
+    const state = btoa(JSON.stringify({ teamId, userId, origin }));
 
     // Construct Calendly OAuth authorization URL
     const authUrl = new URL('https://auth.calendly.com/oauth/authorize');
