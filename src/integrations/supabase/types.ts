@@ -834,7 +834,7 @@ export type Database = {
         | "CLOSED"
         | "RESCHEDULED"
         | "CONFIRMED"
-      global_role: "super_admin" | "member"
+      global_role: "super_admin" | "member" | "creator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -971,7 +971,7 @@ export const Constants = {
         "RESCHEDULED",
         "CONFIRMED",
       ],
-      global_role: ["super_admin", "member"],
+      global_role: ["super_admin", "member", "creator"],
     },
   },
 } as const

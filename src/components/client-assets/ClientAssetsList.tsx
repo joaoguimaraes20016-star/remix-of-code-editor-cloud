@@ -73,14 +73,27 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
       return;
     }
 
+    console.log('Loading assets for user:', user.email);
+    console.log('Team IDs:', teamIds);
+
     // Load assets that either:
-    // 1. Have team_id matching user's teams
+    // 1. Have team_id matching user's teams (if user has teams)
     // 2. Were created by the user and have no team_id yet (pending account creation)
     // But exclude assets where client_email matches current user (their own asset)
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from('client_assets')
-      .select('*')
-      .or(`team_id.in.(${teamIds.join(',')}),and(created_by.eq.${user.id},team_id.is.null)`)
+      .select('*');
+
+    // Build the OR condition based on whether user has teams
+    if (teamIds.length > 0) {
+      query = query.or(`team_id.in.(${teamIds.join(',')}),and(created_by.eq.${user.id},team_id.is.null)`);
+    } else {
+      // If no teams, just get assets created by this user with no team
+      query = query.eq('created_by', user.id).is('team_id', null);
+    }
+
+    const { data, error } = await query
       .neq('client_email', user.email)
       .order('created_at', { ascending: false });
 
@@ -91,6 +104,7 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
       return;
     }
 
+    console.log('Loaded assets:', data?.length);
     setAssets(data || []);
     setFilteredAssets(data || []);
     setLoading(false);

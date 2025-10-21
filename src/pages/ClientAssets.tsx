@@ -39,14 +39,14 @@ export default function ClientAssets() {
 
   const loadTeams = async () => {
     try {
-      // Check if user has creator global role (signed up with creator code)
+      // Check if user has creator or super_admin global role
       const { data: userRole } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user?.id)
         .maybeSingle();
 
-      setIsCreator(userRole?.role === 'creator' as any);
+      setIsCreator(userRole?.role === 'creator' || userRole?.role === 'super_admin');
 
       // Get all teams for the user
       const { data: teamMembers, error } = await supabase
