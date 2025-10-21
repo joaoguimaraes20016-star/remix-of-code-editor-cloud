@@ -4,9 +4,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, Search, Mail, Copy } from 'lucide-react';
+import { Eye, Search, Mail, Copy, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClientAssetViewer } from './ClientAssetViewer';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ClientAsset {
   id: string;
@@ -28,6 +38,7 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<ClientAsset | null>(null);
+  const [deleteAssetId, setDeleteAssetId] = useState<string | null>(null);
 
   useEffect(() => {
     loadAssets();
@@ -116,6 +127,27 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
     toast.success('Onboarding link copied to clipboard');
   };
 
+  const handleDelete = async () => {
+    if (!deleteAssetId) return;
+
+    try {
+      const { error } = await supabase
+        .from('client_assets')
+        .delete()
+        .eq('id', deleteAssetId);
+
+      if (error) throw error;
+
+      toast.success('Client asset deleted successfully');
+      loadAssets();
+    } catch (error) {
+      console.error('Error deleting asset:', error);
+      toast.error('Failed to delete client asset');
+    } finally {
+      setDeleteAssetId(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string }> = {
       complete: { variant: 'default', label: 'Complete' },
@@ -201,12 +233,37 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeleteAssetId(asset.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deleteAssetId} onOpenChange={() => setDeleteAssetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Client Asset</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this client asset? This action cannot be undone.
+              All associated data and files will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
