@@ -7,9 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Plus, Trash2, Edit2, GripVertical } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Plus, Trash2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -178,14 +178,14 @@ export function OnboardingTemplateManager({ teamId }: OnboardingTemplateManagerP
       is_required: false,
       placeholder_text: '',
       help_text: '',
-      order_index: templates.length,
+      order_index: templates.length + 1,
     });
     setEditingId(null);
     setShowDialog(false);
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center p-8">Loading...</div>;
+    return <div className="flex items-center justify-center p-8">Loading templates...</div>;
   }
 
   // Group templates by category
@@ -197,6 +197,16 @@ export function OnboardingTemplateManager({ teamId }: OnboardingTemplateManagerP
     acc[category].push(template);
     return acc;
   }, {} as Record<string, TemplateField[]>);
+
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      instagram: 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20',
+      domain: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+      manychat: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
+      media: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
+    };
+    return colors[category] || 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20';
+  };
 
   return (
     <Card>
@@ -217,63 +227,78 @@ export function OnboardingTemplateManager({ teamId }: OnboardingTemplateManagerP
       <CardContent>
         {templates.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg mb-2">No custom fields yet</p>
-            <p className="text-sm">Add your first field to customize the onboarding form</p>
+            <p className="mb-4">No custom fields yet.</p>
+            <Button onClick={() => setShowDialog(true)} variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Add your first field
+            </Button>
           </div>
         ) : (
-          <Accordion type="multiple" defaultValue={Object.keys(groupedTemplates)} className="w-full">
+          <Accordion type="multiple" defaultValue={Object.keys(groupedTemplates)} className="space-y-2">
             {Object.entries(groupedTemplates).map(([category, fields]) => (
-              <AccordionItem key={category} value={category} className="border-b">
-                <AccordionTrigger className="hover:no-underline py-4">
+              <AccordionItem key={category} value={category} className="border rounded-lg px-4">
+                <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg font-semibold capitalize">{category}</span>
-                    <Badge variant="secondary" className="ml-2">
-                      {fields.length} field{fields.length !== 1 ? 's' : ''}
+                    <Badge variant="outline" className={getCategoryColor(category)}>
+                      {category}
                     </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {fields.length} field{fields.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-3 pt-2 pb-4">
+                  <div className="space-y-2 pt-2">
                     {fields
                       .sort((a, b) => a.order_index - b.order_index)
                       .map((template) => (
                         <div
                           key={template.id}
-                          className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                          className="flex items-center gap-3 p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors"
                         >
-                          <div className="flex items-center gap-4 flex-1">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary font-semibold text-sm">
-                              {template.order_index}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium">{template.field_name}</span>
-                                {template.is_required && (
-                                  <Badge variant="destructive" className="text-xs">Required</Badge>
-                                )}
-                                <Badge variant="outline" className="text-xs">
-                                  {template.field_type}
-                                </Badge>
-                              </div>
-                              {template.help_text && (
-                                <p className="text-sm text-muted-foreground">{template.help_text}</p>
-                              )}
-                              {template.placeholder_text && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Placeholder: {template.placeholder_text}
-                                </p>
-                              )}
-                            </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <GripVertical className="h-4 w-4" />
+                            <span className="text-xs font-mono w-6">{template.order_index}</span>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(template)}>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{template.field_name}</p>
+                              {template.is_required && (
+                                <Badge variant="secondary" className="text-xs">Required</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {template.field_type}
+                              </Badge>
+                              {template.placeholder_text && (
+                                <span className="text-xs text-muted-foreground truncate">
+                                  placeholder: "{template.placeholder_text}"
+                                </span>
+                              )}
+                            </div>
+                            {template.help_text && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {template.help_text}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEdit(template)}
+                              className="h-8 w-8 p-0"
+                            >
                               <Edit2 className="h-4 w-4" />
                             </Button>
                             <Button 
                               variant="ghost" 
-                              size="icon" 
+                              size="sm" 
                               onClick={() => handleDelete(template.id)}
-                              className="text-destructive hover:text-destructive"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -304,7 +329,7 @@ export function OnboardingTemplateManager({ teamId }: OnboardingTemplateManagerP
                 <Input
                   value={formData.field_category}
                   onChange={(e) => setFormData({ ...formData, field_category: e.target.value })}
-                  placeholder="e.g., social_media, credentials"
+                  placeholder="e.g., instagram, domain"
                 />
               </div>
 
