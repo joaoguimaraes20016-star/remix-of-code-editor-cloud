@@ -263,49 +263,82 @@ const Dashboard = () => {
           <p className="text-muted-foreground text-lg">Choose a workspace to get started with your operations</p>
         </div>
 
-        {/* Client Assets Section - Only show if user is a growth operator */}
+        {/* Client Management Section - Only show if user is a growth operator */}
         {isGrowthOperator && (
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
-                <FolderKey className="h-5 w-5 text-primary" />
+                <User className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold">Client Onboarding</h3>
+                <h3 className="text-xl font-semibold">Client Management</h3>
                 <p className="text-sm text-muted-foreground">
-                  Manage client credentials, assets, and onboarding workflows
+                  Manage client information and onboarding workflows
                 </p>
               </div>
             </div>
             
-            <Card
-              className="group hover:border-primary hover:shadow-glow transition-all duration-300 cursor-pointer bg-gradient-card backdrop-blur-sm border-2 border-primary/50"
-              onClick={() => navigate('/client-assets')}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1 flex-1">
-                    <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
-                      <FolderKey className="h-5 w-5" />
-                      Client Assets Dashboard
-                    </CardTitle>
-                    <CardDescription className="text-base">
-                      Access secure client information, track onboarding progress, and manage credentials
-                    </CardDescription>
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+              {/* Onboard New Client Card */}
+              <Card
+                className="group hover:border-primary hover:shadow-glow transition-all duration-300 cursor-pointer bg-gradient-card backdrop-blur-sm border-2 border-primary/50"
+                onClick={() => navigate('/client-assets?tab=onboard')}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1 flex-1">
+                      <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
+                        <Plus className="h-5 w-5" />
+                        Onboard New Client
+                      </CardTitle>
+                      <CardDescription className="text-base">
+                        Create secure onboarding forms and send unique links to new clients
+                      </CardDescription>
+                    </div>
+                    <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                      →
+                    </div>
                   </div>
-                  <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                    →
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="px-2 py-1 bg-primary/10 rounded">Custom Forms</span>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Share Links</span>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Track Progress</span>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <span className="px-2 py-1 bg-primary/10 rounded">Onboarding Forms</span>
-                  <span className="px-2 py-1 bg-primary/10 rounded">Asset Management</span>
-                  <span className="px-2 py-1 bg-primary/10 rounded">Client Portal</span>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Client Assets Card */}
+              <Card
+                className="group hover:border-primary hover:shadow-glow transition-all duration-300 cursor-pointer bg-gradient-card backdrop-blur-sm border-2 border-primary/50"
+                onClick={() => navigate('/client-assets')}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1 flex-1">
+                      <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
+                        <FolderKey className="h-5 w-5" />
+                        Client Assets
+                      </CardTitle>
+                      <CardDescription className="text-base">
+                        View and manage existing client information and credentials
+                      </CardDescription>
+                    </div>
+                    <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                      →
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="px-2 py-1 bg-primary/10 rounded">View Assets</span>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Manage Data</span>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Download Files</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 

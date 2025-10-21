@@ -5,7 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, FolderKey, Plus, User } from 'lucide-react';
+import { ArrowLeft, FolderKey, User, Plus } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ClientAssetsDashboard } from '@/components/client-assets/ClientAssetsDashboard';
 import { ClientAssetsList } from '@/components/client-assets/ClientAssetsList';
@@ -22,11 +23,15 @@ interface Team {
 export default function ClientAssets() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [hasOwnAsset, setHasOwnAsset] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  
+  // Check if we should open the onboard tab
+  const defaultTab = searchParams.get('tab') === 'onboard' ? 'onboard' : 'assets';
 
   useEffect(() => {
     if (!user) {
@@ -178,33 +183,24 @@ export default function ClientAssets() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                  Client Assets Management
+                  {defaultTab === 'onboard' ? 'Onboard New Client' : 'Client Assets'}
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                  Manage existing clients and onboard new ones securely
+                  {defaultTab === 'onboard' 
+                    ? 'Create secure onboarding forms for new clients'
+                    : 'View and manage existing client information'
+                  }
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Content based on tab */}
         {teams.length > 0 && (
-          <Tabs defaultValue="assets" className="space-y-6">
-            <TabsList className="bg-card/50 backdrop-blur-sm border border-border">
-              <TabsTrigger value="assets">Client Assets</TabsTrigger>
-              <TabsTrigger value="onboard">Onboard New Client</TabsTrigger>
-              <TabsTrigger value="templates">Form Templates</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="assets" className="space-y-6">
-              <ClientAssetsDashboard teamIds={teams.map(t => t.id)} />
-              <div className="mt-6">
-                <ClientAssetsList teamIds={teams.map(t => t.id)} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="onboard" className="space-y-6">
+          defaultTab === 'onboard' ? (
+            // Onboard New Client View
+            <div className="space-y-6">
               <Card className="bg-card/50 backdrop-blur-sm border-2 border-primary/20">
                 <CardContent className="pt-6">
                   <div className="text-center space-y-4 mb-6">
@@ -212,9 +208,9 @@ export default function ClientAssets() {
                       <Plus className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold">Onboard New Client</h2>
+                      <h2 className="text-2xl font-bold">Create Client Onboarding</h2>
                       <p className="text-muted-foreground mt-2">
-                        Create a secure onboarding form to collect client information
+                        Generate a secure form to collect client information
                       </p>
                     </div>
                   </div>
@@ -258,12 +254,27 @@ export default function ClientAssets() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </div>
+          ) : (
+            // Client Assets View
+            <Tabs defaultValue="assets" className="space-y-6">
+              <TabsList className="bg-card/50 backdrop-blur-sm border border-border">
+                <TabsTrigger value="assets">Client Assets</TabsTrigger>
+                <TabsTrigger value="templates">Form Templates</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="templates" className="space-y-6">
-              <OnboardingTemplateManager teamId={teams[0].id} />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="assets" className="space-y-6">
+                <ClientAssetsDashboard teamIds={teams.map(t => t.id)} />
+                <div className="mt-6">
+                  <ClientAssetsList teamIds={teams.map(t => t.id)} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="templates" className="space-y-6">
+                <OnboardingTemplateManager teamId={teams[0].id} />
+              </TabsContent>
+            </Tabs>
+          )
         )}
       </div>
 
