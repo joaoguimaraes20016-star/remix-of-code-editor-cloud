@@ -91,6 +91,241 @@ export type Database = {
           },
         ]
       }
+      asset_field_templates: {
+        Row: {
+          created_at: string | null
+          field_category: string
+          field_name: string
+          field_type: string
+          help_text: string | null
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          order_index: number
+          placeholder_text: string | null
+          team_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_category: string
+          field_name: string
+          field_type: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          order_index: number
+          placeholder_text?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_category?: string
+          field_name?: string
+          field_type?: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          order_index?: number
+          placeholder_text?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_field_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_asset_audit_logs: {
+        Row: {
+          action: string
+          client_asset_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          client_asset_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          client_asset_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_asset_audit_logs_client_asset_id_fkey"
+            columns: ["client_asset_id"]
+            isOneToOne: false
+            referencedRelation: "client_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_asset_fields: {
+        Row: {
+          client_asset_id: string
+          created_at: string | null
+          field_category: string
+          field_name: string
+          field_type: string
+          field_value: string | null
+          id: string
+          is_required: boolean | null
+          order_index: number
+          updated_at: string | null
+        }
+        Insert: {
+          client_asset_id: string
+          created_at?: string | null
+          field_category: string
+          field_name: string
+          field_type: string
+          field_value?: string | null
+          id?: string
+          is_required?: boolean | null
+          order_index: number
+          updated_at?: string | null
+        }
+        Update: {
+          client_asset_id?: string
+          created_at?: string | null
+          field_category?: string
+          field_name?: string
+          field_type?: string
+          field_value?: string | null
+          id?: string
+          is_required?: boolean | null
+          order_index?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_asset_fields_client_asset_id_fkey"
+            columns: ["client_asset_id"]
+            isOneToOne: false
+            referencedRelation: "client_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_asset_files: {
+        Row: {
+          client_asset_id: string
+          file_category: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          client_asset_id: string
+          file_category: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          mime_type: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          client_asset_id?: string
+          file_category?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_asset_files_client_asset_id_fkey"
+            columns: ["client_asset_id"]
+            isOneToOne: false
+            referencedRelation: "client_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_assets: {
+        Row: {
+          access_token: string
+          client_email: string
+          client_name: string
+          completion_percentage: number | null
+          created_at: string | null
+          created_by: string
+          id: string
+          last_updated_by: string | null
+          status: string
+          team_id: string
+          token_expires_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_token: string
+          client_email: string
+          client_name: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          last_updated_by?: string | null
+          status?: string
+          team_id: string
+          token_expires_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          client_email?: string
+          client_name?: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          last_updated_by?: string | null
+          status?: string
+          team_id?: string
+          token_expires_at?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_assets_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string | null
@@ -546,6 +781,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_completion_percentage: {
+        Args: { asset_id: string }
+        Returns: number
+      }
       can_create_teams: {
         Args: { _user_id: string }
         Returns: boolean

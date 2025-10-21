@@ -1,0 +1,185 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Eye, Search, Mail, Copy } from 'lucide-react';
+import { toast } from 'sonner';
+import { ClientAssetViewer } from './ClientAssetViewer';
+
+interface ClientAsset {
+  id: string;
+  client_name: string;
+  client_email: string;
+  status: string;
+  completion_percentage: number;
+  access_token: string;
+  created_at: string;
+}
+
+interface ClientAssetsListProps {
+  teamId: string;
+}
+
+export function ClientAssetsList({ teamId }: ClientAssetsListProps) {
+  const [assets, setAssets] = useState<ClientAsset[]>([]);
+  const [filteredAssets, setFilteredAssets] = useState<ClientAsset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAsset, setSelectedAsset] = useState<ClientAsset | null>(null);
+
+  useEffect(() => {
+    loadAssets();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('client-assets-list')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'client_assets',
+          filter: `team_id=eq.${teamId}`,
+        },
+        () => {
+          loadAssets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [teamId]);
+
+  useEffect(() => {
+    const filtered = assets.filter(
+      (asset) =>
+        asset.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        asset.client_email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredAssets(filtered);
+  }, [searchQuery, assets]);
+
+  const loadAssets = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('client_assets')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading assets:', error);
+      toast.error('Failed to load client assets');
+      setLoading(false);
+      return;
+    }
+
+    setAssets(data || []);
+    setFilteredAssets(data || []);
+    setLoading(false);
+  };
+
+  const copyOnboardingLink = (token: string) => {
+    const link = `${window.location.origin}/onboard/${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Onboarding link copied to clipboard');
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, { variant: any; label: string }> = {
+      complete: { variant: 'default', label: 'Complete' },
+      in_progress: { variant: 'secondary', label: 'In Progress' },
+      not_started: { variant: 'outline', label: 'Not Started' },
+      needs_update: { variant: 'destructive', label: 'Needs Update' },
+    };
+
+    const config = variants[status] || variants.not_started;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  if (selectedAsset) {
+    return (
+      <ClientAssetViewer
+        assetId={selectedAsset.id}
+        onClose={() => setSelectedAsset(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by client name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Client Cards */}
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading clients...</p>
+        </div>
+      ) : filteredAssets.length === 0 ? (
+        <Card className="bg-card/50 backdrop-blur-sm border-2 border-dashed border-border">
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">
+              {searchQuery ? 'No clients found matching your search' : 'No clients yet'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredAssets.map((asset) => (
+            <Card
+              key={asset.id}
+              className="bg-card/50 backdrop-blur-sm border-2 border-border hover:border-primary/50 transition-all"
+            >
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-lg">{asset.client_name}</h3>
+                  <p className="text-sm text-muted-foreground">{asset.client_email}</p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  {getStatusBadge(asset.status)}
+                  <span className="text-sm text-muted-foreground">
+                    {Math.round(asset.completion_percentage)}%
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedAsset(asset)}
+                    className="flex-1"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyOnboardingLink(asset.access_token)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

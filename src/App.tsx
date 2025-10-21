@@ -10,6 +10,7 @@ import AuthCallback from "./pages/AuthCallback";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import TeamSettings from "./pages/TeamSettings";
+import ClientAssets from "./pages/ClientAssets";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/team/:teamId" element={<Index />} />
             <Route path="/team/:teamId/settings" element={<TeamSettings />} />
+            <Route path="/team/:teamId/client-assets" element={<ClientAssets />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
