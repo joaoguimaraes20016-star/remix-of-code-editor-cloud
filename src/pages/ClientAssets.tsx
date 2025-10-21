@@ -5,12 +5,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, FolderKey, Plus } from 'lucide-react';
+import { ArrowLeft, FolderKey, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClientAssetsDashboard } from '@/components/client-assets/ClientAssetsDashboard';
 import { ClientAssetsList } from '@/components/client-assets/ClientAssetsList';
 import { NewClientAssetDialog } from '@/components/client-assets/NewClientAssetDialog';
 import { OnboardingTemplateManager } from '@/components/client-assets/OnboardingTemplateManager';
+import { MyAssets } from '@/components/client-assets/MyAssets';
 
 interface Team {
   id: string;
@@ -36,12 +37,11 @@ export default function ClientAssets() {
 
   const loadTeams = async () => {
     try {
-      // Get teams where user is offer_owner, admin, or owner
+      // Get all teams for the user
       const { data: teamMembers, error } = await supabase
         .from('team_members')
         .select('team_id, role, teams(id, name)')
-        .eq('user_id', user?.id)
-        .in('role', ['owner', 'admin', 'offer_owner']);
+        .eq('user_id', user?.id);
 
       if (error) throw error;
 
@@ -91,7 +91,7 @@ export default function ClientAssets() {
               <FolderKey className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">No Access</h2>
               <p className="text-muted-foreground">
-                You need to be an owner, admin, or offer owner to access Client Assets.
+                You haven't been added to any teams yet.
               </p>
             </CardContent>
           </Card>
@@ -100,6 +100,48 @@ export default function ClientAssets() {
     );
   }
 
+  // Check if user is a growth operator (offer_owner, admin, or owner)
+  const isGrowthOperator = teams.some(t => 
+    ['owner', 'admin', 'offer_owner'].includes(t.role)
+  );
+
+  // If not a growth operator, show My Assets view
+  if (!isGrowthOperator) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
+        <div className="container mx-auto px-4 py-6 space-y-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="w-fit"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+
+          <div className="bg-card/50 backdrop-blur-sm border-2 border-primary/20 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <User className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  My Information
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Manage your onboarding information and track your progress
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <MyAssets />
+        </div>
+      </div>
+    );
+  }
+
+  // Growth operator view - show admin interface
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
       <div className="container mx-auto px-4 py-6 space-y-6">

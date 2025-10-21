@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Users, TrendingUp, Trash2, FolderKey, DollarSign, Calendar, BarChart3 } from "lucide-react";
+import { Plus, Users, TrendingUp, Trash2, FolderKey, DollarSign, Calendar, BarChart3, User } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,7 @@ const Dashboard = () => {
   const [creating, setCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [canCreateTeams, setCanCreateTeams] = useState(false);
+  const [isGrowthOperator, setIsGrowthOperator] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +51,17 @@ const Dashboard = () => {
       .single();
     
     setCanCreateTeams(profile?.account_type === 'creator');
+
+    // Check if user is a growth operator (offer_owner, admin, or owner)
+    const { data: teamMembers } = await supabase
+      .from('team_members')
+      .select('role')
+      .eq('user_id', user.id);
+
+    const hasGrowthRole = teamMembers?.some(tm => 
+      ['owner', 'admin', 'offer_owner'].includes(tm.role)
+    );
+    setIsGrowthOperator(hasGrowthRole || false);
   };
 
   const loadTeams = async () => {
@@ -235,8 +247,15 @@ const Dashboard = () => {
               <FolderKey className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold">Client Onboarding</h3>
-              <p className="text-sm text-muted-foreground">Manage client credentials, assets, and onboarding workflows</p>
+              <h3 className="text-xl font-semibold">
+                {isGrowthOperator ? 'Client Onboarding' : 'My Information'}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {isGrowthOperator 
+                  ? 'Manage client credentials, assets, and onboarding workflows'
+                  : 'View and update your onboarding information'
+                }
+              </p>
             </div>
           </div>
           
@@ -249,10 +268,13 @@ const Dashboard = () => {
                 <div className="space-y-1 flex-1">
                   <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
                     <FolderKey className="h-5 w-5" />
-                    Client Assets Dashboard
+                    {isGrowthOperator ? 'Client Assets Dashboard' : 'My Information'}
                   </CardTitle>
                   <CardDescription className="text-base">
-                    Access secure client information, track onboarding progress, and manage credentials
+                    {isGrowthOperator
+                      ? 'Access secure client information, track onboarding progress, and manage credentials'
+                      : 'View your profile, update information, and track your onboarding completion'
+                    }
                   </CardDescription>
                 </div>
                 <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
@@ -262,9 +284,19 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span className="px-2 py-1 bg-primary/10 rounded">Onboarding Forms</span>
-                <span className="px-2 py-1 bg-primary/10 rounded">Asset Management</span>
-                <span className="px-2 py-1 bg-primary/10 rounded">Client Portal</span>
+                {isGrowthOperator ? (
+                  <>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Onboarding Forms</span>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Asset Management</span>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Client Portal</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Profile Info</span>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Edit Details</span>
+                    <span className="px-2 py-1 bg-primary/10 rounded">Track Progress</span>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
