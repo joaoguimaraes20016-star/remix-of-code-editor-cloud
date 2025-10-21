@@ -47,9 +47,11 @@ const Auth = () => {
       const token = params.get('invite');
       const creatorParam = params.get('creator');
       
-      console.log('=== AUTH PAGE LOADED ===');
-      console.log('Full URL:', window.location.href);
-      console.log('Invite token:', token);
+      if (import.meta.env.DEV) {
+        console.log('=== AUTH PAGE LOADED ===');
+        console.log('Full URL:', window.location.href);
+        console.log('Invite token:', token);
+      }
       
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
@@ -66,7 +68,9 @@ const Auth = () => {
       
       // If user is logged in and NO invite token, redirect to dashboard
       if (session?.user && !token) {
-        console.log('Logged in user without invite, redirecting to dashboard');
+        if (import.meta.env.DEV) {
+          console.log('Logged in user without invite, redirecting to dashboard');
+        }
         navigate('/dashboard');
         return;
       }
@@ -75,7 +79,9 @@ const Auth = () => {
       if (token) {
         // User is logged in with invite token - auto accept
         if (session?.user) {
-          console.log('Logged in user with invite, auto-accepting...');
+          if (import.meta.env.DEV) {
+            console.log('Logged in user with invite, auto-accepting...');
+          }
           
           try {
             const { data: invitation, error: inviteError } = await supabase
@@ -86,7 +92,9 @@ const Auth = () => {
               .maybeSingle();
 
             if (inviteError || !invitation) {
-              console.error('Invitation error:', inviteError);
+              if (import.meta.env.DEV) {
+                console.error('Invitation error:', inviteError);
+              }
               toast({
                 title: 'Invalid invitation',
                 description: 'This invitation link is not valid or has already been used.',
@@ -126,7 +134,9 @@ const Auth = () => {
                 });
 
               if (memberError) {
-                console.error('Error adding team member:', memberError);
+                if (import.meta.env.DEV) {
+                  console.error('Error adding team member:', memberError);
+                }
                 throw memberError;
               }
 
@@ -152,7 +162,9 @@ const Auth = () => {
             }, 1000);
             
           } catch (err) {
-            console.error('Error processing invitation:', err);
+            if (import.meta.env.DEV) {
+              console.error('Error processing invitation:', err);
+            }
             toast({
               title: 'Error',
               description: 'Could not process invitation. Please try again.',
@@ -164,7 +176,9 @@ const Auth = () => {
         }
 
         // User NOT logged in with invite - show signup form
-        console.log('Not logged in, showing invite signup form');
+        if (import.meta.env.DEV) {
+          console.log('Not logged in, showing invite signup form');
+        }
         setInviteMode(true);
         setInviteToken(token);
         setInviteLoading(true);

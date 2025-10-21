@@ -173,40 +173,68 @@ serve(async (req) => {
     if (!signingKey) {
       // Fall back to global signing key from environment (set from Calendly Developer Console)
       signingKey = Deno.env.get('CALENDLY_WEBHOOK_SIGNING_KEY');
-      
-      if (!signingKey) {
-        console.error('No signing key configured for team or in environment');
-        console.error('Webhook verification disabled - this is insecure!');
-        console.error('Set CALENDLY_WEBHOOK_SIGNING_KEY from: https://developer.calendly.com/console/apps');
-        
-        // For now, allow the webhook through but log a warning
-        // In production, you should reject it
-        console.warn('Processing webhook WITHOUT signature verification');
-      }
     }
     
-    // Only verify signature if we have a signing key AND it's not an error message
+    // Validate signing key format
     const isValidSigningKey = signingKey && !signingKey.includes('Please allow popups') && signingKey.length > 20;
     
-    if (isValidSigningKey) {
-      const signature = req.headers.get('calendly-webhook-signature');
+    if (!isValidSigningKey) {
+      console.error('SECURITY: No valid signing key configured for team or in environment');
+      console.error('Rejecting webhook - signature verification is required');
+      console.error('Set CALENDLY_WEBHOOK_SIGNING_KEY from: https://developer.calendly.com/console/apps');
       
-      if (signature) {
-        const isValidSignature = await verifyWebhookSignature(rawBody, signature, signingKey);
-        
-        if (!isValidSignature) {
-          console.error('Invalid webhook signature');
-          console.warn('Proceeding anyway - signature verification failed but allowing through');
-          // Don't block the webhook, just log the issue
-        } else {
-          console.log('Webhook signature verified successfully');
+      await logWebhookEvent(supabase, teamIdParam, 'signature_verification_failed', 'error', {
+        error: 'No signing key configured',
+        team_id: teamIdParam
+      });
+      
+      return new Response(
+        JSON.stringify({ error: 'Webhook signature verification required' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
-      } else {
-        console.warn('No signature provided in webhook request');
-      }
-    } else {
-      console.warn('Processing webhook WITHOUT signature verification - signing key not valid:', signingKey?.substring(0, 30));
+      );
     }
+    
+    // Verify signature
+    const signature = req.headers.get('calendly-webhook-signature');
+    
+    if (!signature) {
+      console.error('SECURITY: No signature provided in webhook request');
+      await logWebhookEvent(supabase, teamIdParam, 'missing_signature', 'error', {
+        error: 'No signature header',
+        team_id: teamIdParam
+      });
+      
+      return new Response(
+        JSON.stringify({ error: 'Webhook signature required' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const isValidSignature = await verifyWebhookSignature(rawBody, signature, signingKey);
+    
+    if (!isValidSignature) {
+      console.error('SECURITY: Invalid webhook signature - rejecting request');
+      await logWebhookEvent(supabase, teamIdParam, 'invalid_signature', 'error', {
+        error: 'Signature verification failed',
+        team_id: teamIdParam
+      });
+      
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook signature' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    console.log('✓ Webhook signature verified successfully');
     
     const rawPayload = JSON.parse(rawBody);
     console.log('Received valid Calendly webhook for team:', teamId);

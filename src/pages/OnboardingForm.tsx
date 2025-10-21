@@ -70,7 +70,9 @@ export default function OnboardingForm() {
         .single();
 
       if (assetError) {
-        console.error('Asset error:', assetError);
+        if (import.meta.env.DEV) {
+          console.error('Asset error:', assetError);
+        }
         toast.error('Invalid or expired link');
         navigate('/');
         return;
@@ -93,7 +95,9 @@ export default function OnboardingForm() {
         .order('order_index');
 
       if (fieldsError) {
-        console.error('Fields error:', fieldsError);
+        if (import.meta.env.DEV) {
+          console.error('Fields error:', fieldsError);
+        }
         toast.error('Failed to load form');
         return;
       }
@@ -129,7 +133,9 @@ export default function OnboardingForm() {
 
       setFields(enrichedFields);
     } catch (error) {
-      console.error('Error loading asset:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error loading asset:', error);
+      }
       toast.error('An error occurred');
       navigate('/');
     } finally {
@@ -152,20 +158,68 @@ export default function OnboardingForm() {
         }
       }
     } catch (error) {
-      console.error('Auto-save error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Auto-save error:', error);
+      }
     } finally {
       setSaving(false);
     }
   };
 
   const handleFieldChange = (fieldId: string, value: string) => {
+    const field = fields.find(f => f.id === fieldId);
+    
+    // Input validation
+    let sanitizedValue = value;
+    
+    // Enforce max length to prevent data corruption
+    if (sanitizedValue.length > 5000) {
+      toast.error('Input too long. Maximum 5000 characters.');
+      return;
+    }
+    
+    // Validate URLs
+    if (field?.field_type === 'url' && sanitizedValue) {
+      try {
+        new URL(sanitizedValue);
+      } catch {
+        // Allow partial URLs during typing, validate on blur
+      }
+    }
+    
+    // Trim whitespace for non-password fields
+    if (field?.field_type !== 'password') {
+      sanitizedValue = sanitizedValue.trim();
+    }
+    
     setFields((prev) =>
-      prev.map((f) => (f.id === fieldId ? { ...f, field_value: value } : f))
+      prev.map((f) => (f.id === fieldId ? { ...f, field_value: sanitizedValue } : f))
     );
   };
 
   const handleFileUpload = async (fieldId: string, file: File) => {
     if (!asset) return;
+
+    // File validation
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      toast.error('File too large. Maximum size is 50MB.');
+      return;
+    }
+
+    // Validate file type - allow common formats only
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/quicktime', 'video/x-msvideo',
+      'application/pdf',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('File type not allowed. Please upload images, videos, PDFs, or documents.');
+      return;
+    }
 
     setUploadingFiles((prev) => new Set(prev).add(fieldId));
     try {
@@ -190,7 +244,9 @@ export default function OnboardingForm() {
       handleFieldChange(fieldId, 'File uploaded');
       toast.success('File uploaded successfully');
     } catch (error: any) {
-      console.error('Upload error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Upload error:', error);
+      }
       toast.error('Failed to upload file');
     } finally {
       setUploadingFiles((prev) => {
@@ -236,7 +292,9 @@ export default function OnboardingForm() {
       setSubmitted(true);
       toast.success('Form submitted successfully!');
     } catch (error) {
-      console.error('Submit error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Submit error:', error);
+      }
       toast.error('Failed to submit form');
     } finally {
       setSaving(false);

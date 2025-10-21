@@ -131,7 +131,9 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
     if (!deleteAssetId) return;
 
     try {
-      console.log('Deleting client asset and associated data:', deleteAssetId);
+      if (import.meta.env.DEV) {
+        console.log('Deleting client asset and associated data:', deleteAssetId);
+      }
       
       // Get the client asset to find the team_id
       const { data: asset } = await supabase
@@ -151,13 +153,17 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
         .eq('id', deleteAssetId);
 
       if (assetError) {
-        console.error('Delete asset error:', assetError);
+        if (import.meta.env.DEV) {
+          console.error('Delete asset error:', assetError);
+        }
         throw assetError;
       }
 
       // If there's a team associated, delete it
       if (asset.team_id) {
-        console.log('Deleting associated team:', asset.team_id);
+        if (import.meta.env.DEV) {
+          console.log('Deleting associated team:', asset.team_id);
+        }
         
         // Delete team (this will cascade to team_members)
         const { error: teamError } = await supabase
@@ -166,16 +172,22 @@ export function ClientAssetsList({ teamIds }: ClientAssetsListProps) {
           .eq('id', asset.team_id);
 
         if (teamError) {
-          console.error('Delete team error:', teamError);
+          if (import.meta.env.DEV) {
+            console.error('Delete team error:', teamError);
+          }
           // Don't throw - asset is already deleted
         }
       }
 
-      console.log('Successfully deleted client asset and associated data');
+      if (import.meta.env.DEV) {
+        console.log('Successfully deleted client asset and associated data');
+      }
       toast.success('Client deleted successfully');
       loadAssets();
     } catch (error) {
-      console.error('Error deleting:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error deleting:', error);
+      }
       toast.error('Failed to delete client');
     } finally {
       setDeleteAssetId(null);
