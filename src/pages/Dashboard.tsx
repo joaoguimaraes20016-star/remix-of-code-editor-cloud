@@ -340,7 +340,53 @@ const Dashboard = () => {
           </div>
         )}
 
-        {isGrowthOperator && <Separator className="my-8" />}
+        {/* Client Information Section - Show for non-growth operators */}
+        {!isGrowthOperator && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">My Information</h3>
+                <p className="text-sm text-muted-foreground">
+                  View and update your onboarding information
+                </p>
+              </div>
+            </div>
+            
+            <Card
+              className="group hover:border-primary hover:shadow-glow transition-all duration-300 cursor-pointer bg-gradient-card backdrop-blur-sm border-2 border-primary/50"
+              onClick={() => navigate('/client-assets')}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1 flex-1">
+                    <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
+                      <FolderKey className="h-5 w-5" />
+                      My Profile & Assets
+                    </CardTitle>
+                    <CardDescription className="text-base">
+                      Manage your onboarding information, track your progress, and update your details
+                    </CardDescription>
+                  </div>
+                  <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    →
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span className="px-2 py-1 bg-primary/10 rounded">Profile Info</span>
+                  <span className="px-2 py-1 bg-primary/10 rounded">Track Progress</span>
+                  <span className="px-2 py-1 bg-primary/10 rounded">Update Details</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {(isGrowthOperator || teams.length > 0) && <Separator className="my-8" />}
 
         {/* Sales Teams Section - Only show if user has teams */}
         {teams.length > 0 && (

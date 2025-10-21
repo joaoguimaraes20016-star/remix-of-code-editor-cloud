@@ -63,15 +63,20 @@ export function AccountCreation({ assetId, clientName, clientEmail }: AccountCre
       });
 
       if (signInError) {
-        toast.error('Account created but failed to sign in. Please try logging in manually.');
+        console.error('Sign in error:', signInError);
+        toast.error(`Account created! ${signInError.message}. Please sign in manually.`);
+        // Wait 2 seconds then redirect to login page
+        setTimeout(() => {
+          navigate('/', { state: { email: clientEmail } });
+        }, 2000);
       } else {
         setAccountCreated(true);
         const message = data?.isNewUser ? 'Account created successfully!' : 'Welcome back! Your account has been linked.';
         toast.success(message);
         
-        // Redirect to dashboard after 2 seconds
+        // Redirect to client assets page after 2 seconds
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/client-assets');
         }, 2000);
       }
     } catch (error: any) {
