@@ -131,9 +131,9 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
     loadTeamMembers();
     loadAppointments();
 
-    // Set up realtime subscription with optimized event handling
+    // Set up realtime subscription with unique channel name
     const channel = supabase
-      .channel('all-new-appointments-changes')
+      .channel(`all-new-appointments-${teamId}-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -185,7 +185,11 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Realtime subscription error:', status);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

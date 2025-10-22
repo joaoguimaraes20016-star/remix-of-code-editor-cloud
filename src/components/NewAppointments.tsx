@@ -120,9 +120,9 @@ export function NewAppointments({ teamId, closerCommissionPct, setterCommissionP
     loadTeamMembers();
     loadAppointments();
 
-    // Set up realtime subscription
+    // Set up realtime subscription with unique channel name
     const channel = supabase
-      .channel('new-appointments-changes')
+      .channel(`new-appointments-${teamId}-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -138,6 +138,11 @@ export function NewAppointments({ teamId, closerCommissionPct, setterCommissionP
       )
       .subscribe((status) => {
         console.log('New appointments subscription status:', status);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Realtime subscription error - retrying...');
+          // Auto-retry on error
+          setTimeout(() => loadAppointments(), 2000);
+        }
       });
 
     return () => {
@@ -263,18 +268,36 @@ export function NewAppointments({ teamId, closerCommissionPct, setterCommissionP
 
     if (idsToDelete.length === 0) return;
 
+    // Limit batch size to prevent URL length issues
+    const MAX_BATCH_SIZE = 50;
+    if (idsToDelete.length > MAX_BATCH_SIZE) {
+      toast({
+        title: 'Too many appointments selected',
+        description: `Please select ${MAX_BATCH_SIZE} or fewer appointments at a time`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setDeleting(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('appointments')
         .delete()
-        .in('id', idsToDelete);
+        .in('id', idsToDelete)
+        .select();
 
       if (error) throw error;
 
+      // Check if any rows were actually deleted
+      const actuallyDeleted = data?.length || 0;
+      if (actuallyDeleted === 0 && idsToDelete.length > 0) {
+        throw new Error('Permission denied. Only team admins can delete appointments.');
+      }
+
       toast({
         title: 'Appointments deleted',
-        description: `Deleted ${idsToDelete.length} appointment${idsToDelete.length > 1 ? 's' : ''}`,
+        description: `Deleted ${actuallyDeleted} appointment${actuallyDeleted > 1 ? 's' : ''}`,
       });
 
       setDeleteDialogOpen(false);

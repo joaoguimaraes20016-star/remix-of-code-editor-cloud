@@ -71,9 +71,9 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
   useEffect(() => {
     loadAppointments();
 
-    // Set up realtime subscription with optimized event handling
+    // Set up realtime subscription with unique channel name
     const channel = supabase
-      .channel('all-claimed-changes')
+      .channel(`all-claimed-${teamId}-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -126,7 +126,11 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Realtime subscription error:', status);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
