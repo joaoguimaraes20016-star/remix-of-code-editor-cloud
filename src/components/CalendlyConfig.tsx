@@ -53,7 +53,6 @@ export function CalendlyConfig({
   const [manualUrl, setManualUrl] = useState("");
   const [isManualFetchOpen, setIsManualFetchOpen] = useState(false);
   const [isFetchingManual, setIsFetchingManual] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -474,43 +473,6 @@ export function CalendlyConfig({
     }
   };
 
-  const handleSyncAppointments = () => {
-    setSyncing(true);
-    
-    toast({
-      title: "Import Started",
-      description: "Syncing appointments in the background. You can continue using the app.",
-    });
-
-    // Run import in background without blocking UI
-    supabase.functions.invoke("import-calendly-appointments", {
-      body: { teamId },
-    }).then(({ data, error }) => {
-      setSyncing(false);
-      
-      if (error || data?.error) {
-        toast({
-          title: "Sync Failed",
-          description: error?.message || data?.error || "Failed to import appointments",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Sync Complete",
-          description: `Imported ${data.imported} appointments (${data.skipped} skipped)`,
-        });
-        onUpdate();
-      }
-    }).catch((error: any) => {
-      setSyncing(false);
-      toast({
-        title: "Sync Failed",
-        description: error.message || "Failed to sync appointments",
-        variant: "destructive",
-      });
-    });
-  };
-
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
@@ -801,16 +763,6 @@ export function CalendlyConfig({
                 <CheckCircle2 className="w-4 h-4 text-green-600 ml-auto" />
               </div>
             </div>
-
-            <Button 
-              onClick={handleSyncAppointments}
-              disabled={syncing}
-              variant="outline"
-              className="w-full"
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              {syncing ? "Syncing..." : "Sync Existing Appointments"}
-            </Button>
 
             {tokenValidationFailed ? (
               <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
