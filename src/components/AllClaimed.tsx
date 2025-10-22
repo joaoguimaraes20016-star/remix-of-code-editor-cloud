@@ -26,6 +26,15 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Trash2, Clock, Mail, User } from "lucide-react";
 import { CloseDealDialog } from "@/components/CloseDealDialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 interface Appointment {
   id: string;
@@ -55,23 +64,66 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
   const [selectedAppointments, setSelectedAppointments] = useState<Set<string>>(new Set());
   const [closeDealOpen, setCloseDealOpen] = useState(false);
   const [closeDealAppointment, setCloseDealAppointment] = useState<Appointment | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 50;
 
   useEffect(() => {
     loadAppointments();
 
-    // Set up realtime subscription
+    // Set up realtime subscription with optimized event handling
     const channel = supabase
       .channel('all-claimed-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'DELETE',
           schema: 'public',
           table: 'appointments',
           filter: `team_id=eq.${teamId}`
         },
-        () => {
-          loadAppointments();
+        (payload) => {
+          // Remove deleted appointment from local state
+          setAppointments(prev => prev.filter(apt => apt.id !== payload.old.id));
+          setTotalCount(prev => Math.max(0, prev - 1));
+          setSelectedAppointments(prev => {
+            const next = new Set(prev);
+            next.delete(payload.old.id);
+            return next;
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'appointments',
+          filter: `team_id=eq.${teamId}`
+        },
+        (payload) => {
+          // Only reload if on first page for new appointments with setter
+          const newApt = payload.new as Appointment;
+          if (newApt.setter_id && currentPage === 1) {
+            loadAppointments();
+          } else if (newApt.setter_id) {
+            setTotalCount(prev => prev + 1);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'appointments',
+          filter: `team_id=eq.${teamId}`
+        },
+        (payload) => {
+          // Update specific appointment in local state
+          setAppointments(prev => 
+            prev.map(apt => apt.id === payload.new.id ? payload.new as Appointment : apt)
+          );
         }
       )
       .subscribe();
@@ -79,16 +131,33 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId]);
+  }, [teamId, currentPage]);
 
   const loadAppointments = async () => {
     try {
+      setLoading(true);
+      
+      // Get total count
+      const { count, error: countError } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_id', teamId)
+        .not('setter_id', 'is', null);
+
+      if (countError) throw countError;
+      setTotalCount(count || 0);
+
+      // Get paginated data
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
         .not('setter_id', 'is', null)
-        .order('start_at_utc', { ascending: false });
+        .order('start_at_utc', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       setAppointments(data || []);
@@ -131,7 +200,7 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
 
       setDeleteDialogOpen(false);
       setSelectedAppointments(new Set());
-      loadAppointments();
+      // Don't reload - realtime will handle it
     } catch (error: any) {
       toast({
         title: 'Error deleting appointments',
@@ -389,6 +458,50 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
           closerCommissionPct={closerCommissionPct}
           setterCommissionPct={setterCommissionPct}
         />
+
+        {/* Pagination */}
+        {totalCount > pageSize && (
+          <Pagination className="mt-6">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: Math.ceil(totalCount / pageSize) }, (_, i) => i + 1)
+                .filter(page => {
+                  const totalPages = Math.ceil(totalCount / pageSize);
+                  return page === 1 || 
+                         page === totalPages || 
+                         (page >= currentPage - 1 && page <= currentPage + 1);
+                })
+                .map((page, index, array) => (
+                  <PaginationItem key={page}>
+                    {index > 0 && array[index - 1] !== page - 1 && (
+                      <PaginationEllipsis />
+                    )}
+                    <PaginationLink
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))
+              }
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / pageSize), prev + 1))}
+                  className={currentPage >= Math.ceil(totalCount / pageSize) ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
     );
   }
