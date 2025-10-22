@@ -54,9 +54,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (membership.role !== 'owner' && membership.role !== 'offer_owner') {
+    if (membership.role !== 'owner' && membership.role !== 'offer_owner' && membership.role !== 'admin') {
       return new Response(
-        JSON.stringify({ error: 'Only team owners can configure Calendly integration' }),
+        JSON.stringify({ error: 'Only team owners and admins can configure Calendly integration' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
