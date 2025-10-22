@@ -67,7 +67,7 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
   const canEdit = userRole === 'admin' || userRole === 'offer_owner';
 
   const canDelete = (sale: Sale) => {
-    return userRole === 'admin' || sale.offerOwner === currentUserName;
+    return userRole === 'admin' || userRole === 'offer_owner' || sale.offerOwner === currentUserName;
   };
 
   const handleDeleteClick = (sale: Sale) => {
@@ -274,9 +274,9 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
               <TableHead>Setter Commission</TableHead>
               <TableHead>Closer Commission</TableHead>
               <TableHead>Status</TableHead>
-              {userRole === 'admin' && (
+              {userRole === 'admin' || userRole === 'offer_owner' ? (
                 <TableHead className="w-[100px]">Actions</TableHead>
-              )}
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -419,7 +419,7 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
                   )}
                 </TableCell>
                 <TableCell>{getStatusBadge(sale.status)}</TableCell>
-                {userRole === 'admin' && (
+                {(userRole === 'admin' || userRole === 'offer_owner') && (
                   <TableCell>
                     {canDelete(sale) && (
                       <Button

@@ -477,8 +477,8 @@ export default function TeamSettings() {
           </>
         )}
 
-        {/* Commission Settings - visible to admins only */}
-        {isAdmin && (
+        {/* Commission Settings - visible to admins and offer owners */}
+        {(isAdmin || role === 'offer_owner') && (
           <CommissionSettings teamId={teamId!} />
         )}
 
