@@ -339,7 +339,10 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
           .delete()
           .in('id', batch);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Batch deletion error:', error);
+          throw error;
+        }
         deletedCount += batch.length;
         
         // Show progress for large deletions
@@ -360,9 +363,10 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
       setSelectedAppointments(new Set());
       // Don't reload - realtime will handle it
     } catch (error: any) {
+      console.error('Error deleting appointments:', error);
       toast({
         title: 'Error deleting appointments',
-        description: error.message,
+        description: error?.message || 'An unexpected error occurred',
         variant: 'destructive',
       });
     } finally {
