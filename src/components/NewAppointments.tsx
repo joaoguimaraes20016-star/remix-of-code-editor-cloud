@@ -268,45 +268,51 @@ export function NewAppointments({ teamId, closerCommissionPct, setterCommissionP
 
     if (idsToDelete.length === 0) return;
 
-    // Limit batch size to prevent URL length issues
-    const MAX_BATCH_SIZE = 50;
-    if (idsToDelete.length > MAX_BATCH_SIZE) {
-      toast({
-        title: 'Too many appointments selected',
-        description: `Please select ${MAX_BATCH_SIZE} or fewer appointments at a time`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setDeleting(true);
     try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .delete()
-        .in('id', idsToDelete)
-        .select();
+      // Delete in batches of 50 to avoid URL length limits
+      const batchSize = 50;
+      let deletedCount = 0;
+      
+      for (let i = 0; i < idsToDelete.length; i += batchSize) {
+        const batch = idsToDelete.slice(i, i + batchSize);
+        const { data, error } = await supabase
+          .from('appointments')
+          .delete()
+          .in('id', batch)
+          .select();
 
-      if (error) throw error;
+        if (error) {
+          console.error('Batch deletion error:', error);
+          throw error;
+        }
 
-      // Check if any rows were actually deleted
-      const actuallyDeleted = data?.length || 0;
-      if (actuallyDeleted === 0 && idsToDelete.length > 0) {
-        throw new Error('Permission denied. Only team admins can delete appointments.');
+        const actuallyDeleted = data?.length || 0;
+        if (actuallyDeleted === 0 && batch.length > 0) {
+          throw new Error('Permission denied. Only team admins can delete appointments.');
+        }
+
+        deletedCount += actuallyDeleted;
+        
+        // Show progress for large deletions silently
+        if (idsToDelete.length > batchSize && i > 0) {
+          console.log(`Deleting batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(idsToDelete.length/batchSize)}: ${deletedCount}/${idsToDelete.length}`);
+        }
       }
 
       toast({
-        title: 'Appointments deleted',
-        description: `Deleted ${actuallyDeleted} appointment${actuallyDeleted > 1 ? 's' : ''}`,
+        title: 'Success',
+        description: `Deleted ${deletedCount} appointment${deletedCount > 1 ? 's' : ''}`,
       });
 
       setDeleteDialogOpen(false);
       setSelectedAppointments(new Set());
       loadAppointments();
     } catch (error: any) {
+      console.error('Error deleting appointments:', error);
       toast({
         title: 'Error deleting appointments',
-        description: error.message,
+        description: error?.message || 'An unexpected error occurred',
         variant: 'destructive',
       });
     } finally {
