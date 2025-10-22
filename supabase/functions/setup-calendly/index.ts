@@ -53,7 +53,7 @@ serve(async (req) => {
 
       console.log('Verifying user permissions for team:', teamId);
 
-      // Verify user is team owner or offer owner
+      // Verify user is team admin or offer owner
       const { data: membership, error: membershipError } = await supabaseAdmin
         .from('team_members')
         .select('role')
@@ -69,9 +69,9 @@ serve(async (req) => {
         });
       }
 
-      if (!membership || (membership.role !== 'owner' && membership.role !== 'offer_owner' && membership.role !== 'admin')) {
+      if (!membership || (membership.role !== 'admin' && membership.role !== 'offer_owner')) {
         console.error('User does not have permission. Role:', membership?.role);
-        return new Response(JSON.stringify({ error: 'Only team owners, offer owners, and admins can setup Calendly' }), {
+        return new Response(JSON.stringify({ error: 'Only team admins and offer owners can setup Calendly' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

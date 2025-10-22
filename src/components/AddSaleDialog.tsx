@@ -77,7 +77,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
 
   useEffect(() => {
     // Auto-select if preselected or if there's only one offer owner
-    const offerOwners = teamMembers.filter(m => m.role === 'offer_owner' || m.role === 'owner');
+    const offerOwners = teamMembers.filter(m => m.role === 'offer_owner' || m.role === 'admin');
     
     if (preselectedOfferOwner && !offerOwnerId) {
       const preselected = offerOwners.find(o => o.full_name === preselectedOfferOwner);
@@ -206,7 +206,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
             <div className="grid gap-2">
               <Label htmlFor="offerOwner">Offer Owner</Label>
               {(() => {
-                const offerOwners = teamMembers.filter(m => m.role === 'offer_owner' || m.role === 'owner');
+                const offerOwners = teamMembers.filter(m => m.role === 'offer_owner' || m.role === 'admin');
                 if (offerOwners.length === 1) {
                   return (
                     <Input
@@ -253,7 +253,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border z-50">
                   {teamMembers
-                    .filter(m => m.role === 'setter' || m.role === 'admin' || m.role === 'owner' || m.role === 'offer_owner')
+                    .filter(m => m.role === 'setter' || m.role === 'admin' || m.role === 'offer_owner')
                     .map(member => (
                       <SelectItem key={member.user_id} value={member.user_id}>
                         {member.full_name}
@@ -271,7 +271,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border z-50">
                   {teamMembers
-                    .filter(m => m.role === 'closer' || m.role === 'admin' || m.role === 'owner' || m.role === 'offer_owner')
+                    .filter(m => m.role === 'closer' || m.role === 'admin' || m.role === 'offer_owner')
                     .map(member => (
                       <SelectItem key={member.user_id} value={member.user_id}>
                         {member.full_name}

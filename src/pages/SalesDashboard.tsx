@@ -38,7 +38,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { role: userRole, isOwner } = useTeamRole(teamId);
+  const { role: userRole, isAdmin } = useTeamRole(teamId);
   
   const [sales, setSales] = useState<Sale[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -619,7 +619,7 @@ const Index = () => {
     );
   }
 
-  const canViewSetterScheduling = userRole === 'setter' || userRole === 'admin' || isOwner;
+  const canViewSetterScheduling = userRole === 'setter' || userRole === 'admin' || isAdmin;
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -642,7 +642,7 @@ const Index = () => {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {isOwner && (
+            {isAdmin && (
               <Button variant="outline" onClick={() => navigate(`/team/${teamId}/settings`)} className="text-sm md:text-base w-full sm:w-auto">
                 <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
                 Settings
@@ -770,7 +770,7 @@ const Index = () => {
                   {selectedRep === 'all' ? 'All Sales' : `${selectedRep}'s Sales`}
                 </h2>
                 <div className="flex gap-2">
-                  {isOwner && <FixCommissionsButton teamId={teamId || ''} onComplete={loadSales} />}
+                  {isAdmin && <FixCommissionsButton teamId={teamId || ''} onComplete={loadSales} />}
                   <ImportSpreadsheet teamId={teamId!} onImport={() => {
                     loadSales();
                     loadAppointments();
@@ -795,8 +795,8 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="scheduling" className="space-y-6 mt-6">
-            {(userRole === "owner" || userRole === "offer_owner" || userRole === "admin") && (
-              <CalendlyConfig 
+            {(userRole === "admin" || userRole === "offer_owner") && (
+              <CalendlyConfig
                 teamId={teamId!} 
                 currentAccessToken={calendlyAccessToken}
                 currentOrgUri={calendlyOrgUri}

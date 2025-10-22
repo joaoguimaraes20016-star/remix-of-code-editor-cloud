@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify user is owner or offer_owner of this team
+    // Verify user is admin or offer_owner of this team
     const { data: membership, error: membershipError } = await supabaseAdmin
       .from('team_members')
       .select('role')
@@ -54,9 +54,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (membership.role !== 'owner' && membership.role !== 'offer_owner' && membership.role !== 'admin') {
+    if (membership.role !== 'admin' && membership.role !== 'offer_owner') {
       return new Response(
-        JSON.stringify({ error: 'Only team owners and admins can configure Calendly integration' }),
+        JSON.stringify({ error: 'Only team admins and offer owners can configure Calendly integration' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

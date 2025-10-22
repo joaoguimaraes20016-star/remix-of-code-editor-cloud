@@ -50,7 +50,7 @@ export default function TeamSettings() {
   const { teamId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { role, isOwner, loading: roleLoading } = useTeamRole(teamId);
+  const { role, isAdmin, loading: roleLoading } = useTeamRole(teamId);
   const { toast } = useToast();
 
   const [teamName, setTeamName] = useState('');
@@ -73,7 +73,7 @@ export default function TeamSettings() {
     checkSuperAdmin();
     
     // Allow all team members to access settings (limited view for closers/setters)
-    if (!roleLoading && !isOwner && !isSuperAdmin && role !== 'setter' && role !== 'offer_owner' && role !== 'admin' && role !== 'closer') {
+    if (!roleLoading && !isAdmin && !isSuperAdmin && role !== 'setter' && role !== 'offer_owner' && role !== 'admin' && role !== 'closer') {
       toast({
         title: 'Access denied',
         description: 'You do not have permission to access settings',
@@ -106,7 +106,7 @@ export default function TeamSettings() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, teamId, isOwner, roleLoading, navigate, isSuperAdmin]);
+  }, [user, teamId, isAdmin, roleLoading, navigate, isSuperAdmin]);
 
   const checkSuperAdmin = async () => {
     if (!user) return;
@@ -321,15 +321,14 @@ export default function TeamSettings() {
 
   const getRoleBadge = (role: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
-      owner: 'default',
+      admin: 'default',
       offer_owner: 'default',
       closer: 'secondary',
       setter: 'secondary',
       member: 'outline',
-      admin: 'default',
     };
 
-    const displayName = role === 'owner' ? 'Admin' : role === 'offer_owner' ? 'Offer Owner' : role;
+    const displayName = role === 'admin' ? 'Admin' : role === 'offer_owner' ? 'Offer Owner' : role;
     return <Badge variant={variants[role] || 'outline'}>{displayName}</Badge>;
   };
 
@@ -361,8 +360,8 @@ export default function TeamSettings() {
           </p>
         </div>
 
-        {/* Admin/Owner sections - hidden from closers and setters */}
-        {(isOwner || role === 'offer_owner' || role === 'admin' || isSuperAdmin) && (
+        {/* Admin/Offer Owner sections - hidden from closers and setters */}
+        {(isAdmin || role === 'offer_owner' || role === 'admin' || isSuperAdmin) && (
           <>
             {/* Add Member Card */}
             <Card>
@@ -392,13 +391,13 @@ export default function TeamSettings() {
                         <SelectTrigger id="role">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="owner">Admin</SelectItem>
-                          <SelectItem value="offer_owner">Offer Owner</SelectItem>
-                          <SelectItem value="closer">Closer</SelectItem>
-                          <SelectItem value="setter">Setter</SelectItem>
-                          <SelectItem value="member">Member</SelectItem>
-                        </SelectContent>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="offer_owner">Offer Owner</SelectItem>
+                        <SelectItem value="closer">Closer</SelectItem>
+                        <SelectItem value="setter">Setter</SelectItem>
+                        <SelectItem value="member">Member</SelectItem>
+                      </SelectContent>
                       </Select>
                     </div>
                   </div>
@@ -437,7 +436,7 @@ export default function TeamSettings() {
                           </TableCell>
                           <TableCell>{member.email}</TableCell>
                           <TableCell>
-                            {(isSuperAdmin || isOwner) && !member.is_super_admin ? (
+                            {(isSuperAdmin || isAdmin) && !member.is_super_admin ? (
                               <Select
                                 value={member.role}
                                 onValueChange={(value) => handleRoleChange(member.id, value)}
@@ -446,7 +445,7 @@ export default function TeamSettings() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="owner">Admin</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
                                   <SelectItem value="offer_owner">Offer Owner</SelectItem>
                                   <SelectItem value="closer">Closer</SelectItem>
                                   <SelectItem value="setter">Setter</SelectItem>
@@ -458,7 +457,7 @@ export default function TeamSettings() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            {((isSuperAdmin && !member.is_current_user) || (!member.is_super_admin && member.role !== 'owner' && member.role !== 'offer_owner')) && (
+                            {((isSuperAdmin && !member.is_current_user) || (!member.is_super_admin && member.role !== 'admin' && member.role !== 'offer_owner')) && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -478,13 +477,13 @@ export default function TeamSettings() {
           </>
         )}
 
-        {/* Commission Settings - visible to owners only */}
-        {isOwner && (
+        {/* Commission Settings - visible to admins only */}
+        {isAdmin && (
           <CommissionSettings teamId={teamId!} />
         )}
 
         {/* Calendly Integration */}
-        {(isOwner || role === "offer_owner" || role === "admin") && (() => {
+        {(isAdmin || role === "offer_owner" || role === "admin") && (() => {
           try {
             return (
               <>
@@ -520,8 +519,8 @@ export default function TeamSettings() {
           }
         })()}
 
-        {/* Setter Booking Links - visible to owners, setters, and closers */}
-        {(isOwner || role === 'setter' || role === 'closer') && calendlyEventTypes && calendlyEventTypes.length > 0 && (() => {
+        {/* Setter Booking Links - visible to admins, setters, and closers */}
+        {(isAdmin || role === 'setter' || role === 'closer') && calendlyEventTypes && calendlyEventTypes.length > 0 && (() => {
           try {
             return (
               <SetterBookingLinks
@@ -531,7 +530,7 @@ export default function TeamSettings() {
                 calendlyOrgUri={calendlyOrgUri}
                 onRefresh={loadTeamData}
                 currentUserId={user?.id}
-                isOwner={isOwner}
+                isOwner={isAdmin}
               />
             );
           } catch (error) {
