@@ -163,12 +163,13 @@ serve(async (req) => {
       throw assetFetchError;
     }
 
-    // Update the client asset to link to this team and user
+    // Update the client asset to link to this team and user, and mark as complete
     const { error: assetError } = await supabase
       .from('client_assets')
       .update({
         team_id: teamId,
         last_updated_by: userId,
+        status: 'complete',
       })
       .eq('id', clientAssetId);
 
