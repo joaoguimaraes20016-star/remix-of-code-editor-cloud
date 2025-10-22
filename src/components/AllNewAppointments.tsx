@@ -334,16 +334,24 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
       
       for (let i = 0; i < idsToDelete.length; i += batchSize) {
         const batch = idsToDelete.slice(i, i + batchSize);
-        const { error } = await supabase
+        const { data, error, count } = await supabase
           .from('appointments')
-          .delete()
-          .in('id', batch);
+          .delete({ count: 'exact' })
+          .in('id', batch)
+          .select();
 
         if (error) {
           console.error('Batch deletion error:', error);
           throw error;
         }
-        deletedCount += batch.length;
+
+        // Check if RLS policy prevented deletion
+        const actuallyDeleted = data?.length || 0;
+        if (actuallyDeleted === 0 && batch.length > 0) {
+          throw new Error('Permission denied. Only team admins can delete appointments.');
+        }
+
+        deletedCount += actuallyDeleted;
         
         // Show progress for large deletions
         if (idsToDelete.length > batchSize) {
