@@ -53,6 +53,7 @@ export function CalendlyConfig({
   const [manualUrl, setManualUrl] = useState("");
   const [isManualFetchOpen, setIsManualFetchOpen] = useState(false);
   const [isFetchingManual, setIsFetchingManual] = useState(false);
+  const [fixingWebhook, setFixingWebhook] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -470,6 +471,39 @@ export function CalendlyConfig({
       });
     } finally {
       setFetchingOrgUri(false);
+    }
+  };
+
+  const handleFixWebhook = async () => {
+    setFixingWebhook(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Please log in to continue');
+      }
+
+      const { data, error } = await supabase.functions.invoke("fix-webhook", {
+        body: { teamId }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Webhook Fixed",
+        description: "Calendly webhook has been recreated. New appointments will now sync automatically.",
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setFixingWebhook(false);
     }
   };
 
@@ -927,6 +961,16 @@ export function CalendlyConfig({
               )}
             </div>
             )}
+
+            <Button 
+              onClick={handleFixWebhook} 
+              disabled={fixingWebhook}
+              variant="outline"
+              className="w-full"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              {fixingWebhook ? "Fixing..." : "Fix Webhook"}
+            </Button>
 
             <Button 
               onClick={handleDisconnect} 
