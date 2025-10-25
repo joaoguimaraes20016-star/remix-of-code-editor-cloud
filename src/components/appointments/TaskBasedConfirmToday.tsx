@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
+import { useTeamRole } from '@/hooks/useTeamRole';
 import { useTaskManagement } from '@/hooks/useTaskManagement';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ interface TaskBasedConfirmTodayProps {
 
 export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
   const { user } = useAuth();
+  const { role: userRole } = useTeamRole(teamId);
   const {
     myTasks,
     queueTasks,
@@ -30,7 +32,7 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
     noShowTask,
     rescheduleTask,
     refreshTasks
-  } = useTaskManagement(teamId, user?.id || '');
+  } = useTaskManagement(teamId, user?.id || '', userRole || '');
 
   const [rescheduleDialog, setRescheduleDialog] = useState<{
     open: boolean;
@@ -145,7 +147,7 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CalendarCheck className="h-5 w-5 text-info" />
-            My Tasks (Today)
+            {userRole === 'admin' || userRole === 'offer_owner' ? 'All Team Tasks (Today)' : 'My Tasks (Today)'}
             <Badge variant="info" className="ml-auto">
               {myTasks.length}
             </Badge>
@@ -153,7 +155,7 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           {myTasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No tasks assigned to you</p>
+            <p className="text-sm text-muted-foreground">No tasks assigned</p>
           ) : (
             myTasks.map((task) => {
               const apt = task.appointment;
@@ -175,9 +177,15 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
                             </Badge>
                           )}
                           {getTaskTypeBadge(task.task_type)}
-                          <Badge variant="default" className="text-xs bg-blue-600">
-                            Assigned to You
-                          </Badge>
+                          {apt.setter_id === user?.id ? (
+                            <Badge variant="default" className="text-xs bg-blue-600">
+                              Assigned to You
+                            </Badge>
+                          ) : (userRole === 'admin' || userRole === 'offer_owner') && apt.setter_name ? (
+                            <Badge variant="secondary" className="text-xs">
+                              Assigned to {apt.setter_name}
+                            </Badge>
+                          ) : null}
                           {isReturningSoon(task.auto_return_at) && (
                             <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
                               <AlertCircle className="h-3 w-3 mr-1" />

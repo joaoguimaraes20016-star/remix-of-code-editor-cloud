@@ -17,7 +17,7 @@ interface Task {
   appointment?: any;
 }
 
-export function useTaskManagement(teamId: string, userId: string) {
+export function useTaskManagement(teamId: string, userId: string, userRole?: string) {
   const [myTasks, setMyTasks] = useState<Task[]>([]);
   const [queueTasks, setQueueTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,8 +46,12 @@ export function useTaskManagement(teamId: string, userId: string) {
       });
       
       const uniqueTasks = Array.from(uniqueTasksMap.values());
-      // My tasks: appointments assigned to me (based on appointment.setter_id)
-      const my = uniqueTasks.filter(t => t.appointment?.setter_id === userId);
+      
+      // Admins see all assigned tasks; regular users see only their tasks
+      const my = userRole === 'admin' || userRole === 'offer_owner'
+        ? uniqueTasks.filter(t => t.appointment?.setter_id) // All assigned appointments
+        : uniqueTasks.filter(t => t.appointment?.setter_id === userId); // Only mine
+      
       // Queue tasks: unassigned appointments only (no setter_id)
       const queue = uniqueTasks.filter(t => !t.appointment?.setter_id);
 
