@@ -92,9 +92,11 @@ interface AllNewAppointmentsProps {
   teamId: string;
   closerCommissionPct: number;
   setterCommissionPct: number;
+  userRole?: string;
+  currentUserId?: string;
 }
 
-export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissionPct }: AllNewAppointmentsProps) {
+export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissionPct, userRole, currentUserId }: AllNewAppointmentsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -229,27 +231,40 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
     try {
       setLoading(true);
       
-      // Get total count - ONLY unassigned appointments
-      const { count, error: countError } = await supabase
+      // Build query based on role
+      let countQuery = supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .eq('team_id', teamId)
-        .is('setter_id', null)
         .in('status', ['NEW', 'CONFIRMED']);
 
-      if (countError) throw countError;
-      setTotalCount(count || 0);
-
-      // Get paginated data - ONLY unassigned appointments
-      const from = (currentPage - 1) * pageSize;
-      const to = from + pageSize - 1;
-
-      const { data, error } = await supabase
+      let dataQuery = supabase
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
-        .is('setter_id', null)
-        .in('status', ['NEW', 'CONFIRMED'])
+        .in('status', ['NEW', 'CONFIRMED']);
+
+      // If closer role, show only appointments assigned to this closer
+      if (userRole === 'closer' && currentUserId) {
+        countQuery = countQuery.eq('closer_id', currentUserId);
+        dataQuery = dataQuery.eq('closer_id', currentUserId);
+      } 
+      // If not admin/offer_owner, show unassigned appointments
+      else if (userRole !== 'admin' && userRole !== 'offer_owner') {
+        countQuery = countQuery.is('setter_id', null);
+        dataQuery = dataQuery.is('setter_id', null);
+      }
+      // Admin/offer_owner see all appointments (no additional filter)
+
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+      setTotalCount(count || 0);
+
+      // Get paginated data
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error } = await dataQuery
         .order('start_at_utc', { ascending: false })
         .range(from, to);
 

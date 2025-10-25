@@ -151,6 +151,8 @@ export function AppointmentsHub({
               teamId={teamId}
               closerCommissionPct={closerCommissionPct}
               setterCommissionPct={setterCommissionPct}
+              userRole={userRole}
+              currentUserId={user?.id}
             />
           </TabsContent>
 
@@ -261,6 +263,8 @@ export function AppointmentsHub({
             teamId={teamId}
             closerCommissionPct={closerCommissionPct}
             setterCommissionPct={setterCommissionPct}
+            userRole={userRole}
+            currentUserId={user?.id}
           />
         </TabsContent>
 
