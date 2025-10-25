@@ -439,6 +439,19 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
                   Cancel Subscription
                 </Button>
               </div>
+
+              {selectedTask.status !== 'due' && (
+                <div className="pt-3 border-t">
+                  <Button
+                    onClick={() => updateTaskStatus(selectedTask.id, 'due', notes)}
+                    variant="outline"
+                    className="w-full border-2 border-orange-500/50 hover:bg-orange-500/10 hover:border-orange-500 transition-all h-12"
+                  >
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Return to Due
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

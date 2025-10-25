@@ -5,9 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Plus, Clock, User } from 'lucide-react';
+import { X, Plus, Clock, User, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ActivityLog {
   id: string;
@@ -27,6 +37,9 @@ export function ActivityTimeline({ appointmentId, teamId, onClose }: ActivityTim
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [newNote, setNewNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [activityToDelete, setActivityToDelete] = useState<ActivityLog | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadActivities();
@@ -100,6 +113,34 @@ export function ActivityTimeline({ appointmentId, teamId, onClose }: ActivityTim
     }
   };
 
+  const handleDeleteClick = (activity: ActivityLog) => {
+    setActivityToDelete(activity);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!activityToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('activity_logs')
+        .delete()
+        .eq('id', activityToDelete.id);
+
+      if (error) throw error;
+
+      toast.success('Activity deleted');
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      toast.error('Failed to delete activity');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setActivityToDelete(null);
+    }
+  };
+
   const getActionColor = (action: string) => {
     const colors: Record<string, string> = {
       'Confirmed': 'bg-green-100 text-green-700 border-green-200',
@@ -149,14 +190,24 @@ export function ActivityTimeline({ appointmentId, teamId, onClose }: ActivityTim
               </p>
             ) : (
               activities.map((activity) => (
-                <div key={activity.id} className="border-l-2 border-muted pl-4 pb-3">
+                <div key={activity.id} className="border-l-2 border-muted pl-4 pb-3 relative group">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <Badge variant="outline" className={getActionColor(activity.action_type)}>
                       {activity.action_type}
                     </Badge>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {format(parseISO(activity.created_at), 'MMM d, h:mm a')}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {format(parseISO(activity.created_at), 'MMM d, h:mm a')}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeleteClick(activity)}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
@@ -174,6 +225,27 @@ export function ActivityTimeline({ appointmentId, teamId, onClose }: ActivityTim
           </div>
         </ScrollArea>
       </CardContent>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this activity log? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
