@@ -59,6 +59,12 @@ export function CloseDealDialog({
   const [mrrAmount, setMrrAmount] = useState("");
   const [mrrMonths, setMrrMonths] = useState("");
   const [productName, setProductName] = useState("");
+  const [firstChargeDate, setFirstChargeDate] = useState(() => {
+    // Default to 30 days from now
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 30);
+    return format(defaultDate, 'yyyy-MM-dd');
+  });
   const [closing, setClosing] = useState(false);
 
   const handleClose = async () => {
@@ -227,7 +233,7 @@ export function CloseDealDialog({
         }
 
         // Create MRR schedule for monthly follow-ups
-        const firstChargeDate = startOfMonth(addMonths(new Date(), 1));
+        const chargeDate = new Date(firstChargeDate);
         const { data: scheduleData, error: scheduleError } = await supabase
           .from('mrr_schedules')
           .insert({
@@ -236,8 +242,8 @@ export function CloseDealDialog({
             client_name: appointment.lead_name,
             client_email: appointment.lead_email,
             mrr_amount: mrr,
-            first_charge_date: format(firstChargeDate, 'yyyy-MM-dd'),
-            next_renewal_date: format(firstChargeDate, 'yyyy-MM-dd'),
+            first_charge_date: format(chargeDate, 'yyyy-MM-dd'),
+            next_renewal_date: format(chargeDate, 'yyyy-MM-dd'),
             status: 'active',
             assigned_to: user.id
           })
@@ -246,14 +252,14 @@ export function CloseDealDialog({
 
         if (scheduleError) throw scheduleError;
 
-        // Create first follow-up task
+        // Create first follow-up task with exact date
         if (scheduleData) {
           const { error: taskError } = await supabase
             .from('mrr_follow_up_tasks')
             .insert({
               team_id: teamId,
               mrr_schedule_id: scheduleData.id,
-              due_date: format(firstChargeDate, 'yyyy-MM-dd'),
+              due_date: format(chargeDate, 'yyyy-MM-dd'),
               status: 'due'
             });
 
@@ -271,6 +277,11 @@ export function CloseDealDialog({
       setMrrAmount("");
       setMrrMonths("");
       setProductName("");
+      setFirstChargeDate(() => {
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() + 30);
+        return format(defaultDate, 'yyyy-MM-dd');
+      });
       onSuccess();
     } catch (error: any) {
       toast({
@@ -310,16 +321,31 @@ export function CloseDealDialog({
       </div>
 
       {parseFloat(mrrAmount) > 0 && (
-        <div className="space-y-2">
-          <Label htmlFor="months">Number of Months</Label>
-          <Input
-            id="months"
-            type="number"
-            placeholder="Enter number of months"
-            value={mrrMonths}
-            onChange={(e) => setMrrMonths(e.target.value)}
-          />
-        </div>
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="months">Number of Months</Label>
+            <Input
+              id="months"
+              type="number"
+              placeholder="Enter number of months"
+              value={mrrMonths}
+              onChange={(e) => setMrrMonths(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="firstCharge">First Charge Date</Label>
+            <Input
+              id="firstCharge"
+              type="date"
+              value={firstChargeDate}
+              onChange={(e) => setFirstChargeDate(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              The exact date when the first recurring payment is due
+            </p>
+          </div>
+        </>
       )}
 
       <div className="space-y-2">

@@ -26,6 +26,7 @@ interface MRRTask {
   due_date: string;
   status: string;
   notes: string | null;
+  completed_at: string | null;
   schedule: MRRSchedule;
 }
 
@@ -214,9 +215,17 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-border/30">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span className="font-medium">{format(parseISO(task.due_date), 'MMM dd, yyyy')}</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span className="font-medium">Due: {format(parseISO(task.due_date), 'MMM dd, yyyy')}</span>
+                      </div>
+                      {task.completed_at && (
+                        <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+                          <CheckCircle className="h-3.5 w-3.5" />
+                          <span className="font-medium">Confirmed: {format(parseISO(task.completed_at), 'MMM dd, yyyy')}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="text-base font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                       ${task.schedule.mrr_amount.toLocaleString()}/mo
@@ -321,11 +330,26 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">
-                    Due: {format(parseISO(selectedTask.due_date), 'MMMM dd, yyyy')}
-                  </span>
+                <div className="space-y-2 pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">
+                      Due Date: {format(parseISO(selectedTask.due_date), 'MMMM dd, yyyy')}
+                    </span>
+                  </div>
+                  {selectedTask.completed_at && (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        Confirmed: {format(parseISO(selectedTask.completed_at), 'MMMM dd, yyyy')}
+                      </span>
+                    </div>
+                  )}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-2">
+                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                      💡 Next renewal will be auto-scheduled for {format(parseISO(selectedTask.due_date), 'MMMM dd, yyyy')} next month
+                    </p>
+                  </div>
                 </div>
               </div>
 
