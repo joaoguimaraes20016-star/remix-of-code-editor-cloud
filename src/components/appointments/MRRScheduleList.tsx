@@ -2,11 +2,22 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar, DollarSign, Loader2, TrendingUp } from 'lucide-react';
+import { Calendar, DollarSign, Loader2, TrendingUp, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, isPast, differenceInDays } from 'date-fns';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface MRRSchedule {
   id: string;
@@ -29,6 +40,11 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
   const [schedules, setSchedules] = useState<MRRSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState<MRRSchedule | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const canDelete = userRole === 'admin' || userRole === 'offer_owner';
 
   useEffect(() => {
     loadSchedules();
@@ -74,6 +90,52 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
       toast.error('Failed to load MRR schedules');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (schedule: MRRSchedule) => {
+    setScheduleToDelete(schedule);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!scheduleToDelete) return;
+
+    setDeleting(true);
+    try {
+      // Delete all follow-up tasks first
+      const { error: tasksError } = await supabase
+        .from('mrr_follow_up_tasks')
+        .delete()
+        .eq('mrr_schedule_id', scheduleToDelete.id);
+
+      if (tasksError) throw tasksError;
+
+      // Delete all MRR commissions
+      const { error: commissionsError } = await supabase
+        .from('mrr_commissions')
+        .delete()
+        .eq('appointment_id', scheduleToDelete.id);
+
+      if (commissionsError) throw commissionsError;
+
+      // Delete the schedule
+      const { error } = await supabase
+        .from('mrr_schedules')
+        .delete()
+        .eq('id', scheduleToDelete.id);
+
+      if (error) throw error;
+
+      toast.success('MRR schedule deleted');
+      loadSchedules();
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+      toast.error('Failed to delete schedule');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setScheduleToDelete(null);
     }
   };
 
@@ -178,8 +240,18 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
                 return (
                   <Card
                     key={schedule.id}
-                    className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-border/50 hover:border-primary/50 bg-gradient-to-br from-card to-card/80"
+                    className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-border/50 hover:border-primary/50 bg-gradient-to-br from-card to-card/80 relative"
                   >
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        onClick={() => handleDeleteClick(schedule)}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    )}
                     <CardContent className="p-5 space-y-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -295,6 +367,29 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
           </>
         )}
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete MRR Schedule</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the MRR schedule for {scheduleToDelete?.client_name}? 
+              This will permanently remove ${scheduleToDelete?.mrr_amount.toLocaleString()}/mo in recurring revenue, 
+              all follow-up tasks, and all MRR commissions. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
