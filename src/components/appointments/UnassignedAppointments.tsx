@@ -133,14 +133,20 @@ export function UnassignedAppointments({ teamId, onUpdate }: UnassignedAppointme
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold">Unassigned Appointments</h3>
-          {appointments.length > 0 && (
-            <Badge variant="destructive">{appointments.length}</Badge>
-          )}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-destructive/10 to-destructive/5 border border-destructive/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-destructive/20">
+            <InfoIcon className="h-5 w-5 text-destructive" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Unassigned Appointments</h3>
+            <p className="text-sm text-muted-foreground">Appointments waiting to be assigned</p>
+          </div>
         </div>
+        {appointments.length > 0 && (
+          <Badge variant="destructive" className="text-base px-4 py-1">{appointments.length}</Badge>
+        )}
       </div>
 
       <AppointmentFilters
@@ -155,21 +161,21 @@ export function UnassignedAppointments({ teamId, onUpdate }: UnassignedAppointme
       />
 
       {appointments.length === 0 ? (
-        <Alert>
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="border-success/30 bg-success/5">
+          <InfoIcon className="h-4 w-4 text-success" />
+          <AlertDescription className="text-success-foreground">
             All appointments have been assigned! Great work.
           </AlertDescription>
         </Alert>
       ) : filteredAppointments.length === 0 ? (
-        <Alert>
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="border-info/30 bg-info/5">
+          <InfoIcon className="h-4 w-4 text-info" />
+          <AlertDescription className="text-info-foreground">
             No appointments match your current filters.
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in">
           {filteredAppointments.map((appointment) => (
             <AppointmentCard
               key={appointment.id}

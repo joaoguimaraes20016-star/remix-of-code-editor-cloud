@@ -484,32 +484,34 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
     });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {selectedAppointments.size > 0 && (
-        <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-          <span className="text-sm font-medium">
-            {selectedAppointments.size} appointment{selectedAppointments.size > 1 ? 's' : ''} selected
-          </span>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={handleBulkDelete}
-            className="flex items-center gap-1"
-          >
-            <Trash2 className="h-3 w-3" />
-            Delete Selected
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setSelectedAppointments(new Set())}
-          >
-            Clear Selection
-          </Button>
-        </div>
+        <Card className="bg-gradient-to-r from-destructive/10 to-destructive/5 border-destructive/20">
+          <CardContent className="flex items-center gap-4 p-4">
+            <span className="text-sm font-medium">
+              {selectedAppointments.size} appointment{selectedAppointments.size > 1 ? 's' : ''} selected
+            </span>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Selected
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSelectedAppointments(new Set())}
+            >
+              Clear Selection
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="flex flex-col gap-4">
+      <Card className="p-4 space-y-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -628,17 +630,20 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
             </DrawerContent>
           </Drawer>
         )}
-      </div>
+      </Card>
 
       {filteredAppointments.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">
-          No appointments found
-        </div>
+        <Card className="border-info/20 bg-info/5">
+          <CardContent className="p-12 text-center">
+            <p className="text-muted-foreground">No appointments found</p>
+          </CardContent>
+        </Card>
       ) : isMobile ? (
-        <div className="space-y-3">
+        <div className="space-y-3 animate-fade-in">
           {filteredAppointments.map((apt) => (
-            <Card key={apt.id} className="overflow-hidden">
-              <CardContent className="p-4 space-y-3">
+            <Card key={apt.id} className="overflow-hidden card-hover group">
+              <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <CardContent className="relative z-10 p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Checkbox

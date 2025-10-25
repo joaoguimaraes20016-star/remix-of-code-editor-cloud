@@ -186,18 +186,31 @@ export function MyClaimed({ teamId, closerCommissionPct, setterCommissionPct }: 
 
   if (appointments.length === 0) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        No assigned appointments yet
-      </div>
+      <Card className="border-info/20 bg-info/5">
+        <CardContent className="p-12 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="p-4 rounded-full bg-info/20">
+              <MessageSquare className="h-8 w-8 text-info" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-2">No Assigned Appointments Yet</h3>
+              <p className="text-muted-foreground">Appointments assigned to you will appear here</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
-  return isMobile ? (
-    // Mobile Card View
-    <div className="space-y-3">
-      {appointments.map((apt) => (
-        <Card key={apt.id} className="overflow-hidden">
-          <CardContent className="p-4 space-y-3">
+  return (
+    <>
+      {isMobile ? (
+        // Mobile Card View
+        <div className="space-y-3">
+          {appointments.map((apt) => (
+            <Card key={apt.id} className="overflow-hidden card-hover group">
+              <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <CardContent className="relative z-10 p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-base truncate">{apt.lead_name}</h3>
@@ -244,15 +257,15 @@ export function MyClaimed({ teamId, closerCommissionPct, setterCommissionPct }: 
             </div>
           </CardContent>
           
-          <CardFooter className="p-3 pt-0">
+          <CardFooter className="relative z-10 p-3 pt-0">
             <Button
               size="sm"
-              variant="default"
+              variant="success"
               onClick={() => {
                 setCloseDealAppointment(apt);
                 setCloseDealOpen(true);
               }}
-              className="w-full h-10 text-sm"
+              className="w-full h-10 text-sm font-semibold"
             >
               Close Deal
             </Button>
@@ -262,7 +275,7 @@ export function MyClaimed({ teamId, closerCommissionPct, setterCommissionPct }: 
     </div>
   ) : (
     // Desktop Table View
-    <div className="rounded-md border">
+    <Card className="overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
@@ -331,12 +344,12 @@ export function MyClaimed({ teamId, closerCommissionPct, setterCommissionPct }: 
               <TableCell>
                 <Button
                   size="sm"
-                  variant="default"
+                  variant="success"
                   onClick={() => {
                     setCloseDealAppointment(apt);
                     setCloseDealOpen(true);
                   }}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 font-semibold"
                 >
                   Close Deal
                 </Button>
@@ -345,16 +358,18 @@ export function MyClaimed({ teamId, closerCommissionPct, setterCommissionPct }: 
           ))}
         </TableBody>
       </Table>
+    </Card>
+  )}
 
-      <CloseDealDialog
-        appointment={closeDealAppointment}
-        teamId={teamId}
-        open={closeDealOpen}
-        onOpenChange={setCloseDealOpen}
-        onSuccess={loadAppointments}
-        closerCommissionPct={closerCommissionPct}
-        setterCommissionPct={setterCommissionPct}
-      />
-    </div>
-  );
+  <CloseDealDialog
+      appointment={closeDealAppointment}
+      teamId={teamId}
+      open={closeDealOpen}
+      onOpenChange={setCloseDealOpen}
+      onSuccess={loadAppointments}
+      closerCommissionPct={closerCommissionPct}
+      setterCommissionPct={setterCommissionPct}
+    />
+  </>
+);
 }
