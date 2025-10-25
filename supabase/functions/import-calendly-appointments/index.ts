@@ -131,12 +131,11 @@ Deno.serve(async (req) => {
 
     const organizationUri = team.calendly_organization_uri;
 
-    // Fetch scheduled events from Calendly (past 6 months + future)
+    // Fetch ONLY upcoming scheduled events from Calendly
     const now = new Date();
-    const sixMonthsAgo = new Date(now.getTime() - (180 * 24 * 60 * 60 * 1000)).toISOString();
-    const calendlyEventsUrl = `https://api.calendly.com/scheduled_events?organization=${encodeURIComponent(organizationUri)}&status=active&min_start_time=${encodeURIComponent(sixMonthsAgo)}&count=100`;
+    const calendlyEventsUrl = `https://api.calendly.com/scheduled_events?organization=${encodeURIComponent(organizationUri)}&status=active&min_start_time=${encodeURIComponent(now.toISOString())}&count=100`;
 
-    console.log('Fetching scheduled events from Calendly...');
+    console.log('Fetching upcoming scheduled events from Calendly...');
     const eventsResponse = await fetch(calendlyEventsUrl, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -368,19 +367,12 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Determine status based on event timing and Calendly data
-          let appointmentStatus: 'NEW' | 'CONFIRMED' | 'NO_SHOW' | 'CANCELLED' = 'NEW';
+          // Determine status - for upcoming events, use NEW or CONFIRMED
+          let appointmentStatus: 'NEW' | 'CONFIRMED' | 'CANCELLED' = 'NEW';
 
-          const eventStartTime = new Date(event.start_time);
-          const isPastEvent = eventStartTime < now;
-
-          // Check if event was cancelled in Calendly (invitee status is 'active' or 'canceled')
+          // Check if event was cancelled in Calendly
           if (invitee.status !== 'active' || event.status !== 'active') {
             appointmentStatus = 'CANCELLED';
-          } 
-          // For past events without cancellation, mark as NO_SHOW by default
-          else if (isPastEvent) {
-            appointmentStatus = 'NO_SHOW';
           } 
           // For future events, mark as CONFIRMED if invitee confirmed
           else if (invitee.status === 'active') {
