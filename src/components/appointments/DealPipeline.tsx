@@ -390,7 +390,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           cc_collected: depositAmount,
           setter_notes: notes,
           retarget_date: format(followUpDate, "yyyy-MM-dd"),
-          retarget_reason: `Deposit follow-up: $${depositAmount}`
+          retarget_reason: `Close due: $${depositAmount} deposit collected`
         })
         .eq("id", depositDialog.appointmentId);
 
