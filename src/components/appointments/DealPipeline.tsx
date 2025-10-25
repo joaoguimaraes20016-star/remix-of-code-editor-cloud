@@ -37,6 +37,7 @@ interface Appointment {
   event_type_name: string | null;
   updated_at: string;
   pipeline_stage: string | null;
+  status: string | null;
 }
 
 interface DealPipelineProps {
@@ -384,6 +385,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
                             <DealCard
                               key={appointment.id}
                               id={appointment.id}
+                              teamId={teamId}
                               appointment={appointment}
                               onCloseDeal={handleCloseDeal}
                               onMoveTo={handleMoveTo}
@@ -405,6 +407,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
                 <div className="rotate-3 scale-105">
                   <DealCard
                     id={activeId}
+                    teamId={teamId}
                     appointment={activeAppointment}
                     onCloseDeal={handleCloseDeal}
                     onMoveTo={handleMoveTo}
