@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Calendar, AlertCircle, CheckCircle2, Unplug, Settings, ChevronDown, Plus } from "lucide-react";
+import { Calendar, AlertCircle, CheckCircle2, Unplug, Settings, ChevronDown, Plus, Download, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface CalendlyConfigProps {
@@ -54,6 +54,7 @@ export function CalendlyConfig({
   const [isManualFetchOpen, setIsManualFetchOpen] = useState(false);
   const [isFetchingManual, setIsFetchingManual] = useState(false);
   const [fixingWebhook, setFixingWebhook] = useState(false);
+  const [importingAppointments, setImportingAppointments] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -527,6 +528,43 @@ export function CalendlyConfig({
     }
   };
 
+  const handleImportAppointments = async () => {
+    setImportingAppointments(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-calendly-appointments", {
+        body: { teamId }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const imported = data.imported || 0;
+      const skipped = data.skipped || 0;
+      
+      if (imported === 0 && skipped === 0) {
+        toast({
+          title: "No Appointments Found",
+          description: "No appointments found in your Calendly account.",
+        });
+      } else {
+        toast({
+          title: "Sync Complete!",
+          description: `Imported ${imported} new appointment${imported !== 1 ? 's' : ''}.${skipped > 0 ? ` ${skipped} already existed.` : ''}`,
+        });
+      }
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import appointments from Calendly",
+        variant: "destructive",
+      });
+    } finally {
+      setImportingAppointments(false);
+    }
+  };
+
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
@@ -982,25 +1020,42 @@ export function CalendlyConfig({
             </div>
             )}
 
-            <Button 
-              onClick={handleFixWebhook} 
-              disabled={fixingWebhook}
-              variant="outline"
-              className="w-full"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              {fixingWebhook ? "Fixing..." : "Appointments Not Showing? Click Here"}
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                onClick={handleImportAppointments} 
+                disabled={importingAppointments}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                size="lg"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                {importingAppointments ? "Syncing Appointments..." : "Sync Appointments from Calendly"}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Click to import all upcoming appointments from your Calendly account
+              </p>
+            </div>
 
-            <Button 
-              onClick={handleDisconnect} 
-              disabled={disconnecting}
-              variant="destructive"
-              className="w-full"
-            >
-              <Unplug className="w-4 h-4 mr-2" />
-              {disconnecting ? "Disconnecting..." : "Disconnect Calendly"}
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleFixWebhook} 
+                disabled={fixingWebhook}
+                variant="outline"
+                className="flex-1"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                {fixingWebhook ? "Fixing..." : "Fix Webhook"}
+              </Button>
+
+              <Button 
+                onClick={handleDisconnect} 
+                disabled={disconnecting}
+                variant="destructive"
+                className="flex-1"
+              >
+                <Unplug className="w-4 h-4 mr-2" />
+                {disconnecting ? "Disconnecting..." : "Disconnect"}
+              </Button>
+            </div>
           </div>
         )}
 
