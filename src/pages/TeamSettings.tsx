@@ -34,6 +34,7 @@ import { ArrowLeft, Trash2 } from 'lucide-react';
 import { CalendlyConfig } from '@/components/CalendlyConfig';
 import { SetterBookingLinks } from '@/components/SetterBookingLinks';
 import { CommissionSettings } from '@/components/CommissionSettings';
+import { SetterRotationSettings } from '@/components/SetterRotationSettings';
 import { getUserFriendlyError } from '@/lib/errorUtils';
 
 interface TeamMember {
@@ -481,7 +482,10 @@ export default function TeamSettings() {
 
         {/* Commission Settings - visible to admins and offer owners */}
         {(isAdmin || role === 'offer_owner') && (
-          <CommissionSettings teamId={teamId!} />
+          <>
+            <CommissionSettings teamId={teamId!} />
+            <SetterRotationSettings teamId={teamId!} />
+          </>
         )}
 
         {/* Calendly Integration */}

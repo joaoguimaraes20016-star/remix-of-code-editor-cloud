@@ -779,6 +779,41 @@ export type Database = {
           },
         ]
       }
+      setter_rotation_settings: {
+        Row: {
+          created_at: string
+          id: string
+          is_in_rotation: boolean
+          setter_id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_in_rotation?: boolean
+          setter_id: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_in_rotation?: boolean
+          setter_id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setter_rotation_settings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_assets: {
         Row: {
           category: string
