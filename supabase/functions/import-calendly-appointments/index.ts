@@ -434,16 +434,23 @@ Deno.serve(async (req) => {
       }
 
       // Create a set of existing appointment keys for fast lookup
+      // Normalize timestamps to ISO format without milliseconds for comparison
       const existingKeys = new Set(
-        (existingAppointments || []).map(apt => 
-          `${apt.lead_email.toLowerCase()}|${apt.start_at_utc}`
-        )
+        (existingAppointments || []).map(apt => {
+          const timestamp = new Date(apt.start_at_utc).toISOString().split('.')[0];
+          return `${apt.lead_email.toLowerCase()}|${timestamp}`;
+        })
       );
 
       // Filter out duplicates
       const uniqueAppointments = appointmentsToInsert.filter(apt => {
-        const key = `${apt.lead_email.toLowerCase()}|${apt.start_at_utc}`;
-        return !existingKeys.has(key);
+        const timestamp = new Date(apt.start_at_utc).toISOString().split('.')[0];
+        const key = `${apt.lead_email.toLowerCase()}|${timestamp}`;
+        const isDuplicate = existingKeys.has(key);
+        if (isDuplicate) {
+          console.log(`✓ Skipping duplicate: ${apt.lead_email} at ${timestamp}`);
+        }
+        return !isDuplicate;
       });
 
       const duplicatesSkipped = appointmentsToInsert.length - uniqueAppointments.length;
