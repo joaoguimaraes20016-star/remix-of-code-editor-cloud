@@ -86,7 +86,13 @@ const Index = () => {
         },
         (payload) => {
           console.log('Appointment change detected:', payload);
-          loadAppointments();
+          // For DELETE events, immediately filter out the deleted appointment
+          if (payload.eventType === 'DELETE' && payload.old) {
+            setAppointments(prev => prev.filter(apt => apt.id !== payload.old.id));
+          } else {
+            // For INSERT/UPDATE, reload all appointments
+            loadAppointments();
+          }
         }
       )
       .subscribe((status) => {
@@ -242,9 +248,10 @@ const Index = () => {
       if (error) throw error;
       
       console.log(`Loaded ${data?.length || 0} appointments, ${data?.filter(a => a.status === 'CLOSED').length || 0} closed`);
+      console.log(`No-show count: ${data?.filter(a => a.status === 'NO_SHOW').length || 0}`);
       
-      // Always update state to ensure metrics recalculate
-      setAppointments(data || []);
+      // Force update state even if data looks the same to ensure metrics recalculate
+      setAppointments([...data || []]);
     } catch (error: any) {
       console.error('Error loading appointments:', error);
     }
