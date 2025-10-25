@@ -68,7 +68,9 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
 
   // Show revenue clearly
   const hasRevenue = (appointment.cc_collected || 0) > 0 || (appointment.mrr_amount || 0) > 0;
-  const isConfirmed = appointment.status === 'CONFIRMED';
+  const isNoShow = appointment.pipeline_stage === 'no_show';
+  const isCancelled = appointment.pipeline_stage === 'cancelled';
+  const isConfirmed = appointment.status === 'CONFIRMED' && !isNoShow && !isCancelled;
   const isRescheduled = appointment.status === 'RESCHEDULED' || appointment.pipeline_stage === 'rescheduled';
   const isClosed = appointment.pipeline_stage === 'won' || appointment.pipeline_stage?.toLowerCase().includes('closed');
   const showUndoButton = (isClosed || hasRevenue) && onUndo;
@@ -168,6 +170,20 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
         </div>
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {isNoShow && (
+            <Badge variant="default" className="bg-gradient-to-r from-red-600 to-rose-600 shadow-sm">
+              <span className="flex items-center gap-1">
+                ✗ No Show
+              </span>
+            </Badge>
+          )}
+          {isCancelled && (
+            <Badge variant="default" className="bg-gradient-to-r from-gray-600 to-slate-600 shadow-sm">
+              <span className="flex items-center gap-1">
+                ✗ Cancelled
+              </span>
+            </Badge>
+          )}
           {isConfirmed && (
             <Badge variant="default" className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-sm">
               <span className="flex items-center gap-1">

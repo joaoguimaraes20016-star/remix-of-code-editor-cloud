@@ -21,6 +21,7 @@ interface Appointment {
   closer_name: string | null;
   setter_notes: string | null;
   event_type_name: string | null;
+  pipeline_stage: string | null;
 }
 
 interface ConfirmTodayWorkspaceProps {
@@ -303,12 +304,12 @@ export function ConfirmTodayWorkspace({ teamId, userRole }: ConfirmTodayWorkspac
                       )}
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge 
-                          variant={apt.status === 'CONFIRMED' ? 'default' : 'secondary'}
+                          variant={apt.pipeline_stage === 'no_show' ? 'destructive' : apt.pipeline_stage === 'cancelled' ? 'secondary' : apt.status === 'CONFIRMED' ? 'default' : 'secondary'}
                           className="text-xs"
                         >
-                          {apt.status}
+                          {apt.pipeline_stage === 'no_show' ? 'No Show' : apt.pipeline_stage === 'cancelled' ? 'Cancelled' : apt.status}
                         </Badge>
-                        {apt.status === 'CONFIRMED' && apt.setter_id === user?.id && (
+                        {apt.status === 'CONFIRMED' && apt.setter_id === user?.id && !apt.pipeline_stage?.includes('no_show') && !apt.pipeline_stage?.includes('cancelled') && (
                           <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                             Confirmed & Assigned to You
                           </Badge>
