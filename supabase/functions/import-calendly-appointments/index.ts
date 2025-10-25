@@ -409,6 +409,7 @@ Deno.serve(async (req) => {
             event_type_uri: event.event_type,
             event_type_name: eventTypeName,
             status: appointmentStatus,
+            pipeline_stage: 'new_lead', // Auto-assign to pipeline
           });
           importedCount++;
         }

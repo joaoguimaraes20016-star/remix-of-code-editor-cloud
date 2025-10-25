@@ -103,7 +103,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         .from("appointments")
         .select("*")
         .eq("team_id", teamId)
-        .not('setter_id', 'is', null);
+        .not('pipeline_stage', 'is', null); // Show all appointments in pipeline
 
       // Apply view filter
       if (viewFilter === 'all') {
