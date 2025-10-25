@@ -35,6 +35,15 @@ export function SyncFromUrl({ teamId, onSync }: SyncFromUrlProps) {
       return;
     }
 
+    if (isProcessing) {
+      toast({
+        title: "Sync in Progress",
+        description: "Please wait for the current sync to complete",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
@@ -46,15 +55,24 @@ export function SyncFromUrl({ teamId, onSync }: SyncFromUrlProps) {
 
       if (data.success) {
         const { successCount = 0, duplicateCount = 0, errorCount = 0 } = data;
-        const messages = [];
-        if (successCount > 0) messages.push(`${successCount} new records`);
-        if (duplicateCount > 0) messages.push(`${duplicateCount} duplicates skipped`);
-        if (errorCount > 0) messages.push(`${errorCount} failed`);
         
-        toast({
-          title: "Sync Complete",
-          description: messages.join(', ') || "No changes made",
-        });
+        if (successCount === 0 && duplicateCount > 0) {
+          toast({
+            title: "No New Records",
+            description: `All ${duplicateCount} records already exist - no duplicates created`,
+          });
+        } else {
+          const messages = [];
+          if (successCount > 0) messages.push(`${successCount} new records added`);
+          if (duplicateCount > 0) messages.push(`${duplicateCount} duplicates skipped`);
+          if (errorCount > 0) messages.push(`${errorCount} failed`);
+          
+          toast({
+            title: "Sync Complete",
+            description: messages.join(', ') || "No changes made",
+          });
+        }
+        
         onSync();
         setOpen(false);
         setUrl("");
