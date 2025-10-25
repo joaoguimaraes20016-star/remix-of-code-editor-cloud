@@ -10,6 +10,8 @@ import { ConfirmTodayWorkspace } from "./ConfirmTodayWorkspace";
 import { RetargetTab } from "./RetargetTab";
 import { StageWorkspaceView } from "./StageWorkspaceView";
 import { StageWorkspaceList } from "./StageWorkspaceList";
+import { InitializeDefaultStages } from "./InitializeDefaultStages";
+import { PipelineStageManager } from "./PipelineStageManager";
 
 interface AppointmentsHubProps {
   teamId: string;
@@ -26,10 +28,14 @@ export function AppointmentsHub({
   setterCommissionPct,
   onUpdate,
 }: AppointmentsHubProps) {
+  const [selectedStage, setSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
+  const [adminSelectedStage, setAdminSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
+  const [showStageManager, setShowStageManager] = useState(false);
   // Setter sees: Confirm Today, New Leads, My Appointments, and Retarget
   if (userRole === "setter") {
     return (
       <div className="space-y-6">
+        <InitializeDefaultStages teamId={teamId} />
         <div className="bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 rounded-xl p-6 border border-primary/30 shadow-lg">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Setter Dashboard
@@ -74,11 +80,10 @@ export function AppointmentsHub({
   }
 
   // Closer sees: My Deals, Deal Pipeline, and Stage Views
-  const [selectedStage, setSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
-
   if (userRole === "closer") {
     return (
       <div className="space-y-6">
+        <InitializeDefaultStages teamId={teamId} />
         <div className="bg-gradient-to-br from-accent/10 via-primary/10 to-accent/5 rounded-xl p-6 border border-accent/30 shadow-lg">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
             Closer Dashboard
@@ -139,26 +144,41 @@ export function AppointmentsHub({
     );
   }
 
-  // Admin/Offer Owner sees: Unassigned, All Assigned, Pipeline, Stages, and Retarget
-  const [adminSelectedStage, setAdminSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
-
+  // Admin/Offer Owner sees: Confirm Today, Unassigned, All Assigned, Pipeline, Stages, and Retarget
   return (
     <div className="space-y-6">
+      <InitializeDefaultStages teamId={teamId} />
       <div className="bg-gradient-to-br from-primary/15 via-accent/15 to-primary/10 rounded-xl p-6 border border-primary/40 shadow-lg">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-          Admin Dashboard
-        </h2>
-        <p className="text-muted-foreground mt-1">Manage all team appointments and deals</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+              Admin Dashboard
+            </h2>
+            <p className="text-muted-foreground mt-1">Manage all team appointments and deals</p>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowStageManager(true)}
+          >
+            Manage Pipeline Stages
+          </Button>
+        </div>
       </div>
       
-      <Tabs defaultValue="unassigned" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 h-12">
+      <Tabs defaultValue="confirm" className="w-full">
+        <TabsList className="grid w-full grid-cols-6 h-12">
+          <TabsTrigger value="confirm" className="text-base">Confirm Today</TabsTrigger>
           <TabsTrigger value="unassigned" className="text-base">Unassigned</TabsTrigger>
           <TabsTrigger value="assigned" className="text-base">All Assigned</TabsTrigger>
           <TabsTrigger value="pipeline" className="text-base">Pipeline</TabsTrigger>
           <TabsTrigger value="stages" className="text-base">Stages</TabsTrigger>
           <TabsTrigger value="retarget" className="text-base">Retarget</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="confirm" className="mt-6">
+          <ConfirmTodayWorkspace teamId={teamId} userRole={userRole} />
+        </TabsContent>
 
         <TabsContent value="unassigned" className="mt-6">
           <AllNewAppointments
@@ -214,6 +234,16 @@ export function AppointmentsHub({
           <RetargetTab teamId={teamId} />
         </TabsContent>
       </Tabs>
+
+      <PipelineStageManager 
+        open={showStageManager} 
+        onOpenChange={setShowStageManager}
+        teamId={teamId}
+        onStagesUpdated={() => {
+          setShowStageManager(false);
+          onUpdate();
+        }}
+      />
     </div>
   );
 }

@@ -107,7 +107,10 @@ export function ConfirmTodayWorkspace({ teamId, userRole }: ConfirmTodayWorkspac
     if (!user) return;
 
     try {
-      const updateData: any = { status: 'CONFIRMED' };
+      const updateData: any = { 
+        status: 'CONFIRMED',
+        pipeline_stage: 'confirmed'
+      };
       
       // If unassigned, auto-assign to current user
       if (!setterId) {
@@ -121,7 +124,9 @@ export function ConfirmTodayWorkspace({ teamId, userRole }: ConfirmTodayWorkspac
 
       if (error) throw error;
 
-      toast.success(setterId ? 'Appointment confirmed' : 'Appointment confirmed and assigned to you');
+      toast.success(setterId ? 'Appointment confirmed' : 'Confirmed & Assigned to You', {
+        description: !setterId ? 'You now own this lead for commission credit' : undefined
+      });
       loadTodaysAppointments();
     } catch (error) {
       console.error('Error confirming appointment:', error);
@@ -265,13 +270,18 @@ export function ConfirmTodayWorkspace({ teamId, userRole }: ConfirmTodayWorkspac
                           {apt.event_type_name}
                         </Badge>
                       )}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge 
                           variant={apt.status === 'CONFIRMED' ? 'default' : 'secondary'}
                           className="text-xs"
                         >
                           {apt.status}
                         </Badge>
+                        {apt.status === 'CONFIRMED' && apt.setter_id === user?.id && (
+                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                            Confirmed & Assigned to You
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">

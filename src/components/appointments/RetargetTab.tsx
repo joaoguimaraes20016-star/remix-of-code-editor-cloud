@@ -104,6 +104,49 @@ export function RetargetTab({ teamId }: RetargetTabProps) {
     }
   };
 
+  const handleRebook = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ 
+          status: 'RESCHEDULED',
+          pipeline_stage: 'rescheduled',
+          retarget_date: null,
+          retarget_reason: null
+        })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      toast.success('Marked as rebooked');
+      loadRetargetQueue();
+    } catch (error) {
+      console.error('Error rebooking:', error);
+      toast.error('Failed to rebook');
+    }
+  };
+
+  const handleFollowedUp = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ 
+          retarget_date: null,
+          retarget_reason: null,
+          setter_notes: 'Followed up from retarget queue'
+        })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      toast.success('Marked as followed up');
+      loadRetargetQueue();
+    } catch (error) {
+      console.error('Error marking followed up:', error);
+      toast.error('Failed to mark as followed up');
+    }
+  };
+
   const handleMarkForRetarget = async () => {
     if (!selectedApt || !retargetDate) return;
 
@@ -170,13 +213,20 @@ export function RetargetTab({ teamId }: RetargetTabProps) {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant="outline">
-            <MessageCircle className="h-4 w-4 mr-1" />
-            DM
-          </Button>
-          <Button size="sm" variant="outline">
+          <Button 
+            size="sm"
+            onClick={() => handleRebook(apt.id)}
+          >
             <Calendar className="h-4 w-4 mr-1" />
             Rebook
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => handleFollowedUp(apt.id)}
+          >
+            <MessageCircle className="h-4 w-4 mr-1" />
+            Followed Up
           </Button>
           <Button 
             size="sm" 
