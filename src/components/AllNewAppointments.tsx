@@ -526,18 +526,18 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
       )}
 
       <Card className="p-4 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by lead, email, setter, closer, or event type..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-10"
             />
           </div>
           
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-shrink-0">
             <Select value={dateFilter} onValueChange={(value) => {
               setDateFilter(value);
               if (value === "custom") {
@@ -546,7 +546,7 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
                 }
               }
             }}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px] h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

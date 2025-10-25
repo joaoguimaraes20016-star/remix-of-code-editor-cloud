@@ -169,7 +169,7 @@ export function EventTypeFilter({
   return (
     <div className="flex flex-col gap-2 min-w-[200px]">
       <Select value={selectedEventType} onValueChange={handleFilterChange}>
-        <SelectTrigger className="w-full bg-background">
+        <SelectTrigger className="w-full bg-background h-10">
           <SelectValue placeholder="All Event Types" />
         </SelectTrigger>
         <SelectContent className="bg-background z-50">
