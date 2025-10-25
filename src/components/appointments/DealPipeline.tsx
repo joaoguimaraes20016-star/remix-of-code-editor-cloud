@@ -540,6 +540,47 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     }
   };
 
+  const handleUndo = async (appointmentId: string) => {
+    const appointment = appointments.find((a) => a.id === appointmentId);
+    if (!appointment) return;
+
+    if (!confirm(`Undo this action and move ${appointment.lead_name} back to Booked?`)) {
+      return;
+    }
+
+    try {
+      // Move back to booked and clear deposit/revenue data
+      const { error } = await supabase
+        .from('appointments')
+        .update({ 
+          pipeline_stage: 'booked',
+          cc_collected: 0,
+          retarget_date: null,
+          retarget_reason: null
+        })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      // Log the undo action
+      await supabase
+        .from("activity_logs")
+        .insert({
+          team_id: appointment.team_id,
+          appointment_id: appointmentId,
+          actor_name: "User",
+          action_type: "Undone",
+          note: `Moved back to Booked from ${appointment.pipeline_stage}`
+        });
+      
+      toast.success('Action undone - moved back to Booked');
+      loadDeals();
+    } catch (error) {
+      console.error('Error undoing action:', error);
+      toast.error('Failed to undo action');
+    }
+  };
+
   const getStageColors = (stageId: string) => {
     const colorMap: Record<string, { bg: string; text: string; badge: string }> = {
       'new': { 
@@ -670,6 +711,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
                               onCloseDeal={handleCloseDeal}
                               onMoveTo={handleMoveTo}
                               onDelete={handleDelete}
+                              onUndo={handleUndo}
                               userRole={userRole}
                             />
                           ))
@@ -694,6 +736,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
                     onCloseDeal={handleCloseDeal}
                     onMoveTo={handleMoveTo}
                     onDelete={handleDelete}
+                    onUndo={handleUndo}
                     userRole={userRole}
                   />
                 </div>

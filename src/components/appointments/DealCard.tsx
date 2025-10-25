@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { GripVertical, MoreVertical, Calendar, MessageSquare } from "lucide-react";
+import { GripVertical, MoreVertical, Calendar, MessageSquare, Undo2 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { DealAvatar } from "./DealAvatar";
 import { ActivityTimeline } from "./ActivityTimeline";
@@ -33,10 +33,11 @@ interface DealCardProps {
   onCloseDeal: (appointment: any) => void;
   onMoveTo: (id: string, stage: string) => void;
   onDelete?: (id: string) => void;
+  onUndo?: (id: string) => void;
   userRole?: string;
 }
 
-export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDelete, userRole }: DealCardProps) {
+export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDelete, onUndo, userRole }: DealCardProps) {
   const [showTimeline, setShowTimeline] = useState(false);
   const {
     attributes,
@@ -68,6 +69,8 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
   const hasRevenue = (appointment.cc_collected || 0) > 0 || (appointment.mrr_amount || 0) > 0;
   const isConfirmed = appointment.status === 'CONFIRMED';
   const isRescheduled = appointment.status === 'RESCHEDULED' || appointment.pipeline_stage === 'rescheduled';
+  const isClosed = appointment.pipeline_stage === 'won' || appointment.pipeline_stage?.toLowerCase().includes('closed');
+  const showUndoButton = (isClosed || hasRevenue) && onUndo;
 
   return (
     <>
@@ -113,6 +116,17 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
           )}
 
           <div className="flex items-center gap-1">
+            {showUndoButton && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="h-7 px-2 gap-1 bg-warning/10 hover:bg-warning/20 border-warning/30"
+                onClick={() => onUndo!(id)}
+              >
+                <Undo2 className="h-3 w-3" />
+                <span className="text-xs font-medium">Undo</span>
+              </Button>
+            )}
             <Button 
               variant="ghost" 
               size="icon" 
