@@ -249,12 +249,11 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
         countQuery = countQuery.eq('closer_id', currentUserId);
         dataQuery = dataQuery.eq('closer_id', currentUserId);
       } 
-      // If not admin/offer_owner, show unassigned appointments
-      else if (userRole !== 'admin' && userRole !== 'offer_owner') {
+      // For everyone else (including admin), show only unassigned appointments (setter_id is null)
+      else {
         countQuery = countQuery.is('setter_id', null);
         dataQuery = dataQuery.is('setter_id', null);
       }
-      // Admin/offer_owner see all appointments (no additional filter)
 
       const { count, error: countError } = await countQuery;
       if (countError) throw countError;
