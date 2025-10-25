@@ -46,7 +46,7 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
     loadTasks();
 
     const channel = supabase
-      .channel('mrr-changes')
+      .channel(`mrr-follow-ups-${teamId}-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -55,11 +55,32 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
           table: 'mrr_follow_up_tasks',
           filter: `team_id=eq.${teamId}`
         },
-        () => loadTasks()
+        (payload) => {
+          console.log('MRR task change:', payload);
+          
+          // Handle different events to avoid unnecessary full reloads
+          if (payload.eventType === 'INSERT') {
+            loadTasks();
+          } else if (payload.eventType === 'UPDATE') {
+            // Optimistically update the specific task
+            setTasks(prev => 
+              prev.map(t => 
+                t.id === payload.new.id 
+                  ? { ...t, ...payload.new } 
+                  : t
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+          }
+        }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('MRR subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up MRR subscription');
       supabase.removeChannel(channel);
     };
   }, [teamId]);
