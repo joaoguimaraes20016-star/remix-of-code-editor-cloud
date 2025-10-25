@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action_type: string
+          actor_id: string | null
+          actor_name: string
+          appointment_id: string
+          created_at: string
+          id: string
+          note: string | null
+          team_id: string
+        }
+        Insert: {
+          action_type: string
+          actor_id?: string | null
+          actor_name: string
+          appointment_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          team_id: string
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string | null
+          actor_name?: string
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          team_id?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           cc_collected: number | null
@@ -373,6 +406,45 @@ export type Database = {
           },
         ]
       }
+      confirmation_tasks: {
+        Row: {
+          appointment_id: string
+          assigned_at: string | null
+          assigned_to: string | null
+          auto_return_at: string | null
+          claimed_manually: boolean | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          status: string
+          team_id: string
+        }
+        Insert: {
+          appointment_id: string
+          assigned_at?: string | null
+          assigned_to?: string | null
+          auto_return_at?: string | null
+          claimed_manually?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          team_id: string
+        }
+        Update: {
+          appointment_id?: string
+          assigned_at?: string | null
+          assigned_to?: string | null
+          auto_return_at?: string | null
+          claimed_manually?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          team_id?: string
+        }
+        Relationships: []
+      }
       creator_codes: {
         Row: {
           code: string
@@ -697,6 +769,7 @@ export type Database = {
           booking_code: string | null
           created_at: string | null
           id: string
+          is_active: boolean | null
           role: string | null
           team_id: string
           user_id: string
@@ -705,6 +778,7 @@ export type Database = {
           booking_code?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           role?: string | null
           team_id: string
           user_id: string
@@ -713,6 +787,7 @@ export type Database = {
           booking_code?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           role?: string | null
           team_id?: string
           user_id?: string

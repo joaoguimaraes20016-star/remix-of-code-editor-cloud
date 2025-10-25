@@ -6,7 +6,8 @@ import { MyClaimed } from "@/components/MyClaimed";
 import { AllClaimed } from "@/components/AllClaimed";
 import { AllNewAppointments } from "@/components/AllNewAppointments";
 import { DealPipeline } from "./DealPipeline";
-import { ConfirmTodayWorkspace } from "./ConfirmTodayWorkspace";
+import { TaskBasedConfirmToday } from "./TaskBasedConfirmToday";
+import { OperatorControls } from "./OperatorControls";
 import { RetargetTab } from "./RetargetTab";
 import { StageWorkspaceView } from "./StageWorkspaceView";
 import { StageWorkspaceList } from "./StageWorkspaceList";
@@ -52,7 +53,7 @@ export function AppointmentsHub({
           </TabsList>
 
           <TabsContent value="confirm" className="mt-6">
-            <ConfirmTodayWorkspace teamId={teamId} userRole={userRole} />
+            <TaskBasedConfirmToday teamId={teamId} />
           </TabsContent>
 
           <TabsContent value="new" className="mt-6">
@@ -166,35 +167,24 @@ export function AppointmentsHub({
         </div>
       </div>
       
-      <Tabs defaultValue="confirm" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 h-12">
-          <TabsTrigger value="confirm" className="text-base">Confirm Today</TabsTrigger>
-          <TabsTrigger value="unassigned" className="text-base">Unassigned</TabsTrigger>
-          <TabsTrigger value="assigned" className="text-base">All Assigned</TabsTrigger>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-5 h-12">
+          <TabsTrigger value="overview" className="text-base">Overview</TabsTrigger>
           <TabsTrigger value="pipeline" className="text-base">Pipeline</TabsTrigger>
+          <TabsTrigger value="tasks" className="text-base">Tasks</TabsTrigger>
           <TabsTrigger value="stages" className="text-base">Stages</TabsTrigger>
-          <TabsTrigger value="retarget" className="text-base">Retarget</TabsTrigger>
+          <TabsTrigger value="retarget" className="text-base">Follow-Ups</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="confirm" className="mt-6">
-          <ConfirmTodayWorkspace teamId={teamId} userRole={userRole} />
+        <TabsContent value="overview" className="mt-6 space-y-6">
+          <OperatorControls teamId={teamId} />
+          <TaskBasedConfirmToday teamId={teamId} />
         </TabsContent>
 
-        <TabsContent value="unassigned" className="mt-6">
-          <AllNewAppointments
-            teamId={teamId}
-            closerCommissionPct={closerCommissionPct}
-            setterCommissionPct={setterCommissionPct}
-          />
+        <TabsContent value="tasks" className="mt-6">
+          <TaskBasedConfirmToday teamId={teamId} />
         </TabsContent>
 
-        <TabsContent value="assigned" className="mt-6">
-          <AllClaimed
-            teamId={teamId}
-            closerCommissionPct={closerCommissionPct}
-            setterCommissionPct={setterCommissionPct}
-          />
-        </TabsContent>
 
         <TabsContent value="pipeline" className="mt-6">
           <DealPipeline
