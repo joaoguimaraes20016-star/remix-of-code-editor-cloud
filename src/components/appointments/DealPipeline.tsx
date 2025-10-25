@@ -28,6 +28,7 @@ import { DroppableStageColumn } from "./DroppableStageColumn";
 import { RescheduleDialog } from "./RescheduleDialog";
 import { FollowUpDialog } from "./FollowUpDialog";
 import { DepositCollectedDialog } from "./DepositCollectedDialog";
+import { ChangeStatusDialog } from "./ChangeStatusDialog";
 import { format } from "date-fns";
 
 interface Appointment {
@@ -77,6 +78,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
   const [rescheduleDialog, setRescheduleDialog] = useState<{ open: boolean; appointmentId: string; stageId: string; dealName: string } | null>(null);
   const [followUpDialog, setFollowUpDialog] = useState<{ open: boolean; appointmentId: string; stageId: string; dealName: string; stage: "cancelled" | "no_show" } | null>(null);
   const [depositDialog, setDepositDialog] = useState<{ open: boolean; appointmentId: string; stageId: string; dealName: string } | null>(null);
+  const [statusDialog, setStatusDialog] = useState<{ open: boolean; appointmentId: string; dealName: string; currentStatus: string | null } | null>(null);
   
   const { trackAction, showUndoToast } = useUndoAction();
 
@@ -544,6 +546,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     const appointment = appointments.find((a) => a.id === appointmentId);
     if (!appointment) return;
 
+    // Normal undo logic
     if (!confirm(`Undo this action and move ${appointment.lead_name} back to Booked?`)) {
       return;
     }
@@ -578,6 +581,52 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     } catch (error) {
       console.error('Error undoing action:', error);
       toast.error('Failed to undo action');
+    }
+  };
+
+  const handleChangeStatus = (appointmentId: string, currentStatus: string | null, dealName: string) => {
+    const appointment = appointments.find((a) => a.id === appointmentId);
+    if (!appointment) return;
+
+    setStatusDialog({
+      open: true,
+      appointmentId,
+      dealName,
+      currentStatus
+    });
+  };
+
+  const handleStatusConfirm = async (newStatus: string) => {
+    if (!statusDialog) return;
+
+    const appointment = appointments.find((a) => a.id === statusDialog.appointmentId);
+    if (!appointment) return;
+
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: newStatus as any })
+        .eq('id', statusDialog.appointmentId);
+
+      if (error) throw error;
+
+      // Log the status change
+      await supabase
+        .from("activity_logs")
+        .insert({
+          team_id: appointment.team_id,
+          appointment_id: statusDialog.appointmentId,
+          actor_name: "User",
+          action_type: "Status Changed",
+          note: `Changed status to ${newStatus}`
+        });
+      
+      toast.success(`Status changed to ${newStatus}`);
+      setStatusDialog(null);
+      loadDeals();
+    } catch (error) {
+      console.error('Error changing status:', error);
+      toast.error('Failed to change status');
     }
   };
 
@@ -712,6 +761,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
                               onMoveTo={handleMoveTo}
                               onDelete={handleDelete}
                               onUndo={handleUndo}
+                              onChangeStatus={handleChangeStatus}
                               userRole={userRole}
                             />
                           ))
@@ -737,6 +787,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
                     onMoveTo={handleMoveTo}
                     onDelete={handleDelete}
                     onUndo={handleUndo}
+                    onChangeStatus={handleChangeStatus}
                     userRole={userRole}
                   />
                 </div>
@@ -781,6 +832,16 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           onOpenChange={(open) => !open && setDepositDialog(null)}
           onConfirm={handleDepositConfirm}
           dealName={depositDialog.dealName}
+        />
+      )}
+
+      {statusDialog && (
+        <ChangeStatusDialog
+          open={statusDialog.open}
+          onOpenChange={(open) => !open && setStatusDialog(null)}
+          onConfirm={handleStatusConfirm}
+          dealName={statusDialog.dealName}
+          currentStatus={statusDialog.currentStatus}
         />
       )}
     </div>

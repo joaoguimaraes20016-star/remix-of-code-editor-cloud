@@ -34,10 +34,11 @@ interface DealCardProps {
   onMoveTo: (id: string, stage: string) => void;
   onDelete?: (id: string) => void;
   onUndo?: (id: string) => void;
+  onChangeStatus?: (id: string, currentStatus: string | null, dealName: string) => void;
   userRole?: string;
 }
 
-export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDelete, onUndo, userRole }: DealCardProps) {
+export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDelete, onUndo, onChangeStatus, userRole }: DealCardProps) {
   const [showTimeline, setShowTimeline] = useState(false);
   const {
     attributes,
@@ -148,6 +149,11 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
                 <DropdownMenuItem onClick={() => onMoveTo(id, 'lost')}>
                   Mark as Lost
                 </DropdownMenuItem>
+                {onChangeStatus && (
+                  <DropdownMenuItem onClick={() => onChangeStatus(id, appointment.status, appointment.lead_name)}>
+                    Change Status
+                  </DropdownMenuItem>
+                )}
                 {canDelete && onDelete && (
                   <DropdownMenuItem 
                     onClick={() => onDelete(id)}
