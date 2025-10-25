@@ -338,6 +338,12 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         updateData.retarget_reason = "Rescheduled by user";
       }
 
+      // Add retarget_date for follow-ups (no-show/cancelled)
+      if (additionalData?.followUpDate && additionalData?.followUpReason) {
+        updateData.retarget_date = format(additionalData.followUpDate, "yyyy-MM-dd");
+        updateData.retarget_reason = additionalData.followUpReason;
+      }
+
       const { error } = await supabase
         .from("appointments")
         .update(updateData)
