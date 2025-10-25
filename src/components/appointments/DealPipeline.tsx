@@ -298,7 +298,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card border border-border rounded-lg p-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-card via-card/95 to-secondary/30 border border-primary/20 rounded-xl p-5 shadow-md backdrop-blur-sm">
         <div className="flex-1 w-full">
           <AppointmentFilters
             searchQuery={searchQuery}
@@ -315,20 +315,24 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
             }}
           />
         </div>
-        <Button onClick={() => setManagerOpen(true)} variant="outline" className="whitespace-nowrap">
+        <Button 
+          onClick={() => setManagerOpen(true)} 
+          variant="outline" 
+          className="whitespace-nowrap border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all"
+        >
           <Settings className="h-4 w-4 mr-2" />
           Manage Pipeline
         </Button>
       </div>
 
-      <div className="bg-muted/30 dark:bg-muted/10 rounded-lg p-4">
+      <div className="bg-gradient-to-br from-muted/20 via-background to-muted/10 rounded-xl p-6 border border-primary/10 shadow-lg">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 overflow-x-auto pb-2">
+          <div className="flex gap-6 overflow-x-auto pb-4 px-2">
             {stages.map((stage) => {
               const stageAppointments = dealsByStage[stage.stage_id] || [];
               const stageValue = stageAppointments.reduce(
@@ -338,46 +342,49 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
               const colors = getStageColors(stage.stage_id);
 
               return (
-                <div key={stage.id} className="flex flex-col flex-shrink-0" style={{ width: '280px' }}>
-                  <div className="mb-3 space-y-2">
+                <div key={stage.id} className="flex flex-col flex-shrink-0" style={{ width: '300px' }}>
+                  <div className="mb-4 space-y-3 p-4 bg-gradient-to-br from-card/80 via-card/60 to-secondary/40 rounded-xl border border-primary/10 backdrop-blur-sm shadow-md">
                     <div className={cn(
-                      "inline-flex items-center px-3 py-1.5 rounded-full",
+                      "inline-flex items-center px-4 py-2 rounded-full shadow-sm",
                       colors.badge
                     )}>
-                      <span className={cn("text-xs font-bold uppercase tracking-wide", colors.text)}>
+                      <span className={cn("text-sm font-bold uppercase tracking-wider", colors.text)}>
                         {stage.stage_label}
                       </span>
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                         {stageAppointments.length} {stageAppointments.length === 1 ? 'DEAL' : 'DEALS'}
                       </span>
                     </div>
                     
                     {stageValue > 0 && (
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                          VALUE
+                      <div className="flex items-center justify-between p-2 bg-primary/5 rounded-lg border border-primary/10">
+                        <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                          TOTAL VALUE
                         </span>
-                        <span className="text-sm font-semibold text-primary tabular-nums">
+                        <span className="text-base font-bold text-primary tabular-nums">
                           ${stageValue.toLocaleString()}
                         </span>
                       </div>
                     )}
                   </div>
 
-                  <ScrollArea className="flex-1" style={{ height: 'calc(100vh - 340px)' }}>
+                  <ScrollArea className="flex-1 rounded-xl" style={{ height: 'calc(100vh - 380px)' }}>
                     <SortableContext
                       items={stageAppointments.map((apt) => apt.id)}
                       strategy={verticalListSortingStrategy}
                       id={stage.stage_id}
                     >
-                      <div className="space-y-3 pb-2 pr-2">
+                      <div className="space-y-3 pb-2 pr-3">
                         {stageAppointments.length === 0 ? (
-                          <div className="text-center py-12">
-                            <p className="text-sm text-muted-foreground">
-                              No deals in this stage
+                          <div className="text-center py-16 px-4 bg-muted/20 rounded-xl border border-dashed border-border/50">
+                            <p className="text-sm text-muted-foreground font-medium">
+                              No deals here yet
+                            </p>
+                            <p className="text-xs text-muted-foreground/70 mt-1">
+                              Drag deals to this stage
                             </p>
                           </div>
                         ) : (
@@ -404,7 +411,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
             {activeId && (() => {
               const activeAppointment = filteredAppointments.find(a => a.id === activeId);
               return activeAppointment ? (
-                <div className="rotate-3 scale-105">
+                <div className="rotate-6 scale-110 shadow-2xl animate-pulse">
                   <DealCard
                     id={activeId}
                     teamId={teamId}

@@ -70,8 +70,10 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo }: Dea
       <Card
         ref={setNodeRef}
         style={style}
-        className="group bg-card p-4 cursor-grab active:cursor-grabbing hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 transition-all duration-200"
+        className="group relative bg-gradient-to-br from-card via-card/95 to-secondary/50 p-4 cursor-grab active:cursor-grabbing hover:shadow-glow hover:scale-[1.03] hover:border-primary/60 transition-all duration-300 border border-border/50 backdrop-blur-sm overflow-hidden"
       >
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="relative z-10">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div 
             {...attributes} 
@@ -84,17 +86,17 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo }: Dea
           {hasRevenue && (
             <div className="flex-1 grid grid-cols-2 gap-2">
               {appointment.cc_collected && appointment.cc_collected > 0 && (
-                <div className="flex flex-col items-center px-2 py-1.5 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/30 rounded-md">
-                  <span className="text-xs text-green-600 dark:text-green-500 font-medium">Cash</span>
-                  <span className="text-lg font-bold text-green-700 dark:text-green-400 tabular-nums">
+                <div className="flex flex-col items-center px-3 py-2 bg-gradient-to-br from-green-500/20 via-green-500/10 to-emerald-500/5 border border-green-500/30 rounded-lg shadow-sm backdrop-blur-sm">
+                  <span className="text-xs text-green-400 font-bold uppercase tracking-wider">Cash</span>
+                  <span className="text-xl font-black text-green-300 tabular-nums mt-0.5">
                     ${appointment.cc_collected.toLocaleString()}
                   </span>
                 </div>
               )}
               {appointment.mrr_amount && appointment.mrr_amount > 0 && (
-                <div className="flex flex-col items-center px-2 py-1.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/30 rounded-md">
-                  <span className="text-xs text-emerald-600 dark:text-emerald-500 font-medium">Monthly</span>
-                  <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                <div className="flex flex-col items-center px-3 py-2 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/5 border border-primary/30 rounded-lg shadow-sm backdrop-blur-sm">
+                  <span className="text-xs text-primary font-bold uppercase tracking-wider">Monthly</span>
+                  <span className="text-xl font-black text-primary tabular-nums mt-0.5">
                     ${appointment.mrr_amount.toLocaleString()}
                   </span>
                 </div>
@@ -131,13 +133,17 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo }: Dea
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           {isConfirmed && (
-            <Badge variant="default" className="bg-green-600">
-              Confirmed
+            <Badge variant="default" className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-sm">
+              <span className="flex items-center gap-1">
+                ✓ Confirmed
+              </span>
             </Badge>
           )}
           {isRescheduled && (
-            <Badge variant="default" className="bg-yellow-600">
-              Rescheduled
+            <Badge variant="default" className="bg-gradient-to-r from-yellow-600 to-amber-600 shadow-sm">
+              <span className="flex items-center gap-1">
+                ⟳ Rescheduled
+              </span>
             </Badge>
           )}
         </div>
@@ -149,22 +155,23 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo }: Dea
           </div>
 
           {appointment.setter_name && (
-            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-md">
-              <DealAvatar name={appointment.setter_name} className="h-7 w-7" />
+            <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-muted/40 to-muted/20 rounded-lg border border-border/30">
+              <DealAvatar name={appointment.setter_name} className="h-7 w-7 ring-2 ring-primary/20" />
               <span className="text-sm font-medium truncate">{appointment.setter_name}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs pt-2 border-t border-border/50">
+          <div className="flex items-center justify-between text-xs pt-2 border-t border-primary/10">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="h-3 w-3" />
               <span>{format(new Date(appointment.start_at_utc), "MMM dd")}</span>
             </div>
             <div className={`flex items-center gap-1.5 font-bold ${getDaysColor(daysInStage)}`}>
-              <div className="h-2 w-2 rounded-full bg-current" />
+              <div className="h-2 w-2 rounded-full bg-current animate-pulse" />
               {daysInStage} {daysInStage === 1 ? 'day' : 'days'} ago
             </div>
           </div>
+        </div>
         </div>
       </Card>
       
