@@ -51,7 +51,7 @@ export function AppointmentCard({
   const formattedDate = format(new Date(appointment.start_at_utc), "MMM dd, yyyy 'at' h:mm a");
 
   return (
-    <Card className="p-5 hover:shadow-md transition-shadow animate-fade-in border-l-4 border-l-primary/20">
+    <Card className="p-5 hover:shadow-md transition-shadow animate-fade-in">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <h3 className="text-xl font-semibold mb-1 truncate">{appointment.lead_name}</h3>
@@ -64,31 +64,25 @@ export function AppointmentCard({
           <Badge className={statusColors[appointment.status] || ""} variant="secondary">
             {appointment.status}
           </Badge>
-          {onAssign ? (
-            <Button onClick={onAssign} size="sm" className="shrink-0">
-              Assign to Setter
-            </Button>
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {onViewDetails && (
-                  <DropdownMenuItem onClick={() => onViewDetails(appointment)}>
-                    View Details
-                  </DropdownMenuItem>
-                )}
-                {onCloseDeal && appointment.status !== 'CLOSED' && (
-                  <DropdownMenuItem onClick={() => onCloseDeal(appointment)}>
-                    Close Deal
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {onViewDetails && (
+                <DropdownMenuItem onClick={() => onViewDetails(appointment)}>
+                  View Details
+                </DropdownMenuItem>
+              )}
+              {onCloseDeal && appointment.status !== 'CLOSED' && (
+                <DropdownMenuItem onClick={() => onCloseDeal(appointment)}>
+                  Close Deal
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

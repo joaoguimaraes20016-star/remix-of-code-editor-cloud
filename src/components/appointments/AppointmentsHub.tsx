@@ -3,9 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppointmentListView } from "./AppointmentListView";
 import { DealPipeline } from "./DealPipeline";
 import { QuickCloseDealModal } from "./QuickCloseDealModal";
-import { MyLeads } from "./MyLeads";
-import { TodaysSchedule } from "./TodaysSchedule";
-import { UnassignedAppointments } from "./UnassignedAppointments";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AppointmentsHubProps {
@@ -36,83 +33,35 @@ export function AppointmentsHub({
     onUpdate();
   };
 
-  // Role-based tab configuration
-  const isSetter = userRole === "setter";
-  const isCloser = userRole === "closer";
-  const isAdmin = userRole === "admin" || userRole === "offer_owner";
+  // Only closers and admins see the pipeline
+  const showPipeline = userRole === "closer" || userRole === "admin" || userRole === "offer_owner";
 
   return (
     <div>
-      <Tabs defaultValue={isSetter ? "my-leads" : isCloser ? "today" : "unassigned"} className="w-full">
-        {/* Setter View */}
-        {isSetter && (
-          <>
-            <TabsList className="w-full">
-              <TabsTrigger value="my-leads">My Leads</TabsTrigger>
-            </TabsList>
-            <TabsContent value="my-leads" className="mt-6">
-              <MyLeads
-                teamId={teamId}
-                currentUserId={user?.id || ""}
-                onCloseDeal={handleCloseDeal}
-              />
-            </TabsContent>
-          </>
-        )}
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className={showPipeline ? "grid w-full grid-cols-2" : "w-full"}>
+          <TabsTrigger value="list">Appointments</TabsTrigger>
+          {showPipeline && <TabsTrigger value="pipeline">Deal Pipeline</TabsTrigger>}
+        </TabsList>
 
-        {/* Closer View */}
-        {isCloser && (
-          <>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="today">Today's Schedule</TabsTrigger>
-              <TabsTrigger value="pipeline">My Pipeline</TabsTrigger>
-            </TabsList>
-            <TabsContent value="today" className="mt-6">
-              <TodaysSchedule
-                teamId={teamId}
-                currentUserId={user?.id || ""}
-                onCloseDeal={handleCloseDeal}
-              />
-            </TabsContent>
-            <TabsContent value="pipeline" className="mt-6">
-              <DealPipeline
-                teamId={teamId}
-                userRole={userRole}
-                currentUserId={user?.id || ""}
-                onCloseDeal={handleCloseDeal}
-              />
-            </TabsContent>
-          </>
-        )}
+        <TabsContent value="list" className="mt-6">
+          <AppointmentListView
+            teamId={teamId}
+            userRole={userRole}
+            currentUserId={user?.id || ""}
+            onCloseDeal={handleCloseDeal}
+          />
+        </TabsContent>
 
-        {/* Admin/Offer Owner View */}
-        {isAdmin && (
-          <>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="unassigned">Unassigned</TabsTrigger>
-              <TabsTrigger value="all">All Appointments</TabsTrigger>
-              <TabsTrigger value="pipeline">Team Pipeline</TabsTrigger>
-            </TabsList>
-            <TabsContent value="unassigned" className="mt-6">
-              <UnassignedAppointments teamId={teamId} onUpdate={onUpdate} />
-            </TabsContent>
-            <TabsContent value="all" className="mt-6">
-              <AppointmentListView
-                teamId={teamId}
-                userRole={userRole}
-                currentUserId={user?.id || ""}
-                onCloseDeal={handleCloseDeal}
-              />
-            </TabsContent>
-            <TabsContent value="pipeline" className="mt-6">
-              <DealPipeline
-                teamId={teamId}
-                userRole={userRole}
-                currentUserId={user?.id || ""}
-                onCloseDeal={handleCloseDeal}
-              />
-            </TabsContent>
-          </>
+        {showPipeline && (
+          <TabsContent value="pipeline" className="mt-6">
+            <DealPipeline
+              teamId={teamId}
+              userRole={userRole}
+              currentUserId={user?.id || ""}
+              onCloseDeal={handleCloseDeal}
+            />
+          </TabsContent>
         )}
       </Tabs>
 

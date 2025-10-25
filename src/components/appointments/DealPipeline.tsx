@@ -93,7 +93,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
         .from("appointments")
         .select("*")
         .eq("team_id", teamId)
-        .not("closer_id", "is", null);
+        .in("status", ["SHOWED", "CLOSED"]);
 
       // Filter by closer_id for closers (not admins/offer owners)
       if (userRole === 'closer' && currentUserId) {
@@ -198,6 +198,11 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
     const appointmentId = active.id as string;
     const newStage = over.id as string;
 
+    // Find the appointment being dragged
+    const appointment = appointments.find(a => a.id === appointmentId);
+    if (!appointment) return;
+
+    // Optimistically update UI
     setAppointments((prev) =>
       prev.map((app) =>
         app.id === appointmentId ? { ...app, pipeline_stage: newStage } : app
@@ -205,9 +210,13 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
     );
 
     try {
+      // Update the appointment with new stage and ensure it stays in pipeline
       const { error } = await supabase
         .from("appointments")
-        .update({ pipeline_stage: newStage })
+        .update({ 
+          pipeline_stage: newStage,
+          status: newStage === 'won' ? 'CLOSED' : 'SHOWED'
+        })
         .eq("id", appointmentId);
 
       if (error) throw error;

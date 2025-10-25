@@ -73,13 +73,6 @@ export function AppointmentListView({
         .eq("team_id", teamId)
         .order("start_at_utc", { ascending: false });
 
-      // Filter based on role
-      if (userRole === "setter") {
-        query = query.eq("setter_id", currentUserId);
-      } else if (userRole === "closer") {
-        query = query.eq("closer_id", currentUserId);
-      }
-
       const { data, error } = await query;
 
       if (error) throw error;
