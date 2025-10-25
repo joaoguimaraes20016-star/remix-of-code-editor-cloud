@@ -1,7 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,8 +8,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GripVertical, MoreVertical, DollarSign, Calendar, User } from "lucide-react";
+import { GripVertical, MoreVertical, Calendar } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { DealAvatar } from "./DealAvatar";
 
 interface DealCardProps {
   id: string;
@@ -58,22 +58,27 @@ export function DealCard({ id, appointment, onCloseDeal, onMoveTo }: DealCardPro
     <Card
       ref={setNodeRef}
       style={style}
-      className="p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary/50 transition-all duration-200"
+      className="group bg-card p-4 cursor-grab active:cursor-grabbing hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 transition-all duration-200"
     >
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-start gap-2 flex-1 min-w-0">
-          <div {...attributes} {...listeners} className="cursor-grab mt-0.5 flex-shrink-0">
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm mb-0.5 truncate">{appointment.lead_name}</h4>
-            <p className="text-xs text-muted-foreground truncate">{appointment.lead_email}</p>
-          </div>
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div 
+          {...attributes} 
+          {...listeners} 
+          className="opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0 transition-opacity"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
+        
+        {dealValue > 0 && (
+          <div className="flex-1 inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 text-green-700 dark:text-green-400 rounded-md">
+            <span className="text-lg font-semibold tabular-nums">${dealValue.toLocaleString()}</span>
+          </div>
+        )}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
-              <MoreVertical className="h-3.5 w-3.5" />
+              <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -87,27 +92,28 @@ export function DealCard({ id, appointment, onCloseDeal, onMoveTo }: DealCardPro
         </DropdownMenu>
       </div>
 
-      {dealValue > 0 && (
-        <div className="flex items-center gap-1.5 mb-2 px-2 py-1 bg-muted/50 rounded">
-          <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-sm font-semibold">${dealValue.toLocaleString()}</span>
+      <div className="space-y-2.5">
+        <div>
+          <h4 className="font-medium text-base mb-1 truncate">{appointment.lead_name}</h4>
+          <p className="text-sm text-muted-foreground truncate">{appointment.lead_email}</p>
         </div>
-      )}
 
-      <div className="space-y-1.5 text-xs text-muted-foreground">
         {appointment.setter_name && (
-          <div className="flex items-center gap-1.5">
-            <User className="h-3 w-3" />
-            <span className="truncate">{appointment.setter_name}</span>
+          <div className="flex items-center gap-2">
+            <DealAvatar name={appointment.setter_name} className="h-7 w-7" />
+            <span className="text-sm truncate">{appointment.setter_name}</span>
           </div>
         )}
-        <div className="flex items-center gap-1.5">
-          <Calendar className="h-3 w-3" />
-          <span>{format(new Date(appointment.start_at_utc), "MMM dd, yyyy")}</span>
-        </div>
-        <div className={`flex items-center gap-1.5 text-xs ${getDaysColor(daysInStage)}`}>
-          <div className="h-1.5 w-1.5 rounded-full bg-current" />
-          {daysInStage}d in stage
+
+        <div className="flex items-center justify-between text-sm pt-2 border-t border-border/50">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>{format(new Date(appointment.start_at_utc), "MMM dd, yyyy")}</span>
+          </div>
+          <div className={`flex items-center gap-1.5 font-medium ${getDaysColor(daysInStage)}`}>
+            <div className="h-2 w-2 rounded-full bg-current" />
+            {daysInStage}d
+          </div>
         </div>
       </div>
     </Card>

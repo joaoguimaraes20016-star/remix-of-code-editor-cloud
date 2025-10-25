@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Appointment {
   id: string;
@@ -29,6 +30,10 @@ interface Appointment {
   cc_collected: number | null;
   mrr_amount: number | null;
   setter_name: string | null;
+  setter_id: string | null;
+  closer_id: string | null;
+  closer_name: string | null;
+  team_id: string;
   event_type_name: string | null;
   updated_at: string;
   pipeline_stage: string | null;
@@ -230,6 +235,41 @@ export function DealPipeline({ teamId, onCloseDeal }: DealPipelineProps) {
     }
   };
 
+  const handleCloseDeal = (appointment: Appointment) => {
+    onCloseDeal(appointment);
+  };
+
+  const getStageColors = (stageId: string) => {
+    const colorMap: Record<string, { bg: string; text: string; badge: string }> = {
+      'new': { 
+        bg: 'bg-blue-500/10 dark:bg-blue-500/20', 
+        text: 'text-blue-900 dark:text-blue-100',
+        badge: 'bg-blue-500/20 dark:bg-blue-500/30'
+      },
+      'contacted': { 
+        bg: 'bg-purple-500/10 dark:bg-purple-500/20', 
+        text: 'text-purple-900 dark:text-purple-100',
+        badge: 'bg-purple-500/20 dark:bg-purple-500/30'
+      },
+      'qualified': { 
+        bg: 'bg-indigo-500/10 dark:bg-indigo-500/20', 
+        text: 'text-indigo-900 dark:text-indigo-100',
+        badge: 'bg-indigo-500/20 dark:bg-indigo-500/30'
+      },
+      'won': { 
+        bg: 'bg-green-500/10 dark:bg-green-500/20', 
+        text: 'text-green-900 dark:text-green-100',
+        badge: 'bg-green-500/20 dark:bg-green-500/30'
+      },
+      'lost': { 
+        bg: 'bg-red-500/10 dark:bg-red-500/20', 
+        text: 'text-red-900 dark:text-red-100',
+        badge: 'bg-red-500/20 dark:bg-red-500/30'
+      },
+    };
+    return colorMap[stageId] || colorMap['new'];
+  };
+
   if (loading || stages.length === 0) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -245,7 +285,7 @@ export function DealPipeline({ teamId, onCloseDeal }: DealPipelineProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card border border-border rounded-lg p-4">
         <div className="flex-1 w-full">
           <AppointmentFilters
             searchQuery={searchQuery}
@@ -268,79 +308,101 @@ export function DealPipeline({ teamId, onCloseDeal }: DealPipelineProps) {
         </Button>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          {stages.map((stage) => {
-            const stageAppointments = dealsByStage[stage.stage_id] || [];
-            const stageValue = stageAppointments.reduce(
-              (sum, apt) => sum + (apt.cc_collected || 0) + (apt.mrr_amount || 0) * 12,
-              0
-            );
+      <div className="bg-muted/30 dark:bg-muted/10 rounded-lg p-4">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {stages.map((stage) => {
+              const stageAppointments = dealsByStage[stage.stage_id] || [];
+              const stageValue = stageAppointments.reduce(
+                (sum, apt) => sum + (apt.cc_collected || 0) + (apt.mrr_amount || 0) * 12,
+                0
+              );
+              const colors = getStageColors(stage.stage_id);
 
-            return (
-              <Card
-                key={stage.id}
-                className="flex flex-col max-w-[320px] border-t-4"
-                style={{ borderTopColor: `hsl(var(--${stage.stage_color}))` }}
-              >
-                <div className="p-4 rounded-t-lg border-b bg-muted/30 sticky top-0 z-10 backdrop-blur-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-2.5 h-2.5 rounded-full bg-${stage.stage_color}-500`} />
-                    <h3 className="font-semibold text-sm">{stage.stage_label}</h3>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{stageAppointments.length} {stageAppointments.length === 1 ? 'deal' : 'deals'}</span>
-                    {stageValue > 0 && (
-                      <span className="font-semibold text-foreground">
-                        ${stageValue.toLocaleString()}
+              return (
+                <div key={stage.id} className="flex flex-col flex-shrink-0" style={{ width: '280px' }}>
+                  <div className="mb-3 space-y-2">
+                    <div className={cn(
+                      "inline-flex items-center px-3 py-1.5 rounded-full",
+                      colors.badge
+                    )}>
+                      <span className={cn("text-xs font-bold uppercase tracking-wide", colors.text)}>
+                        {stage.stage_label}
                       </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                        {stageAppointments.length} {stageAppointments.length === 1 ? 'DEAL' : 'DEALS'}
+                      </span>
+                    </div>
+                    
+                    {stageValue > 0 && (
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                          VALUE
+                        </span>
+                        <span className="text-sm font-semibold text-primary tabular-nums">
+                          ${stageValue.toLocaleString()}
+                        </span>
+                      </div>
                     )}
                   </div>
-                </div>
-                <ScrollArea className="flex-1 p-3">
-                  <SortableContext
-                    items={stageAppointments.map((apt) => apt.id)}
-                    strategy={verticalListSortingStrategy}
-                    id={stage.stage_id}
-                  >
-                    <div className="space-y-2 min-h-[100px]">
-                      {stageAppointments.map((appointment) => (
-                        <DealCard
-                          key={appointment.id}
-                          id={appointment.id}
-                          appointment={appointment}
-                          onCloseDeal={onCloseDeal}
-                          onMoveTo={handleMoveTo}
-                        />
-                      ))}
-                      {stageAppointments.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground text-xs">
-                          No deals
-                        </div>
-                      )}
-                    </div>
-                  </SortableContext>
-                </ScrollArea>
-              </Card>
-            );
-          })}
-        </div>
 
-        <DragOverlay>
-          {activeId ? (
-            <Card className="p-3 opacity-80 shadow-lg border-primary">
-              <div className="font-medium text-sm">
-                {appointments.find((apt) => apt.id === activeId)?.lead_name}
-              </div>
-            </Card>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+                  <ScrollArea className="flex-1" style={{ height: 'calc(100vh - 340px)' }}>
+                    <SortableContext
+                      items={stageAppointments.map((apt) => apt.id)}
+                      strategy={verticalListSortingStrategy}
+                      id={stage.stage_id}
+                    >
+                      <div className="space-y-3 pb-2 pr-2">
+                        {stageAppointments.length === 0 ? (
+                          <div className="text-center py-12">
+                            <p className="text-sm text-muted-foreground">
+                              No deals in this stage
+                            </p>
+                          </div>
+                        ) : (
+                          stageAppointments.map((appointment) => (
+                            <DealCard
+                              key={appointment.id}
+                              id={appointment.id}
+                              appointment={appointment}
+                              onCloseDeal={handleCloseDeal}
+                              onMoveTo={handleMoveTo}
+                            />
+                          ))
+                        )}
+                      </div>
+                    </SortableContext>
+                  </ScrollArea>
+                </div>
+              );
+            })}
+          </div>
+
+          <DragOverlay>
+            {activeId && (() => {
+              const activeAppointment = filteredAppointments.find(a => a.id === activeId);
+              return activeAppointment ? (
+                <div className="rotate-3 scale-105">
+                  <DealCard
+                    id={activeId}
+                    appointment={activeAppointment}
+                    onCloseDeal={handleCloseDeal}
+                    onMoveTo={handleMoveTo}
+                  />
+                </div>
+              ) : null;
+            })()}
+          </DragOverlay>
+        </DndContext>
+      </div>
 
       <PipelineStageManager
         open={managerOpen}
