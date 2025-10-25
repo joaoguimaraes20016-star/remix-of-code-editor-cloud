@@ -38,6 +38,8 @@ export function InitializeDefaultStages({ teamId }: InitializeDefaultStagesProps
         if (stage.stage_label === 'Closed Won') return true;
         if (stage.stage_label === 'Closed Lost') return true;
         if (stage.stage_id === 'confirmed') return true;
+        if (stage.stage_id === 'new') return true; // Remove 'new' stage
+        if (stage.stage_label === 'New Leads') return true;
         if (stage.stage_label === 'Confirmed') return true;
         if (stage.stage_label === 'Contacted') return true;
         return false;
@@ -49,7 +51,7 @@ export function InitializeDefaultStages({ teamId }: InitializeDefaultStagesProps
             .from('team_pipeline_stages')
             .update({ stage_label: 'Closed' })
             .eq('id', stage.id);
-        } else if (stage.stage_label === 'Closed Lost' || stage.stage_id === 'confirmed' || stage.stage_label === 'Confirmed' || stage.stage_label === 'Contacted') {
+        } else if (stage.stage_label === 'Closed Lost' || stage.stage_id === 'confirmed' || stage.stage_id === 'new' || stage.stage_label === 'New Leads' || stage.stage_label === 'Confirmed' || stage.stage_label === 'Contacted') {
           // Delete these stages and move appointments to "booked"
           await supabase
             .from('appointments')

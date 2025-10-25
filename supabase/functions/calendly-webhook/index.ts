@@ -398,7 +398,7 @@ serve(async (req) => {
         team_id: teamId,
         event_type_uri: eventTypeUri,
         event_type_name: eventTypeName,
-        pipeline_stage: 'new', // Auto-assign to pipeline
+        pipeline_stage: 'booked', // Auto-assign to Appointment Booked stage
       };
 
       // Try to auto-assign based on UTM tracking parameter
