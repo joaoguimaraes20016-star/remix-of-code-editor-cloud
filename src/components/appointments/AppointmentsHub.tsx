@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { NewAppointments } from "@/components/NewAppointments";
 import { MyClaimed } from "@/components/MyClaimed";
 import { AllClaimed } from "@/components/AllClaimed";
@@ -8,11 +9,14 @@ import { AllNewAppointments } from "@/components/AllNewAppointments";
 import { DealPipeline } from "./DealPipeline";
 import { TaskBasedConfirmToday } from "./TaskBasedConfirmToday";
 import { OperatorControls } from "./OperatorControls";
+import { MRRFollowUps } from "./MRRFollowUps";
 import { RetargetTab } from "./RetargetTab";
 import { StageWorkspaceView } from "./StageWorkspaceView";
 import { StageWorkspaceList } from "./StageWorkspaceList";
 import { InitializeDefaultStages } from "./InitializeDefaultStages";
 import { PipelineStageManager } from "./PipelineStageManager";
+import { useTabCounts } from "@/hooks/useTabCounts";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AppointmentsHubProps {
   teamId: string;
@@ -29,6 +33,8 @@ export function AppointmentsHub({
   setterCommissionPct,
   onUpdate,
 }: AppointmentsHubProps) {
+  const { user } = useAuth();
+  const counts = useTabCounts(teamId, user?.id || '', userRole);
   const [selectedStage, setSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
   const [adminSelectedStage, setAdminSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
   const [showStageManager, setShowStageManager] = useState(false);
@@ -46,10 +52,14 @@ export function AppointmentsHub({
         
         <Tabs defaultValue="confirm" className="w-full">
           <TabsList className="grid w-full grid-cols-4 h-12">
-            <TabsTrigger value="confirm" className="text-base">Confirm Today</TabsTrigger>
+            <TabsTrigger value="confirm" className="text-base">
+              Confirm Today {counts.myTasks > 0 && <Badge className="ml-2" variant="secondary">{counts.myTasks}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="new" className="text-base">New Leads</TabsTrigger>
             <TabsTrigger value="mine" className="text-base">My Appointments</TabsTrigger>
-            <TabsTrigger value="retarget" className="text-base">Retarget</TabsTrigger>
+            <TabsTrigger value="retarget" className="text-base">
+              Retarget {counts.followUps > 0 && <Badge className="ml-2" variant="secondary">{counts.followUps}</Badge>}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="confirm" className="mt-6">
@@ -93,10 +103,13 @@ export function AppointmentsHub({
         </div>
         
         <Tabs defaultValue="mine" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-12">
+          <TabsList className="grid w-full grid-cols-5 h-12">
             <TabsTrigger value="mine" className="text-base">My Deals</TabsTrigger>
             <TabsTrigger value="all" className="text-base">All Appointments</TabsTrigger>
             <TabsTrigger value="pipeline" className="text-base">Deal Pipeline</TabsTrigger>
+            <TabsTrigger value="mrr" className="text-base">
+              MRR {counts.mrrDue > 0 && <Badge className="ml-2" variant="secondary">{counts.mrrDue}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="stages" className="text-base">Stage Views</TabsTrigger>
           </TabsList>
 
@@ -114,6 +127,10 @@ export function AppointmentsHub({
               closerCommissionPct={closerCommissionPct}
               setterCommissionPct={setterCommissionPct}
             />
+          </TabsContent>
+
+          <TabsContent value="mrr" className="mt-6">
+            <MRRFollowUps teamId={teamId} />
           </TabsContent>
 
           <TabsContent value="pipeline" className="mt-6">
@@ -177,14 +194,21 @@ export function AppointmentsHub({
       </div>
       
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-7 h-12">
+        <TabsList className="grid w-full grid-cols-8 h-12">
           <TabsTrigger value="overview" className="text-base">Overview</TabsTrigger>
           <TabsTrigger value="unassigned" className="text-base">Unassigned</TabsTrigger>
           <TabsTrigger value="assigned" className="text-base">All Assigned</TabsTrigger>
           <TabsTrigger value="pipeline" className="text-base">Pipeline</TabsTrigger>
-          <TabsTrigger value="tasks" className="text-base">Tasks</TabsTrigger>
+          <TabsTrigger value="tasks" className="text-base">
+            Tasks {(counts.myTasks + counts.queueTasks) > 0 && <Badge className="ml-2" variant="secondary">{counts.myTasks + counts.queueTasks}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="mrr" className="text-base">
+            MRR {counts.mrrDue > 0 && <Badge className="ml-2" variant="secondary">{counts.mrrDue}</Badge>}
+          </TabsTrigger>
           <TabsTrigger value="stages" className="text-base">Stages</TabsTrigger>
-          <TabsTrigger value="retarget" className="text-base">Follow-Ups</TabsTrigger>
+          <TabsTrigger value="retarget" className="text-base">
+            Follow-Ups {counts.followUps > 0 && <Badge className="ml-2" variant="secondary">{counts.followUps}</Badge>}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6 space-y-6">
@@ -210,6 +234,10 @@ export function AppointmentsHub({
 
         <TabsContent value="tasks" className="mt-6">
           <TaskBasedConfirmToday teamId={teamId} />
+        </TabsContent>
+
+        <TabsContent value="mrr" className="mt-6">
+          <MRRFollowUps teamId={teamId} />
         </TabsContent>
 
 

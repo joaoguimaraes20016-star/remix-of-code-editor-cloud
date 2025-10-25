@@ -63,17 +63,31 @@ export function MRRFollowUps({ teamId }: MRRFollowUpsProps) {
 
   const loadTasks = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: tasksData, error: tasksError } = await supabase
         .from('mrr_follow_up_tasks')
-        .select(`
-          *,
-          schedule:mrr_schedules(*)
-        `)
+        .select('*')
         .eq('team_id', teamId)
         .order('due_date', { ascending: true });
 
-      if (error) throw error;
-      setTasks(data || []);
+      if (tasksError) throw tasksError;
+
+      // Load schedules separately
+      const scheduleIds = tasksData?.map(t => t.mrr_schedule_id) || [];
+      const { data: schedulesData, error: schedulesError } = await supabase
+        .from('mrr_schedules')
+        .select('*')
+        .in('id', scheduleIds);
+
+      if (schedulesError) throw schedulesError;
+
+      // Combine data
+      const schedulesMap = new Map(schedulesData?.map(s => [s.id, s]) || []);
+      const combinedTasks = tasksData?.map(task => ({
+        ...task,
+        schedule: schedulesMap.get(task.mrr_schedule_id)!
+      })).filter(task => task.schedule) || [];
+
+      setTasks(combinedTasks);
     } catch (error) {
       console.error('Error loading MRR tasks:', error);
       toast.error('Failed to load MRR follow-ups');

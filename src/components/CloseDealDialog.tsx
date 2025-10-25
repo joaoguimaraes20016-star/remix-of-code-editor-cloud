@@ -225,6 +225,40 @@ export function CloseDealDialog({
 
           if (mrrError) throw mrrError;
         }
+
+        // Create MRR schedule for monthly follow-ups
+        const firstChargeDate = startOfMonth(addMonths(new Date(), 1));
+        const { data: scheduleData, error: scheduleError } = await supabase
+          .from('mrr_schedules')
+          .insert({
+            team_id: teamId,
+            appointment_id: appointment.id,
+            client_name: appointment.lead_name,
+            client_email: appointment.lead_email,
+            mrr_amount: mrr,
+            first_charge_date: format(firstChargeDate, 'yyyy-MM-dd'),
+            next_renewal_date: format(firstChargeDate, 'yyyy-MM-dd'),
+            status: 'active',
+            assigned_to: user.id
+          })
+          .select()
+          .single();
+
+        if (scheduleError) throw scheduleError;
+
+        // Create first follow-up task
+        if (scheduleData) {
+          const { error: taskError } = await supabase
+            .from('mrr_follow_up_tasks')
+            .insert({
+              team_id: teamId,
+              mrr_schedule_id: scheduleData.id,
+              due_date: format(firstChargeDate, 'yyyy-MM-dd'),
+              status: 'due'
+            });
+
+          if (taskError) throw taskError;
+        }
       }
 
       toast({

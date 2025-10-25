@@ -572,7 +572,15 @@ export type Database = {
           status?: string
           team_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_mrr_schedule"
+            columns: ["mrr_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "mrr_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mrr_schedules: {
         Row: {

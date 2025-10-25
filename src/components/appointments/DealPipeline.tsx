@@ -335,10 +335,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
           <div className="flex gap-6 overflow-x-auto pb-4 px-2">
             {stages.map((stage) => {
               const stageAppointments = dealsByStage[stage.stage_id] || [];
-              const stageValue = stageAppointments.reduce(
-                (sum, apt) => sum + (apt.cc_collected || 0) + (apt.mrr_amount || 0) * 12,
-                0
-              );
               const colors = getStageColors(stage.stage_id);
 
               return (
@@ -358,17 +354,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
                         {stageAppointments.length} {stageAppointments.length === 1 ? 'DEAL' : 'DEALS'}
                       </span>
                     </div>
-                    
-                    {stageValue > 0 && (
-                      <div className="flex items-center justify-between p-2 bg-primary/5 rounded-lg border border-primary/10">
-                        <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-                          TOTAL VALUE
-                        </span>
-                        <span className="text-base font-bold text-primary tabular-nums">
-                          ${stageValue.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
                   </div>
 
                   <ScrollArea className="flex-1 rounded-xl" style={{ height: 'calc(100vh - 380px)' }}>
