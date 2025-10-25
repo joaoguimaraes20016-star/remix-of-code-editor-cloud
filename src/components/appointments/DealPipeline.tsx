@@ -9,6 +9,8 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  DragOverEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DealCard } from "./DealCard";
@@ -21,6 +23,7 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DroppableStageColumn } from "./DroppableStageColumn";
 
 interface Appointment {
   id: string;
@@ -201,14 +204,23 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over || active.id === over.id) return;
+    if (!over) return;
 
     const appointmentId = active.id as string;
-    const newStage = over.id as string;
+    const overId = over.id as string;
+    
+    // Check if we dropped over a stage or over another card
+    const targetStage = stages.find(s => s.stage_id === overId);
+    const targetCard = appointments.find(a => a.id === overId);
+    
+    // Determine the new stage
+    const newStage = targetStage ? targetStage.stage_id : (targetCard?.pipeline_stage || null);
+    
+    if (!newStage) return;
 
     // Find the appointment being dragged
     const appointment = appointments.find(a => a.id === appointmentId);
-    if (!appointment) return;
+    if (!appointment || appointment.pipeline_stage === newStage) return;
 
     // Optimistically update UI
     setAppointments((prev) =>
@@ -345,7 +357,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
               const colors = getStageColors(stage.stage_id);
 
               return (
-                <div key={stage.id} className="flex flex-col flex-shrink-0" style={{ width: '300px' }}>
+                <DroppableStageColumn key={stage.id} id={stage.stage_id}>
                   <div className="mb-4 space-y-3 p-4 bg-gradient-to-br from-card/80 via-card/60 to-secondary/40 rounded-xl border border-primary/10 backdrop-blur-sm shadow-md">
                     <div className={cn(
                       "inline-flex items-center px-4 py-2 rounded-full shadow-sm",
@@ -394,7 +406,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
                       </div>
                     </SortableContext>
                   </ScrollArea>
-                </div>
+                </DroppableStageColumn>
               );
             })}
           </div>
