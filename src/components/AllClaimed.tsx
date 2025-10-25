@@ -24,8 +24,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { format } from "date-fns";
-import { Trash2, Clock, Mail, User } from "lucide-react";
+import { Trash2, Clock, Mail, User, RefreshCw } from "lucide-react";
 import { CloseDealDialog } from "@/components/CloseDealDialog";
+import { AssignDialog } from "./appointments/AssignDialog";
 import {
   Pagination,
   PaginationContent,
@@ -45,6 +46,7 @@ interface Appointment {
   setter_name: string | null;
   setter_notes: string | null;
   setter_id: string | null;
+  closer_id: string | null;
 }
 
 interface AllClaimedProps {
@@ -64,6 +66,8 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
   const [selectedAppointments, setSelectedAppointments] = useState<Set<string>>(new Set());
   const [closeDealOpen, setCloseDealOpen] = useState(false);
   const [closeDealAppointment, setCloseDealAppointment] = useState<Appointment | null>(null);
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [reassignAppointment, setReassignAppointment] = useState<Appointment | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 50;
@@ -348,6 +352,18 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
               <CardFooter className="p-3 pt-0 flex gap-2">
                 <Button
                   size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setReassignAppointment(apt);
+                    setReassignDialogOpen(true);
+                  }}
+                  className="flex-1 h-10 text-sm"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                  Reassign
+                </Button>
+                <Button
+                  size="sm"
                   variant="default"
                   onClick={() => {
                     setCloseDealAppointment(apt);
@@ -421,6 +437,18 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
                  <div className="flex gap-2">
                    <Button
                      size="sm"
+                     variant="outline"
+                     onClick={() => {
+                       setReassignAppointment(apt);
+                       setReassignDialogOpen(true);
+                     }}
+                     className="flex items-center gap-1"
+                   >
+                     <RefreshCw className="h-3 w-3" />
+                     Reassign
+                   </Button>
+                   <Button
+                     size="sm"
                      variant="default"
                      onClick={() => {
                        setCloseDealAppointment(apt);
@@ -486,6 +514,22 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
           closerCommissionPct={closerCommissionPct}
           setterCommissionPct={setterCommissionPct}
         />
+
+        {reassignAppointment && (
+          <AssignDialog
+            open={reassignDialogOpen}
+            onOpenChange={setReassignDialogOpen}
+            appointment={reassignAppointment}
+            teamId={teamId}
+            onSuccess={() => {
+              loadAppointments();
+              toast({
+                title: 'Appointment reassigned',
+                description: 'The appointment has been reassigned successfully',
+              });
+            }}
+          />
+        )}
 
         {/* Pagination */}
         {totalCount > pageSize && (

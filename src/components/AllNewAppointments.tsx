@@ -229,17 +229,18 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
     try {
       setLoading(true);
       
-      // Get total count
+      // Get total count - ONLY unassigned appointments
       const { count, error: countError } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .eq('team_id', teamId)
+        .is('setter_id', null)
         .in('status', ['NEW', 'CONFIRMED']);
 
       if (countError) throw countError;
       setTotalCount(count || 0);
 
-      // Get paginated data
+      // Get paginated data - ONLY unassigned appointments
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
 
@@ -247,6 +248,7 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
+        .is('setter_id', null)
         .in('status', ['NEW', 'CONFIRMED'])
         .order('start_at_utc', { ascending: false })
         .range(from, to);
