@@ -458,7 +458,15 @@ export type Database = {
           task_type?: Database["public"]["Enums"]["task_type"]
           team_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "confirmation_tasks_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       creator_codes: {
         Row: {
