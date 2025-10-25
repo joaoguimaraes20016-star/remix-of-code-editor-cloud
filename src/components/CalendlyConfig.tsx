@@ -531,6 +531,16 @@ export function CalendlyConfig({
   };
 
   const handleImportAppointments = async (eventTypeUri?: string | null) => {
+    // Prevent double-clicks
+    if (importingAppointments) {
+      toast({
+        title: "Import in Progress",
+        description: "Please wait for the current import to complete",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setImportingAppointments(true);
     try {
       const { data, error } = await supabase.functions.invoke("import-calendly-appointments", {
@@ -553,10 +563,15 @@ export function CalendlyConfig({
             ? "No appointments found for the selected event type." 
             : "No appointments found in your Calendly account.",
         });
+      } else if (imported === 0 && skipped > 0) {
+        toast({
+          title: "No New Appointments",
+          description: `All ${skipped} appointments already exist - no duplicates created.`,
+        });
       } else {
         toast({
           title: "Sync Complete!",
-          description: `Imported ${imported} new appointment${imported !== 1 ? 's' : ''}.${skipped > 0 ? ` ${skipped} already existed.` : ''}`,
+          description: `Imported ${imported} new appointment${imported !== 1 ? 's' : ''}.${skipped > 0 ? ` ${skipped} duplicates skipped.` : ''}`,
         });
       }
       

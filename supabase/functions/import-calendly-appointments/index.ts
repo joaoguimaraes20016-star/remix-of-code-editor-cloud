@@ -447,6 +447,11 @@ Deno.serve(async (req) => {
       });
 
       const duplicatesSkipped = appointmentsToInsert.length - uniqueAppointments.length;
+      
+      // Update counts to reflect actual duplicates found
+      importedCount = uniqueAppointments.length;
+      skippedCount += duplicatesSkipped;
+      
       if (duplicatesSkipped > 0) {
         console.log(`⚠️ Skipped ${duplicatesSkipped} duplicate appointments`);
       }
