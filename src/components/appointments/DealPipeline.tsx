@@ -229,8 +229,15 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     const appointment = appointments.find(a => a.id === appointmentId);
     if (!appointment || appointment.pipeline_stage === newStage) return;
 
-    // Check if moving to stages that require additional info
-    if (newStage === "deposit") {
+    // Check if moving to won/closed stage - collect deposit info
+    const targetStageData = stages.find(s => s.stage_id === newStage);
+    const isClosedStage = targetStageData && 
+      (targetStageData.stage_id === 'won' || 
+       targetStageData.stage_label.toLowerCase().includes('won') || 
+       targetStageData.stage_label.toLowerCase().includes('closed') || 
+       targetStageData.stage_label.toLowerCase().includes('close'));
+
+    if (isClosedStage) {
       setDepositDialog({ 
         open: true, 
         appointmentId, 
@@ -240,6 +247,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       return;
     }
 
+    // Check if moving to stages that require additional info
     if (newStage === "rescheduled") {
       setRescheduleDialog({ 
         open: true, 
@@ -261,14 +269,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       return;
     }
 
-    // Check if dropping into a "won" or "closed" stage
-    const targetStageData = stages.find(s => s.stage_id === newStage);
-    const isClosedStage = targetStageData && 
-      (targetStageData.stage_id.toLowerCase() === 'won' || 
-       targetStageData.stage_label.toLowerCase().includes('won') || 
-       targetStageData.stage_label.toLowerCase().includes('closed') || 
-       targetStageData.stage_label.toLowerCase().includes('close'));
-
     // Optimistically update UI
     setAppointments((prev) =>
       prev.map((app) =>
@@ -285,12 +285,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
       if (error) throw error;
 
-      // If it's a closed/won stage, open the close deal dialog
-      if (isClosedStage) {
-        onCloseDeal({ ...appointment, pipeline_stage: newStage });
-      } else {
-        toast.success("Deal moved successfully");
-      }
+      toast.success("Deal moved successfully");
     } catch (error) {
       console.error("Error updating deal stage:", error);
       toast.error("Failed to move deal");
@@ -387,11 +382,11 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     if (!appointment) return;
 
     try {
-      // Update appointment with deposit amount, notes, retarget date, and move to deposit stage
+      // Update appointment with deposit amount, notes, retarget date, and move to won/closed stage
       const { error: updateError } = await supabase
         .from("appointments")
         .update({ 
-          pipeline_stage: "deposit",
+          pipeline_stage: depositDialog.stageId, // Use the target stage (won/closed)
           cc_collected: depositAmount,
           setter_notes: notes,
           retarget_date: format(followUpDate, "yyyy-MM-dd"),
@@ -422,6 +417,10 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         });
 
       toast.success("Deposit recorded successfully");
+      
+      // Trigger the close deal dialog for final sale details
+      onCloseDeal({ ...appointment, pipeline_stage: depositDialog.stageId });
+      
       await loadDeals();
     } catch (error: any) {
       console.error("Error recording deposit:", error);
@@ -435,8 +434,15 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     const appointment = appointments.find((a) => a.id === appointmentId);
     if (!appointment) return;
 
-    // Check if moving to stages that require additional info
-    if (stage === "deposit") {
+    // Check if moving to won/closed stage - collect deposit info
+    const targetStageData = stages.find(s => s.stage_id === stage);
+    const isClosedStage = targetStageData && 
+      (targetStageData.stage_id === 'won' || 
+       targetStageData.stage_label.toLowerCase().includes('won') || 
+       targetStageData.stage_label.toLowerCase().includes('closed') || 
+       targetStageData.stage_label.toLowerCase().includes('close'));
+
+    if (isClosedStage) {
       setDepositDialog({ 
         open: true, 
         appointmentId, 
@@ -446,6 +452,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       return;
     }
 
+    // Check if moving to stages that require additional info
     if (stage === "rescheduled") {
       setRescheduleDialog({ 
         open: true, 
