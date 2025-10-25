@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, UserPlus, CalendarCheck, CalendarX, Loader2, AlertCircle, Phone, RefreshCw } from 'lucide-react';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface TaskBasedConfirmTodayProps {
   teamId: string;
@@ -40,21 +41,21 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
     switch (taskType) {
       case 'call_confirmation':
         return (
-          <Badge variant="info" className="text-xs">
+          <Badge className="text-xs bg-blue-500 hover:bg-blue-600 text-white border-0">
             <Phone className="h-3 w-3 mr-1" />
             Call Confirmation
           </Badge>
         );
       case 'follow_up':
         return (
-          <Badge variant="secondary" className="text-xs">
+          <Badge className="text-xs bg-purple-500 hover:bg-purple-600 text-white border-0">
             <RefreshCw className="h-3 w-3 mr-1" />
             Follow-Up
           </Badge>
         );
       case 'reschedule':
         return (
-          <Badge variant="warning" className="text-xs">
+          <Badge className="text-xs bg-amber-500 hover:bg-amber-600 text-white border-0">
             <Calendar className="h-3 w-3 mr-1" />
             Reschedule
           </Badge>
@@ -96,8 +97,12 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
           ) : (
             myTasks.map((task) => {
               const apt = task.appointment;
+              const taskColor = task.task_type === 'call_confirmation' ? 'border-blue-200 dark:border-blue-900' 
+                : task.task_type === 'follow_up' ? 'border-purple-200 dark:border-purple-900'
+                : task.task_type === 'reschedule' ? 'border-amber-200 dark:border-amber-900'
+                : '';
               return (
-                <Card key={task.id} className="bg-card border-border card-hover">
+                <Card key={task.id} className={cn("bg-card card-hover", taskColor)}>
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
@@ -233,8 +238,12 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
           ) : (
             queueTasks.map((task) => {
               const apt = task.appointment;
+              const taskColor = task.task_type === 'call_confirmation' ? 'border-blue-200 dark:border-blue-900' 
+                : task.task_type === 'follow_up' ? 'border-purple-200 dark:border-purple-900'
+                : task.task_type === 'reschedule' ? 'border-amber-200 dark:border-amber-900'
+                : '';
               return (
-                <Card key={task.id} className="bg-background">
+                <Card key={task.id} className={cn("bg-background", taskColor)}>
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
