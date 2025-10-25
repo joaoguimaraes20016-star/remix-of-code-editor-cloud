@@ -33,8 +33,8 @@ export function AppointmentsHub({
         
         <Tabs defaultValue="new" className="w-full">
           <TabsList className="grid w-full grid-cols-2 h-12">
-            <TabsTrigger value="new" className="text-base">🎯 New Leads</TabsTrigger>
-            <TabsTrigger value="mine" className="text-base">📋 My Appointments</TabsTrigger>
+            <TabsTrigger value="new" className="text-base">New Leads</TabsTrigger>
+            <TabsTrigger value="mine" className="text-base">My Appointments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="new" className="mt-6">
@@ -70,8 +70,8 @@ export function AppointmentsHub({
         
         <Tabs defaultValue="mine" className="w-full">
           <TabsList className="grid w-full grid-cols-2 h-12">
-            <TabsTrigger value="mine" className="text-base">💼 My Deals</TabsTrigger>
-            <TabsTrigger value="pipeline" className="text-base">📊 Deal Pipeline</TabsTrigger>
+            <TabsTrigger value="mine" className="text-base">My Deals</TabsTrigger>
+            <TabsTrigger value="pipeline" className="text-base">Deal Pipeline</TabsTrigger>
           </TabsList>
 
           <TabsContent value="mine" className="mt-6">
@@ -107,9 +107,9 @@ export function AppointmentsHub({
       
       <Tabs defaultValue="unassigned" className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-12">
-          <TabsTrigger value="unassigned" className="text-base">🆕 Unassigned</TabsTrigger>
-          <TabsTrigger value="assigned" className="text-base">✅ All Assigned</TabsTrigger>
-          <TabsTrigger value="pipeline" className="text-base">📊 Deal Pipeline</TabsTrigger>
+          <TabsTrigger value="unassigned" className="text-base">Unassigned</TabsTrigger>
+          <TabsTrigger value="assigned" className="text-base">All Assigned</TabsTrigger>
+          <TabsTrigger value="pipeline" className="text-base">Deal Pipeline</TabsTrigger>
         </TabsList>
 
         <TabsContent value="unassigned" className="mt-6">
