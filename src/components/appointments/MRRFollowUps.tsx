@@ -115,10 +115,30 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
 
   const updateTaskStatus = async (taskId: string, status: string, notes?: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Optimistically update local state immediately
+      setTasks(prevTasks => 
+        prevTasks.map(t => 
+          t.id === taskId 
+            ? { 
+                ...t, 
+                status, 
+                notes: notes || t.notes,
+                completed_at: status === 'confirmed' ? new Date().toISOString() : null 
+              } 
+            : t
+        )
+      );
+
+      // Close dialog immediately for better UX
+      setSelectedTask(null);
+      setNotes('');
+
       const updateData: any = {
         status,
         completed_at: status === 'confirmed' ? new Date().toISOString() : null,
-        completed_by: status === 'confirmed' ? (await supabase.auth.getUser()).data.user?.id : null
+        completed_by: status === 'confirmed' ? user?.id : null
       };
 
       if (notes) {
@@ -135,7 +155,6 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
       // Log activity
       const task = tasks.find(t => t.id === taskId);
       if (task) {
-        const { data: { user } } = await supabase.auth.getUser();
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name')
@@ -153,12 +172,11 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
       }
 
       toast.success('MRR follow-up updated');
-      setSelectedTask(null);
-      setNotes('');
-      loadTasks();
     } catch (error) {
       console.error('Error updating task:', error);
       toast.error('Failed to update follow-up');
+      // Reload on error to revert optimistic update
+      loadTasks();
     }
   };
 
