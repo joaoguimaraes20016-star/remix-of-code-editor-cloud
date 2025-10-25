@@ -387,13 +387,15 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     if (!appointment) return;
 
     try {
-      // Update appointment with deposit amount, notes, and move to deposit stage
+      // Update appointment with deposit amount, notes, retarget date, and move to deposit stage
       const { error: updateError } = await supabase
         .from("appointments")
         .update({ 
           pipeline_stage: "deposit",
           cc_collected: depositAmount,
-          setter_notes: notes
+          setter_notes: notes,
+          retarget_date: format(followUpDate, "yyyy-MM-dd"),
+          retarget_reason: `Deposit follow-up: $${depositAmount}`
         })
         .eq("id", depositDialog.appointmentId);
 
