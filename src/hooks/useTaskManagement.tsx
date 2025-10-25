@@ -36,8 +36,18 @@ export function useTaskManagement(teamId: string, userId: string) {
 
       if (error) throw error;
 
-      const my = tasks?.filter(t => t.assigned_to === userId) || [];
-      const queue = tasks?.filter(t => !t.assigned_to) || [];
+      // Remove duplicates - keep only one task per appointment (most recent)
+      const uniqueTasksMap = new Map<string, Task>();
+      tasks?.forEach(task => {
+        const existingTask = uniqueTasksMap.get(task.appointment_id);
+        if (!existingTask || new Date(task.created_at) > new Date(existingTask.created_at)) {
+          uniqueTasksMap.set(task.appointment_id, task);
+        }
+      });
+      
+      const uniqueTasks = Array.from(uniqueTasksMap.values());
+      const my = uniqueTasks.filter(t => t.assigned_to === userId);
+      const queue = uniqueTasks.filter(t => !t.assigned_to);
 
       setMyTasks(my);
       setQueueTasks(queue);
