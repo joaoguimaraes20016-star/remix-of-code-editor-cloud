@@ -20,21 +20,21 @@ export function AppointmentsHub({
   setterCommissionPct,
   onUpdate,
 }: AppointmentsHubProps) {
-  // Setter sees: New Appointments (claim) and My Leads (close deal)
+  // Setter sees: New Leads (claim) and My Appointments (manage & confirm)
   if (userRole === "setter") {
     return (
       <div className="space-y-6">
-        <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-transparent rounded-lg p-6 border border-primary/20">
+        <div className="bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 rounded-xl p-6 border border-primary/30 shadow-lg">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            My Appointments
+            Setter Dashboard
           </h2>
-          <p className="text-muted-foreground mt-1">Claim new leads and manage your pipeline</p>
+          <p className="text-muted-foreground mt-1">Claim new leads and manage your appointments</p>
         </div>
         
         <Tabs defaultValue="new" className="w-full">
           <TabsList className="grid w-full grid-cols-2 h-12">
-            <TabsTrigger value="new" className="text-base">New Appointments</TabsTrigger>
-            <TabsTrigger value="mine" className="text-base">My Leads</TabsTrigger>
+            <TabsTrigger value="new" className="text-base">🎯 New Leads</TabsTrigger>
+            <TabsTrigger value="mine" className="text-base">📋 My Appointments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="new" className="mt-6">
@@ -57,21 +57,21 @@ export function AppointmentsHub({
     );
   }
 
-  // Closer sees: Assigned to Me and All Appointments
+  // Closer sees: My Deals and Deal Pipeline
   if (userRole === "closer") {
     return (
       <div className="space-y-6">
-        <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-transparent rounded-lg p-6 border border-primary/20">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Deal Management
+        <div className="bg-gradient-to-br from-accent/10 via-primary/10 to-accent/5 rounded-xl p-6 border border-accent/30 shadow-lg">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+            Closer Dashboard
           </h2>
           <p className="text-muted-foreground mt-1">Track and close your deals</p>
         </div>
         
         <Tabs defaultValue="mine" className="w-full">
           <TabsList className="grid w-full grid-cols-2 h-12">
-            <TabsTrigger value="mine" className="text-base">My Deals</TabsTrigger>
-            <TabsTrigger value="pipeline" className="text-base">Deal Pipeline</TabsTrigger>
+            <TabsTrigger value="mine" className="text-base">💼 My Deals</TabsTrigger>
+            <TabsTrigger value="pipeline" className="text-base">📊 Deal Pipeline</TabsTrigger>
           </TabsList>
 
           <TabsContent value="mine" className="mt-6">
@@ -95,21 +95,21 @@ export function AppointmentsHub({
     );
   }
 
-  // Admin/Offer Owner sees: Unassigned, Assigned, and Pipeline
+  // Admin/Offer Owner sees: Unassigned, All Assigned, and Pipeline
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-transparent rounded-lg p-6 border border-primary/20">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Team Dashboard
+      <div className="bg-gradient-to-br from-primary/15 via-accent/15 to-primary/10 rounded-xl p-6 border border-primary/40 shadow-lg">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+          Admin Dashboard
         </h2>
         <p className="text-muted-foreground mt-1">Manage all team appointments and deals</p>
       </div>
       
       <Tabs defaultValue="unassigned" className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-12">
-          <TabsTrigger value="unassigned" className="text-base">Unassigned</TabsTrigger>
-          <TabsTrigger value="assigned" className="text-base">Assigned</TabsTrigger>
-          <TabsTrigger value="pipeline" className="text-base">Deal Pipeline</TabsTrigger>
+          <TabsTrigger value="unassigned" className="text-base">🆕 Unassigned</TabsTrigger>
+          <TabsTrigger value="assigned" className="text-base">✅ All Assigned</TabsTrigger>
+          <TabsTrigger value="pipeline" className="text-base">📊 Deal Pipeline</TabsTrigger>
         </TabsList>
 
         <TabsContent value="unassigned" className="mt-6">
