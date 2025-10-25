@@ -84,21 +84,25 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo }: Dea
           </div>
           
           {hasRevenue && (
-            <div className="flex-1 grid grid-cols-2 gap-2">
+            <div className="flex-1 space-y-2">
               {appointment.cc_collected && appointment.cc_collected > 0 && (
-                <div className="flex flex-col items-center px-3 py-2 bg-gradient-to-br from-green-500/20 via-green-500/10 to-emerald-500/5 border border-green-500/30 rounded-lg shadow-sm backdrop-blur-sm">
-                  <span className="text-xs text-green-400 font-bold uppercase tracking-wider">Cash</span>
-                  <span className="text-xl font-black text-green-300 tabular-nums mt-0.5">
-                    ${appointment.cc_collected.toLocaleString()}
-                  </span>
+                <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/10 border border-green-500/30 rounded-lg">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-green-400 font-bold uppercase tracking-wider">Cash Collected</span>
+                    <span className="text-2xl font-black text-green-300 tabular-nums">
+                      ${appointment.cc_collected.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               )}
               {appointment.mrr_amount && appointment.mrr_amount > 0 && (
-                <div className="flex flex-col items-center px-3 py-2 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/5 border border-primary/30 rounded-lg shadow-sm backdrop-blur-sm">
-                  <span className="text-xs text-primary font-bold uppercase tracking-wider">Monthly</span>
-                  <span className="text-xl font-black text-primary tabular-nums mt-0.5">
-                    ${appointment.mrr_amount.toLocaleString()}
-                  </span>
+                <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/20 to-accent/10 border border-primary/30 rounded-lg">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-primary font-bold uppercase tracking-wider">Monthly Recurring</span>
+                    <span className="text-2xl font-black text-primary tabular-nums">
+                      ${appointment.mrr_amount.toLocaleString()}/mo
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
