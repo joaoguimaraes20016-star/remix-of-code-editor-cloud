@@ -3,11 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Target, MessageCircle, Calendar, X, Loader2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Target, MessageCircle, Calendar as CalendarIcon, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 
@@ -35,6 +37,8 @@ export function RetargetTab({ teamId }: RetargetTabProps) {
   const [selectedApt, setSelectedApt] = useState<string | null>(null);
   const [retargetDate, setRetargetDate] = useState('');
   const [retargetReason, setRetargetReason] = useState('');
+  const [rebookDialog, setRebookDialog] = useState<{ open: boolean; appointmentId: string; appointmentName: string } | null>(null);
+  const [rebookDateTime, setRebookDateTime] = useState<Date>();
 
   useEffect(() => {
     loadRetargetQueue();
@@ -104,21 +108,31 @@ export function RetargetTab({ teamId }: RetargetTabProps) {
     }
   };
 
-  const handleRebook = async (appointmentId: string) => {
+  const handleRebook = (appointmentId: string, appointmentName: string) => {
+    setRebookDialog({ open: true, appointmentId, appointmentName });
+    setRebookDateTime(undefined);
+  };
+
+  const handleRebookConfirm = async () => {
+    if (!rebookDialog || !rebookDateTime) return;
+
     try {
       const { error } = await supabase
         .from('appointments')
         .update({ 
           status: 'RESCHEDULED',
           pipeline_stage: 'rescheduled',
+          start_at_utc: rebookDateTime.toISOString(),
           retarget_date: null,
           retarget_reason: null
         })
-        .eq('id', appointmentId);
+        .eq('id', rebookDialog.appointmentId);
 
       if (error) throw error;
 
-      toast.success('Marked as rebooked');
+      toast.success('Rebooked successfully');
+      setRebookDialog(null);
+      setRebookDateTime(undefined);
       loadRetargetQueue();
     } catch (error) {
       console.error('Error rebooking:', error);
@@ -227,9 +241,9 @@ export function RetargetTab({ teamId }: RetargetTabProps) {
             ) : (
               <Button 
                 size="sm"
-                onClick={() => handleRebook(apt.id)}
+                onClick={() => handleRebook(apt.id, apt.lead_name)}
               >
-                <Calendar className="h-4 w-4 mr-1" />
+                <CalendarIcon className="h-4 w-4 mr-1" />
                 Rebook
               </Button>
             )}
@@ -303,6 +317,86 @@ export function RetargetTab({ teamId }: RetargetTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Rebook Dialog */}
+      {rebookDialog && (
+        <Dialog open={rebookDialog.open} onOpenChange={(open) => !open && setRebookDialog(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Rebook Appointment</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                Setting new appointment date/time for <span className="font-semibold">{rebookDialog.appointmentName}</span>
+              </p>
+              
+              <div className="space-y-2">
+                <Label>Select New Date & Time</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {rebookDateTime ? format(rebookDateTime, "PPP 'at' p") : "Pick a date and time"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={rebookDateTime}
+                      onSelect={(date) => {
+                        if (date) {
+                          // If no time set yet, default to 9 AM
+                          const newDate = rebookDateTime ? new Date(date) : new Date(date.setHours(9, 0, 0, 0));
+                          if (rebookDateTime) {
+                            newDate.setHours(rebookDateTime.getHours(), rebookDateTime.getMinutes());
+                          }
+                          setRebookDateTime(newDate);
+                        }
+                      }}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                    {rebookDateTime && (
+                      <div className="p-3 border-t">
+                        <Label className="text-xs">Time</Label>
+                        <div className="flex gap-2 mt-2">
+                          <Input
+                            type="time"
+                            value={rebookDateTime ? format(rebookDateTime, "HH:mm") : ""}
+                            onChange={(e) => {
+                              if (rebookDateTime && e.target.value) {
+                                const [hours, minutes] = e.target.value.split(':');
+                                const newDate = new Date(rebookDateTime);
+                                newDate.setHours(parseInt(hours), parseInt(minutes));
+                                setRebookDateTime(newDate);
+                              }
+                            }}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setRebookDialog(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleRebookConfirm} disabled={!rebookDateTime}>
+                Confirm Rebook
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
