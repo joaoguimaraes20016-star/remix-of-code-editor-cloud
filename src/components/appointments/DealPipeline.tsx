@@ -222,6 +222,14 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     const appointment = appointments.find(a => a.id === appointmentId);
     if (!appointment || appointment.pipeline_stage === newStage) return;
 
+    // Check if dropping into a "won" or "closed" stage - trigger close deal dialog
+    const targetStageData = stages.find(s => s.stage_id === newStage);
+    if (targetStageData && (targetStageData.stage_id === 'won' || targetStageData.stage_label.toLowerCase().includes('won') || targetStageData.stage_label.toLowerCase().includes('closed'))) {
+      // Trigger the close deal dialog instead of just moving
+      onCloseDeal(appointment);
+      return;
+    }
+
     // Optimistically update UI
     setAppointments((prev) =>
       prev.map((app) =>
@@ -411,11 +419,11 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
             })}
           </div>
 
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activeId && (() => {
-              const activeAppointment = filteredAppointments.find(a => a.id === activeId);
+              const activeAppointment = appointments.find(a => a.id === activeId);
               return activeAppointment ? (
-                <div className="rotate-6 scale-110 shadow-2xl animate-pulse">
+                <div className="opacity-90 cursor-grabbing" style={{ width: '280px' }}>
                   <DealCard
                     id={activeId}
                     teamId={teamId}
