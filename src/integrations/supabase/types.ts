@@ -27,6 +27,7 @@ export type Database = {
           lead_name: string
           mrr_amount: number | null
           mrr_months: number | null
+          pipeline_stage: string | null
           product_name: string | null
           revenue: number | null
           setter_id: string | null
@@ -49,6 +50,7 @@ export type Database = {
           lead_name: string
           mrr_amount?: number | null
           mrr_months?: number | null
+          pipeline_stage?: string | null
           product_name?: string | null
           revenue?: number | null
           setter_id?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           lead_name?: string
           mrr_amount?: number | null
           mrr_months?: number | null
+          pipeline_stage?: string | null
           product_name?: string | null
           revenue?: number | null
           setter_id?: string | null
