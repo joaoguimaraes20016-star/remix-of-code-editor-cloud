@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar, AlertCircle, CheckCircle2, Unplug, Settings, ChevronDown, Plus, Download, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { EventTypeFilter } from "@/components/EventTypeFilter";
 
 interface CalendlyConfigProps {
   teamId: string;
@@ -55,6 +56,7 @@ export function CalendlyConfig({
   const [isFetchingManual, setIsFetchingManual] = useState(false);
   const [fixingWebhook, setFixingWebhook] = useState(false);
   const [importingAppointments, setImportingAppointments] = useState(false);
+  const [selectedEventTypeForSync, setSelectedEventTypeForSync] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -528,11 +530,14 @@ export function CalendlyConfig({
     }
   };
 
-  const handleImportAppointments = async () => {
+  const handleImportAppointments = async (eventTypeUri?: string | null) => {
     setImportingAppointments(true);
     try {
       const { data, error } = await supabase.functions.invoke("import-calendly-appointments", {
-        body: { teamId }
+        body: { 
+          teamId,
+          eventTypeUri: eventTypeUri || null
+        }
       });
 
       if (error) throw error;
@@ -544,7 +549,9 @@ export function CalendlyConfig({
       if (imported === 0 && skipped === 0) {
         toast({
           title: "No Appointments Found",
-          description: "No appointments found in your Calendly account.",
+          description: eventTypeUri 
+            ? "No appointments found for the selected event type." 
+            : "No appointments found in your Calendly account.",
         });
       } else {
         toast({
@@ -563,6 +570,32 @@ export function CalendlyConfig({
     } finally {
       setImportingAppointments(false);
     }
+  };
+
+  // Auto-sync when connected or event type changes
+  useEffect(() => {
+    if (isConnected && currentAccessToken && currentOrgUri) {
+      // Trigger initial sync on connection
+      const hasInitialSynced = sessionStorage.getItem(`calendly-synced-${teamId}`);
+      if (!hasInitialSynced) {
+        console.log('Auto-syncing appointments on connection...');
+        handleImportAppointments(selectedEventTypeForSync);
+        sessionStorage.setItem(`calendly-synced-${teamId}`, 'true');
+      }
+    }
+  }, [isConnected, currentAccessToken, currentOrgUri]);
+
+  // Sync when event type filter changes
+  useEffect(() => {
+    if (isConnected && selectedEventTypeForSync !== null) {
+      console.log('Event type changed, re-syncing...', selectedEventTypeForSync);
+      handleImportAppointments(selectedEventTypeForSync);
+    }
+  }, [selectedEventTypeForSync]);
+
+  const handleEventTypeFilterChange = (eventTypeUri: string | null) => {
+    console.log('Event type filter changed:', eventTypeUri);
+    setSelectedEventTypeForSync(eventTypeUri);
   };
 
   const handleDisconnect = async () => {
@@ -1020,23 +1053,24 @@ export function CalendlyConfig({
             </div>
             )}
 
-            <div className="space-y-3">
-              <Button 
-                onClick={handleImportAppointments} 
-                disabled={importingAppointments}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                size="lg"
-              >
-                <Download className="w-5 h-5 mr-2" />
-                {importingAppointments ? "Syncing Appointments..." : "Sync Appointments from Calendly"}
-              </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                Click to import all upcoming appointments from your Calendly account
-              </p>
-            </div>
+            {/* Event Type Filter with Auto-Sync */}
+            {isConnected && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Filter Appointments by Event Type</Label>
+                <EventTypeFilter
+                  teamId={teamId}
+                  calendlyAccessToken={currentAccessToken}
+                  calendlyOrgUri={currentOrgUri}
+                  onFilterChange={handleEventTypeFilterChange}
+                />
+                {importingAppointments && (
+                  <p className="text-xs text-primary animate-pulse">Syncing appointments...</p>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-3">
-              <Button 
+              <Button
                 onClick={handleFixWebhook} 
                 disabled={fixingWebhook}
                 variant="outline"

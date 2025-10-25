@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       }
     );
 
-    const { teamId } = await req.json();
+    const { teamId, eventTypeUri } = await req.json();
 
     if (!teamId) {
       return new Response(
@@ -64,6 +64,8 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Starting import for team:', teamId, 'Event Type:', eventTypeUri || 'ALL');
 
     console.log('Starting import for team:', teamId);
 
@@ -179,6 +181,12 @@ Deno.serve(async (req) => {
     }
     
     console.log(`Found ${allEvents.length} total scheduled events`);
+
+    // Filter by event type if specified
+    if (eventTypeUri) {
+      allEvents = allEvents.filter(event => event.event_type === eventTypeUri);
+      console.log(`After filtering by event type: ${allEvents.length} events`);
+    }
 
     let importedCount = 0;
     let skippedCount = 0;
