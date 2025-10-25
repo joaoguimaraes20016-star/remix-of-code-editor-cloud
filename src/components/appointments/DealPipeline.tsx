@@ -93,7 +93,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
         .from("appointments")
         .select("*")
         .eq("team_id", teamId)
-        .in("status", ["SHOWED", "CLOSED"]);
+        .not('setter_id', 'is', null);
 
       // Filter by closer_id for closers (not admins/offer owners)
       if (userRole === 'closer' && currentUserId) {
@@ -210,13 +210,10 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal }: D
     );
 
     try {
-      // Update the appointment with new stage and ensure it stays in pipeline
+      // Update only the pipeline_stage - don't change status or visibility
       const { error } = await supabase
         .from("appointments")
-        .update({ 
-          pipeline_stage: newStage,
-          status: newStage === 'won' ? 'CLOSED' : 'SHOWED'
-        })
+        .update({ pipeline_stage: newStage })
         .eq("id", appointmentId);
 
       if (error) throw error;

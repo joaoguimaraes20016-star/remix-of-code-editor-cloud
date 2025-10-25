@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AppointmentListView } from "./AppointmentListView";
+import { NewAppointments } from "@/components/NewAppointments";
+import { MyClaimed } from "@/components/MyClaimed";
+import { AllClaimed } from "@/components/AllClaimed";
+import { AllNewAppointments } from "@/components/AllNewAppointments";
 import { DealPipeline } from "./DealPipeline";
-import { QuickCloseDealModal } from "./QuickCloseDealModal";
-import { useAuth } from "@/hooks/useAuth";
 
 interface AppointmentsHubProps {
   teamId: string;
@@ -20,61 +20,96 @@ export function AppointmentsHub({
   setterCommissionPct,
   onUpdate,
 }: AppointmentsHubProps) {
-  const { user } = useAuth();
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
-  const [closeDealModalOpen, setCloseDealModalOpen] = useState(false);
-
-  const handleCloseDeal = (appointment: any) => {
-    setSelectedAppointment(appointment);
-    setCloseDealModalOpen(true);
-  };
-
-  const handleCloseDealSuccess = () => {
-    onUpdate();
-  };
-
-  // Only closers and admins see the pipeline
-  const showPipeline = userRole === "closer" || userRole === "admin" || userRole === "offer_owner";
-
-  return (
-    <div>
-      <Tabs defaultValue="list" className="w-full">
-        <TabsList className={showPipeline ? "grid w-full grid-cols-2" : "w-full"}>
-          <TabsTrigger value="list">Appointments</TabsTrigger>
-          {showPipeline && <TabsTrigger value="pipeline">Deal Pipeline</TabsTrigger>}
+  // Setter sees: New Appointments (claim) and My Leads (close deal)
+  if (userRole === "setter") {
+    return (
+      <Tabs defaultValue="new" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="new">New Appointments</TabsTrigger>
+          <TabsTrigger value="mine">My Leads</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="mt-6">
-          <AppointmentListView
+        <TabsContent value="new" className="mt-6">
+          <NewAppointments
             teamId={teamId}
-            userRole={userRole}
-            currentUserId={user?.id || ""}
-            onCloseDeal={handleCloseDeal}
+            closerCommissionPct={closerCommissionPct}
+            setterCommissionPct={setterCommissionPct}
           />
         </TabsContent>
 
-        {showPipeline && (
-          <TabsContent value="pipeline" className="mt-6">
-            <DealPipeline
-              teamId={teamId}
-              userRole={userRole}
-              currentUserId={user?.id || ""}
-              onCloseDeal={handleCloseDeal}
-            />
-          </TabsContent>
-        )}
+        <TabsContent value="mine" className="mt-6">
+          <MyClaimed
+            teamId={teamId}
+            closerCommissionPct={closerCommissionPct}
+            setterCommissionPct={setterCommissionPct}
+          />
+        </TabsContent>
       </Tabs>
+    );
+  }
 
-      {selectedAppointment && (
-        <QuickCloseDealModal
-          open={closeDealModalOpen}
-          onOpenChange={setCloseDealModalOpen}
-          appointment={selectedAppointment}
+  // Closer sees: Assigned to Me and All Appointments
+  if (userRole === "closer") {
+    return (
+      <Tabs defaultValue="mine" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="mine">My Deals</TabsTrigger>
+          <TabsTrigger value="pipeline">Deal Pipeline</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="mine" className="mt-6">
+          <AllClaimed
+            teamId={teamId}
+            closerCommissionPct={closerCommissionPct}
+            setterCommissionPct={setterCommissionPct}
+          />
+        </TabsContent>
+
+        <TabsContent value="pipeline" className="mt-6">
+          <DealPipeline
+            teamId={teamId}
+            userRole={userRole}
+            currentUserId=""
+            onCloseDeal={() => onUpdate()}
+          />
+        </TabsContent>
+      </Tabs>
+    );
+  }
+
+  // Admin/Offer Owner sees: Unassigned, Assigned, and Pipeline
+  return (
+    <Tabs defaultValue="unassigned" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="unassigned">Unassigned</TabsTrigger>
+        <TabsTrigger value="assigned">Assigned</TabsTrigger>
+        <TabsTrigger value="pipeline">Deal Pipeline</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="unassigned" className="mt-6">
+        <AllNewAppointments
+          teamId={teamId}
           closerCommissionPct={closerCommissionPct}
           setterCommissionPct={setterCommissionPct}
-          onSuccess={handleCloseDealSuccess}
         />
-      )}
-    </div>
+      </TabsContent>
+
+      <TabsContent value="assigned" className="mt-6">
+        <AllClaimed
+          teamId={teamId}
+          closerCommissionPct={closerCommissionPct}
+          setterCommissionPct={setterCommissionPct}
+        />
+      </TabsContent>
+
+      <TabsContent value="pipeline" className="mt-6">
+        <DealPipeline
+          teamId={teamId}
+          userRole={userRole}
+          currentUserId=""
+          onCloseDeal={() => onUpdate()}
+        />
+      </TabsContent>
+    </Tabs>
   );
 }
