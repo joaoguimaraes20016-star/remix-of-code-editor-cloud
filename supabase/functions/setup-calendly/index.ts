@@ -78,31 +78,8 @@ serve(async (req) => {
       }
     }
 
-    // For OAuth apps, the signing key is at the application level, not per webhook
-    // We need to retrieve it from the OAuth application details
-    console.log('Fetching OAuth application details to get signing key...');
-    
-    const appResponse = await fetch('https://api.calendly.com/oauth/applications', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    let signingKey = null;
-    if (appResponse.ok) {
-      const appData = await appResponse.json();
-      console.log('OAuth app response:', JSON.stringify(appData, null, 2));
-      
-      // The signing key should be in the application details
-      // However, Calendly doesn't expose it via API for security reasons
-      // It's only shown once in the Developer Console
-      signingKey = appData.resource?.webhook_signing_key || appData.webhook_signing_key;
-      
-      if (signingKey) {
-        console.log('Found signing key in OAuth app details');
-      }
-    }
+    // Signing key is configured at environment level via CALENDLY_WEBHOOK_SIGNING_KEY
+    // No need to fetch it per team
     
     // Register webhook with Calendly - include team ID in URL
     const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/calendly-webhook?team_id=${teamId}`;
@@ -175,23 +152,7 @@ serve(async (req) => {
     
     console.log('Webhook created successfully with ID:', webhookId);
     
-    // For OAuth apps, the signing key is NOT in the webhook response
-    // It must be retrieved from environment secrets where it was manually set
-    // from the Calendly Developer Console
-    if (!signingKey) {
-      // Try to get it from env (it should be manually configured from Calendly Developer Console)
-      signingKey = Deno.env.get('CALENDLY_WEBHOOK_SIGNING_KEY');
-      
-      if (signingKey) {
-        console.log('Using signing key from environment variable');
-      } else {
-        console.warn('No signing key available - webhooks will not be verified');
-        console.warn('To enable webhook verification, set CALENDLY_WEBHOOK_SIGNING_KEY in your environment');
-        console.warn('Get the signing key from: https://developer.calendly.com/console/apps');
-      }
-    }
-    
-    // Store credentials in database
+    // Store credentials in database (signing key is stored in environment secrets, not per-team)
     console.log('Storing credentials in database for team:', teamId);
     const { error: updateError } = await supabaseAdmin
       .from('teams')
@@ -201,7 +162,7 @@ serve(async (req) => {
         calendly_token_expires_at: expiresAt,
         calendly_organization_uri: organizationUri,
         calendly_webhook_id: webhookId,
-        calendly_signing_key: signingKey, // Will be null if not available
+        calendly_signing_key: null, // Signing key is at environment level, not per-team
       })
       .eq('id', teamId);
 

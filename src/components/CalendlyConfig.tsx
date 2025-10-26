@@ -150,7 +150,7 @@ export function CalendlyConfig({
       if (!response.ok) {
         console.warn('Failed to fetch Calendly event types:', response.status);
         if (response.status === 401) {
-          // Try to refresh the token automatically
+          // Try to refresh the token automatically and silently
           try {
             const { data: refreshData, error: refreshError } = await supabase.functions.invoke('refresh-calendly-token', {
               body: { teamId }
@@ -158,28 +158,17 @@ export function CalendlyConfig({
 
             if (refreshError || refreshData?.error) {
               setTokenValidationFailed(true);
-              toast({
-                title: "Token Expired",
-                description: "Please disconnect and reconnect Calendly to continue.",
-                variant: "destructive",
-              });
+              console.error('Token refresh failed, user needs to reconnect');
               return;
             }
 
-            // Token refreshed, retry fetching event types
-            toast({
-              title: "Token Refreshed",
-              description: "Retrying...",
-            });
+            // Token refreshed successfully, retry silently
+            console.log('Token refreshed, retrying event types fetch...');
             setTimeout(() => fetchEventTypes(), 500);
             return;
           } catch (e) {
             setTokenValidationFailed(true);
-            toast({
-              title: "Token Expired",
-              description: "Please disconnect and reconnect Calendly.",
-              variant: "destructive",
-            });
+            console.error('Token refresh error:', e);
             return;
           }
         }
