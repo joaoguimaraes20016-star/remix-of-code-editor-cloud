@@ -152,6 +152,24 @@ serve(async (req) => {
     
     console.log('Webhook created successfully with ID:', webhookId);
     
+    // Fetch event types from Calendly
+    console.log('Fetching event types from Calendly...');
+    const eventTypesResponse = await fetch(`https://api.calendly.com/event_types?organization=${encodeURIComponent(organizationUri)}&active=true`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    let eventTypes: string[] = [];
+    if (eventTypesResponse.ok) {
+      const eventTypesData = await eventTypesResponse.json();
+      eventTypes = eventTypesData.collection?.map((et: any) => et.scheduling_url) || [];
+      console.log('Fetched event types:', eventTypes);
+    } else {
+      console.error('Failed to fetch event types:', await eventTypesResponse.text());
+    }
+    
     // Store credentials in database (signing key is stored in environment secrets, not per-team)
     console.log('Storing credentials in database for team:', teamId);
     const { error: updateError } = await supabaseAdmin
@@ -162,6 +180,7 @@ serve(async (req) => {
         calendly_token_expires_at: expiresAt,
         calendly_organization_uri: organizationUri,
         calendly_webhook_id: webhookId,
+        calendly_event_types: eventTypes,
       })
       .eq('id', teamId);
 
