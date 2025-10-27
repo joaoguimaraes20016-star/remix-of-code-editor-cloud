@@ -314,7 +314,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId, userId]);
+  }, [teamId, userId, userRole]);
 
   return {
     myTasks,

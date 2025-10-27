@@ -30,7 +30,7 @@ interface TeamMember {
 
 export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
   const { user } = useAuth();
-  const { role: userRole } = useTeamRole(teamId);
+  const { role: userRole, loading: roleLoading } = useTeamRole(teamId);
   const {
     myTasks,
     loading,
@@ -197,7 +197,7 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
     }
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="flex items-center justify-center p-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
