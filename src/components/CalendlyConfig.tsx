@@ -903,17 +903,17 @@ export function CalendlyConfig({
                         <div key={eventType.uri} className="md:hidden">
                           <Card 
                             className={`cursor-pointer transition-all min-h-[68px] ${
-                              selectedEventTypes.includes(eventType.scheduling_url)
+                              selectedEventTypes.includes(eventType.uri)
                                 ? 'border-primary bg-primary/5 shadow-sm'
                                 : 'hover:border-primary/50'
                             }`}
-                            onClick={() => handleEventTypeToggle(eventType.scheduling_url)}
+                            onClick={() => handleEventTypeToggle(eventType.uri)}
                           >
                             <CardContent className="p-6">
                               <div className="flex items-center space-x-4">
                                 <Checkbox
-                                  checked={selectedEventTypes.includes(eventType.scheduling_url)}
-                                  onCheckedChange={() => handleEventTypeToggle(eventType.scheduling_url)}
+                                  checked={selectedEventTypes.includes(eventType.uri)}
+                                  onCheckedChange={() => handleEventTypeToggle(eventType.uri)}
                                   className="h-7 w-7 border-2"
                                 />
                                 <div className="flex-1">
@@ -953,8 +953,8 @@ export function CalendlyConfig({
                           <div key={eventType.uri} className="flex items-start space-x-3 p-2 rounded hover:bg-muted/50">
                             <Checkbox
                               id={eventType.uri}
-                              checked={selectedEventTypes.includes(eventType.scheduling_url)}
-                              onCheckedChange={() => handleEventTypeToggle(eventType.scheduling_url)}
+                              checked={selectedEventTypes.includes(eventType.uri)}
+                              onCheckedChange={() => handleEventTypeToggle(eventType.uri)}
                             />
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
