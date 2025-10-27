@@ -75,13 +75,20 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
     const upcoming: typeof filteredTasks = [];
 
     filteredTasks.forEach(task => {
-      const appointmentDate = parseISO(task.appointment.start_at_utc);
-      if (isToday(appointmentDate)) {
-        today.push(task);
-      } else if (isTomorrow(appointmentDate)) {
-        tomorrow.push(task);
-      } else {
-        upcoming.push(task);
+      if (!task.appointment?.start_at_utc) return;
+      
+      try {
+        const appointmentDate = parseISO(task.appointment.start_at_utc);
+        if (isToday(appointmentDate)) {
+          today.push(task);
+        } else if (isTomorrow(appointmentDate)) {
+          tomorrow.push(task);
+        } else {
+          upcoming.push(task);
+        }
+      } catch (error) {
+        console.error('Error parsing date:', error);
+        upcoming.push(task); // Default to upcoming if date parse fails
       }
     });
 
