@@ -162,7 +162,6 @@ serve(async (req) => {
         calendly_token_expires_at: expiresAt,
         calendly_organization_uri: organizationUri,
         calendly_webhook_id: webhookId,
-        calendly_signing_key: null, // Signing key is at environment level, not per-team
       })
       .eq('id', teamId);
 
