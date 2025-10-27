@@ -24,6 +24,15 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
   const loadTasks = async () => {
     try {
+      // Get team's saved event types filter
+      const { data: teamData } = await supabase
+        .from('teams')
+        .select('calendly_event_types')
+        .eq('id', teamId)
+        .single();
+
+      const savedEventTypes = teamData?.calendly_event_types || [];
+
       const { data: tasks, error } = await supabase
         .from('confirmation_tasks')
         .select(`
@@ -36,9 +45,26 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       if (error) throw error;
 
+      // Filter tasks to only include appointments with event types that match saved filter
+      let filteredTasks = tasks || [];
+      if (savedEventTypes.length > 0) {
+        filteredTasks = filteredTasks.filter(task => {
+          const eventTypeUri = task.appointment?.event_type_uri;
+          if (!eventTypeUri) return false;
+          
+          // Check if the appointment's event type URI matches any saved event type
+          return savedEventTypes.some((savedUri: string) => {
+            // Handle both full URIs and scheduling URLs
+            return eventTypeUri === savedUri || 
+                   eventTypeUri.includes(savedUri) || 
+                   savedUri.includes(eventTypeUri);
+          });
+        });
+      }
+
       // Remove duplicates - keep only one task per appointment (most recent)
       const uniqueTasksMap = new Map<string, Task>();
-      tasks?.forEach(task => {
+      filteredTasks.forEach(task => {
         const existingTask = uniqueTasksMap.get(task.appointment_id);
         if (!existingTask || new Date(task.created_at) > new Date(existingTask.created_at)) {
           uniqueTasksMap.set(task.appointment_id, task);
