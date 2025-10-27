@@ -32,6 +32,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         .single();
 
       const savedEventTypes = teamData?.calendly_event_types || [];
+      console.log('Saved event types for filtering:', savedEventTypes);
 
       const { data: tasks, error } = await supabase
         .from('confirmation_tasks')
@@ -47,6 +48,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       // Filter tasks to only include appointments with event types that match saved filter
       let filteredTasks = tasks || [];
+      console.log('Total tasks before filter:', filteredTasks.length);
       if (savedEventTypes.length > 0) {
         filteredTasks = filteredTasks.filter(task => {
           const eventTypeUri = task.appointment?.event_type_uri;
@@ -61,6 +63,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
           });
         });
       }
+      console.log('Tasks after event type filter:', filteredTasks.length);
 
       // Remove duplicates - keep only one task per appointment (most recent)
       const uniqueTasksMap = new Map<string, Task>();
@@ -72,6 +75,8 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
       });
       
       const uniqueTasks = Array.from(uniqueTasksMap.values());
+      console.log('Unique tasks after dedup:', uniqueTasks.length);
+      console.log('User role:', userRole, 'User ID:', userId);
       
       // Filter tasks based on who they're assigned to
       const my = userRole === 'admin' || userRole === 'offer_owner'
@@ -81,6 +86,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
       // Queue tasks: completely unassigned (no assigned_to)
       const queue = uniqueTasks.filter(t => t.assigned_to === null);
 
+      console.log('My tasks:', my.length, 'Queue tasks:', queue.length);
       setMyTasks(my);
       setQueueTasks(queue);
     } catch (error) {
