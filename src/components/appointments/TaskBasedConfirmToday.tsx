@@ -389,7 +389,18 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {groupedTasks.tomorrow.map(renderTaskCard)}
+                {groupedTasks.tomorrow.map((task) => {
+                  const apt = task.appointment;
+                  const appointmentDate = parseISO(apt.start_at_utc);
+                  return (
+                    <div key={task.id}>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        {format(appointmentDate, 'EEEE, MMMM d')}
+                      </div>
+                      {renderTaskCard(task)}
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           )}
