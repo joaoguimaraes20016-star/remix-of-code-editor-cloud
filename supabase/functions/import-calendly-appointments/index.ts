@@ -383,16 +383,16 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Determine status - for upcoming events, use NEW or CONFIRMED
+          // Determine status - NEW until setter confirms, CANCELLED if not active
           let appointmentStatus: 'NEW' | 'CONFIRMED' | 'CANCELLED' = 'NEW';
 
           // Check if event was cancelled in Calendly
           if (invitee.status !== 'active' || event.status !== 'active') {
             appointmentStatus = 'CANCELLED';
           } 
-          // For future events, mark as CONFIRMED if invitee confirmed
+          // For future events, keep as NEW until setter confirms via task
           else if (invitee.status === 'active') {
-            appointmentStatus = 'CONFIRMED';
+            appointmentStatus = 'NEW';
           }
 
           // Add to batch instead of inserting one by one
