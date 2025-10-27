@@ -88,6 +88,15 @@ export function MyClaimed({ teamId, closerCommissionPct, setterCommissionPct }: 
     if (!user) return;
 
     try {
+      // Get team's event type filter
+      const { data: teamData } = await supabase
+        .from('teams')
+        .select('calendly_event_types')
+        .eq('id', teamId)
+        .single();
+
+      const savedEventTypes = teamData?.calendly_event_types || [];
+
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
@@ -96,7 +105,21 @@ export function MyClaimed({ teamId, closerCommissionPct, setterCommissionPct }: 
         .order('start_at_utc', { ascending: false });
 
       if (error) throw error;
-      setAppointments((data || []) as Appointment[]);
+      
+      // Filter by event types if configured
+      let filteredData = data || [];
+      if (savedEventTypes.length > 0) {
+        filteredData = filteredData.filter(apt => {
+          if (!apt.event_type_uri) return false;
+          return savedEventTypes.some((savedUri: string) => 
+            apt.event_type_uri === savedUri || 
+            apt.event_type_uri.includes(savedUri) || 
+            savedUri.includes(apt.event_type_uri)
+          );
+        });
+      }
+      
+      setAppointments((filteredData) as Appointment[]);
     } catch (error: any) {
       toast({
         title: 'Error loading appointments',

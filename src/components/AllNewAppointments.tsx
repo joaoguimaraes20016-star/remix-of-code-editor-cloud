@@ -231,6 +231,15 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
     try {
       setLoading(true);
       
+      // Get team's event type filter
+      const { data: teamFilterData } = await supabase
+        .from('teams')
+        .select('calendly_event_types')
+        .eq('id', teamId)
+        .single();
+
+      const savedEventTypes = teamFilterData?.calendly_event_types || [];
+      
       // Build query based on role
       let countQuery = supabase
         .from('appointments')
@@ -257,7 +266,6 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
 
       const { count, error: countError } = await countQuery;
       if (countError) throw countError;
-      setTotalCount(count || 0);
 
       // Get paginated data
       const from = (currentPage - 1) * pageSize;
@@ -268,7 +276,26 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
         .range(from, to);
 
       if (error) throw error;
-      setAppointments(data || []);
+      
+      // Filter by event types if configured
+      let filteredData = data || [];
+      if (savedEventTypes.length > 0) {
+        filteredData = filteredData.filter(apt => {
+          if (!apt.event_type_uri) return false;
+          return savedEventTypes.some((savedUri: string) => 
+            apt.event_type_uri === savedUri || 
+            apt.event_type_uri.includes(savedUri) || 
+            savedUri.includes(apt.event_type_uri)
+          );
+        });
+        
+        // Update total count to reflect filtered results
+        setTotalCount(filteredData.length);
+      } else {
+        setTotalCount(count || 0);
+      }
+      
+      setAppointments(filteredData);
     } catch (error: any) {
       toast({
         title: 'Error loading appointments',
