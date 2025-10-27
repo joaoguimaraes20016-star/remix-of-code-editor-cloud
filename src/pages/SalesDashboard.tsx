@@ -517,28 +517,18 @@ const Index = () => {
   // Note: We filter for CLOSED status only, cc_collected can be 0 for some deals
   const closedAppointments = filteredAppointments.filter(apt => apt.status === 'CLOSED');
   
-  // Include CC from both closed appointments AND closed sales
-  const ccFromAppointments = closedAppointments.reduce((sum, apt) => sum + (Number(apt.cc_collected) || 0), 0);
-  const ccFromSales = filteredSales
-    .filter(s => s.status === 'closed')
-    .reduce((sum, sale) => sum + (Number(sale.revenue) || 0), 0);
-  const totalCCRevenue = ccFromAppointments + ccFromSales;
+  // Only count CC from appointments (sales are derived from appointments, no double counting)
+  const totalCCRevenue = closedAppointments.reduce((sum, apt) => sum + (Number(apt.cc_collected) || 0), 0);
   
   const totalMRR = closedAppointments.reduce((sum, apt) => sum + (Number(apt.mrr_amount) || 0), 0);
   
-  // Include commissions from both appointments AND sales
-  const commissionsFromAppointments = closedAppointments.reduce((sum, apt) => {
+  // Only calculate commissions from appointments to avoid double counting
+  const totalCommissions = closedAppointments.reduce((sum, apt) => {
     const cc = Number(apt.cc_collected) || 0;
     const closerComm = cc * (closerCommissionPct / 100);
     const setterComm = apt.setter_id ? cc * (setterCommissionPct / 100) : 0;
     return sum + closerComm + setterComm;
   }, 0);
-  
-  const commissionsFromSales = filteredSales
-    .filter(s => s.status === 'closed')
-    .reduce((sum, sale) => sum + (Number(sale.commission) || 0) + (Number(sale.setterCommission) || 0), 0);
-  
-  const totalCommissions = commissionsFromAppointments + commissionsFromSales;
   
   // Calculate appointment-based metrics
   const showedAppointments = filteredAppointments.filter(apt => apt.status === 'SHOWED' || apt.status === 'CLOSED');

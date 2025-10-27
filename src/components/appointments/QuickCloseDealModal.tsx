@@ -78,10 +78,10 @@ export function QuickCloseDealModal({
 
       if (updateError) throw updateError;
 
-      // Create sale record
+      // Create sale record (revenue is only CC, MRR tracked separately)
       const closerCommission = cc * (closerCommissionPct / 100);
       const setterCommission = cc * (setterCommissionPct / 100);
-      const revenue = cc + mrr * months;
+      const revenue = cc;
 
       const { error: saleError } = await supabase.from("sales").insert({
         customer_name: appointment.lead_name,
