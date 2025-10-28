@@ -75,8 +75,7 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
       let schedulesQuery = supabase
         .from('mrr_schedules')
         .select('*')
-        .eq('team_id', teamId)
-        .eq('status', 'active');
+        .eq('team_id', teamId);
 
       if (userRole === 'closer' && currentUserId) {
         schedulesQuery = schedulesQuery.eq('assigned_to', currentUserId);
@@ -287,8 +286,10 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
     }
   };
 
-  const activeSchedules = schedules.filter(s => s.payment_due_today || s.confirmed_count < s.total_months);
-  const completedSchedules = schedules.filter(s => !s.payment_due_today && s.confirmed_count >= s.total_months);
+  const activeSchedules = schedules.filter(s => s.status === 'active');
+  const pausedSchedules = schedules.filter(s => s.status === 'paused');
+  const canceledSchedules = schedules.filter(s => s.status === 'canceled');
+  const completedSchedules = schedules.filter(s => s.status === 'completed' || (s.status === 'active' && s.confirmed_count >= s.total_months));
 
   const ScheduleCard = ({ schedule }: { schedule: MRRScheduleWithProgress }) => {
     const isDueToday = schedule.payment_due_today;
@@ -388,6 +389,68 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
                   ) : (
                     <div className="space-y-3 pr-4">
                       {activeSchedules.map(schedule => (
+                        <ScheduleCard key={schedule.id} schedule={schedule} />
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Paused Column */}
+          <div className="flex-1 min-w-[350px]">
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Pause className="h-4 w-4 text-warning" />
+                    Paused
+                  </CardTitle>
+                  <Badge variant="warning">{pausedSchedules.length}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ScrollArea className="h-[calc(100vh-280px)]">
+                  {pausedSchedules.length === 0 ? (
+                    <div className="text-center py-8 px-4 bg-muted/20 rounded-lg border border-dashed">
+                      <Pause className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">No paused schedules</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pr-4">
+                      {pausedSchedules.map(schedule => (
+                        <ScheduleCard key={schedule.id} schedule={schedule} />
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Canceled Column */}
+          <div className="flex-1 min-w-[350px]">
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Ban className="h-4 w-4 text-destructive" />
+                    Canceled
+                  </CardTitle>
+                  <Badge variant="destructive">{canceledSchedules.length}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ScrollArea className="h-[calc(100vh-280px)]">
+                  {canceledSchedules.length === 0 ? (
+                    <div className="text-center py-8 px-4 bg-muted/20 rounded-lg border border-dashed">
+                      <Ban className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">No canceled schedules</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pr-4">
+                      {canceledSchedules.map(schedule => (
                         <ScheduleCard key={schedule.id} schedule={schedule} />
                       ))}
                     </div>
