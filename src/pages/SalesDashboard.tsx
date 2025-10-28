@@ -476,8 +476,43 @@ const Index = () => {
   
   const salesReps = ['all', ...Array.from(allNamesMap.values()).sort()];
 
+  // Filter appointments by date range FIRST
+  const filteredAppointments = appointments.filter(apt => {
+    if (!dateRange.from && !dateRange.to) return true;
+    const aptDate = new Date(apt.start_at_utc);
+    aptDate.setHours(0, 0, 0, 0);
+    if (dateRange.from && dateRange.to) {
+      return aptDate >= dateRange.from && aptDate <= dateRange.to;
+    } else if (dateRange.from) {
+      return aptDate >= dateRange.from;
+    } else if (dateRange.to) {
+      return aptDate <= dateRange.to;
+    }
+    return true;
+  });
+
+  // Combine sales from sales table AND appointments in deposit/closed stages
+  const depositsAsSales: Sale[] = filteredAppointments
+    .filter(apt => {
+      const hasDeposit = (apt.pipeline_stage?.toLowerCase().includes('deposit') || apt.status === 'CLOSED') && Number(apt.cc_collected || 0) > 0;
+      const repMatch = selectedRep === 'all' || apt.closer_name === selectedRep || apt.setter_name === selectedRep;
+      return hasDeposit && repMatch;
+    })
+    .map(apt => ({
+      id: apt.id,
+      customerName: apt.lead_name,
+      offerOwner: apt.closer_name || '',
+      setter: apt.setter_name || '',
+      salesRep: apt.closer_name || '',
+      date: apt.start_at_utc?.split('T')[0] || new Date().toISOString().split('T')[0],
+      revenue: Number(apt.cc_collected) || 0,
+      setterCommission: apt.setter_id ? (Number(apt.cc_collected) || 0) * (setterCommissionPct / 100) : 0,
+      commission: (Number(apt.cc_collected) || 0) * (closerCommissionPct / 100),
+      status: apt.pipeline_stage?.toLowerCase().includes('deposit') ? 'pending' as const : 'closed' as const,
+    }));
+
   // Filter sales by selected rep and date range
-  const filteredSales = sales.filter(s => {
+  const filteredSalesFromTable = sales.filter(s => {
     const repMatch = selectedRep === 'all' || s.salesRep === selectedRep;
     
     // Date range filtering
@@ -498,20 +533,9 @@ const Index = () => {
     return repMatch && dateMatch;
   });
 
-  // Filter appointments by date range
-  const filteredAppointments = appointments.filter(apt => {
-    if (!dateRange.from && !dateRange.to) return true;
-    const aptDate = new Date(apt.start_at_utc);
-    aptDate.setHours(0, 0, 0, 0);
-    if (dateRange.from && dateRange.to) {
-      return aptDate >= dateRange.from && aptDate <= dateRange.to;
-    } else if (dateRange.from) {
-      return aptDate >= dateRange.from;
-    } else if (dateRange.to) {
-      return aptDate <= dateRange.to;
-    }
-    return true;
-  });
+  // Combine both sources - deposits and manual sales
+  const filteredSales = [...depositsAsSales, ...filteredSalesFromTable]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Calculate metrics from CLOSED appointments AND deposit stage deals (actual money collected)
   // Include both status='CLOSED' OR pipeline_stage='deposit' or similar stages with deposits
