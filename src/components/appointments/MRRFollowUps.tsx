@@ -545,7 +545,7 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
                 </div>
               </div>
 
-              {selectedSchedule.payment_due_today && (
+              {selectedSchedule.confirmed_count < selectedSchedule.total_months && (
                 <>
                   <div className="space-y-3">
                     <label className="text-sm font-semibold flex items-center gap-2">
@@ -564,19 +564,20 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
                   <Button
                     onClick={() => confirmPayment(selectedSchedule)}
                     className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg transition-all h-12"
+                    disabled={!selectedSchedule.current_task_id}
                   >
                     <CheckCircle className="h-5 w-5 mr-2" />
-                    Confirm Payment
+                    {selectedSchedule.payment_due_today ? 'Confirm Payment' : 'Confirm Payment Early'}
                   </Button>
+                  
+                  {!selectedSchedule.payment_due_today && selectedSchedule.next_payment_due && (
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-center">
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        Payment is scheduled for {format(parseISO(selectedSchedule.next_payment_due), 'MMMM dd, yyyy')}
+                      </p>
+                    </div>
+                  )}
                 </>
-              )}
-
-              {!selectedSchedule.payment_due_today && selectedSchedule.next_payment_due && (
-                <div className="bg-muted/50 border border-border rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Next payment will be available to confirm on {format(parseISO(selectedSchedule.next_payment_due), 'MMMM dd, yyyy')}
-                  </p>
-                </div>
               )}
 
               {selectedSchedule.confirmed_count >= selectedSchedule.total_months && (
