@@ -1156,6 +1156,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_assign_unassigned_tasks: { Args: never; Returns: undefined }
       auto_return_expired_tasks: { Args: never; Returns: undefined }
       calculate_completion_percentage: {
         Args: { asset_id: string }
