@@ -395,19 +395,19 @@ Deno.serve(async (req) => {
             appointmentStatus = 'NEW';
           }
 
-          // Add to batch instead of inserting one by one
+          // Add to batch instead of inserting one by one - explicitly map only valid columns
           appointmentsToInsert.push({
             team_id: teamId,
             lead_name: invitee.name,
             lead_email: invitee.email,
-            lead_phone: leadPhone,
+            lead_phone: leadPhone || null,
             start_at_utc: event.start_time,
-            closer_id: closerId,
-            closer_name: closerName,
-            setter_id: setterId,
-            setter_name: setterName,
-            event_type_uri: event.event_type,
-            event_type_name: eventTypeName,
+            closer_id: closerId || null,
+            closer_name: closerName || null,
+            setter_id: setterId || null,
+            setter_name: setterName || null,
+            event_type_uri: event.event_type || null,
+            event_type_name: eventTypeName || null,
             status: appointmentStatus,
             pipeline_stage: 'booked', // Auto-assign to Appointment Booked stage
           });

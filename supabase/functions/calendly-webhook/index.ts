@@ -420,14 +420,34 @@ serve(async (req) => {
       }
 
       // Create new appointment (with or without auto-assignment)
+      // Ensure only valid columns are included
+      const cleanAppointmentData = {
+        team_id: appointmentData.team_id,
+        lead_name: appointmentData.lead_name,
+        lead_email: appointmentData.lead_email,
+        lead_phone: appointmentData.lead_phone,
+        start_at_utc: appointmentData.start_at_utc,
+        closer_id: appointmentData.closer_id || null,
+        closer_name: appointmentData.closer_name || null,
+        setter_id: appointmentData.setter_id || null,
+        setter_name: appointmentData.setter_name || null,
+        status: appointmentData.status,
+        event_type_uri: appointmentData.event_type_uri || null,
+        event_type_name: appointmentData.event_type_name || null,
+        pipeline_stage: appointmentData.pipeline_stage || 'booked',
+      };
+
+      console.log('Inserting appointment with data:', JSON.stringify(cleanAppointmentData));
+
       const { data: appointment, error } = await supabase
         .from('appointments')
-        .insert(appointmentData)
+        .insert(cleanAppointmentData)
         .select()
         .single();
 
       if (error) {
         console.error('Error creating appointment:', error);
+        console.error('Failed data:', JSON.stringify(cleanAppointmentData));
         await logWebhookEvent(supabase, teamId, event, 'error', { error: error.message });
         return new Response(JSON.stringify({ error: 'Failed to process appointment' }), {
           status: 500,
