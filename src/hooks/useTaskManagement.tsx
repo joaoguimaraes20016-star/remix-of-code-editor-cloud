@@ -33,6 +33,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       const savedEventTypes = teamData?.calendly_event_types || [];
 
+      // Load confirmation tasks
       const { data: tasks, error } = await supabase
         .from('confirmation_tasks')
         .select(`
@@ -44,6 +45,60 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+
+      // Load MRR follow-up tasks
+      const { data: mrrTasks, error: mrrError } = await supabase
+        .from('mrr_follow_up_tasks')
+        .select(`
+          *,
+          mrr_schedule:mrr_schedules(
+            appointment_id,
+            client_name,
+            client_email,
+            assigned_to,
+            mrr_amount
+          )
+        `)
+        .eq('team_id', teamId)
+        .in('status', ['due', 'overdue'])
+        .order('due_date', { ascending: true });
+
+      if (mrrError) throw mrrError;
+
+      // Convert MRR tasks to match Task interface
+      const convertedMrrTasks = await Promise.all((mrrTasks || []).map(async (mrrTask) => {
+        const schedule = mrrTask.mrr_schedule;
+        // Get appointment details
+        const { data: appointment } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('id', schedule?.appointment_id)
+          .maybeSingle();
+
+        return {
+          id: mrrTask.id,
+          appointment_id: schedule?.appointment_id || '',
+          assigned_to: schedule?.assigned_to || null,
+          status: 'pending',
+          created_at: mrrTask.created_at,
+          assigned_at: null,
+          auto_return_at: null,
+          task_type: 'follow_up' as const,
+          follow_up_date: mrrTask.due_date,
+          follow_up_reason: `MRR Follow-up: $${schedule?.mrr_amount}/mo`,
+          reschedule_date: null,
+          appointment: appointment || {
+            id: schedule?.appointment_id,
+            lead_name: schedule?.client_name,
+            lead_email: schedule?.client_email,
+            start_at_utc: mrrTask.due_date,
+            event_type_name: 'MRR Follow-Up',
+            setter_id: schedule?.assigned_to,
+            setter_name: null,
+            team_id: teamId
+          }
+        };
+      }));
 
       // Filter tasks to only include appointments with event types that match saved filter
       let filteredTasks = tasks || [];
@@ -62,9 +117,12 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         });
       }
 
+      // Combine confirmation tasks and MRR tasks
+      const allTasks = [...filteredTasks, ...convertedMrrTasks];
+
       // Remove duplicates - keep only one task per appointment (most recent)
       const uniqueTasksMap = new Map<string, Task>();
-      filteredTasks.forEach(task => {
+      allTasks.forEach(task => {
         const existingTask = uniqueTasksMap.get(task.appointment_id);
         if (!existingTask || new Date(task.created_at) > new Date(existingTask.created_at)) {
           uniqueTasksMap.set(task.appointment_id, task);
@@ -297,7 +355,8 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
   useEffect(() => {
     loadTasks();
 
-    const channel = supabase
+    // Subscribe to confirmation tasks changes
+    const confirmationChannel = supabase
       .channel('tasks-changes')
       .on(
         'postgres_changes',
@@ -311,8 +370,24 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
       )
       .subscribe();
 
+    // Subscribe to MRR follow-up tasks changes
+    const mrrChannel = supabase
+      .channel('mrr-tasks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'mrr_follow_up_tasks',
+          filter: `team_id=eq.${teamId}`
+        },
+        () => loadTasks()
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(confirmationChannel);
+      supabase.removeChannel(mrrChannel);
     };
   }, [teamId, userId, userRole]);
 
