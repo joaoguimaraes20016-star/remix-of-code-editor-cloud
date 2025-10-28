@@ -426,7 +426,7 @@ serve(async (req) => {
         });
       }
 
-      // Create new appointment using database function to bypass auth context
+      // Create new appointment using direct REST API to bypass auth context
       const appointmentToInsert = {
         team_id: appointmentData.team_id,
         lead_name: appointmentData.lead_name,
@@ -445,21 +445,34 @@ serve(async (req) => {
 
       console.log('Inserting appointment with data:', JSON.stringify(appointmentToInsert));
 
-      const { data: appointments, error } = await supabase
-        .rpc('insert_appointments_batch', {
-          appointments_data: [appointmentToInsert]
-        });
+      // Call the database function via PostgREST API directly
+      const response = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/insert_appointments_batch`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            appointments_data: [appointmentToInsert]
+          })
+        }
+      );
 
-      if (error) {
-        console.error('Error creating appointment:', error);
-        console.error('Failed data:', JSON.stringify(appointmentToInsert));
-        await logWebhookEvent(supabase, teamId, event, 'error', { error: error.message });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error creating appointment:', errorText);
+        await logWebhookEvent(supabase, teamId, event, 'error', { error: errorText });
         return new Response(JSON.stringify({ error: 'Failed to process appointment' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
+      const appointments = await response.json();
       const appointment = appointments?.[0];
 
       console.log('Created appointment:', appointment.id);

@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Create Supabase client for non-insert operations
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -58,6 +59,14 @@ Deno.serve(async (req) => {
           autoRefreshToken: false,
           persistSession: false,
           detectSessionInUrl: false
+        },
+        db: {
+          schema: 'public'
+        },
+        global: {
+          headers: {
+            'x-my-custom-header': 'no-auth-injection'
+          }
         }
       }
     );
@@ -465,21 +474,37 @@ Deno.serve(async (req) => {
         console.log(`⚠️ Skipped ${duplicatesSkipped} duplicate appointments`);
       }
 
-      // Batch insert only unique appointments
+      // Batch insert only unique appointments using REST API directly
       if (uniqueAppointments.length > 0) {
         console.log(`Batch inserting ${uniqueAppointments.length} unique appointments...`);
-        const { data: insertedAppointments, error: batchError } = await supabaseClient
-          .rpc('insert_appointments_batch', {
-            appointments_data: uniqueAppointments
-          });
+        
+        // Call the database function via PostgREST API directly (bypasses client auth injection)
+        const response = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/insert_appointments_batch`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+              appointments_data: uniqueAppointments
+            })
+          }
+        );
 
-        if (batchError) {
-          console.error('Batch insert error:', batchError);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Batch insert error:', errorText);
           return new Response(
-            JSON.stringify({ error: `Failed to insert appointments: ${batchError.message}` }),
+            JSON.stringify({ error: `Failed to insert appointments: ${errorText}` }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+        
+        const insertedAppointments = await response.json();
         console.log(`✓ Successfully inserted ${uniqueAppointments.length} unique appointments`);
       } else {
         console.log('No new appointments to insert (all were duplicates)');
