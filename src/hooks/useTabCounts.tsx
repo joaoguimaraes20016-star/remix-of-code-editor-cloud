@@ -53,6 +53,9 @@ export function useTabCounts(teamId: string, userId: string, userRole: string) {
 
   const loadCounts = async () => {
     try {
+      // Auto-assign any unassigned tasks first
+      await supabase.rpc('auto_assign_unassigned_tasks');
+
       // My Tasks
       const { count: myTasksCount } = await supabase
         .from('confirmation_tasks')

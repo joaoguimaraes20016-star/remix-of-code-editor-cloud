@@ -28,6 +28,9 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
   const loadTasks = async () => {
     try {
+      // Auto-assign any unassigned tasks first
+      await supabase.rpc('auto_assign_unassigned_tasks');
+
       // Get team's saved event types filter
       const { data: teamData } = await supabase
         .from('teams')
