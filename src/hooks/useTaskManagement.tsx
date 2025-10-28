@@ -151,8 +151,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         });
       }
 
-      // Filter follow-up tasks to only show ones due today or overdue
-      // Also filter out tasks for appointments that are already closed/completed
+      // Filter tasks based on appointment status and due dates
       filteredTasks = filteredTasks.filter(task => {
         const aptStatus = task.appointment?.status;
         
@@ -162,9 +161,14 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
           return false;
         }
         
-        // Only show follow-up tasks that are due today or overdue
+        // Show follow-up tasks only if they're due today or overdue (regardless of appointment status)
         if (task.task_type === 'follow_up' && task.follow_up_date) {
           return task.follow_up_date <= today;
+        }
+        
+        // Show reschedule tasks only if due today or overdue
+        if (task.task_type === 'reschedule' && task.reschedule_date) {
+          return task.reschedule_date <= today;
         }
         
         return true;
