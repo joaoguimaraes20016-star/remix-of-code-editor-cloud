@@ -50,7 +50,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       if (error) throw error;
 
-      // Load MRR follow-up tasks (only show when due date is today or earlier)
+      // Load MRR follow-up tasks (only show ONE card per schedule when a payment is due TODAY)
       const today = new Date().toISOString().split('T')[0];
       const { data: mrrTasks, error: mrrError } = await supabase
         .from('mrr_follow_up_tasks')
@@ -66,12 +66,12 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         `)
         .eq('team_id', teamId)
         .in('status', ['due', 'overdue'])
-        .lte('due_date', today)
+        .eq('due_date', today)  // Only show tasks due TODAY
         .order('due_date', { ascending: true });
 
       if (mrrError) throw mrrError;
 
-      // Group MRR tasks by schedule_id - only keep one task per schedule (the earliest due)
+      // Group MRR tasks by schedule_id - only keep one task per schedule
       const mrrTasksBySchedule = new Map();
       (mrrTasks || []).forEach(task => {
         if (!mrrTasksBySchedule.has(task.mrr_schedule_id)) {
