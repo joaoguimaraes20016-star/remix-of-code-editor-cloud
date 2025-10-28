@@ -146,7 +146,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     loadDeals();
 
     const appointmentsChannel = supabase
-      .channel("deal-changes")
+      .channel(`deal-changes-${teamId}-${viewFilter}-${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -162,7 +162,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       .subscribe();
 
     const stagesChannel = supabase
-      .channel("stage-changes")
+      .channel(`stage-changes-${teamId}-${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -181,7 +181,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       supabase.removeChannel(appointmentsChannel);
       supabase.removeChannel(stagesChannel);
     };
-  }, [teamId]);
+  }, [teamId, viewFilter, userRole, currentUserId]);
 
   const eventTypes = useMemo(() => {
     const types = new Set(
@@ -672,8 +672,9 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
             note: `Reset to fresh booked appointment from ${appointment.pipeline_stage}`
           });
 
-        toast.success(`${appointment.lead_name} reset to booked appointment`);
-        loadDeals();
+      toast.success(`${appointment.lead_name} reset to booked appointment`);
+        // Force refresh with a small delay to ensure DB propagation
+        setTimeout(() => loadDeals(), 100);
       } catch (error) {
         console.error('Error resetting deal:', error);
         toast.error('Failed to reset deal');
@@ -712,7 +713,8 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         });
       
       toast.success('Action undone - moved back to Booked');
-      loadDeals();
+      // Force refresh with a small delay to ensure DB propagation
+      setTimeout(() => loadDeals(), 100);
     } catch (error) {
       console.error('Error undoing action:', error);
       toast.error('Failed to undo action');
