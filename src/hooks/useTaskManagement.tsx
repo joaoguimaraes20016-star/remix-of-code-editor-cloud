@@ -71,8 +71,17 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       if (mrrError) throw mrrError;
 
+      // Group MRR tasks by schedule_id - only keep one task per schedule (the earliest due)
+      const mrrTasksBySchedule = new Map();
+      (mrrTasks || []).forEach(task => {
+        if (!mrrTasksBySchedule.has(task.mrr_schedule_id)) {
+          mrrTasksBySchedule.set(task.mrr_schedule_id, task);
+        }
+      });
+      const uniqueMrrTasks = Array.from(mrrTasksBySchedule.values());
+
       // Convert MRR tasks to match Task interface
-      const convertedMrrTasks = await Promise.all((mrrTasks || []).map(async (mrrTask) => {
+      const convertedMrrTasks = await Promise.all(uniqueMrrTasks.map(async (mrrTask) => {
         const schedule = mrrTask.mrr_schedule;
         // Get appointment details
         const { data: appointment } = await supabase
