@@ -60,9 +60,9 @@ export function AppointmentsHub({
         <InitializeDefaultStages teamId={teamId} />
         <div className="bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 rounded-xl p-6 border border-primary/30 shadow-lg">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Setter Dashboard
+            Setter CRM
           </h2>
-          <p className="text-muted-foreground mt-1">Manage your daily appointments and retarget leads</p>
+          <p className="text-muted-foreground mt-1">Manage your daily CRM tasks and retarget leads</p>
         </div>
         
         <Tabs defaultValue="confirm" className="w-full">
@@ -114,7 +114,7 @@ export function AppointmentsHub({
         <InitializeDefaultStages teamId={teamId} />
         <div className="bg-gradient-to-br from-accent/10 via-primary/10 to-accent/5 rounded-xl p-6 border border-accent/30 shadow-lg">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-            Closer Dashboard
+            Closer CRM
           </h2>
           <p className="text-muted-foreground mt-1">Track and close your deals</p>
         </div>
@@ -215,9 +215,9 @@ export function AppointmentsHub({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              Admin Dashboard
+              Admin CRM
             </h2>
-            <p className="text-muted-foreground mt-1">Manage all team appointments and deals</p>
+            <p className="text-muted-foreground mt-1">Manage all team CRM and deals</p>
           </div>
           <Button 
             variant="outline" 
