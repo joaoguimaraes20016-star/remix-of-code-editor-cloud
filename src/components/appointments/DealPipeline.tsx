@@ -584,7 +584,73 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     const appointment = appointments.find((a) => a.id === appointmentId);
     if (!appointment) return;
 
-    // Normal undo logic
+    // Check if deal is in deposit or closed stage - if so, completely delete it
+    const currentStage = appointment.pipeline_stage?.toLowerCase() || '';
+    const isDepositOrClosed = 
+      currentStage === 'deposit' || 
+      currentStage === 'won' || 
+      currentStage.includes('deposit') ||
+      currentStage.includes('closed') ||
+      currentStage.includes('won');
+
+    if (isDepositOrClosed) {
+      if (!confirm(`Completely remove ${appointment.lead_name} from the system? This will delete all related data and cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        // Delete related records first (due to foreign key constraints)
+        // Delete MRR commissions
+        await supabase
+          .from('mrr_commissions')
+          .delete()
+          .eq('appointment_id', appointmentId);
+
+        // Delete MRR schedules
+        await supabase
+          .from('mrr_schedules')
+          .delete()
+          .eq('appointment_id', appointmentId);
+
+        // Delete confirmation tasks
+        await supabase
+          .from('confirmation_tasks')
+          .delete()
+          .eq('appointment_id', appointmentId);
+
+        // Delete activity logs
+        await supabase
+          .from('activity_logs')
+          .delete()
+          .eq('appointment_id', appointmentId);
+
+        // Delete sales records for this customer
+        await supabase
+          .from('sales')
+          .delete()
+          .match({ 
+            team_id: appointment.team_id,
+            customer_name: appointment.lead_name
+          });
+
+        // Finally, delete the appointment
+        const { error } = await supabase
+          .from('appointments')
+          .delete()
+          .eq('id', appointmentId);
+
+        if (error) throw error;
+
+        toast.success(`${appointment.lead_name} has been completely removed from the system`);
+        loadDeals();
+      } catch (error) {
+        console.error('Error removing deal:', error);
+        toast.error('Failed to remove deal');
+      }
+      return;
+    }
+
+    // Normal undo logic for other stages - move back to booked
     if (!confirm(`Undo this action and move ${appointment.lead_name} back to Booked?`)) {
       return;
     }
