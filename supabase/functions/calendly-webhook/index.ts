@@ -426,13 +426,12 @@ serve(async (req) => {
         });
       }
 
-      // Create new appointment (with or without auto-assignment)
-      // Ensure only valid columns are included
-      const cleanAppointmentData = {
+      // Create new appointment using database function to bypass auth context
+      const appointmentToInsert = {
         team_id: appointmentData.team_id,
         lead_name: appointmentData.lead_name,
         lead_email: appointmentData.lead_email,
-        lead_phone: appointmentData.lead_phone,
+        lead_phone: appointmentData.lead_phone || null,
         start_at_utc: appointmentData.start_at_utc,
         closer_id: appointmentData.closer_id || null,
         closer_name: appointmentData.closer_name || null,
@@ -444,23 +443,24 @@ serve(async (req) => {
         pipeline_stage: appointmentData.pipeline_stage || 'booked',
       };
 
-      console.log('Inserting appointment with data:', JSON.stringify(cleanAppointmentData));
+      console.log('Inserting appointment with data:', JSON.stringify(appointmentToInsert));
 
-      const { data: appointment, error } = await supabase
-        .from('appointments')
-        .insert(cleanAppointmentData)
-        .select()
-        .single();
+      const { data: appointments, error } = await supabase
+        .rpc('insert_appointments_batch', {
+          appointments_data: [appointmentToInsert]
+        });
 
       if (error) {
         console.error('Error creating appointment:', error);
-        console.error('Failed data:', JSON.stringify(cleanAppointmentData));
+        console.error('Failed data:', JSON.stringify(appointmentToInsert));
         await logWebhookEvent(supabase, teamId, event, 'error', { error: error.message });
         return new Response(JSON.stringify({ error: 'Failed to process appointment' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
+      const appointment = appointments?.[0];
 
       console.log('Created appointment:', appointment.id);
       await logWebhookEvent(supabase, teamId, event, 'success', { appointmentId: appointment.id });

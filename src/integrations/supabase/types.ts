@@ -1193,6 +1193,41 @@ export type Database = {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
+      insert_appointments_batch: {
+        Args: { appointments_data: Json }
+        Returns: {
+          cc_collected: number | null
+          closer_id: string | null
+          closer_name: string | null
+          created_at: string | null
+          event_type_name: string | null
+          event_type_uri: string | null
+          id: string
+          lead_email: string
+          lead_name: string
+          lead_phone: string | null
+          mrr_amount: number | null
+          mrr_months: number | null
+          pipeline_stage: string | null
+          product_name: string | null
+          retarget_date: string | null
+          retarget_reason: string | null
+          revenue: number | null
+          setter_id: string | null
+          setter_name: string | null
+          setter_notes: string | null
+          start_at_utc: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          team_id: string
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       is_creator: { Args: { _user_id: string }; Returns: boolean }
       is_team_admin: {
         Args: { _team_id: string; _user_id: string }

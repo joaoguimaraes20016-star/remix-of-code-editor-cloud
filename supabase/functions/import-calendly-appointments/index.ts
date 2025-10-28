@@ -468,9 +468,10 @@ Deno.serve(async (req) => {
       // Batch insert only unique appointments
       if (uniqueAppointments.length > 0) {
         console.log(`Batch inserting ${uniqueAppointments.length} unique appointments...`);
-        const { error: batchError } = await supabaseClient
-          .from('appointments')
-          .insert(uniqueAppointments);
+        const { data: insertedAppointments, error: batchError } = await supabaseClient
+          .rpc('insert_appointments_batch', {
+            appointments_data: uniqueAppointments
+          });
 
         if (batchError) {
           console.error('Batch insert error:', batchError);
