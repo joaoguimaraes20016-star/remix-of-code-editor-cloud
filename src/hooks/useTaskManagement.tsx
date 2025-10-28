@@ -50,6 +50,90 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       if (error) throw error;
 
+      // Load MRR follow-up tasks due today (for closers to confirm)
+      const today = new Date().toISOString().split('T')[0];
+      const { data: mrrTasks, error: mrrError } = await supabase
+        .from('mrr_follow_up_tasks')
+        .select(`
+          *,
+          mrr_schedule:mrr_schedules(
+            appointment_id,
+            client_name,
+            client_email,
+            assigned_to,
+            mrr_amount
+          )
+        `)
+        .eq('team_id', teamId)
+        .eq('status', 'due')
+        .eq('due_date', today)
+        .order('due_date', { ascending: true });
+
+      if (mrrError) throw mrrError;
+
+      // Deduplicate MRR tasks by client email
+      const mrrTasksByClient = new Map();
+      (mrrTasks || []).forEach(task => {
+        const clientKey = task.mrr_schedule?.client_email?.toLowerCase().trim();
+        if (clientKey && !mrrTasksByClient.has(clientKey)) {
+          mrrTasksByClient.set(clientKey, task);
+        }
+      });
+      
+      const uniqueMrrTasks = Array.from(mrrTasksByClient.values());
+
+      // Convert MRR tasks to match Task interface
+      const convertedMrrTasks = await Promise.all(uniqueMrrTasks.map(async (mrrTask) => {
+        const schedule = mrrTask.mrr_schedule;
+        const { data: appointment } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('id', schedule?.appointment_id)
+          .maybeSingle();
+
+        // Count confirmed months
+        const { count: confirmedCount } = await supabase
+          .from('mrr_follow_up_tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('mrr_schedule_id', mrrTask.mrr_schedule_id)
+          .eq('status', 'confirmed');
+
+        const totalMonths = appointment?.mrr_months || 0;
+        const confirmedMonths = confirmedCount || 0;
+
+        return {
+          id: mrrTask.id,
+          appointment_id: schedule?.appointment_id || '',
+          assigned_to: schedule?.assigned_to || null,
+          status: 'pending',
+          created_at: mrrTask.created_at,
+          assigned_at: null,
+          auto_return_at: null,
+          task_type: 'follow_up' as const,
+          follow_up_date: mrrTask.due_date,
+          follow_up_reason: `MRR Payment Due: $${schedule?.mrr_amount}/mo (${confirmedMonths}/${totalMonths} months)`,
+          reschedule_date: null,
+          mrr_schedule_id: mrrTask.mrr_schedule_id,
+          mrr_amount: schedule?.mrr_amount || 0,
+          mrr_confirmed_months: confirmedMonths,
+          mrr_total_months: totalMonths,
+          appointment: appointment || {
+            id: schedule?.appointment_id,
+            lead_name: schedule?.client_name,
+            lead_email: schedule?.client_email,
+            start_at_utc: mrrTask.due_date,
+            event_type_name: 'MRR Payment Confirmation',
+            setter_id: null,
+            setter_name: null,
+            closer_id: schedule?.assigned_to,
+            closer_name: null,
+            team_id: teamId,
+            mrr_months: totalMonths,
+            mrr_amount: schedule?.mrr_amount
+          }
+        };
+      }));
+
       // Filter tasks to only include appointments with event types that match saved filter
       let filteredTasks = tasks || [];
       if (savedEventTypes.length > 0) {
@@ -67,8 +151,8 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         });
       }
 
-      // Use only confirmation tasks (MRR tasks are handled separately in MRRFollowUps component)
-      const allTasks = filteredTasks;
+      // Use confirmation tasks + MRR tasks due today
+      const allTasks = [...filteredTasks, ...convertedMrrTasks];
 
       // Remove duplicates - keep only one task per appointment (most recent)
       const uniqueTasksMap = new Map<string, Task>();
