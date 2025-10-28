@@ -350,58 +350,82 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 border border-primary/30 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
+      <div className="space-y-4">
+        <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 border border-primary/30 rounded-lg p-4 shadow-lg backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/20 rounded-xl">
-              <Calendar className="h-6 w-6 text-primary" />
+            <div className="p-2 bg-primary/20 rounded-lg">
+              <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 MRR Follow-Ups
               </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">Monthly renewal tracking and payment confirmation</p>
+              <p className="text-xs text-muted-foreground">Monthly renewal tracking and payment confirmation</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-muted/20 via-background to-muted/10 rounded-2xl p-6 border border-primary/10 shadow-lg">
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Active MRR Schedules
-                <Badge variant="secondary" className="ml-auto">{activeSchedules.length}</Badge>
-              </h3>
-              
-              {activeSchedules.length === 0 ? (
-                <div className="text-center py-12 px-4 bg-gradient-to-br from-muted/30 to-muted/10 rounded-xl border border-dashed border-border/50">
-                  <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                  <p className="text-sm text-muted-foreground font-medium">No active MRR schedules</p>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {/* Active Column */}
+          <div className="flex-1 min-w-[350px]">
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Active
+                  </CardTitle>
+                  <Badge variant="secondary">{activeSchedules.length}</Badge>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {activeSchedules.map(schedule => (
-                    <ScheduleCard key={schedule.id} schedule={schedule} />
-                  ))}
-                </div>
-              )}
-            </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ScrollArea className="h-[calc(100vh-280px)]">
+                  {activeSchedules.length === 0 ? (
+                    <div className="text-center py-8 px-4 bg-muted/20 rounded-lg border border-dashed">
+                      <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">No active schedules</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pr-4">
+                      {activeSchedules.map(schedule => (
+                        <ScheduleCard key={schedule.id} schedule={schedule} />
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
 
-            {completedSchedules.length > 0 && (
-              <div>
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  Completed
-                  <Badge variant="success" className="ml-auto">{completedSchedules.length}</Badge>
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {completedSchedules.map(schedule => (
-                    <ScheduleCard key={schedule.id} schedule={schedule} />
-                  ))}
+          {/* Completed Column */}
+          <div className="flex-1 min-w-[350px]">
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                    Completed
+                  </CardTitle>
+                  <Badge variant="success">{completedSchedules.length}</Badge>
                 </div>
-              </div>
-            )}
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ScrollArea className="h-[calc(100vh-280px)]">
+                  {completedSchedules.length === 0 ? (
+                    <div className="text-center py-8 px-4 bg-muted/20 rounded-lg border border-dashed">
+                      <CheckCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">No completed schedules</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pr-4">
+                      {completedSchedules.map(schedule => (
+                        <ScheduleCard key={schedule.id} schedule={schedule} />
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
