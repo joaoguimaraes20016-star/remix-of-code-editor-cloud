@@ -71,14 +71,27 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       if (mrrError) throw mrrError;
 
-      // Group by CLIENT (not schedule) - only keep one task per client name
+      console.log('All MRR tasks found:', mrrTasks?.length);
+      mrrTasks?.forEach(task => {
+        console.log('MRR Task:', {
+          id: task.id,
+          client_name: task.mrr_schedule?.client_name,
+          client_email: task.mrr_schedule?.client_email,
+          schedule_id: task.mrr_schedule_id,
+          due_date: task.due_date
+        });
+      });
+
+      // Group by CLIENT (not schedule) - only keep one task per client email (more reliable than name)
       const mrrTasksByClient = new Map();
       (mrrTasks || []).forEach(task => {
-        const clientKey = task.mrr_schedule?.client_name || task.mrr_schedule?.client_email;
-        if (!mrrTasksByClient.has(clientKey)) {
+        const clientKey = task.mrr_schedule?.client_email?.toLowerCase().trim();
+        if (clientKey && !mrrTasksByClient.has(clientKey)) {
           mrrTasksByClient.set(clientKey, task);
         }
       });
+      
+      console.log('Unique MRR tasks after deduplication:', mrrTasksByClient.size);
       const uniqueMrrTasks = Array.from(mrrTasksByClient.values());
 
       // Convert MRR tasks to match Task interface
