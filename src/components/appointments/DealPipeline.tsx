@@ -621,16 +621,16 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
             customer_name: appointment.lead_name
           });
 
-        // Reset appointment to fresh booked state
+        // Reset appointment to fresh booked state - clear ALL closed deal data
         const { error } = await supabase
           .from('appointments')
           .update({ 
             pipeline_stage: 'booked',
             status: 'NEW',
-            cc_collected: 0,
-            mrr_amount: 0,
-            mrr_months: 0,
-            revenue: 0,
+            cc_collected: null,
+            mrr_amount: null,
+            mrr_months: null,
+            revenue: null,
             product_name: null,
             retarget_date: null,
             retarget_reason: null
