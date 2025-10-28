@@ -37,6 +37,8 @@ import { FollowUpDialog } from "./FollowUpDialog";
 import { ChangeStatusDialog } from "./ChangeStatusDialog";
 import { DepositCollectedDialog } from "./DepositCollectedDialog";
 import { format } from "date-fns";
+import { getUserFriendlyError } from "@/lib/errorUtils";
+
 
 interface Appointment {
   id: string;
@@ -439,20 +441,35 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     
     if (appointment) {
       try {
+        console.log("💰 Saving deposit:", {
+          appointmentId: depositDialog.appointmentId,
+          stageId: depositDialog.stageId,
+          depositAmount,
+          notes,
+          followUpDate,
+          currentUser: appointment.closer_name
+        });
+
         // Update appointment with deposit amount and move to deposit stage
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("appointments")
           .update({ 
             pipeline_stage: depositDialog.stageId,
             cc_collected: depositAmount,
             setter_notes: notes
           })
-          .eq("id", depositDialog.appointmentId);
+          .eq("id", depositDialog.appointmentId)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Deposit update error:", error);
+          throw error;
+        }
+
+        console.log("✅ Deposit saved successfully:", data);
 
         // Create follow-up task
-        await supabase.rpc("create_task_with_assignment", {
+        const { error: taskError } = await supabase.rpc("create_task_with_assignment", {
           p_team_id: appointment.team_id,
           p_appointment_id: depositDialog.appointmentId,
           p_task_type: "follow_up",
@@ -460,11 +477,15 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           p_follow_up_reason: `Deposit collected: $${depositAmount}. ${notes}`
         });
 
+        if (taskError) {
+          console.error("⚠️ Task creation error:", taskError);
+        }
+
         toast.success(`Deposit of $${depositAmount} recorded`);
         await loadDeals();
       } catch (error: any) {
-        console.error("Error recording deposit:", error);
-        toast.error(error.message || "Failed to record deposit");
+        console.error("💥 Error recording deposit:", error);
+        toast.error(getUserFriendlyError(error));
       }
     }
     
