@@ -513,9 +513,13 @@ const Index = () => {
     return true;
   });
 
-  // Calculate metrics from CLOSED appointments only (actual deals closed)
-  // Note: We filter for CLOSED status only, cc_collected can be 0 for some deals
-  const closedAppointments = filteredAppointments.filter(apt => apt.status === 'CLOSED');
+  // Calculate metrics from CLOSED appointments AND deposit stage deals (actual money collected)
+  // Include both status='CLOSED' OR pipeline_stage='deposit' or similar stages with deposits
+  const closedAppointments = filteredAppointments.filter(apt => {
+    const isClosedStatus = apt.status === 'CLOSED';
+    const hasDeposit = apt.pipeline_stage?.toLowerCase().includes('deposit') && Number(apt.cc_collected || 0) > 0;
+    return isClosedStatus || hasDeposit;
+  });
   
   // Only count CC from appointments (sales are derived from appointments, no double counting)
   const totalCCRevenue = closedAppointments.reduce((sum, apt) => sum + (Number(apt.cc_collected) || 0), 0);
@@ -554,39 +558,55 @@ const Index = () => {
   // Deals that showed but didn't close
   const showedButNotClosed = showedAppointments.length - closedAppointments.length;
 
-  // Calculate leaderboards (exclude zero commissions)
-  const closedSales = filteredSales.filter(s => s.status === 'closed');
-  
+  // Calculate leaderboards from appointments (not sales table)
   const closerLeaderboard = Object.entries(
-    closedSales
-      .filter(sale => sale.commission > 0)
-      .reduce((acc, sale) => {
-        if (!acc[sale.salesRep]) {
-          acc[sale.salesRep] = { sales: 0, revenue: 0, commission: 0 };
+    closedAppointments
+      .filter(apt => apt.closer_name && Number(apt.cc_collected || 0) > 0)
+      .reduce((acc, apt) => {
+        const closerName = apt.closer_name || 'Unknown';
+        const revenue = Number(apt.cc_collected) || 0;
+        const commission = revenue * (closerCommissionPct / 100);
+        
+        if (!acc[closerName]) {
+          acc[closerName] = { sales: 0, revenue: 0, commission: 0 };
         }
-        acc[sale.salesRep].sales += 1;
-        acc[sale.salesRep].revenue += sale.revenue;
-        acc[sale.salesRep].commission += sale.commission;
+        acc[closerName].sales += 1;
+        acc[closerName].revenue += revenue;
+        acc[closerName].commission += commission;
         return acc;
       }, {} as Record<string, { sales: number; revenue: number; commission: number }>)
   )
-    .map(([name, stats]) => ({ name, ...stats }))
+    .map(([name, stats]: [string, { sales: number; revenue: number; commission: number }]) => ({ 
+      name, 
+      sales: stats.sales, 
+      revenue: stats.revenue, 
+      commission: stats.commission 
+    }))
     .sort((a, b) => b.commission - a.commission);
 
   const setterLeaderboard = Object.entries(
-    closedSales
-      .filter(sale => sale.setterCommission > 0)
-      .reduce((acc, sale) => {
-        if (!acc[sale.setter]) {
-          acc[sale.setter] = { sales: 0, revenue: 0, commission: 0 };
+    closedAppointments
+      .filter(apt => apt.setter_name && apt.setter_id && Number(apt.cc_collected || 0) > 0)
+      .reduce((acc, apt) => {
+        const setterName = apt.setter_name || 'Unknown';
+        const revenue = Number(apt.cc_collected) || 0;
+        const commission = revenue * (setterCommissionPct / 100);
+        
+        if (!acc[setterName]) {
+          acc[setterName] = { sales: 0, revenue: 0, commission: 0 };
         }
-        acc[sale.setter].sales += 1;
-        acc[sale.setter].revenue += sale.revenue;
-        acc[sale.setter].commission += sale.setterCommission;
+        acc[setterName].sales += 1;
+        acc[setterName].revenue += revenue;
+        acc[setterName].commission += commission;
         return acc;
       }, {} as Record<string, { sales: number; revenue: number; commission: number }>)
   )
-    .map(([name, stats]) => ({ name, ...stats }))
+    .map(([name, stats]: [string, { sales: number; revenue: number; commission: number }]) => ({ 
+      name, 
+      sales: stats.sales, 
+      revenue: stats.revenue, 
+      commission: stats.commission 
+    }))
     .sort((a, b) => b.commission - a.commission);
 
   // Prepare chart data (last 7 days)
