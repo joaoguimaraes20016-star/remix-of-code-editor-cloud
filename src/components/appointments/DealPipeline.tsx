@@ -35,6 +35,7 @@ import { DroppableStageColumn } from "./DroppableStageColumn";
 import { RescheduleDialog } from "./RescheduleDialog";
 import { FollowUpDialog } from "./FollowUpDialog";
 import { ChangeStatusDialog } from "./ChangeStatusDialog";
+import { DepositCollectedDialog } from "./DepositCollectedDialog";
 import { format } from "date-fns";
 
 interface Appointment {
@@ -85,6 +86,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
   const [rescheduleDialog, setRescheduleDialog] = useState<{ open: boolean; appointmentId: string; stageId: string; dealName: string } | null>(null);
   const [followUpDialog, setFollowUpDialog] = useState<{ open: boolean; appointmentId: string; stageId: string; dealName: string; stage: "cancelled" | "no_show" } | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ open: boolean; appointmentId: string; dealName: string; currentStatus: string | null } | null>(null);
+  const [depositDialog, setDepositDialog] = useState<{ open: boolean; appointmentId: string; stageId: string; dealName: string } | null>(null);
   
   const { trackAction, showUndoToast } = useUndoAction();
 
@@ -299,6 +301,17 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       return;
     }
 
+    // Check if moving to deposit stage
+    if (newStage === "deposit" || targetStageData?.stage_label.toLowerCase().includes("deposit")) {
+      setDepositDialog({
+        open: true,
+        appointmentId,
+        stageId: newStage,
+        dealName: appointment.lead_name
+      });
+      return;
+    }
+
     // Optimistically update UI
     setAppointments((prev) =>
       prev.map((app) =>
@@ -417,6 +430,45 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     }
     
     setFollowUpDialog(null);
+  };
+
+  const handleDepositConfirm = async (depositAmount: number, notes: string, followUpDate: Date) => {
+    if (!depositDialog) return;
+    
+    const appointment = appointments.find((a) => a.id === depositDialog.appointmentId);
+    
+    if (appointment) {
+      try {
+        // Update appointment with deposit amount and move to deposit stage
+        const { error } = await supabase
+          .from("appointments")
+          .update({ 
+            pipeline_stage: depositDialog.stageId,
+            cc_collected: depositAmount,
+            setter_notes: notes
+          })
+          .eq("id", depositDialog.appointmentId);
+
+        if (error) throw error;
+
+        // Create follow-up task
+        await supabase.rpc("create_task_with_assignment", {
+          p_team_id: appointment.team_id,
+          p_appointment_id: depositDialog.appointmentId,
+          p_task_type: "follow_up",
+          p_follow_up_date: format(followUpDate, "yyyy-MM-dd"),
+          p_follow_up_reason: `Deposit collected: $${depositAmount}. ${notes}`
+        });
+
+        toast.success(`Deposit of $${depositAmount} recorded`);
+        await loadDeals();
+      } catch (error: any) {
+        console.error("Error recording deposit:", error);
+        toast.error(error.message || "Failed to record deposit");
+      }
+    }
+    
+    setDepositDialog(null);
   };
 
   const handleMoveTo = async (appointmentId: string, stage: string) => {
@@ -835,6 +887,15 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           onConfirm={handleStatusConfirm}
           dealName={statusDialog.dealName}
           currentStatus={statusDialog.currentStatus}
+        />
+      )}
+
+      {depositDialog && (
+        <DepositCollectedDialog
+          open={depositDialog.open}
+          onOpenChange={(open) => !open && setDepositDialog(null)}
+          onConfirm={handleDepositConfirm}
+          dealName={depositDialog.dealName}
         />
       )}
     </div>
