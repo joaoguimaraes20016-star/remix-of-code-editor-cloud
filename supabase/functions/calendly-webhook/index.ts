@@ -424,6 +424,7 @@ serve(async (req) => {
         .eq('team_id', teamId)
         .eq('lead_email', leadEmail)
         .eq('start_at_utc', startTime)
+        .neq('status', 'CANCELLED') // Don't count cancelled appointments
         .maybeSingle();
 
       if (existingAppointment) {
@@ -436,6 +437,23 @@ serve(async (req) => {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      }
+
+      // Check if this is a rescheduled appointment (cancelled within last 2 minutes with same email)
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const { data: recentlyCancelled } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('team_id', teamId)
+        .eq('lead_email', leadEmail)
+        .eq('status', 'CANCELLED')
+        .gte('updated_at', twoMinutesAgo)
+        .maybeSingle();
+
+      // If there's a recently cancelled appointment, mark this as a reschedule
+      if (recentlyCancelled) {
+        appointmentData.status = 'RESCHEDULED';
+        console.log(`🔄 Detected reschedule - linked to cancelled appointment ${recentlyCancelled.id}`);
       }
 
       // Create new appointment using direct REST API to bypass auth context

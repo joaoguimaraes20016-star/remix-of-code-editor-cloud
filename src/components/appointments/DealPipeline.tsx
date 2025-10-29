@@ -132,7 +132,8 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         .from("appointments")
         .select("*")
         .eq("team_id", teamId)
-        .not('pipeline_stage', 'is', null); // Show all appointments in pipeline
+        .not('pipeline_stage', 'is', null)
+        .neq('status', 'CANCELLED'); // Hide cancelled appointments from pipeline
 
       // Apply view filter
       if (viewFilter === 'all') {

@@ -71,14 +71,6 @@ export function RescheduleWithLinkDialog({
             console.log('[RESCHEDULE DIALOG] Status changed to:', payload.new.status, '- closing dialog');
             setDialogState('rescheduled');
             toast.success("Client rescheduled successfully!");
-            
-            // Close after showing success
-            setTimeout(() => {
-              onOpenChange(false);
-              setReason("");
-              setNotes("");
-              setDialogState('initial');
-            }, 2000);
           }
         }
       )
@@ -307,6 +299,16 @@ export function RescheduleWithLinkDialog({
             <Button variant="outline" onClick={() => toast.info("Waiting for client to reschedule")}>
               <Clock className="h-4 w-4 mr-2" />
               Close When Done
+            </Button>
+          ) : dialogState === 'rescheduled' ? (
+            <Button onClick={() => {
+              onOpenChange(false);
+              setReason("");
+              setNotes("");
+              setDialogState('initial');
+            }}>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Done
             </Button>
           ) : null}
         </DialogFooter>
