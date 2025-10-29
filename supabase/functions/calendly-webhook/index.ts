@@ -443,17 +443,42 @@ serve(async (req) => {
       const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
       const { data: recentlyCancelled } = await supabase
         .from('appointments')
-        .select('id')
+        .select('id, setter_id, setter_name, closer_id, closer_name')
         .eq('team_id', teamId)
         .eq('lead_email', leadEmail)
         .eq('status', 'CANCELLED')
         .gte('updated_at', twoMinutesAgo)
         .maybeSingle();
 
-      // If there's a recently cancelled appointment, mark this as a reschedule
+      // If there's a recently cancelled appointment, this is a reschedule
       if (recentlyCancelled) {
+        console.log(`🔄 Detected reschedule - will delete old appointment ${recentlyCancelled.id}`);
+        
+        // Preserve setter/closer from old appointment if not already assigned
+        if (!appointmentData.setter_id && recentlyCancelled.setter_id) {
+          appointmentData.setter_id = recentlyCancelled.setter_id;
+          appointmentData.setter_name = recentlyCancelled.setter_name;
+          console.log(`Preserved setter from cancelled appointment: ${recentlyCancelled.setter_name}`);
+        }
+        if (!appointmentData.closer_id && recentlyCancelled.closer_id) {
+          appointmentData.closer_id = recentlyCancelled.closer_id;
+          appointmentData.closer_name = recentlyCancelled.closer_name;
+          console.log(`Preserved closer from cancelled appointment: ${recentlyCancelled.closer_name}`);
+        }
+        
         appointmentData.status = 'RESCHEDULED';
-        console.log(`🔄 Detected reschedule - linked to cancelled appointment ${recentlyCancelled.id}`);
+        
+        // Delete the old cancelled appointment to avoid duplicates
+        const { error: deleteError } = await supabase
+          .from('appointments')
+          .delete()
+          .eq('id', recentlyCancelled.id);
+        
+        if (deleteError) {
+          console.error(`Failed to delete old appointment ${recentlyCancelled.id}:`, deleteError);
+        } else {
+          console.log(`✓ Deleted old cancelled appointment ${recentlyCancelled.id}`);
+        }
       }
 
       // Create new appointment using direct REST API to bypass auth context
@@ -507,6 +532,21 @@ serve(async (req) => {
       }
 
       console.log('Created appointment:', insertedAppointment?.id);
+      
+      // If this was a reschedule and we have the old appointment, update any tasks to point to new appointment
+      if (recentlyCancelled && insertedAppointment?.id) {
+        const { error: taskUpdateError } = await supabase
+          .from('confirmation_tasks')
+          .update({ appointment_id: insertedAppointment.id })
+          .eq('appointment_id', recentlyCancelled.id);
+        
+        if (taskUpdateError) {
+          console.error(`Failed to update tasks for old appointment:`, taskUpdateError);
+        } else {
+          console.log(`✓ Updated tasks to point to new appointment ${insertedAppointment.id}`);
+        }
+      }
+      
       await logWebhookEvent(supabase, teamId, event, 'success', { appointmentId: insertedAppointment?.id });
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
