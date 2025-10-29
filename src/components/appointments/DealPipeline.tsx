@@ -781,6 +781,65 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     });
   };
 
+  const handleClearDealData = async (appointmentId: string) => {
+    const appointment = appointments.find((a) => a.id === appointmentId);
+    if (!appointment) return;
+
+    if (!confirm(`Clear all deal data for ${appointment.lead_name}? This will remove CC, MRR, and product information.`)) {
+      return;
+    }
+
+    try {
+      // Delete related financial records
+      await supabase
+        .from('mrr_commissions')
+        .delete()
+        .eq('appointment_id', appointmentId);
+
+      // Delete MRR schedules and related tasks
+      const { data: mrrSchedules } = await supabase
+        .from('mrr_schedules')
+        .select('id')
+        .eq('appointment_id', appointmentId);
+
+      if (mrrSchedules && mrrSchedules.length > 0) {
+        const scheduleIds = mrrSchedules.map(s => s.id);
+        
+        await supabase
+          .from('mrr_follow_up_tasks')
+          .delete()
+          .in('mrr_schedule_id', scheduleIds);
+
+        await supabase
+          .from('mrr_schedules')
+          .delete()
+          .in('id', scheduleIds);
+      }
+
+      // Clear revenue fields from appointment
+      const { error } = await supabase
+        .from('appointments')
+        .update({ 
+          cc_collected: 0,
+          mrr_amount: 0,
+          mrr_months: 0,
+          revenue: 0,
+          product_name: null,
+          closer_id: null,
+          closer_name: null
+        })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      toast.success(`Deal data cleared for ${appointment.lead_name}`);
+      loadDeals();
+    } catch (error) {
+      console.error('Error clearing deal data:', error);
+      toast.error('Failed to clear deal data');
+    }
+  };
+
   const handleStatusConfirm = async (newStatus: string) => {
     if (!statusDialog) return;
 
@@ -963,6 +1022,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
                               onDelete={handleDelete}
                               onUndo={handleUndo}
                               onChangeStatus={handleChangeStatus}
+                              onClearDealData={handleClearDealData}
                               userRole={userRole}
                             />
                           ))
@@ -989,6 +1049,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
                     onDelete={handleDelete}
                     onUndo={handleUndo}
                     onChangeStatus={handleChangeStatus}
+                    onClearDealData={handleClearDealData}
                     userRole={userRole}
                   />
                 </div>
