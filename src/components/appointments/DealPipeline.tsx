@@ -92,7 +92,10 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
   const [statusDialog, setStatusDialog] = useState<{ open: boolean; appointmentId: string; dealName: string; currentStatus: string | null } | null>(null);
   const [depositDialog, setDepositDialog] = useState<{ open: boolean; appointmentId: string; stageId: string; dealName: string } | null>(null);
   
-  const { trackAction, showUndoToast } = useUndoAction();
+  const { trackAction, showUndoToast } = useUndoAction(() => {
+    // Refresh appointments after undo
+    loadDeals();
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

@@ -9,7 +9,7 @@ interface UndoAction {
   description: string;
 }
 
-export function useUndoAction() {
+export function useUndoAction(onUndoSuccess?: () => void) {
   const [lastAction, setLastAction] = useState<UndoAction | null>(null);
 
   const trackAction = useCallback((action: UndoAction) => {
@@ -29,11 +29,16 @@ export function useUndoAction() {
 
       toast.success("Action undone successfully");
       setLastAction(null);
+      
+      // Call the callback to refresh UI
+      if (onUndoSuccess) {
+        onUndoSuccess();
+      }
     } catch (error) {
       console.error("Error undoing action:", error);
       toast.error("Failed to undo action");
     }
-  }, [lastAction]);
+  }, [lastAction, onUndoSuccess]);
 
   const showUndoToast = useCallback((description: string) => {
     toast.success(description, {
