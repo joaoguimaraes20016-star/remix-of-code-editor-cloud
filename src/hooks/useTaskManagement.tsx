@@ -40,7 +40,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       const savedEventTypes = teamData?.calendly_event_types || [];
 
-      // Load confirmation tasks
+      // Load confirmation tasks (including those awaiting reschedule)
       const { data: tasks, error } = await supabase
         .from('confirmation_tasks')
         .select(`
@@ -48,7 +48,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
           appointment:appointments(*)
         `)
         .eq('team_id', teamId)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'awaiting_reschedule'])
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -158,9 +158,11 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
       filteredTasks = filteredTasks.filter(task => {
         const aptStatus = task.appointment?.status;
         
-        // Don't show call confirmation tasks for appointments that are already confirmed, closed, or cancelled
+        // Don't show call confirmation tasks for appointments that are already confirmed, closed, cancelled, or rescheduled
+        // UNLESS the task itself is awaiting_reschedule (we want to keep showing those)
         if (task.task_type === 'call_confirmation' && 
-            (aptStatus === 'CONFIRMED' || aptStatus === 'CLOSED' || aptStatus === 'CANCELLED')) {
+            task.status !== 'awaiting_reschedule' &&
+            (aptStatus === 'CONFIRMED' || aptStatus === 'CLOSED' || aptStatus === 'CANCELLED' || aptStatus === 'RESCHEDULED')) {
           return false;
         }
         
