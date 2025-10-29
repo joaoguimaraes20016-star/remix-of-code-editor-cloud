@@ -12,7 +12,7 @@ interface RescheduleWithLinkDialogProps {
   onOpenChange: (open: boolean) => void;
   rescheduleUrl: string;
   appointmentName: string;
-  onConfirm: (reason: string, notes?: string) => void;
+  onConfirm: (reason: string, notes?: string) => Promise<void>;
 }
 
 export function RescheduleWithLinkDialog({
@@ -25,6 +25,7 @@ export function RescheduleWithLinkDialog({
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCopyLink = async () => {
     try {
@@ -37,14 +38,29 @@ export function RescheduleWithLinkDialog({
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!reason.trim()) {
       toast.error("Please enter a reason for reschedule");
       return;
     }
-    onConfirm(reason, notes || undefined);
-    setReason("");
-    setNotes("");
+    
+    setIsLoading(true);
+    try {
+      await onConfirm(reason, notes || undefined);
+      toast.success("Link sent! Awaiting client reschedule...");
+      
+      // Wait briefly to show success message, then close
+      setTimeout(() => {
+        onOpenChange(false);
+        setReason("");
+        setNotes("");
+        setIsLoading(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Error sending reschedule request:", error);
+      toast.error("Failed to send reschedule request");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -102,13 +118,14 @@ export function RescheduleWithLinkDialog({
             <Label htmlFor="reason" className="text-destructive">
               Reason for Reschedule *
             </Label>
-            <Input
-              id="reason"
-              placeholder="Client requested different time, scheduling conflict..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
-            />
+              <Input
+                id="reason"
+                placeholder="Client requested different time, scheduling conflict..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                disabled={isLoading}
+                required
+              />
           </div>
 
           {/* Additional Notes */}
@@ -119,6 +136,7 @@ export function RescheduleWithLinkDialog({
               placeholder="Any additional context or instructions..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              disabled={isLoading}
               rows={3}
             />
           </div>
@@ -139,11 +157,19 @@ export function RescheduleWithLinkDialog({
               setReason("");
               setNotes("");
             }}
+            disabled={isLoading}
           >
             Cancel
           </Button>
-          <Button onClick={handleConfirm}>
-            Mark as Awaiting Reschedule
+          <Button onClick={handleConfirm} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <span className="animate-spin mr-2">⏳</span>
+                Sending...
+              </>
+            ) : (
+              "Mark as Awaiting Reschedule"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

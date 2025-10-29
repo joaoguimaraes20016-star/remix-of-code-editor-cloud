@@ -417,7 +417,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
     appointmentId: string, 
     reason: string,
     notes?: string
-  ) => {
+  ): Promise<void> => {
     try {
       // Update task status to awaiting_reschedule
       const { error: taskError } = await supabase
@@ -430,26 +430,17 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       if (taskError) throw taskError;
 
-      // Update appointment status to RESCHEDULED
-      const { error: aptError } = await supabase
-        .from('appointments')
-        .update({ status: 'RESCHEDULED' })
-        .eq('id', appointmentId);
-
-      if (aptError) throw aptError;
-
       // Log activity with reason and notes
       const logNote = notes 
-        ? `Marked as awaiting reschedule - ${reason}\nNotes: ${notes}`
-        : `Marked as awaiting reschedule - ${reason}`;
+        ? `Setter marked as awaiting reschedule - ${reason}\nNotes: ${notes}`
+        : `Setter marked as awaiting reschedule - ${reason}`;
       
       await logActivity(appointmentId, 'Awaiting Reschedule', logNote);
       
-      toast.success('Task marked as awaiting client reschedule');
       loadTasks();
     } catch (error) {
       console.error('Error marking task as awaiting reschedule:', error);
-      toast.error('Failed to update task');
+      throw error; // Re-throw to let dialog handle the error
     }
   };
 
