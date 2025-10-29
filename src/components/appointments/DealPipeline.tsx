@@ -121,6 +121,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
   const loadDeals = async () => {
     try {
+      console.log("Loading deals for team:", teamId);
       let query = supabase
         .from("appointments")
         .select("*")
@@ -139,6 +140,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       }
 
       const { data, error } = await query.order("updated_at", { ascending: false });
+      console.log("Loaded appointments:", data?.length);
       setAppointments(data || []);
     } catch (error) {
       console.error("Error loading deals:", error);

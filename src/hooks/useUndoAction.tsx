@@ -20,6 +20,8 @@ export function useUndoAction(onUndoSuccess?: () => void) {
     if (!lastAction) return;
 
     try {
+      console.log("Performing undo with data:", lastAction.previousData);
+      
       const { error } = await supabase
         .from(lastAction.table as any)
         .update(lastAction.previousData)
@@ -27,8 +29,12 @@ export function useUndoAction(onUndoSuccess?: () => void) {
 
       if (error) throw error;
 
+      console.log("Undo successful, calling callback");
       toast.success("Action undone successfully");
       setLastAction(null);
+      
+      // Wait a moment for database to update before refreshing
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Call the callback to refresh UI
       if (onUndoSuccess) {
