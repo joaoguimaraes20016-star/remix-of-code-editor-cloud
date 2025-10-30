@@ -21,6 +21,9 @@ import { useTabCounts } from "@/hooks/useTabCounts";
 import { useAuth } from "@/hooks/useAuth";
 import { ByCloserView } from "./ByCloserView";
 import { BySetterView } from "./BySetterView";
+import { AdminOverview } from "./AdminOverview";
+import { SettersView } from "./SettersView";
+import { UnifiedTasksView } from "./UnifiedTasksView";
 
 interface AppointmentsHubProps {
   teamId: string;
@@ -247,7 +250,7 @@ export function AppointmentsHub({
     );
   }
 
-  // Admin/Offer Owner sees: Overview, Unassigned, All Assigned, Pipeline, By Closer, By Setter, Tasks, MRR, Stages, and Retarget
+  // Admin sees: Overview, Team Pipeline, Setters View, Closers View, MRR Deals, and Tasks
   return (
     <div className="space-y-6">
       <InitializeDefaultStages teamId={teamId} />
@@ -257,7 +260,7 @@ export function AppointmentsHub({
             <h2 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
               Admin CRM
             </h2>
-            <p className="text-muted-foreground mt-1">Manage all team CRM and deals</p>
+            <p className="text-muted-foreground mt-1">Comprehensive team performance & management</p>
           </div>
           <Button 
             variant="outline" 
@@ -272,65 +275,34 @@ export function AppointmentsHub({
       <Tabs defaultValue="overview" className="w-full">
         <div className="w-full overflow-x-auto">
           <TabsList className="w-max min-w-full h-12">
-            <TabsTrigger value="overview" className="text-xs md:text-sm whitespace-nowrap">Overview</TabsTrigger>
-            <TabsTrigger value="unassigned" className="text-xs md:text-sm whitespace-nowrap">Unassigned</TabsTrigger>
-            <TabsTrigger value="assigned" className="text-xs md:text-sm whitespace-nowrap">All Assigned</TabsTrigger>
-            <TabsTrigger value="pipeline" className="text-xs md:text-sm whitespace-nowrap">Pipeline</TabsTrigger>
-            <TabsTrigger value="by-closer" className="text-xs md:text-sm whitespace-nowrap">By Closer</TabsTrigger>
-            <TabsTrigger value="by-setter" className="text-xs md:text-sm whitespace-nowrap">By Setter</TabsTrigger>
-            <TabsTrigger value="tasks" className="text-xs md:text-sm whitespace-nowrap">
-              Tasks 
+            <TabsTrigger value="overview" className="text-sm md:text-base whitespace-nowrap">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">
+              Team Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="setters" className="text-sm md:text-base whitespace-nowrap">
+              Setters View
+            </TabsTrigger>
+            <TabsTrigger value="closers" className="text-sm md:text-base whitespace-nowrap">
+              Closers View
+            </TabsTrigger>
+            <TabsTrigger value="mrr" className="text-sm md:text-base whitespace-nowrap">
+              MRR Deals
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="text-sm md:text-base whitespace-nowrap">
+              Tasks
               {counts.overdue > 0 && (
-                <Badge className="ml-1 bg-red-600 text-white" variant="secondary">
-                  {counts.overdue} overdue
+                <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                  {counts.overdue}
                 </Badge>
               )}
-              {counts.myTasks > 0 && <Badge className="ml-1" variant="secondary">{counts.myTasks}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="mrr-tasks" className="text-xs md:text-sm whitespace-nowrap">
-              MRR Tasks {counts.mrrDue > 0 && <Badge className="ml-1" variant="secondary">{counts.mrrDue}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="mrr-deals" className="text-xs md:text-sm whitespace-nowrap">MRR Deals</TabsTrigger>
-            <TabsTrigger value="stages" className="text-xs md:text-sm whitespace-nowrap">Stages</TabsTrigger>
-            <TabsTrigger value="retarget" className="text-xs md:text-sm whitespace-nowrap">
-              Follow-Ups {counts.followUps > 0 && <Badge className="ml-1" variant="secondary">{counts.followUps}</Badge>}
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="overview" className="mt-6 space-y-6">
-          <OperatorControls teamId={teamId} />
-          <TaskBasedConfirmToday teamId={teamId} />
-        </TabsContent>
-
-        <TabsContent value="unassigned" className="mt-6">
-          <AllNewAppointments
-            teamId={teamId}
-            closerCommissionPct={closerCommissionPct}
-            setterCommissionPct={setterCommissionPct}
-            userRole={userRole}
-            currentUserId={user?.id}
-          />
-        </TabsContent>
-
-        <TabsContent value="assigned" className="mt-6">
-          <AllClaimed
-            teamId={teamId}
-            closerCommissionPct={closerCommissionPct}
-            setterCommissionPct={setterCommissionPct}
-          />
-        </TabsContent>
-
-        <TabsContent value="tasks" className="mt-6">
-          <TaskBasedConfirmToday teamId={teamId} />
-        </TabsContent>
-
-        <TabsContent value="mrr-tasks" className="mt-6">
-          <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
-        </TabsContent>
-
-        <TabsContent value="mrr-deals" className="mt-6">
-          <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
+        <TabsContent value="overview" className="mt-6">
+          <AdminOverview teamId={teamId} />
         </TabsContent>
 
         <TabsContent value="pipeline" className="mt-6">
@@ -343,41 +315,24 @@ export function AppointmentsHub({
           />
         </TabsContent>
 
-        <TabsContent value="by-closer" className="mt-6">
+        <TabsContent value="setters" className="mt-6">
+          <SettersView
+            teamId={teamId}
+            closerCommissionPct={closerCommissionPct}
+            setterCommissionPct={setterCommissionPct}
+          />
+        </TabsContent>
+
+        <TabsContent value="closers" className="mt-6">
           <ByCloserView teamId={teamId} />
         </TabsContent>
 
-        <TabsContent value="by-setter" className="mt-6">
-          <BySetterView teamId={teamId} />
+        <TabsContent value="mrr" className="mt-6">
+          <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
         </TabsContent>
 
-        <TabsContent value="stages" className="mt-6">
-          {adminSelectedStage ? (
-            <div className="space-y-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setAdminSelectedStage(null)}
-              >
-                ← Back to All Stages
-              </Button>
-              <StageWorkspaceView 
-                teamId={teamId} 
-                stageId={adminSelectedStage.id} 
-                stageName={adminSelectedStage.name}
-                stageColor={adminSelectedStage.color}
-              />
-            </div>
-          ) : (
-            <StageWorkspaceList 
-              teamId={teamId} 
-              onSelectStage={(id, name, color) => setAdminSelectedStage({ id, name, color })}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="retarget" className="mt-6">
-          <RetargetTab teamId={teamId} />
+        <TabsContent value="tasks" className="mt-6">
+          <UnifiedTasksView teamId={teamId} />
         </TabsContent>
       </Tabs>
 
