@@ -330,24 +330,59 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           dealName: appointment.lead_name
         });
       } else {
-        // No reschedule URL - create manual reschedule task and move to stage
+        // Fetch reschedule URL from Calendly on-demand
+        toast.loading("Fetching reschedule link...", { id: 'fetch-reschedule' });
         try {
-          await supabase
-            .from("appointments")
-            .update({ pipeline_stage: newStage })
-            .eq("id", appointmentId);
+          // Get team's Calendly access token
+          const { data: teamData } = await supabase
+            .from('teams')
+            .select('calendly_access_token')
+            .eq('id', teamId)
+            .single();
 
-          await supabase.rpc("create_task_with_assignment", {
-            p_team_id: appointment.team_id,
-            p_appointment_id: appointmentId,
-            p_task_type: "reschedule"
+          if (!teamData?.calendly_access_token || !appointment.calendly_invitee_uri) {
+            toast.error("Cannot fetch reschedule link - Calendly not configured", { id: 'fetch-reschedule' });
+            return;
+          }
+
+          // Fetch invitee details from Calendly
+          const response = await fetch(appointment.calendly_invitee_uri, {
+            headers: {
+              'Authorization': `Bearer ${teamData.calendly_access_token}`,
+              'Content-Type': 'application/json'
+            }
           });
 
-          toast.success("Moved to rescheduled - manual reschedule task created");
-          loadDeals();
+          if (!response.ok) {
+            throw new Error('Failed to fetch from Calendly');
+          }
+
+          const data = await response.json();
+          const rescheduleUrl = data.resource?.reschedule_url;
+
+          if (!rescheduleUrl) {
+            toast.error("No reschedule link available for this appointment", { id: 'fetch-reschedule' });
+            return;
+          }
+
+          // Update appointment with fetched URL
+          await supabase
+            .from('appointments')
+            .update({ reschedule_url: rescheduleUrl })
+            .eq('id', appointmentId);
+
+          toast.success("Reschedule link fetched!", { id: 'fetch-reschedule' });
+
+          // Open dialog with fetched URL
+          setRescheduleLinkDialog({
+            open: true,
+            appointmentId,
+            rescheduleUrl,
+            dealName: appointment.lead_name
+          });
         } catch (error) {
-          console.error("Error moving to rescheduled:", error);
-          toast.error("Failed to move to rescheduled");
+          console.error("Error fetching reschedule URL:", error);
+          toast.error("Failed to fetch reschedule link", { id: 'fetch-reschedule' });
         }
       }
       return;
@@ -666,24 +701,59 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           dealName: appointment.lead_name 
         });
       } else {
-        // No reschedule URL - create manual reschedule task and move to stage
+        // Fetch reschedule URL from Calendly on-demand
+        toast.loading("Fetching reschedule link...", { id: 'fetch-reschedule' });
         try {
-          await supabase
-            .from("appointments")
-            .update({ pipeline_stage: stage })
-            .eq("id", appointmentId);
+          // Get team's Calendly access token
+          const { data: teamData } = await supabase
+            .from('teams')
+            .select('calendly_access_token')
+            .eq('id', teamId)
+            .single();
 
-          await supabase.rpc("create_task_with_assignment", {
-            p_team_id: appointment.team_id,
-            p_appointment_id: appointmentId,
-            p_task_type: "reschedule"
+          if (!teamData?.calendly_access_token || !appointment.calendly_invitee_uri) {
+            toast.error("Cannot fetch reschedule link - Calendly not configured", { id: 'fetch-reschedule' });
+            return;
+          }
+
+          // Fetch invitee details from Calendly
+          const response = await fetch(appointment.calendly_invitee_uri, {
+            headers: {
+              'Authorization': `Bearer ${teamData.calendly_access_token}`,
+              'Content-Type': 'application/json'
+            }
           });
 
-          toast.success("Moved to rescheduled - manual reschedule task created");
-          loadDeals();
+          if (!response.ok) {
+            throw new Error('Failed to fetch from Calendly');
+          }
+
+          const data = await response.json();
+          const rescheduleUrl = data.resource?.reschedule_url;
+
+          if (!rescheduleUrl) {
+            toast.error("No reschedule link available for this appointment", { id: 'fetch-reschedule' });
+            return;
+          }
+
+          // Update appointment with fetched URL
+          await supabase
+            .from('appointments')
+            .update({ reschedule_url: rescheduleUrl })
+            .eq('id', appointmentId);
+
+          toast.success("Reschedule link fetched!", { id: 'fetch-reschedule' });
+
+          // Open dialog with fetched URL
+          setRescheduleLinkDialog({ 
+            open: true, 
+            appointmentId, 
+            rescheduleUrl,
+            dealName: appointment.lead_name 
+          });
         } catch (error) {
-          console.error("Error moving to rescheduled:", error);
-          toast.error("Failed to move to rescheduled");
+          console.error("Error fetching reschedule URL:", error);
+          toast.error("Failed to fetch reschedule link", { id: 'fetch-reschedule' });
         }
       }
       return;
