@@ -343,15 +343,15 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
               <CardContent className="p-4 relative">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                    <UserCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
                   <span className="text-sm font-medium text-muted-foreground">Showed Up</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="text-3xl font-bold text-green-700 dark:text-green-500">{stats.showed}</div>
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.showed}</div>
                   {stats.booked > 0 && (
-                    <Badge className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
                       {showRate.toFixed(0)}%
                     </Badge>
                   )}
@@ -397,7 +397,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
 
           {/* Confirmed Calls Performance Section */}
           <div className="pt-4 border-t">
-            <h4 className="text-sm font-semibold text-primary mb-3">📞 Confirmed Calls Performance (This Month)</h4>
+            <h4 className="text-sm font-semibold text-muted-foreground mb-3">Confirmed Calls Performance (This Month)</h4>
             <Card className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
               <CardContent className="p-4 relative">
@@ -408,15 +408,15 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground mb-2">Showed Up</div>
-                    <div className="text-2xl font-bold text-green-700 dark:text-green-500">{member.stats.confirmedShowed.thisMonth}</div>
-                    <Badge className="mt-1 text-xs bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{member.stats.confirmedShowed.thisMonth}</div>
+                    <Badge className="mt-1 text-xs bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
                       {member.stats.confirmedShowRate.thisMonth.toFixed(0)}%
                     </Badge>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground mb-2">Closed</div>
-                    <div className="text-2xl font-bold text-green-700 dark:text-green-500">{member.stats.confirmedClosed.thisMonth}</div>
-                    <Badge className="mt-1 text-xs bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{member.stats.confirmedClosed.thisMonth}</div>
+                    <Badge className="mt-1 text-xs bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
                       {member.stats.confirmedCloseRate.thisMonth.toFixed(0)}%
                     </Badge>
                   </div>
@@ -454,15 +454,15 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
             <CardContent className="p-4 relative">
               <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                  <DollarSign className="h-4 w-4 text-green-700 dark:text-green-500" />
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">Closed</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="text-3xl font-bold text-green-700 dark:text-green-500">{stats.closed}</div>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.closed}</div>
                 {stats.taken > 0 && (
-                  <Badge className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                  <Badge className="bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
                     {stats.closeRate.toFixed(0)}%
                   </Badge>
                 )}
