@@ -295,14 +295,29 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       return;
     }
 
-    // Check if moving to stages that require additional info
+    // Check if moving to rescheduled - create task and update stage
     if (newStage === "rescheduled") {
-      setRescheduleDialog({ 
-        open: true, 
-        appointmentId, 
-        stageId: newStage,
-        dealName: appointment.lead_name 
-      });
+      try {
+        // Update pipeline stage immediately
+        await supabase
+          .from("appointments")
+          .update({ pipeline_stage: newStage })
+          .eq("id", appointmentId);
+
+        // Create reschedule task without a date - waits for confirmation
+        await supabase.rpc("create_task_with_assignment", {
+          p_team_id: appointment.team_id,
+          p_appointment_id: appointmentId,
+          p_task_type: "reschedule",
+          p_reschedule_date: null
+        });
+
+        toast.success("Moved to rescheduled - task created");
+        loadDeals();
+      } catch (error) {
+        console.error("Error moving to rescheduled:", error);
+        toast.error("Failed to move to rescheduled");
+      }
       return;
     }
 
@@ -841,35 +856,27 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     }
   };
 
-  const handleStatusConfirm = async (newStatus: string, rescheduleDate?: Date) => {
+  const handleStatusConfirm = async (newStatus: string) => {
     if (!statusDialog) return;
 
     const appointment = appointments.find((a) => a.id === statusDialog.appointmentId);
     if (!appointment) return;
 
     try {
-      const updateData: any = { status: newStatus as any };
-
-      // Add retarget_date and reason for rescheduled status
-      if (newStatus === "RESCHEDULED" && rescheduleDate) {
-        updateData.retarget_date = format(rescheduleDate, "yyyy-MM-dd");
-        updateData.retarget_reason = "Rescheduled by user";
-      }
-
       const { error } = await supabase
         .from('appointments')
-        .update(updateData)
+        .update({ status: newStatus as any })
         .eq('id', statusDialog.appointmentId);
 
       if (error) throw error;
 
-      // Create reschedule task if rescheduled with a date
-      if (newStatus === "RESCHEDULED" && rescheduleDate) {
+      // Create reschedule task if status changed to RESCHEDULED
+      if (newStatus === "RESCHEDULED") {
         await supabase.rpc("create_task_with_assignment", {
           p_team_id: appointment.team_id,
           p_appointment_id: statusDialog.appointmentId,
           p_task_type: "reschedule",
-          p_reschedule_date: format(rescheduleDate, "yyyy-MM-dd")
+          p_reschedule_date: null
         });
       }
 
@@ -881,7 +888,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           appointment_id: statusDialog.appointmentId,
           actor_name: "User",
           action_type: "Status Changed",
-          note: `Changed status to ${newStatus}${rescheduleDate ? ` for ${format(rescheduleDate, "PPP")}` : ""}`
+          note: `Changed status to ${newStatus}`
         });
       
       toast.success(`Status changed to ${newStatus}`);
