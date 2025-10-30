@@ -147,7 +147,7 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
           </div>
           <div className="flex items-center gap-3">
             <Badge variant={activityStatus.color === 'bg-success' ? 'default' : activityStatus.color === 'bg-warning' ? 'secondary' : 'outline'}>
-              {activityStatus.icon} {activityStatus.text}
+              {activityStatus.text}
             </Badge>
             <Button size="sm" variant="outline" onClick={exportToCSV}>
               <Download className="h-4 w-4 mr-2" />

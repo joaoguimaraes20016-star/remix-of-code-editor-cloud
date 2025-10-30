@@ -307,7 +307,8 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
           <CardHeader>
             <CollapsibleTrigger className="flex items-center justify-between w-full group">
               <CardTitle className="flex items-center gap-2">
-                📊 Performance Dashboard
+                <TrendingUp className="h-5 w-5" />
+                Performance Dashboard
               </CardTitle>
               <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
@@ -370,7 +371,8 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
           <CardHeader>
             <CollapsibleTrigger className="flex items-center justify-between w-full group">
               <CardTitle className="flex items-center gap-2">
-                📈 Team Performance
+                <Users className="h-5 w-5" />
+                Team Performance
               </CardTitle>
               <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
@@ -402,7 +404,8 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
           <CardHeader>
             <CollapsibleTrigger className="flex items-center justify-between w-full group">
               <CardTitle className="flex items-center gap-2">
-                💰 Monthly Commission Report
+                <DollarSign className="h-5 w-5" />
+                Monthly Commission Report
               </CardTitle>
               <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
