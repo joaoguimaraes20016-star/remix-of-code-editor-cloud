@@ -394,6 +394,36 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
             booked: member.stats.booked.today,
             showed: member.stats.showed.today
           })}
+
+          {/* Confirmed Calls Performance Section */}
+          <div className="pt-4 border-t">
+            <h4 className="text-sm font-semibold text-primary mb-3">📞 Confirmed Calls Performance (This Month)</h4>
+            <Card className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+              <CardContent className="p-4 relative">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Total Confirmed</div>
+                    <div className="text-2xl font-bold text-primary">{member.stats.confirmed.thisMonth}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Showed Up</div>
+                    <div className="text-2xl font-bold text-green-700 dark:text-green-500">{member.stats.confirmedShowed.thisMonth}</div>
+                    <Badge className="mt-1 text-xs bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                      {member.stats.confirmedShowRate.thisMonth.toFixed(0)}%
+                    </Badge>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Closed</div>
+                    <div className="text-2xl font-bold text-green-700 dark:text-green-500">{member.stats.confirmedClosed.thisMonth}</div>
+                    <Badge className="mt-1 text-xs bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                      {member.stats.confirmedCloseRate.thisMonth.toFixed(0)}%
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </Card>
     );
