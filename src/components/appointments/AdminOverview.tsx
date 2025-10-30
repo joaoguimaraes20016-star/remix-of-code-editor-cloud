@@ -10,8 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import { CalendarClock, AlertCircle, TrendingUp, DollarSign, Users, RefreshCw, ChevronDown } from "lucide-react";
+import { CalendarClock, AlertCircle, TrendingUp, DollarSign, Users, RefreshCw, ChevronDown, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { AppointmentsBookedBreakdown } from "@/components/AppointmentsBookedBreakdown";
 
 interface AdminOverviewProps {
   teamId: string;
@@ -304,60 +305,6 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
       {/* EOD Reports - Always Visible */}
       <EODReportsHub teamId={teamId} />
 
-      {/* Collapsible: Performance Dashboard */}
-      <Collapsible defaultOpen>
-        <Card>
-          <CardHeader>
-            <CollapsibleTrigger className="flex items-center justify-between w-full group">
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Performance Dashboard
-              </CardTitle>
-              <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent>
-              {/* Quick Metrics */}
-              <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-                <MetricCard
-                  title="Close Rate"
-                  value={`${metrics.closeRate.toFixed(1)}%`}
-                  icon={TrendingUp}
-                  trend={metrics.closeRate > 20 ? "up" : "down"}
-                />
-                <MetricCard
-                  title="Show Rate"
-                  value={`${metrics.showRate.toFixed(1)}%`}
-                  icon={Users}
-                  trend={metrics.showRate > 70 ? "up" : "down"}
-                />
-                <MetricCard
-                  title="Total Revenue"
-                  value={`$${metrics.totalRevenue.toLocaleString()}`}
-                  icon={DollarSign}
-                />
-                <MetricCard
-                  title="Commissions"
-                  value={`$${metrics.totalCommissions.toLocaleString()}`}
-                  icon={DollarSign}
-                />
-                <MetricCard
-                  title="Active Deals"
-                  value={metrics.activeDeals.toString()}
-                  icon={Users}
-                />
-                <MetricCard
-                  title="Total MRR"
-                  value={`$${metrics.totalMRR.toLocaleString()}`}
-                  icon={RefreshCw}
-                />
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-
       {/* Collapsible: Team Performance */}
       <Collapsible defaultOpen>
         <Card>
@@ -386,6 +333,26 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
                   type="closer"
                 />
               </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Collapsible: Team Booking Metrics */}
+      <Collapsible defaultOpen={false}>
+        <Card>
+          <CardHeader>
+            <CollapsibleTrigger className="flex items-center justify-between w-full group">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Team Booking Metrics
+              </CardTitle>
+              <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              <AppointmentsBookedBreakdown teamId={teamId} />
             </CardContent>
           </CollapsibleContent>
         </Card>
