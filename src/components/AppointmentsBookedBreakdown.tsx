@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, UserCheck, Calendar, CalendarDays, CalendarClock, PhoneCall, CheckCircle2, TrendingUp } from "lucide-react";
+import { User, UserCheck, Calendar, CalendarDays, CalendarClock, PhoneCall, CheckCircle2, TrendingUp, DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfMonth, startOfWeek, startOfDay, endOfDay } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface DetailedStats {
   thisMonth: number;
@@ -248,162 +249,199 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
   };
 
   const renderSetterCard = (member: TeamMemberSetterStats) => {
+    const renderTimeBlock = (label: string, stats: { booked: number; confirmed: number; showed: number; confirmRate: number; showRate: number }) => (
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold text-muted-foreground">{label}</h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Booked Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Calendar className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Booked</span>
+              </div>
+              <div className="text-3xl font-bold text-primary">{stats.booked}</div>
+            </CardContent>
+          </Card>
+
+          {/* Confirmed Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
+                  <PhoneCall className="h-4 w-4 text-yellow-700 dark:text-yellow-500" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Confirmed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-500">{stats.confirmed}</div>
+                {stats.booked > 0 && (
+                  <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-500 dark:border-yellow-700">
+                    {stats.confirmRate.toFixed(0)}%
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Showed Up Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                  <UserCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Showed Up</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-3xl font-bold text-green-700 dark:text-green-500">{stats.showed}</div>
+                {stats.confirmed > 0 && (
+                  <Badge className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                    {stats.showRate.toFixed(0)}%
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+
     return (
-      <div 
-        key={member.id} 
-        className="p-5 rounded-lg bg-card border hover:border-primary/50 transition-all space-y-4"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="font-semibold text-lg">{member.name}</p>
-              <p className="text-xs text-muted-foreground">Setter</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm font-semibold">
-              <TrendingUp className="h-4 w-4" />
-              {member.stats.showRate.thisMonth.toFixed(1)}%
-            </Badge>
-            <p className="text-xs text-muted-foreground mt-1">Show Rate</p>
+      <Card key={member.id} className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Avatar className="h-12 w-12">
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+              {member.name.split(' ').map(n => n[0]).join('')}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h3 className="font-semibold text-lg">{member.name}</h3>
+            <p className="text-sm text-muted-foreground">Setter</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
-          <div className="text-center p-3 rounded bg-secondary/30">
-            <p className="text-xs text-muted-foreground mb-2 font-medium">All Time</p>
-            <p className="text-2xl font-bold mb-1">{member.stats.booked.total}</p>
-            <p className="text-xs text-muted-foreground mb-1">Booked</p>
-            <div className="space-y-1 pt-1 border-t border-border/50">
-              <p className="text-sm text-warning font-semibold">{member.stats.confirmed.total} confirmed</p>
-              <p className="text-xs text-muted-foreground">({member.stats.confirmRate.total.toFixed(0)}% confirm)</p>
-              <p className="text-sm text-success font-semibold">{member.stats.showed.total} showed</p>
-              <p className="text-xs text-muted-foreground">({member.stats.showRate.total.toFixed(0)}% show)</p>
-            </div>
-          </div>
-          
-          <div className="text-center p-3 rounded bg-primary/5 border-2 border-primary/30">
-            <p className="text-xs text-muted-foreground mb-2 font-medium">This Month</p>
-            <p className="text-2xl font-bold text-primary mb-1">{member.stats.booked.thisMonth}</p>
-            <p className="text-xs text-muted-foreground mb-1">Booked</p>
-            <div className="space-y-1 pt-1 border-t border-primary/30">
-              <p className="text-sm text-warning font-semibold">{member.stats.confirmed.thisMonth} confirmed</p>
-              <p className="text-xs text-muted-foreground">({member.stats.confirmRate.thisMonth.toFixed(0)}% confirm)</p>
-              <p className="text-sm text-success font-semibold">{member.stats.showed.thisMonth} showed</p>
-              <p className="text-xs text-muted-foreground">({member.stats.showRate.thisMonth.toFixed(0)}% show)</p>
-            </div>
-          </div>
-          
-          <div className="text-center p-3 rounded bg-secondary/30">
-            <p className="text-xs text-muted-foreground mb-2 font-medium">This Week</p>
-            <p className="text-2xl font-bold mb-1">{member.stats.booked.thisWeek}</p>
-            <p className="text-xs text-muted-foreground mb-1">Booked</p>
-            <div className="space-y-1 pt-1 border-t border-border/50">
-              <p className="text-sm text-warning font-semibold">{member.stats.confirmed.thisWeek} confirmed</p>
-              <p className="text-xs text-muted-foreground">({member.stats.confirmRate.thisWeek.toFixed(0)}% confirm)</p>
-              <p className="text-sm text-success font-semibold">{member.stats.showed.thisWeek} showed</p>
-              <p className="text-xs text-muted-foreground">({member.stats.showRate.thisWeek.toFixed(0)}% show)</p>
-            </div>
-          </div>
-          
-          <div className="text-center p-3 rounded bg-secondary/30">
-            <p className="text-xs text-muted-foreground mb-2 font-medium">Today</p>
-            <p className="text-2xl font-bold mb-1">{member.stats.booked.today}</p>
-            <p className="text-xs text-muted-foreground mb-1">Booked</p>
-            <div className="space-y-1 pt-1 border-t border-border/50">
-              <p className="text-sm text-warning font-semibold">{member.stats.confirmed.today} confirmed</p>
-              <p className="text-xs text-muted-foreground">({member.stats.booked.today > 0 ? member.stats.confirmRate.today.toFixed(0) : '0'}% confirm)</p>
-              <p className="text-sm text-success font-semibold">{member.stats.showed.today} showed</p>
-              <p className="text-xs text-muted-foreground">({member.stats.confirmed.today > 0 ? member.stats.showRate.today.toFixed(0) : '0'}% show)</p>
-            </div>
-          </div>
+        <div className="space-y-6">
+          {renderTimeBlock("All Time", {
+            booked: member.stats.booked.total,
+            confirmed: member.stats.confirmed.total,
+            showed: member.stats.showed.total,
+            confirmRate: member.stats.confirmRate.total,
+            showRate: member.stats.showRate.total
+          })}
+          {renderTimeBlock("This Month", {
+            booked: member.stats.booked.thisMonth,
+            confirmed: member.stats.confirmed.thisMonth,
+            showed: member.stats.showed.thisMonth,
+            confirmRate: member.stats.confirmRate.thisMonth,
+            showRate: member.stats.showRate.thisMonth
+          })}
+          {renderTimeBlock("This Week", {
+            booked: member.stats.booked.thisWeek,
+            confirmed: member.stats.confirmed.thisWeek,
+            showed: member.stats.showed.thisWeek,
+            confirmRate: member.stats.confirmRate.thisWeek,
+            showRate: member.stats.showRate.thisWeek
+          })}
+          {renderTimeBlock("Today", {
+            booked: member.stats.booked.today,
+            confirmed: member.stats.confirmed.today,
+            showed: member.stats.showed.today,
+            confirmRate: member.stats.confirmRate.today,
+            showRate: member.stats.showRate.today
+          })}
         </div>
-      </div>
+      </Card>
     );
   };
 
   const renderCloserCard = (member: TeamMemberCloserStats) => {
+    const renderTimeBlock = (label: string, stats: { taken: number; closed: number; closeRate: number }) => (
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold text-muted-foreground">{label}</h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Calls Taken Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <PhoneCall className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Calls Taken</span>
+              </div>
+              <div className="text-3xl font-bold text-primary">{stats.taken}</div>
+            </CardContent>
+          </Card>
+
+          {/* Closed Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                  <DollarSign className="h-4 w-4 text-green-700 dark:text-green-500" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Closed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-3xl font-bold text-green-700 dark:text-green-500">{stats.closed}</div>
+                {stats.taken > 0 && (
+                  <Badge className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                    {stats.closeRate.toFixed(0)}%
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+
     return (
-      <div 
-        key={member.id} 
-        className="p-5 rounded-lg bg-card border hover:border-primary/50 transition-all space-y-4"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <UserCheck className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="font-semibold text-lg">{member.name}</p>
-              <p className="text-xs text-muted-foreground">Closer</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm font-semibold">
-              <CheckCircle2 className="h-4 w-4" />
-              {member.stats.closeRate.thisMonth.toFixed(1)}%
-            </Badge>
-            <p className="text-xs text-muted-foreground mt-1">Close Rate</p>
+      <Card key={member.id} className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Avatar className="h-12 w-12">
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+              {member.name.split(' ').map(n => n[0]).join('')}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h3 className="font-semibold text-lg">{member.name}</h3>
+            <p className="text-sm text-muted-foreground">Closer</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
-          <div className="text-center p-3 rounded bg-secondary/30">
-            <p className="text-xs text-muted-foreground mb-2 font-medium">All Time</p>
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <PhoneCall className="h-4 w-4 text-muted-foreground" />
-              <p className="text-2xl font-bold">{member.stats.taken.total}</p>
-            </div>
-            <p className="text-xs text-muted-foreground mb-1">Calls Taken</p>
-            <p className="text-sm text-success font-semibold">{member.stats.closed.total} closed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {member.stats.closeRate.total.toFixed(1)}% close rate
-            </p>
-          </div>
-          
-          <div className="text-center p-3 rounded bg-primary/5 border-2 border-primary/30">
-            <p className="text-xs text-muted-foreground mb-2 font-medium">This Month</p>
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <PhoneCall className="h-4 w-4 text-primary" />
-              <p className="text-2xl font-bold text-primary">{member.stats.taken.thisMonth}</p>
-            </div>
-            <p className="text-xs text-muted-foreground mb-1">Calls Taken</p>
-            <p className="text-sm text-success font-semibold">{member.stats.closed.thisMonth} closed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {member.stats.closeRate.thisMonth.toFixed(1)}% close rate
-            </p>
-          </div>
-          
-          <div className="text-center p-3 rounded bg-secondary/30">
-            <p className="text-xs text-muted-foreground mb-2 font-medium">This Week</p>
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <PhoneCall className="h-4 w-4 text-muted-foreground" />
-              <p className="text-2xl font-bold">{member.stats.taken.thisWeek}</p>
-            </div>
-            <p className="text-xs text-muted-foreground mb-1">Calls Taken</p>
-            <p className="text-sm text-success font-semibold">{member.stats.closed.thisWeek} closed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {member.stats.closeRate.thisWeek.toFixed(1)}% close rate
-            </p>
-          </div>
-          
-          <div className="text-center p-3 rounded bg-secondary/30">
-            <p className="text-xs text-muted-foreground mb-2 font-medium">Today</p>
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <PhoneCall className="h-4 w-4 text-muted-foreground" />
-              <p className="text-2xl font-bold">{member.stats.taken.today}</p>
-            </div>
-            <p className="text-xs text-muted-foreground mb-1">Calls Taken</p>
-            <p className="text-sm text-success font-semibold">{member.stats.closed.today} closed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {member.stats.taken.today > 0 ? member.stats.closeRate.today.toFixed(1) : '0'}% close rate
-            </p>
-          </div>
+        <div className="space-y-6">
+          {renderTimeBlock("All Time", {
+            taken: member.stats.taken.total,
+            closed: member.stats.closed.total,
+            closeRate: member.stats.closeRate.total
+          })}
+          {renderTimeBlock("This Month", {
+            taken: member.stats.taken.thisMonth,
+            closed: member.stats.closed.thisMonth,
+            closeRate: member.stats.closeRate.thisMonth
+          })}
+          {renderTimeBlock("This Week", {
+            taken: member.stats.taken.thisWeek,
+            closed: member.stats.closed.thisWeek,
+            closeRate: member.stats.closeRate.thisWeek
+          })}
+          {renderTimeBlock("Today", {
+            taken: member.stats.taken.today,
+            closed: member.stats.closed.today,
+            closeRate: member.stats.closeRate.today
+          })}
         </div>
-      </div>
+      </Card>
     );
   };
 
