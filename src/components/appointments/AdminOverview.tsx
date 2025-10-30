@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { Leaderboard } from "@/components/Leaderboard";
 import { ActivityTracker } from "./ActivityTracker";
-import { EODDashboard } from "./EODDashboard";
+import { EODReportsHub } from "./EODReportsHub";
 import { MonthlyCommissionReport } from "./MonthlyCommissionReport";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -301,6 +301,9 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
         </Card>
       </div>
 
+      {/* EOD Reports - Always Visible */}
+      <EODReportsHub teamId={teamId} />
+
       {/* Collapsible: Performance Dashboard */}
       <Collapsible defaultOpen>
         <Card>
@@ -314,7 +317,7 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
             </CollapsibleTrigger>
           </CardHeader>
           <CollapsibleContent>
-            <CardContent className="space-y-6">
+            <CardContent>
               {/* Quick Metrics */}
               <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
                 <MetricCard
@@ -350,16 +353,6 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
                   icon={RefreshCw}
                 />
               </div>
-
-              <Separator />
-
-              {/* Daily Performance */}
-              <EODDashboard 
-                teamId={teamId}
-                userRole="admin"
-                currentUserId={user?.id || ''}
-                currentUserName={currentUserName}
-              />
             </CardContent>
           </CollapsibleContent>
         </Card>
