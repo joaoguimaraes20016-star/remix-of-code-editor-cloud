@@ -382,7 +382,7 @@ export default function TeamSettings() {
               </TabsTrigger>
               <TabsTrigger value="commissions" className="gap-2">
                 <DollarSign className="h-4 w-4" />
-                Money
+                Commissions
               </TabsTrigger>
               <TabsTrigger value="workflow" className="gap-2">
                 <Workflow className="h-4 w-4" />
