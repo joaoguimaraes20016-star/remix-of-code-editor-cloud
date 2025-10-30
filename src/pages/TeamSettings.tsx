@@ -29,8 +29,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Users, DollarSign, Workflow, Link2, AlertTriangle, Settings2 } from 'lucide-react';
 import { CalendlyConfig } from '@/components/CalendlyConfig';
 import { SetterBookingLinks } from '@/components/SetterBookingLinks';
 import { CommissionSettings } from '@/components/CommissionSettings';
@@ -348,240 +349,321 @@ export default function TeamSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/team/${teamId}`)}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Dashboard
-          </Button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate(`/team/${teamId}`)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                <Settings2 className="h-8 w-8" />
+                {teamName}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {(role === 'closer' || role === 'setter') 
+                  ? 'Manage your booking links and preferences'
+                  : 'Complete team and workflow configuration'}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{teamName} Settings</h1>
-          <p className="text-muted-foreground mt-1">
-            {(role === 'closer' || role === 'setter') 
-              ? 'Manage your booking links'
-              : 'Manage your team members and roles'}
-          </p>
-        </div>
+        {/* Admin View - Tabbed Interface */}
+        {(isAdmin || role === 'offer_owner' || role === 'admin' || role === 'owner' || isSuperAdmin) ? (
+          <Tabs defaultValue="team" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+              <TabsTrigger value="team" className="gap-2">
+                <Users className="h-4 w-4" />
+                Team
+              </TabsTrigger>
+              <TabsTrigger value="commissions" className="gap-2">
+                <DollarSign className="h-4 w-4" />
+                Money
+              </TabsTrigger>
+              <TabsTrigger value="workflow" className="gap-2">
+                <Workflow className="h-4 w-4" />
+                Workflow
+              </TabsTrigger>
+              <TabsTrigger value="integrations" className="gap-2">
+                <Link2 className="h-4 w-4" />
+                Integrations
+              </TabsTrigger>
+              <TabsTrigger value="danger" className="gap-2 text-destructive">
+                <AlertTriangle className="h-4 w-4" />
+                Danger
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Admin/Offer Owner sections - hidden from closers and setters */}
-        {(isAdmin || role === 'offer_owner' || role === 'admin' || role === 'owner' || isSuperAdmin) && (
-          <>
-            {/* Add Member Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Add Team Member</CardTitle>
-                <CardDescription>
-                  Invite users to your team by their email address
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleInviteMember} className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="user@example.com"
-                        value={newMemberEmail}
-                        onChange={(e) => setNewMemberEmail(e.target.value)}
-                        required
-                      />
+            {/* Team Members Tab */}
+            <TabsContent value="team" className="space-y-6">
+              <Card className="border-primary/20 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Add Team Member
+                  </CardTitle>
+                  <CardDescription>
+                    Invite new members to collaborate on your team
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleInviteMember} className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="user@example.com"
+                          value={newMemberEmail}
+                          onChange={(e) => setNewMemberEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="role">Role</Label>
+                        <Select value={newMemberRole} onValueChange={setNewMemberRole}>
+                          <SelectTrigger id="role">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="offer_owner">Offer Owner</SelectItem>
+                            <SelectItem value="closer">Closer</SelectItem>
+                            <SelectItem value="setter">Setter</SelectItem>
+                            <SelectItem value="member">Member</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="role">Role</Label>
-                      <Select value={newMemberRole} onValueChange={setNewMemberRole}>
-                        <SelectTrigger id="role">
-                          <SelectValue />
-                        </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="offer_owner">Offer Owner</SelectItem>
-                        <SelectItem value="closer">Closer</SelectItem>
-                        <SelectItem value="setter">Setter</SelectItem>
-                        <SelectItem value="member">Member</SelectItem>
-                      </SelectContent>
-                      </Select>
+                    <Button type="submit" className="w-full md:w-auto">Add Member</Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card className="border-primary/20 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Team Members ({members.length})
+                  </CardTitle>
+                  <CardDescription>
+                    Manage roles and permissions for your team
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {members.map((member) => (
+                          <TableRow key={member.id}>
+                            <TableCell className="font-medium">
+                              {member.full_name}
+                              {member.is_super_admin && (
+                                <Badge variant="destructive" className="ml-2">SUPER ADMIN</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>{member.email}</TableCell>
+                            <TableCell>
+                              {(isSuperAdmin || isAdmin) && !member.is_super_admin ? (
+                                <Select
+                                  value={member.role}
+                                  onValueChange={(value) => handleRoleChange(member.id, value)}
+                                >
+                                  <SelectTrigger className="w-[140px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="offer_owner">Offer Owner</SelectItem>
+                                    <SelectItem value="closer">Closer</SelectItem>
+                                    <SelectItem value="setter">Setter</SelectItem>
+                                    <SelectItem value="member">Member</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                getRoleBadge(member.role)
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {((isSuperAdmin && !member.is_current_user) || (!member.is_super_admin && member.role !== 'admin' && member.role !== 'offer_owner')) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveMember(member.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Commissions & Money Tab */}
+            <TabsContent value="commissions" className="space-y-6">
+              <CommissionSettings teamId={teamId!} />
+              <SetterRotationSettings teamId={teamId!} />
+            </TabsContent>
+
+            {/* Workflow Tab */}
+            <TabsContent value="workflow" className="space-y-6">
+              <WorkflowSettings teamId={teamId!} />
+            </TabsContent>
+
+            {/* Integrations Tab */}
+            <TabsContent value="integrations" className="space-y-6">
+              {(() => {
+                try {
+                  return (
+                    <>
+                      <CalendlyConfig 
+                        teamId={teamId!}
+                        currentAccessToken={calendlyAccessToken}
+                        currentOrgUri={calendlyOrgUri}
+                        currentWebhookId={calendlyWebhookId}
+                        currentEventTypes={calendlyEventTypes}
+                        onUpdate={loadTeamData}
+                      />
+                      
+                      {calendlyAccessToken && (
+                        <>
+                          <Card className="border-primary/20 shadow-lg">
+                            <CardHeader>
+                              <CardTitle className="flex items-center gap-2">
+                                <Link2 className="h-5 w-5" />
+                                Webhook Troubleshooting
+                              </CardTitle>
+                              <CardDescription>
+                                Fix booking link issues and setter assignments
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <Button onClick={handleFixWebhook} disabled={loading}>
+                                Re-register Webhook
+                              </Button>
+                            </CardContent>
+                          </Card>
+                          
+                          <BackfillRescheduleUrls teamId={teamId!} />
+                        </>
+                      )}
+
+                      {calendlyEventTypes && calendlyEventTypes.length > 0 && (
+                        <SetterBookingLinks
+                          teamId={teamId!}
+                          calendlyEventTypes={calendlyEventTypes}
+                          calendlyAccessToken={calendlyAccessToken}
+                          calendlyOrgUri={calendlyOrgUri}
+                          onRefresh={loadTeamData}
+                          currentUserId={user?.id}
+                          isOwner={isAdmin}
+                        />
+                      )}
+                    </>
+                  );
+                } catch (error) {
+                  console.error('Error rendering integrations:', error);
+                  return null;
+                }
+              })()}
+            </TabsContent>
+
+            {/* Danger Zone Tab */}
+            <TabsContent value="danger" className="space-y-6">
+              <Card className="border-destructive shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Danger Zone
+                  </CardTitle>
+                  <CardDescription>
+                    Irreversible actions - proceed with caution
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3 p-4 border border-destructive/30 rounded-lg bg-destructive/5">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Clean Duplicate Sales</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Remove old sales records causing duplicate counts. Appointment data remains safe.
+                        </p>
+                        <div className="mt-3">
+                          <CleanupDuplicateSales 
+                            teamId={teamId!} 
+                            onComplete={() => window.location.reload()} 
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <Button type="submit">Add Member</Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Team Members Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>
-                  Current members of your team
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {members.map((member) => (
-                        <TableRow key={member.id}>
-                          <TableCell className="font-medium">
-                            {member.full_name}
-                            {member.is_super_admin && (
-                              <Badge variant="destructive" className="ml-2">SUPER ADMIN</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>{member.email}</TableCell>
-                          <TableCell>
-                            {(isSuperAdmin || isAdmin) && !member.is_super_admin ? (
-                              <Select
-                                value={member.role}
-                                onValueChange={(value) => handleRoleChange(member.id, value)}
-                              >
-                                <SelectTrigger className="w-[140px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                  <SelectItem value="offer_owner">Offer Owner</SelectItem>
-                                  <SelectItem value="closer">Closer</SelectItem>
-                                  <SelectItem value="setter">Setter</SelectItem>
-                                  <SelectItem value="member">Member</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              getRoleBadge(member.role)
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {((isSuperAdmin && !member.is_current_user) || (!member.is_super_admin && member.role !== 'admin' && member.role !== 'offer_owner')) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMember(member.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {/* Commission Settings - visible to admins and offer owners */}
-        {(isAdmin || role === 'offer_owner' || role === 'owner') && (
-          <>
-            <CommissionSettings teamId={teamId!} />
-            <SetterRotationSettings teamId={teamId!} />
-            <WorkflowSettings teamId={teamId!} />
-            
-            {/* Danger Zone - Clear All Data */}
-            <Card className="border-destructive/50">
-              <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                <CardDescription>
-                  Manage operational data cleanup
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Clean duplicate sales records</p>
-                  <p className="text-sm text-muted-foreground">
-                    Remove old sales records that are causing duplicate counts. Your appointment data is safe.
-                  </p>
-                  <CleanupDuplicateSales 
-                    teamId={teamId!} 
-                    onComplete={() => window.location.reload()} 
-                  />
-                </div>
-                <div className="space-y-2 pt-4 border-t">
-                  <p className="text-sm font-medium">Clear all operational data</p>
-                  <p className="text-sm text-muted-foreground">
-                    Remove all appointments, sales, tasks, etc. while keeping team structure intact
-                  </p>
-                  <ClearTeamData teamId={teamId!} />
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {/* Calendly Integration */}
-        {(isAdmin || role === "offer_owner" || role === "admin" || role === "owner") && (() => {
-          try {
-            return (
-              <>
-                <CalendlyConfig 
+                  
+                  <div className="space-y-3 p-4 border border-destructive rounded-lg bg-destructive/10">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-destructive">Clear All Data</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Permanently delete all appointments, sales, and tasks. Team structure will be preserved.
+                        </p>
+                        <div className="mt-3">
+                          <ClearTeamData teamId={teamId!} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          /* Closer/Setter View - Simple Booking Links */
+          <Card className="border-primary/20 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="h-5 w-5" />
+                Your Booking Links
+              </CardTitle>
+              <CardDescription>
+                Manage your personal appointment booking links
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {calendlyEventTypes && calendlyEventTypes.length > 0 ? (
+                <SetterBookingLinks
                   teamId={teamId!}
-                  currentAccessToken={calendlyAccessToken}
-                  currentOrgUri={calendlyOrgUri}
-                  currentWebhookId={calendlyWebhookId}
-                  currentEventTypes={calendlyEventTypes}
-                  onUpdate={loadTeamData}
+                  calendlyEventTypes={calendlyEventTypes}
+                  calendlyAccessToken={calendlyAccessToken}
+                  calendlyOrgUri={calendlyOrgUri}
+                  onRefresh={loadTeamData}
+                  currentUserId={user?.id}
+                  isOwner={isAdmin}
                 />
-                
-                {calendlyAccessToken && (
-                  <>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Webhook Troubleshooting</CardTitle>
-                        <CardDescription>
-                          If booking links aren't capturing setter assignments, click below to re-register the webhook
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button onClick={handleFixWebhook} disabled={loading}>
-                          Fix Webhook
-                        </Button>
-                      </CardContent>
-                    </Card>
-                    
-                    <BackfillRescheduleUrls teamId={teamId!} />
-                  </>
-                )}
-              </>
-            );
-          } catch (error) {
-            console.error('Error rendering Calendly config:', error);
-            return null;
-          }
-        })()}
-
-        {/* Setter Booking Links - visible to admins, setters, and closers */}
-        {(isAdmin || role === 'setter' || role === 'closer') && calendlyEventTypes && calendlyEventTypes.length > 0 && (() => {
-          try {
-            return (
-              <SetterBookingLinks
-                teamId={teamId!}
-                calendlyEventTypes={calendlyEventTypes}
-                calendlyAccessToken={calendlyAccessToken}
-                calendlyOrgUri={calendlyOrgUri}
-                onRefresh={loadTeamData}
-                currentUserId={user?.id}
-                isOwner={isAdmin}
-              />
-            );
-          } catch (error) {
-            console.error('Error rendering booking links:', error);
-            return null;
-          }
-        })()}
+              ) : (
+                <p className="text-muted-foreground">No booking links configured yet. Contact your admin.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
