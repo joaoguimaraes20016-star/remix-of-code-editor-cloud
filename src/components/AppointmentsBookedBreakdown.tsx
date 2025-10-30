@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, UserCheck, Calendar, CalendarDays, CalendarClock, PhoneCall, CheckCircle2, TrendingUp, DollarSign, Activity, ListTodo, Clock, AlertCircle, FileText, AlertTriangle } from "lucide-react";
+import { User, UserCheck, Calendar, CalendarDays, CalendarClock, PhoneCall, CheckCircle2, TrendingUp, DollarSign, Activity, ListTodo, Clock, AlertCircle, FileText, AlertTriangle, ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,6 +120,8 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
   const [setterStats, setSetterStats] = useState<TeamMemberSetterStats[]>([]);
   const [closerStats, setCloserStats] = useState<TeamMemberCloserStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedMembers, setExpandedMembers] = useState<Set<string>>(new Set());
+  const [memberTimeFilters, setMemberTimeFilters] = useState<Record<string, 'today' | 'week' | 'month' | 'total'>>({});
 
   useEffect(() => {
     loadAppointmentStats();
@@ -528,527 +530,601 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
     }
   };
 
-  const renderSetterCard = (member: TeamMemberSetterStats) => {
-    const renderTimeBlock = (label: string, stats: { 
-      booked: number; 
-      showed: number; 
-    }) => {
-      const showRate = stats.booked > 0 ? (stats.showed / stats.booked) * 100 : 0;
-      
-      return (
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-muted-foreground">{label}</h4>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Booked Box */}
-            <Card className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-              <CardContent className="p-4 relative">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Calendar className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-muted-foreground">Booked</span>
-                </div>
-                <div className="text-3xl font-bold text-primary">{stats.booked}</div>
-              </CardContent>
-            </Card>
+  const toggleMember = (memberId: string) => {
+    setExpandedMembers(prev => {
+      const next = new Set(prev);
+      if (next.has(memberId)) {
+        next.delete(memberId);
+      } else {
+        next.add(memberId);
+        if (!memberTimeFilters[memberId]) {
+          setMemberTimeFilters(prev => ({ ...prev, [memberId]: 'today' }));
+        }
+      }
+      return next;
+    });
+  };
 
-            {/* Showed Up Box */}
-            <Card className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
-              <CardContent className="p-4 relative">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-lg bg-green-500/10">
-                    <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  </div>
-                  <span className="text-sm font-medium text-muted-foreground">Showed Up</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.showed}</div>
-                  {stats.booked > 0 && (
-                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
-                      {showRate.toFixed(0)}%
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      );
-    };
+  const getStatsForPeriod = (member: TeamMemberSetterStats, period: 'today' | 'week' | 'month' | 'total') => {
+    switch (period) {
+      case 'today': 
+        return { 
+          booked: member.stats.booked.today, 
+          showed: member.stats.showed.today,
+          confirmed: member.stats.confirmed.today,
+          confirmedShowed: member.stats.confirmedShowed.today,
+          confirmedClosed: member.stats.confirmedClosed.today,
+          confirmRate: member.stats.confirmRate.today,
+          showRate: member.stats.showRate.today,
+          confirmedShowRate: member.stats.confirmedShowRate.today,
+          confirmedCloseRate: member.stats.confirmedCloseRate.today
+        };
+      case 'week': 
+        return { 
+          booked: member.stats.booked.thisWeek, 
+          showed: member.stats.showed.thisWeek,
+          confirmed: member.stats.confirmed.thisWeek,
+          confirmedShowed: member.stats.confirmedShowed.thisWeek,
+          confirmedClosed: member.stats.confirmedClosed.thisWeek,
+          confirmRate: member.stats.confirmRate.thisWeek,
+          showRate: member.stats.showRate.thisWeek,
+          confirmedShowRate: member.stats.confirmedShowRate.thisWeek,
+          confirmedCloseRate: member.stats.confirmedCloseRate.thisWeek
+        };
+      case 'month': 
+        return { 
+          booked: member.stats.booked.thisMonth, 
+          showed: member.stats.showed.thisMonth,
+          confirmed: member.stats.confirmed.thisMonth,
+          confirmedShowed: member.stats.confirmedShowed.thisMonth,
+          confirmedClosed: member.stats.confirmedClosed.thisMonth,
+          confirmRate: member.stats.confirmRate.thisMonth,
+          showRate: member.stats.showRate.thisMonth,
+          confirmedShowRate: member.stats.confirmedShowRate.thisMonth,
+          confirmedCloseRate: member.stats.confirmedCloseRate.thisMonth
+        };
+      case 'total': 
+        return { 
+          booked: member.stats.booked.total, 
+          showed: member.stats.showed.total,
+          confirmed: member.stats.confirmed.total,
+          confirmedShowed: member.stats.confirmedShowed.total,
+          confirmedClosed: member.stats.confirmedClosed.total,
+          confirmRate: member.stats.confirmRate.total,
+          showRate: member.stats.showRate.total,
+          confirmedShowRate: member.stats.confirmedShowRate.total,
+          confirmedCloseRate: member.stats.confirmedCloseRate.total
+        };
+    }
+  };
+
+  const getCloserStatsForPeriod = (member: TeamMemberCloserStats, period: 'today' | 'week' | 'month' | 'total') => {
+    switch (period) {
+      case 'today': 
+        return { 
+          taken: member.stats.taken.today, 
+          closed: member.stats.closed.today,
+          closeRate: member.stats.closeRate.today
+        };
+      case 'week': 
+        return { 
+          taken: member.stats.taken.thisWeek, 
+          closed: member.stats.closed.thisWeek,
+          closeRate: member.stats.closeRate.thisWeek
+        };
+      case 'month': 
+        return { 
+          taken: member.stats.taken.thisMonth, 
+          closed: member.stats.closed.thisMonth,
+          closeRate: member.stats.closeRate.thisMonth
+        };
+      case 'total': 
+        return { 
+          taken: member.stats.taken.total, 
+          closed: member.stats.closed.total,
+          closeRate: member.stats.closeRate.total
+        };
+    }
+  };
+
+  const getTotalIssues = (accountability: AccountabilityMetrics) => {
+    return accountability.overdueTasks.length +
+           accountability.dueTodayTasks.length +
+           accountability.staleLeads.length +
+           accountability.missingNotes.length;
+  };
+
+  const renderSetterCard = (member: TeamMemberSetterStats) => {
+    const isExpanded = expandedMembers.has(member.id);
+    const timeFilter = memberTimeFilters[member.id] || 'today';
+    const stats = getStatsForPeriod(member, timeFilter);
+    const totalIssues = getTotalIssues(member.accountability);
+    const showRate = stats.booked > 0 ? (stats.showed / stats.booked) * 100 : 0;
 
     return (
-      <Card key={member.id} className="p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Avatar className="h-12 w-12">
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {member.name.split(' ').map(n => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="font-semibold text-lg">{member.name}</h3>
-            <p className="text-sm text-muted-foreground">Setter</p>
+      <Card key={member.id}>
+        {/* Header - Always Visible */}
+        <div 
+          onClick={() => toggleMember(member.id)}
+          className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                {member.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold">{member.name}</h3>
+              <p className="text-sm text-muted-foreground">Setter</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {member.accountability.overdueTasks.length > 0 && (
+              <Badge variant="destructive">
+                {member.accountability.overdueTasks.length} overdue
+              </Badge>
+            )}
+            {member.accountability.dueTodayTasks.length > 0 && (
+              <Badge variant="warning">
+                {member.accountability.dueTodayTasks.length} due
+              </Badge>
+            )}
+            {totalIssues === 0 && (
+              <Badge variant="success">✅ All clear</Badge>
+            )}
+            <ChevronDown 
+              className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+            />
           </div>
         </div>
 
-        <div className="space-y-6">
-          {renderTimeBlock("All Time", {
-            booked: member.stats.booked.total,
-            showed: member.stats.showed.total
-          })}
-          {renderTimeBlock("This Month", {
-            booked: member.stats.booked.thisMonth,
-            showed: member.stats.showed.thisMonth
-          })}
-          {renderTimeBlock("This Week", {
-            booked: member.stats.booked.thisWeek,
-            showed: member.stats.showed.thisWeek
-          })}
-          {renderTimeBlock("Today", {
-            booked: member.stats.booked.today,
-            showed: member.stats.showed.today
-          })}
+        {/* Expanded Content */}
+        {isExpanded && (
+          <div className="p-4 pt-0 space-y-6">
+            {/* Time Period Toggle */}
+            <Tabs 
+              value={timeFilter} 
+              onValueChange={(value) => setMemberTimeFilters(prev => ({ 
+                ...prev, 
+                [member.id]: value as 'today' | 'week' | 'month' | 'total' 
+              }))}
+            >
+              <TabsList className="grid grid-cols-4 w-full">
+                <TabsTrigger value="today">Today</TabsTrigger>
+                <TabsTrigger value="week">Week</TabsTrigger>
+                <TabsTrigger value="month">Month</TabsTrigger>
+                <TabsTrigger value="total">All Time</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-          {/* Confirmed Calls Performance Section */}
-          <div className="pt-4 border-t">
-            <h4 className="text-sm font-semibold text-muted-foreground mb-3">Confirmed Calls Performance (This Month)</h4>
-            <Card className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-              <CardContent className="p-4 relative">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-2">Total Confirmed</div>
-                    <div className="text-2xl font-bold text-primary">{member.stats.confirmed.thisMonth}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-2">Showed Up</div>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{member.stats.confirmedShowed.thisMonth}</div>
-                    <Badge className="mt-1 text-xs bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
-                      {member.stats.confirmedShowRate.thisMonth.toFixed(0)}%
-                    </Badge>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-2">Closed</div>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{member.stats.confirmedClosed.thisMonth}</div>
-                    <Badge className="mt-1 text-xs bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
-                      {member.stats.confirmedCloseRate.thisMonth.toFixed(0)}%
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Activity Today */}
-          <Collapsible className="pt-4 border-t">
-            <CollapsibleTrigger className="flex items-center justify-between w-full hover:text-primary transition-colors">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                <h4 className="text-sm font-semibold">Activity Today</h4>
-                <Badge variant="outline">{member.activityToday.length}</Badge>
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-4">
-              {member.activityToday.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No activity recorded today</p>
-              ) : (
-                <div className="space-y-2">
-                  {member.activityToday.map(activity => (
-                    <div key={activity.id} className="p-3 rounded-lg bg-muted/50 text-sm">
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge variant="outline" className="text-xs">{activity.action_type}</Badge>
-                        <span className="text-xs text-muted-foreground">{format(new Date(activity.created_at), 'h:mm a')}</span>
-                      </div>
-                      <p className="text-muted-foreground">{activity.note}</p>
+            {/* Performance Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Calendar className="h-4 w-4 text-primary" />
                     </div>
-                  ))}
+                    <span className="text-sm font-medium text-muted-foreground">Booked</span>
+                  </div>
+                  <div className="text-3xl font-bold text-primary">{stats.booked}</div>
+                </CardContent>
+              </Card>
+
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">Showed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.showed}</div>
+                    {stats.booked > 0 && (
+                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
+                        {showRate.toFixed(0)}%
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Confirmed Calls Performance */}
+            {stats.confirmed > 0 && (
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">Confirmed Calls Performance</h4>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-2">Confirmed</div>
+                      <div className="text-2xl font-bold text-primary">{stats.confirmed}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-2">Showed</div>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.confirmedShowed}</div>
+                      <Badge className="mt-1 text-xs bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
+                        {stats.confirmedShowRate.toFixed(0)}%
+                      </Badge>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-2">Closed</div>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.confirmedClosed}</div>
+                      <Badge className="mt-1 text-xs bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
+                        {stats.confirmedCloseRate.toFixed(0)}%
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Accountability Section */}
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                Accountability
+              </h4>
+
+              {/* Overdue Tasks */}
+              {member.accountability.overdueTasks.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      <span className="font-semibold text-destructive">Overdue Tasks</span>
+                    </div>
+                    <Badge variant="destructive">{member.accountability.overdueTasks.length}</Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="space-y-2">
+                      {member.accountability.overdueTasks.map(task => (
+                        <div key={task.id} className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant="destructive" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                            <div className="flex items-center gap-1 text-xs text-destructive">
+                              <Clock className="h-3 w-3" />
+                              {task.follow_up_date && format(new Date(task.follow_up_date), 'MMM d')}
+                              {task.reschedule_date && format(new Date(task.reschedule_date), 'MMM d')}
+                            </div>
+                          </div>
+                          <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Due Today */}
+              {member.accountability.dueTodayTasks.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                      <span className="font-semibold text-yellow-600 dark:text-yellow-400">Due Today</span>
+                    </div>
+                    <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">{member.accountability.dueTodayTasks.length}</Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="space-y-2">
+                      {member.accountability.dueTodayTasks.map(task => (
+                        <div key={task.id} className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                            <span className="text-xs text-muted-foreground">Today</span>
+                          </div>
+                          <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Stale Leads */}
+              {member.accountability.staleLeads.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                      <span className="font-semibold text-orange-600 dark:text-orange-400">Stale Leads (48h+)</span>
+                    </div>
+                    <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30">{member.accountability.staleLeads.length}</Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="space-y-2">
+                      {member.accountability.staleLeads.map(lead => (
+                        <div key={lead.id} className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant="outline" className="text-xs">{lead.status}</Badge>
+                            <span className="text-xs text-orange-600 dark:text-orange-400">
+                              {lead.hoursSinceActivity < 72 ? `${lead.hoursSinceActivity}h ago` : `${Math.floor(lead.hoursSinceActivity / 24)}d ago`}
+                            </span>
+                          </div>
+                          <p className="font-medium">{lead.lead_name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Appt: {format(new Date(lead.start_at_utc), 'MMM d, h:mm a')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Missing Notes */}
+              {member.accountability.missingNotes.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-muted/50 border hover:bg-muted transition-colors">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-semibold">Missing Notes</span>
+                    </div>
+                    <Badge variant="outline">{member.accountability.missingNotes.length}</Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="space-y-2">
+                      {member.accountability.missingNotes.map(apt => (
+                        <div key={apt.id} className="p-3 rounded-lg bg-muted/30">
+                          <p className="font-medium">{apt.lead_name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Appt: {format(new Date(apt.start_at_utc), 'MMM d, h:mm a')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* All Clear */}
+              {totalIssues === 0 && (
+                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400 mx-auto mb-2" />
+                  <p className="font-medium text-green-600 dark:text-green-400">All caught up! 🎉</p>
                 </div>
               )}
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Accountability Section */}
-          <div className="pt-4 border-t space-y-4">
-            <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Accountability
-            </h4>
-
-            {/* Overdue Tasks */}
-            {member.accountability.overdueTasks.length > 0 && (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                    <span className="text-sm font-semibold text-destructive">Overdue Tasks</span>
-                  </div>
-                  <Badge variant="destructive">{member.accountability.overdueTasks.length}</Badge>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <div className="space-y-2">
-                    {member.accountability.overdueTasks.map(task => (
-                      <div key={task.id} className="p-3 rounded-lg bg-destructive/5 border border-destructive/10 text-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant="destructive" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
-                          <div className="flex items-center gap-1 text-xs text-destructive">
-                            <Clock className="h-3 w-3" />
-                            {task.follow_up_date && format(new Date(task.follow_up_date), 'MMM d')}
-                            {task.reschedule_date && format(new Date(task.reschedule_date), 'MMM d')}
-                          </div>
-                        </div>
-                        <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Due Today Tasks */}
-            {member.accountability.dueTodayTasks.length > 0 && (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                    <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">Due Today</span>
-                  </div>
-                  <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">{member.accountability.dueTodayTasks.length}</Badge>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <div className="space-y-2">
-                    {member.accountability.dueTodayTasks.map(task => (
-                      <div key={task.id} className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10 text-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            Today
-                          </div>
-                        </div>
-                        <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Stale Leads */}
-            {member.accountability.staleLeads.length > 0 && (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                    <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">Stale Leads (48h+)</span>
-                  </div>
-                  <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30">{member.accountability.staleLeads.length}</Badge>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <div className="space-y-2">
-                    {member.accountability.staleLeads.map(lead => (
-                      <div key={lead.id} className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/10 text-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant="outline" className="text-xs">{lead.status}</Badge>
-                          <span className="text-xs text-orange-600 dark:text-orange-400">
-                            {lead.hoursSinceActivity < 72 ? `${lead.hoursSinceActivity}h ago` : `${Math.floor(lead.hoursSinceActivity / 24)}d ago`}
-                          </span>
-                        </div>
-                        <p className="font-medium">{lead.lead_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Appt: {format(new Date(lead.start_at_utc), 'MMM d, h:mm a')}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Missing Notes */}
-            {member.accountability.missingNotes.length > 0 && (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/50 border hover:bg-muted transition-colors">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold">Missing Notes</span>
-                  </div>
-                  <Badge variant="outline">{member.accountability.missingNotes.length}</Badge>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <div className="space-y-2">
-                    {member.accountability.missingNotes.map(apt => (
-                      <div key={apt.id} className="p-3 rounded-lg bg-muted/30 text-sm">
-                        <p className="font-medium">{apt.lead_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Appt: {format(new Date(apt.start_at_utc), 'MMM d, h:mm a')}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* All Clear */}
-            {member.accountability.overdueTasks.length === 0 && 
-             member.accountability.dueTodayTasks.length === 0 && 
-             member.accountability.staleLeads.length === 0 && 
-             member.accountability.missingNotes.length === 0 && (
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">All caught up! 🎉</p>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </Card>
     );
   };
 
   const renderCloserCard = (member: TeamMemberCloserStats) => {
-    const renderTimeBlock = (label: string, stats: { taken: number; closed: number; closeRate: number }) => (
-      <div className="space-y-4">
-        <h4 className="text-sm font-semibold text-muted-foreground">{label}</h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Calls Taken Box */}
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-            <CardContent className="p-4 relative">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <PhoneCall className="h-4 w-4 text-primary" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">Calls Taken</span>
-              </div>
-              <div className="text-3xl font-bold text-primary">{stats.taken}</div>
-            </CardContent>
-          </Card>
-
-          {/* Closed Box */}
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
-            <CardContent className="p-4 relative">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-green-500/10">
-                  <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">Closed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.closed}</div>
-                {stats.taken > 0 && (
-                  <Badge className="bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
-                    {stats.closeRate.toFixed(0)}%
-                  </Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+    const isExpanded = expandedMembers.has(member.id);
+    const timeFilter = memberTimeFilters[member.id] || 'today';
+    const stats = getCloserStatsForPeriod(member, timeFilter);
+    const totalIssues = getTotalIssues(member.accountability);
 
     return (
-      <Card key={member.id} className="p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Avatar className="h-12 w-12">
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {member.name.split(' ').map(n => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="font-semibold text-lg">{member.name}</h3>
-            <p className="text-sm text-muted-foreground">Closer</p>
+      <Card key={member.id}>
+        {/* Header - Always Visible */}
+        <div 
+          onClick={() => toggleMember(member.id)}
+          className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                {member.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold">{member.name}</h3>
+              <p className="text-sm text-muted-foreground">Closer</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {member.accountability.overdueTasks.length > 0 && (
+              <Badge variant="destructive">
+                {member.accountability.overdueTasks.length} overdue
+              </Badge>
+            )}
+            {member.accountability.dueTodayTasks.length > 0 && (
+              <Badge variant="warning">
+                {member.accountability.dueTodayTasks.length} due
+              </Badge>
+            )}
+            {totalIssues === 0 && (
+              <Badge variant="success">✅ All clear</Badge>
+            )}
+            <ChevronDown 
+              className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+            />
           </div>
         </div>
 
-        <div className="space-y-6">
-          {renderTimeBlock("All Time", {
-            taken: member.stats.taken.total,
-            closed: member.stats.closed.total,
-            closeRate: member.stats.closeRate.total
-          })}
-          {renderTimeBlock("This Month", {
-            taken: member.stats.taken.thisMonth,
-            closed: member.stats.closed.thisMonth,
-            closeRate: member.stats.closeRate.thisMonth
-          })}
-          {renderTimeBlock("This Week", {
-            taken: member.stats.taken.thisWeek,
-            closed: member.stats.closed.thisWeek,
-            closeRate: member.stats.closeRate.thisWeek
-          })}
-          {renderTimeBlock("Today", {
-            taken: member.stats.taken.today,
-            closed: member.stats.closed.today,
-            closeRate: member.stats.closeRate.today
-          })}
+        {/* Expanded Content */}
+        {isExpanded && (
+          <div className="p-4 pt-0 space-y-6">
+            {/* Time Period Toggle */}
+            <Tabs 
+              value={timeFilter} 
+              onValueChange={(value) => setMemberTimeFilters(prev => ({ 
+                ...prev, 
+                [member.id]: value as 'today' | 'week' | 'month' | 'total' 
+              }))}
+            >
+              <TabsList className="grid grid-cols-4 w-full">
+                <TabsTrigger value="today">Today</TabsTrigger>
+                <TabsTrigger value="week">Week</TabsTrigger>
+                <TabsTrigger value="month">Month</TabsTrigger>
+                <TabsTrigger value="total">All Time</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-          {/* Activity Today */}
-          <Collapsible className="pt-4 border-t">
-            <CollapsibleTrigger className="flex items-center justify-between w-full hover:text-primary transition-colors">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                <h4 className="text-sm font-semibold">Activity Today</h4>
-                <Badge variant="outline">{member.activityToday.length}</Badge>
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-4">
-              {member.activityToday.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No activity recorded today</p>
-              ) : (
-                <div className="space-y-2">
-                  {member.activityToday.map(activity => (
-                    <div key={activity.id} className="p-3 rounded-lg bg-muted/50 text-sm">
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge variant="outline" className="text-xs">{activity.action_type}</Badge>
-                        <span className="text-xs text-muted-foreground">{format(new Date(activity.created_at), 'h:mm a')}</span>
-                      </div>
-                      <p className="text-muted-foreground">{activity.note}</p>
+            {/* Performance Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <PhoneCall className="h-4 w-4 text-primary" />
                     </div>
-                  ))}
+                    <span className="text-sm font-medium text-muted-foreground">Calls Taken</span>
+                  </div>
+                  <div className="text-3xl font-bold text-primary">{stats.taken}</div>
+                </CardContent>
+              </Card>
+
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">Closed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.closed}</div>
+                    {stats.taken > 0 && (
+                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400">
+                        {stats.closeRate.toFixed(0)}%
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Accountability Section */}
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                Accountability
+              </h4>
+
+              {/* Overdue Tasks */}
+              {member.accountability.overdueTasks.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      <span className="font-semibold text-destructive">Overdue Tasks</span>
+                    </div>
+                    <Badge variant="destructive">{member.accountability.overdueTasks.length}</Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="space-y-2">
+                      {member.accountability.overdueTasks.map(task => (
+                        <div key={task.id} className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant="destructive" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                            <div className="flex items-center gap-1 text-xs text-destructive">
+                              <Clock className="h-3 w-3" />
+                              {task.follow_up_date && format(new Date(task.follow_up_date), 'MMM d')}
+                              {task.reschedule_date && format(new Date(task.reschedule_date), 'MMM d')}
+                            </div>
+                          </div>
+                          <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Due Today */}
+              {member.accountability.dueTodayTasks.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                      <span className="font-semibold text-yellow-600 dark:text-yellow-400">Due Today</span>
+                    </div>
+                    <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">{member.accountability.dueTodayTasks.length}</Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="space-y-2">
+                      {member.accountability.dueTodayTasks.map(task => (
+                        <div key={task.id} className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                            <span className="text-xs text-muted-foreground">Today</span>
+                          </div>
+                          <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Stale Leads */}
+              {member.accountability.staleLeads.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                      <span className="font-semibold text-orange-600 dark:text-orange-400">Stale Leads (48h+)</span>
+                    </div>
+                    <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30">{member.accountability.staleLeads.length}</Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="space-y-2">
+                      {member.accountability.staleLeads.map(lead => (
+                        <div key={lead.id} className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant="outline" className="text-xs">{lead.status}</Badge>
+                            <span className="text-xs text-orange-600 dark:text-orange-400">
+                              {lead.hoursSinceActivity < 72 ? `${lead.hoursSinceActivity}h ago` : `${Math.floor(lead.hoursSinceActivity / 24)}d ago`}
+                            </span>
+                          </div>
+                          <p className="font-medium">{lead.lead_name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Appt: {format(new Date(lead.start_at_utc), 'MMM d, h:mm a')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Missing Notes */}
+              {member.accountability.missingNotes.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-muted/50 border hover:bg-muted transition-colors">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-semibold">Missing Notes</span>
+                    </div>
+                    <Badge variant="outline">{member.accountability.missingNotes.length}</Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="space-y-2">
+                      {member.accountability.missingNotes.map(apt => (
+                        <div key={apt.id} className="p-3 rounded-lg bg-muted/30">
+                          <p className="font-medium">{apt.lead_name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Appt: {format(new Date(apt.start_at_utc), 'MMM d, h:mm a')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* All Clear */}
+              {totalIssues === 0 && (
+                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400 mx-auto mb-2" />
+                  <p className="font-medium text-green-600 dark:text-green-400">All caught up! 🎉</p>
                 </div>
               )}
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Accountability Section */}
-          <div className="pt-4 border-t space-y-4">
-            <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Accountability
-            </h4>
-
-            {/* Overdue Tasks */}
-            {member.accountability.overdueTasks.length > 0 && (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                    <span className="text-sm font-semibold text-destructive">Overdue Tasks</span>
-                  </div>
-                  <Badge variant="destructive">{member.accountability.overdueTasks.length}</Badge>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <div className="space-y-2">
-                    {member.accountability.overdueTasks.map(task => (
-                      <div key={task.id} className="p-3 rounded-lg bg-destructive/5 border border-destructive/10 text-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant="destructive" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
-                          <div className="flex items-center gap-1 text-xs text-destructive">
-                            <Clock className="h-3 w-3" />
-                            {task.follow_up_date && format(new Date(task.follow_up_date), 'MMM d')}
-                            {task.reschedule_date && format(new Date(task.reschedule_date), 'MMM d')}
-                          </div>
-                        </div>
-                        <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Due Today Tasks */}
-            {member.accountability.dueTodayTasks.length > 0 && (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                    <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">Due Today</span>
-                  </div>
-                  <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">{member.accountability.dueTodayTasks.length}</Badge>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <div className="space-y-2">
-                    {member.accountability.dueTodayTasks.map(task => (
-                      <div key={task.id} className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10 text-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            Today
-                          </div>
-                        </div>
-                        <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Stale Leads */}
-            {member.accountability.staleLeads.length > 0 && (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                    <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">Stale Leads (48h+)</span>
-                  </div>
-                  <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30">{member.accountability.staleLeads.length}</Badge>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <div className="space-y-2">
-                    {member.accountability.staleLeads.map(lead => (
-                      <div key={lead.id} className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/10 text-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant="outline" className="text-xs">{lead.status}</Badge>
-                          <span className="text-xs text-orange-600 dark:text-orange-400">
-                            {lead.hoursSinceActivity < 72 ? `${lead.hoursSinceActivity}h ago` : `${Math.floor(lead.hoursSinceActivity / 24)}d ago`}
-                          </span>
-                        </div>
-                        <p className="font-medium">{lead.lead_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Appt: {format(new Date(lead.start_at_utc), 'MMM d, h:mm a')}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Missing Notes */}
-            {member.accountability.missingNotes.length > 0 && (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/50 border hover:bg-muted transition-colors">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold">Missing Notes</span>
-                  </div>
-                  <Badge variant="outline">{member.accountability.missingNotes.length}</Badge>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <div className="space-y-2">
-                    {member.accountability.missingNotes.map(apt => (
-                      <div key={apt.id} className="p-3 rounded-lg bg-muted/30 text-sm">
-                        <p className="font-medium">{apt.lead_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Appt: {format(new Date(apt.start_at_utc), 'MMM d, h:mm a')}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* All Clear */}
-            {member.accountability.overdueTasks.length === 0 && 
-             member.accountability.dueTodayTasks.length === 0 && 
-             member.accountability.staleLeads.length === 0 && 
-             member.accountability.missingNotes.length === 0 && (
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">All caught up! 🎉</p>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </Card>
     );
   };
