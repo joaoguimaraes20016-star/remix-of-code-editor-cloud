@@ -5,9 +5,12 @@ import { MetricCard } from "@/components/MetricCard";
 import { Leaderboard } from "@/components/Leaderboard";
 import { ActivityTracker } from "./ActivityTracker";
 import { EODDashboard } from "./EODDashboard";
+import { MonthlyCommissionReport } from "./MonthlyCommissionReport";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, AlertCircle, TrendingUp, DollarSign, Users, RefreshCw } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
+import { CalendarClock, AlertCircle, TrendingUp, DollarSign, Users, RefreshCw, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AdminOverviewProps {
@@ -248,7 +251,7 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Task Summary Cards */}
+      {/* Always Visible: Action Items */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className={taskSummary.overdue > 0 ? "border-destructive" : ""}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -298,66 +301,119 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
         </Card>
       </div>
 
-      {/* Performance Metrics */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-        <MetricCard
-          title="Close Rate"
-          value={`${metrics.closeRate.toFixed(1)}%`}
-          icon={TrendingUp}
-          trend={metrics.closeRate > 20 ? "up" : "down"}
-        />
-        <MetricCard
-          title="Show Rate"
-          value={`${metrics.showRate.toFixed(1)}%`}
-          icon={Users}
-          trend={metrics.showRate > 70 ? "up" : "down"}
-        />
-        <MetricCard
-          title="Total Revenue"
-          value={`$${metrics.totalRevenue.toLocaleString()}`}
-          icon={DollarSign}
-        />
-        <MetricCard
-          title="Commissions"
-          value={`$${metrics.totalCommissions.toLocaleString()}`}
-          icon={DollarSign}
-        />
-        <MetricCard
-          title="Active Deals"
-          value={metrics.activeDeals.toString()}
-          icon={Users}
-        />
-        <MetricCard
-          title="Total MRR"
-          value={`$${metrics.totalMRR.toLocaleString()}`}
-          icon={RefreshCw}
-        />
-      </div>
+      {/* Collapsible: Performance Dashboard */}
+      <Collapsible defaultOpen>
+        <Card>
+          <CardHeader>
+            <CollapsibleTrigger className="flex items-center justify-between w-full group">
+              <CardTitle className="flex items-center gap-2">
+                📊 Performance Dashboard
+              </CardTitle>
+              <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-6">
+              {/* Quick Metrics */}
+              <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+                <MetricCard
+                  title="Close Rate"
+                  value={`${metrics.closeRate.toFixed(1)}%`}
+                  icon={TrendingUp}
+                  trend={metrics.closeRate > 20 ? "up" : "down"}
+                />
+                <MetricCard
+                  title="Show Rate"
+                  value={`${metrics.showRate.toFixed(1)}%`}
+                  icon={Users}
+                  trend={metrics.showRate > 70 ? "up" : "down"}
+                />
+                <MetricCard
+                  title="Total Revenue"
+                  value={`$${metrics.totalRevenue.toLocaleString()}`}
+                  icon={DollarSign}
+                />
+                <MetricCard
+                  title="Commissions"
+                  value={`$${metrics.totalCommissions.toLocaleString()}`}
+                  icon={DollarSign}
+                />
+                <MetricCard
+                  title="Active Deals"
+                  value={metrics.activeDeals.toString()}
+                  icon={Users}
+                />
+                <MetricCard
+                  title="Total MRR"
+                  value={`$${metrics.totalMRR.toLocaleString()}`}
+                  icon={RefreshCw}
+                />
+              </div>
 
-      {/* EOD Dashboard */}
-      <EODDashboard 
-        teamId={teamId}
-        userRole="admin"
-        currentUserId={user?.id || ''}
-        currentUserName={currentUserName}
-      />
+              <Separator />
 
-      {/* Activity Tracking */}
-      <ActivityTracker teamId={teamId} />
+              {/* Daily Performance */}
+              <EODDashboard 
+                teamId={teamId}
+                userRole="admin"
+                currentUserId={user?.id || ''}
+                currentUserName={currentUserName}
+              />
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
-      {/* Leaderboards */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Leaderboard
-          title="Top Setters (This Month)"
-          entries={topSetters}
-          type="setter"
-        />
-        <Leaderboard
-          title="Top Closers (This Month)"
-          entries={topClosers}
-          type="closer"
-        />
-      </div>
+      {/* Collapsible: Team Performance */}
+      <Collapsible defaultOpen>
+        <Card>
+          <CardHeader>
+            <CollapsibleTrigger className="flex items-center justify-between w-full group">
+              <CardTitle className="flex items-center gap-2">
+                📈 Team Performance
+              </CardTitle>
+              <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-6">
+              <ActivityTracker teamId={teamId} />
+              <Separator />
+              <div className="grid gap-6 md:grid-cols-2">
+                <Leaderboard
+                  title="Top Setters (This Month)"
+                  entries={topSetters}
+                  type="setter"
+                />
+                <Leaderboard
+                  title="Top Closers (This Month)"
+                  entries={topClosers}
+                  type="closer"
+                />
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Collapsible: Monthly Commissions (default collapsed) */}
+      <Collapsible defaultOpen={false}>
+        <Card>
+          <CardHeader>
+            <CollapsibleTrigger className="flex items-center justify-between w-full group">
+              <CardTitle className="flex items-center gap-2">
+                💰 Monthly Commission Report
+              </CardTitle>
+              <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              <MonthlyCommissionReport teamId={teamId} />
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 }

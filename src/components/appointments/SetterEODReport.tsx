@@ -13,16 +13,14 @@ interface SetterEODReportProps {
   userId: string;
   userName: string;
   date: Date;
-  compact?: boolean;
 }
 
-export function SetterEODReport({ teamId, userId, userName, date, compact = false }: SetterEODReportProps) {
+export function SetterEODReport({ teamId, userId, userName, date }: SetterEODReportProps) {
   const [loading, setLoading] = useState(true);
   const [appointmentsBooked, setAppointmentsBooked] = useState<any[]>([]);
   const [confirmations, setConfirmations] = useState<any[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<any[]>([]);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -140,118 +138,130 @@ export function SetterEODReport({ teamId, userId, userName, date, compact = fals
   const activityStatus = getActivityStatus();
 
   return (
-    <Card className={cn("transition-all duration-300", compact && "hover:shadow-xl")}>
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={cn("h-3 w-3 rounded-full animate-pulse", activityStatus.color)} />
-            <CardTitle className="text-lg">{userName}</CardTitle>
-            <Badge variant="outline">{activityStatus.text}</Badge>
+          <div>
+            <CardTitle className="text-xl font-bold">{userName}</CardTitle>
+            <p className="text-sm text-muted-foreground">{format(date, 'EEEE, MMMM d, yyyy')}</p>
           </div>
-          <div className="flex items-center gap-2">
-            {lastActivity && (
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(lastActivity, { addSuffix: true })}
-              </span>
-            )}
-            {!compact && (
-              <Button size="sm" variant="outline" onClick={exportToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            )}
+          <div className="flex items-center gap-3">
+            <Badge variant={activityStatus.color === 'bg-success' ? 'default' : activityStatus.color === 'bg-warning' ? 'secondary' : 'outline'}>
+              {activityStatus.icon} {activityStatus.text}
+            </Badge>
+            <Button size="sm" variant="outline" onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Appointments Booked */}
-        <div className="space-y-2">
-          <div 
-            className="flex items-center justify-between cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-            onClick={() => setExpandedSection(expandedSection === 'booked' ? null : 'booked')}
-          >
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-primary" />
-              <span className="font-medium">Appointments Booked</span>
-            </div>
-            <Badge variant="default" className="bg-primary">
-              {appointmentsBooked.length}
-            </Badge>
-          </div>
-          {(expandedSection === 'booked' || compact === false) && appointmentsBooked.slice(0, compact ? 3 : undefined).map(apt => (
-            <div key={apt.id} className="ml-6 p-3 bg-accent/20 rounded-lg border border-border space-y-1">
-              <div className="flex items-center justify-between">
-                <p className="font-medium">{apt.lead_name}</p>
-                <Badge variant="secondary">{apt.status}</Badge>
+      <CardContent className="space-y-6">
+        {/* Key Metrics */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <Phone className="h-5 w-5 text-primary mx-auto mb-2" />
+                <p className="text-3xl font-bold text-primary">{appointmentsBooked.length}</p>
+                <p className="text-sm text-muted-foreground">Booked</p>
               </div>
-              <p className="text-sm text-muted-foreground">{apt.lead_email}</p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                {format(new Date(apt.start_at_utc), 'MMM dd, h:mm a')}
-                {apt.event_type_name && ` • ${apt.event_type_name}`}
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-success/5 border-success/20">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <CheckCircle className="h-5 w-5 text-success mx-auto mb-2" />
+                <p className="text-3xl font-bold text-success">{confirmations.length}</p>
+                <p className="text-sm text-muted-foreground">Confirmed</p>
               </div>
-            </div>
-          ))}
-          {compact && appointmentsBooked.length > 3 && expandedSection !== 'booked' && (
-            <Button variant="ghost" size="sm" className="ml-6 w-full" onClick={() => setExpandedSection('booked')}>
-              Show all {appointmentsBooked.length} appointments
-            </Button>
-          )}
+            </CardContent>
+          </Card>
+          
+          <Card className={cn("border-destructive/20", overdueTasks.length > 0 ? "bg-destructive/5" : "bg-muted/20")}>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <AlertCircle className={cn("h-5 w-5 mx-auto mb-2", overdueTasks.length > 0 ? "text-destructive" : "text-muted-foreground")} />
+                <p className={cn("text-3xl font-bold", overdueTasks.length > 0 ? "text-destructive" : "text-muted-foreground")}>{overdueTasks.length}</p>
+                <p className="text-sm text-muted-foreground">Overdue</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Confirmations */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between p-2 rounded-lg bg-success/10">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-success" />
-              <span className="font-medium">Confirmations</span>
+        {/* Activity Timeline */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Activity Timeline</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {appointmentsBooked.length === 0 && confirmations.length === 0 && overdueTasks.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No activity for this date</p>
+              ) : (
+                <>
+                  {appointmentsBooked.map(apt => (
+                    <div key={apt.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors">
+                      <div className="text-xs text-muted-foreground min-w-[80px]">
+                        {format(new Date(apt.start_at_utc), 'h:mm a')}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-primary" />
+                          <span className="font-medium">Booked Appointment</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {apt.lead_name} • {apt.lead_email}
+                        </p>
+                        {apt.event_type_name && (
+                          <Badge variant="secondary" className="mt-1">{apt.event_type_name}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {confirmations.map(task => (
+                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors">
+                      <div className="text-xs text-muted-foreground min-w-[80px]">
+                        {format(new Date(task.completed_at), 'h:mm a')}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-success" />
+                          <span className="font-medium">Confirmed Appointment</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {task.appointment?.lead_name}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {overdueTasks.map(task => (
+                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg border border-destructive bg-destructive/5">
+                      <div className="text-xs text-destructive min-w-[80px]">
+                        Overdue
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                          <span className="font-medium text-destructive">Needs Confirmation</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {task.appointment?.lead_name}
+                        </p>
+                        <p className="text-xs text-destructive mt-1">
+                          Overdue by {formatDistanceToNow(new Date(task.appointment?.start_at_utc))}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
-            <Badge variant="success">{confirmations.length}</Badge>
-          </div>
-        </div>
-
-        {/* Overdue Tasks */}
-        {overdueTasks.length > 0 && (
-          <div className="space-y-2">
-            <div 
-              className="flex items-center justify-between cursor-pointer hover:bg-destructive/10 p-2 rounded-lg transition-colors border border-destructive"
-              onClick={() => setExpandedSection(expandedSection === 'overdue' ? null : 'overdue')}
-            >
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                <span className="font-medium text-destructive">Overdue Tasks</span>
-              </div>
-              <Badge variant="destructive">{overdueTasks.length}</Badge>
-            </div>
-            {(expandedSection === 'overdue' || !compact) && overdueTasks.map(task => (
-              <div key={task.id} className="ml-6 p-3 bg-destructive/5 rounded-lg border border-destructive space-y-1">
-                <p className="font-medium">{task.appointment?.lead_name}</p>
-                <div className="flex items-center gap-2 text-xs text-destructive">
-                  <Clock className="h-3 w-3" />
-                  Overdue by {formatDistanceToNow(new Date(task.appointment?.start_at_utc))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Summary Stats */}
-        {!compact && (
-          <div className="pt-4 border-t border-border grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-primary">{appointmentsBooked.length}</p>
-              <p className="text-xs text-muted-foreground">Booked</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-success">{confirmations.length}</p>
-              <p className="text-xs text-muted-foreground">Confirmed</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-destructive">{overdueTasks.length}</p>
-              <p className="text-xs text-muted-foreground">Overdue</p>
-            </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
       </CardContent>
     </Card>
   );
