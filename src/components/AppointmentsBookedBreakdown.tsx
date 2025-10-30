@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, UserCheck, Calendar, CalendarDays, CalendarClock, PhoneCall, CheckCircle2, TrendingUp, DollarSign, Activity, ListTodo, Clock, AlertCircle, FileText, AlertTriangle, ChevronDown } from "lucide-react";
+import { User, UserCheck, Calendar, CalendarDays, CalendarClock, PhoneCall, CheckCircle2, TrendingUp, DollarSign, Activity, ListTodo, Clock, AlertCircle, FileText, AlertTriangle, ChevronDown, UserCog } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,9 @@ import { startOfMonth, startOfWeek, startOfDay, endOfDay, format, subHours } fro
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { AssignDialog } from "./appointments/AssignDialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface DetailedStats {
   thisMonth: number;
@@ -122,6 +125,8 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
   const [loading, setLoading] = useState(true);
   const [expandedMembers, setExpandedMembers] = useState<Set<string>>(new Set());
   const [memberTimeFilters, setMemberTimeFilters] = useState<Record<string, 'today' | 'week' | 'month' | 'total'>>({});
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
 
   useEffect(() => {
     loadAppointmentStats();
@@ -634,6 +639,11 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
            accountability.missingNotes.length;
   };
 
+  const handleReassign = (appointment: any) => {
+    setSelectedAppointment(appointment);
+    setReassignDialogOpen(true);
+  };
+
   const renderSetterCard = (member: TeamMemberSetterStats) => {
     const isExpanded = expandedMembers.has(member.id);
     const timeFilter = memberTimeFilters[member.id] || 'today';
@@ -786,12 +796,25 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                       {member.accountability.overdueTasks.map(task => (
                         <div key={task.id} className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
                           <div className="flex items-center justify-between mb-1">
-                            <Badge variant="destructive" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
-                            <div className="flex items-center gap-1 text-xs text-destructive">
-                              <Clock className="h-3 w-3" />
-                              {task.follow_up_date && format(new Date(task.follow_up_date), 'MMM d')}
-                              {task.reschedule_date && format(new Date(task.reschedule_date), 'MMM d')}
+                            <div className="flex items-center gap-2">
+                              <Badge variant="destructive" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                              <div className="flex items-center gap-1 text-xs text-destructive">
+                                <Clock className="h-3 w-3" />
+                                {task.follow_up_date && format(new Date(task.follow_up_date), 'MMM d')}
+                                {task.reschedule_date && format(new Date(task.reschedule_date), 'MMM d')}
+                              </div>
                             </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReassign(task.appointments);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                           <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
                         </div>
@@ -816,8 +839,21 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                       {member.accountability.dueTodayTasks.map(task => (
                         <div key={task.id} className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
                           <div className="flex items-center justify-between mb-1">
-                            <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
-                            <span className="text-xs text-muted-foreground">Today</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                              <span className="text-xs text-muted-foreground">Today</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReassign(task.appointments);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                           <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
                         </div>
@@ -842,10 +878,23 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                       {member.accountability.staleLeads.map(lead => (
                         <div key={lead.id} className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
                           <div className="flex items-center justify-between mb-1">
-                            <Badge variant="outline" className="text-xs">{lead.status}</Badge>
-                            <span className="text-xs text-orange-600 dark:text-orange-400">
-                              {lead.hoursSinceActivity < 72 ? `${lead.hoursSinceActivity}h ago` : `${Math.floor(lead.hoursSinceActivity / 24)}d ago`}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">{lead.status}</Badge>
+                              <span className="text-xs text-orange-600 dark:text-orange-400">
+                                {lead.hoursSinceActivity < 72 ? `${lead.hoursSinceActivity}h ago` : `${Math.floor(lead.hoursSinceActivity / 24)}d ago`}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReassign(lead);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                           <p className="font-medium">{lead.lead_name}</p>
                           <p className="text-xs text-muted-foreground mt-1">
@@ -872,8 +921,21 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                     <div className="space-y-2">
                       {member.accountability.missingNotes.map(apt => (
                         <div key={apt.id} className="p-3 rounded-lg bg-muted/30">
-                          <p className="font-medium">{apt.lead_name}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium">{apt.lead_name}</p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReassign(apt);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
                             Appt: {format(new Date(apt.start_at_utc), 'MMM d, h:mm a')}
                           </p>
                         </div>
@@ -1018,12 +1080,25 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                       {member.accountability.overdueTasks.map(task => (
                         <div key={task.id} className="p-3 rounded-lg bg-destructive/5 border border-destructive/10">
                           <div className="flex items-center justify-between mb-1">
-                            <Badge variant="destructive" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
-                            <div className="flex items-center gap-1 text-xs text-destructive">
-                              <Clock className="h-3 w-3" />
-                              {task.follow_up_date && format(new Date(task.follow_up_date), 'MMM d')}
-                              {task.reschedule_date && format(new Date(task.reschedule_date), 'MMM d')}
+                            <div className="flex items-center gap-2">
+                              <Badge variant="destructive" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                              <div className="flex items-center gap-1 text-xs text-destructive">
+                                <Clock className="h-3 w-3" />
+                                {task.follow_up_date && format(new Date(task.follow_up_date), 'MMM d')}
+                                {task.reschedule_date && format(new Date(task.reschedule_date), 'MMM d')}
+                              </div>
                             </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReassign(task.appointments);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                           <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
                         </div>
@@ -1048,8 +1123,21 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                       {member.accountability.dueTodayTasks.map(task => (
                         <div key={task.id} className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
                           <div className="flex items-center justify-between mb-1">
-                            <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
-                            <span className="text-xs text-muted-foreground">Today</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                              <span className="text-xs text-muted-foreground">Today</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReassign(task.appointments);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                           <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
                         </div>
@@ -1074,10 +1162,23 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                       {member.accountability.staleLeads.map(lead => (
                         <div key={lead.id} className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
                           <div className="flex items-center justify-between mb-1">
-                            <Badge variant="outline" className="text-xs">{lead.status}</Badge>
-                            <span className="text-xs text-orange-600 dark:text-orange-400">
-                              {lead.hoursSinceActivity < 72 ? `${lead.hoursSinceActivity}h ago` : `${Math.floor(lead.hoursSinceActivity / 24)}d ago`}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">{lead.status}</Badge>
+                              <span className="text-xs text-orange-600 dark:text-orange-400">
+                                {lead.hoursSinceActivity < 72 ? `${lead.hoursSinceActivity}h ago` : `${Math.floor(lead.hoursSinceActivity / 24)}d ago`}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReassign(lead);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                           <p className="font-medium">{lead.lead_name}</p>
                           <p className="text-xs text-muted-foreground mt-1">
@@ -1104,8 +1205,21 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                     <div className="space-y-2">
                       {member.accountability.missingNotes.map(apt => (
                         <div key={apt.id} className="p-3 rounded-lg bg-muted/30">
-                          <p className="font-medium">{apt.lead_name}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium">{apt.lead_name}</p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReassign(apt);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
                             Appt: {format(new Date(apt.start_at_utc), 'MMM d, h:mm a')}
                           </p>
                         </div>
@@ -1181,6 +1295,20 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      {selectedAppointment && (
+        <AssignDialog
+          open={reassignDialogOpen}
+          onOpenChange={setReassignDialogOpen}
+          appointment={selectedAppointment}
+          teamId={teamId}
+          onSuccess={() => {
+            loadAppointmentStats();
+            loadActivityAndTasks();
+            toast.success('Appointment reassigned successfully');
+          }}
+        />
+      )}
     </Card>
   );
 }
