@@ -36,7 +36,7 @@ export function SettersView({ teamId, closerCommissionPct, setterCommissionPct }
             All Assigned
           </TabsTrigger>
           <TabsTrigger value="my-appointments">
-            My Appointments
+            {showAllInMyAppointments ? 'All Appointments' : 'My Appointments'}
           </TabsTrigger>
         </TabsList>
 
