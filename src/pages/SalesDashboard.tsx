@@ -801,9 +801,6 @@ const Index = () => {
         {/* Commission Breakdown */}
         <CommissionBreakdown sales={filteredSales} />
 
-        {/* Appointments Booked Breakdown */}
-        <AppointmentsBookedBreakdown teamId={teamId!} />
-
         {/* Leaderboards */}
         <div className="grid gap-6 md:grid-cols-2">
           <Leaderboard 
