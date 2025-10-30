@@ -19,6 +19,8 @@ import { PipelineStageManager } from "./PipelineStageManager";
 import { CloseDealDialog } from "@/components/CloseDealDialog";
 import { useTabCounts } from "@/hooks/useTabCounts";
 import { useAuth } from "@/hooks/useAuth";
+import { ByCloserView } from "./ByCloserView";
+import { BySetterView } from "./BySetterView";
 
 interface AppointmentsHubProps {
   teamId: string;
@@ -66,7 +68,7 @@ export function AppointmentsHub({
     setDealToClose(null);
     onUpdate();
   };
-  // Setter sees: Confirm Today, My Appointments, All Assigned, and Retarget
+  // Setter sees: Confirm Today, My Appointments, All Assigned, Team Pipeline, MRR Deals, and Retarget
   if (userRole === "setter") {
     return (
       <div className="space-y-6">
@@ -75,7 +77,7 @@ export function AppointmentsHub({
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Setter CRM
           </h2>
-          <p className="text-muted-foreground mt-1">Manage your daily CRM tasks and retarget leads</p>
+          <p className="text-muted-foreground mt-1">Manage your daily CRM tasks and view team deals</p>
         </div>
         
         <Tabs defaultValue="confirm" className="w-full">
@@ -90,8 +92,10 @@ export function AppointmentsHub({
                 )}
                 {counts.myTasks > 0 && <Badge className="ml-2" variant="secondary">{counts.myTasks}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Appointments</TabsTrigger>
+              <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Leads</TabsTrigger>
               <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">All Assigned</TabsTrigger>
+              <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">Team Pipeline</TabsTrigger>
+              <TabsTrigger value="mrr-deals" className="text-sm md:text-base whitespace-nowrap">MRR Deals</TabsTrigger>
               <TabsTrigger value="retarget" className="text-sm md:text-base whitespace-nowrap">
                 Retarget {counts.followUps > 0 && <Badge className="ml-2" variant="secondary">{counts.followUps}</Badge>}
               </TabsTrigger>
@@ -118,6 +122,20 @@ export function AppointmentsHub({
             />
           </TabsContent>
 
+          <TabsContent value="pipeline" className="mt-6">
+            <DealPipeline
+              teamId={teamId}
+              userRole="setter"
+              currentUserId={user?.id || ''}
+              onCloseDeal={() => {}}
+              viewFilter="all"
+            />
+          </TabsContent>
+
+          <TabsContent value="mrr-deals" className="mt-6">
+            <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
+          </TabsContent>
+
           <TabsContent value="retarget" className="mt-6">
             <RetargetTab teamId={teamId} />
           </TabsContent>
@@ -126,7 +144,7 @@ export function AppointmentsHub({
     );
   }
 
-  // Closer sees: My Deals, Deal Pipeline, and Stage Views
+  // Closer sees: My Deals, Team Pipeline, MRR Tasks, MRR Deals, and Stage Views
   if (userRole === "closer") {
     return (
       <div className="space-y-6">
@@ -141,9 +159,9 @@ export function AppointmentsHub({
         <Tabs defaultValue="mine" className="w-full">
           <div className="w-full overflow-x-auto">
             <TabsList className="w-max min-w-full h-12">
-              <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Appointments</TabsTrigger>
-              <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">All Appointments</TabsTrigger>
-              <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">Deal Pipeline</TabsTrigger>
+              <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Deals</TabsTrigger>
+              <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">My Pipeline</TabsTrigger>
+              <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">Team Pipeline</TabsTrigger>
               <TabsTrigger value="mrr-tasks" className="text-sm md:text-base whitespace-nowrap">
                 MRR Tasks {counts.mrrDue > 0 && <Badge className="ml-2" variant="secondary">{counts.mrrDue}</Badge>}
               </TabsTrigger>
@@ -160,13 +178,23 @@ export function AppointmentsHub({
             />
           </TabsContent>
 
-          <TabsContent value="all" className="mt-6">
-            <AllNewAppointments
+          <TabsContent value="pipeline" className="mt-6">
+            <DealPipeline
               teamId={teamId}
-              closerCommissionPct={closerCommissionPct}
-              setterCommissionPct={setterCommissionPct}
               userRole={userRole}
-              currentUserId={user?.id}
+              currentUserId={user?.id || ''}
+              onCloseDeal={handleCloseDeal}
+              viewFilter="mine"
+            />
+          </TabsContent>
+
+          <TabsContent value="all" className="mt-6">
+            <DealPipeline
+              teamId={teamId}
+              userRole={userRole}
+              currentUserId={user?.id || ''}
+              onCloseDeal={handleCloseDeal}
+              viewFilter="all"
             />
           </TabsContent>
 
@@ -176,15 +204,6 @@ export function AppointmentsHub({
 
           <TabsContent value="mrr-deals" className="mt-6">
             <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
-          </TabsContent>
-
-          <TabsContent value="pipeline" className="mt-6">
-            <DealPipeline
-              teamId={teamId}
-              userRole={userRole}
-              currentUserId={user?.id || ''}
-              onCloseDeal={handleCloseDeal}
-            />
           </TabsContent>
 
           <TabsContent value="stages" className="mt-6">
@@ -228,7 +247,7 @@ export function AppointmentsHub({
     );
   }
 
-  // Admin/Offer Owner sees: Confirm Today, Unassigned, All Assigned, Pipeline, Stages, and Retarget
+  // Admin/Offer Owner sees: Overview, Unassigned, All Assigned, Pipeline, By Closer, By Setter, Tasks, MRR, Stages, and Retarget
   return (
     <div className="space-y-6">
       <InitializeDefaultStages teamId={teamId} />
@@ -257,6 +276,8 @@ export function AppointmentsHub({
             <TabsTrigger value="unassigned" className="text-xs md:text-sm whitespace-nowrap">Unassigned</TabsTrigger>
             <TabsTrigger value="assigned" className="text-xs md:text-sm whitespace-nowrap">All Assigned</TabsTrigger>
             <TabsTrigger value="pipeline" className="text-xs md:text-sm whitespace-nowrap">Pipeline</TabsTrigger>
+            <TabsTrigger value="by-closer" className="text-xs md:text-sm whitespace-nowrap">By Closer</TabsTrigger>
+            <TabsTrigger value="by-setter" className="text-xs md:text-sm whitespace-nowrap">By Setter</TabsTrigger>
             <TabsTrigger value="tasks" className="text-xs md:text-sm whitespace-nowrap">
               Tasks 
               {counts.overdue > 0 && (
@@ -320,6 +341,14 @@ export function AppointmentsHub({
             onCloseDeal={handleCloseDeal}
             viewFilter="all"
           />
+        </TabsContent>
+
+        <TabsContent value="by-closer" className="mt-6">
+          <ByCloserView teamId={teamId} />
+        </TabsContent>
+
+        <TabsContent value="by-setter" className="mt-6">
+          <BySetterView teamId={teamId} />
         </TabsContent>
 
         <TabsContent value="stages" className="mt-6">
