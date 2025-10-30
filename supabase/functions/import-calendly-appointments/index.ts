@@ -206,19 +206,18 @@ Deno.serve(async (req) => {
     let skippedCount = 0;
     const appointmentsToInsert: any[] = [];
 
-    // Fetch all closers for this team (same logic as webhook)
-    const { data: closerMembers } = await supabaseClient
+    // Fetch all team members for closer matching (any role can be a meeting host)
+    const { data: allTeamMembers } = await supabaseClient
       .from('team_members')
       .select('user_id')
-      .eq('team_id', teamId)
-      .eq('role', 'closer');
+      .eq('team_id', teamId);
 
-    const closerIds = closerMembers?.map(m => m.user_id) || [];
+    const allMemberIds = allTeamMembers?.map(m => m.user_id) || [];
     
     const { data: closers } = await supabaseClient
       .from('profiles')
       .select('id, email, full_name')
-      .in('id', closerIds);
+      .in('id', allMemberIds);
 
     // Fetch all team members with booking codes (for setter auto-assignment)
     const { data: teamMembers } = await supabaseClient
