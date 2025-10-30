@@ -315,73 +315,53 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
   const renderSetterCard = (member: TeamMemberSetterStats) => {
     const renderTimeBlock = (label: string, stats: { 
       booked: number; 
-      confirmed: number; 
       showed: number; 
-      confirmRate: number; 
-      showRate: number;
-    }) => (
-      <div className="space-y-4">
-        <h4 className="text-sm font-semibold text-muted-foreground">{label}</h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Booked Box */}
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-            <CardContent className="p-4 relative">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Calendar className="h-4 w-4 text-primary" />
+    }) => {
+      const showRate = stats.booked > 0 ? (stats.showed / stats.booked) * 100 : 0;
+      
+      return (
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold text-muted-foreground">{label}</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Booked Box */}
+            <Card className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+              <CardContent className="p-4 relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Calendar className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Booked</span>
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Booked</span>
-              </div>
-              <div className="text-3xl font-bold text-primary">{stats.booked}</div>
-            </CardContent>
-          </Card>
+                <div className="text-3xl font-bold text-primary">{stats.booked}</div>
+              </CardContent>
+            </Card>
 
-          {/* Confirmed Box */}
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent" />
-            <CardContent className="p-4 relative">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                  <PhoneCall className="h-4 w-4 text-yellow-700 dark:text-yellow-500" />
+            {/* Showed Up Box */}
+            <Card className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
+              <CardContent className="p-4 relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                    <UserCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Showed Up</span>
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Confirmed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-500">{stats.confirmed}</div>
-                {stats.booked > 0 && (
-                  <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-500 dark:border-yellow-700">
-                    {stats.confirmRate.toFixed(0)}%
-                  </Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Showed Up Box */}
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
-            <CardContent className="p-4 relative">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                  <UserCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
+                <div className="flex items-center gap-2">
+                  <div className="text-3xl font-bold text-green-700 dark:text-green-500">{stats.showed}</div>
+                  {stats.booked > 0 && (
+                    <Badge className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                      {showRate.toFixed(0)}%
+                    </Badge>
+                  )}
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Showed Up</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-3xl font-bold text-green-700 dark:text-green-500">{stats.showed}</div>
-                {stats.confirmed > 0 && (
-                  <Badge className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
-                    {stats.showRate.toFixed(0)}%
-                  </Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
-    );
+      );
+    };
 
     return (
       <Card key={member.id} className="p-6">
@@ -400,59 +380,20 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
         <div className="space-y-6">
           {renderTimeBlock("All Time", {
             booked: member.stats.booked.total,
-            confirmed: member.stats.confirmed.total,
-            showed: member.stats.showed.total,
-            confirmRate: member.stats.confirmRate.total,
-            showRate: member.stats.showRate.total
+            showed: member.stats.showed.total
           })}
           {renderTimeBlock("This Month", {
             booked: member.stats.booked.thisMonth,
-            confirmed: member.stats.confirmed.thisMonth,
-            showed: member.stats.showed.thisMonth,
-            confirmRate: member.stats.confirmRate.thisMonth,
-            showRate: member.stats.showRate.thisMonth
+            showed: member.stats.showed.thisMonth
           })}
           {renderTimeBlock("This Week", {
             booked: member.stats.booked.thisWeek,
-            confirmed: member.stats.confirmed.thisWeek,
-            showed: member.stats.showed.thisWeek,
-            confirmRate: member.stats.confirmRate.thisWeek,
-            showRate: member.stats.showRate.thisWeek
+            showed: member.stats.showed.thisWeek
           })}
           {renderTimeBlock("Today", {
             booked: member.stats.booked.today,
-            confirmed: member.stats.confirmed.today,
-            showed: member.stats.showed.today,
-            confirmRate: member.stats.confirmRate.today,
-            showRate: member.stats.showRate.today
+            showed: member.stats.showed.today
           })}
-
-          {/* Confirmed Calls Performance Section */}
-          <div className="pt-4 border-t">
-            <h4 className="text-sm font-semibold text-primary mb-3">⭐ Confirmed Calls Performance (This Month)</h4>
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Confirmed</div>
-                  <div className="text-2xl font-bold">{member.stats.confirmed.thisMonth}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Showed Up</div>
-                  <div className="text-2xl font-bold">{member.stats.confirmedShowed.thisMonth}</div>
-                  <Badge variant="outline" className="mt-1 text-xs">
-                    {member.stats.confirmedShowRate.thisMonth.toFixed(0)}%
-                  </Badge>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Closed</div>
-                  <div className="text-2xl font-bold">{member.stats.confirmedClosed.thisMonth}</div>
-                  <Badge variant="outline" className="mt-1 text-xs">
-                    {member.stats.confirmedCloseRate.thisMonth.toFixed(0)}%
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </Card>
     );
