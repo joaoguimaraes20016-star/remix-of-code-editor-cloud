@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
-import { Leaderboard } from "@/components/Leaderboard";
 import { ActivityTracker } from "./ActivityTracker";
 import { EODReportsHub } from "./EODReportsHub";
 import { MonthlyCommissionReport } from "./MonthlyCommissionReport";
@@ -37,13 +36,6 @@ interface PerformanceMetrics {
   totalMRR: number;
 }
 
-interface LeaderboardEntry {
-  name: string;
-  sales: number;
-  revenue: number;
-  commission: number;
-}
-
 export function AdminOverview({ teamId }: AdminOverviewProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -65,8 +57,6 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
     activeDeals: 0,
     totalMRR: 0,
   });
-  const [topSetters, setTopSetters] = useState<LeaderboardEntry[]>([]);
-  const [topClosers, setTopClosers] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
     loadUserProfile();
@@ -100,7 +90,6 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
       await Promise.all([
         loadTaskSummary(),
         loadPerformanceMetrics(),
-        loadLeaderboards(),
       ]);
     } finally {
       setLoading(false);
@@ -196,47 +185,6 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
     });
   };
 
-  const loadLeaderboards = async () => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const { data: closedAppointments } = await supabase
-      .from('appointments')
-      .select('closer_id, closer_name, setter_id, setter_name, cc_collected')
-      .eq('team_id', teamId)
-      .eq('status', 'CLOSED')
-      .gte('created_at', startOfMonth.toISOString());
-
-    const setterMap = new Map<string, { name: string; sales: number; commission: number; revenue: number }>();
-    const closerMap = new Map<string, { name: string; sales: number; commission: number; revenue: number }>();
-
-    closedAppointments?.forEach(apt => {
-      const revenue = Number(apt.cc_collected) || 0;
-      
-      if (apt.setter_id && apt.setter_name && revenue > 0) {
-        const existing = setterMap.get(apt.setter_id) || { name: apt.setter_name, sales: 0, commission: 0, revenue: 0 };
-        existing.sales++;
-        existing.commission += revenue * 0.05; // 5% setter commission
-        existing.revenue += revenue;
-        setterMap.set(apt.setter_id, existing);
-      }
-      
-      if (apt.closer_id && apt.closer_name && revenue > 0) {
-        const existing = closerMap.get(apt.closer_id) || { name: apt.closer_name, sales: 0, commission: 0, revenue: 0 };
-        existing.sales++;
-        existing.commission += revenue * 0.10; // 10% closer commission
-        existing.revenue += revenue;
-        closerMap.set(apt.closer_id, existing);
-      }
-    });
-
-    const setters = Array.from(setterMap.values()).sort((a, b) => b.commission - a.commission).slice(0, 5);
-    const closers = Array.from(closerMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-
-    setTopSetters(setters);
-    setTopClosers(closers);
-  };
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -321,37 +269,6 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
             <CardContent className="space-y-6">
               <ActivityTracker teamId={teamId} />
               <Separator />
-              <div className="grid gap-6 md:grid-cols-2">
-                <Leaderboard
-                  title="Top Setters (This Month)"
-                  entries={topSetters}
-                  type="setter"
-                />
-                <Leaderboard
-                  title="Top Closers (This Month)"
-                  entries={topClosers}
-                  type="closer"
-                />
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-
-      {/* Collapsible: Team Booking Metrics */}
-      <Collapsible defaultOpen={false}>
-        <Card>
-          <CardHeader>
-            <CollapsibleTrigger className="flex items-center justify-between w-full group">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Team Booking Metrics
-              </CardTitle>
-              <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent>
               <AppointmentsBookedBreakdown teamId={teamId} />
             </CardContent>
           </CollapsibleContent>

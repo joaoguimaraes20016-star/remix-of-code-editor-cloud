@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, UserCheck, Calendar, CalendarDays, CalendarClock, PhoneCall, CheckCircle2, TrendingUp, DollarSign } from "lucide-react";
+import { User, UserCheck, Calendar, CalendarDays, CalendarClock, PhoneCall, CheckCircle2, TrendingUp, DollarSign, Activity, ListTodo, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfMonth, startOfWeek, startOfDay, endOfDay } from "date-fns";
+import { startOfMonth, startOfWeek, startOfDay, endOfDay, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface DetailedStats {
   thisMonth: number;
@@ -57,16 +58,40 @@ interface CloserStats {
   };
 }
 
+interface ActivityLog {
+  id: string;
+  action_type: string;
+  note: string;
+  created_at: string;
+}
+
+interface Task {
+  id: string;
+  task_type: string;
+  status: string;
+  appointment_id: string;
+  created_at: string;
+  follow_up_date?: string;
+  reschedule_date?: string;
+  appointments?: {
+    lead_name: string;
+  };
+}
+
 interface TeamMemberSetterStats {
   name: string;
   id: string;
   stats: SetterStats;
+  activityToday: ActivityLog[];
+  dueTasks: Task[];
 }
 
 interface TeamMemberCloserStats {
   name: string;
   id: string;
   stats: CloserStats;
+  activityToday: ActivityLog[];
+  dueTasks: Task[];
 }
 
 interface AppointmentsBookedBreakdownProps {
@@ -80,7 +105,74 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
 
   useEffect(() => {
     loadAppointmentStats();
+    loadActivityAndTasks();
   }, [teamId]);
+
+  const loadActivityAndTasks = async () => {
+    try {
+      const todayStart = startOfDay(new Date());
+      const todayEnd = endOfDay(new Date());
+
+      // Load today's activities
+      const { data: activities } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .eq('team_id', teamId)
+        .gte('created_at', todayStart.toISOString())
+        .lte('created_at', todayEnd.toISOString())
+        .order('created_at', { ascending: false });
+
+      // Load pending tasks
+      const { data: tasks } = await supabase
+        .from('confirmation_tasks')
+        .select(`
+          *,
+          appointments!inner(lead_name)
+        `)
+        .eq('team_id', teamId)
+        .eq('status', 'pending')
+        .not('assigned_to', 'is', null)
+        .order('created_at', { ascending: false });
+
+      // Group activities and tasks by user
+      const activitiesByUser = new Map<string, ActivityLog[]>();
+      const tasksByUser = new Map<string, Task[]>();
+
+      activities?.forEach(activity => {
+        if (activity.actor_id) {
+          if (!activitiesByUser.has(activity.actor_id)) {
+            activitiesByUser.set(activity.actor_id, []);
+          }
+          activitiesByUser.get(activity.actor_id)!.push(activity);
+        }
+      });
+
+      tasks?.forEach(task => {
+        if (task.assigned_to) {
+          if (!tasksByUser.has(task.assigned_to)) {
+            tasksByUser.set(task.assigned_to, []);
+          }
+          tasksByUser.get(task.assigned_to)!.push(task);
+        }
+      });
+
+      // Update setter stats with activities and tasks
+      setSetterStats(prev => prev.map(setter => ({
+        ...setter,
+        activityToday: activitiesByUser.get(setter.id) || [],
+        dueTasks: tasksByUser.get(setter.id) || []
+      })));
+
+      // Update closer stats with activities and tasks
+      setCloserStats(prev => prev.map(closer => ({
+        ...closer,
+        activityToday: activitiesByUser.get(closer.id) || [],
+        dueTasks: tasksByUser.get(closer.id) || []
+      })));
+    } catch (error) {
+      console.error('Error loading activity and tasks:', error);
+    }
+  };
 
   const loadAppointmentStats = async () => {
     setLoading(true);
@@ -219,6 +311,8 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
       const settersArray = Array.from(setterMap.entries()).map(([id, data]) => ({
         id,
         name: data.name,
+        activityToday: [],
+        dueTasks: [],
         stats: {
           booked: {
             total: data.booked[0],
@@ -281,6 +375,8 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
       const closersArray = Array.from(closerMap.entries()).map(([id, data]) => ({
         id,
         name: data.name,
+        activityToday: [],
+        dueTasks: [],
         stats: {
           taken: {
             total: data.taken[0],
@@ -424,6 +520,65 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
               </CardContent>
             </Card>
           </div>
+
+          {/* Activity Today */}
+          <Collapsible className="pt-4 border-t">
+            <CollapsibleTrigger className="flex items-center justify-between w-full hover:text-primary transition-colors">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                <h4 className="text-sm font-semibold">Activity Today</h4>
+                <Badge variant="outline">{member.activityToday.length}</Badge>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4">
+              {member.activityToday.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No activity recorded today</p>
+              ) : (
+                <div className="space-y-2">
+                  {member.activityToday.map(activity => (
+                    <div key={activity.id} className="p-3 rounded-lg bg-muted/50 text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant="outline" className="text-xs">{activity.action_type}</Badge>
+                        <span className="text-xs text-muted-foreground">{format(new Date(activity.created_at), 'h:mm a')}</span>
+                      </div>
+                      <p className="text-muted-foreground">{activity.note}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Due Tasks */}
+          <Collapsible className="pt-4 border-t">
+            <CollapsibleTrigger className="flex items-center justify-between w-full hover:text-primary transition-colors">
+              <div className="flex items-center gap-2">
+                <ListTodo className="h-4 w-4" />
+                <h4 className="text-sm font-semibold">Due Tasks</h4>
+                <Badge variant="outline">{member.dueTasks.length}</Badge>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4">
+              {member.dueTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No pending tasks</p>
+              ) : (
+                <div className="space-y-2">
+                  {member.dueTasks.map(task => (
+                    <div key={task.id} className="p-3 rounded-lg bg-muted/50 text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(task.created_at), 'MMM d')}
+                        </div>
+                      </div>
+                      <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </Card>
     );
@@ -508,6 +663,65 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
             closed: member.stats.closed.today,
             closeRate: member.stats.closeRate.today
           })}
+
+          {/* Activity Today */}
+          <Collapsible className="pt-4 border-t">
+            <CollapsibleTrigger className="flex items-center justify-between w-full hover:text-primary transition-colors">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                <h4 className="text-sm font-semibold">Activity Today</h4>
+                <Badge variant="outline">{member.activityToday.length}</Badge>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4">
+              {member.activityToday.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No activity recorded today</p>
+              ) : (
+                <div className="space-y-2">
+                  {member.activityToday.map(activity => (
+                    <div key={activity.id} className="p-3 rounded-lg bg-muted/50 text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant="outline" className="text-xs">{activity.action_type}</Badge>
+                        <span className="text-xs text-muted-foreground">{format(new Date(activity.created_at), 'h:mm a')}</span>
+                      </div>
+                      <p className="text-muted-foreground">{activity.note}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Due Tasks */}
+          <Collapsible className="pt-4 border-t">
+            <CollapsibleTrigger className="flex items-center justify-between w-full hover:text-primary transition-colors">
+              <div className="flex items-center gap-2">
+                <ListTodo className="h-4 w-4" />
+                <h4 className="text-sm font-semibold">Due Tasks</h4>
+                <Badge variant="outline">{member.dueTasks.length}</Badge>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4">
+              {member.dueTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No pending tasks</p>
+              ) : (
+                <div className="space-y-2">
+                  {member.dueTasks.map(task => (
+                    <div key={task.id} className="p-3 rounded-lg bg-muted/50 text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant="outline" className="text-xs">{task.task_type.replace('_', ' ')}</Badge>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(task.created_at), 'MMM d')}
+                        </div>
+                      </div>
+                      <p className="font-medium">{task.appointments?.lead_name || 'Unknown Lead'}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </Card>
     );

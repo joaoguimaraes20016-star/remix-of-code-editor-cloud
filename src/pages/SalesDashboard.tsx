@@ -9,7 +9,6 @@ import { FixCommissionsButton } from "@/components/FixCommissionsButton";
 import { RevenueChart } from "@/components/RevenueChart";
 import { CommissionBreakdown } from "@/components/CommissionBreakdown";
 import { AppointmentsBookedBreakdown } from "@/components/AppointmentsBookedBreakdown";
-import { Leaderboard } from "@/components/Leaderboard";
 import { ImportSpreadsheet } from "@/components/ImportSpreadsheet";
 import { SyncFromUrl } from "@/components/SyncFromUrl";
 import { DateRangeFilter, DateRangePreset } from "@/components/DateRangeFilter";
@@ -596,58 +595,6 @@ const Index = () => {
   // Deals that showed but didn't close
   const showedButNotClosed = showedAppointments.length - closedAppointments.length;
 
-  // Calculate leaderboards from appointments (not sales table)
-  // Offer owners don't get commissions
-  const closerLeaderboard = Object.entries(
-    closedAppointments
-      .filter(apt => apt.closer_name && Number(apt.cc_collected || 0) > 0)
-      .reduce((acc, apt) => {
-        const closerName = apt.closer_name || 'Unknown';
-        const revenue = Number(apt.cc_collected) || 0;
-        const closerMember = teamMembers.find(m => m.id === apt.closer_id);
-        const commission = (closerMember?.role !== 'offer_owner') ? revenue * (closerCommissionPct / 100) : 0;
-        
-        if (!acc[closerName]) {
-          acc[closerName] = { sales: 0, revenue: 0, commission: 0 };
-        }
-        acc[closerName].sales += 1;
-        acc[closerName].revenue += revenue;
-        acc[closerName].commission += commission;
-        return acc;
-      }, {} as Record<string, { sales: number; revenue: number; commission: number }>)
-  )
-    .map(([name, stats]: [string, { sales: number; revenue: number; commission: number }]) => ({ 
-      name, 
-      sales: stats.sales, 
-      revenue: stats.revenue, 
-      commission: stats.commission 
-    }))
-    .sort((a, b) => b.commission - a.commission);
-
-  const setterLeaderboard = Object.entries(
-    closedAppointments
-      .filter(apt => apt.setter_name && apt.setter_id && Number(apt.cc_collected || 0) > 0)
-      .reduce((acc, apt) => {
-        const setterName = apt.setter_name || 'Unknown';
-        const revenue = Number(apt.cc_collected) || 0;
-        const commission = revenue * (setterCommissionPct / 100);
-        
-        if (!acc[setterName]) {
-          acc[setterName] = { sales: 0, revenue: 0, commission: 0 };
-        }
-        acc[setterName].sales += 1;
-        acc[setterName].revenue += revenue;
-        acc[setterName].commission += commission;
-        return acc;
-      }, {} as Record<string, { sales: number; revenue: number; commission: number }>)
-  )
-    .map(([name, stats]: [string, { sales: number; revenue: number; commission: number }]) => ({ 
-      name, 
-      sales: stats.sales, 
-      revenue: stats.revenue, 
-      commission: stats.commission 
-    }))
-    .sort((a, b) => b.commission - a.commission);
 
   // Prepare chart data (last 7 days)
   const chartData = Array.from({ length: 7 }, (_, i) => {
@@ -800,20 +747,6 @@ const Index = () => {
 
         {/* Commission Breakdown */}
         <CommissionBreakdown sales={filteredSales} />
-
-        {/* Leaderboards */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <Leaderboard 
-            title="Top Closers" 
-            entries={closerLeaderboard}
-            type="closer"
-          />
-          <Leaderboard 
-            title="Top Setters" 
-            entries={setterLeaderboard}
-            type="setter"
-          />
-        </div>
 
         {/* Chart */}
         <RevenueChart data={chartData} />
