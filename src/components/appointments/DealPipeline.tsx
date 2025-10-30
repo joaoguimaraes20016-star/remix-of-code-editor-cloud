@@ -329,61 +329,68 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           rescheduleUrl: appointment.reschedule_url,
           dealName: appointment.lead_name
         });
-      } else {
-        // Fetch reschedule URL from Calendly on-demand
-        toast.loading("Fetching reschedule link...", { id: 'fetch-reschedule' });
-        try {
-          // Get team's Calendly access token
-          const { data: teamData } = await supabase
-            .from('teams')
-            .select('calendly_access_token')
-            .eq('id', teamId)
-            .single();
+        return;
+      }
+      
+      // Check if we can fetch the reschedule URL
+      if (!appointment.calendly_invitee_uri) {
+        toast.error("This appointment was imported before reschedule links were tracked. Please re-import appointments from Calendly in Team Settings.", { duration: 5000 });
+        return;
+      }
 
-          if (!teamData?.calendly_access_token || !appointment.calendly_invitee_uri) {
-            toast.error("Cannot fetch reschedule link - Calendly not configured", { id: 'fetch-reschedule' });
-            return;
-          }
+      // Fetch reschedule URL from Calendly on-demand
+      toast.loading("Fetching reschedule link...", { id: 'fetch-reschedule' });
+      try {
+        // Get team's Calendly access token
+        const { data: teamData } = await supabase
+          .from('teams')
+          .select('calendly_access_token')
+          .eq('id', teamId)
+          .single();
 
-          // Fetch invitee details from Calendly
-          const response = await fetch(appointment.calendly_invitee_uri, {
-            headers: {
-              'Authorization': `Bearer ${teamData.calendly_access_token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to fetch from Calendly');
-          }
-
-          const data = await response.json();
-          const rescheduleUrl = data.resource?.reschedule_url;
-
-          if (!rescheduleUrl) {
-            toast.error("No reschedule link available for this appointment", { id: 'fetch-reschedule' });
-            return;
-          }
-
-          // Update appointment with fetched URL
-          await supabase
-            .from('appointments')
-            .update({ reschedule_url: rescheduleUrl })
-            .eq('id', appointmentId);
-
-          toast.success("Reschedule link fetched!", { id: 'fetch-reschedule' });
-
-          // Open dialog with fetched URL
-          setRescheduleLinkDialog({
-            open: true,
-            appointmentId,
-            rescheduleUrl,
-            dealName: appointment.lead_name
-          });
-        } catch (error) {
-          console.error("Error fetching reschedule URL:", error);
-          toast.error("Failed to fetch reschedule link", { id: 'fetch-reschedule' });
+        if (!teamData?.calendly_access_token) {
+          toast.error("Calendly not configured for this team", { id: 'fetch-reschedule' });
+          return;
         }
+
+        // Fetch invitee details from Calendly
+        const response = await fetch(appointment.calendly_invitee_uri, {
+          headers: {
+            'Authorization': `Bearer ${teamData.calendly_access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch from Calendly');
+        }
+
+        const data = await response.json();
+        const rescheduleUrl = data.resource?.reschedule_url;
+
+        if (!rescheduleUrl) {
+          toast.error("No reschedule link available for this appointment", { id: 'fetch-reschedule' });
+          return;
+        }
+
+        // Update appointment with fetched URL
+        await supabase
+          .from('appointments')
+          .update({ reschedule_url: rescheduleUrl })
+          .eq('id', appointmentId);
+
+        toast.success("Reschedule link fetched!", { id: 'fetch-reschedule' });
+
+        // Open dialog with fetched URL
+        setRescheduleLinkDialog({
+          open: true,
+          appointmentId,
+          rescheduleUrl,
+          dealName: appointment.lead_name
+        });
+      } catch (error) {
+        console.error("Error fetching reschedule URL:", error);
+        toast.error("Failed to fetch reschedule link from Calendly", { id: 'fetch-reschedule' });
       }
       return;
     }
@@ -700,61 +707,68 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           rescheduleUrl: appointment.reschedule_url,
           dealName: appointment.lead_name 
         });
-      } else {
-        // Fetch reschedule URL from Calendly on-demand
-        toast.loading("Fetching reschedule link...", { id: 'fetch-reschedule' });
-        try {
-          // Get team's Calendly access token
-          const { data: teamData } = await supabase
-            .from('teams')
-            .select('calendly_access_token')
-            .eq('id', teamId)
-            .single();
+        return;
+      }
+      
+      // Check if we can fetch the reschedule URL
+      if (!appointment.calendly_invitee_uri) {
+        toast.error("This appointment was imported before reschedule links were tracked. Please re-import appointments from Calendly in Team Settings.", { duration: 5000 });
+        return;
+      }
 
-          if (!teamData?.calendly_access_token || !appointment.calendly_invitee_uri) {
-            toast.error("Cannot fetch reschedule link - Calendly not configured", { id: 'fetch-reschedule' });
-            return;
-          }
+      // Fetch reschedule URL from Calendly on-demand
+      toast.loading("Fetching reschedule link...", { id: 'fetch-reschedule' });
+      try {
+        // Get team's Calendly access token
+        const { data: teamData } = await supabase
+          .from('teams')
+          .select('calendly_access_token')
+          .eq('id', teamId)
+          .single();
 
-          // Fetch invitee details from Calendly
-          const response = await fetch(appointment.calendly_invitee_uri, {
-            headers: {
-              'Authorization': `Bearer ${teamData.calendly_access_token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to fetch from Calendly');
-          }
-
-          const data = await response.json();
-          const rescheduleUrl = data.resource?.reschedule_url;
-
-          if (!rescheduleUrl) {
-            toast.error("No reschedule link available for this appointment", { id: 'fetch-reschedule' });
-            return;
-          }
-
-          // Update appointment with fetched URL
-          await supabase
-            .from('appointments')
-            .update({ reschedule_url: rescheduleUrl })
-            .eq('id', appointmentId);
-
-          toast.success("Reschedule link fetched!", { id: 'fetch-reschedule' });
-
-          // Open dialog with fetched URL
-          setRescheduleLinkDialog({ 
-            open: true, 
-            appointmentId, 
-            rescheduleUrl,
-            dealName: appointment.lead_name 
-          });
-        } catch (error) {
-          console.error("Error fetching reschedule URL:", error);
-          toast.error("Failed to fetch reschedule link", { id: 'fetch-reschedule' });
+        if (!teamData?.calendly_access_token) {
+          toast.error("Calendly not configured for this team", { id: 'fetch-reschedule' });
+          return;
         }
+
+        // Fetch invitee details from Calendly
+        const response = await fetch(appointment.calendly_invitee_uri, {
+          headers: {
+            'Authorization': `Bearer ${teamData.calendly_access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch from Calendly');
+        }
+
+        const data = await response.json();
+        const rescheduleUrl = data.resource?.reschedule_url;
+
+        if (!rescheduleUrl) {
+          toast.error("No reschedule link available for this appointment", { id: 'fetch-reschedule' });
+          return;
+        }
+
+        // Update appointment with fetched URL
+        await supabase
+          .from('appointments')
+          .update({ reschedule_url: rescheduleUrl })
+          .eq('id', appointmentId);
+
+        toast.success("Reschedule link fetched!", { id: 'fetch-reschedule' });
+
+        // Open dialog with fetched URL
+        setRescheduleLinkDialog({ 
+          open: true, 
+          appointmentId, 
+          rescheduleUrl,
+          dealName: appointment.lead_name 
+        });
+      } catch (error) {
+        console.error("Error fetching reschedule URL:", error);
+        toast.error("Failed to fetch reschedule link from Calendly", { id: 'fetch-reschedule' });
       }
       return;
     }
