@@ -15,7 +15,14 @@ interface DetailedStats {
 
 interface SetterStats {
   booked: DetailedStats;
+  confirmed: DetailedStats;
   showed: DetailedStats;
+  confirmRate: {
+    thisMonth: number;
+    thisWeek: number;
+    today: number;
+    total: number;
+  };
   showRate: {
     thisMonth: number;
     thisWeek: number;
@@ -77,8 +84,19 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
 
       if (error) throw error;
 
+      // Fetch all completed confirmation tasks to track confirmed appointments
+      const { data: confirmedTasks, error: tasksError } = await supabase
+        .from('confirmation_tasks')
+        .select('appointment_id, completed_at')
+        .eq('team_id', teamId)
+        .eq('status', 'confirmed');
+
+      if (tasksError) throw tasksError;
+
+      const confirmedAppointmentIds = new Set(confirmedTasks?.map(t => t.appointment_id) || []);
+
       // Process setter stats
-      const setterMap = new Map<string, { name: string; booked: number[]; showed: number[] }>();
+      const setterMap = new Map<string, { name: string; booked: number[]; confirmed: number[]; showed: number[] }>();
       
       appointments?.forEach(apt => {
         if (apt.setter_id && apt.setter_name) {
@@ -86,27 +104,33 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
             setterMap.set(apt.setter_id, {
               name: apt.setter_name,
               booked: [0, 0, 0, 0], // [total, month, week, today]
+              confirmed: [0, 0, 0, 0],
               showed: [0, 0, 0, 0]
             });
           }
           
           const data = setterMap.get(apt.setter_id)!;
           const aptDate = new Date(apt.start_at_utc);
+          const isConfirmed = confirmedAppointmentIds.has(apt.id);
           const showed = apt.status !== 'NO_SHOW' && apt.status !== 'CANCELLED';
           
           data.booked[0] += 1; // total
+          if (isConfirmed) data.confirmed[0] += 1;
           if (showed) data.showed[0] += 1;
           
           if (aptDate >= monthStart) {
             data.booked[1] += 1;
+            if (isConfirmed) data.confirmed[1] += 1;
             if (showed) data.showed[1] += 1;
           }
           if (aptDate >= weekStart) {
             data.booked[2] += 1;
+            if (isConfirmed) data.confirmed[2] += 1;
             if (showed) data.showed[2] += 1;
           }
           if (aptDate >= todayStart && aptDate <= todayEnd) {
             data.booked[3] += 1;
+            if (isConfirmed) data.confirmed[3] += 1;
             if (showed) data.showed[3] += 1;
           }
         }
@@ -161,17 +185,29 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
             thisWeek: data.booked[2],
             today: data.booked[3]
           },
+          confirmed: {
+            total: data.confirmed[0],
+            thisMonth: data.confirmed[1],
+            thisWeek: data.confirmed[2],
+            today: data.confirmed[3]
+          },
           showed: {
             total: data.showed[0],
             thisMonth: data.showed[1],
             thisWeek: data.showed[2],
             today: data.showed[3]
           },
+          confirmRate: {
+            total: data.booked[0] > 0 ? (data.confirmed[0] / data.booked[0]) * 100 : 0,
+            thisMonth: data.booked[1] > 0 ? (data.confirmed[1] / data.booked[1]) * 100 : 0,
+            thisWeek: data.booked[2] > 0 ? (data.confirmed[2] / data.booked[2]) * 100 : 0,
+            today: data.booked[3] > 0 ? (data.confirmed[3] / data.booked[3]) * 100 : 0
+          },
           showRate: {
-            total: data.booked[0] > 0 ? (data.showed[0] / data.booked[0]) * 100 : 0,
-            thisMonth: data.booked[1] > 0 ? (data.showed[1] / data.booked[1]) * 100 : 0,
-            thisWeek: data.booked[2] > 0 ? (data.showed[2] / data.booked[2]) * 100 : 0,
-            today: data.booked[3] > 0 ? (data.showed[3] / data.booked[3]) * 100 : 0
+            total: data.confirmed[0] > 0 ? (data.showed[0] / data.confirmed[0]) * 100 : 0,
+            thisMonth: data.confirmed[1] > 0 ? (data.showed[1] / data.confirmed[1]) * 100 : 0,
+            thisWeek: data.confirmed[2] > 0 ? (data.showed[2] / data.confirmed[2]) * 100 : 0,
+            today: data.confirmed[3] > 0 ? (data.showed[3] / data.confirmed[3]) * 100 : 0
           }
         }
       })).sort((a, b) => b.stats.booked.thisMonth - a.stats.booked.thisMonth);
@@ -241,40 +277,48 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
             <p className="text-xs text-muted-foreground mb-2 font-medium">All Time</p>
             <p className="text-2xl font-bold mb-1">{member.stats.booked.total}</p>
             <p className="text-xs text-muted-foreground mb-1">Booked</p>
-            <p className="text-sm text-success font-semibold">{member.stats.showed.total} confirmed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {member.stats.showRate.total.toFixed(1)}% show rate
-            </p>
+            <div className="space-y-1 pt-1 border-t border-border/50">
+              <p className="text-sm text-warning font-semibold">{member.stats.confirmed.total} confirmed</p>
+              <p className="text-xs text-muted-foreground">({member.stats.confirmRate.total.toFixed(0)}% confirm)</p>
+              <p className="text-sm text-success font-semibold">{member.stats.showed.total} showed</p>
+              <p className="text-xs text-muted-foreground">({member.stats.showRate.total.toFixed(0)}% show)</p>
+            </div>
           </div>
           
           <div className="text-center p-3 rounded bg-primary/5 border-2 border-primary/30">
             <p className="text-xs text-muted-foreground mb-2 font-medium">This Month</p>
             <p className="text-2xl font-bold text-primary mb-1">{member.stats.booked.thisMonth}</p>
             <p className="text-xs text-muted-foreground mb-1">Booked</p>
-            <p className="text-sm text-success font-semibold">{member.stats.showed.thisMonth} confirmed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {member.stats.showRate.thisMonth.toFixed(1)}% show rate
-            </p>
+            <div className="space-y-1 pt-1 border-t border-primary/30">
+              <p className="text-sm text-warning font-semibold">{member.stats.confirmed.thisMonth} confirmed</p>
+              <p className="text-xs text-muted-foreground">({member.stats.confirmRate.thisMonth.toFixed(0)}% confirm)</p>
+              <p className="text-sm text-success font-semibold">{member.stats.showed.thisMonth} showed</p>
+              <p className="text-xs text-muted-foreground">({member.stats.showRate.thisMonth.toFixed(0)}% show)</p>
+            </div>
           </div>
           
           <div className="text-center p-3 rounded bg-secondary/30">
             <p className="text-xs text-muted-foreground mb-2 font-medium">This Week</p>
             <p className="text-2xl font-bold mb-1">{member.stats.booked.thisWeek}</p>
             <p className="text-xs text-muted-foreground mb-1">Booked</p>
-            <p className="text-sm text-success font-semibold">{member.stats.showed.thisWeek} confirmed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {member.stats.showRate.thisWeek.toFixed(1)}% show rate
-            </p>
+            <div className="space-y-1 pt-1 border-t border-border/50">
+              <p className="text-sm text-warning font-semibold">{member.stats.confirmed.thisWeek} confirmed</p>
+              <p className="text-xs text-muted-foreground">({member.stats.confirmRate.thisWeek.toFixed(0)}% confirm)</p>
+              <p className="text-sm text-success font-semibold">{member.stats.showed.thisWeek} showed</p>
+              <p className="text-xs text-muted-foreground">({member.stats.showRate.thisWeek.toFixed(0)}% show)</p>
+            </div>
           </div>
           
           <div className="text-center p-3 rounded bg-secondary/30">
             <p className="text-xs text-muted-foreground mb-2 font-medium">Today</p>
             <p className="text-2xl font-bold mb-1">{member.stats.booked.today}</p>
             <p className="text-xs text-muted-foreground mb-1">Booked</p>
-            <p className="text-sm text-success font-semibold">{member.stats.showed.today} confirmed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {member.stats.booked.today > 0 ? member.stats.showRate.today.toFixed(1) : '0'}% show rate
-            </p>
+            <div className="space-y-1 pt-1 border-t border-border/50">
+              <p className="text-sm text-warning font-semibold">{member.stats.confirmed.today} confirmed</p>
+              <p className="text-xs text-muted-foreground">({member.stats.booked.today > 0 ? member.stats.confirmRate.today.toFixed(0) : '0'}% confirm)</p>
+              <p className="text-sm text-success font-semibold">{member.stats.showed.today} showed</p>
+              <p className="text-xs text-muted-foreground">({member.stats.confirmed.today > 0 ? member.stats.showRate.today.toFixed(0) : '0'}% show)</p>
+            </div>
           </div>
         </div>
       </div>
