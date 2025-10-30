@@ -280,7 +280,7 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
         if (appointment.closer_id) {
           const { data: closerTeamMember } = await supabase
             .from('team_members')
-            .select('user_id, profiles!inner(full_name)')
+            .select('user_id, role, profiles!inner(full_name)')
             .eq('user_id', appointment.closer_id)
             .eq('team_id', teamId)
             .single();
@@ -292,21 +292,24 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
               .eq('id', teamId)
               .single();
 
-            const closerCommission = schedule.mrr_amount * ((teamSettings?.closer_commission_percentage || 10) / 100);
-            
-            commissions.push({
-              team_id: teamId,
-              appointment_id: schedule.appointment_id,
-              team_member_id: appointment.closer_id,
-              team_member_name: (closerTeamMember.profiles as any)?.full_name || 'Unknown',
-              role: 'closer',
-              prospect_name: schedule.client_name,
-              prospect_email: schedule.client_email,
-              month_date,
-              mrr_amount: schedule.mrr_amount,
-              commission_percentage: teamSettings?.closer_commission_percentage || 10,
-              commission_amount: closerCommission
-            });
+            // Only add commission if closer is NOT offer owner
+            if (closerTeamMember.role !== 'offer_owner') {
+              const closerCommission = schedule.mrr_amount * ((teamSettings?.closer_commission_percentage || 10) / 100);
+              
+              commissions.push({
+                team_id: teamId,
+                appointment_id: schedule.appointment_id,
+                team_member_id: appointment.closer_id,
+                team_member_name: (closerTeamMember.profiles as any)?.full_name || 'Unknown',
+                role: 'closer',
+                prospect_name: schedule.client_name,
+                prospect_email: schedule.client_email,
+                month_date,
+                mrr_amount: schedule.mrr_amount,
+                commission_percentage: teamSettings?.closer_commission_percentage || 10,
+                commission_amount: closerCommission
+              });
+            }
           }
         }
 

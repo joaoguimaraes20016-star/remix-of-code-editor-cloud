@@ -59,7 +59,7 @@ const Index = () => {
   });
   const [setterCommissionPct, setSetterCommissionPct] = useState(5);
   const [closerCommissionPct, setCloserCommissionPct] = useState(10);
-  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string }>>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
 
   useEffect(() => {
     if (!user || !teamId) {
@@ -171,7 +171,7 @@ const Index = () => {
     try {
       const { data: members, error } = await supabase
         .from('team_members')
-        .select('user_id')
+        .select('user_id, role')
         .eq('team_id', teamId);
 
       if (error) throw error;
@@ -186,7 +186,14 @@ const Index = () => {
         if (profilesError) throw profilesError;
 
         if (profiles) {
-          setTeamMembers(profiles.map(p => ({ id: p.id, name: p.full_name || 'Unknown' })));
+          setTeamMembers(profiles.map(p => {
+            const member = members.find(m => m.user_id === p.id);
+            return { 
+              id: p.id, 
+              name: p.full_name || 'Unknown',
+              role: member?.role || 'member'
+            };
+          }));
         }
       }
     } catch (error) {
@@ -507,7 +514,10 @@ const Index = () => {
       date: apt.start_at_utc?.split('T')[0] || new Date().toISOString().split('T')[0],
       revenue: Number(apt.cc_collected) || 0,
       setterCommission: apt.setter_id ? (Number(apt.cc_collected) || 0) * (setterCommissionPct / 100) : 0,
-      commission: (Number(apt.cc_collected) || 0) * (closerCommissionPct / 100),
+      commission: (() => {
+        const closerMember = teamMembers.find(m => m.id === apt.closer_id);
+        return (closerMember?.role !== 'offer_owner') ? (Number(apt.cc_collected) || 0) * (closerCommissionPct / 100) : 0;
+      })(),
       status: apt.pipeline_stage?.toLowerCase().includes('deposit') ? 'pending' as const : 'closed' as const,
     }));
 
@@ -551,9 +561,11 @@ const Index = () => {
   const totalMRR = closedAppointments.reduce((sum, apt) => sum + (Number(apt.mrr_amount) || 0), 0);
   
   // Only calculate commissions from appointments to avoid double counting
+  // Offer owners don't get commissions
   const totalCommissions = closedAppointments.reduce((sum, apt) => {
     const cc = Number(apt.cc_collected) || 0;
-    const closerComm = cc * (closerCommissionPct / 100);
+    const closerMember = teamMembers.find(m => m.id === apt.closer_id);
+    const closerComm = (closerMember?.role !== 'offer_owner') ? cc * (closerCommissionPct / 100) : 0;
     const setterComm = apt.setter_id ? cc * (setterCommissionPct / 100) : 0;
     return sum + closerComm + setterComm;
   }, 0);
@@ -583,13 +595,15 @@ const Index = () => {
   const showedButNotClosed = showedAppointments.length - closedAppointments.length;
 
   // Calculate leaderboards from appointments (not sales table)
+  // Offer owners don't get commissions
   const closerLeaderboard = Object.entries(
     closedAppointments
       .filter(apt => apt.closer_name && Number(apt.cc_collected || 0) > 0)
       .reduce((acc, apt) => {
         const closerName = apt.closer_name || 'Unknown';
         const revenue = Number(apt.cc_collected) || 0;
-        const commission = revenue * (closerCommissionPct / 100);
+        const closerMember = teamMembers.find(m => m.id === apt.closer_id);
+        const commission = (closerMember?.role !== 'offer_owner') ? revenue * (closerCommissionPct / 100) : 0;
         
         if (!acc[closerName]) {
           acc[closerName] = { sales: 0, revenue: 0, commission: 0 };

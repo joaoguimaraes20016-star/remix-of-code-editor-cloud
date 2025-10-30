@@ -502,19 +502,28 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
       }
 
       if (appointment.closer_id && appointment.closer_name) {
-        mrrCommissions.push({
-          team_id: teamId,
-          appointment_id: appointmentId,
-          team_member_id: appointment.closer_id,
-          team_member_name: appointment.closer_name,
-          prospect_name: appointment.lead_name,
-          prospect_email: appointment.lead_email,
-          role: 'closer',
-          month_date: mrrTask.due_date,
-          mrr_amount: mrrAmount,
-          commission_amount: mrrAmount * (closerCommissionPct / 100),
-          commission_percentage: closerCommissionPct,
-        });
+        const { data: closerTeamMember } = await supabase
+          .from('team_members')
+          .select('role')
+          .eq('team_id', teamId)
+          .eq('user_id', appointment.closer_id)
+          .maybeSingle();
+
+        if (closerTeamMember?.role !== 'offer_owner') {
+          mrrCommissions.push({
+            team_id: teamId,
+            appointment_id: appointmentId,
+            team_member_id: appointment.closer_id,
+            team_member_name: appointment.closer_name,
+            prospect_name: appointment.lead_name,
+            prospect_email: appointment.lead_email,
+            role: 'closer',
+            month_date: mrrTask.due_date,
+            mrr_amount: mrrAmount,
+            commission_amount: mrrAmount * (closerCommissionPct / 100),
+            commission_percentage: closerCommissionPct,
+          });
+        }
       }
 
       // Insert commission records

@@ -137,18 +137,27 @@ export function QuickCloseDealModal({
           monthDate.setMonth(monthDate.getMonth() + i);
 
           if (appointment.closer_id) {
-            mrrRecords.push({
-              team_id: appointment.team_id,
-              team_member_id: appointment.closer_id,
-              team_member_name: appointment.closer_name || "Unknown",
-              role: "closer",
-              prospect_name: appointment.lead_name,
-              prospect_email: appointment.lead_email,
-              mrr_amount: mrr,
-              commission_percentage: closerCommissionPct,
-              commission_amount: mrr * (closerCommissionPct / 100),
-              month_date: monthDate.toISOString().split("T")[0],
-            });
+            const { data: closerTeamMember } = await supabase
+              .from('team_members')
+              .select('role')
+              .eq('team_id', appointment.team_id)
+              .eq('user_id', appointment.closer_id)
+              .maybeSingle();
+
+            if (closerTeamMember?.role !== 'offer_owner') {
+              mrrRecords.push({
+                team_id: appointment.team_id,
+                team_member_id: appointment.closer_id,
+                team_member_name: appointment.closer_name || "Unknown",
+                role: "closer",
+                prospect_name: appointment.lead_name,
+                prospect_email: appointment.lead_email,
+                mrr_amount: mrr,
+                commission_percentage: closerCommissionPct,
+                commission_amount: mrr * (closerCommissionPct / 100),
+                month_date: monthDate.toISOString().split("T")[0],
+              });
+            }
           }
 
           if (appointment.setter_id) {
