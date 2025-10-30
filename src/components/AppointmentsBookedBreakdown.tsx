@@ -325,54 +325,75 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
       confirmedCloseRate: number;
     }) => (
       <div className="space-y-3">
-        <h4 className="text-sm font-semibold">{label}</h4>
+        <h4 className="text-sm font-semibold text-muted-foreground">{label}</h4>
         
-        {/* Booking Funnel */}
-        <div className="flex items-center gap-2 text-sm bg-muted/30 p-2 rounded-lg">
-          <Calendar className="h-4 w-4" />
-          <span className="font-semibold">{stats.booked}</span>
-          <span className="text-muted-foreground text-xs">Booked</span>
-          <span className="text-muted-foreground">→</span>
-          <PhoneCall className="h-4 w-4" />
-          <span className="font-semibold">{stats.confirmed}</span>
-          <Badge variant="secondary" className="text-xs">
-            {stats.confirmRate.toFixed(0)}%
-          </Badge>
-          <span className="text-muted-foreground">→</span>
-          <UserCheck className="h-4 w-4" />
-          <span className="font-semibold">{stats.showed}</span>
-          <Badge variant="secondary" className="text-xs">
-            {stats.showRate.toFixed(0)}%
-          </Badge>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Booked Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Calendar className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Booked</span>
+              </div>
+              <div className="text-3xl font-bold text-primary">{stats.booked}</div>
+            </CardContent>
+          </Card>
+
+          {/* Confirmed Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
+                  <PhoneCall className="h-4 w-4 text-yellow-700 dark:text-yellow-500" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Confirmed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-500">{stats.confirmed}</div>
+                {stats.booked > 0 && (
+                  <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-500 dark:border-yellow-700">
+                    {stats.confirmRate.toFixed(0)}%
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Showed Up Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                  <UserCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Showed Up</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-3xl font-bold text-green-700 dark:text-green-500">{stats.showed}</div>
+                {stats.confirmed > 0 && (
+                  <Badge className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                    {stats.showRate.toFixed(0)}%
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Confirmed Calls Performance */}
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-semibold text-primary">⭐ Confirmed Calls Performance</span>
-            <span className="text-xs text-muted-foreground">(Commission Eligible)</span>
+        {/* Confirmed Calls Performance Highlight */}
+        {stats.confirmed > 0 && (
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-sm">
+            <span className="text-primary font-semibold">⭐ Confirmed Performance:</span>
+            <span className="ml-2">{stats.confirmedShowed} showed ({stats.confirmedShowRate.toFixed(0)}%)</span>
+            <span className="mx-1.5">•</span>
+            <span>{stats.confirmedClosed} closed ({stats.confirmedCloseRate.toFixed(0)}%)</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">📞 Confirmed</div>
-              <div className="text-lg font-bold">{stats.confirmed}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">✅ Showed Up</div>
-              <div className="text-lg font-bold">{stats.confirmedShowed}</div>
-              <Badge variant="outline" className="text-xs mt-1">
-                {stats.confirmedShowRate.toFixed(0)}%
-              </Badge>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">💰 Closed</div>
-              <div className="text-lg font-bold">{stats.confirmedClosed}</div>
-              <Badge variant="outline" className="text-xs mt-1">
-                {stats.confirmedCloseRate.toFixed(0)}%
-              </Badge>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     );
 
@@ -442,27 +463,44 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
 
   const renderCloserCard = (member: TeamMemberCloserStats) => {
     const renderTimeBlock = (label: string, stats: { taken: number; closed: number; closeRate: number }) => (
-      <div className="space-y-3">
-        <h4 className="text-sm font-semibold">{label}</h4>
-        <div className="flex items-center gap-4 bg-muted/30 p-3 rounded-lg">
-          <div className="flex items-center gap-2 flex-1">
-            <PhoneCall className="h-4 w-4" />
-            <div>
-              <div className="text-xs text-muted-foreground">Calls Taken</div>
-              <div className="text-xl font-bold">{stats.taken}</div>
-            </div>
-          </div>
-          <div className="text-muted-foreground">→</div>
-          <div className="flex items-center gap-2 flex-1">
-            <DollarSign className="h-4 w-4 text-green-600" />
-            <div>
-              <div className="text-xs text-muted-foreground">Closed</div>
-              <div className="text-xl font-bold">{stats.closed}</div>
-            </div>
-            <Badge variant="secondary" className="ml-2">
-              {stats.closeRate.toFixed(0)}%
-            </Badge>
-          </div>
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold text-muted-foreground">{label}</h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Calls Taken Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <PhoneCall className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Calls Taken</span>
+              </div>
+              <div className="text-3xl font-bold text-primary">{stats.taken}</div>
+            </CardContent>
+          </Card>
+
+          {/* Closed Box */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent" />
+            <CardContent className="p-4 relative">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                  <DollarSign className="h-4 w-4 text-green-700 dark:text-green-500" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Closed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-3xl font-bold text-green-700 dark:text-green-500">{stats.closed}</div>
+                {stats.taken > 0 && (
+                  <Badge className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-500 dark:border-green-700">
+                    {stats.closeRate.toFixed(0)}%
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
