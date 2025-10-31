@@ -28,7 +28,7 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
   const [reschedules, setReschedules] = useState<any[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<any[]>([]);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
-  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "custom">("week");
+  const [timePeriod, setTimePeriod] = useState<"today" | "week" | "custom">("today");
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
@@ -53,16 +53,17 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
       let startDate: Date;
       let endDate: Date;
       
-      if (timePeriod === "week") {
+      if (timePeriod === "today") {
+        startDate = new Date();
+        endDate = new Date();
+      } else if (timePeriod === "week") {
         startDate = startOfWeek(new Date(), { weekStartsOn: 0 });
         endDate = endOfWeek(new Date(), { weekStartsOn: 0 });
-      } else if (timePeriod === "month") {
-        startDate = startOfMonth(new Date());
-        endDate = endOfMonth(new Date());
       } else {
         // custom
-        startDate = customRange?.from || new Date();
-        endDate = customRange?.to || new Date();
+        if (!customRange?.from) return;
+        startDate = customRange.from;
+        endDate = customRange.to || customRange.from;
       }
       
       startDate.setHours(0, 0, 0, 0);
@@ -204,12 +205,17 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
   const activityStatus = getActivityStatus();
 
   const getPeriodLabel = () => {
-    if (timePeriod === "week") return format(startOfWeek(new Date()), 'MMM d') + " - " + format(endOfWeek(new Date()), 'MMM d, yyyy');
-    if (timePeriod === "month") return format(new Date(), 'MMMM yyyy');
-    if (customRange?.from && customRange?.to) {
-      return format(customRange.from, 'MMM d') + " - " + format(customRange.to, 'MMM d, yyyy');
+    if (timePeriod === "today") {
+      return format(new Date(), 'EEEE, MMMM d, yyyy');
+    } else if (timePeriod === "week") {
+      return `${format(startOfWeek(new Date()), 'MMM d')} - ${format(endOfWeek(new Date()), 'MMM d, yyyy')}`;
+    } else if (customRange?.from) {
+      if (customRange.to && customRange.to.getTime() !== customRange.from.getTime()) {
+        return `${format(customRange.from, 'MMM d')} - ${format(customRange.to, 'MMM d, yyyy')}`;
+      }
+      return format(customRange.from, 'MMMM d, yyyy');
     }
-    return "Select dates";
+    return 'Select dates';
   };
 
   return (
@@ -232,10 +238,10 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
         </div>
         
         <div className="flex items-center gap-2">
-          <Tabs value={timePeriod} onValueChange={(v) => setTimePeriod(v as "week" | "month" | "custom")}>
+          <Tabs value={timePeriod} onValueChange={(v) => setTimePeriod(v as "today" | "week" | "custom")}>
             <TabsList>
+              <TabsTrigger value="today">Today</TabsTrigger>
               <TabsTrigger value="week">This Week</TabsTrigger>
-              <TabsTrigger value="month">This Month</TabsTrigger>
               <TabsTrigger value="custom">Custom Date</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -279,7 +285,12 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
               <div className="text-center">
                 <Phone className="h-6 w-6 text-primary mx-auto mb-2" />
                 <p className="text-4xl font-bold text-primary">{appointmentsBooked.length}</p>
-                <p className="text-sm font-medium text-muted-foreground">Booked Today</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {timePeriod === "today" ? "Booked Today" : 
+                   timePeriod === "week" ? "Booked This Week" : 
+                   customRange?.from ? `Booked ${format(customRange.from, 'M/d/yyyy')}${customRange.to ? ` - ${format(customRange.to, 'M/d/yyyy')}` : ''}` : 
+                   'Booked'}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">From confirmations</p>
               </div>
             </CardContent>
@@ -290,7 +301,12 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
               <div className="text-center">
                 <CheckCircle className="h-6 w-6 text-success mx-auto mb-2" />
                 <p className="text-4xl font-bold text-success">{callConfirmations.length}</p>
-                <p className="text-sm font-medium text-muted-foreground">Confirmed Today</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {timePeriod === "today" ? "Confirmed Today" : 
+                   timePeriod === "week" ? "Confirmed This Week" : 
+                   customRange?.from ? `Confirmed ${format(customRange.from, 'M/d/yyyy')}${customRange.to ? ` - ${format(customRange.to, 'M/d/yyyy')}` : ''}` : 
+                   'Confirmed'}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">Call confirmations</p>
               </div>
             </CardContent>
