@@ -139,8 +139,8 @@ export function AppointmentsHub({
 
           <TabsContent value="mrr" className="mt-6">
             <div className="space-y-6">
-              <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
               <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
+              <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
             </div>
           </TabsContent>
 
@@ -207,8 +207,8 @@ export function AppointmentsHub({
 
           <TabsContent value="mrr" className="mt-6">
             <div className="space-y-6">
-              <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
               <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
+              <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
             </div>
           </TabsContent>
 
@@ -332,8 +332,8 @@ export function AppointmentsHub({
 
         <TabsContent value="mrr" className="mt-6">
           <div className="space-y-6">
-            <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
             <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
+            <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
           </div>
         </TabsContent>
 
