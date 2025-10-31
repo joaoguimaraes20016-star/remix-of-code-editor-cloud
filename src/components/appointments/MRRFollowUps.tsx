@@ -233,12 +233,37 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
 
   const reactivateSchedule = async (scheduleId: string) => {
     try {
-      const { error } = await supabase
+      // Reactivate the schedule
+      const { error: scheduleError } = await supabase
         .from('mrr_schedules')
         .update({ status: 'active' })
         .eq('id', scheduleId);
 
-      if (error) throw error;
+      if (scheduleError) throw scheduleError;
+
+      // Find any pending tasks for this schedule
+      const { data: tasks } = await supabase
+        .from('mrr_follow_up_tasks')
+        .select('*')
+        .eq('mrr_schedule_id', scheduleId)
+        .neq('status', 'confirmed')
+        .order('due_date', { ascending: true });
+
+      // If there are tasks, check if any are overdue and mark them as due
+      if (tasks && tasks.length > 0) {
+        const today = new Date().toISOString().split('T')[0];
+        const overdueTasks = tasks.filter(t => t.due_date <= today);
+        
+        if (overdueTasks.length > 0) {
+          // Mark the earliest overdue task as due
+          const { error: taskError } = await supabase
+            .from('mrr_follow_up_tasks')
+            .update({ status: 'due' })
+            .eq('id', overdueTasks[0].id);
+
+          if (taskError) throw taskError;
+        }
+      }
 
       toast.success('Schedule reactivated');
       setSelectedSchedule(null);
