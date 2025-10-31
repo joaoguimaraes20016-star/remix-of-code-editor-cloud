@@ -91,7 +91,7 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
       // Load MRR follow-up tasks completed in period
       const { data: mrr } = await supabase
         .from('mrr_follow_up_tasks')
-        .select('*, mrr_schedule:mrr_schedules(*, appointment:appointments(*))')
+        .select('*, mrr_schedule:mrr_schedules(*)')
         .eq('completed_by', userId)
         .eq('status', 'confirmed')
         .gte('completed_at', startDate.toISOString())
@@ -122,7 +122,7 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
       // Get no-shows from activity logs
       const { data: noShowLogs } = await supabase
         .from('activity_logs')
-        .select('*, appointment:appointments(*)')
+        .select('*')
         .eq('actor_id', userId)
         .eq('action_type', 'No Show')
         .gte('created_at', startDate.toISOString())

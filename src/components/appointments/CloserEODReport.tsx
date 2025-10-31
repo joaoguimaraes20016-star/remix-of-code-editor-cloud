@@ -83,7 +83,7 @@ export function CloserEODReport({ teamId, userId, userName, date }: CloserEODRep
       // Load deposits collected in period
       const { data: deposits } = await supabase
         .from('activity_logs')
-        .select('*, appointment:appointments(*)')
+        .select('*')
         .eq('actor_id', userId)
         .eq('action_type', 'Deposit Collected')
         .gte('created_at', startDate.toISOString())
@@ -111,7 +111,7 @@ export function CloserEODReport({ teamId, userId, userName, date }: CloserEODRep
       // Load MRR follow-up tasks completed in period
       const { data: mrrTasks } = await supabase
         .from('mrr_follow_up_tasks')
-        .select('*, mrr_schedule:mrr_schedules(*, appointment:appointments(*))')
+        .select('*, mrr_schedule:mrr_schedules(*)')
         .eq('completed_by', userId)
         .eq('status', 'confirmed')
         .gte('completed_at', startDate.toISOString())
