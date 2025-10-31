@@ -518,15 +518,21 @@ export function CloserEODReport({ teamId, userId, userName, date }: CloserEODRep
                   time: new Date(),
                   type: 'overdue',
                   content: (
-                    <div className="flex items-start gap-3 p-3 rounded-lg border-l-4 border-destructive bg-destructive/5">
-                      <div className="text-xs text-destructive min-w-[80px]">OVERDUE</div>
+                    <div className="flex items-start gap-3 p-4 rounded-lg border-l-4 border-destructive bg-destructive/5 border border-destructive/20">
+                      <div className="text-xs text-destructive font-bold min-w-[80px]">OVERDUE</div>
                       <Badge variant="destructive" className="shrink-0 gap-1">
                         <AlertCircle className="h-3 w-3" />
                         Overdue Follow-up
                       </Badge>
-                      <div className="flex-1">
-                        <p className="font-medium text-destructive">{task.appointment?.lead_name}</p>
+                      <div className="flex-1 space-y-1">
+                        <p className="font-semibold text-destructive text-base">{task.appointment?.lead_name}</p>
                         <p className="text-sm text-muted-foreground">{task.appointment?.lead_email}</p>
+                        {task.appointment?.lead_phone && (
+                          <p className="text-sm font-medium text-foreground flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {task.appointment?.lead_phone}
+                          </p>
+                        )}
                         <p className="text-xs text-destructive mt-1">
                           Due: {format(new Date(task.follow_up_date), 'MMM dd, yyyy')}
                         </p>

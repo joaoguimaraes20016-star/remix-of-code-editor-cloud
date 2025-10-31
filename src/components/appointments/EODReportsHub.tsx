@@ -10,13 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SetterEODReport } from "./SetterEODReport";
 import { CloserEODReport } from "./CloserEODReport";
-import { CalendarIcon, ChevronDown, Activity, AlertCircle, CheckCircle, Phone, DollarSign, TrendingUp } from "lucide-react";
+import { CalendarIcon, ChevronDown, Activity, AlertCircle, CheckCircle, Phone, DollarSign, TrendingUp, Send } from "lucide-react";
 import { format, subDays, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useTeamRole } from "@/hooks/useTeamRole";
+import { toast } from "sonner";
 
 interface TeamMemberStats {
   id: string;
   name: string;
+  email: string;
   officialRole: string;
   actualRoles: ('setter' | 'closer')[];
   activityStatus: { color: string; text: string };
@@ -37,6 +40,8 @@ export function EODReportsHub({ teamId }: EODReportsHubProps) {
   const [loading, setLoading] = useState(true);
   const [teamStats, setTeamStats] = useState<TeamMemberStats[]>([]);
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const { isAdmin } = useTeamRole(teamId);
 
   useEffect(() => {
     loadTeamStats();
@@ -70,10 +75,10 @@ export function EODReportsHub({ teamId }: EODReportsHubProps) {
 
       const userIds = members.map(m => m.user_id);
       
-      // Get profiles
+      // Get profiles with email
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, email')
         .in('id', userIds);
 
       if (!profiles) return;
@@ -107,6 +112,7 @@ export function EODReportsHub({ teamId }: EODReportsHubProps) {
         return {
           id: profile.id,
           name: profile.full_name || 'Unknown',
+          email: profile.email || '',
           officialRole,
           actualRoles,
           activityStatus: { color: 'bg-muted', text: 'View Details' },
@@ -145,6 +151,31 @@ export function EODReportsHub({ teamId }: EODReportsHubProps) {
     return 'outline';
   };
 
+  const handleSendReminder = async (memberId: string, memberName: string, memberEmail: string, overdueCount: number) => {
+    try {
+      setSendingReminder(memberId);
+      
+      const { error } = await supabase.functions.invoke('send-task-reminder', {
+        body: {
+          userId: memberId,
+          userName: memberName,
+          userEmail: memberEmail,
+          overdueCount,
+          teamId
+        }
+      });
+
+      if (error) throw error;
+      
+      toast.success(`Reminder sent to ${memberName}`);
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      toast.error('Failed to send reminder');
+    } finally {
+      setSendingReminder(null);
+    }
+  };
+
   const renderMemberCard = (member: TeamMemberStats) => {
     const isExpanded = expandedMember === member.id;
     const displayRole = member.actualRoles.length > 1 ? 'Setter & Closer' : 
@@ -175,9 +206,26 @@ export function EODReportsHub({ teamId }: EODReportsHubProps) {
                   
                   {/* Overdue Warning */}
                   {member.overdue > 0 && (
-                    <div className="flex items-center gap-2 mt-2 text-destructive font-semibold text-sm">
-                      <AlertCircle className="h-4 w-4" />
-                      <span>{member.overdue} OVERDUE TASKS</span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 text-destructive font-semibold text-sm flex-1">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{member.overdue} OVERDUE TASKS</span>
+                      </div>
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSendReminder(member.id, member.name, member.email, member.overdue);
+                          }}
+                          disabled={sendingReminder === member.id}
+                        >
+                          <Send className="h-3 w-3" />
+                          {sendingReminder === member.id ? 'Sending...' : 'Send Reminder'}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
