@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "lucide-react";
 import { NewAppointments } from "@/components/NewAppointments";
 import { MyClaimed } from "@/components/MyClaimed";
 import { AllClaimed } from "@/components/AllClaimed";
@@ -170,8 +171,16 @@ export function AppointmentsHub({
               <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Deals</TabsTrigger>
               <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">My Pipeline</TabsTrigger>
               <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">Team Pipeline</TabsTrigger>
-              <TabsTrigger value="mrr" className="text-sm md:text-base whitespace-nowrap">
-                MRR {counts.mrrDue > 0 && <Badge className="ml-2" variant="secondary">{counts.mrrDue}</Badge>}
+              <TabsTrigger value="mrr" className="text-sm md:text-base whitespace-nowrap relative">
+                MRR
+                {(counts.mrrDue > 0 || counts.overdue > 0) && (
+                  <Badge 
+                    variant="destructive" 
+                    className="ml-2 min-w-[20px] h-5 flex items-center justify-center px-1.5 bg-red-500 hover:bg-red-600 animate-pulse"
+                  >
+                    {counts.mrrDue + counts.overdue}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="stages" className="text-sm md:text-base whitespace-nowrap">Stage Views</TabsTrigger>
             </TabsList>
@@ -207,6 +216,22 @@ export function AppointmentsHub({
 
           <TabsContent value="mrr" className="mt-6">
             <div className="space-y-6">
+              {(counts.mrrDue > 0 || counts.overdue > 0) && (
+                <div className="bg-destructive/10 border-2 border-destructive rounded-lg p-4 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-destructive rounded-full">
+                      <Calendar className="h-5 w-5 text-destructive-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-destructive">⚠️ MRR Payment Action Required</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {counts.mrrDue} payment{counts.mrrDue !== 1 ? 's' : ''} due today
+                        {counts.overdue > 0 && ` + ${counts.overdue} overdue`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
               <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
             </div>

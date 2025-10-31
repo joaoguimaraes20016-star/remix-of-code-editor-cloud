@@ -60,8 +60,10 @@ export function CalendlyConfig({
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  const isConnected = Boolean(currentAccessToken && currentOrgUri && currentWebhookId);
+  const [tokenRefreshInProgress, setTokenRefreshInProgress] = useState(false);
   const [tokenValidationFailed, setTokenValidationFailed] = useState(false);
+
+  const isConnected = Boolean(currentAccessToken && currentOrgUri && currentWebhookId);
 
   // Handle OAuth callback
   useEffect(() => {
@@ -126,21 +128,20 @@ export function CalendlyConfig({
   }, [toast, onUpdate]);
 
   useEffect(() => {
-    if (isConnected && currentAccessToken && currentOrgUri && !tokenValidationFailed && !loadingEventTypes) {
-      // Add small delay to prevent race conditions with token refresh
+    if (isConnected && currentAccessToken && currentOrgUri && !tokenValidationFailed && !tokenRefreshInProgress && !loadingEventTypes) {
       const timer = setTimeout(() => {
         fetchEventTypes();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [isConnected, currentAccessToken, currentOrgUri, tokenValidationFailed]);
+  }, [isConnected, currentAccessToken, currentOrgUri]);
 
   useEffect(() => {
     setSelectedEventTypes(currentEventTypes || []);
   }, [currentEventTypes]);
 
   const fetchEventTypes = async () => {
-    if (!currentAccessToken || !currentOrgUri) return;
+    if (!currentAccessToken || !currentOrgUri || tokenRefreshInProgress) return;
 
     setLoadingEventTypes(true);
     try {
@@ -153,8 +154,8 @@ export function CalendlyConfig({
 
       if (!response.ok) {
         console.warn('Failed to fetch Calendly event types:', response.status);
-        if (response.status === 401) {
-          // Try to refresh the token automatically and silently
+        if (response.status === 401 && !tokenRefreshInProgress) {
+          setTokenRefreshInProgress(true);
           try {
             const { data: refreshData, error: refreshError } = await supabase.functions.invoke('refresh-calendly-token', {
               body: { teamId }
@@ -162,21 +163,25 @@ export function CalendlyConfig({
 
             if (refreshError || refreshData?.error) {
               setTokenValidationFailed(true);
+              setTokenRefreshInProgress(false);
               console.error('Token refresh failed, user needs to reconnect');
               return;
             }
 
-            // Token refreshed successfully - trigger parent update to get new token
-            console.log('Token refreshed, triggering parent update...');
+            // Token refreshed - wait for parent to update props
+            console.log('Token refreshed successfully');
             setLoadingEventTypes(false);
+            setTokenRefreshInProgress(false);
             onUpdate();
             return;
           } catch (e) {
             setTokenValidationFailed(true);
+            setTokenRefreshInProgress(false);
             console.error('Token refresh error:', e);
             return;
           }
         }
+        setLoadingEventTypes(false);
         return;
       }
 
@@ -190,6 +195,7 @@ export function CalendlyConfig({
           description: "Please disconnect and reconnect Calendly.",
           variant: "destructive",
         });
+        setLoadingEventTypes(false);
         return;
       }
       
@@ -205,8 +211,8 @@ export function CalendlyConfig({
       
       setAvailableEventTypes(eventTypes);
       setTokenValidationFailed(false);
+      setTokenRefreshInProgress(false);
     } catch (error: any) {
-      // Silently log errors without showing toast
       console.error('Error fetching event types:', error);
     } finally {
       setLoadingEventTypes(false);
