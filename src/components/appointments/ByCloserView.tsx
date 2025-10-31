@@ -39,7 +39,7 @@ export function ByCloserView({ teamId }: ByCloserViewProps) {
       // Get all appointments with closers assigned
       const { data: appointments, error } = await supabase
         .from('appointments')
-        .select('*, pipeline_stage:pipeline_stages(*)')
+        .select('*')
         .eq('team_id', teamId)
         .not('closer_name', 'is', null)
         .order('appointment_time', { ascending: true });

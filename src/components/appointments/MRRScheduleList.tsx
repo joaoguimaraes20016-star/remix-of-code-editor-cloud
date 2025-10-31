@@ -88,10 +88,7 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
     try {
       let query = supabase
         .from('mrr_schedules')
-        .select(`
-          *,
-          appointments!inner(product_name)
-        `)
+        .select('*')
         .eq('team_id', teamId)
         .order('next_renewal_date', { ascending: true });
 
