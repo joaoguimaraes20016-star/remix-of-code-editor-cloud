@@ -367,65 +367,6 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
             </div>
           )}
         </div>
-
-        {/* Paused & Canceled */}
-        {(pausedSchedules.length > 0 || canceledSchedules.length > 0) && (
-          <>
-            {pausedSchedules.length > 0 && (
-              <div className="md:col-span-2 lg:col-span-3">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold">Paused Subscriptions</h3>
-                  <Badge variant="secondary">{pausedSchedules.length}</Badge>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {pausedSchedules.map((schedule) => (
-                    <Card key={schedule.id} className="opacity-75">
-                      <CardContent className="p-5 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold truncate">{schedule.client_name}</p>
-                            <p className="text-sm text-muted-foreground truncate">{schedule.client_email}</p>
-                          </div>
-                          <Badge className={getStatusColor(schedule.status)}>Paused</Badge>
-                        </div>
-                        <div className="text-lg font-bold text-muted-foreground">
-                          ${schedule.mrr_amount.toLocaleString()}/mo
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {canceledSchedules.length > 0 && (
-              <div className="md:col-span-2 lg:col-span-3">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold">Canceled Subscriptions</h3>
-                  <Badge variant="secondary">{canceledSchedules.length}</Badge>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {canceledSchedules.map((schedule) => (
-                    <Card key={schedule.id} className="opacity-60">
-                      <CardContent className="p-5 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold truncate">{schedule.client_name}</p>
-                            <p className="text-sm text-muted-foreground truncate">{schedule.client_email}</p>
-                          </div>
-                          <Badge className={getStatusColor(schedule.status)}>Canceled</Badge>
-                        </div>
-                        <div className="text-lg font-bold text-muted-foreground">
-                          ${schedule.mrr_amount.toLocaleString()}/mo
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
