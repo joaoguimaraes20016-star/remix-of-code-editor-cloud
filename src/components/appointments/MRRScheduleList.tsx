@@ -110,10 +110,32 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
 
   const loadTaskStats = async () => {
     try {
+      // Load schedules with proper filtering
+      let schedulesQuery = supabase
+        .from('mrr_schedules')
+        .select('id')
+        .eq('team_id', teamId);
+
+      if (userRole === 'closer' && currentUserId) {
+        schedulesQuery = schedulesQuery.eq('assigned_to', currentUserId);
+      }
+
+      const { data: schedulesData, error: schedulesError } = await schedulesQuery;
+      if (schedulesError) throw schedulesError;
+
+      if (!schedulesData || schedulesData.length === 0) {
+        setTaskStats({ due: 0, confirmed: 0, canceled: 0, paused: 0 });
+        return;
+      }
+
+      const scheduleIds = schedulesData.map(s => s.id);
+
+      // Load tasks only for visible schedules
       const { data, error } = await supabase
         .from('mrr_follow_up_tasks')
         .select('status')
-        .eq('team_id', teamId);
+        .eq('team_id', teamId)
+        .in('mrr_schedule_id', scheduleIds);
 
       if (error) throw error;
 
