@@ -250,33 +250,6 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 border border-primary/30 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/20 rounded-xl">
-              <TrendingUp className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Active MRR Deals
-              </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {activeSchedules.length} active subscription{activeSchedules.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <Input
-            placeholder="Search by client name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-md"
-          />
-        </div>
-      </div>
-
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Active Schedules */}
         <div className="md:col-span-2 lg:col-span-3">
