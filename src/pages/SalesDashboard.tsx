@@ -743,9 +743,6 @@ const Index = () => {
           </div>
         )}
 
-        {/* MRR Dashboard */}
-        <MRRDashboard teamId={teamId!} />
-
         {/* Commission Breakdown */}
         <CommissionBreakdown sales={filteredSales} />
 
