@@ -24,7 +24,6 @@ export function CloserEODReport({ teamId, userId, userName, date }: CloserEODRep
   const [mrrTasksCompleted, setMrrTasksCompleted] = useState<any[]>([]);
   const [confirmTasksCompleted, setConfirmTasksCompleted] = useState<any[]>([]);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
-  const [monthlyStats, setMonthlyStats] = useState({ booked: 0, callsTaken: 0 });
 
   useEffect(() => {
     loadData();
@@ -117,25 +116,6 @@ export function CloserEODReport({ teamId, userId, userName, date }: CloserEODRep
         .limit(1)
         .maybeSingle();
 
-      // Load monthly stats
-      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
-      
-      const { data: monthlyAppts } = await supabase
-        .from('appointments')
-        .select('id, status')
-        .eq('closer_id', userId)
-        .gte('created_at', startOfMonth.toISOString())
-        .lte('created_at', endOfMonth.toISOString());
-
-      const { data: monthlyCalls } = await supabase
-        .from('appointments')
-        .select('id')
-        .eq('closer_id', userId)
-        .in('status', ['CONFIRMED', 'CLOSED', 'NO_SHOW'])
-        .gte('start_at_utc', startOfMonth.toISOString())
-        .lte('start_at_utc', endOfMonth.toISOString());
-
       setDealsClosed(closed || []);
       setDepositsCollected(deposits || []);
       setPipelineActivity(pipeline || []);
@@ -143,10 +123,6 @@ export function CloserEODReport({ teamId, userId, userName, date }: CloserEODRep
       setMrrTasksCompleted((mrrTasks || []).filter(t => t.completed_at));
       setConfirmTasksCompleted((confirmTasks || []).filter(t => t.completed_at));
       setLastActivity(activity ? new Date(activity.created_at) : null);
-      setMonthlyStats({
-        booked: monthlyAppts?.length || 0,
-        callsTaken: monthlyCalls?.length || 0
-      });
     } catch (error) {
       console.error('Error loading closer EOD data:', error);
     } finally {
@@ -225,24 +201,24 @@ export function CloserEODReport({ teamId, userId, userName, date }: CloserEODRep
       <CardContent className="space-y-6">
         {/* Key Metrics */}
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <Card className="bg-primary/5 border-primary/20">
+          <Card className="bg-success/5 border-success/20">
             <CardContent className="pt-6">
               <div className="text-center">
-                <Phone className="h-6 w-6 text-primary mx-auto mb-2" />
-                <p className="text-4xl font-bold text-primary">{monthlyStats.booked}</p>
-                <p className="text-sm font-medium text-muted-foreground">Appointments Booked (Month)</p>
-                <p className="text-xs text-muted-foreground mt-1">All appointments set</p>
+                <DollarSign className="h-6 w-6 text-success mx-auto mb-2" />
+                <p className="text-4xl font-bold text-success">{dealsClosed.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Deals Closed Today</p>
+                <p className="text-xs text-muted-foreground mt-1">Total closed deals</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-accent/5 border-accent/20">
+          <Card className="bg-chart-3/5 border-chart-3/20">
             <CardContent className="pt-6">
               <div className="text-center">
-                <PhoneCall className="h-6 w-6 text-accent mx-auto mb-2" />
-                <p className="text-4xl font-bold text-accent">{monthlyStats.callsTaken}</p>
-                <p className="text-sm font-medium text-muted-foreground">Calls Taken (Month)</p>
-                <p className="text-xs text-muted-foreground mt-1">Confirmed + Closed + No-shows</p>
+                <TrendingUp className="h-6 w-6 text-chart-3 mx-auto mb-2" />
+                <p className="text-4xl font-bold text-chart-3">${totalRevenue.toLocaleString()}</p>
+                <p className="text-sm font-medium text-muted-foreground">Revenue Today</p>
+                <p className="text-xs text-muted-foreground mt-1">Total collected</p>
               </div>
             </CardContent>
           </Card>

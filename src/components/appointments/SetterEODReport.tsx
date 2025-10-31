@@ -24,7 +24,6 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
   const [reschedules, setReschedules] = useState<any[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<any[]>([]);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
-  const [monthlyStats, setMonthlyStats] = useState({ booked: 0, closed: 0 });
 
   useEffect(() => {
     loadData();
@@ -95,21 +94,6 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
         .limit(1)
         .maybeSingle();
 
-      // Load monthly stats
-      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
-      
-      const { data: monthlyBooked } = await supabase
-        .from('appointments')
-        .select('id, status')
-        .eq('setter_id', userId)
-        .gte('created_at', startOfMonth.toISOString())
-        .lte('created_at', endOfMonth.toISOString());
-
-      setMonthlyStats({
-        booked: monthlyBooked?.length || 0,
-        closed: monthlyBooked?.filter(a => a.status === 'CLOSED').length || 0
-      });
 
       // Separate tasks by type and check for no-shows via activity logs
       const allTasks = tasks || [];
@@ -225,9 +209,9 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
             <CardContent className="pt-6">
               <div className="text-center">
                 <Phone className="h-6 w-6 text-primary mx-auto mb-2" />
-                <p className="text-4xl font-bold text-primary">{monthlyStats.booked}</p>
-                <p className="text-sm font-medium text-muted-foreground">Appointments Booked (Month)</p>
-                <p className="text-xs text-muted-foreground mt-1">{appointmentsBooked.length} today</p>
+                <p className="text-4xl font-bold text-primary">{appointmentsBooked.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Booked Today</p>
+                <p className="text-xs text-muted-foreground mt-1">From confirmations</p>
               </div>
             </CardContent>
           </Card>
@@ -235,10 +219,10 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
           <Card className="bg-success/5 border-success/20">
             <CardContent className="pt-6">
               <div className="text-center">
-                <DollarSign className="h-6 w-6 text-success mx-auto mb-2" />
-                <p className="text-4xl font-bold text-success">{monthlyStats.closed}</p>
-                <p className="text-sm font-medium text-muted-foreground">Deals Closed (Month)</p>
-                <p className="text-xs text-muted-foreground mt-1">Commission eligible</p>
+                <CheckCircle className="h-6 w-6 text-success mx-auto mb-2" />
+                <p className="text-4xl font-bold text-success">{callConfirmations.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Confirmed Today</p>
+                <p className="text-xs text-muted-foreground mt-1">Call confirmations</p>
               </div>
             </CardContent>
           </Card>
