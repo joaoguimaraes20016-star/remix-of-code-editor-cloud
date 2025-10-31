@@ -255,15 +255,6 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 border rounded-xl px-6 py-3">
-            <DollarSign className="h-5 w-5 text-success" />
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">Total MRR</p>
-              <p className="text-2xl font-bold text-success">
-                ${totalMRR.toLocaleString()}
-              </p>
-            </div>
-          </div>
         </div>
 
         <div className="mt-4">
@@ -273,26 +264,6 @@ export function MRRScheduleList({ teamId, userRole, currentUserId }: MRRSchedule
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-md"
           />
-        </div>
-
-        {/* MRR Task Status Breakdown */}
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-card border rounded-xl p-3">
-            <p className="text-xs text-muted-foreground font-medium">Due Tasks</p>
-            <p className="text-2xl font-bold text-primary">{taskStats.due}</p>
-          </div>
-          <div className="bg-card border rounded-xl p-3">
-            <p className="text-xs text-muted-foreground font-medium">Confirmed</p>
-            <p className="text-2xl font-bold text-success">{taskStats.confirmed}</p>
-          </div>
-          <div className="bg-card border rounded-xl p-3">
-            <p className="text-xs text-muted-foreground font-medium">Canceled</p>
-            <p className="text-2xl font-bold text-destructive">{taskStats.canceled}</p>
-          </div>
-          <div className="bg-card border rounded-xl p-3">
-            <p className="text-xs text-muted-foreground font-medium">Paused</p>
-            <p className="text-2xl font-bold text-warning">{taskStats.paused}</p>
-          </div>
         </div>
       </div>
 
