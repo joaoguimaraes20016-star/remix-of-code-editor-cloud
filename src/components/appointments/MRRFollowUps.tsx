@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Calendar, CheckCircle, XCircle, Pause, Ban, Loader2, Play } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, Pause, Ban, Loader2, Play, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -628,16 +628,31 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
   return (
     <>
       <div className="space-y-6">
-        {/* Active Subscriptions Grid */}
+        {/* Active MRR Deals */}
         <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-bold">
-                Active MRR Deals: {activeSchedules.length}
-              </CardTitle>
-              <p className="text-xl font-bold text-success">
-                Total MRR: ${totalMRR.toLocaleString()}/mo
-              </p>
+          <CardHeader className="pb-4">
+            <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 border border-primary/30 rounded-xl p-4 -m-6 mb-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/20 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      Active MRR Deals
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {activeSchedules.length} active subscription{activeSchedules.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Total MRR</p>
+                  <p className="text-2xl font-bold text-success">
+                    ${totalMRR.toLocaleString()}/mo
+                  </p>
+                </div>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
