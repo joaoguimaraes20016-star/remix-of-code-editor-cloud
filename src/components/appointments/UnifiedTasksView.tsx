@@ -161,7 +161,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
 
   const filteredTasks = tasks.filter(task => {
     if (filterType !== 'all' && task.type !== filterType) return false;
-    if (filterAssignee !== 'all' && task.assignedTo !== filterAssignee) return false;
+    if (filterAssignee !== 'all') {
+      if (filterAssignee === 'unassigned') {
+        if (task.assignedTo !== null) return false;
+      } else {
+        if (task.assignedTo !== filterAssignee) return false;
+      }
+    }
     return true;
   });
 
@@ -244,6 +250,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Team Members</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {teamMembers.map(member => (
                     <SelectItem key={member.id} value={member.id}>
                       {member.name}
