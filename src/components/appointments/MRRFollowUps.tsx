@@ -630,23 +630,14 @@ export function MRRFollowUps({ teamId, userRole, currentUserId }: MRRFollowUpsPr
       <div className="space-y-6">
         {/* Active Subscriptions Grid */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-success animate-pulse"></div>
-                Active Subscriptions
+              <CardTitle className="text-xl font-bold">
+                Active MRR Deals: {activeSchedules.length}
               </CardTitle>
-              <div className="flex items-center gap-4">
-                <Badge variant="success" className="text-lg px-4 py-2">
-                  {activeSchedules.length} Active
-                </Badge>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Total MRR</p>
-                  <p className="text-2xl font-bold text-success">
-                    ${totalMRR.toLocaleString()}/mo
-                  </p>
-                </div>
-              </div>
+              <p className="text-xl font-bold text-success">
+                Total MRR: ${totalMRR.toLocaleString()}/mo
+              </p>
             </div>
           </CardHeader>
           <CardContent>
