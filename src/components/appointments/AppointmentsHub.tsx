@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "lucide-react";
+import { Calendar, Plus } from "lucide-react";
+import { CreateTaskDialog } from "./CreateTaskDialog";
 import { NewAppointments } from "@/components/NewAppointments";
 import { MyClaimed } from "@/components/MyClaimed";
 import { AllClaimed } from "@/components/AllClaimed";
@@ -25,6 +26,8 @@ import { BySetterView } from "./BySetterView";
 import { AdminOverview } from "./AdminOverview";
 import { SettersView } from "./SettersView";
 import { UnifiedTasksView } from "./UnifiedTasksView";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 interface AppointmentsHubProps {
   teamId: string;
@@ -44,6 +47,8 @@ export function AppointmentsHub({
   const { user } = useAuth();
   const counts = useTabCounts(teamId, user?.id || '', userRole);
   const [selectedStage, setSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [appointments, setAppointments] = useState<any[]>([]);
   const [adminSelectedStage, setAdminSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
   const [showStageManager, setShowStageManager] = useState(false);
   const [dealToClose, setDealToClose] = useState<any>(null);
@@ -52,6 +57,21 @@ export function AppointmentsHub({
     trackAction: (action: { table: string; recordId: string; previousData: Record<string, any>; description: string }) => void;
     showUndoToast: (description: string) => void;
   } | null>(null);
+
+  useEffect(() => {
+    const loadAppointments = async () => {
+      const { data } = await supabase
+        .from("appointments")
+        .select("id, lead_name, lead_email, start_at_utc")
+        .eq("team_id", teamId)
+        .order("start_at_utc", { ascending: false })
+        .limit(100);
+      
+      if (data) setAppointments(data);
+    };
+    
+    loadAppointments();
+  }, [teamId]);
 
   const handleCloseDeal = (
     appointment: any,
@@ -78,10 +98,18 @@ export function AppointmentsHub({
       <div className="space-y-6">
         <InitializeDefaultStages teamId={teamId} />
         <div className="bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 rounded-xl p-6 border border-primary/30 shadow-lg">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Setter CRM
-          </h2>
-          <p className="text-muted-foreground mt-1">Manage your daily CRM tasks and view team deals</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Setter CRM
+              </h2>
+              <p className="text-muted-foreground mt-1">Manage your daily CRM tasks and view team deals</p>
+            </div>
+            <Button onClick={() => setShowCreateTask(true)} size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Create Task
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="confirm" className="w-full">
@@ -149,6 +177,14 @@ export function AppointmentsHub({
             <RetargetTab teamId={teamId} />
           </TabsContent>
         </Tabs>
+
+        <CreateTaskDialog
+          open={showCreateTask}
+          onOpenChange={setShowCreateTask}
+          teamId={teamId}
+          appointments={appointments}
+          onTaskCreated={() => window.location.reload()}
+        />
       </div>
     );
   }
@@ -159,10 +195,18 @@ export function AppointmentsHub({
       <div className="space-y-6">
         <InitializeDefaultStages teamId={teamId} />
         <div className="bg-gradient-to-br from-accent/10 via-primary/10 to-accent/5 rounded-xl p-6 border border-accent/30 shadow-lg">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-            Closer CRM
-          </h2>
-          <p className="text-muted-foreground mt-1">Track and close your deals</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                Closer CRM
+              </h2>
+              <p className="text-muted-foreground mt-1">Track and close your deals</p>
+            </div>
+            <Button onClick={() => setShowCreateTask(true)} size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Create Task
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="mine" className="w-full">
@@ -273,6 +317,14 @@ export function AppointmentsHub({
           setterCommissionPct={setterCommissionPct}
           onTrackUndo={undoHandlers?.trackAction}
           onShowUndoToast={undoHandlers?.showUndoToast}
+        />
+
+        <CreateTaskDialog
+          open={showCreateTask}
+          onOpenChange={setShowCreateTask}
+          teamId={teamId}
+          appointments={appointments}
+          onTaskCreated={() => window.location.reload()}
         />
       </div>
     );
@@ -387,6 +439,14 @@ export function AppointmentsHub({
         setterCommissionPct={setterCommissionPct}
         onTrackUndo={undoHandlers?.trackAction}
         onShowUndoToast={undoHandlers?.showUndoToast}
+      />
+
+      <CreateTaskDialog
+        open={showCreateTask}
+        onOpenChange={setShowCreateTask}
+        teamId={teamId}
+        appointments={appointments}
+        onTaskCreated={() => window.location.reload()}
       />
     </div>
   );
