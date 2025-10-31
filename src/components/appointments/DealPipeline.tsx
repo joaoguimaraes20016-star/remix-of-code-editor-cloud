@@ -141,8 +141,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         .from("appointments")
         .select("*")
         .eq("team_id", teamId)
-        .not('pipeline_stage', 'is', null)
-        .neq('status', 'CANCELLED')
         .gte('created_at', ninetyDaysAgo.toISOString()) // Only load last 90 days
         .limit(500); // Hard limit for safety
 
