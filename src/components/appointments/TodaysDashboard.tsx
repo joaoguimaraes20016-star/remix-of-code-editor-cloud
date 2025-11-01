@@ -62,13 +62,15 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
   const [depositAppointment, setDepositAppointment] = useState<Appointment | null>(null);
   const [commissionSettings, setCommissionSettings] = useState({ closer: 10, setter: 5 });
 
-  console.log('[TodaysDashboard] Component mounted/updated with props:', {
+  console.log('🔍 [TodaysDashboard] PROPS RECEIVED:', {
     teamId,
     userRole,
     viewingAsCloserId,
     viewingAsSetterId,
-    viewingAsCloseridType: typeof viewingAsCloserId,
-    viewingAsSetteridType: typeof viewingAsSetterId
+    viewingAsCloserIdType: typeof viewingAsCloserId,
+    viewingAsSetterIdType: typeof viewingAsSetterId,
+    isCloserUndefined: viewingAsCloserId === undefined,
+    isSetterUndefined: viewingAsSetterId === undefined
   });
 
   useEffect(() => {
