@@ -230,12 +230,8 @@ const Index = () => {
 
       console.log(`Loaded ${formattedSales.length} sales, ${formattedSales.filter(s => s.status === 'closed').length} closed`);
 
-      setSales(prev => {
-        if (JSON.stringify(prev) !== JSON.stringify(formattedSales)) {
-          return formattedSales;
-        }
-        return prev;
-      });
+      // Always update to ensure UI reflects latest data
+      setSales(formattedSales);
     } catch (error: any) {
       toast({
         title: 'Error loading sales',
