@@ -101,7 +101,7 @@ export function HorizontalAppointmentCard({
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                  {confirmationTask.is_overdue ? 'Overdue' : 'Confirm Before'}
+                  {confirmationTask.is_overdue ? 'Overdue' : 'Confirm Before (1hr before call)'}
                 </p>
                 <p className={`text-2xl font-bold ${
                   confirmationTask.is_overdue ? 'text-destructive' : 'text-foreground'
@@ -113,7 +113,7 @@ export function HorizontalAppointmentCard({
 
             {/* Appointment Time */}
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">Appointment</p>
+              <p className="text-xs text-muted-foreground">Call Time</p>
               <p className="text-lg font-semibold">{format(new Date(appointment.start_at_utc), "h:mm a")}</p>
             </div>
           </div>
