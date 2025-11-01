@@ -63,9 +63,12 @@ export type Database = {
           lead_phone: string | null
           mrr_amount: number | null
           mrr_months: number | null
+          original_appointment_id: string | null
           pipeline_stage: string | null
           product_name: string | null
+          reschedule_count: number | null
           reschedule_url: string | null
+          rescheduled_to_appointment_id: string | null
           retarget_date: string | null
           retarget_reason: string | null
           revenue: number | null
@@ -92,9 +95,12 @@ export type Database = {
           lead_phone?: string | null
           mrr_amount?: number | null
           mrr_months?: number | null
+          original_appointment_id?: string | null
           pipeline_stage?: string | null
           product_name?: string | null
+          reschedule_count?: number | null
           reschedule_url?: string | null
+          rescheduled_to_appointment_id?: string | null
           retarget_date?: string | null
           retarget_reason?: string | null
           revenue?: number | null
@@ -121,9 +127,12 @@ export type Database = {
           lead_phone?: string | null
           mrr_amount?: number | null
           mrr_months?: number | null
+          original_appointment_id?: string | null
           pipeline_stage?: string | null
           product_name?: string | null
+          reschedule_count?: number | null
           reschedule_url?: string | null
+          rescheduled_to_appointment_id?: string | null
           retarget_date?: string | null
           retarget_reason?: string | null
           revenue?: number | null
@@ -136,6 +145,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_original_appointment_id_fkey"
+            columns: ["original_appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_rescheduled_to_appointment_id_fkey"
+            columns: ["rescheduled_to_appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "appointments_team_id_fkey"
             columns: ["team_id"]
@@ -1352,9 +1375,12 @@ export type Database = {
           lead_phone: string | null
           mrr_amount: number | null
           mrr_months: number | null
+          original_appointment_id: string | null
           pipeline_stage: string | null
           product_name: string | null
+          reschedule_count: number | null
           reschedule_url: string | null
+          rescheduled_to_appointment_id: string | null
           retarget_date: string | null
           retarget_reason: string | null
           revenue: number | null

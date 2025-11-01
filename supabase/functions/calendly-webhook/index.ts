@@ -630,7 +630,7 @@ serve(async (req) => {
       });
 
     } else if (event === 'invitee.rescheduled') {
-      console.log('[RESCHEDULE] Processing rescheduled event');
+      console.log('[RESCHEDULE] Processing rescheduled event - NEW LOGIC');
       
       // Fetch new invitee details for updated URLs
       let newRescheduleUrl = null;
@@ -665,17 +665,17 @@ serve(async (req) => {
         console.warn('[RESCHEDULE] Failed to fetch new invitee details:', error);
       }
 
-      // Find appointment by email and old time (or calendly URI if available)
-      const { data: appointment, error: findError } = await supabase
+      // Find the old appointment
+      const { data: oldAppointment, error: findError } = await supabase
         .from('appointments')
-        .select('id, team_id')
+        .select('id, team_id, setter_id, setter_name, closer_id, closer_name, reschedule_count, original_appointment_id')
         .eq('lead_email', leadEmail)
         .eq('team_id', teamId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (findError || !appointment) {
+      if (findError || !oldAppointment) {
         console.error('[RESCHEDULE] Could not find appointment:', findError);
         await logWebhookEvent(supabase, teamId, event, 'error', { error: 'Appointment not found' });
         return new Response(JSON.stringify({ error: 'Appointment not found' }), {
@@ -684,64 +684,134 @@ serve(async (req) => {
         });
       }
 
-      // Update appointment with new time, URLs, and status
-      const { error: updateError } = await supabase
+      // Create admin client for service role operations
+      const adminClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      );
+
+      // Move old appointment to "rescheduled" stage but keep it
+      const { error: updateOldError } = await adminClient
         .from('appointments')
         .update({ 
-          start_at_utc: startTime,
-          reschedule_url: newRescheduleUrl,
-          cancel_url: newCancelUrl,
-          calendly_invitee_uri: newCalendlyInviteeUri,
+          pipeline_stage: 'rescheduled',
           status: 'RESCHEDULED',
         })
-        .eq('id', appointment.id);
+        .eq('id', oldAppointment.id);
 
-      if (updateError) {
-        console.error('[RESCHEDULE] Error updating appointment:', updateError);
-        await logWebhookEvent(supabase, teamId, event, 'error', { error: updateError.message });
-        return new Response(JSON.stringify({ error: 'Failed to update appointment' }), {
+      if (updateOldError) {
+        console.error('[RESCHEDULE] Error updating old appointment:', updateOldError);
+        await logWebhookEvent(supabase, teamId, event, 'error', { error: updateOldError.message });
+        return new Response(JSON.stringify({ error: 'Failed to update old appointment' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Mark any awaiting_reschedule tasks as completed
-      const { error: taskUpdateError } = await supabase
+      console.log('[RESCHEDULE] Moved old appointment to rescheduled stage');
+
+      // Create NEW appointment for the new date
+      const eventTypeName = eventTypeUri?.split('/').pop() || 'Unknown Event';
+      const newAppointmentData = {
+        team_id: teamId,
+        lead_name: leadName,
+        lead_email: leadEmail,
+        lead_phone: payload.payload?.questions_and_answers?.find((qa: any) => 
+          qa.question?.toLowerCase().includes('phone')
+        )?.answer || null,
+        start_at_utc: startTime,
+        status: 'NEW',
+        pipeline_stage: 'booked',
+        event_type_uri: eventTypeUri,
+        event_type_name: eventTypeName,
+        reschedule_url: newRescheduleUrl,
+        cancel_url: newCancelUrl,
+        calendly_invitee_uri: newCalendlyInviteeUri,
+        // Preserve setter and closer from old appointment
+        setter_id: oldAppointment.setter_id,
+        setter_name: oldAppointment.setter_name,
+        closer_id: oldAppointment.closer_id,
+        closer_name: oldAppointment.closer_name,
+        // Link to old appointment and track reschedule count
+        original_appointment_id: oldAppointment.original_appointment_id || oldAppointment.id,
+        reschedule_count: (oldAppointment.reschedule_count || 0) + 1,
+      };
+
+      const { data: newAppointment, error: createError } = await adminClient
+        .from('appointments')
+        .insert(newAppointmentData)
+        .select()
+        .single();
+
+      if (createError || !newAppointment) {
+        console.error('[RESCHEDULE] Error creating new appointment:', createError);
+        await logWebhookEvent(supabase, teamId, event, 'error', { error: createError?.message || 'Failed to create' });
+        return new Response(JSON.stringify({ error: 'Failed to create new appointment' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('[RESCHEDULE] Created new appointment:', newAppointment.id);
+
+      // Update old appointment to point to new one
+      await adminClient
+        .from('appointments')
+        .update({ rescheduled_to_appointment_id: newAppointment.id })
+        .eq('id', oldAppointment.id);
+
+      // Mark any awaiting_reschedule tasks on old appointment as completed
+      await adminClient
         .from('confirmation_tasks')
         .update({ 
           status: 'completed',
           completed_at: new Date().toISOString()
         })
-        .eq('appointment_id', appointment.id)
+        .eq('appointment_id', oldAppointment.id)
         .eq('status', 'awaiting_reschedule');
 
-      if (taskUpdateError) {
-        console.error('[RESCHEDULE] Error updating awaiting tasks:', taskUpdateError);
-      }
-
-      // Create a new call_confirmation task for the new date
-      const { error: newTaskError } = await supabase.rpc('create_task_with_assignment', {
-        p_team_id: appointment.team_id,
-        p_appointment_id: appointment.id,
+      // Create new call_confirmation task for NEW appointment
+      await adminClient.rpc('create_task_with_assignment', {
+        p_team_id: teamId,
+        p_appointment_id: newAppointment.id,
         p_task_type: 'call_confirmation'
       });
 
-      if (newTaskError) {
-        console.error('[RESCHEDULE] Error creating new task:', newTaskError);
-      }
+      // Log activity for both appointments
+      await adminClient.from('activity_logs').insert([
+        {
+          team_id: teamId,
+          appointment_id: oldAppointment.id,
+          actor_name: 'Calendly Webhook',
+          action_type: 'Rescheduled',
+          note: `Appointment rescheduled to new time. New appointment ID: ${newAppointment.id}`
+        },
+        {
+          team_id: teamId,
+          appointment_id: newAppointment.id,
+          actor_name: 'Calendly Webhook',
+          action_type: 'Created',
+          note: `Rescheduled from appointment ${oldAppointment.id}. Reschedule count: ${newAppointmentData.reschedule_count}`
+        }
+      ]);
 
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        team_id: appointment.team_id,
-        appointment_id: appointment.id,
-        actor_name: 'Calendly Webhook',
-        action_type: 'Rescheduled',
-        note: `Client rescheduled via Calendly to ${startTime}`
+      console.log('[RESCHEDULE] Successfully created reschedule chain');
+      await logWebhookEvent(supabase, teamId, event, 'success', { 
+        oldAppointmentId: oldAppointment.id,
+        newAppointmentId: newAppointment.id 
       });
-
-      console.log('[RESCHEDULE] Successfully updated appointment and created new task');
-      await logWebhookEvent(supabase, teamId, event, 'success', { appointmentId: appointment.id });
-      return new Response(JSON.stringify({ success: true }), {
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        oldAppointmentId: oldAppointment.id,
+        newAppointmentId: newAppointment.id 
+      }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

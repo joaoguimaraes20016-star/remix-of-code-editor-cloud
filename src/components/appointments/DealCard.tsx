@@ -4,6 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EditAppointmentDialog } from "./EditAppointmentDialog";
+import { RescheduleHistory } from "./RescheduleHistory";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { GripVertical, MoreVertical, Calendar, MessageSquare, Undo2 } from "lucide-react";
+import { GripVertical, MoreVertical, Calendar, MessageSquare, Undo2, History, ArrowRight } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { DealAvatar } from "./DealAvatar";
 import { ActivityTimeline } from "./ActivityTimeline";
@@ -31,6 +32,9 @@ interface DealCardProps {
     updated_at: string;
     pipeline_stage: string | null;
     status: string | null;
+    original_appointment_id: string | null;
+    rescheduled_to_appointment_id: string | null;
+    reschedule_count: number;
   };
   onCloseDeal: (appointment: any) => void;
   onMoveTo: (id: string, stage: string) => void;
@@ -44,6 +48,7 @@ interface DealCardProps {
 export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDelete, onUndo, onChangeStatus, onClearDealData, userRole }: DealCardProps) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showRescheduleHistory, setShowRescheduleHistory] = useState(false);
   const {
     attributes,
     listeners,
@@ -218,6 +223,39 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
             <p className="text-sm text-muted-foreground truncate">{appointment.lead_email}</p>
           </div>
 
+          {/* Reschedule Badges */}
+          {(appointment.original_appointment_id || appointment.rescheduled_to_appointment_id) && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {appointment.original_appointment_id && (
+                <Badge 
+                  variant="info" 
+                  className="cursor-pointer hover:bg-info/20"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRescheduleHistory(true);
+                  }}
+                >
+                  <History className="h-3 w-3 mr-1" />
+                  Previously Rescheduled
+                  {appointment.reschedule_count > 0 && ` (${appointment.reschedule_count}x)`}
+                </Badge>
+              )}
+              {appointment.rescheduled_to_appointment_id && (
+                <Badge 
+                  variant="warning"
+                  className="cursor-pointer hover:bg-chart-2/30"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRescheduleHistory(true);
+                  }}
+                >
+                  <ArrowRight className="h-3 w-3 mr-1" />
+                  Rescheduled to New Time
+                </Badge>
+              )}
+            </div>
+          )}
+
           {/* Team Members */}
           {(appointment.setter_name || appointment.closer_name) && (
             <div className="flex items-center gap-2 flex-wrap">
@@ -271,6 +309,14 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
           onOpenChange={setShowEditDialog}
           appointment={appointment}
           teamId={teamId}
+        />
+      )}
+
+      {showRescheduleHistory && (
+        <RescheduleHistory
+          open={showRescheduleHistory}
+          onOpenChange={setShowRescheduleHistory}
+          appointmentId={appointment.id}
         />
       )}
     </>
