@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Mail, User, Phone, Clock, MessageSquare, DollarSign, UserPlus, Users, CheckCircle, Edit, CalendarClock } from "lucide-react";
+import { Calendar, Mail, User, Phone, Clock, MessageSquare, DollarSign, UserPlus, Users, CheckCircle, Edit, CalendarClock, Wallet } from "lucide-react";
 import { useState } from "react";
 import { EditAppointmentDialog } from "./EditAppointmentDialog";
 import { ConfirmationProgressTracker } from "./ConfirmationProgressTracker";
@@ -44,6 +44,7 @@ interface HorizontalAppointmentCardProps {
   onAssign?: () => void;
   onReassign?: () => void;
   onCloseDeal?: () => void;
+  onDepositClick?: () => void;
   onUpdate?: () => void;
 }
 
@@ -70,6 +71,7 @@ export function HorizontalAppointmentCard({
   onAssign,
   onReassign,
   onCloseDeal,
+  onDepositClick,
   onUpdate,
 }: HorizontalAppointmentCardProps) {
   const [notesExpanded, setNotesExpanded] = useState(false);
@@ -132,9 +134,9 @@ export function HorizontalAppointmentCard({
         </div>
       )}
 
-      {/* Closer View: Show confirmation status */}
+      {/* Closer View: Show confirmation status with full details */}
       {confirmationTask && userRole === 'closer' && (
-        <div className="mb-4 pb-4 border-b">
+        <div className="mb-4 pb-4 border-b space-y-3">
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${
               confirmationTask.completed_confirmations >= confirmationTask.required_confirmations
@@ -152,20 +154,43 @@ export function HorizontalAppointmentCard({
               }`} />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium">
+              <p className="text-sm font-semibold">
                 {confirmationTask.completed_confirmations >= confirmationTask.required_confirmations
-                  ? '✓ Confirmed'
+                  ? '✓ Fully Confirmed'
                   : confirmationTask.completed_confirmations > 0
-                  ? `Partially Confirmed (${confirmationTask.completed_confirmations}/${confirmationTask.required_confirmations})`
+                  ? `Partially Confirmed`
                   : 'Not Confirmed Yet'}
               </p>
-              {confirmationTask.confirmation_attempts && confirmationTask.confirmation_attempts.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Last: {confirmationTask.confirmation_attempts[confirmationTask.confirmation_attempts.length - 1]?.notes || 'No notes'}
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Confirmed {confirmationTask.completed_confirmations} time{confirmationTask.completed_confirmations !== 1 ? 's' : ''} 
+                {confirmationTask.confirmation_attempts.length > 0 && ` • ${confirmationTask.confirmation_attempts.length} attempt${confirmationTask.confirmation_attempts.length !== 1 ? 's' : ''}`}
+              </p>
             </div>
           </div>
+
+          {/* Show all confirmation attempts */}
+          {confirmationTask.confirmation_attempts && confirmationTask.confirmation_attempts.length > 0 && (
+            <div className="space-y-2 pl-11">
+              <p className="text-xs font-medium text-muted-foreground uppercase">Confirmation History</p>
+              {confirmationTask.confirmation_attempts.map((attempt: any, idx: number) => (
+                <div key={idx} className="text-xs bg-muted/50 p-2 rounded">
+                  <div className="flex items-center justify-between mb-1">
+                    <Badge variant={attempt.confirmed ? "default" : "secondary"} className="text-[10px]">
+                      {attempt.confirmed ? 'Confirmed' : 'Attempted'}
+                    </Badge>
+                    {attempt.timestamp && (
+                      <span className="text-muted-foreground">
+                        {format(new Date(attempt.timestamp), "MMM dd 'at' h:mm a")}
+                      </span>
+                    )}
+                  </div>
+                  {attempt.notes && (
+                    <p className="text-muted-foreground mt-1">{attempt.notes}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
       
@@ -290,6 +315,18 @@ export function HorizontalAppointmentCard({
               >
                 <CalendarClock className="w-4 h-4" />
                 <span>Reschedule</span>
+              </Button>
+            )}
+
+            {userRole === 'closer' && onDepositClick && appointment.status !== 'CLOSED' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onDepositClick}
+                className="flex items-center gap-1.5"
+              >
+                <Wallet className="w-4 h-4" />
+                <span>Deposit</span>
               </Button>
             )}
             

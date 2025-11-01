@@ -8,7 +8,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, parseISO, isToday, startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { HorizontalAppointmentCard } from './HorizontalAppointmentCard';
+import { CloseDealDialog } from '../CloseDealDialog';
+import { DepositCollectedDialog } from './DepositCollectedDialog';
 
 interface TodaysDashboardProps {
   teamId: string;
@@ -55,10 +58,14 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
   const [loading, setLoading] = useState(true);
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [viewingAsUserId, setViewingAsUserId] = useState<string | null>(null);
+  const [closeDealAppointment, setCloseDealAppointment] = useState<Appointment | null>(null);
+  const [depositAppointment, setDepositAppointment] = useState<Appointment | null>(null);
+  const [commissionSettings, setCommissionSettings] = useState({ closer: 10, setter: 5 });
 
   useEffect(() => {
     loadTeamMembers();
     loadTodaysAppointments();
+    loadCommissionSettings();
 
     const channel = supabase
       .channel(`today-appointments-${teamId}`)
@@ -189,6 +196,64 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
     }
   };
 
+  const loadCommissionSettings = async () => {
+    try {
+      const { data: team, error } = await supabase
+        .from('teams')
+        .select('closer_commission_percentage, setter_commission_percentage')
+        .eq('id', teamId)
+        .single();
+
+      if (error) throw error;
+      if (team) {
+        setCommissionSettings({
+          closer: team.closer_commission_percentage || 10,
+          setter: team.setter_commission_percentage || 5,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading commission settings:', error);
+    }
+  };
+
+  const handleCloseDeal = (appointment: Appointment) => {
+    setCloseDealAppointment(appointment);
+  };
+
+  const handleDepositClick = (appointment: Appointment) => {
+    setDepositAppointment(appointment);
+  };
+
+  const handleDepositConfirm = async (depositAmount: number, notes: string, followUpDate: Date) => {
+    if (!depositAppointment) return;
+
+    try {
+      await supabase
+        .from('appointments')
+        .update({
+          cc_collected: depositAmount,
+          setter_notes: notes,
+        })
+        .eq('id', depositAppointment.id);
+
+      // Create follow-up task if needed
+      await supabase
+        .from('confirmation_tasks')
+        .insert({
+          team_id: teamId,
+          appointment_id: depositAppointment.id,
+          task_type: 'follow_up',
+          follow_up_date: followUpDate.toISOString().split('T')[0],
+          status: 'pending',
+        });
+
+      toast.success(`$${depositAmount} deposit collected`);
+      loadTodaysAppointments();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   // Group appointments by time period
   const groupedAppointments = useMemo(() => {
     const morning: Appointment[] = [];
@@ -242,44 +307,46 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
 
   return (
     <div className="space-y-6">
-      {/* Rep Selector (for testing/admin) */}
-      <Card className="p-4">
-        <div className="flex items-center gap-4">
-          <Users className="h-5 w-5 text-muted-foreground" />
-          <div className="flex-1">
-            <label className="text-sm font-medium mb-2 block">View As Team Member</label>
-            <Select 
-              value={viewingAsUserId || user?.id || ''} 
-              onValueChange={(value) => setViewingAsUserId(value === user?.id ? null : value)}
-            >
-              <SelectTrigger className="w-full max-w-xs">
-                <SelectValue placeholder="Select team member" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={user?.id || ''}>
-                  👤 {teamMembers.find(m => m.id === user?.id)?.name || 'Me (Current User)'}
-                </SelectItem>
-                {teamMembers
-                  .filter(m => m.id !== user?.id)
-                  .map(member => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name} ({member.role})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+      {/* Rep Selector (for testing/admin) - Hidden when viewing specific reps */}
+      {!viewingAsCloserId && !viewingAsSetterId && (
+        <Card className="p-4">
+          <div className="flex items-center gap-4">
+            <Users className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">View As Team Member</label>
+              <Select 
+                value={viewingAsUserId || user?.id || ''} 
+                onValueChange={(value) => setViewingAsUserId(value === user?.id ? null : value)}
+              >
+                <SelectTrigger className="w-full max-w-xs">
+                  <SelectValue placeholder="Select team member" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={user?.id || ''}>
+                    👤 {teamMembers.find(m => m.id === user?.id)?.name || 'Me (Current User)'}
+                  </SelectItem>
+                  {teamMembers
+                    .filter(m => m.id !== user?.id)
+                    .map(member => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name} ({member.role})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {viewingAsUserId && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setViewingAsUserId(null)}
+              >
+                Reset to My View
+              </Button>
+            )}
           </div>
-          {viewingAsUserId && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setViewingAsUserId(null)}
-            >
-              Reset to My View
-            </Button>
-          )}
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Header with date */}
       <div className="flex items-center justify-between">
@@ -398,6 +465,8 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
                     userRole={userRole}
                     showRescheduleButton={userRole === 'closer'}
                     showCloseDealButton={userRole === 'closer'}
+                    onCloseDeal={() => handleCloseDeal(apt)}
+                    onDepositClick={() => handleDepositClick(apt)}
                     onUpdate={loadTodaysAppointments}
                   />
                 ))}
@@ -423,6 +492,8 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
                     userRole={userRole}
                     showRescheduleButton={userRole === 'closer'}
                     showCloseDealButton={userRole === 'closer'}
+                    onCloseDeal={() => handleCloseDeal(apt)}
+                    onDepositClick={() => handleDepositClick(apt)}
                     onUpdate={loadTodaysAppointments}
                   />
                 ))}
@@ -448,6 +519,8 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
                     userRole={userRole}
                     showRescheduleButton={userRole === 'closer'}
                     showCloseDealButton={userRole === 'closer'}
+                    onCloseDeal={() => handleCloseDeal(apt)}
+                    onDepositClick={() => handleDepositClick(apt)}
                     onUpdate={loadTodaysAppointments}
                   />
                 ))}
@@ -455,6 +528,38 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
             </div>
           )}
         </>
+      )}
+
+      {/* Close Deal Dialog */}
+      {closeDealAppointment && (
+        <CloseDealDialog
+          appointment={{
+            id: closeDealAppointment.id,
+            lead_name: closeDealAppointment.lead_name,
+            lead_email: closeDealAppointment.lead_email,
+            setter_id: closeDealAppointment.setter_id,
+            setter_name: closeDealAppointment.setter_name,
+          }}
+          teamId={teamId}
+          open={!!closeDealAppointment}
+          onOpenChange={(open) => !open && setCloseDealAppointment(null)}
+          onSuccess={() => {
+            setCloseDealAppointment(null);
+            loadTodaysAppointments();
+          }}
+          closerCommissionPct={commissionSettings.closer}
+          setterCommissionPct={commissionSettings.setter}
+        />
+      )}
+
+      {/* Deposit Dialog */}
+      {depositAppointment && (
+        <DepositCollectedDialog
+          open={!!depositAppointment}
+          onOpenChange={(open) => !open && setDepositAppointment(null)}
+          onConfirm={handleDepositConfirm}
+          dealName={depositAppointment.lead_name}
+        />
       )}
     </div>
   );
