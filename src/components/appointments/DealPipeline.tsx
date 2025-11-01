@@ -21,7 +21,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Settings, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -1107,37 +1108,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     }
   };
 
-  const getStageColors = (stageId: string) => {
-    const colorMap: Record<string, { bg: string; text: string; badge: string }> = {
-      'new': { 
-        bg: 'bg-blue-500/10 dark:bg-blue-500/20', 
-        text: 'text-blue-900 dark:text-blue-100',
-        badge: 'bg-blue-500/20 dark:bg-blue-500/30'
-      },
-      'contacted': { 
-        bg: 'bg-purple-500/10 dark:bg-purple-500/20', 
-        text: 'text-purple-900 dark:text-purple-100',
-        badge: 'bg-purple-500/20 dark:bg-purple-500/30'
-      },
-      'qualified': { 
-        bg: 'bg-indigo-500/10 dark:bg-indigo-500/20', 
-        text: 'text-indigo-900 dark:text-indigo-100',
-        badge: 'bg-indigo-500/20 dark:bg-indigo-500/30'
-      },
-      'won': { 
-        bg: 'bg-green-500/10 dark:bg-green-500/20', 
-        text: 'text-green-900 dark:text-green-100',
-        badge: 'bg-green-500/20 dark:bg-green-500/30'
-      },
-      'lost': { 
-        bg: 'bg-red-500/10 dark:bg-red-500/20', 
-        text: 'text-red-900 dark:text-red-100',
-        badge: 'bg-red-500/20 dark:bg-red-500/30'
-      },
-    };
-    return colorMap[stageId] || colorMap['new'];
-  };
-
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1196,73 +1166,67 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         </Button>
       </div>
 
-      <div className="bg-gradient-to-br from-muted/20 via-background to-muted/10 rounded-xl p-6 border border-primary/10 shadow-lg">
+      <ScrollArea className="w-full">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-6 overflow-x-auto pb-4 px-2">
+          <div className="flex gap-4 pb-4">
             {stages.map((stage) => {
               const stageAppointments = dealsByStage[stage.stage_id] || [];
-              const colors = getStageColors(stage.stage_id);
 
               return (
                 <DroppableStageColumn key={stage.id} id={stage.stage_id}>
-                  <div className="mb-4 space-y-3 p-4 bg-gradient-to-br from-card/80 via-card/60 to-secondary/40 rounded-xl border border-primary/10 backdrop-blur-sm shadow-md">
-                    <div className={cn(
-                      "inline-flex items-center px-4 py-2 rounded-full shadow-sm",
-                      colors.badge
-                    )}>
-                      <span className={cn("text-sm font-bold uppercase tracking-wider", colors.text)}>
-                        {stage.stage_label}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                        {stageAppointments.length} {stageAppointments.length === 1 ? 'DEAL' : 'DEALS'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <ScrollArea className="flex-1 rounded-xl" style={{ height: 'calc(100vh - 380px)' }}>
-                    <SortableContext
-                      items={stageAppointments.map((apt) => apt.id)}
-                      strategy={verticalListSortingStrategy}
-                      id={stage.stage_id}
+                  <Card className="h-full" style={{ width: '300px' }}>
+                    <div 
+                      className="p-4 border-b"
+                      style={{ 
+                        backgroundColor: `${stage.stage_color}15`,
+                        borderBottomColor: stage.stage_color
+                      }}
                     >
-                      <div className="space-y-3 pb-2 pr-3">
-                        {stageAppointments.length === 0 ? (
-                          <div className="text-center py-16 px-4 bg-muted/20 rounded-xl border border-dashed border-border/50">
-                            <p className="text-sm text-muted-foreground font-medium">
-                              No deals here yet
-                            </p>
-                            <p className="text-xs text-muted-foreground/70 mt-1">
-                              Drag deals to this stage
-                            </p>
-                          </div>
-                        ) : (
-                          stageAppointments.map((appointment) => (
-                            <DealCard
-                              key={appointment.id}
-                              id={appointment.id}
-                              teamId={teamId}
-                              appointment={appointment}
-                              onCloseDeal={handleCloseDeal}
-                              onMoveTo={handleMoveTo}
-                              onDelete={handleDelete}
-                              onUndo={handleUndo}
-                              onChangeStatus={handleChangeStatus}
-                              onClearDealData={handleClearDealData}
-                              userRole={userRole}
-                            />
-                          ))
-                        )}
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">{stage.stage_label}</h3>
+                        <Badge variant="secondary">
+                          {stageAppointments.length}
+                        </Badge>
                       </div>
-                    </SortableContext>
-                  </ScrollArea>
+                    </div>
+
+                    <ScrollArea className="p-3" style={{ height: 'calc(100vh - 400px)' }}>
+                      <SortableContext
+                        items={stageAppointments.map((apt) => apt.id)}
+                        strategy={verticalListSortingStrategy}
+                        id={stage.stage_id}
+                      >
+                        <div className="space-y-3 min-h-[200px]">
+                          {stageAppointments.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-8">
+                              No deals
+                            </p>
+                          ) : (
+                            stageAppointments.map((appointment) => (
+                              <DealCard
+                                key={appointment.id}
+                                id={appointment.id}
+                                teamId={teamId}
+                                appointment={appointment}
+                                onCloseDeal={handleCloseDeal}
+                                onMoveTo={handleMoveTo}
+                                onDelete={handleDelete}
+                                onUndo={handleUndo}
+                                onChangeStatus={handleChangeStatus}
+                                onClearDealData={handleClearDealData}
+                                userRole={userRole}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </SortableContext>
+                    </ScrollArea>
+                  </Card>
                 </DroppableStageColumn>
               );
             })}
@@ -1272,7 +1236,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
             {activeId && (() => {
               const activeAppointment = appointments.find(a => a.id === activeId);
               return activeAppointment ? (
-                <div className="opacity-90 cursor-grabbing" style={{ width: '280px' }}>
+                <div className="opacity-90 cursor-grabbing" style={{ width: '300px' }}>
                   <DealCard
                     id={activeId}
                     teamId={teamId}
@@ -1290,7 +1254,8 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
             })()}
           </DragOverlay>
         </DndContext>
-      </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
 
       <PipelineStageManager
         open={managerOpen}
