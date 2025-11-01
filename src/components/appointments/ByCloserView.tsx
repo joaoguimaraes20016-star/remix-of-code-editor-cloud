@@ -175,21 +175,22 @@ export function ByCloserView({ teamId }: ByCloserViewProps) {
     try {
       setLoading(true);
 
-      // Get all appointments with closers assigned
+      // Get all appointments with closers assigned - filter by closer_id, not closer_name
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
-        .not('closer_name', 'is', null)
+        .not('closer_id', 'is', null)
         .order('start_at_utc', { ascending: true });
 
       if (error) throw error;
 
-      // Group by closer
+      // Group by closer - ONLY use closer_id (UUID), skip if missing
       const groups = new Map<string, any[]>();
       
       appointments?.forEach(apt => {
-        const closerId = apt.closer_id || apt.closer_name;
+        if (!apt.closer_id) return; // Skip appointments without a valid closer_id
+        const closerId = apt.closer_id;
         if (!groups.has(closerId)) {
           groups.set(closerId, []);
         }
