@@ -62,6 +62,15 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
   const [depositAppointment, setDepositAppointment] = useState<Appointment | null>(null);
   const [commissionSettings, setCommissionSettings] = useState({ closer: 10, setter: 5 });
 
+  console.log('[TodaysDashboard] Component mounted/updated with props:', {
+    teamId,
+    userRole,
+    viewingAsCloserId,
+    viewingAsSetterId,
+    viewingAsCloseridType: typeof viewingAsCloserId,
+    viewingAsSetteridType: typeof viewingAsSetterId
+  });
+
   useEffect(() => {
     loadTeamMembers();
     loadTodaysAppointments();
@@ -139,10 +148,12 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           .in('appointment_id', appointmentIds)
           .eq('status', 'pending');
         
-        // Filter by the effective user (whether viewing as setter or currently logged in setter)
-        // This ensures admins see only the selected setter's tasks
-        if (userRole === 'setter' || viewingAsSetterId) {
-          console.log('[TodaysDashboard] Filtering tasks for user:', effectiveUserId);
+        // ALWAYS filter by effectiveUserId when viewing a specific person's tasks
+        // This ensures we see only their tasks, not all tasks
+        const shouldFilter = viewingAsSetterId || viewingAsCloserId || userRole === 'setter';
+        
+        if (shouldFilter) {
+          console.log('[TodaysDashboard] Filtering tasks for user:', effectiveUserId, { viewingAsSetterId, viewingAsCloserId, userRole });
           tasksQuery = tasksQuery.eq('assigned_to', effectiveUserId);
         }
         
@@ -150,7 +161,7 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
         
         console.log('[TodaysDashboard] Loaded tasks:', {
           totalTasks: tasks?.length || 0,
-          filteredBy: viewingAsSetterId ? 'viewingAsSetterId' : (userRole === 'setter' ? 'setter role' : 'no filter'),
+          filteredBy: shouldFilter ? 'filtered by user' : 'no filter',
           effectiveUserId,
           tasks: tasks?.map(t => ({ id: t.id, appointment_id: t.appointment_id, assigned_to: t.assigned_to }))
         });
