@@ -41,6 +41,7 @@ interface ConfirmationTask {
   due_at: string | null;
   is_overdue: boolean;
   confirmation_sequence: number;
+  task_type?: string;
 }
 
 export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
@@ -123,7 +124,8 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
               confirmation_attempts: (task.confirmation_attempts as unknown as any[]) || [],
               due_at: task.due_at,
               is_overdue: task.is_overdue || false,
-              confirmation_sequence: task.confirmation_sequence || 1
+              confirmation_sequence: task.confirmation_sequence || 1,
+              task_type: task.task_type || 'call_confirmation'
             });
           });
           setConfirmationTasks(tasksMap);

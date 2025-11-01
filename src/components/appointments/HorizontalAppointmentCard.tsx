@@ -75,7 +75,10 @@ export function HorizontalAppointmentCard({
       {/* Confirmation Progress Tracker - Show at top if task exists */}
       {confirmationTask && (
         <div className="mb-4 pb-4 border-b">
-          <ConfirmationProgressTracker task={confirmationTask} />
+          <ConfirmationProgressTracker 
+            task={{ ...confirmationTask, appointment_id: appointment.id }} 
+            onUpdate={onUpdate}
+          />
         </div>
       )}
       
