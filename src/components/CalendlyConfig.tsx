@@ -137,7 +137,11 @@ export function CalendlyConfig({
   }, [isConnected, currentAccessToken, currentOrgUri]);
 
   useEffect(() => {
-    setSelectedEventTypes(currentEventTypes || []);
+    // Clean up selectedEventTypes to only include API URIs (not scheduling_url)
+    const cleanedEventTypes = (currentEventTypes || []).filter(uri => 
+      uri.includes('/event_types/')
+    );
+    setSelectedEventTypes(cleanedEventTypes);
   }, [currentEventTypes]);
 
   const fetchEventTypes = async () => {
@@ -220,12 +224,20 @@ export function CalendlyConfig({
   };
 
   const handleEventTypeToggle = async (eventTypeUri: string) => {
+    // Ensure we only work with API URIs, not scheduling URLs
+    if (!eventTypeUri.includes('/event_types/')) {
+      console.error('Invalid event type URI format:', eventTypeUri);
+      return;
+    }
+    
     const newSelection = selectedEventTypes.includes(eventTypeUri)
       ? selectedEventTypes.filter(uri => uri !== eventTypeUri)
       : [...selectedEventTypes, eventTypeUri];
     
-    // Remove duplicates just in case
-    const uniqueSelection = Array.from(new Set(newSelection));
+    // Remove duplicates and filter out any scheduling_url format
+    const uniqueSelection = Array.from(new Set(newSelection)).filter(uri => 
+      uri.includes('/event_types/')
+    );
     
     setSelectedEventTypes(uniqueSelection);
     
