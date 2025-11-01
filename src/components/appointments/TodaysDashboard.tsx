@@ -2,7 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Phone, User, AlertCircle, Loader2, TrendingUp } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar, Clock, Phone, User, AlertCircle, Loader2, TrendingUp, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, parseISO, isToday, startOfDay, endOfDay } from 'date-fns';
@@ -49,8 +50,11 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [confirmationTasks, setConfirmationTasks] = useState<Map<string, ConfirmationTask>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [viewingAsUserId, setViewingAsUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    loadTeamMembers();
     loadTodaysAppointments();
 
     const channel = supabase
@@ -72,7 +76,7 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId, user?.id, userRole]);
+  }, [teamId, user?.id, userRole, viewingAsUserId]);
 
   const loadTodaysAppointments = async () => {
     try {
@@ -90,12 +94,14 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
         .order('start_at_utc', { ascending: true });
 
       // Filter by role
+      const effectiveUserId = viewingAsUserId || user?.id;
+      
       if (userRole === 'setter') {
         // Setters see unassigned or their assigned appointments
-        query = query.or(`setter_id.is.null,setter_id.eq.${user?.id}`);
+        query = query.or(`setter_id.is.null,setter_id.eq.${effectiveUserId}`);
       } else if (userRole === 'closer') {
         // Closers see their assigned appointments
-        query = query.eq('closer_id', user?.id);
+        query = query.eq('closer_id', effectiveUserId);
       }
       // Admins see all appointments (no filter)
 
@@ -135,6 +141,40 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
       console.error('Error loading today\'s appointments:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTeamMembers = async () => {
+    try {
+      const { data: members, error } = await supabase
+        .from('team_members')
+        .select('user_id, role')
+        .eq('team_id', teamId);
+
+      if (error) throw error;
+
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        if (profiles) {
+          setTeamMembers(profiles.map(p => {
+            const member = members.find(m => m.user_id === p.id);
+            return { 
+              id: p.id, 
+              name: p.full_name || 'Unknown',
+              role: member?.role || 'member'
+            };
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading team members:', error);
     }
   };
 
@@ -191,6 +231,45 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {/* Rep Selector (for testing/admin) */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4">
+          <Users className="h-5 w-5 text-muted-foreground" />
+          <div className="flex-1">
+            <label className="text-sm font-medium mb-2 block">View As Team Member</label>
+            <Select 
+              value={viewingAsUserId || user?.id || ''} 
+              onValueChange={(value) => setViewingAsUserId(value === user?.id ? null : value)}
+            >
+              <SelectTrigger className="w-full max-w-xs">
+                <SelectValue placeholder="Select team member" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={user?.id || ''}>
+                  👤 {teamMembers.find(m => m.id === user?.id)?.name || 'Me (Current User)'}
+                </SelectItem>
+                {teamMembers
+                  .filter(m => m.id !== user?.id)
+                  .map(member => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name} ({member.role})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {viewingAsUserId && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setViewingAsUserId(null)}
+            >
+              Reset to My View
+            </Button>
+          )}
+        </div>
+      </Card>
+
       {/* Header with date */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
