@@ -224,22 +224,25 @@ export function CalendlyConfig({
       ? selectedEventTypes.filter(uri => uri !== eventTypeUri)
       : [...selectedEventTypes, eventTypeUri];
     
-    setSelectedEventTypes(newSelection);
+    // Remove duplicates just in case
+    const uniqueSelection = Array.from(new Set(newSelection));
+    
+    setSelectedEventTypes(uniqueSelection);
     
     // Auto-save the selection
     try {
       const { error } = await supabase
         .from("teams")
-        .update({ calendly_event_types: newSelection })
+        .update({ calendly_event_types: uniqueSelection })
         .eq("id", teamId);
 
       if (error) throw error;
 
       toast({
         title: "Sync Filter Updated",
-        description: newSelection.length === 0 
+        description: uniqueSelection.length === 0 
           ? "All event types will now sync" 
-          : `Only ${newSelection.length} selected event type(s) will sync from Calendly`,
+          : `${uniqueSelection.length} event type${uniqueSelection.length === 1 ? '' : 's'} will sync from Calendly`,
       });
       
       onUpdate();
