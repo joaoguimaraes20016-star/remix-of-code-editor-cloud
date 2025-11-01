@@ -139,9 +139,10 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           .in('appointment_id', appointmentIds)
           .eq('status', 'pending');
         
-        // For setters: filter by assigned_to to only show their tasks
-        if (userRole === 'setter') {
-          console.log('[TodaysDashboard] Filtering tasks for setter:', effectiveUserId);
+        // Filter by the effective user (whether viewing as setter or currently logged in setter)
+        // This ensures admins see only the selected setter's tasks
+        if (userRole === 'setter' || viewingAsSetterId) {
+          console.log('[TodaysDashboard] Filtering tasks for user:', effectiveUserId);
           tasksQuery = tasksQuery.eq('assigned_to', effectiveUserId);
         }
         
@@ -149,6 +150,8 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
         
         console.log('[TodaysDashboard] Loaded tasks:', {
           totalTasks: tasks?.length || 0,
+          filteredBy: viewingAsSetterId ? 'viewingAsSetterId' : (userRole === 'setter' ? 'setter role' : 'no filter'),
+          effectiveUserId,
           tasks: tasks?.map(t => ({ id: t.id, appointment_id: t.appointment_id, assigned_to: t.assigned_to }))
         });
         
