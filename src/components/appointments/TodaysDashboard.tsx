@@ -336,6 +336,47 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
 
   return (
     <div className="space-y-6">
+      {/* Rep Selector - Only show in main Today view, not when viewing specific reps */}
+      {!viewingAsCloserId && !viewingAsSetterId && (
+        <Card className="p-4">
+          <div className="flex items-center gap-4">
+            <Users className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">View As Team Member</label>
+              <Select 
+                value={viewingAsUserId || user?.id || ''} 
+                onValueChange={(value) => setViewingAsUserId(value === user?.id ? null : value)}
+              >
+                <SelectTrigger className="w-full max-w-xs">
+                  <SelectValue placeholder="Select team member" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={user?.id || ''}>
+                    👤 {teamMembers.find(m => m.id === user?.id)?.name || 'Me (Current User)'}
+                  </SelectItem>
+                  {teamMembers
+                    .filter(m => m.id !== user?.id)
+                    .map(member => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name} ({member.role})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {viewingAsUserId && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setViewingAsUserId(null)}
+              >
+                Reset to My View
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* Header with date */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
