@@ -15,8 +15,10 @@ interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   teamId: string;
-  appointments: Array<{ id: string; lead_name: string; lead_email: string; start_at_utc: string }>;
+  appointments: Array<{ id: string; lead_name: string; lead_email: string; start_at_utc: string; closer_id?: string }>;
   onTaskCreated?: () => void;
+  userRole?: string;
+  currentUserId?: string;
 }
 
 export function CreateTaskDialog({ 
@@ -24,7 +26,9 @@ export function CreateTaskDialog({
   onOpenChange, 
   teamId, 
   appointments,
-  onTaskCreated 
+  onTaskCreated,
+  userRole = 'admin',
+  currentUserId
 }: CreateTaskDialogProps) {
   const [appointmentId, setAppointmentId] = useState("");
   const [taskType, setTaskType] = useState<"call_confirmation" | "follow_up" | "reschedule">("call_confirmation");
@@ -32,6 +36,27 @@ export function CreateTaskDialog({
   const [followUpReason, setFollowUpReason] = useState("");
   const [rescheduleDate, setRescheduleDate] = useState<Date>();
   const [creating, setCreating] = useState(false);
+
+  // Filter appointments based on user role
+  const filteredAppointments = userRole === 'closer' 
+    ? appointments.filter(apt => apt.closer_id === currentUserId)
+    : appointments;
+
+  // Filter task types based on user role
+  const availableTaskTypes = userRole === 'closer' 
+    ? [{ value: 'follow_up', label: 'Follow-up' }]
+    : [
+        { value: 'call_confirmation', label: 'Call Confirmation' },
+        { value: 'follow_up', label: 'Follow-up' },
+        { value: 'reschedule', label: 'Reschedule' }
+      ];
+
+  const getDialogDescription = () => {
+    if (userRole === 'closer') {
+      return 'Create follow-up tasks for your deals';
+    }
+    return 'Select an appointment and task type to create a new task that will be auto-assigned.';
+  };
 
   const handleCreate = async () => {
     if (!appointmentId) {
@@ -87,7 +112,7 @@ export function CreateTaskDialog({
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            Select an appointment and task type to create a new task that will be auto-assigned.
+            {getDialogDescription()}
           </DialogDescription>
         </DialogHeader>
         
@@ -99,7 +124,7 @@ export function CreateTaskDialog({
                 <SelectValue placeholder="Select appointment" />
               </SelectTrigger>
               <SelectContent>
-                {appointments.map((apt) => (
+                {filteredAppointments.map((apt) => (
                   <SelectItem key={apt.id} value={apt.id}>
                     {apt.lead_name} - {format(new Date(apt.start_at_utc), "MMM d, h:mm a")}
                   </SelectItem>
@@ -115,9 +140,11 @@ export function CreateTaskDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="call_confirmation">Call Confirmation</SelectItem>
-                <SelectItem value="follow_up">Follow-up</SelectItem>
-                <SelectItem value="reschedule">Reschedule</SelectItem>
+                {availableTaskTypes.map(type => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -62,7 +62,7 @@ export function AppointmentsHub({
     const loadAppointments = async () => {
       const { data } = await supabase
         .from("appointments")
-        .select("id, lead_name, lead_email, start_at_utc")
+        .select("id, lead_name, lead_email, start_at_utc, closer_id")
         .eq("team_id", teamId)
         .order("start_at_utc", { ascending: false })
         .limit(100);
@@ -184,6 +184,8 @@ export function AppointmentsHub({
           teamId={teamId}
           appointments={appointments}
           onTaskCreated={() => window.location.reload()}
+          userRole={userRole}
+          currentUserId={user?.id}
         />
       </div>
     );
@@ -325,6 +327,8 @@ export function AppointmentsHub({
           teamId={teamId}
           appointments={appointments}
           onTaskCreated={() => window.location.reload()}
+          userRole={userRole}
+          currentUserId={user?.id}
         />
       </div>
     );

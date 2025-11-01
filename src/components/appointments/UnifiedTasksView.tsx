@@ -15,6 +15,8 @@ import {
 import { Phone, Calendar, RefreshCw, DollarSign, AlertCircle, Clock, CheckCircle2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { CreateTaskDialog } from "./CreateTaskDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useTeamRole } from "@/hooks/useTeamRole";
 
 interface UnifiedTasksViewProps {
   teamId: string;
@@ -36,6 +38,8 @@ interface UnifiedTask {
 
 export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { role } = useTeamRole(teamId);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<UnifiedTask[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
@@ -75,7 +79,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
   const loadAppointments = async () => {
     const { data } = await supabase
       .from("appointments")
-      .select("id, lead_name, lead_email, start_at_utc")
+      .select("id, lead_name, lead_email, start_at_utc, closer_id")
       .eq("team_id", teamId)
       .order("start_at_utc", { ascending: false })
       .limit(100);
@@ -348,6 +352,8 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           loadTasks();
           loadAppointments();
         }}
+        userRole={role || 'admin'}
+        currentUserId={user?.id}
       />
     </div>
   );
