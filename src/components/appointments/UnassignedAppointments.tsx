@@ -23,6 +23,7 @@ interface Appointment {
   mrr_amount: number | null;
   setter_id: string | null;
   closer_id: string | null;
+  reschedule_url: string | null;
 }
 
 interface UnassignedAppointmentsProps {

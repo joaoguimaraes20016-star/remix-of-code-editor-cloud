@@ -84,6 +84,7 @@ interface Appointment {
   setter_notes: string | null;
   cc_collected: number | null;
   mrr_amount: number | null;
+  reschedule_url: string | null;
 }
 
 interface TeamMember {

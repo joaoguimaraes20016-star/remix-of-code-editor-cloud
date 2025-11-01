@@ -31,6 +31,7 @@ interface Appointment {
   cc_collected: number | null;
   mrr_amount: number | null;
   setter_notes: string | null;
+  reschedule_url: string | null;
 }
 
 interface ConfirmationTask {
@@ -110,8 +111,8 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
       if (error) throw error;
       setAppointments(data || []);
 
-      // Load confirmation tasks for today's appointments
-      if (data && data.length > 0) {
+      // Load confirmation tasks for today's appointments (only for setters/admins)
+      if (data && data.length > 0 && (userRole === 'setter' || userRole === 'admin')) {
         const appointmentIds = data.map(apt => apt.id);
         const { data: tasks } = await supabase
           .from('confirmation_tasks')
@@ -375,6 +376,7 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
                     appointment={apt}
                     confirmationTask={confirmationTasks.get(apt.id)}
                     teamId={teamId}
+                    showRescheduleButton={userRole === 'closer'}
                     onUpdate={loadTodaysAppointments}
                   />
                 ))}
@@ -397,6 +399,7 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
                     appointment={apt}
                     confirmationTask={confirmationTasks.get(apt.id)}
                     teamId={teamId}
+                    showRescheduleButton={userRole === 'closer'}
                     onUpdate={loadTodaysAppointments}
                   />
                 ))}
@@ -419,6 +422,7 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
                     appointment={apt}
                     confirmationTask={confirmationTasks.get(apt.id)}
                     teamId={teamId}
+                    showRescheduleButton={userRole === 'closer'}
                     onUpdate={loadTodaysAppointments}
                   />
                 ))}

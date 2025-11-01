@@ -2,10 +2,12 @@ import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Mail, User, Phone, Clock, MessageSquare, DollarSign, UserPlus, Users, CheckCircle, Edit } from "lucide-react";
+import { Calendar, Mail, User, Phone, Clock, MessageSquare, DollarSign, UserPlus, Users, CheckCircle, Edit, CalendarClock } from "lucide-react";
 import { useState } from "react";
 import { EditAppointmentDialog } from "./EditAppointmentDialog";
 import { ConfirmationProgressTracker } from "./ConfirmationProgressTracker";
+import { RescheduleWithLinkDialog } from "./RescheduleWithLinkDialog";
+import { toast } from "sonner";
 
 interface HorizontalAppointmentCardProps {
   appointment: {
@@ -21,6 +23,7 @@ interface HorizontalAppointmentCardProps {
     setter_notes: string | null;
     cc_collected: number | null;
     mrr_amount: number | null;
+    reschedule_url: string | null;
   };
   confirmationTask?: {
     id: string;
@@ -36,6 +39,7 @@ interface HorizontalAppointmentCardProps {
   showReassignButton?: boolean;
   showCloseDealButton?: boolean;
   showEditButton?: boolean;
+  showRescheduleButton?: boolean;
   onAssign?: () => void;
   onReassign?: () => void;
   onCloseDeal?: () => void;
@@ -60,6 +64,7 @@ export function HorizontalAppointmentCard({
   showReassignButton,
   showCloseDealButton,
   showEditButton = true,
+  showRescheduleButton = false,
   onAssign,
   onReassign,
   onCloseDeal,
@@ -67,8 +72,15 @@ export function HorizontalAppointmentCard({
 }: HorizontalAppointmentCardProps) {
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const formattedDate = format(new Date(appointment.start_at_utc), "MMM dd, yyyy 'at' h:mm a");
   const statusStyle = statusColors[appointment.status] || statusColors.NEW;
+
+  const handleReschedule = async (reason: string, notes?: string) => {
+    toast.success("Reschedule link sent to client");
+    setShowRescheduleDialog(false);
+    onUpdate?.();
+  };
 
   return (
     <Card className={`p-4 hover:shadow-md transition-all duration-200 border-l-4 ${statusStyle.border} group`}>
@@ -194,6 +206,18 @@ export function HorizontalAppointmentCard({
               </Button>
             )}
             
+            {showRescheduleButton && appointment.reschedule_url && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowRescheduleDialog(true)}
+                className="flex items-center gap-1.5"
+              >
+                <CalendarClock className="w-4 h-4" />
+                <span>Reschedule</span>
+              </Button>
+            )}
+            
             {showCloseDealButton && onCloseDeal && appointment.status !== 'CLOSED' && (
               <Button
                 size="sm"
@@ -236,6 +260,17 @@ export function HorizontalAppointmentCard({
           onSuccess={() => {
             onUpdate?.();
           }}
+        />
+      )}
+
+      {appointment.reschedule_url && showRescheduleDialog && (
+        <RescheduleWithLinkDialog
+          open={showRescheduleDialog}
+          onOpenChange={setShowRescheduleDialog}
+          rescheduleUrl={appointment.reschedule_url}
+          appointmentName={appointment.lead_name}
+          appointmentId={appointment.id}
+          onConfirm={handleReschedule}
         />
       )}
     </Card>
