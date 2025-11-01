@@ -27,6 +27,7 @@ interface DealCardProps {
     cc_collected: number | null;
     mrr_amount: number | null;
     setter_name: string | null;
+    closer_name: string | null;
     updated_at: string;
     pipeline_stage: string | null;
     status: string | null;
@@ -217,10 +218,28 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
             <p className="text-sm text-muted-foreground truncate">{appointment.lead_email}</p>
           </div>
 
-          {appointment.setter_name && (
-            <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-muted/40 to-muted/20 rounded-lg border border-border/30">
-              <DealAvatar name={appointment.setter_name} className="h-7 w-7 ring-2 ring-primary/20" />
-              <span className="text-sm font-medium truncate">{appointment.setter_name}</span>
+          {/* Team Members */}
+          {(appointment.setter_name || appointment.closer_name) && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {appointment.setter_name && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20 flex-1 min-w-0">
+                  <DealAvatar name={appointment.setter_name} className="h-7 w-7 ring-2 ring-primary/30" />
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-[10px] text-primary/70 font-semibold uppercase tracking-wider">Setter</span>
+                    <span className="text-xs font-medium truncate">{appointment.setter_name}</span>
+                  </div>
+                </div>
+              )}
+              
+              {appointment.closer_name && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg border border-accent/20 flex-1 min-w-0">
+                  <DealAvatar name={appointment.closer_name} className="h-7 w-7 ring-2 ring-accent/30" />
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-[10px] text-accent/70 font-semibold uppercase tracking-wider">Closer</span>
+                    <span className="text-xs font-medium truncate">{appointment.closer_name}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
