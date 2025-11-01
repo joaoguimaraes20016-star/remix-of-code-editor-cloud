@@ -98,8 +98,7 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
       const effectiveUserId = viewingAsUserId || user?.id;
       
       if (userRole === 'setter') {
-        // Setters see unassigned or their assigned appointments
-        query = query.or(`setter_id.is.null,setter_id.eq.${effectiveUserId}`);
+        // Setters see appointments they need to confirm (no filter on setter_id yet, will filter by tasks)
       } else if (userRole === 'closer') {
         // Closers see their assigned appointments
         query = query.eq('closer_id', effectiveUserId);
@@ -109,11 +108,12 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
       const { data, error } = await query;
 
       if (error) throw error;
-      setAppointments(data || []);
+      
+      let filteredData = data || [];
 
       // Load confirmation tasks for today's appointments (only for setters/admins)
-      if (data && data.length > 0 && (userRole === 'setter' || userRole === 'admin')) {
-        const appointmentIds = data.map(apt => apt.id);
+      if (filteredData.length > 0 && (userRole === 'setter' || userRole === 'admin')) {
+        const appointmentIds = filteredData.map(apt => apt.id);
         const { data: tasks } = await supabase
           .from('confirmation_tasks')
           .select('*')
@@ -136,8 +136,16 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
             });
           });
           setConfirmationTasks(tasksMap);
+          
+          // For setters: Only show appointments with pending confirmation tasks
+          if (userRole === 'setter') {
+            const appointmentIdsWithTasks = new Set(tasks.map(t => t.appointment_id));
+            filteredData = filteredData.filter(apt => appointmentIdsWithTasks.has(apt.id));
+          }
         }
       }
+      
+      setAppointments(filteredData);
     } catch (error) {
       console.error('Error loading today\'s appointments:', error);
     } finally {
@@ -279,7 +287,11 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
           </div>
           <div>
             <h3 className="text-2xl font-bold">{format(new Date(), 'EEEE, MMMM d')}</h3>
-            <p className="text-sm text-muted-foreground">Your schedule for today</p>
+            <p className="text-sm text-muted-foreground">
+              {userRole === 'setter' ? 'Calls requiring confirmation' : 
+               userRole === 'closer' ? 'Your booked calls for today' : 
+               'Team schedule for today'}
+            </p>
           </div>
         </div>
         <Button onClick={loadTodaysAppointments} variant="outline" size="sm">
@@ -353,9 +365,14 @@ export function TodaysDashboard({ teamId, userRole }: TodaysDashboardProps) {
         <Card>
           <CardContent className="p-12 text-center">
             <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No calls scheduled for today</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              {userRole === 'setter' ? 'No calls need confirmation' : 
+               userRole === 'closer' ? 'No calls scheduled for today' : 
+               'No calls scheduled for today'}
+            </h3>
             <p className="text-sm text-muted-foreground">
-              You're all caught up! New appointments will appear here.
+              {userRole === 'setter' ? 'All appointments are confirmed! Check back later for new tasks.' : 
+               'You\'re all caught up! New appointments will appear here.'}
             </p>
           </CardContent>
         </Card>
