@@ -22,6 +22,7 @@ import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useParams } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface TeamMember {
   id: string;
@@ -53,6 +54,7 @@ interface AddSaleDialogProps {
 export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialogProps) {
   const { teamId } = useParams();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [offerOwnerId, setOfferOwnerId] = useState("");
@@ -138,6 +140,47 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate amounts
+    const cc = parseFloat(ccCollected);
+    const mrr = parseFloat(mrrAmount) || 0;
+    const months = parseInt(mrrMonths) || 0;
+
+    if (isNaN(cc) || cc < 0) {
+      toast({
+        title: 'Invalid Amount',
+        description: 'Cash collected must be a valid positive number',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (cc > 1000000) {
+      toast({
+        title: 'Amount Too Large',
+        description: 'Cash collected cannot exceed $1,000,000',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (mrr < 0) {
+      toast({
+        title: 'Invalid MRR',
+        description: 'MRR amount cannot be negative',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (mrr > 0 && (months <= 0 || months > 120)) {
+      toast({
+        title: 'Invalid MRR Months',
+        description: 'MRR months must be between 1 and 120',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     const selectedSetter = teamMembers.find(m => m.user_id === setterId);
     const selectedCloser = teamMembers.find(m => m.user_id === salesRepId);
     const selectedOfferOwner = teamMembers.find(m => m.user_id === offerOwnerId);
@@ -151,9 +194,9 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
       offerOwner: selectedOfferOwner?.full_name || '',
       productName,
       date,
-      ccCollected: parseFloat(ccCollected) || 0,
-      mrrAmount: parseFloat(mrrAmount) || 0,
-      mrrMonths: parseInt(mrrMonths) || 0,
+      ccCollected: Math.round(cc * 100) / 100,
+      mrrAmount: Math.round(mrr * 100) / 100,
+      mrrMonths: months,
       status,
       setterCommissionPct,
       closerCommissionPct,

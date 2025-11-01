@@ -60,6 +60,21 @@ export function QuickCloseDealModal({
       return;
     }
 
+    if (cc < 0 || cc > 1000000) {
+      toast.error("CC amount must be between $0 and $1,000,000");
+      return;
+    }
+
+    if (mrr < 0 || mrr > 100000) {
+      toast.error("MRR amount cannot be negative or exceed $100,000");
+      return;
+    }
+
+    if (mrr > 0 && (months <= 0 || months > 120)) {
+      toast.error("MRR months must be between 1 and 120");
+      return;
+    }
+
     setClosing(true);
 
     try {
@@ -78,10 +93,10 @@ export function QuickCloseDealModal({
 
       if (updateError) throw updateError;
 
-      // Upsert sale record (revenue is only CC, MRR tracked separately)
-      const closerCommission = cc * (closerCommissionPct / 100);
-      const setterCommission = cc * (setterCommissionPct / 100);
-      const revenue = cc;
+      // Upsert sale record (revenue is only CC, MRR tracked separately) - round to 2 decimals
+      const closerCommission = Math.round((cc * (closerCommissionPct / 100)) * 100) / 100;
+      const setterCommission = Math.round((cc * (setterCommissionPct / 100)) * 100) / 100;
+      const revenue = Math.round(cc * 100) / 100;
       const todayDate = new Date().toISOString().split("T")[0];
 
       // Check if sale already exists for this appointment

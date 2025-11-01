@@ -119,40 +119,32 @@ export function CommissionSettings({ teamId }: CommissionSettingsProps) {
       const setterPct = Number(teamData.setter_commission_percentage) || 5;
       const closerPct = Number(teamData.closer_commission_percentage) || 10;
 
-      // Get all sales for this team
-      const { data: sales, error: salesError } = await supabase
-        .from('sales')
-        .select('*')
-        .eq('team_id', teamId);
-
-      if (salesError) throw salesError;
-
-      // Recalculate commissions for each sale
-      const updates = sales.map((sale: any) => {
-        const revenue = Number(sale.revenue) || 0;
-        const setterCommission = sale.setter ? revenue * (setterPct / 100) : 0;
-        const closerCommission = revenue * (closerPct / 100);
-
-        return supabase
-          .from('sales')
-          .update({
-            setter_commission: setterCommission,
-            commission: closerCommission,
-          })
-          .eq('id', sale.id);
+      // Call the transaction-safe database function
+      const { data, error } = await supabase.rpc('recalculate_team_commissions', {
+        p_team_id: teamId,
+        p_setter_percentage: setterPct,
+        p_closer_percentage: closerPct,
       });
 
-      await Promise.all(updates);
+      if (error) throw error;
+
+      // Data is an array with one result
+      const result = data?.[0];
+      
+      if (result?.error_message) {
+        throw new Error(result.error_message);
+      }
 
       toast({
-        title: 'Commissions recalculated',
-        description: `Updated ${sales.length} sales based on current commission rates`,
+        title: "Commissions recalculated",
+        description: `Successfully updated ${result?.updated_count || 0} sales records with new commission rates.`,
       });
     } catch (error: any) {
+      console.error('Error recalculating:', error);
       toast({
-        title: 'Error recalculating commissions',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to recalculate commissions",
+        variant: "destructive",
       });
     } finally {
       setRecalculating(false);

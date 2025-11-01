@@ -1,9 +1,41 @@
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Log error to backend for monitoring
+ */
+async function logErrorToBackend(error: any, context?: Record<string, any>) {
+  try {
+    // Get current user if available
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    await supabase.functions.invoke('log-error', {
+      body: {
+        team_id: context?.teamId || null,
+        user_id: user?.id || null,
+        error_type: error?.code || 'unknown',
+        error_message: error?.message || String(error),
+        error_context: {
+          ...context,
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+        }
+      }
+    });
+  } catch (logError) {
+    // Silently fail - don't break the app if logging fails
+    console.error('Failed to log error:', logError);
+  }
+}
+
 /**
  * Sanitize error messages for user display
  * Prevents exposing database structure, table names, and internal logic
  */
-export function getUserFriendlyError(error: any): string {
-  // Don't log sensitive error details in production
+export function getUserFriendlyError(error: any, context?: Record<string, any>): string {
+  // Log to backend in both dev and production
+  logErrorToBackend(error, context);
+  
+  // Don't log sensitive error details in production console
   if (import.meta.env.DEV) {
     console.error('[Debug only]:', error);
   }

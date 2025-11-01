@@ -24,13 +24,25 @@ export function DepositCollectedDialog({ open, onOpenChange, onConfirm, dealName
 
   const handleConfirm = () => {
     const amount = parseFloat(depositAmount);
-    if (!isNaN(amount) && amount > 0 && notes.trim() && followUpDate) {
-      onConfirm(amount, notes.trim(), followUpDate);
-      setDepositAmount("");
-      setNotes("");
-      setFollowUpDate(addDays(new Date(), 7));
-      onOpenChange(false);
+    
+    // Validate amount
+    if (isNaN(amount) || amount <= 0) {
+      return;
     }
+
+    if (amount > 1000000) {
+      return;
+    }
+
+    if (!notes.trim() || !followUpDate) {
+      return;
+    }
+
+    onConfirm(Math.round(amount * 100) / 100, notes.trim(), followUpDate);
+    setDepositAmount("");
+    setNotes("");
+    setFollowUpDate(addDays(new Date(), 7));
+    onOpenChange(false);
   };
 
   const isValid = depositAmount && !isNaN(parseFloat(depositAmount)) && parseFloat(depositAmount) > 0 && notes.trim() && followUpDate;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { addDays, format } from 'date-fns';
 
 interface Task {
   id: string;
@@ -53,8 +54,9 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
 
       if (error) throw error;
 
-      // Load MRR follow-up tasks due today (for closers to confirm)
+      // Load MRR follow-up tasks for next 30 days (not just today)
       const today = new Date().toISOString().split('T')[0];
+      const futureDate = addDays(new Date(), 30).toISOString().split('T')[0];
       const { data: mrrTasks, error: mrrError } = await supabase
         .from('mrr_follow_up_tasks')
         .select(`
@@ -69,7 +71,8 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         `)
         .eq('team_id', teamId)
         .eq('status', 'due')
-        .eq('due_date', today)
+        .gte('due_date', today)
+        .lte('due_date', futureDate)
         .order('due_date', { ascending: true });
 
       if (mrrError) throw mrrError;

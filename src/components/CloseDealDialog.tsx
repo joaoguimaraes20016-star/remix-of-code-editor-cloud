@@ -96,8 +96,8 @@ export function CloseDealDialog({
     }
 
     const cc = parseFloat(ccCollected);
-    const mrr = parseFloat(mrrAmount);
-    const months = parseInt(mrrMonths);
+    const mrr = parseFloat(mrrAmount) || 0;
+    const months = parseInt(mrrMonths) || 0;
 
     if (isNaN(cc) || cc <= 0) {
       toast({
@@ -108,10 +108,28 @@ export function CloseDealDialog({
       return;
     }
 
-    if (mrr > 0 && (isNaN(months) || months <= 0)) {
+    if (cc > 1000000) {
+      toast({
+        title: 'Amount Too Large',
+        description: 'Cash collected cannot exceed $1,000,000',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (mrr < 0) {
+      toast({
+        title: 'Invalid MRR',
+        description: 'MRR amount cannot be negative',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (mrr > 0 && (isNaN(months) || months <= 0 || months > 120)) {
       toast({
         title: 'Invalid MRR months',
-        description: 'Please enter a valid number of months for MRR',
+        description: 'MRR months must be between 1 and 120',
         variant: 'destructive',
       });
       return;
@@ -148,9 +166,9 @@ export function CloseDealDialog({
         isSetterOfferOwner = setterData?.role === 'offer_owner';
       }
       
-      // Calculate commissions on CC using configured percentages
-      const closerCommission = isOfferOwner ? 0 : cc * (closerCommissionPct / 100);
-      const setterCommission = (appointment.setter_id && !isSetterOfferOwner) ? cc * (setterCommissionPct / 100) : 0;
+      // Calculate commissions on CC using configured percentages (round to 2 decimals)
+      const closerCommission = Math.round((isOfferOwner ? 0 : cc * (closerCommissionPct / 100)) * 100) / 100;
+      const setterCommission = Math.round(((appointment.setter_id && !isSetterOfferOwner) ? cc * (setterCommissionPct / 100) : 0) * 100) / 100;
 
       // Update appointment to closed
       const { error: updateError } = await supabase
