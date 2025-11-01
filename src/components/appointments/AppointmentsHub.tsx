@@ -120,7 +120,7 @@ export function AppointmentsHub({
                 📅 Today
               </TabsTrigger>
               <TabsTrigger value="confirm" className="text-sm md:text-base whitespace-nowrap">
-                Confirm Today 
+                📋 Assigned Tasks 
                 {counts.overdue > 0 && (
                   <Badge className="ml-2 bg-red-600 text-white" variant="secondary">
                     {counts.overdue} overdue
