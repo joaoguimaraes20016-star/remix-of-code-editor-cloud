@@ -101,14 +101,24 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
 
       // Determine which user's data to show using SANITIZED props
       const targetUserId = sanitizedCloserId || sanitizedSetterId || user?.id;
-      const targetRole = sanitizedCloserId ? 'closer' : sanitizedSetterId ? 'setter' : userRole;
+      const isViewingSpecificPerson = !!(sanitizedCloserId || sanitizedSetterId);
+      
+      // Determine target role
+      let targetRole = userRole;
+      if (sanitizedCloserId) {
+        targetRole = 'closer';
+      } else if (sanitizedSetterId) {
+        targetRole = 'setter';
+      }
 
       console.log('[TodaysDashboard] Loading for:', {
         targetUserId,
         targetRole,
+        isViewingSpecificPerson,
         sanitizedCloserId,
         sanitizedSetterId,
-        currentUserId: user?.id
+        currentUserId: user?.id,
+        userRole
       });
 
       let query = supabase
@@ -119,10 +129,12 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
         .lte('start_at_utc', endOfToday)
         .order('start_at_utc', { ascending: true });
 
-      // Filter appointments by role - handle BOTH closer and setter views
-      if (targetRole === 'closer') {
+      // Apply role-based filters
+      if (targetRole === 'closer' || (targetRole === 'offer_owner' && !isViewingSpecificPerson) || (targetRole === 'admin' && !isViewingSpecificPerson)) {
+        // Closers, offer owners, and admins (when NOT viewing someone else) see their own closer appointments
         query = query.eq('closer_id', targetUserId);
       } else if (targetRole === 'setter') {
+        // Setters see their own setter appointments
         query = query.eq('setter_id', targetUserId);
       }
 
