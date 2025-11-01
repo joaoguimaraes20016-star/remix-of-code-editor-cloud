@@ -26,6 +26,7 @@ import { BySetterView } from "./BySetterView";
 import { AdminOverview } from "./AdminOverview";
 import { SettersView } from "./SettersView";
 import { UnifiedTasksView } from "./UnifiedTasksView";
+import { TodaysDashboard } from "./TodaysDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
@@ -112,9 +113,12 @@ export function AppointmentsHub({
           </div>
         </div>
         
-        <Tabs defaultValue="confirm" className="w-full">
+        <Tabs defaultValue="today" className="w-full">
           <div className="w-full overflow-x-auto">
             <TabsList className="w-max min-w-full h-12">
+              <TabsTrigger value="today" className="text-sm md:text-base whitespace-nowrap">
+                📅 Today
+              </TabsTrigger>
               <TabsTrigger value="confirm" className="text-sm md:text-base whitespace-nowrap">
                 Confirm Today 
                 {counts.overdue > 0 && (
@@ -135,6 +139,10 @@ export function AppointmentsHub({
               </TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="today" className="mt-6">
+            <TodaysDashboard teamId={teamId} userRole={userRole} />
+          </TabsContent>
 
           <TabsContent value="confirm" className="mt-6">
             <TaskBasedConfirmToday teamId={teamId} />
@@ -211,9 +219,12 @@ export function AppointmentsHub({
           </div>
         </div>
         
-        <Tabs defaultValue="mine" className="w-full">
+        <Tabs defaultValue="today" className="w-full">
           <div className="w-full overflow-x-auto">
             <TabsList className="w-max min-w-full h-12">
+              <TabsTrigger value="today" className="text-sm md:text-base whitespace-nowrap">
+                📅 Today
+              </TabsTrigger>
               <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Deals</TabsTrigger>
               <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">My Pipeline</TabsTrigger>
               <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">Team Pipeline</TabsTrigger>
@@ -231,6 +242,10 @@ export function AppointmentsHub({
               <TabsTrigger value="stages" className="text-sm md:text-base whitespace-nowrap">Stage Views</TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="today" className="mt-6">
+            <TodaysDashboard teamId={teamId} userRole={userRole} />
+          </TabsContent>
 
           <TabsContent value="mine" className="mt-6">
             <AllClaimed
@@ -356,9 +371,12 @@ export function AppointmentsHub({
         </div>
       </div>
       
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs defaultValue="today" className="w-full">
         <div className="w-full overflow-x-auto">
           <TabsList className="w-max min-w-full h-12">
+            <TabsTrigger value="today" className="text-sm md:text-base whitespace-nowrap">
+              📅 Today
+            </TabsTrigger>
             <TabsTrigger value="overview" className="text-sm md:text-base whitespace-nowrap">
               Overview
             </TabsTrigger>
@@ -384,6 +402,10 @@ export function AppointmentsHub({
             </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="today" className="mt-6">
+          <TodaysDashboard teamId={teamId} userRole={userRole} />
+        </TabsContent>
 
         <TabsContent value="overview" className="mt-6">
           <AdminOverview teamId={teamId} />
