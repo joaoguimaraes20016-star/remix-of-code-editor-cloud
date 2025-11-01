@@ -42,6 +42,7 @@ export interface Sale {
   setterCommission: number;
   commission: number;
   status: 'closed' | 'pending' | 'no-show';
+  isAppointment?: boolean; // Flag to distinguish appointments from manual sales
 }
 
 interface SalesTableProps {
@@ -80,26 +81,40 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
 
     setDeleting(true);
     try {
-      // First delete any MRR commissions linked to this sale
-      const { error: mrrError } = await supabase
-        .from('mrr_commissions')
-        .delete()
-        .eq('sale_id', saleToDelete.id);
+      if (saleToDelete.isAppointment) {
+        // This is an appointment being displayed as a sale - delete the appointment
+        const { error } = await supabase
+          .from('appointments')
+          .delete()
+          .eq('id', saleToDelete.id);
 
-      if (mrrError) throw mrrError;
+        if (error) throw error;
 
-      // Then delete the sale
-      const { error } = await supabase
-        .from('sales')
-        .delete()
-        .eq('id', saleToDelete.id);
+        toast({
+          title: 'Appointment deleted',
+          description: 'The appointment and deposit have been removed successfully',
+        });
+      } else {
+        // This is a manual sale record - delete MRR commissions and sale
+        const { error: mrrError } = await supabase
+          .from('mrr_commissions')
+          .delete()
+          .eq('sale_id', saleToDelete.id);
 
-      if (error) throw error;
+        if (mrrError) throw mrrError;
 
-      toast({
-        title: 'Sale deleted',
-        description: 'The transaction and MRR commissions have been removed successfully',
-      });
+        const { error } = await supabase
+          .from('sales')
+          .delete()
+          .eq('id', saleToDelete.id);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Sale deleted',
+          description: 'The transaction and MRR commissions have been removed successfully',
+        });
+      }
 
       onSaleDeleted?.();
     } catch (error: any) {

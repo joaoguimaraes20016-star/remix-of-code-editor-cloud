@@ -519,6 +519,7 @@ const Index = () => {
         return (closerMember?.role !== 'offer_owner') ? (Number(apt.cc_collected) || 0) * (closerCommissionPct / 100) : 0;
       })(),
       status: apt.pipeline_stage?.toLowerCase().includes('deposit') ? 'pending' as const : 'closed' as const,
+      isAppointment: true, // Flag this as an appointment
     }));
 
   // Filter sales by selected rep and date range
