@@ -20,6 +20,9 @@ interface Appointment {
   mrr_amount: number | null;
   setter_id: string | null;
   closer_id: string | null;
+  original_appointment_id: string | null;
+  rescheduled_to_appointment_id: string | null;
+  reschedule_count: number;
 }
 
 interface AppointmentListViewProps {

@@ -3,8 +3,9 @@ import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Mail, User, Clock, MessageSquare } from "lucide-react";
+import { Calendar, Mail, User, Clock, MessageSquare, History, ArrowRight } from "lucide-react";
 import { EditAppointmentDialog } from "./EditAppointmentDialog";
+import { RescheduleHistory } from "./RescheduleHistory";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,9 @@ interface AppointmentCardProps {
     setter_notes: string | null;
     cc_collected: number | null;
     mrr_amount: number | null;
+    original_appointment_id?: string | null;
+    rescheduled_to_appointment_id?: string | null;
+    reschedule_count?: number;
   };
   teamId?: string;
   onUpdateStatus?: (id: string, status: string) => void;
@@ -56,6 +60,7 @@ export function AppointmentCard({
   onUpdate,
 }: AppointmentCardProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showRescheduleHistory, setShowRescheduleHistory] = useState(false);
   const formattedDate = format(new Date(appointment.start_at_utc), "MMM dd, yyyy 'at' h:mm a");
 
   return (
@@ -75,10 +80,38 @@ export function AppointmentCard({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2 ml-3">
+        <div className="flex items-center gap-2 ml-3 flex-wrap">
           <Badge variant={statusColors[appointment.status] as any || "secondary"}>
             {appointment.status}
           </Badge>
+          
+          {appointment.original_appointment_id && (
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-warning/20 border-warning/40 text-warning-foreground gap-1"
+              onClick={() => setShowRescheduleHistory(true)}
+            >
+              <History className="h-3 w-3" />
+              Previously Rescheduled
+              {appointment.reschedule_count && appointment.reschedule_count > 1 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-warning/30 rounded-full text-xs font-bold">
+                  {appointment.reschedule_count}x
+                </span>
+              )}
+            </Badge>
+          )}
+          
+          {appointment.rescheduled_to_appointment_id && (
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-info/20 border-info/40 text-info-foreground gap-1"
+              onClick={() => setShowRescheduleHistory(true)}
+            >
+              <ArrowRight className="h-3 w-3" />
+              Rescheduled to New Time
+            </Badge>
+          )}
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -180,6 +213,12 @@ export function AppointmentCard({
           }}
         />
       )}
+      
+      <RescheduleHistory
+        open={showRescheduleHistory}
+        onOpenChange={setShowRescheduleHistory}
+        appointmentId={appointment.id}
+      />
     </Card>
   );
 }
