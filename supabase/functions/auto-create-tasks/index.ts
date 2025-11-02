@@ -89,34 +89,64 @@ serve(async (req) => {
         }
       });
 
-      // Assign to setter with fewest tasks
-      assignedTo = Object.entries(counts).sort((a, b) => a[1] - b[1])[0][0];
+    // Assign to setter with fewest tasks
+    assignedTo = Object.entries(counts).sort((a, b) => a[1] - b[1])[0][0];
+  }
+
+  // Check if task already exists for this appointment (idempotency)
+  const { data: existingTask, error: existingTaskError } = await supabaseClient
+    .from('confirmation_tasks')
+    .select('id')
+    .eq('appointment_id', appointment.id)
+    .eq('task_type', 'call_confirmation')
+    .maybeSingle();
+
+  if (existingTaskError) {
+    console.error('Error checking for existing task:', existingTaskError);
+  }
+
+  if (existingTask) {
+    console.log('Task already exists for appointment:', appointment.id, '- skipping creation');
+    return new Response(
+      JSON.stringify({ success: true, skipped: true, reason: 'Task already exists' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Create the task
+  const taskData: any = {
+    team_id: appointment.team_id,
+    appointment_id: appointment.id,
+    status: 'pending',
+    required_confirmations: schedule.length,
+    confirmation_sequence: 1,
+    due_at: dueAt.toISOString(),
+    confirmation_attempts: [],
+    completed_confirmations: 0,
+    is_overdue: false
+  };
+
+  if (assignedTo) {
+    taskData.assigned_to = assignedTo;
+    taskData.assigned_at = new Date().toISOString();
+    taskData.auto_return_at = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  }
+
+  const { error: taskError } = await supabaseClient
+    .from('confirmation_tasks')
+    .insert(taskData);
+
+  if (taskError) {
+    // If it's a duplicate key error, log it but don't fail
+    if (taskError.code === '23505') {
+      console.log('Task already exists (caught duplicate key error) - this is okay');
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: 'Duplicate prevented by constraint' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    // Create the task
-    const taskData: any = {
-      team_id: appointment.team_id,
-      appointment_id: appointment.id,
-      status: 'pending',
-      required_confirmations: schedule.length,
-      confirmation_sequence: 1,
-      due_at: dueAt.toISOString(),
-      confirmation_attempts: [],
-      completed_confirmations: 0,
-      is_overdue: false
-    };
-
-    if (assignedTo) {
-      taskData.assigned_to = assignedTo;
-      taskData.assigned_at = new Date().toISOString();
-      taskData.auto_return_at = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
-    }
-
-    const { error: taskError } = await supabaseClient
-      .from('confirmation_tasks')
-      .insert(taskData);
-
-    if (taskError) throw taskError;
+    throw taskError;
+  }
 
     // Log activity
     const { error: activityError } = await supabaseClient
