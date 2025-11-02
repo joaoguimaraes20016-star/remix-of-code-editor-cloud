@@ -38,12 +38,16 @@ export function BySetterView({ teamId }: BySetterViewProps) {
     try {
       setLoading(true);
 
-      // Get all appointments with setters assigned
+      // Get all appointments with setters assigned (from today onwards)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
         .not('setter_id', 'is', null)
+        .gte('start_at_utc', today.toISOString())
         .order('start_at_utc', { ascending: true });
 
       if (error) throw error;
