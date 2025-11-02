@@ -149,8 +149,8 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
       
       let filteredData = data || [];
 
-      // Load confirmation tasks
-      if (filteredData.length > 0 && (targetRole === 'setter' || targetRole === 'admin')) {
+      // Load confirmation tasks - load for setters OR when viewing someone else
+      if (filteredData.length > 0 && (targetRole === 'setter' || targetRole === 'admin' || isViewingSpecificPerson)) {
         const appointmentIds = filteredData.map(apt => apt.id);
         
         let tasksQuery = supabase
@@ -159,9 +159,9 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           .in('appointment_id', appointmentIds)
           .eq('status', 'pending');
         
-        // ALWAYS filter tasks by the target user when viewing someone specific
-        if (isViewingSpecificPerson) {
-          console.log('[TodaysDashboard] Filtering tasks by:', targetUserId);
+        // Filter by target user when viewing someone else OR when user is a setter
+        if (isViewingSpecificPerson || targetRole === 'setter') {
+          console.log('[TodaysDashboard] Filtering tasks by targetUserId:', targetUserId);
           tasksQuery = tasksQuery.eq('assigned_to', targetUserId);
         }
         
