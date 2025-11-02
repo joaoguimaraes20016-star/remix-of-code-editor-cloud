@@ -41,13 +41,13 @@ interface AppointmentCardProps {
 }
 
 const statusColors: Record<string, string> = {
-  NEW: "default",
-  SHOWED: "success",
+  NEW: "pending",
+  SHOWED: "confirmed",
   NO_SHOW: "destructive",
   CANCELLED: "secondary",
-  CLOSED: "success",
-  RESCHEDULED: "warning",
-  CONFIRMED: "info",
+  CLOSED: "confirmed",
+  RESCHEDULED: "rescheduled",
+  CONFIRMED: "confirmed",
 };
 
 export function AppointmentCard({

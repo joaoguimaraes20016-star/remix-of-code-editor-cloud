@@ -304,10 +304,20 @@ export function ConfirmTodayWorkspace({ teamId, userRole }: ConfirmTodayWorkspac
                       )}
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge 
-                          variant={apt.pipeline_stage === 'no_show' ? 'destructive' : apt.pipeline_stage === 'cancelled' ? 'secondary' : apt.status === 'CONFIRMED' ? 'default' : 'secondary'}
+                          variant={
+                            apt.pipeline_stage === 'no_show' ? 'destructive' : 
+                            apt.pipeline_stage === 'cancelled' ? 'secondary' : 
+                            apt.status === 'CONFIRMED' ? 'confirmed' : 
+                            apt.status === 'RESCHEDULED' ? 'rescheduled' :
+                            apt.status === 'NEW' ? 'pending' :
+                            'secondary'
+                          }
                           className="text-xs"
                         >
-                          {apt.pipeline_stage === 'no_show' ? 'No Show' : apt.pipeline_stage === 'cancelled' ? 'Cancelled' : apt.status}
+                          {apt.pipeline_stage === 'no_show' ? 'No Show' : 
+                           apt.pipeline_stage === 'cancelled' ? 'Cancelled' : 
+                           apt.status === 'NEW' ? 'Pending Confirmation' :
+                           apt.status}
                         </Badge>
                         {apt.status === 'CONFIRMED' && apt.setter_id === user?.id && !apt.pipeline_stage?.includes('no_show') && !apt.pipeline_stage?.includes('cancelled') && (
                           <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">

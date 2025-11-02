@@ -49,13 +49,13 @@ interface HorizontalAppointmentCardProps {
 }
 
 const statusColors: Record<string, { badge: string; border: string }> = {
-  NEW: { badge: "success", border: "border-l-green-500" },
-  SHOWED: { badge: "success", border: "border-l-green-500" },
+  NEW: { badge: "pending", border: "border-l-orange-500" },
+  SHOWED: { badge: "confirmed", border: "border-l-green-500" },
   NO_SHOW: { badge: "destructive", border: "border-l-red-500" },
   CANCELLED: { badge: "secondary", border: "border-l-gray-400" },
-  CLOSED: { badge: "success", border: "border-l-green-600" },
-  RESCHEDULED: { badge: "success", border: "border-l-green-500" },
-  CONFIRMED: { badge: "success", border: "border-l-green-500" },
+  CLOSED: { badge: "confirmed", border: "border-l-green-600" },
+  RESCHEDULED: { badge: "rescheduled", border: "border-l-yellow-500" },
+  CONFIRMED: { badge: "confirmed", border: "border-l-green-500" },
 };
 
 export function HorizontalAppointmentCard({

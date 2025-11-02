@@ -196,19 +196,19 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
           {confirmationTask && (
             <>
               {confirmationTask.completed_confirmations >= confirmationTask.required_confirmations ? (
-                <Badge variant="success" className="shadow-sm">
+                <Badge variant="confirmed" className="shadow-sm">
                   <span className="flex items-center gap-1">
                     ✓ Confirmed
                   </span>
                 </Badge>
               ) : confirmationTask.completed_confirmations > 0 ? (
-                <Badge variant="info" className="shadow-sm">
+                <Badge variant="confirmed" className="shadow-sm">
                   <span className="flex items-center gap-1">
                     Confirmed {confirmationTask.completed_confirmations}/{confirmationTask.required_confirmations}
                   </span>
                 </Badge>
               ) : (
-                <Badge variant="warning" className="shadow-sm">
+                <Badge variant="pending" className="shadow-sm">
                   <span className="flex items-center gap-1">
                     Pending Confirmation
                   </span>
@@ -232,14 +232,14 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
             </Badge>
           )}
           {isConfirmed && !confirmationTask && (
-            <Badge variant="default" className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-sm">
+            <Badge variant="confirmed" className="shadow-sm">
               <span className="flex items-center gap-1">
                 ✓ Confirmed
               </span>
             </Badge>
           )}
           {isRescheduled && (
-            <Badge variant="default" className="bg-gradient-to-r from-yellow-600 to-amber-600 shadow-sm">
+            <Badge variant="rescheduled" className="shadow-sm">
               <span className="flex items-center gap-1">
                 ⟳ Rescheduled
               </span>

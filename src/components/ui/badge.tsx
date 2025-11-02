@@ -15,6 +15,9 @@ const badgeVariants = cva(
         info: "border-transparent bg-info text-info-foreground hover:bg-info/80 shadow-sm",
         outline: "text-foreground border-border hover:bg-secondary/50",
         warning: "border-transparent bg-chart-2 text-primary-foreground hover:bg-chart-2/80 shadow-sm",
+        pending: "border-transparent text-pending-foreground shadow-sm [background:var(--gradient-pending)] hover:opacity-90",
+        confirmed: "border-transparent text-confirmed-foreground shadow-sm [background:var(--gradient-confirmed)] hover:opacity-90",
+        rescheduled: "border-transparent text-rescheduled-foreground shadow-sm [background:var(--gradient-rescheduled)] hover:opacity-90",
       },
     },
     defaultVariants: {
