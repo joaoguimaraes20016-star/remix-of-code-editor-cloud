@@ -667,11 +667,20 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
         <RescheduleWithLinkDialog
           open={rescheduleWithLinkDialog.open}
           onOpenChange={(open) => !open && setRescheduleWithLinkDialog(null)}
-          taskId={rescheduleWithLinkDialog.taskId}
           appointmentId={rescheduleWithLinkDialog.appointmentId}
           appointmentName={rescheduleWithLinkDialog.appointmentName}
           rescheduleUrl={rescheduleWithLinkDialog.rescheduleUrl}
-          onSuccess={() => {
+          onConfirm={async (reason: string, notes?: string) => {
+            const { error } = await supabase
+              .from('confirmation_tasks')
+              .update({ 
+                status: 'awaiting_reschedule',
+                notes: notes || reason
+              })
+              .eq('id', rescheduleWithLinkDialog.taskId);
+            
+            if (error) throw error;
+            
             setRescheduleWithLinkDialog(null);
             loadData();
           }}
