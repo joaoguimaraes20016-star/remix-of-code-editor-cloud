@@ -194,6 +194,25 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
     const selectedOfferOwner = teamMembers.find(m => m.user_id === offerOwnerId);
     
     try {
+      // Check for existing sale (idempotency)
+      const { data: existingSales } = await supabase
+        .from("sales")
+        .select("id")
+        .eq("customer_name", customerName)
+        .eq("date", date)
+        .eq("sales_rep", selectedCloser?.full_name || '')
+        .limit(1);
+
+      if (existingSales && existingSales.length > 0) {
+        toast({
+          title: 'Duplicate Sale',
+          description: 'A sale with this customer name, date, and sales rep already exists',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       onAddSale({
         customerName,
         setterId,

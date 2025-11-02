@@ -137,236 +137,31 @@ export function CloseDealDialog({
 
     setClosing(true);
     try {
-      // Check if this deal is already closed
-      const { data: existingAppointment } = await supabase
-        .from('appointments')
-        .select('status')
-        .eq('id', appointment.id)
-        .single();
-      
-      if (existingAppointment?.status === 'CLOSED') {
-        toast({
-          title: 'Deal Already Closed',
-          description: 'This deal has already been closed.',
-          variant: 'destructive',
-        });
-        setClosing(false);
+      // Use transaction function for guaranteed atomicity
+      const { data, error } = await supabase.rpc('close_deal_transaction', {
+        p_appointment_id: appointment.id,
+        p_closer_id: user.id,
+        p_cc_amount: cc,
+        p_mrr_amount: mrr,
+        p_mrr_months: months,
+        p_product_name: productName || null,
+        p_notes: null,
+        p_closer_name: userProfile.full_name,
+        p_closer_commission_pct: closerCommissionPct,
+        p_setter_commission_pct: setterCommissionPct,
+      });
+
+      if (error) {
+        if (error.message?.includes('already closed')) {
+          toast({
+            title: 'Deal Already Closed',
+            description: 'This deal has already been closed.',
+            variant: 'destructive',
+          });
+        } else {
+          throw error;
+        }
         return;
-      }
-
-      // Get current appointment data for undo
-      const { data: currentAppointment } = await supabase
-        .from('appointments')
-        .select('status, closer_id, closer_name, revenue, cc_collected, mrr_amount, mrr_months, product_name')
-        .eq('id', appointment.id)
-        .single();
-      
-      // Check if closer is offer owner
-      const { data: teamMemberData } = await supabase
-        .from('team_members')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('team_id', teamId)
-        .maybeSingle();
-      
-      const isOfferOwner = teamMemberData?.role === 'offer_owner';
-      
-      // Check if setter is offer owner
-      let isSetterOfferOwner = false;
-      if (appointment.setter_id) {
-        const { data: setterData } = await supabase
-          .from('team_members')
-          .select('role')
-          .eq('user_id', appointment.setter_id)
-          .eq('team_id', teamId)
-          .maybeSingle();
-        isSetterOfferOwner = setterData?.role === 'offer_owner';
-      }
-      
-      // Calculate commissions on CC using configured percentages (round to 2 decimals)
-      const closerCommission = Math.round((isOfferOwner ? 0 : cc * (closerCommissionPct / 100)) * 100) / 100;
-      const setterCommission = Math.round(((appointment.setter_id && !isSetterOfferOwner) ? cc * (setterCommissionPct / 100) : 0) * 100) / 100;
-
-      // Update appointment to closed
-      const { error: updateError } = await supabase
-        .from('appointments')
-        .update({
-          status: 'CLOSED',
-          closer_id: user.id,
-          closer_name: userProfile.full_name,
-          revenue: cc,
-          cc_collected: cc,
-          mrr_amount: mrr || 0,
-          mrr_months: months || 0,
-          product_name: productName || null,
-        })
-        .eq('id', appointment.id);
-
-      if (updateError) throw updateError;
-
-      // Track undo action
-      if (onTrackUndo && currentAppointment) {
-        onTrackUndo({
-          table: "appointments",
-          recordId: appointment.id,
-          previousData: {
-            status: currentAppointment.status,
-            closer_id: currentAppointment.closer_id,
-            closer_name: currentAppointment.closer_name,
-            revenue: currentAppointment.revenue,
-            cc_collected: currentAppointment.cc_collected,
-            mrr_amount: currentAppointment.mrr_amount,
-            mrr_months: currentAppointment.mrr_months,
-            product_name: currentAppointment.product_name,
-          },
-          description: `Closed deal for ${appointment.lead_name}`,
-        });
-      }
-
-      // Check if sale already exists for this customer/date/rep to prevent duplicates
-      const todayDate = new Date().toISOString().split('T')[0];
-      const { data: existingSale } = await supabase
-        .from('sales')
-        .select('id')
-        .eq('team_id', teamId)
-        .eq('customer_name', appointment.lead_name)
-        .eq('date', todayDate)
-        .eq('sales_rep', userProfile.full_name)
-        .maybeSingle();
-
-      let saleData;
-      if (existingSale) {
-        // Update existing sale instead of creating duplicate
-        const { data, error: saleError } = await supabase
-          .from('sales')
-          .update({
-            revenue: cc,
-            commission: closerCommission,
-            setter_commission: setterCommission,
-            product_name: productName || null,
-            offer_owner: isOfferOwner ? userProfile.full_name : null,
-          })
-          .eq('id', existingSale.id)
-          .select()
-          .single();
-        
-        if (saleError) throw saleError;
-        saleData = data;
-      } else {
-        // Create new sale record with CC commissions
-        const { data, error: saleError } = await supabase
-          .from('sales')
-          .insert({
-            team_id: teamId,
-            customer_name: appointment.lead_name,
-            offer_owner: isOfferOwner ? userProfile.full_name : null,
-            product_name: productName || null,
-            setter: appointment.setter_name || 'No Setter',
-            sales_rep: userProfile.full_name,
-            date: todayDate,
-            revenue: cc,
-            commission: closerCommission,
-            setter_commission: setterCommission,
-            status: 'closed',
-          })
-          .select()
-          .single();
-
-        if (saleError) throw saleError;
-        saleData = data;
-      }
-
-      // Create MRR commission records if MRR exists
-      if (mrr > 0 && months > 0 && saleData) {
-        // Delete any existing MRR commissions for this appointment
-        await supabase
-          .from('mrr_commissions')
-          .delete()
-          .eq('appointment_id', appointment.id);
-
-        const mrrCommissions = [];
-        
-        for (let i = 1; i <= months; i++) {
-          const monthDate = startOfMonth(addMonths(new Date(), i));
-          
-          // Closer MRR commission - only if closer is not offer owner
-          if (!isOfferOwner) {
-            mrrCommissions.push({
-              team_id: teamId,
-              sale_id: saleData.id,
-              appointment_id: appointment.id,
-              team_member_id: user.id,
-              team_member_name: userProfile.full_name,
-              role: 'closer',
-              prospect_name: appointment.lead_name,
-              prospect_email: appointment.lead_email,
-              month_date: format(monthDate, 'yyyy-MM-dd'),
-              mrr_amount: mrr,
-              commission_amount: mrr * (closerCommissionPct / 100),
-              commission_percentage: closerCommissionPct,
-            });
-          }
-
-          // Setter MRR commission if there's a setter
-          if (appointment.setter_id && appointment.setter_name) {
-            mrrCommissions.push({
-              team_id: teamId,
-              sale_id: saleData.id,
-              appointment_id: appointment.id,
-              team_member_id: appointment.setter_id,
-              team_member_name: appointment.setter_name,
-              role: 'setter',
-              prospect_name: appointment.lead_name,
-              prospect_email: appointment.lead_email,
-              month_date: format(monthDate, 'yyyy-MM-dd'),
-              mrr_amount: mrr,
-              commission_amount: mrr * (setterCommissionPct / 100),
-              commission_percentage: setterCommissionPct,
-            });
-          }
-        }
-
-        if (mrrCommissions.length > 0) {
-          const { error: mrrError } = await supabase
-            .from('mrr_commissions')
-            .insert(mrrCommissions);
-
-          if (mrrError) throw mrrError;
-        }
-
-        // Create MRR schedule for monthly follow-ups
-        const chargeDate = new Date(firstChargeDate);
-        const { data: scheduleData, error: scheduleError } = await supabase
-          .from('mrr_schedules')
-          .insert({
-            team_id: teamId,
-            appointment_id: appointment.id,
-            client_name: appointment.lead_name,
-            client_email: appointment.lead_email,
-            mrr_amount: mrr,
-            first_charge_date: format(chargeDate, 'yyyy-MM-dd'),
-            next_renewal_date: format(chargeDate, 'yyyy-MM-dd'),
-            status: 'active',
-            assigned_to: user.id
-          })
-          .select()
-          .single();
-
-        if (scheduleError) throw scheduleError;
-
-        // Create first follow-up task with exact date
-        if (scheduleData) {
-          const { error: taskError } = await supabase
-            .from('mrr_follow_up_tasks')
-            .insert({
-              team_id: teamId,
-              mrr_schedule_id: scheduleData.id,
-              due_date: format(chargeDate, 'yyyy-MM-dd'),
-              status: 'due'
-            });
-
-          if (taskError) throw taskError;
-        }
       }
 
       const successMessage = `Closed deal - CC: $${cc.toLocaleString()}${mrr > 0 ? `, MRR: $${mrr.toLocaleString()}/mo for ${months} months` : ''}`;
@@ -393,27 +188,11 @@ export function CloseDealDialog({
       onSuccess();
     } catch (error: any) {
       console.error('Error closing deal:', error);
-      
-      // Handle duplicate constraint violations gracefully
-      if (error.message?.includes('unique_sale') || error.code === '23505') {
-        toast({
-          title: 'Duplicate Sale Detected',
-          description: 'This sale has already been recorded. Please refresh the page.',
-          variant: 'destructive',
-        });
-      } else if (error.message?.includes('unique_mrr_commission')) {
-        toast({
-          title: 'Duplicate Commission Detected',
-          description: 'MRR commissions already exist for this deal.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Error closing deal',
-          description: error.message || 'An unexpected error occurred',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: 'Error closing deal',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
     } finally {
       setClosing(false);
     }

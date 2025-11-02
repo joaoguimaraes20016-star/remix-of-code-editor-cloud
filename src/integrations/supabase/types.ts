@@ -545,6 +545,36 @@ export type Database = {
         }
         Relationships: []
       }
+      data_integrity_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          id: string
+          issue_count: number
+          issue_type: string
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          id?: string
+          issue_count: number
+          issue_type: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          id?: string
+          issue_count?: number
+          issue_type?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           created_at: string
@@ -1351,8 +1381,31 @@ export type Database = {
         Returns: number
       }
       can_create_teams: { Args: { _user_id: string }; Returns: boolean }
+      check_data_integrity: {
+        Args: never
+        Returns: {
+          details: Json
+          issue_count: number
+          issue_type: string
+        }[]
+      }
       check_overdue_tasks: { Args: never; Returns: undefined }
       cleanup_expired_reset_tokens: { Args: never; Returns: undefined }
+      close_deal_transaction: {
+        Args: {
+          p_appointment_id: string
+          p_cc_amount: number
+          p_closer_commission_pct?: number
+          p_closer_id: string
+          p_closer_name?: string
+          p_mrr_amount: number
+          p_mrr_months: number
+          p_notes?: string
+          p_product_name: string
+          p_setter_commission_pct?: number
+        }
+        Returns: Json
+      }
       create_task_with_assignment: {
         Args: {
           p_appointment_id: string

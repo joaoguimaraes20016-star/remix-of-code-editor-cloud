@@ -78,150 +78,31 @@ export function QuickCloseDealModal({
     setClosing(true);
 
     try {
-      // Check if deal is already closed
-      const { data: existingAppointment } = await supabase
-        .from("appointments")
-        .select("status")
-        .eq("id", appointment.id)
-        .single();
-      
-      if (existingAppointment?.status === "CLOSED") {
-        toast.error("This deal has already been closed");
-        setClosing(false);
+      // Use transaction function for guaranteed atomicity
+      const { data, error } = await supabase.rpc('close_deal_transaction', {
+        p_appointment_id: appointment.id,
+        p_closer_id: user.id,
+        p_cc_amount: cc,
+        p_mrr_amount: mrr,
+        p_mrr_months: months,
+        p_product_name: productName || null,
+        p_notes: notes || null,
+        p_closer_name: appointment.closer_name || null,
+        p_closer_commission_pct: closerCommissionPct,
+        p_setter_commission_pct: setterCommissionPct,
+      });
+
+      if (error) {
+        if (error.message?.includes('already closed')) {
+          toast.error("This deal has already been closed");
+        } else {
+          throw error;
+        }
         return;
       }
 
-      // Update appointment status and pipeline stage
-      const { error: updateError } = await supabase
-        .from("appointments")
-        .update({
-          status: "CLOSED",
-          cc_collected: cc,
-          mrr_amount: mrr,
-          mrr_months: months,
-          product_name: productName || null,
-          pipeline_stage: "won",
-        })
-        .eq("id", appointment.id);
-
-      if (updateError) throw updateError;
-
-      // Upsert sale record (revenue is only CC, MRR tracked separately) - round to 2 decimals
-      const closerCommission = Math.round((cc * (closerCommissionPct / 100)) * 100) / 100;
-      const setterCommission = Math.round((cc * (setterCommissionPct / 100)) * 100) / 100;
-      const revenue = Math.round(cc * 100) / 100;
-      const todayDate = new Date().toISOString().split("T")[0];
-
-      // Check if sale already exists to prevent duplicates
-      const { data: existingSale } = await supabase
-        .from("sales")
-        .select("id")
-        .eq("customer_name", appointment.lead_name)
-        .eq("team_id", appointment.team_id)
-        .eq("date", todayDate)
-        .eq("sales_rep", appointment.closer_name || "Unknown")
-        .maybeSingle();
-
-      if (existingSale) {
-        // Update existing sale
-        const { error: saleError } = await supabase
-          .from("sales")
-          .update({
-            revenue,
-            commission: closerCommission,
-            setter_commission: setterCommission,
-            sales_rep: appointment.closer_name || "Unknown",
-            setter: appointment.setter_name || "Unknown",
-            product_name: productName || null,
-            status: "Closed",
-          })
-          .eq("id", existingSale.id);
-
-        if (saleError) throw saleError;
-      } else {
-        // Create new sale
-        const { error: saleError } = await supabase.from("sales").insert({
-          customer_name: appointment.lead_name,
-          date: todayDate,
-          revenue,
-          commission: closerCommission,
-          setter_commission: setterCommission,
-          sales_rep: appointment.closer_name || "Unknown",
-          setter: appointment.setter_name || "Unknown",
-          product_name: productName || null,
-          status: "Closed",
-          team_id: appointment.team_id,
-        });
-
-        if (saleError) throw saleError;
-      }
-
-      // Create MRR commissions if applicable (delete existing first to prevent duplicates)
-      if (mrr > 0 && months > 0) {
-        // Delete any existing MRR commissions for this appointment
-        await supabase
-          .from("mrr_commissions")
-          .delete()
-          .eq("appointment_id", appointment.id);
-
-        const mrrRecords = [];
-        const startDate = new Date();
-
-        for (let i = 0; i < months; i++) {
-          const monthDate = new Date(startDate);
-          monthDate.setMonth(monthDate.getMonth() + i);
-
-          if (appointment.closer_id) {
-            const { data: closerTeamMember } = await supabase
-              .from('team_members')
-              .select('role')
-              .eq('team_id', appointment.team_id)
-              .eq('user_id', appointment.closer_id)
-              .maybeSingle();
-
-            if (closerTeamMember?.role !== 'offer_owner') {
-              mrrRecords.push({
-                team_id: appointment.team_id,
-                team_member_id: appointment.closer_id,
-                team_member_name: appointment.closer_name || "Unknown",
-                role: "closer",
-                prospect_name: appointment.lead_name,
-                prospect_email: appointment.lead_email,
-                mrr_amount: mrr,
-                commission_percentage: closerCommissionPct,
-                commission_amount: mrr * (closerCommissionPct / 100),
-                month_date: monthDate.toISOString().split("T")[0],
-              });
-            }
-          }
-
-          if (appointment.setter_id) {
-            mrrRecords.push({
-              team_id: appointment.team_id,
-              team_member_id: appointment.setter_id,
-              team_member_name: appointment.setter_name || "Unknown",
-              role: "setter",
-              prospect_name: appointment.lead_name,
-              prospect_email: appointment.lead_email,
-              mrr_amount: mrr,
-              commission_percentage: setterCommissionPct,
-              commission_amount: mrr * (setterCommissionPct / 100),
-              month_date: monthDate.toISOString().split("T")[0],
-            });
-          }
-        }
-
-        if (mrrRecords.length > 0) {
-          const { error: mrrError } = await supabase
-            .from("mrr_commissions")
-            .insert(mrrRecords);
-
-          if (mrrError) throw mrrError;
-        }
-      }
-
       toast.success("Deal closed successfully!", {
-        description: `Commission: $${closerCommission.toFixed(2)} + $${setterCommission.toFixed(2)} setter`,
+        description: `Transaction completed successfully`,
       });
 
       onOpenChange(false);
@@ -235,21 +116,9 @@ export function QuickCloseDealModal({
       setNotes("");
     } catch (error: any) {
       console.error("Error closing deal:", error);
-      
-      // Handle duplicate constraint violations gracefully
-      if (error.message?.includes('unique_sale') || error.code === '23505') {
-        toast.error("Duplicate Sale", {
-          description: "This sale has already been recorded. Please refresh the page.",
-        });
-      } else if (error.message?.includes('unique_mrr_commission')) {
-        toast.error("Duplicate Commission", {
-          description: "MRR commissions already exist for this deal.",
-        });
-      } else {
-        toast.error("Failed to close deal", {
-          description: error.message || "An unexpected error occurred",
-        });
-      }
+      toast.error("Failed to close deal", {
+        description: error.message || "An unexpected error occurred",
+      });
     } finally {
       setClosing(false);
     }
