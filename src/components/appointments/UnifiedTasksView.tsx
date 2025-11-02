@@ -99,11 +99,24 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       if (filterStatus === 'pending' || filterStatus === 'all') {
         const { data: confirmTasks, error } = await supabase
           .from('confirmation_tasks')
-          .select('*, appointment:appointments(lead_name, start_at_utc), assigned_profile:profiles!confirmation_tasks_assigned_to_fkey(full_name)')
+          .select('*, appointment:appointments(lead_name, start_at_utc)')
           .eq('team_id', teamId)
           .eq('status', 'pending');
 
         console.log('📋 Loaded confirmation tasks:', confirmTasks?.length || 0, error);
+
+        // Fetch profile names separately for assigned tasks
+        const assignedUserIds = [...new Set(confirmTasks?.filter(t => t.assigned_to).map(t => t.assigned_to))];
+        const profilesMap = new Map<string, string>();
+        
+        if (assignedUserIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', assignedUserIds);
+          
+          profiles?.forEach(p => profilesMap.set(p.id, p.full_name || 'Unknown'));
+        }
 
         confirmTasks?.forEach(task => {
           const aptTime = new Date(task.appointment?.start_at_utc || now);
@@ -119,7 +132,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             dueDate: aptTime,
             status,
             assignedTo: task.assigned_to,
-            assignedToName: (task.assigned_profile as any)?.full_name || null,
+            assignedToName: task.assigned_to ? profilesMap.get(task.assigned_to) || null : null,
             leadName: task.appointment?.lead_name || 'Unknown',
             details: task.task_type === 'follow_up' && task.follow_up_reason ? task.follow_up_reason : '',
             appointmentId: task.appointment_id,
@@ -131,7 +144,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       if (filterStatus === 'pending' || filterStatus === 'all') {
         const { data: mrrTasks } = await supabase
           .from('mrr_follow_up_tasks')
-          .select('*, schedule:mrr_schedules(*, appointment:appointments(lead_name))')
+          .select('*, schedule:mrr_schedules(*)')
           .eq('team_id', teamId)
           .eq('status', 'due');
 
@@ -147,7 +160,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             status,
             assignedTo: null,
             assignedToName: null,
-            leadName: (task.schedule as any)?.appointment?.lead_name || 'Unknown',
+            leadName: (task.schedule as any)?.client_name || 'Unknown',
             details: `$${(task.schedule as any)?.mrr_amount || 0}/month`,
             scheduleId: task.mrr_schedule_id,
           });
