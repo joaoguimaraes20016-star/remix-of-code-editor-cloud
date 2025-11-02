@@ -381,9 +381,12 @@ export function AppointmentsHub({
             </TabsTrigger>
             <TabsTrigger value="tasks" className="text-sm md:text-base whitespace-nowrap">
               Tasks
-              {counts.overdue > 0 && (
-                <Badge className="ml-2 bg-destructive text-destructive-foreground">
-                  {counts.overdue}
+              {counts.totalPendingTasks > 0 && (
+                <Badge 
+                  variant={counts.overdue > 0 ? "destructive" : "secondary"}
+                  className="ml-2"
+                >
+                  {counts.totalPendingTasks}
                 </Badge>
               )}
             </TabsTrigger>

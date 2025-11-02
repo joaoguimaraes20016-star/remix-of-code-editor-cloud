@@ -97,11 +97,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
 
       // Load confirmation tasks
       if (filterStatus === 'pending' || filterStatus === 'all') {
-        const { data: confirmTasks } = await supabase
+        const { data: confirmTasks, error } = await supabase
           .from('confirmation_tasks')
           .select('*, appointment:appointments(lead_name, start_at_utc), assigned_profile:profiles!confirmation_tasks_assigned_to_fkey(full_name)')
           .eq('team_id', teamId)
           .eq('status', 'pending');
+
+        console.log('📋 Loaded confirmation tasks:', confirmTasks?.length || 0, error);
 
         confirmTasks?.forEach(task => {
           const aptTime = new Date(task.appointment?.start_at_utc || now);
@@ -251,7 +253,12 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       {/* Filters */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Filter Tasks</CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              Filter Tasks
+              <Badge variant="secondary">{filteredTasks.length} total</Badge>
+            </CardTitle>
+          </div>
           <Button onClick={() => setShowCreateTask(true)} size="sm">
             <Plus className="h-4 w-4 mr-1" />
             Create Task

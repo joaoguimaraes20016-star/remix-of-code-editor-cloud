@@ -8,6 +8,7 @@ export function useTabCounts(teamId: string, userId: string, userRole: string) {
     mrrDue: 0,
     followUps: 0,
     overdue: 0,
+    totalPendingTasks: 0,
   });
 
   useEffect(() => {
@@ -99,12 +100,20 @@ export function useTabCounts(teamId: string, userId: string, userRole: string) {
         .in('status', ['pending', 'awaiting_reschedule'])
         .lt('appointment.start_at_utc', todayStart.toISOString());
 
+      // Total pending tasks (all confirmation tasks)
+      const { count: totalPendingCount } = await supabase
+        .from('confirmation_tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_id', teamId)
+        .eq('status', 'pending');
+
       setCounts({
         myTasks: myTasksCount || 0,
         queueTasks: queueTasksCount || 0,
         mrrDue: mrrDueCount || 0,
         followUps: followUpsCount || 0,
         overdue: overdueCount || 0,
+        totalPendingTasks: totalPendingCount || 0,
       });
     } catch (error) {
       console.error('Error loading tab counts:', error);
