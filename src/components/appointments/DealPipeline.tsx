@@ -152,7 +152,10 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       // Apply view filter
       if (viewFilter === 'all') {
         // Show all deals (no filtering) - for admins viewing main pipeline
-      } else if (viewFilter) {
+      } else if (viewFilter === 'mine') {
+        // Special case for "mine" - filter by current user
+        query = query.eq('closer_id', currentUserId);
+      } else if (viewFilter && viewFilter !== 'all') {
         // Filter by specific closer_id
         query = query.eq('closer_id', viewFilter);
       } else if (userRole === 'closer' && currentUserId) {

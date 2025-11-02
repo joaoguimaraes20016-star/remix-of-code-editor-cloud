@@ -42,6 +42,11 @@ const Index = () => {
   const { toast } = useToast();
   const { role: userRole, isAdmin } = useTeamRole(teamId);
   
+  // Normalize role for UI purposes - owner, admin, and offer_owner should all show admin view
+  const normalizedRole = (userRole === 'owner' || userRole === 'admin' || userRole === 'offer_owner') 
+    ? 'admin' 
+    : userRole;
+  
   const [sales, setSales] = useState<Sale[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [selectedRep, setSelectedRep] = useState<string>("all");
@@ -772,7 +777,7 @@ const Index = () => {
               </div>
               <SalesTable 
                 sales={filteredSales} 
-                userRole={userRole}
+                userRole={normalizedRole || userRole}
                 currentUserName={currentUserName}
                 teamMembers={teamMembers}
                 onSaleDeleted={() => {
@@ -786,7 +791,7 @@ const Index = () => {
           <TabsContent value="appointments" className="space-y-6 mt-6">
             <AppointmentsHub 
               teamId={teamId!}
-              userRole={userRole}
+              userRole={normalizedRole || userRole}
               closerCommissionPct={closerCommissionPct}
               setterCommissionPct={setterCommissionPct}
               onUpdate={() => {
