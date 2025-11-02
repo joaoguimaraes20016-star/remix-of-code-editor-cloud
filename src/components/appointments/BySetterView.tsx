@@ -80,15 +80,34 @@ export function BySetterView({ teamId }: BySetterViewProps) {
 
       // Calculate stats for each setter
       const setterData: SetterGroup[] = Array.from(groups.entries()).map(([setterId, apts]) => {
-        const confirmed = apts.filter(a => a.status === 'confirmed' || a.status === 'showed' || a.status === 'no-show').length;
-        const showed = apts.filter(a => a.status === 'showed' || (a.cc_collected && a.cc_collected > 0)).length;
-        const noShow = apts.filter(a => a.status === 'no-show').length;
+        // Sort appointments within each setter's group
+        const nowTime = new Date().getTime();
+        const sortedApts = apts.sort((a, b) => {
+          const aTime = new Date(a.start_at_utc).getTime();
+          const bTime = new Date(b.start_at_utc).getTime();
+          
+          const aIsFuture = aTime >= nowTime;
+          const bIsFuture = bTime >= nowTime;
+          
+          // Both future: sort ascending (soonest first)
+          if (aIsFuture && bIsFuture) return aTime - bTime;
+          
+          // Both past: sort descending (most recent first)
+          if (!aIsFuture && !bIsFuture) return bTime - aTime;
+          
+          // One future, one past: future always comes first
+          return aIsFuture ? -1 : 1;
+        });
+        
+        const confirmed = sortedApts.filter(a => a.status === 'confirmed' || a.status === 'showed' || a.status === 'no-show').length;
+        const showed = sortedApts.filter(a => a.status === 'showed' || (a.cc_collected && a.cc_collected > 0)).length;
+        const noShow = sortedApts.filter(a => a.status === 'no-show').length;
         const showRate = confirmed > 0 ? Math.round((showed / confirmed) * 100) : 0;
 
         return {
           setterId,
-          setterName: apts[0].setter_name || 'Unknown',
-          appointments: apts,
+          setterName: sortedApts[0].setter_name || 'Unknown',
+          appointments: sortedApts,
           stats: {
             total: apts.length,
             confirmed,
