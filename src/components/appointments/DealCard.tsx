@@ -36,6 +36,11 @@ interface DealCardProps {
     rescheduled_to_appointment_id: string | null;
     reschedule_count: number;
   };
+  confirmationTask?: {
+    completed_confirmations: number;
+    required_confirmations: number;
+    status: string;
+  } | null;
   onCloseDeal: (appointment: any) => void;
   onMoveTo: (id: string, stage: string) => void;
   onDelete?: (id: string) => void;
@@ -45,7 +50,7 @@ interface DealCardProps {
   userRole?: string;
 }
 
-export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDelete, onUndo, onChangeStatus, onClearDealData, userRole }: DealCardProps) {
+export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDeal, onMoveTo, onDelete, onUndo, onChangeStatus, onClearDealData, userRole }: DealCardProps) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRescheduleHistory, setShowRescheduleHistory] = useState(false);
@@ -187,6 +192,31 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
         </div>
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {/* Confirmation Status Badge */}
+          {confirmationTask && (
+            <>
+              {confirmationTask.completed_confirmations >= confirmationTask.required_confirmations ? (
+                <Badge variant="success" className="shadow-sm">
+                  <span className="flex items-center gap-1">
+                    ✓ Confirmed
+                  </span>
+                </Badge>
+              ) : confirmationTask.completed_confirmations > 0 ? (
+                <Badge variant="info" className="shadow-sm">
+                  <span className="flex items-center gap-1">
+                    Confirmed {confirmationTask.completed_confirmations}/{confirmationTask.required_confirmations}
+                  </span>
+                </Badge>
+              ) : (
+                <Badge variant="warning" className="shadow-sm">
+                  <span className="flex items-center gap-1">
+                    Pending Confirmation
+                  </span>
+                </Badge>
+              )}
+            </>
+          )}
+          
           {isNoShow && (
             <Badge variant="default" className="bg-gradient-to-r from-red-600 to-rose-600 shadow-sm">
               <span className="flex items-center gap-1">
@@ -201,7 +231,7 @@ export function DealCard({ id, teamId, appointment, onCloseDeal, onMoveTo, onDel
               </span>
             </Badge>
           )}
-          {isConfirmed && (
+          {isConfirmed && !confirmationTask && (
             <Badge variant="default" className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-sm">
               <span className="flex items-center gap-1">
                 ✓ Confirmed
