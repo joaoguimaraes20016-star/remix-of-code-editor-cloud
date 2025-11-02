@@ -91,16 +91,6 @@ export function HorizontalAppointmentCard({
     onUpdate?.();
   };
 
-  // Debug logging
-  console.log('[HorizontalAppointmentCard] Financial data:', {
-    lead: appointment.lead_name,
-    cc_collected: appointment.cc_collected,
-    mrr_amount: appointment.mrr_amount,
-    cc_check: appointment.cc_collected && appointment.cc_collected > 0,
-    mrr_check: appointment.mrr_amount && appointment.mrr_amount > 0,
-    will_show_financial: ((appointment.cc_collected && appointment.cc_collected > 0) || (appointment.mrr_amount && appointment.mrr_amount > 0))
-  });
-
   return (
     <Card className={`p-4 hover:shadow-md transition-all duration-200 border-l-4 ${statusStyle.border} group`}>
       {/* Setter View ONLY: Show confirmation task */}
@@ -205,7 +195,7 @@ export function HorizontalAppointmentCard({
           </div>
 
           {/* Financial Info */}
-          {((appointment.cc_collected && appointment.cc_collected > 0) || (appointment.mrr_amount && appointment.mrr_amount > 0)) && (
+          {(!!((appointment.cc_collected && appointment.cc_collected > 0) || (appointment.mrr_amount && appointment.mrr_amount > 0))) && (
             <div className="flex gap-2 text-xs">
               {appointment.cc_collected && appointment.cc_collected > 0 && (
                 <div className="flex items-center gap-1 px-2 py-1 bg-success/10 border border-success/30 rounded">
