@@ -47,12 +47,22 @@ export function BySetterView({ teamId }: BySetterViewProps) {
 
       if (error) throw error;
 
+      console.log('[BySetterView] Raw appointments count:', appointments?.length);
+      console.log('[BySetterView] Current time:', new Date().toISOString());
+      if (appointments && appointments.length > 0) {
+        console.log('[BySetterView] Sample dates:', appointments.slice(0, 3).map(a => ({
+          name: a.lead_name,
+          date: a.start_at_utc
+        })));
+      }
+
       // Sort appointments: upcoming first (ascending), then past (descending)
-      const now = new Date().toISOString();
+      const now = new Date();
+      const nowTime = now.getTime();
+      
       appointments?.sort((a, b) => {
         const aTime = new Date(a.start_at_utc).getTime();
         const bTime = new Date(b.start_at_utc).getTime();
-        const nowTime = new Date(now).getTime();
         
         const aIsFuture = aTime >= nowTime;
         const bIsFuture = bTime >= nowTime;
@@ -66,6 +76,12 @@ export function BySetterView({ teamId }: BySetterViewProps) {
         // One future, one past: future always comes first
         return aIsFuture ? -1 : 1;
       });
+
+      console.log('[BySetterView] After sorting, first 3:', appointments?.slice(0, 3).map(a => ({
+        name: a.lead_name,
+        date: a.start_at_utc,
+        isFuture: new Date(a.start_at_utc).getTime() >= nowTime
+      })));
 
       // Group by setter
       const groups = new Map<string, any[]>();
