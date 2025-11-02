@@ -133,7 +133,7 @@ export function AppointmentsHub({
           <div className="w-full overflow-x-auto">
             <TabsList className="w-max min-w-full h-12">
               <TabsTrigger value="today" className="text-sm md:text-base whitespace-nowrap">
-                My Tasks
+                Today
               </TabsTrigger>
               <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Leads</TabsTrigger>
               <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">All Assigned</TabsTrigger>
@@ -236,7 +236,7 @@ export function AppointmentsHub({
           <div className="w-full overflow-x-auto">
             <TabsList className="w-max min-w-full h-12">
               <TabsTrigger value="today" className="text-sm md:text-base whitespace-nowrap">
-                My Tasks
+                Today
               </TabsTrigger>
               <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Deals</TabsTrigger>
               <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">My Pipeline</TabsTrigger>
@@ -398,7 +398,7 @@ export function AppointmentsHub({
         <div className="w-full overflow-x-auto">
           <TabsList className="w-max min-w-full h-12">
             <TabsTrigger value="today" className="text-sm md:text-base whitespace-nowrap">
-              My Tasks
+              Today
             </TabsTrigger>
             <TabsTrigger value="overview" className="text-sm md:text-base whitespace-nowrap">
               Overview
