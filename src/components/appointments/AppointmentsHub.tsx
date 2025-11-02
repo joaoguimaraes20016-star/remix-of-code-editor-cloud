@@ -27,6 +27,8 @@ import { AdminOverview } from "./AdminOverview";
 import { SettersView } from "./SettersView";
 import { UnifiedTasksView } from "./UnifiedTasksView";
 import { TodaysDashboard } from "./TodaysDashboard";
+import { SetterEODReport } from "./SetterEODReport";
+import { CloserEODReport } from "./CloserEODReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
@@ -58,6 +60,20 @@ export function AppointmentsHub({
     trackAction: (action: { table: string; recordId: string; previousData: Record<string, any>; description: string }) => void;
     showUndoToast: (description: string) => void;
   } | null>(null);
+  const [userName, setUserName] = useState<string>('');
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      if (data?.full_name) setUserName(data.full_name);
+    };
+    loadUserProfile();
+  }, [user?.id]);
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -122,6 +138,7 @@ export function AppointmentsHub({
               <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Leads</TabsTrigger>
               <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">All Assigned</TabsTrigger>
               <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">Team Pipeline</TabsTrigger>
+              <TabsTrigger value="stats" className="text-sm md:text-base whitespace-nowrap">My Stats</TabsTrigger>
               <TabsTrigger value="mrr" className="text-sm md:text-base whitespace-nowrap">
                 MRR {counts.mrrDue > 0 && <Badge className="ml-2" variant="secondary">{counts.mrrDue}</Badge>}
               </TabsTrigger>
@@ -158,6 +175,15 @@ export function AppointmentsHub({
               currentUserId={user?.id || ''}
               onCloseDeal={() => {}}
               viewFilter="all"
+            />
+          </TabsContent>
+
+          <TabsContent value="stats" className="mt-6">
+            <SetterEODReport
+              teamId={teamId}
+              userId={user?.id || ''}
+              userName={userName || 'Me'}
+              date={new Date()}
             />
           </TabsContent>
 
@@ -215,6 +241,7 @@ export function AppointmentsHub({
               <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Deals</TabsTrigger>
               <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">My Pipeline</TabsTrigger>
               <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">Team Pipeline</TabsTrigger>
+              <TabsTrigger value="stats" className="text-sm md:text-base whitespace-nowrap">My Stats</TabsTrigger>
               <TabsTrigger value="mrr" className="text-sm md:text-base whitespace-nowrap relative">
                 MRR
                 {(counts.mrrDue > 0 || counts.overdue > 0) && (
@@ -259,6 +286,15 @@ export function AppointmentsHub({
               currentUserId={user?.id || ''}
               onCloseDeal={handleCloseDeal}
               viewFilter="all"
+            />
+          </TabsContent>
+
+          <TabsContent value="stats" className="mt-6">
+            <CloserEODReport
+              teamId={teamId}
+              userId={user?.id || ''}
+              userName={userName || 'Me'}
+              date={new Date()}
             />
           </TabsContent>
 
