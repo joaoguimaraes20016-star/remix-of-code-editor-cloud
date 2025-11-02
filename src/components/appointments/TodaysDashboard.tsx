@@ -123,8 +123,10 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
         isViewingSpecificPerson,
         sanitizedCloserId,
         sanitizedSetterId,
+        viewingAsUserId,
         currentUserId: user?.id,
-        userRole
+        userRole,
+        teamMembers: teamMembers.map(m => ({ id: m.id, name: m.name, role: m.role }))
       });
 
       let query = supabase
@@ -136,6 +138,13 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
         .order('start_at_utc', { ascending: true });
 
       // Apply role-based filters
+      console.log('[TodaysDashboard] Applying filter:', {
+        targetRole,
+        isViewingSpecificPerson,
+        willFilterBy: targetRole === 'closer' ? 'closer_id' : targetRole === 'setter' ? 'setter_id' : 'none',
+        filterValue: targetUserId
+      });
+      
       if (targetRole === 'closer' || (targetRole === 'offer_owner' && !isViewingSpecificPerson) || (targetRole === 'admin' && !isViewingSpecificPerson)) {
         // Closers, offer owners, and admins (when NOT viewing someone else) see their own closer appointments
         query = query.eq('closer_id', targetUserId);
@@ -148,6 +157,18 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
       if (error) throw error;
       
       let filteredData = data || [];
+      
+      console.log('[TodaysDashboard] Appointments loaded:', {
+        count: filteredData.length,
+        appointments: filteredData.map(a => ({
+          id: a.id,
+          lead: a.lead_name,
+          closer_id: a.closer_id,
+          closer_name: a.closer_name,
+          setter_id: a.setter_id,
+          setter_name: a.setter_name
+        }))
+      });
 
       // Load confirmation tasks - load for setters OR when viewing someone else
       if (filteredData.length > 0 && (targetRole === 'setter' || targetRole === 'admin' || isViewingSpecificPerson)) {
