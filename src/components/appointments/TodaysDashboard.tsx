@@ -90,7 +90,7 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId, user?.id, sanitizedCloserId, sanitizedSetterId]);
+  }, [teamId, user?.id, sanitizedCloserId, sanitizedSetterId, viewingAsUserId]);
 
   const loadTodaysAppointments = async () => {
     try {
@@ -99,16 +99,22 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
       const startOfToday = startOfDay(today).toISOString();
       const endOfToday = endOfDay(today).toISOString();
 
-      // Determine which user's data to show using SANITIZED props
-      const targetUserId = sanitizedCloserId || sanitizedSetterId || user?.id;
-      const isViewingSpecificPerson = !!(sanitizedCloserId || sanitizedSetterId);
+      // Determine which user's data to show using SANITIZED props OR local state
+      const targetUserId = sanitizedCloserId || sanitizedSetterId || viewingAsUserId || user?.id;
+      const isViewingSpecificPerson = !!(sanitizedCloserId || sanitizedSetterId || viewingAsUserId);
       
       // Determine target role
       let targetRole = userRole;
-      if (sanitizedCloserId) {
+      if (sanitizedCloserId || (viewingAsUserId && teamMembers.find(m => m.id === viewingAsUserId)?.role === 'closer')) {
         targetRole = 'closer';
-      } else if (sanitizedSetterId) {
+      } else if (sanitizedSetterId || (viewingAsUserId && teamMembers.find(m => m.id === viewingAsUserId)?.role === 'setter')) {
         targetRole = 'setter';
+      } else if (viewingAsUserId) {
+        // Get the actual role of the person we're viewing
+        const viewingMember = teamMembers.find(m => m.id === viewingAsUserId);
+        if (viewingMember) {
+          targetRole = viewingMember.role;
+        }
       }
 
       console.log('[TodaysDashboard] Loading for:', {
@@ -153,8 +159,8 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           .in('appointment_id', appointmentIds)
           .eq('status', 'pending');
         
-        // ALWAYS filter tasks by the target user when viewing as setter
-        if (targetRole === 'setter' || sanitizedSetterId) {
+        // ALWAYS filter tasks by the target user when viewing someone specific
+        if (isViewingSpecificPerson) {
           console.log('[TodaysDashboard] Filtering tasks by:', targetUserId);
           tasksQuery = tasksQuery.eq('assigned_to', targetUserId);
         }
@@ -164,7 +170,8 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
         console.log('[TodaysDashboard] Tasks loaded:', {
           count: tasks?.length || 0,
           assignedTo: tasks?.[0]?.assigned_to,
-          expectedUser: targetUserId
+          expectedUser: targetUserId,
+          isViewingSpecificPerson
         });
         
         if (tasks) {
@@ -184,8 +191,8 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           });
           setConfirmationTasks(tasksMap);
           
-          // For setters: Only show appointments with pending confirmation tasks
-          if (userRole === 'setter') {
+          // For setters: Only show appointments with pending confirmation tasks assigned to them
+          if (targetRole === 'setter') {
             const appointmentIdsWithTasks = new Set(tasks.map(t => t.appointment_id));
             filteredData = filteredData.filter(apt => appointmentIdsWithTasks.has(apt.id));
           }
