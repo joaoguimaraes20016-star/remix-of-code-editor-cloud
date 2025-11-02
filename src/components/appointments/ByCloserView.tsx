@@ -69,18 +69,20 @@ function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) 
 
     const grouped = new Map<string, any[]>();
     
-    // Initialize all stages with empty arrays
+    // Initialize all stages with empty arrays (except 'booked' which we'll handle separately)
     stages.forEach(stage => {
-      grouped.set(stage.stage_id, []);
+      if (stage.stage_id !== 'booked') {
+        grouped.set(stage.stage_id, []);
+      }
     });
 
-    // Add single "Appointments Booked" stage for NEW appointments
+    // Add single "Appointments Booked" stage for NEW and BOOKED appointments
     grouped.set('appointments_booked', []);
 
     // Group appointments
     group.appointments.forEach(apt => {
-      // NEW appointments go to "Appointments Booked"
-      if (!apt.pipeline_stage || apt.pipeline_stage === 'new') {
+      // NEW and BOOKED appointments go to "Appointments Booked"
+      if (!apt.pipeline_stage || apt.pipeline_stage === 'new' || apt.pipeline_stage === 'booked') {
         grouped.get('appointments_booked')!.push(apt);
       } else {
         // Other appointments go to their pipeline stage
@@ -130,7 +132,9 @@ function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) 
         </div>
 
         {/* Pipeline Stages */}
-        {stages.map(stage => (
+        {stages
+          .filter(stage => stage.stage_id !== 'booked') // Skip the 'booked' stage as it's handled by Appointments Booked
+          .map(stage => (
           <div key={stage.stage_id} className="flex-shrink-0" style={{ width: '300px' }}>
             <Card className="h-full">
               <div 
