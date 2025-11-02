@@ -372,7 +372,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
                 <div>
                   <p className="font-medium">{member.profiles.full_name}</p>
                   <Badge variant="secondary" className="mt-1">
-                    {member.role}
+                    {member.role === 'offer_owner' ? 'Offer Owner' : member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                   </Badge>
                 </div>
               </div>

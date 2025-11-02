@@ -441,7 +441,7 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
                     .filter(m => m.id !== user?.id)
                     .map(member => (
                       <SelectItem key={member.id} value={member.id}>
-                        {member.name} ({member.role})
+                        {member.name} ({member.role === 'offer_owner' ? 'Offer Owner' : member.role.charAt(0).toUpperCase() + member.role.slice(1)})
                       </SelectItem>
                     ))}
                 </SelectContent>

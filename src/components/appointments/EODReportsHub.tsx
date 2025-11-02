@@ -178,10 +178,15 @@ export function EODReportsHub({ teamId }: EODReportsHubProps) {
 
   const renderMemberCard = (member: TeamMemberStats) => {
     const isExpanded = expandedMember === member.id;
+    const formatRole = (role: string) => {
+      if (role === 'offer_owner') return 'Offer Owner';
+      if (role === 'admin') return 'Admin';
+      return role.charAt(0).toUpperCase() + role.slice(1);
+    };
     const displayRole = member.actualRoles.length > 1 ? 'Setter & Closer' : 
                        member.actualRoles[0] === 'setter' ? 'Setter' : 
                        member.actualRoles[0] === 'closer' ? 'Closer' : 
-                       member.officialRole;
+                       formatRole(member.officialRole);
 
     return (
       <Collapsible
