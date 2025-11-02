@@ -79,6 +79,11 @@ export function HorizontalAppointmentCard({
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const formattedDate = format(new Date(appointment.start_at_utc), "MMM dd, yyyy 'at' h:mm a");
   const statusStyle = statusColors[appointment.status] || statusColors.NEW;
+  
+  // For closers, show "BOOKED" instead of "NEW"
+  const displayStatus = userRole === 'closer' && appointment.status === 'NEW' 
+    ? 'BOOKED' 
+    : appointment.status;
 
   const handleReschedule = async (reason: string, notes?: string) => {
     toast.success("Reschedule link sent to client");
@@ -142,7 +147,7 @@ export function HorizontalAppointmentCard({
           <div className="flex items-center gap-2 mb-2">
             <h3 className="text-lg font-semibold truncate">{appointment.lead_name}</h3>
             <Badge variant={statusStyle.badge as any} className="text-xs">
-              {appointment.status}
+              {displayStatus}
             </Badge>
           </div>
           
