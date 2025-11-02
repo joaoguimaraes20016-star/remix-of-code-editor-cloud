@@ -69,6 +69,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [setterCommissionPct, setSetterCommissionPct] = useState(5);
   const [closerCommissionPct, setCloserCommissionPct] = useState(10);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open && teamId) {
@@ -137,8 +138,11 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSubmitting) return; // Prevent double submission
+    setIsSubmitting(true);
     
     // Validate amounts
     const cc = parseFloat(ccCollected);
@@ -151,6 +155,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
         description: 'Cash collected must be a valid positive number',
         variant: 'destructive',
       });
+      setIsSubmitting(false);
       return;
     }
 
@@ -160,6 +165,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
         description: 'Cash collected cannot exceed $1,000,000',
         variant: 'destructive',
       });
+      setIsSubmitting(false);
       return;
     }
 
@@ -169,6 +175,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
         description: 'MRR amount cannot be negative',
         variant: 'destructive',
       });
+      setIsSubmitting(false);
       return;
     }
 
@@ -178,6 +185,7 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
         description: 'MRR months must be between 1 and 120',
         variant: 'destructive',
       });
+      setIsSubmitting(false);
       return;
     }
     
@@ -185,24 +193,37 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
     const selectedCloser = teamMembers.find(m => m.user_id === salesRepId);
     const selectedOfferOwner = teamMembers.find(m => m.user_id === offerOwnerId);
     
-    onAddSale({
-      customerName,
-      setterId,
-      setter: selectedSetter?.full_name || '',
-      salesRepId,
-      salesRep: selectedCloser?.full_name || '',
-      offerOwner: selectedOfferOwner?.full_name || '',
-      productName,
-      date,
-      ccCollected: Math.round(cc * 100) / 100,
-      mrrAmount: Math.round(mrr * 100) / 100,
-      mrrMonths: months,
-      status,
-      setterCommissionPct,
-      closerCommissionPct,
-    });
-    setOpen(false);
-    resetForm();
+    try {
+      onAddSale({
+        customerName,
+        setterId,
+        setter: selectedSetter?.full_name || '',
+        salesRepId,
+        salesRep: selectedCloser?.full_name || '',
+        offerOwner: selectedOfferOwner?.full_name || '',
+        productName,
+        date,
+        ccCollected: Math.round(cc * 100) / 100,
+        mrrAmount: Math.round(mrr * 100) / 100,
+        mrrMonths: months,
+        status,
+        setterCommissionPct,
+        closerCommissionPct,
+      });
+      setOpen(false);
+      resetForm();
+    } catch (error: any) {
+      console.error('Error adding sale:', error);
+      toast({
+        title: 'Error',
+        description: error.message?.includes('unique_sale') 
+          ? 'This sale already exists for this customer/date/rep combination'
+          : 'Failed to add sale. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -386,7 +407,9 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Add Sale</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Adding...' : 'Add Sale'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -137,6 +137,23 @@ export function CloseDealDialog({
 
     setClosing(true);
     try {
+      // Check if this deal is already closed
+      const { data: existingAppointment } = await supabase
+        .from('appointments')
+        .select('status')
+        .eq('id', appointment.id)
+        .single();
+      
+      if (existingAppointment?.status === 'CLOSED') {
+        toast({
+          title: 'Deal Already Closed',
+          description: 'This deal has already been closed.',
+          variant: 'destructive',
+        });
+        setClosing(false);
+        return;
+      }
+
       // Get current appointment data for undo
       const { data: currentAppointment } = await supabase
         .from('appointments')
@@ -206,26 +223,58 @@ export function CloseDealDialog({
         });
       }
 
-      // Create a sale record with CC commissions
-      const { data: saleData, error: saleError } = await supabase
+      // Check if sale already exists for this customer/date/rep to prevent duplicates
+      const todayDate = new Date().toISOString().split('T')[0];
+      const { data: existingSale } = await supabase
         .from('sales')
-        .insert({
-          team_id: teamId,
-          customer_name: appointment.lead_name,
-          offer_owner: isOfferOwner ? userProfile.full_name : null,
-          product_name: productName || null,
-          setter: appointment.setter_name || 'No Setter',
-          sales_rep: userProfile.full_name,
-          date: new Date().toISOString().split('T')[0],
-          revenue: cc,
-          commission: closerCommission,
-          setter_commission: setterCommission,
-          status: 'closed',
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('team_id', teamId)
+        .eq('customer_name', appointment.lead_name)
+        .eq('date', todayDate)
+        .eq('sales_rep', userProfile.full_name)
+        .maybeSingle();
 
-      if (saleError) throw saleError;
+      let saleData;
+      if (existingSale) {
+        // Update existing sale instead of creating duplicate
+        const { data, error: saleError } = await supabase
+          .from('sales')
+          .update({
+            revenue: cc,
+            commission: closerCommission,
+            setter_commission: setterCommission,
+            product_name: productName || null,
+            offer_owner: isOfferOwner ? userProfile.full_name : null,
+          })
+          .eq('id', existingSale.id)
+          .select()
+          .single();
+        
+        if (saleError) throw saleError;
+        saleData = data;
+      } else {
+        // Create new sale record with CC commissions
+        const { data, error: saleError } = await supabase
+          .from('sales')
+          .insert({
+            team_id: teamId,
+            customer_name: appointment.lead_name,
+            offer_owner: isOfferOwner ? userProfile.full_name : null,
+            product_name: productName || null,
+            setter: appointment.setter_name || 'No Setter',
+            sales_rep: userProfile.full_name,
+            date: todayDate,
+            revenue: cc,
+            commission: closerCommission,
+            setter_commission: setterCommission,
+            status: 'closed',
+          })
+          .select()
+          .single();
+
+        if (saleError) throw saleError;
+        saleData = data;
+      }
 
       // Create MRR commission records if MRR exists
       if (mrr > 0 && months > 0 && saleData) {
@@ -343,11 +392,28 @@ export function CloseDealDialog({
       });
       onSuccess();
     } catch (error: any) {
-      toast({
-        title: 'Error closing deal',
-        description: error.message,
-        variant: 'destructive',
-      });
+      console.error('Error closing deal:', error);
+      
+      // Handle duplicate constraint violations gracefully
+      if (error.message?.includes('unique_sale') || error.code === '23505') {
+        toast({
+          title: 'Duplicate Sale Detected',
+          description: 'This sale has already been recorded. Please refresh the page.',
+          variant: 'destructive',
+        });
+      } else if (error.message?.includes('unique_mrr_commission')) {
+        toast({
+          title: 'Duplicate Commission Detected',
+          description: 'MRR commissions already exist for this deal.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error closing deal',
+          description: error.message || 'An unexpected error occurred',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setClosing(false);
     }

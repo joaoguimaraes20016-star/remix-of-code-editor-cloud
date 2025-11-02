@@ -78,6 +78,19 @@ export function QuickCloseDealModal({
     setClosing(true);
 
     try {
+      // Check if deal is already closed
+      const { data: existingAppointment } = await supabase
+        .from("appointments")
+        .select("status")
+        .eq("id", appointment.id)
+        .single();
+      
+      if (existingAppointment?.status === "CLOSED") {
+        toast.error("This deal has already been closed");
+        setClosing(false);
+        return;
+      }
+
       // Update appointment status and pipeline stage
       const { error: updateError } = await supabase
         .from("appointments")
@@ -99,14 +112,15 @@ export function QuickCloseDealModal({
       const revenue = Math.round(cc * 100) / 100;
       const todayDate = new Date().toISOString().split("T")[0];
 
-      // Check if sale already exists for this appointment
+      // Check if sale already exists to prevent duplicates
       const { data: existingSale } = await supabase
         .from("sales")
         .select("id")
         .eq("customer_name", appointment.lead_name)
         .eq("team_id", appointment.team_id)
         .eq("date", todayDate)
-        .single();
+        .eq("sales_rep", appointment.closer_name || "Unknown")
+        .maybeSingle();
 
       if (existingSale) {
         // Update existing sale
@@ -142,8 +156,14 @@ export function QuickCloseDealModal({
         if (saleError) throw saleError;
       }
 
-      // Create MRR commissions if applicable
+      // Create MRR commissions if applicable (delete existing first to prevent duplicates)
       if (mrr > 0 && months > 0) {
+        // Delete any existing MRR commissions for this appointment
+        await supabase
+          .from("mrr_commissions")
+          .delete()
+          .eq("appointment_id", appointment.id);
+
         const mrrRecords = [];
         const startDate = new Date();
 
@@ -215,9 +235,21 @@ export function QuickCloseDealModal({
       setNotes("");
     } catch (error: any) {
       console.error("Error closing deal:", error);
-      toast.error("Failed to close deal", {
-        description: error.message,
-      });
+      
+      // Handle duplicate constraint violations gracefully
+      if (error.message?.includes('unique_sale') || error.code === '23505') {
+        toast.error("Duplicate Sale", {
+          description: "This sale has already been recorded. Please refresh the page.",
+        });
+      } else if (error.message?.includes('unique_mrr_commission')) {
+        toast.error("Duplicate Commission", {
+          description: "MRR commissions already exist for this deal.",
+        });
+      } else {
+        toast.error("Failed to close deal", {
+          description: error.message || "An unexpected error occurred",
+        });
+      }
     } finally {
       setClosing(false);
     }
