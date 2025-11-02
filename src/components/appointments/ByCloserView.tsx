@@ -40,6 +40,30 @@ interface CloserPipelineViewProps {
 }
 
 function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) {
+  const [confirmationTasks, setConfirmationTasks] = useState<Map<string, any>>(new Map());
+  
+  // Load confirmation tasks for all appointments
+  useEffect(() => {
+    loadConfirmationTasks();
+  }, [group.appointments]);
+  
+  const loadConfirmationTasks = async () => {
+    if (!group.appointments || group.appointments.length === 0) return;
+    
+    const appointmentIds = group.appointments.map(a => a.id);
+    const { data: tasks } = await supabase
+      .from('confirmation_tasks')
+      .select('*')
+      .in('appointment_id', appointmentIds)
+      .eq('status', 'pending');
+    
+    const tasksMap = new Map();
+    tasks?.forEach(task => {
+      tasksMap.set(task.appointment_id, task);
+    });
+    setConfirmationTasks(tasksMap);
+  };
+  
   // Group appointments by stage for the selected closer
   const dealsByStage = useMemo(() => {
     if (!group || stages.length === 0) return new Map();
@@ -51,37 +75,49 @@ function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) 
       grouped.set(stage.stage_id, []);
     });
 
-    // Add "new" stage for appointments without a stage
-    grouped.set('new', []);
+    // Add confirmation stages for NEW appointments
+    grouped.set('confirmed', []);
+    grouped.set('pending_confirmation', []);
 
     // Group appointments
     group.appointments.forEach(apt => {
-      const stageId = apt.pipeline_stage || 'new';
-      if (!grouped.has(stageId)) {
-        grouped.set(stageId, []);
+      // NEW appointments go to confirmation stages
+      if (!apt.pipeline_stage || apt.pipeline_stage === 'new') {
+        const task = confirmationTasks.get(apt.id);
+        if (task && task.completed_confirmations >= task.required_confirmations) {
+          grouped.get('confirmed')!.push(apt);
+        } else {
+          grouped.get('pending_confirmation')!.push(apt);
+        }
+      } else {
+        // Other appointments go to their pipeline stage
+        const stageId = apt.pipeline_stage;
+        if (!grouped.has(stageId)) {
+          grouped.set(stageId, []);
+        }
+        grouped.get(stageId)!.push(apt);
       }
-      grouped.get(stageId)!.push(apt);
     });
 
     return grouped;
-  }, [group, stages]);
+  }, [group, stages, confirmationTasks]);
 
   return (
     <ScrollArea className="w-full">
       <div className="flex gap-4 pb-4">
-        {/* New Stage */}
+        {/* Pending Confirmation Stage */}
         <div className="flex-shrink-0" style={{ width: '300px' }}>
           <Card className="h-full">
-            <div className="p-4 border-b bg-muted/30">
+            <div className="p-4 border-b bg-amber-500/10 border-b-amber-500">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">New</h3>
+                <h3 className="font-semibold">Pending Confirmation</h3>
                 <Badge variant="secondary">
-                  {dealsByStage.get('new')?.length || 0}
+                  {dealsByStage.get('pending_confirmation')?.length || 0}
                 </Badge>
               </div>
             </div>
             <div className="p-3 space-y-3 min-h-[200px]">
-              {dealsByStage.get('new')?.map(appointment => (
+              {dealsByStage.get('pending_confirmation')?.map(appointment => (
                 <DealCard
                   key={appointment.id}
                   id={appointment.id}
@@ -92,7 +128,37 @@ function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) 
                   userRole="admin"
                 />
               ))}
-              {(!dealsByStage.get('new') || dealsByStage.get('new')?.length === 0) && (
+              {(!dealsByStage.get('pending_confirmation') || dealsByStage.get('pending_confirmation')?.length === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-8">No deals</p>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Confirmed Stage */}
+        <div className="flex-shrink-0" style={{ width: '300px' }}>
+          <Card className="h-full">
+            <div className="p-4 border-b bg-green-500/10 border-b-green-500">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Confirmed</h3>
+                <Badge variant="secondary">
+                  {dealsByStage.get('confirmed')?.length || 0}
+                </Badge>
+              </div>
+            </div>
+            <div className="p-3 space-y-3 min-h-[200px]">
+              {dealsByStage.get('confirmed')?.map(appointment => (
+                <DealCard
+                  key={appointment.id}
+                  id={appointment.id}
+                  teamId={teamId}
+                  appointment={appointment}
+                  onCloseDeal={() => {}}
+                  onMoveTo={() => {}}
+                  userRole="admin"
+                />
+              ))}
+              {(!dealsByStage.get('confirmed') || dealsByStage.get('confirmed')?.length === 0) && (
                 <p className="text-sm text-muted-foreground text-center py-8">No deals</p>
               )}
             </div>
