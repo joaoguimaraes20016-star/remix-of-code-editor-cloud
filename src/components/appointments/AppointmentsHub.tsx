@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Calendar, Plus, Info } from "lucide-react";
 import { CreateTaskDialog } from "./CreateTaskDialog";
 import { NewAppointments } from "@/components/NewAppointments";
 import { MyClaimed } from "@/components/MyClaimed";
@@ -135,16 +136,29 @@ export function AppointmentsHub({
               <TabsTrigger value="today" className="text-sm md:text-base whitespace-nowrap">
                 Today
               </TabsTrigger>
-              <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Leads</TabsTrigger>
+              <TabsTrigger value="mine" className="text-sm md:text-base whitespace-nowrap">My Appointments</TabsTrigger>
               <TabsTrigger value="all" className="text-sm md:text-base whitespace-nowrap">All Assigned</TabsTrigger>
               <TabsTrigger value="pipeline" className="text-sm md:text-base whitespace-nowrap">Team Pipeline</TabsTrigger>
               <TabsTrigger value="stats" className="text-sm md:text-base whitespace-nowrap">My Stats</TabsTrigger>
               <TabsTrigger value="mrr" className="text-sm md:text-base whitespace-nowrap">
                 MRR {counts.mrrDue > 0 && <Badge className="ml-2" variant="secondary">{counts.mrrDue}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="retarget" className="text-sm md:text-base whitespace-nowrap">
-                Retarget {counts.followUps > 0 && <Badge className="ml-2" variant="secondary">{counts.followUps}</Badge>}
-              </TabsTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="retarget" className="text-sm md:text-base whitespace-nowrap">
+                      <span className="flex items-center gap-1">
+                        Retarget
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </span>
+                      {counts.followUps > 0 && <Badge className="ml-2" variant="secondary">{counts.followUps}</Badge>}
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">Queue for leads that need follow-up. Move leads here when they show potential but can't close now, then follow up at the scheduled time.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </TabsList>
           </div>
 

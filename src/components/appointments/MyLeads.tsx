@@ -1,15 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppointmentCard } from "./AppointmentCard";
+import { HorizontalAppointmentCard } from "./HorizontalAppointmentCard";
 import { AppointmentFilters } from "./AppointmentFilters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, Users } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { InfoIcon, Users, UserX } from "lucide-react";
+import { AssignDialog } from "./AssignDialog";
 
 interface Appointment {
   id: string;
   lead_name: string;
   lead_email: string;
+  lead_phone?: string;
   start_at_utc: string;
   status: string;
   setter_name: string | null;
@@ -20,6 +25,7 @@ interface Appointment {
   mrr_amount: number | null;
   setter_id: string | null;
   closer_id: string | null;
+  reschedule_url: string | null;
 }
 
 interface MyAppointmentsProps {
@@ -29,11 +35,13 @@ interface MyAppointmentsProps {
 }
 
 export function MyLeads({ teamId, currentUserId, onCloseDeal }: MyAppointmentsProps) {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [myAppointments, setMyAppointments] = useState<Appointment[]>([]);
+  const [unassignedAppointments, setUnassignedAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
+  const [selectedForAssign, setSelectedForAssign] = useState<Appointment | null>(null);
 
   useEffect(() => {
     loadAppointments();
@@ -68,7 +76,17 @@ export function MyLeads({ teamId, currentUserId, onCloseDeal }: MyAppointmentsPr
         .order("start_at_utc", { ascending: false });
 
       if (error) throw error;
-      setAppointments(data || []);
+      
+      // Separate into assigned to me and unassigned
+      const myAppts = (data || []).filter(apt => 
+        apt.setter_id === currentUserId || apt.closer_id === currentUserId
+      );
+      const unassignedAppts = (data || []).filter(apt => 
+        !apt.setter_id && !apt.closer_id
+      );
+      
+      setMyAppointments(myAppts);
+      setUnassignedAppointments(unassignedAppts);
     } catch (error) {
       console.error("Error loading appointments:", error);
     } finally {
@@ -76,16 +94,21 @@ export function MyLeads({ teamId, currentUserId, onCloseDeal }: MyAppointmentsPr
     }
   };
 
+  const allAppointments = useMemo(() => 
+    [...myAppointments, ...unassignedAppointments], 
+    [myAppointments, unassignedAppointments]
+  );
+
   const eventTypes = useMemo(() => {
     const types = new Set(
-      appointments
+      allAppointments
         .map((a) => a.event_type_name)
         .filter((type): type is string => type !== null)
     );
     return Array.from(types);
-  }, [appointments]);
+  }, [allAppointments]);
 
-  const filteredAppointments = useMemo(() => {
+  const filterAppointments = (appointments: Appointment[]) => {
     return appointments.filter((appointment) => {
       const matchesSearch =
         !searchQuery ||
@@ -100,7 +123,17 @@ export function MyLeads({ teamId, currentUserId, onCloseDeal }: MyAppointmentsPr
 
       return matchesSearch && matchesStatus && matchesEventType;
     });
-  }, [appointments, searchQuery, statusFilter, eventTypeFilter]);
+  };
+
+  const filteredMyAppointments = useMemo(() => 
+    filterAppointments(myAppointments), 
+    [myAppointments, searchQuery, statusFilter, eventTypeFilter]
+  );
+
+  const filteredUnassignedAppointments = useMemo(() => 
+    filterAppointments(unassignedAppointments), 
+    [unassignedAppointments, searchQuery, statusFilter, eventTypeFilter]
+  );
 
   const handleClearFilters = () => {
     setSearchQuery("");
@@ -119,7 +152,7 @@ export function MyLeads({ teamId, currentUserId, onCloseDeal }: MyAppointmentsPr
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <Users className="h-5 w-5 text-primary" />
         <h3 className="text-lg font-semibold">My Appointments</h3>
@@ -136,30 +169,85 @@ export function MyLeads({ teamId, currentUserId, onCloseDeal }: MyAppointmentsPr
         onClearFilters={handleClearFilters}
       />
 
-      {appointments.length === 0 ? (
-        <Alert>
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
-            No appointments scheduled yet.
-          </AlertDescription>
-        </Alert>
-      ) : filteredAppointments.length === 0 ? (
-        <Alert>
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
-            No appointments match your current filters.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredAppointments.map((appointment) => (
-            <AppointmentCard
-              key={appointment.id}
-              appointment={appointment}
-              onCloseDeal={onCloseDeal}
-            />
-          ))}
-        </div>
+      {/* Unassigned Appointments Section */}
+      {unassignedAppointments.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserX className="h-5 w-5 text-amber-600" />
+              Unassigned Appointments
+              <Badge variant="secondary" className="ml-auto">
+                {filteredUnassignedAppointments.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {filteredUnassignedAppointments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No unassigned appointments match your filters</p>
+            ) : (
+              filteredUnassignedAppointments.map((appointment) => (
+                <HorizontalAppointmentCard
+                  key={appointment.id}
+                  appointment={appointment}
+                  onAssign={() => setSelectedForAssign(appointment)}
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* My Assigned Appointments Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Users className="h-5 w-5 text-primary" />
+            My Assigned Appointments
+            <Badge variant="secondary" className="ml-auto">
+              {filteredMyAppointments.length}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {myAppointments.length === 0 ? (
+            <Alert>
+              <InfoIcon className="h-4 w-4" />
+              <AlertDescription>
+                No appointments assigned to you yet.
+              </AlertDescription>
+            </Alert>
+          ) : filteredMyAppointments.length === 0 ? (
+            <Alert>
+              <InfoIcon className="h-4 w-4" />
+              <AlertDescription>
+                No appointments match your current filters.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredMyAppointments.map((appointment) => (
+                <AppointmentCard
+                  key={appointment.id}
+                  appointment={appointment}
+                  onCloseDeal={onCloseDeal}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedForAssign && (
+        <AssignDialog
+          open={!!selectedForAssign}
+          onOpenChange={(open) => !open && setSelectedForAssign(null)}
+          appointment={selectedForAssign}
+          teamId={teamId}
+          onSuccess={() => {
+            setSelectedForAssign(null);
+            loadAppointments();
+          }}
+        />
       )}
     </div>
   );

@@ -299,7 +299,7 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
                    customRange?.from ? `Booked ${format(customRange.from, 'M/d/yyyy')}${customRange.to ? ` - ${format(customRange.to, 'M/d/yyyy')}` : ''}` : 
                    'Booked'}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">From confirmations</p>
+                <p className="text-xs text-muted-foreground mt-1">From links sent</p>
               </div>
             </CardContent>
           </Card>
