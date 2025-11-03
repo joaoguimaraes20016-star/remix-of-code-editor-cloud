@@ -292,6 +292,15 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
               <p className="font-semibold">{apt.lead_name}</p>
               <p className="text-sm text-muted-foreground">{apt.lead_email}</p>
                <div className="flex items-center gap-2 flex-wrap">
+                {(() => {
+                  console.log(`[${apt.lead_name}] Task data:`, {
+                    task_type: task.task_type,
+                    due_at: task.due_at,
+                    confirmation_sequence: task.confirmation_sequence,
+                    status: task.status
+                  });
+                  return null;
+                })()}
                 {task.task_type === 'call_confirmation' && task.due_at && (
                   <Badge className="text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white border-0">
                     <Clock className="h-3 w-3 mr-1" />
