@@ -118,39 +118,8 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           .eq('team_id', teamId)
           .eq('status', 'pending');
 
-        console.log('[UnifiedTasksView] Raw tasks from DB:', confirmTasks?.length || 0);
-
-        // CRITICAL: Apply 48-hour filter to confirmation tasks
-        const now = new Date();
-        const fortyEightHoursFromNow = new Date(now.getTime() + (48 * 60 * 60 * 1000));
-        const filteredConfirmTasks = (confirmTasks || []).filter(task => {
-          if (task.task_type !== 'call_confirmation') return true; // Only filter call_confirmation tasks
-          if (!task.due_at) return true; // Show tasks without due_at (backwards compatibility)
-          
-          try {
-            const dueDate = parseISO(task.due_at);
-            const shouldShow = dueDate <= fortyEightHoursFromNow || task.is_overdue;
-            
-            console.log(`[UnifiedTasksView 48h Filter] Task ${task.id}:`, {
-              appointment_id: task.appointment_id,
-              due_at: task.due_at,
-              hours_until_due: ((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60)).toFixed(2),
-              within_48h: dueDate <= fortyEightHoursFromNow,
-              is_overdue: task.is_overdue,
-              shouldShow
-            });
-            
-            return shouldShow;
-          } catch (error) {
-            console.error('[UnifiedTasksView 48h Filter ERROR]:', error);
-            return false; // Fail closed
-          }
-        });
-
-        console.log('[UnifiedTasksView] Tasks after 48h filter:', filteredConfirmTasks.length);
-
         // Fetch profile names separately
-        const assignedUserIds = [...new Set(filteredConfirmTasks?.filter(t => t.assigned_to).map(t => t.assigned_to))];
+        const assignedUserIds = [...new Set(confirmTasks?.filter(t => t.assigned_to).map(t => t.assigned_to))];
         const profilesMap = new Map<string, string>();
         
         if (assignedUserIds.length > 0) {
@@ -162,7 +131,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           profiles?.forEach(p => profilesMap.set(p.id, p.full_name || 'Unknown'));
         }
 
-        filteredConfirmTasks?.forEach(task => {
+        confirmTasks?.forEach(task => {
           const taskType = task.task_type as 'call_confirmation' | 'reschedule' | 'follow_up';
           
           unifiedTasks.push({
@@ -389,14 +358,18 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
     );
   }
 
-  const renderTaskCard = (task: UnifiedTask) => {
+  const renderTaskCard = (task: UnifiedTask, isUpcoming: boolean = false) => {
     const apt = appointments.find(a => a.id === task.appointmentId);
     const isMRRTask = task.scheduleId != null;
-    const taskColor = isMRRTask ? 'border-emerald-200 dark:border-emerald-900'
+    const baseTaskColor = isMRRTask ? 'border-emerald-200 dark:border-emerald-900'
       : task.type === 'call_confirmation' ? 'border-blue-200 dark:border-blue-900' 
       : task.type === 'follow_up' ? 'border-purple-200 dark:border-purple-900'
       : task.type === 'reschedule' ? 'border-amber-200 dark:border-amber-900'
       : '';
+
+    const taskColor = isUpcoming 
+      ? `${baseTaskColor} border-l-4 border-l-indigo-500` 
+      : baseTaskColor;
 
     // For MRR tasks, use the lead name from the task itself
     const displayName = isMRRTask ? task.leadName : (apt?.lead_name || task.leadName);
@@ -430,7 +403,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
-              {apt?.start_at_utc ? formatTime(apt.start_at_utc) : format(task.dueDate, 'h:mm a')}
+              {isUpcoming ? (
+                <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+                  Due {format(task.dueDate, 'MMM d, h:mm a')}
+                </span>
+              ) : (
+                apt?.start_at_utc ? formatTime(apt.start_at_utc) : format(task.dueDate, 'h:mm a')
+              )}
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -652,11 +631,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
 
           {upcomingTasks.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-muted-foreground flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 Upcoming ({upcomingTasks.length})
               </h3>
-              {upcomingTasks.map((task) => renderTaskCard(task))}
+              <div className="border-l-4 border-indigo-500 pl-4 space-y-3">
+                {upcomingTasks.map((task) => renderTaskCard(task, true))}
+              </div>
             </div>
           )}
         </>
