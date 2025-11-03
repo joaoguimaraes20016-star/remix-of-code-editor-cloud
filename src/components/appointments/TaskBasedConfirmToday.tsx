@@ -230,7 +230,7 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
     return minutes <= 30 && minutes > 0;
   };
 
-  const getTaskTypeBadge = (taskType: string, isMRRTask?: boolean) => {
+  const getTaskTypeBadge = (taskType: string, isMRRTask?: boolean, sequence?: number) => {
     if (isMRRTask) {
       return (
         <Badge className="text-xs bg-emerald-500 hover:bg-emerald-600 text-white border-0">
@@ -242,10 +242,11 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
     
     switch (taskType) {
       case 'call_confirmation':
+        const ordinal = sequence === 1 ? '1st' : sequence === 2 ? '2nd' : sequence === 3 ? '3rd' : `${sequence}th`;
         return (
           <Badge className="text-xs bg-blue-500 hover:bg-blue-600 text-white border-0">
             <Phone className="h-3 w-3 mr-1" />
-            Call Confirmation
+            {ordinal} Confirmation
           </Badge>
         );
       case 'follow_up':
@@ -291,18 +292,18 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
               <p className="font-semibold">{apt.lead_name}</p>
               <p className="text-sm text-muted-foreground">{apt.lead_email}</p>
                <div className="flex items-center gap-2 flex-wrap">
+                {task.task_type === 'call_confirmation' && task.due_at && (
+                  <Badge className="text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white border-0">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Confirm by: {format(parseISO(task.due_at), 'MMM d, h:mm a')}
+                  </Badge>
+                )}
                 {apt.event_type_name && (
                   <Badge variant="outline" className="text-xs">
                     {apt.event_type_name}
                   </Badge>
                 )}
-                {getTaskTypeBadge(task.task_type, isMRRTask)}
-                {task.task_type === 'call_confirmation' && task.due_at && (
-                  <Badge className="text-xs bg-indigo-500 hover:bg-indigo-600 text-white border-0">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Confirm by: {format(parseISO(task.due_at), 'MMM d, h:mm a')}
-                  </Badge>
-                )}
+                {getTaskTypeBadge(task.task_type, isMRRTask, task.confirmation_sequence || 1)}
                 {isMRRTask && (
                   <Badge className="text-xs bg-emerald-600 text-white border-0">
                     {task.mrr_confirmed_months}/{task.mrr_total_months} months
