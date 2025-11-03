@@ -118,8 +118,39 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           .eq('team_id', teamId)
           .eq('status', 'pending');
 
+        console.log('[UnifiedTasksView] Raw tasks from DB:', confirmTasks?.length || 0);
+
+        // CRITICAL: Apply 48-hour filter to confirmation tasks
+        const now = new Date();
+        const fortyEightHoursFromNow = new Date(now.getTime() + (48 * 60 * 60 * 1000));
+        const filteredConfirmTasks = (confirmTasks || []).filter(task => {
+          if (task.task_type !== 'call_confirmation') return true; // Only filter call_confirmation tasks
+          if (!task.due_at) return true; // Show tasks without due_at (backwards compatibility)
+          
+          try {
+            const dueDate = parseISO(task.due_at);
+            const shouldShow = dueDate <= fortyEightHoursFromNow || task.is_overdue;
+            
+            console.log(`[UnifiedTasksView 48h Filter] Task ${task.id}:`, {
+              appointment_id: task.appointment_id,
+              due_at: task.due_at,
+              hours_until_due: ((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60)).toFixed(2),
+              within_48h: dueDate <= fortyEightHoursFromNow,
+              is_overdue: task.is_overdue,
+              shouldShow
+            });
+            
+            return shouldShow;
+          } catch (error) {
+            console.error('[UnifiedTasksView 48h Filter ERROR]:', error);
+            return false; // Fail closed
+          }
+        });
+
+        console.log('[UnifiedTasksView] Tasks after 48h filter:', filteredConfirmTasks.length);
+
         // Fetch profile names separately
-        const assignedUserIds = [...new Set(confirmTasks?.filter(t => t.assigned_to).map(t => t.assigned_to))];
+        const assignedUserIds = [...new Set(filteredConfirmTasks?.filter(t => t.assigned_to).map(t => t.assigned_to))];
         const profilesMap = new Map<string, string>();
         
         if (assignedUserIds.length > 0) {
@@ -131,7 +162,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           profiles?.forEach(p => profilesMap.set(p.id, p.full_name || 'Unknown'));
         }
 
-        confirmTasks?.forEach(task => {
+        filteredConfirmTasks?.forEach(task => {
           const taskType = task.task_type as 'call_confirmation' | 'reschedule' | 'follow_up';
           
           unifiedTasks.push({
