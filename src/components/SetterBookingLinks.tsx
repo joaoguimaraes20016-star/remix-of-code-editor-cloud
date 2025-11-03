@@ -280,7 +280,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
     return <div className="text-sm text-muted-foreground">Loading booking links...</div>;
   }
 
-  // Convert API URIs to scheduling URLs and filter valid ones
+  // Convert API URIs to scheduling URLs and filter to ONLY admin-selected event types
   const validBookingUrls = calendlyEventTypes
     .map(url => {
       console.log('Processing URL:', url);
@@ -301,7 +301,17 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
       console.log('URL filtered out:', url);
       return null;
     })
-    .filter((url): url is string => url !== null);
+    .filter((url): url is string => url !== null)
+    .filter(url => {
+      // Double-check: Only include URLs that correspond to admin-selected event types
+      // This ensures we only show event types that are in calendlyEventTypes
+      return calendlyEventTypes.some(savedType => {
+        if (savedType === url) return true;
+        // Check if the saved type is an API URI that matches this scheduling URL
+        const detail = eventTypeDetails.find(et => et.uri === savedType);
+        return detail?.scheduling_url === url;
+      });
+    });
 
   console.log('Valid booking URLs:', validBookingUrls);
   console.log('Event type details available:', eventTypeDetails.length);
