@@ -128,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
                               
                               <div style="padding: 20px; background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%); border-radius: 8px; margin-bottom: 25px; border: 1px solid rgba(255, 193, 7, 0.3);">
                                 <p style="margin: 0; color: #ffc107; font-size: 14px; line-height: 22px;">
-                                  ⏰ <strong>Important:</strong> This invitation will expire in 7 days.
+                                  <strong>Important:</strong> This invitation will expire in 7 days.
                                 </p>
                               </div>
                               
