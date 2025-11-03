@@ -8,6 +8,17 @@ import { DealCard } from "./DealCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { TodaysDashboard } from "./TodaysDashboard";
+import { DroppableStageColumn } from "./DroppableStageColumn";
+import { toast } from "sonner";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 
 interface ByCloserViewProps {
   teamId: string;
@@ -41,6 +52,15 @@ interface CloserPipelineViewProps {
 
 function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) {
   const [confirmationTasks, setConfirmationTasks] = useState<Map<string, any>>(new Map());
+  const [activeId, setActiveId] = useState<string | null>(null);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
   
   // Load confirmation tasks for all appointments
   useEffect(() => {
@@ -61,6 +81,38 @@ function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) 
       tasksMap.set(task.appointment_id, task);
     });
     setConfirmationTasks(tasksMap);
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const appointmentId = active.id as string;
+    const newStage = over.id as string;
+    
+    const appointment = group.appointments.find(a => a.id === appointmentId);
+    if (!appointment || appointment.pipeline_stage === newStage) return;
+
+    // Update the pipeline stage in database
+    const { error } = await supabase
+      .from('appointments')
+      .update({ pipeline_stage: newStage })
+      .eq('id', appointmentId);
+
+    if (error) {
+      toast.error('Failed to move appointment');
+      console.error(error);
+    } else {
+      toast.success('Appointment moved successfully');
+      // Reload tasks to reflect the change
+      await loadConfirmationTasks();
+    }
   };
   
   // Group appointments by stage for the selected closer
@@ -98,81 +150,104 @@ function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) 
   }, [group, stages, confirmationTasks]);
 
   return (
-    <ScrollArea className="w-full">
-      <div className="flex gap-4 pb-4">
-        {/* Appointments Booked Stage */}
-        <div className="flex-shrink-0" style={{ width: '300px' }}>
-          <Card className="h-full">
-            <div className="p-4 border-b bg-primary/10 border-b-primary">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Appointments Booked</h3>
-                <Badge variant="secondary">
-                  {dealsByStage.get('appointments_booked')?.length || 0}
-                </Badge>
-              </div>
-            </div>
-            <div className="p-3 space-y-3 min-h-[200px]">
-              {dealsByStage.get('appointments_booked')?.map(appointment => (
-                <DealCard
-                  key={appointment.id}
-                  id={appointment.id}
-                  teamId={teamId}
-                  appointment={appointment}
-                  confirmationTask={confirmationTasks.get(appointment.id)}
-                  onCloseDeal={() => {}}
-                  onMoveTo={() => {}}
-                  userRole="admin"
-                />
-              ))}
-              {(!dealsByStage.get('appointments_booked') || dealsByStage.get('appointments_booked')?.length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-8">No deals</p>
-              )}
-            </div>
-          </Card>
-        </div>
-
-        {/* Pipeline Stages */}
-        {stages
-          .filter(stage => stage.stage_id !== 'booked') // Skip the 'booked' stage as it's handled by Appointments Booked
-          .map(stage => (
-          <div key={stage.stage_id} className="flex-shrink-0" style={{ width: '300px' }}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <ScrollArea className="w-full">
+        <div className="flex gap-4 pb-4">
+          {/* Appointments Booked Stage */}
+          <DroppableStageColumn id="appointments_booked">
             <Card className="h-full">
-              <div 
-                className="p-4 border-b"
-                style={{ 
-                  backgroundColor: `${stage.stage_color}15`,
-                  borderBottomColor: stage.stage_color
-                }}
-              >
+              <div className="p-4 border-b bg-primary/10 border-b-primary">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{stage.stage_label}</h3>
+                  <h3 className="font-semibold">Appointments Booked</h3>
                   <Badge variant="secondary">
-                    {dealsByStage.get(stage.stage_id)?.length || 0}
+                    {dealsByStage.get('appointments_booked')?.length || 0}
                   </Badge>
                 </div>
               </div>
               <div className="p-3 space-y-3 min-h-[200px]">
-                {dealsByStage.get(stage.stage_id)?.map(appointment => (
+                {dealsByStage.get('appointments_booked')?.map(appointment => (
                   <DealCard
                     key={appointment.id}
                     id={appointment.id}
                     teamId={teamId}
                     appointment={appointment}
+                    confirmationTask={confirmationTasks.get(appointment.id)}
                     onCloseDeal={() => {}}
                     onMoveTo={() => {}}
-                    userRole="admin"
+                    userRole="closer"
                   />
                 ))}
-                {(!dealsByStage.get(stage.stage_id) || dealsByStage.get(stage.stage_id)?.length === 0) && (
+                {(!dealsByStage.get('appointments_booked') || dealsByStage.get('appointments_booked')?.length === 0) && (
                   <p className="text-sm text-muted-foreground text-center py-8">No deals</p>
                 )}
               </div>
             </Card>
+          </DroppableStageColumn>
+
+          {/* Pipeline Stages */}
+          {stages
+            .filter(stage => stage.stage_id !== 'booked')
+            .map(stage => (
+            <DroppableStageColumn key={stage.stage_id} id={stage.stage_id}>
+              <Card className="h-full">
+                <div 
+                  className="p-4 border-b"
+                  style={{ 
+                    backgroundColor: `${stage.stage_color}15`,
+                    borderBottomColor: stage.stage_color
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{stage.stage_label}</h3>
+                    <Badge variant="secondary">
+                      {dealsByStage.get(stage.stage_id)?.length || 0}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="p-3 space-y-3 min-h-[200px]">
+                  {dealsByStage.get(stage.stage_id)?.map(appointment => (
+                    <DealCard
+                      key={appointment.id}
+                      id={appointment.id}
+                      teamId={teamId}
+                      appointment={appointment}
+                      confirmationTask={confirmationTasks.get(appointment.id)}
+                      onCloseDeal={() => {}}
+                      onMoveTo={() => {}}
+                      userRole="closer"
+                    />
+                  ))}
+                  {(!dealsByStage.get(stage.stage_id) || dealsByStage.get(stage.stage_id)?.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-8">No deals</p>
+                  )}
+                </div>
+              </Card>
+            </DroppableStageColumn>
+          ))}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+
+      <DragOverlay>
+        {activeId ? (
+          <div className="opacity-50">
+            <DealCard
+              id={activeId}
+              teamId={teamId}
+              appointment={group.appointments.find(a => a.id === activeId)!}
+              confirmationTask={confirmationTasks.get(activeId)}
+              onCloseDeal={() => {}}
+              onMoveTo={() => {}}
+              userRole="closer"
+            />
           </div>
-        ))}
-      </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
 
