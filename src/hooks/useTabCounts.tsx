@@ -100,12 +100,14 @@ export function useTabCounts(teamId: string, userId: string, userRole: string) {
         .in('status', ['pending', 'awaiting_reschedule'])
         .lt('appointment.start_at_utc', todayStart.toISOString());
 
-      // Total pending tasks (all confirmation tasks)
+      // Total pending tasks (all confirmation tasks, excluding closed appointments)
       const { count: totalPendingCount } = await supabase
         .from('confirmation_tasks')
-        .select('*', { count: 'exact', head: true })
+        .select('*, appointment:appointments!inner(status, pipeline_stage)', { count: 'exact', head: true })
         .eq('team_id', teamId)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .not('appointment.status', 'in', '(CLOSED,CANCELLED,RESCHEDULED)')
+        .not('appointment.pipeline_stage', 'in', '(won,closed,cancelled,no_show,lost,rescheduled,disqualified)');
 
       setCounts({
         myTasks: myTasksCount || 0,
