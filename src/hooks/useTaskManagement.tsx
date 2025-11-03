@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { addDays, format } from 'date-fns';
+import { addDays, format, parseISO, startOfDay, endOfDay } from 'date-fns';
 
 interface Task {
   id: string;
@@ -167,6 +167,7 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
       // Filter tasks based on appointment status and due dates
       filteredTasks = filteredTasks.filter(task => {
         const aptStatus = task.appointment?.status;
+        const appointment = task.appointment;
         
         // Don't show call confirmation tasks for appointments that are already confirmed, closed, cancelled, or rescheduled
         // UNLESS the task itself is awaiting_reschedule (we want to keep showing those)
@@ -174,6 +175,38 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
             task.status !== 'awaiting_reschedule' &&
             (aptStatus === 'CONFIRMED' || aptStatus === 'CLOSED' || aptStatus === 'CANCELLED' || aptStatus === 'RESCHEDULED')) {
           return false;
+        }
+        
+        // For call_confirmation tasks, check if they're actually due yet
+        if (task.task_type === 'call_confirmation') {
+          // Always include unassigned tasks in queue
+          if (!task.assigned_to) {
+            return true;
+          }
+          
+          // If task has a due_at, only show if it's due now or overdue
+          if (task.due_at) {
+            const dueDate = new Date(task.due_at);
+            const now = new Date();
+            
+            // Show if due time has passed or is overdue
+            return dueDate <= now || task.is_overdue;
+          }
+          
+          // Backwards compatibility: if no due_at, fall back to appointment date logic
+          if (!appointment?.start_at_utc) return false;
+          
+          const appointmentDate = parseISO(appointment.start_at_utc);
+          const todayStart = startOfDay(new Date());
+          
+          // Include if appointment is today or in the past, or if explicitly overdue
+          if (task.is_overdue || appointmentDate <= todayStart) {
+            return true;
+          }
+          
+          // Also include appointments happening tomorrow (for 24h window)
+          const tomorrowEnd = endOfDay(addDays(new Date(), 1));
+          return appointmentDate <= tomorrowEnd;
         }
         
         // Show follow-up tasks only if they're due today or overdue (regardless of appointment status)

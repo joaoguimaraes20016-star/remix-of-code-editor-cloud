@@ -95,28 +95,47 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
     });
   }
 
-  // Group tasks by date
+  // Group tasks by date (using due_at for confirmation tasks, appointment date for others)
   const groupedTasks = useMemo(() => {
     const overdue: typeof filteredTasks = [];
     const today: typeof filteredTasks = [];
     const tomorrow: typeof filteredTasks = [];
     const upcoming: typeof filteredTasks = [];
 
+    const todayStart = startOfDay(new Date());
+
     filteredTasks.forEach(task => {
-      if (!task.appointment?.start_at_utc) return;
-      
       try {
-        const appointmentDate = parseISO(task.appointment.start_at_utc);
-        const todayStart = startOfDay(new Date());
-        
-        if (appointmentDate < todayStart) {
-          overdue.push(task);
-        } else if (isToday(appointmentDate)) {
-          today.push(task);
-        } else if (isTomorrow(appointmentDate)) {
-          tomorrow.push(task);
+        // Use due_at if available (for call_confirmation tasks), otherwise fall back to appointment date
+        if (task.due_at) {
+          const dueDate = parseISO(task.due_at);
+          const dueDay = startOfDay(dueDate);
+
+          if (task.is_overdue || dueDay < todayStart) {
+            overdue.push(task);
+          } else if (isToday(dueDate)) {
+            today.push(task);
+          } else if (isTomorrow(dueDate)) {
+            tomorrow.push(task);
+          } else {
+            upcoming.push(task);
+          }
         } else {
-          upcoming.push(task);
+          // Backwards compatibility: use appointment date if no due_at
+          if (!task.appointment?.start_at_utc) return;
+          
+          const appointmentDate = parseISO(task.appointment.start_at_utc);
+          const appointmentDay = startOfDay(appointmentDate);
+
+          if (task.is_overdue || appointmentDay < todayStart) {
+            overdue.push(task);
+          } else if (isToday(appointmentDate)) {
+            today.push(task);
+          } else if (isTomorrow(appointmentDate)) {
+            tomorrow.push(task);
+          } else {
+            upcoming.push(task);
+          }
         }
       } catch (error) {
         console.error('Error parsing date:', error);
