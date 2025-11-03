@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, ExternalLink, Save, RefreshCw } from 'lucide-react';
+import { Copy, ExternalLink, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TeamMemberWithBooking {
@@ -104,7 +104,16 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
         .in('role', ['setter', 'closer', 'admin', 'offer_owner']);
 
       if (error) throw error;
-      setMembers(data || []);
+      
+      const members = data || [];
+      setMembers(members);
+      
+      // Auto-generate and save booking codes for members without them
+      const membersWithoutCodes = members.filter(m => !m.booking_code);
+      
+      if (membersWithoutCodes.length > 0) {
+        await autoGenerateAndSaveCodes(membersWithoutCodes);
+      }
     } catch (error) {
       console.error('Error loading members:', error);
       toast({
@@ -114,6 +123,70 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const autoGenerateAndSaveCodes = async (membersWithoutCodes: TeamMemberWithBooking[]) => {
+    console.log('Auto-generating booking codes for:', membersWithoutCodes.length, 'members');
+    
+    for (const member of membersWithoutCodes) {
+      const generatedCode = generateCodeFromName(member.profiles.full_name);
+      
+      try {
+        // Check if code already exists
+        const { data: existing } = await supabase
+          .from('team_members')
+          .select('booking_code')
+          .eq('team_id', teamId)
+          .eq('booking_code', generatedCode)
+          .maybeSingle();
+        
+        let finalCode = generatedCode;
+        
+        // If code exists, append a number
+        if (existing) {
+          let counter = 1;
+          let uniqueCode = `${generatedCode}${counter}`;
+          
+          while (true) {
+            const { data: check } = await supabase
+              .from('team_members')
+              .select('booking_code')
+              .eq('team_id', teamId)
+              .eq('booking_code', uniqueCode)
+              .maybeSingle();
+            
+            if (!check) {
+              finalCode = uniqueCode;
+              break;
+            }
+            counter++;
+            uniqueCode = `${generatedCode}${counter}`;
+          }
+        }
+        
+        // Save the code
+        const { error } = await supabase
+          .from('team_members')
+          .update({ booking_code: finalCode })
+          .eq('team_id', teamId)
+          .eq('user_id', member.user_id);
+        
+        if (!error) {
+          console.log(`✓ Auto-generated code "${finalCode}" for ${member.profiles.full_name}`);
+          
+          // Update local state
+          setMembers(prevMembers =>
+            prevMembers.map(m =>
+              m.user_id === member.user_id
+                ? { ...m, booking_code: finalCode }
+                : m
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error auto-generating code for', member.profiles.full_name, error);
+      }
     }
   };
 
@@ -161,11 +234,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
           )
         );
         
-        toast({
-          title: 'Success',
-          description: 'Booking code saved',
-        });
-        
+        // Silently save without toast notification
         // Still refresh from database to ensure consistency
         loadMembers();
         
@@ -386,7 +455,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
       <CardContent className="space-y-4">
         {filteredMembers.map((member) => {
           const currentCode = editingCodes[member.user_id] ?? member.booking_code ?? '';
-          const hasBookingCode = !!(member.booking_code || (editingCodes[member.user_id] && saving !== member.user_id));
+          const hasBookingCode = !!(member.booking_code);
 
           return (
             <div key={member.user_id} className="border rounded-lg p-4 space-y-3">
@@ -401,47 +470,30 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Booking Code</label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="e.g., john_s"
-                    value={currentCode}
-                    onChange={(e) =>
-                      setEditingCodes((prev) => ({
-                        ...prev,
-                        [member.user_id]: e.target.value,
-                      }))
+                <Input
+                  placeholder="e.g., john_s"
+                  value={currentCode}
+                  onChange={(e) =>
+                    setEditingCodes((prev) => ({
+                      ...prev,
+                      [member.user_id]: e.target.value,
+                    }))
+                  }
+                  onBlur={(e) => {
+                    const newCode = e.target.value.trim();
+                    if (newCode && newCode !== member.booking_code) {
+                      handleSaveCode(member.user_id, newCode);
                     }
-                    className="flex-1"
-                    disabled={!isOwner && member.user_id !== currentUserId}
-                  />
-                  {(isOwner || member.user_id === currentUserId) && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSaveCode(member.user_id, currentCode)}
-                        disabled={saving === member.user_id || currentCode === member.booking_code}
-                      >
-                        <Save className="h-4 w-4 mr-1" />
-                        Save
-                      </Button>
-                      {!member.booking_code && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const generated = generateCodeFromName(member.profiles.full_name);
-                            setEditingCodes((prev) => ({
-                              ...prev,
-                              [member.user_id]: generated,
-                            }));
-                          }}
-                        >
-                          Auto-generate
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </div>
+                  }}
+                  className="flex-1"
+                  disabled={!isOwner && member.user_id !== currentUserId}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {member.booking_code ? 
+                    'Edit and press Enter or click away to update' : 
+                    'Generating personalized code...'
+                  }
+                </p>
               </div>
 
               {hasBookingCode && (
