@@ -265,10 +265,38 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
         countQuery = countQuery.eq('closer_id', currentUserId);
         dataQuery = dataQuery.eq('closer_id', currentUserId);
       } 
-      // Admin view: Show ALL assigned appointments (setter_id is NOT null)
+      // Admin view: Show only manually assigned appointments
       else if (showAllAssigned) {
-        countQuery = countQuery.not('setter_id', 'is', null);
-        dataQuery = dataQuery.not('setter_id', 'is', null);
+        // First, get all manually claimed appointment IDs from confirmation_tasks
+        const { data: claimedTasks, error: claimedError } = await supabase
+          .from('confirmation_tasks')
+          .select('appointment_id')
+          .eq('team_id', teamId)
+          .eq('claimed_manually', true);
+        
+        if (claimedError) {
+          console.error('Error fetching claimed tasks:', claimedError);
+          throw claimedError;
+        }
+        
+        // Extract appointment IDs
+        const manuallyClaimedIds = claimedTasks?.map(task => task.appointment_id) || [];
+        
+        // Filter to only show appointments that are in the manually claimed list
+        if (manuallyClaimedIds.length > 0) {
+          countQuery = countQuery
+            .not('setter_id', 'is', null)
+            .in('id', manuallyClaimedIds);
+          dataQuery = dataQuery
+            .not('setter_id', 'is', null)
+            .in('id', manuallyClaimedIds);
+        } else {
+          // No manually claimed appointments, return empty
+          setAppointments([]);
+          setTotalCount(0);
+          setLoading(false);
+          return;
+        }
       }
       // Default: Show unassigned appointments (setter_id IS null)
       else {
