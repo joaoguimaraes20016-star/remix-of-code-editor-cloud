@@ -190,8 +190,18 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
             const now = new Date();
             const fortyEightHoursFromNow = new Date(now.getTime() + (48 * 60 * 60 * 1000));
             
+            const shouldShow = dueDate <= fortyEightHoursFromNow || task.is_overdue;
+            console.log(`[Filter] ${appointment?.lead_name}:`, {
+              due_at: task.due_at,
+              dueDate: dueDate.toISOString(),
+              now: now.toISOString(),
+              fortyEightHoursFromNow: fortyEightHoursFromNow.toISOString(),
+              is_overdue: task.is_overdue,
+              shouldShow
+            });
+            
             // Show if due within 48 hours, overdue, or already past due time
-            return dueDate <= fortyEightHoursFromNow || task.is_overdue;
+            return shouldShow;
           }
           
           // Backwards compatibility: if no due_at, fall back to appointment date logic
