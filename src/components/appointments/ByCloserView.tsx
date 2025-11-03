@@ -48,9 +48,10 @@ interface CloserPipelineViewProps {
   group: CloserGroup;
   stages: PipelineStage[];
   teamId: string;
+  onReload: () => Promise<void>;
 }
 
-function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) {
+function CloserPipelineView({ group, stages, teamId, onReload }: CloserPipelineViewProps) {
   const [confirmationTasks, setConfirmationTasks] = useState<Map<string, any>>(new Map());
   const [activeId, setActiveId] = useState<string | null>(null);
   
@@ -94,24 +95,58 @@ function CloserPipelineView({ group, stages, teamId }: CloserPipelineViewProps) 
     if (!over) return;
 
     const appointmentId = active.id as string;
-    const newStage = over.id as string;
+    let targetStageId = over.id as string;
+    
+    // Map "appointments_booked" droppable ID to actual "booked" stage
+    if (targetStageId === 'appointments_booked') {
+      targetStageId = 'booked';
+    }
     
     const appointment = group.appointments.find(a => a.id === appointmentId);
-    if (!appointment || appointment.pipeline_stage === newStage) return;
+    if (!appointment) return;
+    
+    // Check if the stage is actually changing
+    const currentStage = appointment.pipeline_stage || 'booked';
+    if (currentStage === targetStageId) return;
 
-    // Update the pipeline stage in database
-    const { error } = await supabase
-      .from('appointments')
-      .update({ pipeline_stage: newStage })
-      .eq('id', appointmentId);
+    // Find target stage data for special handling
+    const targetStage = stages.find(s => s.stage_id === targetStageId);
+    
+    // Check if moving to won/closed stage
+    const isClosedStage = targetStage && 
+      (targetStage.stage_id === 'won' || 
+       targetStage.stage_label.toLowerCase().includes('won') || 
+       targetStage.stage_label.toLowerCase().includes('closed'));
+    
+    if (isClosedStage) {
+      toast.info('Use the "Close Deal" button to mark deals as closed with revenue details');
+      return;
+    }
 
-    if (error) {
+    // Check for other special stages that need dialogs
+    if (targetStageId === 'rescheduled' || targetStageId === 'canceled' || 
+        targetStageId === 'no_show' || targetStageId === 'deposit') {
+      toast.info(`Please use the stage menu to move to ${targetStage?.stage_label || targetStageId}`);
+      return;
+    }
+
+    try {
+      // Update the pipeline stage in database
+      const { error } = await supabase
+        .from('appointments')
+        .update({ pipeline_stage: targetStageId })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      const stageName = targetStage?.stage_label || targetStageId;
+      toast.success(`Moved ${appointment.lead_name} to ${stageName}`);
+      
+      // Reload all data to reflect changes
+      await onReload();
+    } catch (error) {
+      console.error('Error moving appointment:', error);
       toast.error('Failed to move appointment');
-      console.error(error);
-    } else {
-      toast.success('Appointment moved successfully');
-      // Reload tasks to reflect the change
-      await loadConfirmationTasks();
     }
   };
   
@@ -424,7 +459,8 @@ export function ByCloserView({ teamId }: ByCloserViewProps) {
               <CloserPipelineView 
                 group={group} 
                 stages={stages} 
-                teamId={teamId} 
+                teamId={teamId}
+                onReload={loadData}
               />
             )}
           </TabsContent>
