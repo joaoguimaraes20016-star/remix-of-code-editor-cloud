@@ -644,7 +644,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
 
           {upcomingTasks.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 Upcoming ({upcomingTasks.length})
               </h3>
