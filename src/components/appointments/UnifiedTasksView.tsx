@@ -609,15 +609,21 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             </div>
           )}
 
-          {dueTodayTasks.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Due Today ({dueTodayTasks.length})
-              </h3>
-              {dueTodayTasks.map((task) => renderTaskCard(task))}
-            </div>
-          )}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Due Today ({dueTodayTasks.length})
+            </h3>
+            {dueTodayTasks.length > 0 ? (
+              dueTodayTasks.map((task) => renderTaskCard(task))
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">None due today</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
           {tomorrowTasks.length > 0 && (
             <div className="space-y-3">
