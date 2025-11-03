@@ -382,14 +382,14 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
                   ) : (
                     <div 
                       onClick={() => {
-                        if (canEdit) {
+                        if (canEdit && sale.setter) {
                           setEditingSetterCommission(sale.id);
                           setTempSetterCommission(sale.setterCommission.toString());
                         }
                       }}
-                      className={canEdit ? 'cursor-pointer hover:underline' : ''}
+                      className={canEdit && sale.setter ? 'cursor-pointer hover:underline' : ''}
                     >
-                      ${sale.setterCommission.toLocaleString()}
+                      ${!sale.setter || sale.setter.trim() === '' ? '0' : sale.setterCommission.toLocaleString()}
                     </div>
                   )}
                 </TableCell>
