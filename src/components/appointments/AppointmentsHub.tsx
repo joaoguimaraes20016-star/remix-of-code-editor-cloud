@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar, Plus, Info } from "lucide-react";
+import { Calendar, Plus, CheckSquare } from "lucide-react";
 import { CreateTaskDialog } from "./CreateTaskDialog";
 import { NewAppointments } from "@/components/NewAppointments";
 import { MyClaimed } from "@/components/MyClaimed";
@@ -14,7 +14,7 @@ import { TaskBasedConfirmToday } from "./TaskBasedConfirmToday";
 import { OperatorControls } from "./OperatorControls";
 import { MRRFollowUps } from "./MRRFollowUps";
 import { MRRScheduleList } from "./MRRScheduleList";
-import { RetargetTab } from "./RetargetTab";
+
 import { StageWorkspaceView } from "./StageWorkspaceView";
 import { StageWorkspaceList } from "./StageWorkspaceList";
 import { InitializeDefaultStages } from "./InitializeDefaultStages";
@@ -143,22 +143,15 @@ export function AppointmentsHub({
               <TabsTrigger value="mrr" className="text-sm md:text-base whitespace-nowrap">
                 MRR {counts.mrrDue > 0 && <Badge className="ml-2" variant="secondary">{counts.mrrDue}</Badge>}
               </TabsTrigger>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <TabsTrigger value="retarget" className="text-sm md:text-base whitespace-nowrap">
-                      <span className="flex items-center gap-1">
-                        Retarget
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </span>
-                      {counts.followUps > 0 && <Badge className="ml-2" variant="secondary">{counts.followUps}</Badge>}
-                    </TabsTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="text-sm">Queue for leads that need follow-up. Move leads here when they show potential but can't close now, then follow up at the scheduled time.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <TabsTrigger value="tasks" className="text-sm md:text-base whitespace-nowrap flex items-center gap-2">
+                <CheckSquare className="h-4 w-4" />
+                Tasks
+                {counts.totalPendingTasks > 0 && (
+                  <Badge variant={counts.overdue > 0 ? "destructive" : "secondary"} className="ml-1">
+                    {counts.totalPendingTasks}
+                  </Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -208,8 +201,8 @@ export function AppointmentsHub({
             </div>
           </TabsContent>
 
-          <TabsContent value="retarget" className="mt-6">
-            <RetargetTab teamId={teamId} />
+          <TabsContent value="tasks" className="mt-6">
+            <UnifiedTasksView teamId={teamId} />
           </TabsContent>
         </Tabs>
 

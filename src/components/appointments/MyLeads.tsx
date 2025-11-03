@@ -170,32 +170,36 @@ export function MyLeads({ teamId, currentUserId, onCloseDeal }: MyAppointmentsPr
       />
 
       {/* Unassigned Appointments Section */}
-      {unassignedAppointments.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <UserX className="h-5 w-5 text-amber-600" />
-              Unassigned Appointments
-              <Badge variant="secondary" className="ml-auto">
-                {filteredUnassignedAppointments.length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {filteredUnassignedAppointments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No unassigned appointments match your filters</p>
-            ) : (
-              filteredUnassignedAppointments.map((appointment) => (
-                <HorizontalAppointmentCard
-                  key={appointment.id}
-                  appointment={appointment}
-                  onAssign={() => setSelectedForAssign(appointment)}
-                />
-              ))
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserX className="h-5 w-5 text-amber-600" />
+            Unassigned Appointments
+            <Badge variant="secondary" className="ml-auto">
+              {filteredUnassignedAppointments.length}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {unassignedAppointments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No unassigned appointments at this time
+            </p>
+          ) : filteredUnassignedAppointments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No unassigned appointments match your filters
+            </p>
+          ) : (
+            filteredUnassignedAppointments.map((appointment) => (
+              <HorizontalAppointmentCard
+                key={appointment.id}
+                appointment={appointment}
+                onAssign={() => setSelectedForAssign(appointment)}
+              />
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       {/* My Assigned Appointments Section */}
       <Card>
