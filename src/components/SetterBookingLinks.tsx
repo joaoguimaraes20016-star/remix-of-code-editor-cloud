@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, ExternalLink, RefreshCw } from 'lucide-react';
+import { Copy, ExternalLink, RefreshCw, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TeamMemberWithBooking {
@@ -127,37 +127,55 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
   };
 
   const autoGenerateAndSaveCodes = async (membersWithoutCodes: TeamMemberWithBooking[]) => {
-    console.log('Auto-generating booking codes for:', membersWithoutCodes.length, 'members');
+    console.log('🔄 Auto-generating booking codes for:', membersWithoutCodes.length, 'members');
     
     for (const member of membersWithoutCodes) {
       const generatedCode = generateCodeFromName(member.profiles.full_name);
+      console.log(`📝 Attempting to generate code "${generatedCode}" for ${member.profiles.full_name}`);
       
       try {
         // Check if code already exists
-        const { data: existing } = await supabase
+        const { data: existing, error: checkError } = await supabase
           .from('team_members')
           .select('booking_code')
           .eq('team_id', teamId)
           .eq('booking_code', generatedCode)
           .maybeSingle();
         
+        if (checkError) {
+          console.error('❌ Error checking existing code:', checkError);
+          toast({
+            title: 'Database Error',
+            description: `Failed to check for existing codes: ${checkError.message}`,
+            variant: 'destructive',
+          });
+          throw checkError;
+        }
+        
         let finalCode = generatedCode;
         
         // If code exists, append a number
         if (existing) {
+          console.log(`⚠️ Code "${generatedCode}" already exists, finding unique variant...`);
           let counter = 1;
           let uniqueCode = `${generatedCode}${counter}`;
           
-          while (true) {
-            const { data: check } = await supabase
+          while (counter < 100) {
+            const { data: check, error: uniqueCheckError } = await supabase
               .from('team_members')
               .select('booking_code')
               .eq('team_id', teamId)
               .eq('booking_code', uniqueCode)
               .maybeSingle();
             
+            if (uniqueCheckError) {
+              console.error('❌ Error checking unique code:', uniqueCheckError);
+              throw uniqueCheckError;
+            }
+            
             if (!check) {
               finalCode = uniqueCode;
+              console.log(`✓ Found unique code: ${finalCode}`);
               break;
             }
             counter++;
@@ -165,28 +183,86 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
           }
         }
         
-        // Save the code
-        const { error } = await supabase
+        // Save the code with verification
+        console.log(`💾 Saving booking code "${finalCode}" to database...`);
+        const { data: savedData, error: saveError } = await supabase
           .from('team_members')
           .update({ booking_code: finalCode })
           .eq('team_id', teamId)
-          .eq('user_id', member.user_id);
+          .eq('user_id', member.user_id)
+          .select('booking_code');
         
-        if (!error) {
-          console.log(`✓ Auto-generated code "${finalCode}" for ${member.profiles.full_name}`);
-          
-          // Update local state
-          setMembers(prevMembers =>
-            prevMembers.map(m =>
-              m.user_id === member.user_id
-                ? { ...m, booking_code: finalCode }
-                : m
-            )
-          );
+        if (saveError) {
+          console.error('❌ Database save FAILED:', saveError);
+          toast({
+            title: 'Failed to save booking code',
+            description: `Could not save code for ${member.profiles.full_name}: ${saveError.message}`,
+            variant: 'destructive',
+          });
+          throw saveError;
         }
-      } catch (error) {
-        console.error('Error auto-generating code for', member.profiles.full_name, error);
+        
+        if (!savedData || savedData.length === 0) {
+          console.error('❌ Save returned no data - possible permission issue');
+          toast({
+            title: 'Save verification failed',
+            description: `Code may not have been saved for ${member.profiles.full_name}. Check permissions.`,
+            variant: 'destructive',
+          });
+          throw new Error('No data returned from save operation');
+        }
+        
+        console.log(`✅ SUCCESS! Saved booking code "${finalCode}" for ${member.profiles.full_name}`);
+        console.log('📊 Database confirmed:', savedData);
+        
+        // Update local state only after confirmed database save
+        setMembers(prevMembers =>
+          prevMembers.map(m =>
+            m.user_id === member.user_id
+              ? { ...m, booking_code: finalCode }
+              : m
+          )
+        );
+        
+        // Show success feedback to user
+        toast({
+          title: 'Booking code ready!',
+          description: `Your code "${finalCode}" is active and ready to use`,
+        });
+        
+      } catch (error: any) {
+        console.error('❌ FAILED to auto-generate code for', member.profiles.full_name, error);
+        toast({
+          title: 'Setup Failed',
+          description: `Could not set up booking code for ${member.profiles.full_name}. Error: ${error?.message || 'Unknown error'}`,
+          variant: 'destructive',
+        });
+        break;
       }
+    }
+    
+    // Reload from database to verify persistence
+    console.log('🔄 Reloading all members from database to verify...');
+    try {
+      const { data: refreshedMembers, error: refreshError } = await supabase
+        .from('team_members')
+        .select('user_id, role, booking_code, profiles!inner(full_name)')
+        .eq('team_id', teamId)
+        .in('role', ['setter', 'closer', 'admin', 'offer_owner']);
+      
+      if (!refreshError && refreshedMembers) {
+        setMembers(refreshedMembers);
+        console.log('✅ Members refreshed from database:', refreshedMembers);
+        
+        const stillNull = refreshedMembers.filter(m => !m.booking_code);
+        if (stillNull.length > 0) {
+          console.error('⚠️ WARNING: Some booking codes are still null after save attempt:', stillNull);
+        }
+      } else {
+        console.error('❌ Failed to refresh members:', refreshError);
+      }
+    } catch (error) {
+      console.error('❌ Error during refresh:', error);
     }
   };
 
@@ -199,7 +275,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
   const handleSaveCode = async (userId: string, code: string) => {
     if (!code.trim()) {
       toast({
-        title: 'Error',
+        title: 'Invalid code',
         description: 'Booking code cannot be empty',
         variant: 'destructive',
       });
@@ -207,50 +283,54 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
     }
 
     setSaving(userId);
+    console.log(`💾 Manually saving code "${code}" for user ${userId}`);
+
     try {
-      const { error } = await supabase
+      const { data: savedData, error } = await supabase
         .from('team_members')
         .update({ booking_code: code.trim().toLowerCase() })
         .eq('team_id', teamId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select('booking_code');
 
       if (error) {
+        console.error('❌ Manual save failed:', error);
         if (error.code === '23505') {
           toast({
-            title: 'Error',
-            description: 'This booking code is already in use',
+            title: 'Code already in use',
+            description: 'This booking code is already taken. Please choose another.',
             variant: 'destructive',
           });
         } else {
-          throw error;
+          toast({
+            title: 'Save failed',
+            description: error.message,
+            variant: 'destructive',
+          });
         }
-      } else {
-        // Optimistically update the member's booking code in state
-        setMembers(prevMembers => 
-          prevMembers.map(m => 
-            m.user_id === userId 
-              ? { ...m, booking_code: code.trim().toLowerCase() }
-              : m
-          )
-        );
-        
-        // Silently save without toast notification
-        // Still refresh from database to ensure consistency
-        loadMembers();
-        
-        setEditingCodes((prev) => {
-          const newCodes = { ...prev };
-          delete newCodes[userId];
-          return newCodes;
-        });
+        throw error;
       }
-    } catch (error) {
-      console.error('Error saving booking code:', error);
+      
+      if (!savedData || savedData.length === 0) {
+        throw new Error('No data returned - possible permission issue');
+      }
+
+      console.log('✅ Manual save successful:', savedData);
       toast({
-        title: 'Error',
-        description: 'Failed to save booking code',
-        variant: 'destructive',
+        title: 'Code saved',
+        description: `Your booking code "${code}" is now active`,
       });
+
+      // Reload to verify
+      await loadMembers();
+      
+      setEditingCodes((prev) => {
+        const newCodes = { ...prev };
+        delete newCodes[userId];
+        return newCodes;
+      });
+    } catch (error: any) {
+      console.error('Error saving code:', error);
     } finally {
       setSaving(null);
     }
@@ -456,6 +536,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
         {filteredMembers.map((member) => {
           const currentCode = editingCodes[member.user_id] ?? member.booking_code ?? '';
           const hasBookingCode = !!(member.booking_code);
+          const isGenerating = loading && !member.booking_code;
 
           return (
             <div key={member.user_id} className="border rounded-lg p-4 space-y-3">
@@ -494,6 +575,42 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, calendlyAccessT
                     'Generating personalized code...'
                   }
                 </p>
+                
+                {/* Status indicator */}
+                <div className="mt-1">
+                  {member.booking_code ? (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <Check className="h-3 w-3" />
+                      <span>Code active - your links are ready</span>
+                    </div>
+                  ) : isGenerating ? (
+                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Generating your unique code...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-xs text-amber-600">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>No code - links won't work yet</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Manual generate button if code is still null */}
+                {!member.booking_code && (isOwner || member.user_id === currentUserId) && (
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      console.log('🔧 Manual generation triggered for:', member.profiles.full_name);
+                      await autoGenerateAndSaveCodes([member]);
+                    }}
+                    disabled={loading}
+                    className="mt-2"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Generate My Code Now
+                  </Button>
+                )}
               </div>
 
               {hasBookingCode && (
