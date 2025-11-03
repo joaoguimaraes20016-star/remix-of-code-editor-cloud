@@ -31,6 +31,7 @@ import { TodaysDashboard } from "./TodaysDashboard";
 import { SetterEODReport } from "./SetterEODReport";
 import { CloserEODReport } from "./CloserEODReport";
 import { UnassignedAppointments } from "./UnassignedAppointments";
+import { SetterBookingLinks } from "@/components/SetterBookingLinks";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
@@ -63,6 +64,11 @@ export function AppointmentsHub({
     showUndoToast: (description: string) => void;
   } | null>(null);
   const [userName, setUserName] = useState<string>('');
+  const [teamCalendlySettings, setTeamCalendlySettings] = useState<{
+    calendlyEventTypes: string[];
+    calendlyAccessToken: string | null;
+    calendlyOrgUri: string | null;
+  }>({ calendlyEventTypes: [], calendlyAccessToken: null, calendlyOrgUri: null });
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -90,6 +96,26 @@ export function AppointmentsHub({
     };
     
     loadAppointments();
+  }, [teamId]);
+
+  useEffect(() => {
+    const loadTeamCalendlySettings = async () => {
+      const { data } = await supabase
+        .from('teams')
+        .select('calendly_event_types, calendly_access_token, calendly_organization_uri')
+        .eq('id', teamId)
+        .single();
+      
+      if (data) {
+        setTeamCalendlySettings({
+          calendlyEventTypes: data.calendly_event_types || [],
+          calendlyAccessToken: data.calendly_access_token,
+          calendlyOrgUri: data.calendly_organization_uri,
+        });
+      }
+    };
+    
+    loadTeamCalendlySettings();
   }, [teamId]);
 
   const handleCloseDeal = (
@@ -161,6 +187,7 @@ export function AppointmentsHub({
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="booking-link" className="text-sm md:text-base whitespace-nowrap">My Link</TabsTrigger>
             </TabsList>
           </div>
 
@@ -219,6 +246,17 @@ export function AppointmentsHub({
 
           <TabsContent value="tasks" className="mt-6">
             <UnifiedTasksView teamId={teamId} />
+          </TabsContent>
+
+          <TabsContent value="booking-link" className="mt-6">
+            <SetterBookingLinks
+              teamId={teamId}
+              calendlyEventTypes={teamCalendlySettings.calendlyEventTypes}
+              calendlyAccessToken={teamCalendlySettings.calendlyAccessToken}
+              calendlyOrgUri={teamCalendlySettings.calendlyOrgUri}
+              currentUserId={user?.id}
+              isOwner={false}
+            />
           </TabsContent>
         </Tabs>
 
