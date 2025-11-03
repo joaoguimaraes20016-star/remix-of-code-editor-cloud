@@ -368,7 +368,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       : '';
 
     const taskColor = isUpcoming 
-      ? `${baseTaskColor} border-l-4 border-l-indigo-500` 
+      ? `${baseTaskColor} border-l-4 border-l-orange-500` 
       : baseTaskColor;
 
     // For MRR tasks, use the lead name from the task itself
@@ -405,7 +405,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
                 {isUpcoming ? (
-                  <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+                  <span className="text-orange-600 dark:text-orange-400 font-medium">
                     Due {format(task.dueDate, 'MMM d, h:mm a')}
                   </span>
                 ) : (
