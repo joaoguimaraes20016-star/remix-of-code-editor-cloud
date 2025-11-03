@@ -108,8 +108,38 @@ const Index = () => {
         }
       });
 
+    // Set up real-time subscription for sales
+    const salesChannel = supabase
+      .channel(`sales-dashboard-${teamId}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sales',
+          filter: `team_id=eq.${teamId}`,
+        },
+        (payload) => {
+          console.log('Sales change detected:', payload);
+          // For DELETE events, immediately filter out the deleted sale
+          if (payload.eventType === 'DELETE' && payload.old) {
+            setSales(prev => prev.filter(sale => sale.id !== payload.old.id));
+          } else {
+            // For INSERT/UPDATE, reload all sales
+            loadSales();
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Sales realtime subscription error:', status);
+          setTimeout(() => loadSales(), 2000);
+        }
+      });
+
     return () => {
       supabase.removeChannel(appointmentsChannel);
+      supabase.removeChannel(salesChannel);
     };
   }, [user, teamId, navigate]);
 
