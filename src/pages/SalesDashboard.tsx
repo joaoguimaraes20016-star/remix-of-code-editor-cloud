@@ -537,11 +537,10 @@ const Index = () => {
       const hasDeposit = (apt.pipeline_stage?.toLowerCase().includes('deposit') || apt.status === 'CLOSED') && Number(apt.cc_collected || 0) > 0;
       const repMatch = selectedRep === 'all' || apt.closer_name === selectedRep || apt.setter_name === selectedRep;
       
-      // Check if a sale record already exists for this appointment
-      const aptDate = apt.start_at_utc?.split('T')[0] || '';
+      // Check if a sale record already exists for this appointment by name + closer
       const hasSaleRecord = sales.some(sale => 
-        sale.customerName === apt.lead_name && 
-        sale.date === aptDate
+        sale.customerName.toLowerCase().trim() === apt.lead_name.toLowerCase().trim() && 
+        sale.salesRep === apt.closer_name
       );
       
       return hasDeposit && repMatch && !hasSaleRecord;
