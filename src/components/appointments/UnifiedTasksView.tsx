@@ -23,6 +23,7 @@ interface UnifiedTask {
   type: 'call_confirmation' | 'reschedule' | 'follow_up' | 'mrr_payment';
   title: string;
   dueDate: Date;
+  appointmentDate?: Date;
   status: string;
   assignedTo: string | null;
   assignedToName: string | null;
@@ -122,11 +123,11 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
         setTeamOverdueThreshold(teamData.overdue_threshold_minutes);
       }
 
-      // Load confirmation tasks
+      // Load confirmation tasks with appointment dates
       if (filterStatus === 'pending' || filterStatus === 'all') {
         const { data: confirmTasks } = await supabase
           .from('confirmation_tasks')
-          .select('*')
+          .select('*, appointment:appointments(start_at_utc, lead_name)')
           .eq('team_id', teamId)
           .eq('status', 'pending');
 
@@ -145,6 +146,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
 
         confirmTasks?.forEach(task => {
           const taskType = task.task_type as 'call_confirmation' | 'reschedule' | 'follow_up';
+          const appointment = task.appointment as any;
           
           unifiedTasks.push({
             id: task.id,
@@ -153,10 +155,11 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             title: task.task_type === 'call_confirmation' ? 'Call Confirmation' : 
                    task.task_type === 'reschedule' ? 'Reschedule' : 'Follow-Up',
             dueDate: task.due_at ? new Date(task.due_at) : now,
+            appointmentDate: appointment?.start_at_utc ? new Date(appointment.start_at_utc) : undefined,
             status: 'pending',
             assignedTo: task.assigned_to,
             assignedToName: task.assigned_to ? profilesMap.get(task.assigned_to) || null : null,
-            leadName: 'Loading...',
+            leadName: appointment?.lead_name || 'Loading...',
             details: task.follow_up_reason || '',
             appointmentId: task.appointment_id,
             followUpReason: task.follow_up_reason,
@@ -338,25 +341,26 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
   const upcomingTasks: UnifiedTask[] = [];
 
   filteredTasks.forEach(task => {
-    if (!task.dueDate) {
+    if (!task.appointmentDate) {
       upcomingTasks.push(task);
       return;
     }
     
     try {
-      const taskDate = new Date(task.dueDate);
+      // Use APPOINTMENT date for grouping, not confirmation due date
+      const appointmentTime = new Date(task.appointmentDate);
       const now = new Date();
       
-      // Calculate overdue deadline: due_at + grace period (threshold)
+      // Calculate overdue deadline: appointment time + grace period (threshold)
       const overdueThresholdMs = (teamOverdueThreshold || 30) * 60 * 1000;
-      const overdueDeadline = new Date(taskDate.getTime() + overdueThresholdMs);
+      const appointmentDeadline = new Date(appointmentTime.getTime() + overdueThresholdMs);
       
-      // Task is only overdue if current time is past the deadline + grace period
-      if (now > overdueDeadline) {
+      // Task is only overdue if the APPOINTMENT time has passed + grace period
+      if (now > appointmentDeadline) {
         overdueTasks.push(task);
-      } else if (isToday(taskDate)) {
+      } else if (isToday(appointmentTime)) {
         dueTodayTasks.push(task);
-      } else if (isTomorrow(taskDate)) {
+      } else if (isTomorrow(appointmentTime)) {
         tomorrowTasks.push(task);
       } else {
         upcomingTasks.push(task);
