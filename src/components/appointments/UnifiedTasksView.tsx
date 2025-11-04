@@ -44,6 +44,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
   const [filterStatus, setFilterStatus] = useState<string>("pending");
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [teamOverdueThreshold, setTeamOverdueThreshold] = useState<number>(30);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     taskId: string;
@@ -109,6 +110,17 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       setLoading(true);
       const now = new Date();
       const unifiedTasks: UnifiedTask[] = [];
+
+      // Load team's overdue threshold
+      const { data: teamData } = await supabase
+        .from('teams')
+        .select('overdue_threshold_minutes')
+        .eq('id', teamId)
+        .single();
+      
+      if (teamData?.overdue_threshold_minutes) {
+        setTeamOverdueThreshold(teamData.overdue_threshold_minutes);
+      }
 
       // Load confirmation tasks
       if (filterStatus === 'pending' || filterStatus === 'all') {
@@ -333,9 +345,14 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
     
     try {
       const taskDate = new Date(task.dueDate);
-      const todayStart = startOfDay(new Date());
+      const now = new Date();
       
-      if (taskDate < todayStart) {
+      // Calculate overdue deadline: due_at + grace period (threshold)
+      const overdueThresholdMs = (teamOverdueThreshold || 30) * 60 * 1000;
+      const overdueDeadline = new Date(taskDate.getTime() + overdueThresholdMs);
+      
+      // Task is only overdue if current time is past the deadline + grace period
+      if (now > overdueDeadline) {
         overdueTasks.push(task);
       } else if (isToday(taskDate)) {
         dueTodayTasks.push(task);
