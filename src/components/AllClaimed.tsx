@@ -126,8 +126,8 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
         (payload) => {
           const updatedApt = payload.new as Appointment;
           
-          // Check if appointment is still assigned (has setter OR closer)
-          const isAssigned = updatedApt.setter_id !== null || updatedApt.closer_id !== null;
+          // Check if appointment still has a setter assigned
+          const isAssigned = updatedApt.setter_id !== null;
           
           setAppointments(prev => {
             if (isAssigned) {
@@ -169,12 +169,12 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
 
       const savedEventTypes = teamFilterData?.calendly_event_types || [];
       
-      // Get total count - show only ASSIGNED appointments (has setter OR closer)
+      // Get total count - show only appointments with ASSIGNED SETTERS
       const { count, error: countError } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .eq('team_id', teamId)
-        .or('setter_id.not.is.null,closer_id.not.is.null');
+        .not('setter_id', 'is', null);
 
       if (countError) throw countError;
 
@@ -186,7 +186,7 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
-        .or('setter_id.not.is.null,closer_id.not.is.null')
+        .not('setter_id', 'is', null)
         .order('start_at_utc', { ascending: false })
         .range(from, to);
 
