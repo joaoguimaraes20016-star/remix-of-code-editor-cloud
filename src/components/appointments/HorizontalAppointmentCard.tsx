@@ -180,16 +180,27 @@ export function HorizontalAppointmentCard({
           )}
 
           <div className="flex flex-wrap gap-2">
-            {appointment.setter_name && (
+            {appointment.setter_name ? (
               <div className="flex items-center gap-1.5 px-2 py-1 bg-info/10 border border-info/30 rounded text-xs">
                 <User className="w-3 h-3 text-info" />
                 <span className="font-medium">Setter: {appointment.setter_name}</span>
               </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/30 border border-muted rounded text-xs">
+                <User className="w-3 h-3 text-muted-foreground" />
+                <span className="text-muted-foreground italic">Setter: Unassigned</span>
+              </div>
             )}
-            {appointment.closer_name && (
+            
+            {appointment.closer_name ? (
               <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 border border-primary/30 rounded text-xs">
                 <User className="w-3 h-3 text-primary" />
                 <span className="font-medium">Closer: {appointment.closer_name}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/30 border border-muted rounded text-xs">
+                <User className="w-3 h-3 text-muted-foreground" />
+                <span className="text-muted-foreground italic">Closer: Unassigned</span>
               </div>
             )}
           </div>

@@ -295,30 +295,44 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
             </div>
           )}
 
-          {/* Team Members */}
-          {(appointment.setter_name || appointment.closer_name) && (
-            <div className="flex items-center gap-2 flex-wrap">
-              {appointment.setter_name && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20 flex-1 min-w-0">
-                  <DealAvatar name={appointment.setter_name} className="h-7 w-7 ring-2 ring-primary/30" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-[10px] text-primary/70 font-semibold uppercase tracking-wider">Setter</span>
-                    <span className="text-xs font-medium truncate">{appointment.setter_name}</span>
-                  </div>
+          {/* Team Members - Always Show Both Fields */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {appointment.setter_name ? (
+              <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20 flex-1 min-w-0">
+                <DealAvatar name={appointment.setter_name} className="h-7 w-7 ring-2 ring-primary/30" />
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-[10px] text-primary/70 font-semibold uppercase tracking-wider">Setter</span>
+                  <span className="text-xs font-medium truncate">{appointment.setter_name}</span>
                 </div>
-              )}
-              
-              {appointment.closer_name && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg border border-accent/20 flex-1 min-w-0">
-                  <DealAvatar name={appointment.closer_name} className="h-7 w-7 ring-2 ring-accent/30" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-[10px] text-accent/70 font-semibold uppercase tracking-wider">Closer</span>
-                    <span className="text-xs font-medium truncate">{appointment.closer_name}</span>
-                  </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg border border-muted flex-1 min-w-0">
+                <DealAvatar name="?" className="h-7 w-7 ring-2 ring-muted" />
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Setter</span>
+                  <span className="text-xs text-muted-foreground italic">Unassigned</span>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+            
+            {appointment.closer_name ? (
+              <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg border border-accent/20 flex-1 min-w-0">
+                <DealAvatar name={appointment.closer_name} className="h-7 w-7 ring-2 ring-accent/30" />
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-[10px] text-accent/70 font-semibold uppercase tracking-wider">Closer</span>
+                  <span className="text-xs font-medium truncate">{appointment.closer_name}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg border border-muted flex-1 min-w-0">
+                <DealAvatar name="?" className="h-7 w-7 ring-2 ring-muted" />
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Closer</span>
+                  <span className="text-xs text-muted-foreground italic">Unassigned</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center justify-between text-xs pt-2 border-t border-primary/10">
             <div className="flex items-center gap-1.5 text-muted-foreground">

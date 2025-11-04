@@ -153,22 +153,35 @@ export function AppointmentCard({
           )}
         </div>
 
-        {(appointment.setter_name || appointment.closer_name) && (
-          <div className="flex items-center gap-2 text-sm">
-            {appointment.setter_name && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-info/10 border border-info/30 rounded-md">
-                <User className="w-3.5 h-3.5 text-info" />
-                <span className="text-info-foreground font-medium">{appointment.setter_name}</span>
-              </div>
-            )}
-            {appointment.closer_name && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/10 border border-primary/30 rounded-md">
-                <User className="w-3.5 h-3.5 text-primary" />
-                <span className="text-foreground font-medium">{appointment.closer_name}</span>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm flex-wrap">
+          {appointment.setter_name ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-info/10 border border-info/30 rounded-md">
+              <User className="w-3.5 h-3.5 text-info" />
+              <span className="text-xs text-muted-foreground mr-1">Setter:</span>
+              <span className="text-info-foreground font-medium">{appointment.setter_name}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/30 border border-muted rounded-md">
+              <User className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mr-1">Setter:</span>
+              <span className="text-muted-foreground italic">Unassigned</span>
+            </div>
+          )}
+          
+          {appointment.closer_name ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/10 border border-primary/30 rounded-md">
+              <User className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs text-muted-foreground mr-1">Closer:</span>
+              <span className="text-foreground font-medium">{appointment.closer_name}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/30 border border-muted rounded-md">
+              <User className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mr-1">Closer:</span>
+              <span className="text-muted-foreground italic">Unassigned</span>
+            </div>
+          )}
+        </div>
 
         {appointment.setter_notes && (
           <div className="p-3 bg-chart-2/10 border border-chart-2/30 rounded-md">
