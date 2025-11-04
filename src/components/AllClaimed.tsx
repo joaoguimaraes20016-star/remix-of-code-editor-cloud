@@ -126,10 +126,23 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
         (payload) => {
           const updatedApt = payload.new as Appointment;
           
-          // Update appointment in list (show all appointments regardless of assignment)
-          setAppointments(prev => 
-            prev.map(apt => apt.id === updatedApt.id ? updatedApt : apt)
-          );
+          // Check if appointment is still assigned (has setter OR closer)
+          const isAssigned = updatedApt.setter_id !== null || updatedApt.closer_id !== null;
+          
+          setAppointments(prev => {
+            if (isAssigned) {
+              // Update if it's in the list
+              return prev.map(apt => apt.id === updatedApt.id ? updatedApt : apt);
+            } else {
+              // Remove if it became unassigned
+              return prev.filter(apt => apt.id !== updatedApt.id);
+            }
+          });
+          
+          // Update count if removed
+          if (!isAssigned) {
+            setTotalCount(prev => Math.max(0, prev - 1));
+          }
         }
       )
       .subscribe((status) => {
