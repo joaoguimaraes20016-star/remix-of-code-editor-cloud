@@ -638,12 +638,14 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           )}
 
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               Due Today ({dueTodayTasks.length})
             </h3>
             {dueTodayTasks.length > 0 ? (
-              dueTodayTasks.map((task) => renderTaskCard(task))
+              <div className="border-l-4 border-orange-500 pl-4 space-y-3">
+                {dueTodayTasks.map((task) => renderTaskCard(task, true))}
+              </div>
             ) : (
               <Card>
                 <CardContent className="p-6 text-center">
@@ -655,11 +657,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
 
           {tomorrowTasks.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 Tomorrow ({tomorrowTasks.length})
               </h3>
-              {tomorrowTasks.map((task) => renderTaskCard(task))}
+              <div className="border-l-4 border-orange-500 pl-4 space-y-3">
+                {tomorrowTasks.map((task) => renderTaskCard(task, true))}
+              </div>
             </div>
           )}
 
