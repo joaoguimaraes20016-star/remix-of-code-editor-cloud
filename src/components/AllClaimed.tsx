@@ -156,11 +156,12 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
 
       const savedEventTypes = teamFilterData?.calendly_event_types || [];
       
-      // Get total count - show ALL appointments (assigned and unassigned)
+      // Get total count - show only ASSIGNED appointments (has setter OR closer)
       const { count, error: countError } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
-        .eq('team_id', teamId);
+        .eq('team_id', teamId)
+        .or('setter_id.not.is.null,closer_id.not.is.null');
 
       if (countError) throw countError;
 
@@ -172,6 +173,7 @@ export function AllClaimed({ teamId, closerCommissionPct, setterCommissionPct }:
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
+        .or('setter_id.not.is.null,closer_id.not.is.null')
         .order('start_at_utc', { ascending: false })
         .range(from, to);
 
