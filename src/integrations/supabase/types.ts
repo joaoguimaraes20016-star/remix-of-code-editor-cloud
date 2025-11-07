@@ -456,7 +456,7 @@ export type Database = {
           confirmation_attempts: Json | null
           confirmation_sequence: number | null
           created_at: string
-          due_at: string | null
+          due_at: string
           follow_up_date: string | null
           follow_up_reason: string | null
           id: string
@@ -478,7 +478,7 @@ export type Database = {
           confirmation_attempts?: Json | null
           confirmation_sequence?: number | null
           created_at?: string
-          due_at?: string | null
+          due_at: string
           follow_up_date?: string | null
           follow_up_reason?: string | null
           id?: string
@@ -500,7 +500,7 @@ export type Database = {
           confirmation_attempts?: Json | null
           confirmation_sequence?: number | null
           created_at?: string
-          due_at?: string | null
+          due_at?: string
           follow_up_date?: string | null
           follow_up_reason?: string | null
           id?: string
