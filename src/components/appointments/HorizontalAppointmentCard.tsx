@@ -1,13 +1,14 @@
-import { format } from "date-fns";
+import { format, isToday, parseISO, isBefore, startOfDay } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Mail, User, Phone, Clock, MessageSquare, DollarSign, UserPlus, Users, CheckCircle, Edit, CalendarClock, Wallet } from "lucide-react";
+import { Calendar, Mail, User, Phone, Clock, MessageSquare, DollarSign, UserPlus, Users, CheckCircle, Edit, CalendarClock, Wallet, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { EditAppointmentDialog } from "./EditAppointmentDialog";
 import { ConfirmationProgressTracker } from "./ConfirmationProgressTracker";
 import { RescheduleWithLinkDialog } from "./RescheduleWithLinkDialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface HorizontalAppointmentCardProps {
   appointment: {
@@ -85,6 +86,13 @@ export function HorizontalAppointmentCard({
     ? 'Pending Confirmation' 
     : appointment.status;
 
+  // Determine visual indicators
+  const appointmentDate = parseISO(appointment.start_at_utc);
+  const isAppointmentToday = isToday(appointmentDate);
+  const isAppointmentOverdue = isBefore(appointmentDate, startOfDay(new Date()));
+  const isTaskDueToday = confirmationTask?.due_at ? isToday(parseISO(confirmationTask.due_at)) : false;
+  const isTaskOverdue = confirmationTask?.is_overdue || false;
+
   const handleReschedule = async (reason: string, notes?: string) => {
     toast.success("Reschedule link sent to client");
     setShowRescheduleDialog(false);
@@ -144,11 +152,36 @@ export function HorizontalAppointmentCard({
       <div className="flex flex-col lg:flex-row lg:items-center gap-4">
         {/* Lead Information - Left Section */}
         <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h3 className="text-lg font-semibold truncate">{appointment.lead_name}</h3>
             <Badge variant={statusStyle.badge as any} className="text-xs">
               {displayStatus}
             </Badge>
+            {/* Visual Indicators */}
+            {isTaskOverdue && (
+              <Badge className="text-xs font-bold bg-red-600 text-white border-0 animate-pulse">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                OVERDUE
+              </Badge>
+            )}
+            {!isTaskOverdue && isAppointmentOverdue && (
+              <Badge className="text-xs font-semibold bg-red-500 text-white border-0">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Appointment Overdue
+              </Badge>
+            )}
+            {isTaskDueToday && !isTaskOverdue && (
+              <Badge className="text-xs font-semibold bg-amber-500 text-white border-0">
+                <Clock className="w-3 h-3 mr-1" />
+                Task Due Today
+              </Badge>
+            )}
+            {isAppointmentToday && !isAppointmentOverdue && (
+              <Badge className="text-xs font-semibold bg-green-500 text-white border-0">
+                <Calendar className="w-3 h-3 mr-1" />
+                Appointment Today
+              </Badge>
+            )}
           </div>
           
           <div className="flex flex-col gap-1 text-sm text-muted-foreground">

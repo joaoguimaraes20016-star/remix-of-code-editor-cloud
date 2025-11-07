@@ -133,6 +133,29 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
         teamMembers: teamMembers.map(m => ({ id: m.id, name: m.name, role: m.role }))
       });
 
+      // UPDATED LOGIC: Load appointments where EITHER:
+      // 1. The appointment is scheduled today, OR
+      // 2. The appointment has a task due today
+      
+      // First, get all appointment IDs with tasks due today
+      const { data: tasksDueToday } = await supabase
+        .from('confirmation_tasks')
+        .select('appointment_id')
+        .eq('team_id', teamId)
+        .eq('status', 'pending')
+        .gte('due_at', startOfToday)
+        .lte('due_at', endOfToday);
+
+      const appointmentIdsWithTasksDueToday = new Set(
+        (tasksDueToday || []).map(t => t.appointment_id)
+      );
+
+      console.log('[TodaysDashboard] Tasks due today:', {
+        count: appointmentIdsWithTasksDueToday.size,
+        ids: Array.from(appointmentIdsWithTasksDueToday)
+      });
+
+      // Load appointments scheduled today
       let query = supabase
         .from('appointments')
         .select('*')
@@ -161,6 +184,34 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
       if (error) throw error;
       
       let filteredData = data || [];
+      
+      // ALSO load appointments that have tasks due today (even if appointment is not today)
+      if (appointmentIdsWithTasksDueToday.size > 0) {
+        let taskApptsQuery = supabase
+          .from('appointments')
+          .select('*')
+          .eq('team_id', teamId)
+          .in('id', Array.from(appointmentIdsWithTasksDueToday));
+
+        // Apply same role-based filters
+        if (targetRole === 'closer' || targetRole === 'offer_owner' || targetRole === 'admin') {
+          taskApptsQuery = taskApptsQuery.eq('closer_id', targetUserId);
+        } else if (targetRole === 'setter') {
+          taskApptsQuery = taskApptsQuery.eq('setter_id', targetUserId);
+        }
+
+        const { data: taskApptsData } = await taskApptsQuery;
+        
+        // Merge with existing data, avoiding duplicates
+        const existingIds = new Set(filteredData.map(a => a.id));
+        const newAppointments = (taskApptsData || []).filter(a => !existingIds.has(a.id));
+        filteredData = [...filteredData, ...newAppointments];
+        
+        console.log('[TodaysDashboard] Added appointments with tasks due today:', {
+          newCount: newAppointments.length,
+          totalCount: filteredData.length
+        });
+      }
       
       console.log('[TodaysDashboard] Appointments loaded:', {
         count: filteredData.length,

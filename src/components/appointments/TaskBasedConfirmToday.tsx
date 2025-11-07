@@ -293,30 +293,51 @@ export function TaskBasedConfirmToday({ teamId }: TaskBasedConfirmTodayProps) {
   const renderTaskCard = (task: any) => {
     const apt = task.appointment;
     const isMRRTask = task.mrr_schedule_id != null;
-    const taskColor = isMRRTask ? 'border-emerald-200 dark:border-emerald-900'
+    
+    // Check if task is overdue
+    const isOverdue = task.is_overdue || (apt?.start_at_utc && parseISO(apt.start_at_utc) < startOfDay(new Date()));
+    
+    // Apply bright red styling for overdue tasks
+    const taskColor = isOverdue 
+      ? 'border-red-600 bg-red-50 dark:bg-red-950/30' 
+      : isMRRTask ? 'border-emerald-200 dark:border-emerald-900'
       : task.task_type === 'call_confirmation' ? 'border-blue-200 dark:border-blue-900' 
       : task.task_type === 'follow_up' ? 'border-purple-200 dark:border-purple-900'
       : task.task_type === 'reschedule' ? 'border-amber-200 dark:border-amber-900'
       : '';
+    
     return (
-      <Card key={task.id} className={cn("bg-card card-hover", taskColor)}>
+      <Card key={task.id} className={cn("bg-card card-hover border-l-4", taskColor, {
+        "border-red-600": isOverdue
+      })}>
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <p className="font-semibold">{apt.lead_name}</p>
-              <p className="text-sm text-muted-foreground">{apt.lead_email}</p>
+              <p className={cn("font-semibold", isOverdue && "text-red-600 dark:text-red-400")}>{apt.lead_name}</p>
+              <p className={cn("text-sm text-muted-foreground", isOverdue && "text-red-600/80 dark:text-red-400/80")}>{apt.lead_email}</p>
                <div className="flex items-center gap-2 flex-wrap">
+                {isOverdue && (
+                  <Badge className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white border-0 animate-pulse">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    OVERDUE
+                  </Badge>
+                )}
                 {(() => {
                   console.log(`[${apt.lead_name}] Task data:`, {
                     task_type: task.task_type,
                     due_at: task.due_at,
                     confirmation_sequence: task.confirmation_sequence,
-                    status: task.status
+                    status: task.status,
+                    isOverdue
                   });
                   return null;
                 })()}
                 {task.task_type === 'call_confirmation' && task.due_at && (
-                  <Badge className="text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white border-0">
+                  <Badge className={cn("text-xs font-semibold border-0", 
+                    isOverdue 
+                      ? "bg-red-600 hover:bg-red-700 text-white" 
+                      : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                  )}>
                     <Clock className="h-3 w-3 mr-1" />
                     Confirm by: {format(parseISO(task.due_at), 'MMM d, h:mm a')}
                   </Badge>
