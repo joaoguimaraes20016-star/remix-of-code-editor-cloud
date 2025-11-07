@@ -138,13 +138,20 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
       // 2. The appointment has a task due today
       
       // First, get all appointment IDs with tasks due today
-      const { data: tasksDueToday } = await supabase
+      let tasksQuery = supabase
         .from('confirmation_tasks')
         .select('appointment_id')
         .eq('team_id', teamId)
         .eq('status', 'pending')
         .gte('due_at', startOfToday)
         .lte('due_at', endOfToday);
+
+      // For setters, only get tasks assigned to them
+      if (targetRole === 'setter') {
+        tasksQuery = tasksQuery.eq('assigned_to', targetUserId);
+      }
+
+      const { data: tasksDueToday } = await tasksQuery;
 
       const appointmentIdsWithTasksDueToday = new Set(
         (tasksDueToday || []).map(t => t.appointment_id)
@@ -193,12 +200,11 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           .eq('team_id', teamId)
           .in('id', Array.from(appointmentIdsWithTasksDueToday));
 
-        // Apply same role-based filters
+        // Apply role-based filters (setters rely on task assignment, not appointment ownership)
         if (targetRole === 'closer' || targetRole === 'offer_owner' || targetRole === 'admin') {
           taskApptsQuery = taskApptsQuery.eq('closer_id', targetUserId);
-        } else if (targetRole === 'setter') {
-          taskApptsQuery = taskApptsQuery.eq('setter_id', targetUserId);
         }
+        // For setters, don't filter by setter_id - we already filtered tasks by assigned_to above
 
         const { data: taskApptsData } = await taskApptsQuery;
         
@@ -431,6 +437,7 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           appointment_id: depositAppointment.id,
           task_type: 'follow_up',
           follow_up_date: followUpDate.toISOString().split('T')[0],
+          due_at: followUpDate.toISOString(),
           status: 'pending',
         });
 
