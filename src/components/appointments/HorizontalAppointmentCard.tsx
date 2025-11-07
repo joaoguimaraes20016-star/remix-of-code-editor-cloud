@@ -103,7 +103,7 @@ export function HorizontalAppointmentCard({
     <Card className={cn(
       "p-4 hover:shadow-md transition-all duration-200 border-l-4 group",
       isTaskOverdue 
-        ? "border-red-600 bg-red-50 dark:bg-red-950/30" 
+        ? "border-red-600 bg-gradient-to-r from-red-500/10 to-transparent" 
         : statusStyle.border
     )}>
       {/* Setter View ONLY: Show confirmation task */}

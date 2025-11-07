@@ -397,7 +397,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       : '';
 
     const taskColor = isOverdue
-      ? 'border-red-600 bg-red-50 dark:bg-red-950/30'
+      ? 'border-red-600 bg-gradient-to-r from-red-500/10 to-transparent'
       : isUpcoming 
         ? `${baseTaskColor} border-l-4 border-l-orange-500` 
         : baseTaskColor;
