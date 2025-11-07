@@ -6,6 +6,7 @@ export function useTabCounts(teamId: string, userId: string, userRole: string) {
     myTasks: 0,
     queueTasks: 0,
     mrrDue: 0,
+    mrrOverdue: 0,
     followUps: 0,
     overdue: 0,
     totalPendingTasks: 0,
@@ -75,15 +76,24 @@ export function useTabCounts(teamId: string, userId: string, userRole: string) {
         .is('assigned_to', null)
         .eq('status', 'pending');
 
-      // MRR Due
+      // MRR Due (today)
+      const today = new Date().toISOString().split('T')[0];
       const { count: mrrDueCount } = await supabase
         .from('mrr_follow_up_tasks')
         .select('*', { count: 'exact', head: true })
         .eq('team_id', teamId)
-        .eq('status', 'due');
+        .eq('status', 'due')
+        .eq('due_date', today);
+
+      // MRR Overdue (before today)
+      const { count: mrrOverdueCount } = await supabase
+        .from('mrr_follow_up_tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_id', teamId)
+        .eq('status', 'due')
+        .lt('due_date', today);
 
       // Follow Ups (retarget)
-      const today = new Date().toISOString().split('T')[0];
       const { count: followUpsCount } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
@@ -123,6 +133,7 @@ export function useTabCounts(teamId: string, userId: string, userRole: string) {
         myTasks: myTasksCount || 0,
         queueTasks: queueTasksCount || 0,
         mrrDue: mrrDueCount || 0,
+        mrrOverdue: mrrOverdueCount || 0,
         followUps: followUpsCount || 0,
         overdue: overdueCount || 0,
         totalPendingTasks: totalPendingCount || 0,
