@@ -647,12 +647,13 @@ export function ByCloserView({ teamId, onCloseDeal }: ByCloserViewProps) {
     try {
       setLoading(true);
 
-      // Get all appointments with closers assigned - filter by closer_id, not closer_name
+      // Get all appointments with closers assigned - filter by closer_id AND closer_name (NULL safety)
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
         .not('closer_id', 'is', null)
+        .not('closer_name', 'is', null)
         .order('start_at_utc', { ascending: true });
 
       if (error) throw error;

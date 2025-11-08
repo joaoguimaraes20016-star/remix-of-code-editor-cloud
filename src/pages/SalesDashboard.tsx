@@ -80,8 +80,9 @@ const Index = () => {
     loadAppointments();
 
     // Set up real-time subscription for appointments with unique channel name
+    const channelId = crypto.randomUUID();
     const appointmentsChannel = supabase
-      .channel(`appointments-dashboard-${teamId}-${Date.now()}`)
+      .channel(`appointments-dashboard-${teamId}-${channelId}`)
       .on(
         'postgres_changes',
         {
@@ -518,14 +519,22 @@ const Index = () => {
   // Filter appointments by date range FIRST
   const filteredAppointments = appointments.filter(apt => {
     if (!dateRange.from && !dateRange.to) return true;
+    
     const aptDate = new Date(apt.start_at_utc);
     aptDate.setHours(0, 0, 0, 0);
-    if (dateRange.from && dateRange.to) {
-      return aptDate >= dateRange.from && aptDate <= dateRange.to;
-    } else if (dateRange.from) {
-      return aptDate >= dateRange.from;
-    } else if (dateRange.to) {
-      return aptDate <= dateRange.to;
+
+    const fromDate = dateRange.from ? new Date(dateRange.from) : null;
+    if (fromDate) fromDate.setHours(0, 0, 0, 0);
+
+    const toDate = dateRange.to ? new Date(dateRange.to) : null;
+    if (toDate) toDate.setHours(0, 0, 0, 0);
+
+    if (fromDate && toDate) {
+      return aptDate >= fromDate && aptDate <= toDate;
+    } else if (fromDate) {
+      return aptDate >= fromDate;
+    } else if (toDate) {
+      return aptDate <= toDate;
     }
     return true;
   });
@@ -538,10 +547,11 @@ const Index = () => {
       const repMatch = selectedRep === 'all' || apt.closer_name === selectedRep || apt.setter_name === selectedRep;
       
       // Check if a sale record already exists for this appointment by name + closer
-      const hasSaleRecord = sales.some(sale => 
-        sale.customerName.toLowerCase().trim() === apt.lead_name.toLowerCase().trim() && 
-        sale.salesRep === apt.closer_name
-      );
+      const hasSaleRecord = sales.some(sale => {
+        if (!apt.closer_name || !sale.salesRep) return false;
+        return sale.customerName.toLowerCase().trim() === apt.lead_name.toLowerCase().trim() && 
+               sale.salesRep === apt.closer_name;
+      });
       
       return hasDeposit && repMatch && !hasSaleRecord;
     })
@@ -555,8 +565,10 @@ const Index = () => {
       revenue: Number(apt.cc_collected) || 0,
       setterCommission: apt.setter_id ? (Number(apt.cc_collected) || 0) * (setterCommissionPct / 100) : 0,
       commission: (() => {
+        if (!apt.closer_id) return 0;
         const closerMember = teamMembers.find(m => m.id === apt.closer_id);
-        return (closerMember?.role !== 'offer_owner') ? (Number(apt.cc_collected) || 0) * (closerCommissionPct / 100) : 0;
+        if (!closerMember) return 0;
+        return (closerMember.role !== 'offer_owner') ? (Number(apt.cc_collected) || 0) * (closerCommissionPct / 100) : 0;
       })(),
       status: apt.pipeline_stage?.toLowerCase().includes('deposit') ? 'pending' as const : 'closed' as const,
       isAppointment: true, // Flag this as an appointment

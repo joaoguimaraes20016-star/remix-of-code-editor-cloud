@@ -1505,6 +1505,14 @@ export type Database = {
         Returns: number
       }
       can_create_teams: { Args: { _user_id: string }; Returns: boolean }
+      check_active_triggers: {
+        Args: never
+        Returns: {
+          event: string
+          table_name: string
+          trigger_name: string
+        }[]
+      }
       check_data_integrity: {
         Args: never
         Returns: {
@@ -1514,6 +1522,10 @@ export type Database = {
         }[]
       }
       check_overdue_tasks: { Args: never; Returns: undefined }
+      cleanup_appointment_tasks: {
+        Args: { appt_id: string }
+        Returns: undefined
+      }
       cleanup_confirmation_tasks: {
         Args: { p_appointment_id: string; p_reason?: string }
         Returns: undefined

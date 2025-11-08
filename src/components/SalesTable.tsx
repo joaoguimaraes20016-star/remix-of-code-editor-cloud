@@ -310,8 +310,8 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
                       </SelectTrigger>
                       <SelectContent>
                         {teamMembers.map((member) => (
-                          <SelectItem key={member.id} value={member.name}>
-                            {member.name}
+                          <SelectItem key={member.id} value={member.name || "Unknown"}>
+                            {member.name || "Unknown"}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -336,8 +336,8 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
                       </SelectTrigger>
                       <SelectContent>
                         {teamMembers.map((member) => (
-                          <SelectItem key={member.id} value={member.name}>
-                            {member.name}
+                          <SelectItem key={member.id} value={member.name || "Unknown"}>
+                            {member.name || "Unknown"}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -384,12 +384,12 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
                       onClick={() => {
                         if (canEdit && sale.setter) {
                           setEditingSetterCommission(sale.id);
-                          setTempSetterCommission(sale.setterCommission.toString());
+                          setTempSetterCommission((sale.setterCommission || 0).toString());
                         }
                       }}
                       className={canEdit && sale.setter ? 'cursor-pointer hover:underline' : ''}
                     >
-                      ${!sale.setter || sale.setter.trim() === '' ? '0' : sale.setterCommission.toLocaleString()}
+                      ${!sale.setter || sale.setter.trim() === '' ? '0' : (sale.setterCommission || 0).toLocaleString()}
                     </div>
                   )}
                 </TableCell>
@@ -424,12 +424,12 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
                       onClick={() => {
                         if (canEdit) {
                           setEditingCloserCommission(sale.id);
-                          setTempCloserCommission(sale.commission.toString());
+                          setTempCloserCommission((sale.commission || 0).toString());
                         }
                       }}
                       className={canEdit ? 'cursor-pointer hover:underline' : ''}
                     >
-                      ${sale.commission.toLocaleString()}
+                      ${(sale.commission || 0).toLocaleString()}
                     </div>
                   )}
                 </TableCell>

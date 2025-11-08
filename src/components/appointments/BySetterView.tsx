@@ -38,12 +38,13 @@ export function BySetterView({ teamId }: BySetterViewProps) {
     try {
       setLoading(true);
 
-      // Get all appointments with setters assigned
+      // Get all appointments with setters assigned (filter out NULL setter_id)
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('team_id', teamId)
-        .not('setter_id', 'is', null);
+        .not('setter_id', 'is', null)
+        .not('setter_name', 'is', null);
 
       if (error) throw error;
 

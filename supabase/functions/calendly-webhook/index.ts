@@ -1029,11 +1029,39 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('Webhook error:', error);
+    console.error('❌ Unexpected webhook error:', error);
     console.error('Error stack:', error.stack);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    
+    // Log unexpected errors
+    try {
+      const logClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
+      
+      await logClient
+        .from('error_logs')
+        .insert({
+          team_id: null,
+          error_type: 'unexpected_webhook_error',
+          error_message: String(error),
+          error_context: { event: 'webhook_handler', error: String(error), stack: error.stack }
+        });
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+
+    // Return 200 to prevent infinite retries from Calendly
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Internal error logged',
+        details: String(error) 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    );
   }
 });
