@@ -4,26 +4,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { getUserFriendlyError } from '@/lib/errorUtils';
+import { Plus, X } from 'lucide-react';
 
 interface FollowUpSettingsProps {
   teamId: string;
 }
 
+interface FollowUpAttempt {
+  sequence: number;
+  enabled: boolean;
+  timeValue: number;
+  timeUnit: 'hours' | 'days';
+  role: string;
+}
+
 const STAGES = [
-  { value: 'no_show', label: 'No Show' },
-  { value: 'canceled', label: 'Canceled' },
-  { value: 'disqualified', label: 'Disqualified' },
+  { value: 'no_show', label: 'No Show Follow-Ups' },
+  { value: 'canceled', label: 'Canceled Follow-Ups' },
+  { value: 'disqualified', label: 'Disqualified Follow-Ups' },
 ];
+
+const HOUR_OPTIONS = [1, 2, 6, 12, 24, 48, 72];
+const DAY_OPTIONS = [1, 2, 3, 5, 7, 14, 30];
+
+const DEFAULT_ATTEMPTS: Record<string, FollowUpAttempt[]> = {
+  no_show: [
+    { sequence: 1, enabled: true, timeValue: 24, timeUnit: 'hours', role: 'setter' },
+    { sequence: 2, enabled: true, timeValue: 3, timeUnit: 'days', role: 'closer' },
+  ],
+  canceled: [
+    { sequence: 1, enabled: true, timeValue: 2, timeUnit: 'days', role: 'setter' },
+  ],
+  disqualified: [
+    { sequence: 1, enabled: true, timeValue: 7, timeUnit: 'days', role: 'setter' },
+  ],
+};
 
 export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<Record<string, { days: number; role: string }>>({
-    no_show: { days: 1, role: 'setter' },
-    canceled: { days: 2, role: 'setter' },
-    disqualified: { days: 7, role: 'setter' },
-  });
+  const [settings, setSettings] = useState<Record<string, FollowUpAttempt[]>>(DEFAULT_ATTEMPTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -37,19 +60,41 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
         .from('team_follow_up_flow_config')
         .select('*')
         .eq('team_id', teamId)
-        .eq('sequence', 1);
+        .order('pipeline_stage')
+        .order('sequence');
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const loadedSettings: Record<string, { days: number; role: string }> = {};
+        const loadedSettings: Record<string, FollowUpAttempt[]> = {};
+        
         data.forEach(config => {
-          loadedSettings[config.pipeline_stage] = {
-            days: Math.round(config.hours_after / 24),
+          if (!loadedSettings[config.pipeline_stage]) {
+            loadedSettings[config.pipeline_stage] = [];
+          }
+          
+          const hours = config.hours_after;
+          let timeValue: number;
+          let timeUnit: 'hours' | 'days';
+          
+          if (hours % 24 === 0 && hours >= 24) {
+            timeValue = hours / 24;
+            timeUnit = 'days';
+          } else {
+            timeValue = hours;
+            timeUnit = 'hours';
+          }
+          
+          loadedSettings[config.pipeline_stage].push({
+            sequence: config.sequence,
+            enabled: config.enabled,
+            timeValue,
+            timeUnit,
             role: config.assigned_role,
-          };
+          });
         });
-        setSettings(prev => ({ ...prev, ...loadedSettings }));
+        
+        setSettings(prev => ({ ...DEFAULT_ATTEMPTS, ...loadedSettings }));
       }
     } catch (error) {
       toast({
@@ -62,37 +107,75 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
     }
   };
 
-  const updateSetting = (stage: string, field: 'days' | 'role', value: number | string) => {
+  const updateAttempt = (stage: string, index: number, field: keyof FollowUpAttempt, value: any) => {
     setSettings(prev => ({
       ...prev,
-      [stage]: { ...prev[stage], [field]: value },
+      [stage]: prev[stage].map((attempt, i) => 
+        i === index ? { ...attempt, [field]: value } : attempt
+      ),
+    }));
+  };
+
+  const addAttempt = (stage: string) => {
+    setSettings(prev => ({
+      ...prev,
+      [stage]: [
+        ...prev[stage],
+        {
+          sequence: prev[stage].length + 1,
+          enabled: true,
+          timeValue: 1,
+          timeUnit: 'days',
+          role: 'setter',
+        },
+      ],
+    }));
+  };
+
+  const removeAttempt = (stage: string, index: number) => {
+    if (settings[stage].length <= 1) return;
+    
+    setSettings(prev => ({
+      ...prev,
+      [stage]: prev[stage]
+        .filter((_, i) => i !== index)
+        .map((attempt, i) => ({ ...attempt, sequence: i + 1 })),
     }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const configs = Object.entries(settings).map(([stage, config]) => ({
-        team_id: teamId,
-        pipeline_stage: stage,
-        sequence: 1,
-        label: 'Follow-Up',
-        hours_after: config.days * 24,
-        assigned_role: config.role,
-        enabled: true,
-      }));
+      // Delete all existing configs for this team
+      const { error: deleteError } = await supabase
+        .from('team_follow_up_flow_config')
+        .delete()
+        .eq('team_id', teamId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert all new configs
+      const configs = Object.entries(settings).flatMap(([stage, attempts]) =>
+        attempts.map(attempt => ({
+          team_id: teamId,
+          pipeline_stage: stage,
+          sequence: attempt.sequence,
+          label: `${attempt.sequence === 1 ? '1st' : attempt.sequence === 2 ? '2nd' : attempt.sequence === 3 ? '3rd' : `${attempt.sequence}th`} Follow-Up`,
+          hours_after: attempt.timeUnit === 'days' ? attempt.timeValue * 24 : attempt.timeValue,
+          assigned_role: attempt.role,
+          enabled: attempt.enabled,
+        }))
+      );
 
       const { error } = await supabase
         .from('team_follow_up_flow_config')
-        .upsert(configs, {
-          onConflict: 'team_id,pipeline_stage,sequence',
-        });
+        .insert(configs);
 
       if (error) throw error;
 
       toast({
         title: 'Settings saved',
-        description: 'Follow-up settings updated successfully',
+        description: 'Follow-up flow updated successfully',
       });
     } catch (error) {
       toast({
@@ -120,49 +203,102 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
       <CardHeader>
         <CardTitle>Follow-Up Settings</CardTitle>
         <CardDescription>
-          Configure when follow-up tasks are created after stage changes
+          Configure multiple follow-up attempts for each pipeline stage
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
         {STAGES.map(stage => (
-          <div key={stage.value} className="space-y-4 p-4 border rounded-lg">
-            <h3 className="font-semibold">{stage.label}</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Days After</Label>
-                <Select
-                  value={settings[stage.value].days.toString()}
-                  onValueChange={(value) => updateSetting(stage.value, 'days', parseInt(value))}
+          <div key={stage.value} className="space-y-3">
+            <h3 className="font-semibold text-base">{stage.label}</h3>
+            
+            <div className="space-y-2">
+              {settings[stage.value].map((attempt, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center gap-3 p-3 border rounded-lg bg-card"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 day</SelectItem>
-                    <SelectItem value="2">2 days</SelectItem>
-                    <SelectItem value="3">3 days</SelectItem>
-                    <SelectItem value="5">5 days</SelectItem>
-                    <SelectItem value="7">7 days</SelectItem>
-                    <SelectItem value="14">14 days</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Assigned To</Label>
-                <Select
-                  value={settings[stage.value].role}
-                  onValueChange={(value) => updateSetting(stage.value, 'role', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="setter">Setter</SelectItem>
-                    <SelectItem value="closer">Closer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Switch
+                    checked={attempt.enabled}
+                    onCheckedChange={(checked) => updateAttempt(stage.value, index, 'enabled', checked)}
+                  />
+                  
+                  <span className="text-sm font-medium min-w-[100px]">
+                    {attempt.sequence === 1 ? '1st' : attempt.sequence === 2 ? '2nd' : attempt.sequence === 3 ? '3rd' : `${attempt.sequence}th`} Follow-Up
+                  </span>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">After:</Label>
+                    <Select
+                      value={attempt.timeValue.toString()}
+                      onValueChange={(value) => updateAttempt(stage.value, index, 'timeValue', parseInt(value))}
+                    >
+                      <SelectTrigger className="w-[80px] h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(attempt.timeUnit === 'hours' ? HOUR_OPTIONS : DAY_OPTIONS).map(val => (
+                          <SelectItem key={val} value={val.toString()}>{val}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select
+                      value={attempt.timeUnit}
+                      onValueChange={(value: 'hours' | 'days') => {
+                        updateAttempt(stage.value, index, 'timeUnit', value);
+                        updateAttempt(stage.value, index, 'timeValue', value === 'hours' ? 24 : 1);
+                      }}
+                    >
+                      <SelectTrigger className="w-[90px] h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hours">Hours</SelectItem>
+                        <SelectItem value="days">Days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">→</span>
+                    <Select
+                      value={attempt.role}
+                      onValueChange={(value) => updateAttempt(stage.value, index, 'role', value)}
+                    >
+                      <SelectTrigger className="w-[120px] h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="setter">Setter</SelectItem>
+                        <SelectItem value="closer">Closer</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="offer_owner">Offer Owner</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeAttempt(stage.value, index)}
+                    disabled={settings[stage.value].length <= 1}
+                    className="ml-auto h-9 w-9"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => addAttempt(stage.value)}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Follow-Up
+            </Button>
           </div>
         ))}
 
