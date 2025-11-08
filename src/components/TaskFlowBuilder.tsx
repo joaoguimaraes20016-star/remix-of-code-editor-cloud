@@ -79,7 +79,7 @@ function ConfirmationCard({
 
   const getRoleBadge = (role: string) => {
     if (role === "setter") return <Badge variant="default"><User className="w-3 h-3 mr-1" />Setter</Badge>;
-    if (role === "closer") return <Badge variant="info"><UserCheck className="w-3 h-3 mr-1" />Closer</Badge>;
+    if (role === "closer") return <Badge variant="default"><UserCheck className="w-3 h-3 mr-1" />Closer</Badge>;
     return <Badge variant="outline"><XCircle className="w-3 h-3 mr-1" />Off</Badge>;
   };
 
