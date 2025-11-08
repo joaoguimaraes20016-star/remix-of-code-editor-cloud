@@ -589,6 +589,28 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
               </>
             ) : task.type === 'follow_up' ? (
               <>
+                {(apt?.pipeline_stage === 'no_show' || apt?.pipeline_stage === 'canceled') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (apt?.reschedule_url) {
+                        setRescheduleWithLinkDialog({
+                          open: true,
+                          taskId: task.id,
+                          appointmentId: apt.id,
+                          appointmentName: displayName,
+                          rescheduleUrl: apt.reschedule_url
+                        });
+                      } else {
+                        toast.error("No reschedule link available");
+                      }
+                    }}
+                  >
+                    <CalendarClock className="h-4 w-4 mr-1" />
+                    Reschedule
+                  </Button>
+                )}
                 <Button 
                   size="sm"
                   onClick={() => setConfirmDialog({ 
@@ -613,6 +635,28 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
               </>
             ) : task.type === 'reschedule' ? (
               <>
+                {(apt?.pipeline_stage === 'no_show' || apt?.pipeline_stage === 'canceled') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (apt?.reschedule_url) {
+                        setRescheduleWithLinkDialog({
+                          open: true,
+                          taskId: task.id,
+                          appointmentId: apt.id,
+                          appointmentName: displayName,
+                          rescheduleUrl: apt.reschedule_url
+                        });
+                      } else {
+                        toast.error("No reschedule link available");
+                      }
+                    }}
+                  >
+                    <CalendarClock className="h-4 w-4 mr-1" />
+                    Reschedule
+                  </Button>
+                )}
                 <Button 
                   size="sm"
                   onClick={() => setConfirmDialog({ 
