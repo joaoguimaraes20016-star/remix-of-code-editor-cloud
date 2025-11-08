@@ -202,42 +202,10 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
           return false;
         }
         
-        // For call_confirmation tasks, check if they're actually due yet
+        // Show ALL call_confirmation tasks regardless of due date
+        // Only hide tasks for appointments that are already processed
         if (task.task_type === 'call_confirmation') {
-          // If task has a due_at, only show if it's within 48 hours or already due
-          // Apply this filter to BOTH assigned and unassigned tasks
-          if (task.due_at) {
-            try {
-              const dueDate = parseISO(task.due_at);
-              const now = new Date();
-              const fortyEightHoursFromNow = new Date(now.getTime() + (48 * 60 * 60 * 1000));
-              
-              const shouldShow = dueDate <= fortyEightHoursFromNow || task.is_overdue;
-              console.log(`[48h Filter Debug] ${appointment?.lead_name}:`, {
-                due_at_raw: task.due_at,
-                due_at_parsed: dueDate.toISOString(),
-                now_utc: now.toISOString(),
-                hours_until_due: ((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60)).toFixed(2),
-                within_48h: dueDate <= fortyEightHoursFromNow,
-                is_overdue: task.is_overdue,
-                shouldShow,
-                RETURNING: shouldShow
-              });
-              
-              // Show if due within 48 hours, overdue, or already past due time
-              return shouldShow;
-            } catch (error) {
-              console.error(`[48h Filter ERROR] ${appointment?.lead_name}:`, error);
-              // If there's an error parsing, DON'T show the task (fail closed)
-              return false;
-            }
-          }
-          
-          // If task has no due_at, skip it (all tasks should have due_at now)
-          if (!task.due_at) {
-            console.warn(`[48h Filter] Task ${task.id} missing due_at - skipping`);
-            return false;
-          }
+          return true;
         }
         
         // Show follow-up tasks only if they're due today or overdue (regardless of appointment status)

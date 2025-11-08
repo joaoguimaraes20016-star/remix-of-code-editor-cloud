@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Calendar, Phone, RefreshCw, Clock, UserPlus, CalendarCheck, CalendarX, Loader2, CalendarClock, AlertCircle } from "lucide-react";
+import { Calendar, Phone, RefreshCw, Clock, UserPlus, CalendarCheck, CalendarX, Loader2, CalendarClock, AlertCircle, CheckCircle2 } from "lucide-react";
 import { format, parseISO, isToday, isTomorrow, startOfDay, differenceInMinutes } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("pending");
+  const [filterTimeRange, setFilterTimeRange] = useState<string>("all");
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [teamOverdueThreshold, setTeamOverdueThreshold] = useState<number>(30);
@@ -123,13 +124,18 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
         setTeamOverdueThreshold(teamData.overdue_threshold_minutes);
       }
 
+      // Fetch tasks based on status filter
+      const statusFilter = filterStatus === 'all' 
+        ? ['pending', 'in_progress', 'completed'] 
+        : [filterStatus];
+
       // Load confirmation tasks with appointment dates
-      if (filterStatus === 'pending' || filterStatus === 'all') {
+      if (filterStatus === 'pending' || filterStatus === 'all' || filterStatus === 'completed') {
         const { data: confirmTasks } = await supabase
           .from('confirmation_tasks')
           .select('*, appointment:appointments(start_at_utc, lead_name)')
           .eq('team_id', teamId)
-          .eq('status', 'pending');
+          .in('status', statusFilter);
 
         // Fetch profile names separately
         const assignedUserIds = [...new Set(confirmTasks?.filter(t => t.assigned_to).map(t => t.assigned_to))];
@@ -156,7 +162,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                    task.task_type === 'reschedule' ? 'Reschedule' : 'Follow-Up',
             dueDate: task.due_at ? new Date(task.due_at) : now,
             appointmentDate: appointment?.start_at_utc ? new Date(appointment.start_at_utc) : undefined,
-            status: 'pending',
+            status: task.status || 'pending',
             assignedTo: task.assigned_to,
             assignedToName: task.assigned_to ? profilesMap.get(task.assigned_to) || null : null,
             leadName: appointment?.lead_name || 'Loading...',
@@ -331,18 +337,35 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       if (filterAssignee === "unassigned" && task.assignedTo !== null) return false;
       if (filterAssignee !== "unassigned" && task.assignedTo !== filterAssignee) return false;
     }
+    if (filterStatus !== "all" && task.status !== filterStatus) return false;
+    
+    // Apply time range filter
+    if (filterTimeRange !== "all" && task.appointmentDate) {
+      const taskDate = new Date(task.appointmentDate);
+      const now = new Date();
+      const daysDiff = Math.ceil((taskDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (filterTimeRange === "today" && !isToday(taskDate)) return false;
+      if (filterTimeRange === "week" && (daysDiff < 0 || daysDiff > 7)) return false;
+      if (filterTimeRange === "overdue" && daysDiff >= 0) return false;
+    }
+    
     return true;
   });
 
-  // Group tasks by date
+  // Group tasks by date - separate completed from active
+  const completedTasks = filteredTasks.filter(task => task.status === 'completed');
+  const activeTasks = filteredTasks.filter(task => task.status !== 'completed');
+  
   const overdueTasks: UnifiedTask[] = [];
   const dueTodayTasks: UnifiedTask[] = [];
   const tomorrowTasks: UnifiedTask[] = [];
-  const upcomingTasks: UnifiedTask[] = [];
+  const thisWeekTasks: UnifiedTask[] = [];
+  const futureTasks: UnifiedTask[] = [];
 
-  filteredTasks.forEach(task => {
+  activeTasks.forEach(task => {
     if (!task.appointmentDate) {
-      upcomingTasks.push(task);
+      futureTasks.push(task);
       return;
     }
     
@@ -355,6 +378,10 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       const overdueThresholdMs = (teamOverdueThreshold || 30) * 60 * 1000;
       const appointmentDeadline = new Date(appointmentTime.getTime() + overdueThresholdMs);
       
+      const startOfToday = startOfDay(now);
+      const startOfTomorrow = startOfDay(new Date(now.getTime() + (24 * 60 * 60 * 1000)));
+      const startOfNextWeek = startOfDay(new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)));
+      
       // Task is only overdue if the APPOINTMENT time has passed + grace period
       if (now > appointmentDeadline) {
         overdueTasks.push(task);
@@ -362,12 +389,14 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
         dueTodayTasks.push(task);
       } else if (isTomorrow(appointmentTime)) {
         tomorrowTasks.push(task);
+      } else if (appointmentTime < startOfNextWeek) {
+        thisWeekTasks.push(task);
       } else {
-        upcomingTasks.push(task);
+        futureTasks.push(task);
       }
     } catch (error) {
       console.error('Error parsing date:', error);
-      upcomingTasks.push(task);
+      futureTasks.push(task);
     }
   });
 
@@ -616,8 +645,23 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="awaiting_reschedule">Awaiting Reschedule</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterTimeRange} onValueChange={setFilterTimeRange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -671,15 +715,35 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             </div>
           )}
 
-          {upcomingTasks.length > 0 && (
+          {thisWeekTasks.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                This Week ({thisWeekTasks.length})
+              </h3>
+              {thisWeekTasks.map((task) => renderTaskCard(task, true))}
+            </div>
+          )}
+
+          {futureTasks.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Upcoming ({upcomingTasks.length})
+                Future ({futureTasks.length})
               </h3>
               <div className="border-l-4 border-orange-500 pl-4 space-y-3">
-                {upcomingTasks.map((task) => renderTaskCard(task, true))}
+                {futureTasks.map((task) => renderTaskCard(task, true))}
               </div>
+            </div>
+          )}
+
+          {completedTasks.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-muted-foreground flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Completed ({completedTasks.length})
+              </h3>
+              {completedTasks.map((task) => renderTaskCard(task))}
             </div>
           )}
         </>
