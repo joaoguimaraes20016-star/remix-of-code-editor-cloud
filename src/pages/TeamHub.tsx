@@ -57,7 +57,7 @@ export default function TeamHub() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Header with glass effect */}
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-3 sm:py-4 md:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -69,19 +69,21 @@ export default function TeamHub() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                   {teamName}
                 </h1>
-                <p className="text-sm text-muted-foreground font-medium">Team Hub</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Team Hub</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
+                size="sm"
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 text-xs sm:text-sm md:text-base px-3 py-2 sm:px-4 sm:py-2"
                 onClick={() => navigate(`/team/${teamId}/sales`)}
               >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Sales Dashboard
+                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Sales Dashboard</span>
+                <span className="sm:hidden">Sales</span>
               </Button>
               {(isAdmin || role === 'offer_owner' || role === 'admin') && (
                 <Button
@@ -99,18 +101,18 @@ export default function TeamHub() {
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="assets" className="space-y-8">
-          <TabsList className="bg-muted/50 backdrop-blur-sm p-1">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
+        <Tabs defaultValue="assets" className="space-y-4 sm:space-y-6 md:space-y-8">
+          <TabsList className="bg-muted/50 backdrop-blur-sm p-1 w-full sm:w-auto">
             <TabsTrigger 
               value="assets"
-              className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all flex-1 sm:flex-none text-xs sm:text-sm"
             >
               Team Assets
             </TabsTrigger>
             <TabsTrigger 
               value="chat"
-              className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all flex-1 sm:flex-none text-xs sm:text-sm"
             >
               Team Chat
             </TabsTrigger>
