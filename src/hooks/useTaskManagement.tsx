@@ -449,7 +449,36 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         await logActivity(appointmentId, 'Confirmation Recorded', 
           note ? `${note} (${completedCount}/${requiredCount})` : `Confirmation ${completedCount}/${requiredCount} completed. Next due: ${nextWindow.label}`);
 
-        toast.success(`Confirmation ${completedCount}/${requiredCount} recorded! Next: ${nextWindow.label}`);
+        toast.success(`Confirmation ${completedCount}/${requiredCount} recorded! Next: ${nextWindow.label}`, {
+          action: {
+            label: 'Undo',
+            onClick: async () => {
+              try {
+                // Revert task to previous state
+                await supabase
+                  .from('confirmation_tasks')
+                  .update(previousState.taskData)
+                  .eq('id', taskId);
+
+                // Revert appointment setter if it was changed
+                if (previousState.appointmentSetterId !== userId) {
+                  await supabase
+                    .from('appointments')
+                    .update({ setter_id: previousState.appointmentSetterId })
+                    .eq('id', appointmentId);
+                }
+
+                await logActivity(appointmentId, 'Undone', 'Confirmation undone');
+                toast.success('Confirmation undone');
+                loadTasks();
+              } catch (error) {
+                console.error('Error undoing confirmation:', error);
+                toast.error('Failed to undo');
+              }
+            }
+          },
+          duration: 10000
+        });
         
         loadTasks();
 
@@ -482,7 +511,38 @@ export function useTaskManagement(teamId: string, userId: string, userRole?: str
         await logActivity(appointmentId, 'Confirmed', 
           note ? `${note} - All ${requiredCount} confirmations completed!` : `All ${requiredCount} confirmations completed. Appointment confirmed!`);
 
-        toast.success('🎉 All confirmations complete! Appointment confirmed.');
+        toast.success('🎉 All confirmations complete! Appointment confirmed.', {
+          action: {
+            label: 'Undo',
+            onClick: async () => {
+              try {
+                // Revert task to previous state
+                await supabase
+                  .from('confirmation_tasks')
+                  .update(previousState.taskData)
+                  .eq('id', taskId);
+
+                // Revert appointment
+                await supabase
+                  .from('appointments')
+                  .update({
+                    status: previousState.appointmentStatus,
+                    pipeline_stage: previousState.appointmentPipelineStage,
+                    setter_id: previousState.appointmentSetterId
+                  })
+                  .eq('id', appointmentId);
+
+                await logActivity(appointmentId, 'Undone', 'Final confirmation undone');
+                toast.success('Confirmation undone');
+                loadTasks();
+              } catch (error) {
+                console.error('Error undoing confirmation:', error);
+                toast.error('Failed to undo');
+              }
+            }
+          },
+          duration: 10000
+        });
         
         loadTasks();
       }
