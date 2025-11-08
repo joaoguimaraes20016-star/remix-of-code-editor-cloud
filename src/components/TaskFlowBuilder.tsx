@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { GripVertical, Plus, Trash2, Clock, User, UserCheck, XCircle } from "lucide-react";
+import { GripVertical, Plus, Trash2, Clock, User, UserCheck, XCircle, Shield, Crown } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
@@ -18,14 +18,14 @@ interface ConfirmationConfig {
   sequence: number;
   hours_before: number;
   label: string;
-  assigned_role: "setter" | "closer" | "off";
+  assigned_role: "setter" | "closer" | "admin" | "offer_owner" | "off";
   enabled: boolean;
 }
 
 interface DefaultTaskRouting {
-  follow_up: "setter" | "closer";
-  reschedule: "setter" | "closer";
-  manual_task: "setter" | "closer";
+  follow_up: "setter" | "closer" | "admin" | "offer_owner";
+  reschedule: "setter" | "closer" | "admin" | "offer_owner";
+  manual_task: "setter" | "closer" | "admin" | "offer_owner";
 }
 
 interface TaskFlowBuilderProps {
@@ -80,6 +80,8 @@ function ConfirmationCard({
   const getRoleBadge = (role: string) => {
     if (role === "setter") return <Badge variant="default"><User className="w-3 h-3 mr-1" />Setter</Badge>;
     if (role === "closer") return <Badge variant="default"><UserCheck className="w-3 h-3 mr-1" />Closer</Badge>;
+    if (role === "admin") return <Badge variant="default"><Shield className="w-3 h-3 mr-1" />Admin</Badge>;
+    if (role === "offer_owner") return <Badge variant="default"><Crown className="w-3 h-3 mr-1" />Offer Owner</Badge>;
     return <Badge variant="outline"><XCircle className="w-3 h-3 mr-1" />Off</Badge>;
   };
 
@@ -140,11 +142,13 @@ function ConfirmationCard({
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="setter">Setter</SelectItem>
-                <SelectItem value="closer">Closer</SelectItem>
-                <SelectItem value="off">Off</SelectItem>
-              </SelectContent>
+                  <SelectContent>
+                    <SelectItem value="setter">Setter</SelectItem>
+                    <SelectItem value="closer">Closer</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="offer_owner">Offer Owner</SelectItem>
+                    <SelectItem value="off">Off</SelectItem>
+                  </SelectContent>
             </Select>
 
             {/* Role Badge */}
@@ -348,11 +352,23 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
                     ? "bg-primary" 
                     : conf.assigned_role === "closer"
                     ? "bg-primary"
+                    : conf.assigned_role === "admin"
+                    ? "bg-primary"
+                    : conf.assigned_role === "offer_owner"
+                    ? "bg-primary"
                     : "bg-muted"
                 }`}></div>
                     <span className="text-xs font-medium">{conf.label}</span>
                     <Badge variant="outline" className="mt-1 text-xs">
-                      {conf.assigned_role === "setter" ? "Setter" : "Closer"}
+                      {conf.assigned_role === "setter" 
+                        ? "Setter" 
+                        : conf.assigned_role === "closer"
+                        ? "Closer"
+                        : conf.assigned_role === "admin"
+                        ? "Admin"
+                        : conf.assigned_role === "offer_owner"
+                        ? "Offer Owner"
+                        : "Off"}
                     </Badge>
                   </div>
                 ))}
@@ -427,10 +443,12 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="setter">Setter</SelectItem>
-                <SelectItem value="closer">Closer</SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="setter">Setter</SelectItem>
+                  <SelectItem value="closer">Closer</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="offer_owner">Offer Owner</SelectItem>
+                </SelectContent>
             </Select>
           </div>
 
@@ -448,10 +466,12 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="setter">Setter</SelectItem>
-                <SelectItem value="closer">Closer</SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="setter">Setter</SelectItem>
+                  <SelectItem value="closer">Closer</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="offer_owner">Offer Owner</SelectItem>
+                </SelectContent>
             </Select>
           </div>
 
@@ -469,10 +489,12 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="setter">Setter</SelectItem>
-                <SelectItem value="closer">Closer</SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="setter">Setter</SelectItem>
+                  <SelectItem value="closer">Closer</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="offer_owner">Offer Owner</SelectItem>
+                </SelectContent>
             </Select>
           </div>
         </CardContent>
