@@ -508,33 +508,39 @@ serve(async (req) => {
       }
 
       // Check if this is a rescheduled appointment (cancelled within last 2 minutes with same email)
+      console.log('[RESCHEDULE-DETECTION] Checking for recently cancelled appointments...');
       const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
       const { data: recentlyCancelled } = await supabase
         .from('appointments')
-        .select('id, setter_id, setter_name, closer_id, closer_name')
+        .select('id, setter_id, setter_name, closer_id, closer_name, calendly_invitee_uri')
         .eq('team_id', teamId)
         .eq('lead_email', leadEmail)
-        .eq('status', 'CANCELLED')
+        .or(`status.eq.CANCELLED,pipeline_stage.eq.canceled`)
         .gte('updated_at', twoMinutesAgo)
         .maybeSingle();
 
       // If there's a recently cancelled appointment, this is a reschedule
       if (recentlyCancelled) {
-        console.log(`🔄 Detected reschedule - will delete old appointment ${recentlyCancelled.id}`);
+        console.log(`🔄 [RESCHEDULE-DETECTION] Detected reschedule!`);
+        console.log(`🔄 Old appointment ID: ${recentlyCancelled.id}`);
+        console.log(`🔄 Old appointment URI: ${recentlyCancelled.calendly_invitee_uri}`);
+        console.log(`🔄 Preserving team members from old appointment...`);
         
         // Preserve setter/closer from old appointment if not already assigned
         if (!appointmentData.setter_id && recentlyCancelled.setter_id) {
           appointmentData.setter_id = recentlyCancelled.setter_id;
           appointmentData.setter_name = recentlyCancelled.setter_name;
-          console.log(`Preserved setter from cancelled appointment: ${recentlyCancelled.setter_name}`);
+          console.log(`✓ Preserved setter: ${recentlyCancelled.setter_name}`);
         }
         if (!appointmentData.closer_id && recentlyCancelled.closer_id) {
           appointmentData.closer_id = recentlyCancelled.closer_id;
           appointmentData.closer_name = recentlyCancelled.closer_name;
-          console.log(`Preserved closer from cancelled appointment: ${recentlyCancelled.closer_name}`);
+          console.log(`✓ Preserved closer: ${recentlyCancelled.closer_name}`);
         }
         
         appointmentData.status = 'RESCHEDULED';
+      } else {
+        console.log('[RESCHEDULE-DETECTION] No recently cancelled appointments found - treating as new booking');
       }
 
       // Create admin client for operations that need service role
@@ -626,35 +632,88 @@ serve(async (req) => {
 
     } else if (event === 'invitee.canceled') {
       console.log('[CANCEL] Processing cancellation event');
+      console.log('[CANCEL] Event URI:', eventUri);
+      console.log('[CANCEL] Lead email:', leadEmail);
+      console.log('[CANCEL] Start time:', startTime);
       
-      // Find most recent appointment by email and time
-      const { data: appointment, error: findError } = await supabase
-        .from('appointments')
-        .select('id, team_id')
-        .eq('lead_email', leadEmail)
-        .eq('start_at_utc', startTime)
-        .eq('team_id', teamId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Try to find by calendly_invitee_uri first (most reliable)
+      let appointment = null;
+      let findError = null;
+      
+      if (eventUri) {
+        console.log('[CANCEL] Searching by calendly_invitee_uri:', eventUri);
+        const result = await supabase
+          .from('appointments')
+          .select('id, team_id, lead_name, calendly_invitee_uri')
+          .eq('calendly_invitee_uri', eventUri)
+          .eq('team_id', teamId)
+          .maybeSingle();
+        
+        appointment = result.data;
+        findError = result.error;
+        
+        if (appointment) {
+          console.log('[CANCEL] ✓ Found appointment by URI:', appointment.id);
+        } else {
+          console.log('[CANCEL] ⚠️ No appointment found by URI, trying email+time...');
+        }
+      }
+      
+      // Fallback: search by email and time
+      if (!appointment && leadEmail && startTime) {
+        console.log('[CANCEL] Searching by email + time');
+        const result = await supabase
+          .from('appointments')
+          .select('id, team_id, lead_name, calendly_invitee_uri')
+          .eq('lead_email', leadEmail)
+          .eq('start_at_utc', startTime)
+          .eq('team_id', teamId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        appointment = result.data;
+        findError = result.error;
+        
+        if (appointment) {
+          console.log('[CANCEL] ✓ Found appointment by email+time:', appointment.id);
+        }
+      }
 
       if (findError || !appointment) {
-        console.error('[CANCEL] Could not find appointment:', findError);
-        await logWebhookEvent(supabase, teamId, event, 'error', { error: 'Appointment not found' });
-        return new Response(JSON.stringify({ error: 'Failed to find appointment' }), {
-          status: 404,
+        console.error('[CANCEL] ❌ Could not find appointment');
+        console.error('[CANCEL] Search criteria:', { eventUri, leadEmail, startTime, teamId });
+        console.error('[CANCEL] Error:', findError);
+        
+        await logWebhookEvent(supabase, teamId, event, 'error', { 
+          error: 'Appointment not found',
+          searchCriteria: { eventUri, leadEmail, startTime }
+        });
+        
+        // Still return success to Calendly to avoid retries
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Appointment not found',
+          note: 'This may be expected if appointment was never synced'
+        }), {
+          status: 200, // Return 200 so Calendly doesn't retry
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
+      console.log('[CANCEL] Updating appointment to CANCELLED:', appointment.id);
+      
       // Update the specific appointment
       const { error: updateError } = await supabase
         .from('appointments')
-        .update({ status: 'CANCELLED' })
+        .update({ 
+          status: 'CANCELLED',
+          pipeline_stage: 'canceled'
+        })
         .eq('id', appointment.id);
 
       if (updateError) {
-        console.error('[CANCEL] Error updating appointment:', updateError);
+        console.error('[CANCEL] ❌ Error updating appointment:', updateError);
         await logWebhookEvent(supabase, teamId, event, 'error', { error: updateError.message });
         return new Response(JSON.stringify({ error: 'Failed to process cancellation' }), {
           status: 500,
@@ -662,7 +721,7 @@ serve(async (req) => {
         });
       }
 
-      console.log('[CANCEL] Canceled appointment:', appointment.id);
+      console.log('[CANCEL] ✓ Successfully canceled appointment:', appointment.id, '-', appointment.lead_name);
       await logWebhookEvent(supabase, teamId, event, 'success', { appointmentId: appointment.id });
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
@@ -670,7 +729,11 @@ serve(async (req) => {
       });
 
     } else if (event === 'invitee.rescheduled') {
-      console.log('[RESCHEDULE] Processing rescheduled event - NEW LOGIC');
+      console.log('[RESCHEDULE] ===== Processing rescheduled event =====');
+      console.log('[RESCHEDULE] Event URI:', eventUri);
+      console.log('[RESCHEDULE] Invitee URI:', inviteeUri);
+      console.log('[RESCHEDULE] Lead email:', leadEmail);
+      console.log('[RESCHEDULE] New start time:', startTime);
       
       // Fetch new invitee details for updated URLs
       let newRescheduleUrl = null;
@@ -682,6 +745,7 @@ serve(async (req) => {
         const eventUuid = eventUri?.split('/').pop();
         
         if (inviteeUuid && eventUuid && accessToken) {
+          console.log('[RESCHEDULE] Fetching new invitee details from Calendly...');
           const inviteeResponse = await fetch(
             `https://api.calendly.com/scheduled_events/${eventUuid}/invitees/${inviteeUuid}`,
             {
@@ -698,27 +762,51 @@ serve(async (req) => {
             newRescheduleUrl = resource?.reschedule_url || null;
             newCancelUrl = resource?.cancel_url || null;
             newCalendlyInviteeUri = resource?.uri || null;
-            console.log('[RESCHEDULE] Fetched new URLs:', { newRescheduleUrl, newCancelUrl, newCalendlyInviteeUri });
+            console.log('[RESCHEDULE] ✓ Fetched new URLs:', { 
+              hasRescheduleUrl: !!newRescheduleUrl, 
+              hasCancelUrl: !!newCancelUrl, 
+              hasInviteeUri: !!newCalendlyInviteeUri 
+            });
+          } else {
+            console.warn('[RESCHEDULE] ⚠️ Failed to fetch invitee details, status:', inviteeResponse.status);
           }
         }
       } catch (error) {
-        console.warn('[RESCHEDULE] Failed to fetch new invitee details:', error);
+        console.error('[RESCHEDULE] ❌ Error fetching new invitee details:', error);
       }
 
-      // Find the old appointment
-      const { data: oldAppointment, error: findError } = await supabase
+      // Find the old appointment - try multiple methods
+      console.log('[RESCHEDULE] Searching for old appointment...');
+      let oldAppointment = null;
+      let findError = null;
+      
+      // Try by email + team first (most reliable for reschedules)
+      const searchResult = await supabase
         .from('appointments')
-        .select('id, team_id, setter_id, setter_name, closer_id, closer_name, reschedule_count, original_appointment_id')
+        .select('id, team_id, setter_id, setter_name, closer_id, closer_name, reschedule_count, original_appointment_id, calendly_invitee_uri, lead_name')
         .eq('lead_email', leadEmail)
         .eq('team_id', teamId)
+        .neq('start_at_utc', startTime) // Exclude the new time to avoid finding newly created appointment
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+      
+      oldAppointment = searchResult.data;
+      findError = searchResult.error;
 
-      if (findError || !oldAppointment) {
-        console.error('[RESCHEDULE] Could not find appointment:', findError);
-        await logWebhookEvent(supabase, teamId, event, 'error', { error: 'Appointment not found' });
-        return new Response(JSON.stringify({ error: 'Appointment not found' }), {
+      if (oldAppointment) {
+        console.log('[RESCHEDULE] ✓ Found old appointment by email+team:', oldAppointment.id, '-', oldAppointment.lead_name);
+      } else {
+        console.error('[RESCHEDULE] ❌ Could not find old appointment');
+        console.error('[RESCHEDULE] Search criteria:', { leadEmail, teamId, excludedTime: startTime });
+        await logWebhookEvent(supabase, teamId, event, 'error', { 
+          error: 'Old appointment not found',
+          searchCriteria: { leadEmail, teamId }
+        });
+        return new Response(JSON.stringify({ 
+          error: 'Old appointment not found',
+          note: 'May need to check if appointment was ever synced'
+        }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -736,6 +824,7 @@ serve(async (req) => {
         }
       );
 
+      console.log('[RESCHEDULE] Updating old appointment to rescheduled stage...');
       // Move old appointment to "rescheduled" stage but keep it
       const { error: updateOldError } = await adminClient
         .from('appointments')
@@ -746,7 +835,7 @@ serve(async (req) => {
         .eq('id', oldAppointment.id);
 
       if (updateOldError) {
-        console.error('[RESCHEDULE] Error updating old appointment:', updateOldError);
+        console.error('[RESCHEDULE] ❌ Error updating old appointment:', updateOldError);
         await logWebhookEvent(supabase, teamId, event, 'error', { error: updateOldError.message });
         return new Response(JSON.stringify({ error: 'Failed to update old appointment' }), {
           status: 500,
@@ -754,9 +843,10 @@ serve(async (req) => {
         });
       }
 
-      console.log('[RESCHEDULE] Moved old appointment to rescheduled stage');
+      console.log('[RESCHEDULE] ✓ Moved old appointment to rescheduled stage');
 
       // Create NEW appointment for the new date
+      console.log('[RESCHEDULE] Creating new appointment for rescheduled date...');
       const eventTypeName = eventTypeUri?.split('/').pop() || 'Unknown Event';
       const newAppointmentData = {
         team_id: teamId,

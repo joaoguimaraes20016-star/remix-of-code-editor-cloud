@@ -519,6 +519,11 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     appointment: Appointment,
     additionalData?: { rescheduleDate?: Date; followUpDate?: Date; followUpReason?: string }
   ) => {
+    console.log('[STAGE-MOVE] Starting performStageMove');
+    console.log('[STAGE-MOVE] Appointment ID:', appointmentId);
+    console.log('[STAGE-MOVE] New stage:', newStageId);
+    console.log('[STAGE-MOVE] Additional data:', additionalData);
+    
     try {
       const updateData: any = { pipeline_stage: newStageId };
       
@@ -526,23 +531,31 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       if (newStageId === "rescheduled" && additionalData?.rescheduleDate) {
         updateData.retarget_date = format(additionalData.rescheduleDate, "yyyy-MM-dd");
         updateData.retarget_reason = "Rescheduled by user";
+        console.log('[STAGE-MOVE] Adding reschedule data:', updateData);
       }
 
       // Add retarget_date for follow-ups (no-show/cancelled)
       if (additionalData?.followUpDate && additionalData?.followUpReason) {
         updateData.retarget_date = format(additionalData.followUpDate, "yyyy-MM-dd");
         updateData.retarget_reason = additionalData.followUpReason;
+        console.log('[STAGE-MOVE] Adding follow-up retarget data:', updateData);
       }
 
+      console.log('[STAGE-MOVE] Updating appointment with data:', updateData);
       const { error } = await supabase
         .from("appointments")
         .update(updateData)
         .eq("id", appointmentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[STAGE-MOVE] ❌ Error updating appointment:', error);
+        throw error;
+      }
+      console.log('[STAGE-MOVE] ✓ Appointment updated successfully');
 
       // Create follow-up or reschedule task if needed
       if (additionalData?.rescheduleDate) {
+        console.log('[STAGE-MOVE] Creating reschedule task...');
         const { error: rpcError } = await supabase.rpc("create_task_with_assignment", {
           p_team_id: appointment.team_id,
           p_appointment_id: appointmentId,
@@ -552,11 +565,13 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           p_reschedule_date: format(additionalData.rescheduleDate, "yyyy-MM-dd")
         });
         if (rpcError) {
-          console.error("Error creating reschedule task:", rpcError);
+          console.error("[STAGE-MOVE] ❌ Error creating reschedule task:", rpcError);
           throw rpcError;
         }
+        console.log('[STAGE-MOVE] ✓ Reschedule task created');
       } else if (additionalData?.followUpDate && additionalData?.followUpReason) {
-        const { error: rpcError } = await supabase.rpc("create_task_with_assignment", {
+        console.log('[STAGE-MOVE] Creating follow-up task...');
+        console.log('[STAGE-MOVE] RPC params:', {
           p_team_id: appointment.team_id,
           p_appointment_id: appointmentId,
           p_task_type: "follow_up",
@@ -564,17 +579,32 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           p_follow_up_reason: additionalData.followUpReason,
           p_reschedule_date: null
         });
+        
+        const { data: rpcData, error: rpcError } = await supabase.rpc("create_task_with_assignment", {
+          p_team_id: appointment.team_id,
+          p_appointment_id: appointmentId,
+          p_task_type: "follow_up",
+          p_follow_up_date: format(additionalData.followUpDate, "yyyy-MM-dd"),
+          p_follow_up_reason: additionalData.followUpReason,
+          p_reschedule_date: null
+        });
+        
         if (rpcError) {
-          console.error("Error creating follow-up task:", rpcError);
+          console.error("[STAGE-MOVE] ❌ Error creating follow-up task:", rpcError);
+          console.error("[STAGE-MOVE] RPC error details:", JSON.stringify(rpcError, null, 2));
           throw rpcError;
         }
+        console.log('[STAGE-MOVE] ✓ Follow-up task created successfully, task ID:', rpcData);
       }
 
       toast.success("Deal moved successfully");
+      console.log('[STAGE-MOVE] Reloading deals...');
       await loadDeals();
+      console.log('[STAGE-MOVE] ✓ Complete!');
     } catch (error: any) {
-      console.error("Error moving deal:", error);
-      toast.error(error.message || "Failed to move deal");
+      console.error("[STAGE-MOVE] ❌ Fatal error in performStageMove:", error);
+      console.error("[STAGE-MOVE] Error stack:", error.stack);
+      toast.error(getUserFriendlyError(error));
     }
   };
 
@@ -661,17 +691,30 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
   };
 
   const handleFollowUpConfirm = async (followUpDate: Date, reason: string) => {
-    if (!followUpDialog) return;
+    console.log('[FOLLOW-UP] handleFollowUpConfirm called');
+    console.log('[FOLLOW-UP] Dialog state:', followUpDialog);
+    console.log('[FOLLOW-UP] Follow-up date:', followUpDate);
+    console.log('[FOLLOW-UP] Reason:', reason);
+    
+    if (!followUpDialog) {
+      console.error('[FOLLOW-UP] ❌ No dialog state!');
+      return;
+    }
     
     const appointment = appointments.find((a) => a.id === followUpDialog.appointmentId);
+    console.log('[FOLLOW-UP] Found appointment:', appointment?.id, '-', appointment?.lead_name);
     
     if (appointment) {
+      console.log('[FOLLOW-UP] Calling performStageMove...');
       await performStageMove(
         followUpDialog.appointmentId,
         followUpDialog.stageId,
         appointment,
         { followUpDate, followUpReason: reason }
       );
+      console.log('[FOLLOW-UP] ✓ performStageMove completed');
+    } else {
+      console.error('[FOLLOW-UP] ❌ Appointment not found!');
     }
     
     setFollowUpDialog(null);
