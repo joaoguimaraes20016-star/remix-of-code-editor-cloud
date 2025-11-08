@@ -24,6 +24,19 @@ interface SetterStats {
   showed: DetailedStats;
   confirmedShowed: DetailedStats;
   confirmedClosed: DetailedStats;
+  confirmationAttempts: DetailedStats; // Total confirmation calls made
+  confirmationEfficiency: {
+    thisMonth: number;
+    thisWeek: number;
+    today: number;
+    total: number;
+  };
+  qualityScore: {
+    thisMonth: number;
+    thisWeek: number;
+    today: number;
+    total: number;
+  };
   confirmRate: {
     thisMonth: number;
     thisWeek: number;
@@ -309,13 +322,30 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
       // Fetch all completed confirmation tasks to track confirmed appointments
       const { data: confirmedTasks, error: tasksError } = await supabase
         .from('confirmation_tasks')
-        .select('appointment_id, completed_at')
-        .eq('team_id', teamId)
-        .eq('status', 'confirmed');
+        .select('appointment_id, completed_at, confirmation_attempts, assigned_to')
+        .eq('team_id', teamId);
 
       if (tasksError) throw tasksError;
 
-      const confirmedAppointmentIds = new Set(confirmedTasks?.map(t => t.appointment_id) || []);
+      const confirmedAppointmentIds = new Set(
+        confirmedTasks?.filter(t => t.completed_at).map(t => t.appointment_id) || []
+      );
+
+      // Build confirmation attempts map by setter
+      const confirmationAttemptsMap = new Map<string, number[]>();
+      confirmedTasks?.forEach(task => {
+        if (task.assigned_to) {
+          const attempts = task.confirmation_attempts as any[];
+          const attemptCount = Array.isArray(attempts) ? attempts.length : 0;
+          
+          if (!confirmationAttemptsMap.has(task.assigned_to)) {
+            confirmationAttemptsMap.set(task.assigned_to, [0, 0, 0, 0]);
+          }
+          const data = confirmationAttemptsMap.get(task.assigned_to)!;
+          data[0] += attemptCount; // total
+          // We'll filter by date later when processing appointments
+        }
+      });
 
       // Process setter stats
       const setterMap = new Map<string, { 
@@ -325,6 +355,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
         showed: number[];
         confirmedShowed: number[];
         confirmedClosed: number[];
+        confirmationAttempts: number[];
       }>();
       
       appointments?.forEach(apt => {
@@ -336,7 +367,8 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
               confirmed: [0, 0, 0, 0],
               showed: [0, 0, 0, 0],
               confirmedShowed: [0, 0, 0, 0],
-              confirmedClosed: [0, 0, 0, 0]
+              confirmedClosed: [0, 0, 0, 0],
+              confirmationAttempts: [0, 0, 0, 0]
             });
           }
           
@@ -346,7 +378,13 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           const showed = apt.status !== 'NO_SHOW' && apt.status !== 'CANCELLED';
           const closed = apt.status === 'CLOSED';
           
+          // Get confirmation attempts for this appointment
+          const aptTask = confirmedTasks?.find(t => t.appointment_id === apt.id);
+          const attempts = aptTask?.confirmation_attempts as any[];
+          const attemptCount = Array.isArray(attempts) ? attempts.length : 0;
+          
           data.booked[0] += 1; // total
+          if (attemptCount > 0) data.confirmationAttempts[0] += attemptCount;
           if (isConfirmed) {
             data.confirmed[0] += 1;
             if (showed) data.confirmedShowed[0] += 1;
@@ -356,6 +394,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           
           if (aptDate >= monthStart) {
             data.booked[1] += 1;
+            if (attemptCount > 0) data.confirmationAttempts[1] += attemptCount;
             if (isConfirmed) {
               data.confirmed[1] += 1;
               if (showed) data.confirmedShowed[1] += 1;
@@ -365,6 +404,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           }
           if (aptDate >= weekStart) {
             data.booked[2] += 1;
+            if (attemptCount > 0) data.confirmationAttempts[2] += attemptCount;
             if (isConfirmed) {
               data.confirmed[2] += 1;
               if (showed) data.confirmedShowed[2] += 1;
@@ -374,6 +414,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           }
           if (aptDate >= todayStart && aptDate <= todayEnd) {
             data.booked[3] += 1;
+            if (attemptCount > 0) data.confirmationAttempts[3] += attemptCount;
             if (isConfirmed) {
               data.confirmed[3] += 1;
               if (showed) data.confirmedShowed[3] += 1;
@@ -464,6 +505,24 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
             thisMonth: data.confirmedClosed[1],
             thisWeek: data.confirmedClosed[2],
             today: data.confirmedClosed[3]
+          },
+          confirmationAttempts: {
+            total: data.confirmationAttempts[0],
+            thisMonth: data.confirmationAttempts[1],
+            thisWeek: data.confirmationAttempts[2],
+            today: data.confirmationAttempts[3]
+          },
+          confirmationEfficiency: {
+            total: data.confirmationAttempts[0] > 0 ? (data.confirmed[0] / data.confirmationAttempts[0]) * 100 : 0,
+            thisMonth: data.confirmationAttempts[1] > 0 ? (data.confirmed[1] / data.confirmationAttempts[1]) * 100 : 0,
+            thisWeek: data.confirmationAttempts[2] > 0 ? (data.confirmed[2] / data.confirmationAttempts[2]) * 100 : 0,
+            today: data.confirmationAttempts[3] > 0 ? (data.confirmed[3] / data.confirmationAttempts[3]) * 100 : 0
+          },
+          qualityScore: {
+            total: data.booked[0] > 0 ? Math.max(0, ((data.booked[0] - data.confirmed[0]) / data.booked[0]) * 100) : 0,
+            thisMonth: data.booked[1] > 0 ? Math.max(0, ((data.booked[1] - data.confirmed[1]) / data.booked[1]) * 100) : 0,
+            thisWeek: data.booked[2] > 0 ? Math.max(0, ((data.booked[2] - data.confirmed[2]) / data.booked[2]) * 100) : 0,
+            today: data.booked[3] > 0 ? Math.max(0, ((data.booked[3] - data.confirmed[3]) / data.booked[3]) * 100) : 0
           },
           confirmRate: {
             total: data.booked[0] > 0 ? (data.confirmed[0] / data.booked[0]) * 100 : 0,
@@ -562,7 +621,10 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           confirmRate: member.stats.confirmRate.today,
           showRate: member.stats.showRate.today,
           confirmedShowRate: member.stats.confirmedShowRate.today,
-          confirmedCloseRate: member.stats.confirmedCloseRate.today
+          confirmedCloseRate: member.stats.confirmedCloseRate.today,
+          confirmationAttempts: member.stats.confirmationAttempts.today,
+          confirmationEfficiency: member.stats.confirmationEfficiency.today,
+          qualityScore: member.stats.qualityScore.today
         };
       case 'week': 
         return { 
@@ -574,7 +636,10 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           confirmRate: member.stats.confirmRate.thisWeek,
           showRate: member.stats.showRate.thisWeek,
           confirmedShowRate: member.stats.confirmedShowRate.thisWeek,
-          confirmedCloseRate: member.stats.confirmedCloseRate.thisWeek
+          confirmedCloseRate: member.stats.confirmedCloseRate.thisWeek,
+          confirmationAttempts: member.stats.confirmationAttempts.thisWeek,
+          confirmationEfficiency: member.stats.confirmationEfficiency.thisWeek,
+          qualityScore: member.stats.qualityScore.thisWeek
         };
       case 'month': 
         return { 
@@ -586,7 +651,10 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           confirmRate: member.stats.confirmRate.thisMonth,
           showRate: member.stats.showRate.thisMonth,
           confirmedShowRate: member.stats.confirmedShowRate.thisMonth,
-          confirmedCloseRate: member.stats.confirmedCloseRate.thisMonth
+          confirmedCloseRate: member.stats.confirmedCloseRate.thisMonth,
+          confirmationAttempts: member.stats.confirmationAttempts.thisMonth,
+          confirmationEfficiency: member.stats.confirmationEfficiency.thisMonth,
+          qualityScore: member.stats.qualityScore.thisMonth
         };
       case 'total': 
         return { 
@@ -598,7 +666,10 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           confirmRate: member.stats.confirmRate.total,
           showRate: member.stats.showRate.total,
           confirmedShowRate: member.stats.confirmedShowRate.total,
-          confirmedCloseRate: member.stats.confirmedCloseRate.total
+          confirmedCloseRate: member.stats.confirmedCloseRate.total,
+          confirmationAttempts: member.stats.confirmationAttempts.total,
+          confirmationEfficiency: member.stats.confirmationEfficiency.total,
+          qualityScore: member.stats.qualityScore.total
         };
     }
   };
@@ -773,6 +844,46 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
                 </CardContent>
               </Card>
             )}
+
+            {/* Confirmation Dependency & Quality Score */}
+            <Card className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+              <CardContent className="p-4 relative">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-3">Confirmation Dependency</h4>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      <PhoneCall className="h-3 w-3 inline mr-1" />
+                      Total Calls
+                    </div>
+                    <div className="text-2xl font-bold text-primary">{stats.confirmationAttempts}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Efficiency</div>
+                    <div className="text-2xl font-bold text-primary">{stats.confirmationEfficiency.toFixed(0)}%</div>
+                    <p className="text-xs text-muted-foreground mt-1">per call success</p>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Quality Score</div>
+                    <div className={`text-2xl font-bold ${
+                      stats.qualityScore >= 80 
+                        ? 'text-green-600 dark:text-green-400'
+                        : stats.qualityScore >= 50 
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {stats.qualityScore.toFixed(0)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">no babysitting</p>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Higher quality score = fewer appointments need confirmation calls
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Accountability Section */}
             <div className="space-y-3">
