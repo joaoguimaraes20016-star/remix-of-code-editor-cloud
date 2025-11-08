@@ -1481,30 +1481,18 @@ export type Database = {
         }
         Returns: Json
       }
-      create_task_with_assignment:
-        | {
-            Args: {
-              p_appointment_id: string
-              p_follow_up_date?: string
-              p_follow_up_reason?: string
-              p_reschedule_date?: string
-              p_task_type: Database["public"]["Enums"]["task_type"]
-              p_team_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_appointment_id: string
-              p_follow_up_date?: string
-              p_follow_up_reason?: string
-              p_preferred_role?: string
-              p_reschedule_date?: string
-              p_task_type: Database["public"]["Enums"]["task_type"]
-              p_team_id: string
-            }
-            Returns: string
-          }
+      create_task_with_assignment: {
+        Args: {
+          p_appointment_id: string
+          p_follow_up_date?: string
+          p_follow_up_reason?: string
+          p_preferred_role?: string
+          p_reschedule_date?: string
+          p_task_type: Database["public"]["Enums"]["task_type"]
+          p_team_id: string
+        }
+        Returns: string
+      }
       get_team_role: {
         Args: { _team_id: string; _user_id: string }
         Returns: string
