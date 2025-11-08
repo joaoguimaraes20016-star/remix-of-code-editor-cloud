@@ -1,11 +1,18 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, Save } from "lucide-react";
-import { ConfirmationTimeline } from "./task-flow/ConfirmationTimeline";
-import { TaskTypeDefaults } from "./task-flow/TaskTypeDefaults";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { GripVertical, Plus, Trash2, Clock, User, UserCheck, XCircle } from "lucide-react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ConfirmationConfig {
   sequence: number;
@@ -25,16 +32,137 @@ interface TaskFlowBuilderProps {
   teamId: string;
 }
 
+function ConfirmationCard({ 
+  confirmation, 
+  index, 
+  onUpdate, 
+  onDelete, 
+  canDelete 
+}: { 
+  confirmation: ConfirmationConfig; 
+  index: number; 
+  onUpdate: (index: number, field: keyof ConfirmationConfig, value: any) => void;
+  onDelete: (index: number) => void;
+  canDelete: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
+    id: confirmation.sequence.toString() 
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const getRoleBadge = (role: string) => {
+    if (role === "setter") return <Badge variant="default" className="bg-primary"><User className="w-3 h-3 mr-1" />Setter</Badge>;
+    if (role === "closer") return <Badge variant="default" className="bg-info"><UserCheck className="w-3 h-3 mr-1" />Closer</Badge>;
+    return <Badge variant="outline" className="text-muted-foreground"><XCircle className="w-3 h-3 mr-1" />Off</Badge>;
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="group">
+      <Card className={`border-l-4 transition-all ${
+        confirmation.enabled 
+          ? confirmation.assigned_role === "setter" 
+            ? "border-l-primary" 
+            : confirmation.assigned_role === "closer"
+            ? "border-l-info"
+            : "border-l-muted"
+          : "border-l-muted opacity-60"
+      }`}>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            {/* Drag Handle */}
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+              <GripVertical className="w-5 h-5 text-muted-foreground" />
+            </div>
+
+            {/* Enable Toggle */}
+            <Switch
+              checked={confirmation.enabled}
+              onCheckedChange={(checked) => onUpdate(index, "enabled", checked)}
+            />
+
+            {/* Time Input */}
+            <div className="flex items-center gap-2 flex-1">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <Input
+                type="number"
+                value={confirmation.hours_before}
+                onChange={(e) => onUpdate(index, "hours_before", parseFloat(e.target.value))}
+                className="w-20"
+                min="0"
+                step="0.1"
+                disabled={!confirmation.enabled}
+              />
+              <span className="text-sm text-muted-foreground">hours before</span>
+            </div>
+
+            {/* Label Input */}
+            <Input
+              value={confirmation.label}
+              onChange={(e) => onUpdate(index, "label", e.target.value)}
+              placeholder="Label"
+              className="w-32"
+              disabled={!confirmation.enabled}
+            />
+
+            {/* Role Select */}
+            <Select
+              value={confirmation.assigned_role}
+              onValueChange={(value) => onUpdate(index, "assigned_role", value)}
+              disabled={!confirmation.enabled}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="setter">Setter</SelectItem>
+                <SelectItem value="closer">Closer</SelectItem>
+                <SelectItem value="off">Off</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Role Badge */}
+            {getRoleBadge(confirmation.assigned_role)}
+
+            {/* Delete Button */}
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onDelete(index)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [flowConfig, setFlowConfig] = useState<ConfirmationConfig[]>([]);
+  const [confirmations, setConfirmations] = useState<ConfirmationConfig[]>([]);
   const [defaultRouting, setDefaultRouting] = useState<DefaultTaskRouting>({
     follow_up: "setter",
     reschedule: "setter",
     manual_task: "closer",
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     loadSettings();
@@ -50,15 +178,14 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
 
       if (error) throw error;
 
-      if (data?.confirmation_flow_config) {
-        setFlowConfig(data.confirmation_flow_config as unknown as ConfirmationConfig[]);
+      if (data.confirmation_flow_config) {
+        setConfirmations(data.confirmation_flow_config as unknown as ConfirmationConfig[]);
       }
-
-      if (data?.default_task_routing) {
+      if (data.default_task_routing) {
         setDefaultRouting(data.default_task_routing as unknown as DefaultTaskRouting);
       }
     } catch (error) {
-      console.error("Error loading task flow settings:", error);
+      console.error("Error loading settings:", error);
       toast({
         title: "Error",
         description: "Failed to load task flow settings",
@@ -75,7 +202,7 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
       const { error } = await supabase
         .from("teams")
         .update({
-          confirmation_flow_config: flowConfig as any,
+          confirmation_flow_config: confirmations as any,
           default_task_routing: defaultRouting as any,
         })
         .eq("id", teamId);
@@ -87,7 +214,7 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
         description: "Task flow settings saved successfully",
       });
     } catch (error) {
-      console.error("Error saving task flow settings:", error);
+      console.error("Error saving settings:", error);
       toast({
         title: "Error",
         description: "Failed to save task flow settings",
@@ -98,111 +225,234 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
     }
   };
 
-  const updateConfirmation = (
-    index: number,
-    field: keyof ConfirmationConfig,
-    value: any
-  ) => {
-    const updated = [...flowConfig];
+  const updateConfirmation = (index: number, field: keyof ConfirmationConfig, value: any) => {
+    const updated = [...confirmations];
     updated[index] = { ...updated[index], [field]: value };
-    setFlowConfig(updated);
+    setConfirmations(updated);
   };
 
   const addConfirmation = () => {
-    const maxSequence = Math.max(...flowConfig.map((c) => c.sequence), 0);
-    const newConfirmation: ConfirmationConfig = {
-      sequence: maxSequence + 1,
-      hours_before: 12,
-      label: "New Confirmation",
-      assigned_role: "setter",
-      enabled: true,
-    };
-    setFlowConfig([...flowConfig, newConfirmation]);
+    const newSequence = Math.max(...confirmations.map(c => c.sequence), 0) + 1;
+    setConfirmations([
+      ...confirmations,
+      {
+        sequence: newSequence,
+        hours_before: 12,
+        label: "New Confirmation",
+        assigned_role: "setter",
+        enabled: true,
+      },
+    ]);
   };
 
-  const removeConfirmation = (index: number) => {
-    if (flowConfig.length <= 1) {
-      toast({
-        title: "Cannot Remove",
-        description: "Must have at least one confirmation",
-        variant: "destructive",
-      });
-      return;
-    }
-    const updated = flowConfig.filter((_, i) => i !== index);
+  const deleteConfirmation = (index: number) => {
+    const updated = confirmations.filter((_, i) => i !== index);
     // Resequence
-    updated.forEach((conf, idx) => {
-      conf.sequence = idx + 1;
+    updated.forEach((conf, i) => {
+      conf.sequence = i + 1;
     });
-    setFlowConfig(updated);
+    setConfirmations(updated);
   };
 
-  const reorderConfirmations = (newOrder: ConfirmationConfig[]) => {
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = confirmations.findIndex(c => c.sequence.toString() === active.id);
+    const newIndex = confirmations.findIndex(c => c.sequence.toString() === over.id);
+
+    const reordered = arrayMove(confirmations, oldIndex, newIndex);
     // Resequence
-    newOrder.forEach((conf, idx) => {
-      conf.sequence = idx + 1;
+    reordered.forEach((conf, i) => {
+      conf.sequence = i + 1;
     });
-    setFlowConfig(newOrder);
+    setConfirmations(reordered);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
+  const enabledCount = confirmations.filter(c => c.enabled).length;
+
   return (
     <div className="space-y-6">
-      <Card>
+      {/* Visual Timeline Preview */}
+      <Card className="bg-gradient-to-r from-primary/5 to-info/5">
         <CardHeader>
-          <CardTitle>Confirmation Flow</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            Confirmation Flow Timeline
+          </CardTitle>
           <CardDescription>
-            Configure when confirmations happen and who handles them. Visual timeline shows the flow from booking to appointment.
+            Visual preview of your confirmation workflow from booking to appointment time
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <ConfirmationTimeline
-            confirmations={flowConfig}
-            onUpdate={updateConfirmation}
-            onRemove={removeConfirmation}
-            onReorder={reorderConfirmations}
-          />
+        <CardContent>
+          <div className="relative py-8">
+            {/* Timeline Line */}
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-border -translate-y-1/2"></div>
+            
+            {/* Timeline Nodes */}
+            <div className="relative flex justify-between items-center">
+              {/* Booking Node */}
+              <div className="flex flex-col items-center z-10">
+                <div className="w-4 h-4 rounded-full bg-success mb-2"></div>
+                <span className="text-xs font-medium">Booked</span>
+              </div>
 
-          <Button
-            onClick={addConfirmation}
-            variant="outline"
-            size="sm"
-            className="w-full"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Confirmation Step
+              {/* Confirmation Nodes */}
+              {confirmations
+                .filter(c => c.enabled)
+                .sort((a, b) => b.hours_before - a.hours_before)
+                .map((conf) => (
+                  <div key={conf.sequence} className="flex flex-col items-center z-10">
+                    <div className={`w-4 h-4 rounded-full mb-2 ${
+                      conf.assigned_role === "setter" 
+                        ? "bg-primary" 
+                        : conf.assigned_role === "closer"
+                        ? "bg-info"
+                        : "bg-muted"
+                    }`}></div>
+                    <span className="text-xs font-medium">{conf.label}</span>
+                    <Badge variant="outline" className="mt-1 text-xs">
+                      {conf.assigned_role === "setter" ? "Setter" : "Closer"}
+                    </Badge>
+                  </div>
+                ))}
+
+              {/* Appointment Node */}
+              <div className="flex flex-col items-center z-10">
+                <div className="w-4 h-4 rounded-full bg-chart-2 mb-2"></div>
+                <span className="text-xs font-medium">Appointment</span>
+              </div>
+            </div>
+          </div>
+
+          {enabledCount === 0 && (
+            <div className="text-center text-sm text-destructive mt-4">
+              ⚠️ Warning: No confirmations are enabled. Enable at least one confirmation below.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Confirmation Cards */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Confirmation Tasks</CardTitle>
+          <CardDescription>
+            Configure when confirmations happen and who handles them. Drag to reorder.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={confirmations.map(c => c.sequence.toString())} strategy={verticalListSortingStrategy}>
+              {confirmations.map((conf, index) => (
+                <ConfirmationCard
+                  key={conf.sequence}
+                  confirmation={conf}
+                  index={index}
+                  onUpdate={updateConfirmation}
+                  onDelete={deleteConfirmation}
+                  canDelete={confirmations.length > 1}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+
+          <Button onClick={addConfirmation} variant="outline" className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Confirmation Point
           </Button>
         </CardContent>
       </Card>
 
-      <TaskTypeDefaults
-        defaultRouting={defaultRouting}
-        onChange={setDefaultRouting}
-      />
+      {/* Default Task Routing */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Default Task Assignment</CardTitle>
+          <CardDescription>
+            Set default role assignments for other task types
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Follow-up Tasks</Label>
+              <p className="text-sm text-muted-foreground">Who handles follow-up tasks by default</p>
+            </div>
+            <Select
+              value={defaultRouting.follow_up}
+              onValueChange={(value: "setter" | "closer") => 
+                setDefaultRouting({ ...defaultRouting, follow_up: value })
+              }
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="setter">Setter</SelectItem>
+                <SelectItem value="closer">Closer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        className="w-full"
-      >
-        {saving ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          <>
-            <Save className="mr-2 h-4 w-4" />
-            Save Task Flow Configuration
-          </>
-        )}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Reschedule Tasks</Label>
+              <p className="text-sm text-muted-foreground">Who handles reschedule requests</p>
+            </div>
+            <Select
+              value={defaultRouting.reschedule}
+              onValueChange={(value: "setter" | "closer") => 
+                setDefaultRouting({ ...defaultRouting, reschedule: value })
+              }
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="setter">Setter</SelectItem>
+                <SelectItem value="closer">Closer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Manual Tasks</Label>
+              <p className="text-sm text-muted-foreground">Who handles manually created tasks</p>
+            </div>
+            <Select
+              value={defaultRouting.manual_task}
+              onValueChange={(value: "setter" | "closer") => 
+                setDefaultRouting({ ...defaultRouting, manual_task: value })
+              }
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="setter">Setter</SelectItem>
+                <SelectItem value="closer">Closer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Save Button */}
+      <Button onClick={handleSave} disabled={saving || enabledCount === 0} className="w-full">
+        {saving ? "Saving..." : "Save Task Flow Settings"}
       </Button>
     </div>
   );
