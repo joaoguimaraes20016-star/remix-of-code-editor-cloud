@@ -188,7 +188,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
   return (
     <div className="space-y-12 max-w-7xl">
       {/* Welcome Banner with Stats */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 border border-primary/40 p-16 shadow-xl shadow-primary/10">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 border border-primary/40 p-4 sm:p-8 md:p-12 lg:p-16 shadow-xl shadow-primary/10">
         <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
         <div className="relative z-10 flex items-start justify-between">
           <div className="flex-1">
@@ -197,7 +197,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                 <Input
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="text-5xl font-bold h-auto py-4 bg-background/50 border-primary/40"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold h-auto py-4 bg-background/50 border-primary/40"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveName();
@@ -220,7 +220,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                 </Button>
               </div>
             ) : (
-              <h2 className="text-6xl font-bold mb-6 flex items-center gap-4">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 flex items-center gap-4">
                 <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   {teamName}
                 </span>
@@ -236,17 +236,17 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                 )}
               </h2>
             )}
-            <p className="text-2xl text-muted-foreground mb-6">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground mb-6">
               Everything you need to succeed, all in one place
             </p>
             <div className="flex items-center gap-8 mt-8">
               <div className="flex items-center gap-3 px-6 py-4 rounded-full bg-background/50 backdrop-blur-sm border border-border/50">
                 <FileText className="h-6 w-6 text-primary" />
-                <span className="text-lg font-medium">{assets.length} Assets</span>
+                <span className="text-sm sm:text-base md:text-lg font-medium">{assets.length} Assets</span>
               </div>
               <div className="flex items-center gap-3 px-6 py-4 rounded-full bg-background/50 backdrop-blur-sm border border-border/50">
                 <Video className="h-6 w-6 text-primary" />
-                <span className="text-lg font-medium">{assets.filter(a => a.loom_url).length} Videos</span>
+                <span className="text-sm sm:text-base md:text-lg font-medium">{assets.filter(a => a.loom_url).length} Videos</span>
               </div>
             </div>
           </div>
@@ -254,7 +254,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
             <Button
               onClick={() => setUploadDialogOpen(true)}
               size="lg"
-              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl hover:scale-105 transition-all text-lg px-8 py-6"
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl hover:scale-105 transition-all text-sm sm:text-base md:text-lg px-4 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6"
             >
               <Plus className="h-6 w-6 mr-2" />
               Add Asset
@@ -266,7 +266,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
       {/* Sales Dashboard Flashcard */}
       <button
         onClick={() => navigate(`/team/${teamId}/sales`)}
-        className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500 border border-yellow-400/50 p-12 shadow-lg hover:shadow-2xl hover:shadow-yellow-500/50 transition-all hover:scale-[1.02] text-left w-full"
+        className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500 border border-yellow-400/50 p-6 sm:p-8 md:p-10 lg:p-12 shadow-lg hover:shadow-2xl hover:shadow-yellow-500/50 transition-all hover:scale-[1.02] text-left w-full"
       >
         <div className="absolute inset-0 bg-gradient-to-tr from-yellow-300/20 via-transparent to-yellow-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-radial from-yellow-300/40 to-transparent rounded-full blur-3xl" />
@@ -279,14 +279,14 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
             <div className="p-4 rounded-xl bg-white/25 border border-white/40 backdrop-blur-sm group-hover:bg-white/35 group-hover:scale-110 transition-all">
               <BarChart3 className="h-8 w-8 text-white" />
             </div>
-            <h3 className="text-4xl font-bold uppercase tracking-wide text-white drop-shadow-lg">
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-wide text-white drop-shadow-lg">
               Sales Dashboard
             </h3>
           </div>
-          <p className="text-xl text-white/95 ml-20 drop-shadow-md">
+          <p className="text-base sm:text-lg md:text-xl text-white/95 ml-0 sm:ml-20 drop-shadow-md">
             Track performance, view analytics & manage your sales pipeline
           </p>
-          <div className="flex items-center gap-3 mt-6 ml-20 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-2">
+          <div className="flex items-center gap-3 mt-6 ml-0 sm:ml-20 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-2">
             <div className="px-5 py-2 rounded-full bg-white/25 backdrop-blur-sm border border-white/40 shadow-lg">
               <span className="text-base font-semibold text-white">View Dashboard</span>
             </div>
@@ -298,14 +298,14 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
       {/* Complete Offer Section */}
       {(offerAssets.length > 0 || canManageAssets) && (
         <div className="space-y-6">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/5 via-background to-background border border-primary/20 p-12 shadow-lg hover:shadow-xl transition-all">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/5 via-background to-background border border-primary/20 p-6 sm:p-8 md:p-10 lg:p-12 shadow-lg hover:shadow-xl transition-all">
             <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl" />
             <div className="relative">
               <div className="flex items-center gap-4 mb-8">
-                <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
-                  <FileText className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-4xl font-bold uppercase tracking-wide">
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <FileText className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary" />
+              </div>
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-wide">
                   Complete Offer
                 </h3>
               </div>
@@ -314,7 +314,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                   <button
                     key={asset.id}
                     onClick={() => handleAssetClick(asset)}
-                    className="group w-full text-left px-8 py-6 rounded-xl bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all flex items-center justify-between hover:scale-[1.02] hover:shadow-lg"
+                    className="group w-full text-left px-4 py-4 sm:px-5 sm:py-5 md:px-6 md:py-5 lg:px-8 lg:py-6 rounded-xl bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all flex items-center justify-between hover:scale-[1.02] hover:shadow-lg"
                   >
                     <div className="flex items-center gap-6">
                       <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
@@ -326,7 +326,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                           <FileText className="h-7 w-7 text-primary" />
                         )}
                       </div>
-                      <span className="text-xl font-medium text-primary group-hover:underline">
+                      <span className="text-base sm:text-lg md:text-xl font-medium text-primary group-hover:underline">
                         {asset.title}
                       </span>
                     </div>
@@ -358,12 +358,12 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
       <div className="grid md:grid-cols-2 gap-8">
         {/* Scripts Section */}
         {(scriptAssets.length > 0 || canManageAssets) && (
-          <div className="group/card rounded-3xl bg-gradient-to-br from-card to-card/50 border border-border/50 p-8 hover:border-primary/30 transition-all shadow-md hover:shadow-xl">
+          <div className="group/card rounded-3xl bg-gradient-to-br from-card to-card/50 border border-border/50 p-4 sm:p-6 md:p-8 hover:border-primary/30 transition-all shadow-md hover:shadow-xl">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <FileText className="h-7 w-7 text-blue-500" />
-              </div>
-              <h3 className="text-3xl font-bold uppercase tracking-wide">
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <FileText className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-blue-500" />
+                </div>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold uppercase tracking-wide">
                 Scripts
               </h3>
             </div>
@@ -372,7 +372,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                 <button
                   key={asset.id}
                   onClick={() => handleAssetClick(asset)}
-                  className="group w-full text-left px-6 py-4 rounded-xl hover:bg-muted/50 transition-all flex items-center justify-between"
+                  className="group w-full text-left px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4 rounded-xl hover:bg-muted/50 transition-all flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4">
                     {asset.loom_url ? (
@@ -382,7 +382,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                     ) : (
                       <FileText className="h-6 w-6 text-blue-500" />
                     )}
-                    <span className="text-lg font-medium group-hover:text-primary group-hover:underline transition-colors">
+                    <span className="text-sm sm:text-base md:text-lg font-medium group-hover:text-primary group-hover:underline transition-colors">
                       {asset.title}
                     </span>
                   </div>
@@ -410,12 +410,12 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
 
         {/* Onboarding Section */}
         {(onboardingAssets.length > 0 || canManageAssets) && (
-          <div className="group/card rounded-3xl bg-gradient-to-br from-card to-card/50 border border-border/50 p-8 hover:border-primary/30 transition-all shadow-md hover:shadow-xl">
+          <div className="group/card rounded-3xl bg-gradient-to-br from-card to-card/50 border border-border/50 p-4 sm:p-6 md:p-8 hover:border-primary/30 transition-all shadow-md hover:shadow-xl">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                <FileText className="h-7 w-7 text-green-500" />
-              </div>
-              <h3 className="text-3xl font-bold uppercase tracking-wide">
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <FileText className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-green-500" />
+                </div>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold uppercase tracking-wide">
                 Onboarding
               </h3>
             </div>
@@ -424,7 +424,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                 <button
                   key={asset.id}
                   onClick={() => handleAssetClick(asset)}
-                  className="group w-full text-left px-6 py-4 rounded-xl hover:bg-muted/50 transition-all flex items-center justify-between"
+                  className="group w-full text-left px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4 rounded-xl hover:bg-muted/50 transition-all flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4">
                     {asset.loom_url ? (
@@ -434,7 +434,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                     ) : (
                       <FileText className="h-6 w-6 text-green-500" />
                     )}
-                    <span className="text-lg font-medium group-hover:text-primary group-hover:underline transition-colors">
+                    <span className="text-sm sm:text-base md:text-lg font-medium group-hover:text-primary group-hover:underline transition-colors">
                       {asset.title}
                     </span>
                   </div>
@@ -462,12 +462,12 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
 
         {/* Tracking Sheets Section */}
         {(trackingAssets.length > 0 || canManageAssets) && (
-          <div className="group/card rounded-3xl bg-gradient-to-br from-card to-card/50 border border-border/50 p-8 hover:border-primary/30 transition-all shadow-md hover:shadow-xl">
+          <div className="group/card rounded-3xl bg-gradient-to-br from-card to-card/50 border border-border/50 p-4 sm:p-6 md:p-8 hover:border-primary/30 transition-all shadow-md hover:shadow-xl">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                <FileText className="h-7 w-7 text-purple-500" />
-              </div>
-              <h3 className="text-3xl font-bold uppercase tracking-wide">
+                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <FileText className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-500" />
+                </div>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold uppercase tracking-wide">
                 Tracking Sheets
               </h3>
             </div>
@@ -476,7 +476,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                 <button
                   key={asset.id}
                   onClick={() => handleAssetClick(asset)}
-                  className="group w-full text-left px-6 py-4 rounded-xl hover:bg-muted/50 transition-all flex items-center justify-between"
+                  className="group w-full text-left px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4 rounded-xl hover:bg-muted/50 transition-all flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4">
                     {asset.loom_url ? (
@@ -486,7 +486,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                     ) : (
                       <FileText className="h-6 w-6 text-purple-500" />
                     )}
-                    <span className="text-lg font-medium group-hover:text-primary group-hover:underline transition-colors">
+                    <span className="text-sm sm:text-base md:text-lg font-medium group-hover:text-primary group-hover:underline transition-colors">
                       {asset.title}
                     </span>
                   </div>
@@ -514,12 +514,12 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
 
         {/* Training Section */}
         {(trainingAssets.length > 0 || canManageAssets) && (
-          <div className="group/card rounded-3xl bg-gradient-to-br from-card to-card/50 border border-border/50 p-8 hover:border-primary/30 transition-all shadow-md hover:shadow-xl">
+          <div className="group/card rounded-3xl bg-gradient-to-br from-card to-card/50 border border-border/50 p-4 sm:p-6 md:p-8 hover:border-primary/30 transition-all shadow-md hover:shadow-xl">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                <Video className="h-7 w-7 text-orange-500" />
-              </div>
-              <h3 className="text-3xl font-bold uppercase tracking-wide">
+                <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                  <Video className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-orange-500" />
+                </div>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold uppercase tracking-wide">
                 Training
               </h3>
             </div>
@@ -528,7 +528,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                 <button
                   key={asset.id}
                   onClick={() => handleAssetClick(asset)}
-                  className="group w-full text-left px-6 py-4 rounded-xl hover:bg-muted/50 transition-all flex items-center justify-between"
+                  className="group w-full text-left px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4 rounded-xl hover:bg-muted/50 transition-all flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4">
                     {asset.loom_url ? (
@@ -538,7 +538,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                     ) : (
                       <FileText className="h-6 w-6 text-orange-500" />
                     )}
-                    <span className="text-lg font-medium group-hover:text-primary group-hover:underline transition-colors">
+                    <span className="text-sm sm:text-base md:text-lg font-medium group-hover:text-primary group-hover:underline transition-colors">
                       {asset.title}
                     </span>
                   </div>
