@@ -39,17 +39,34 @@ export function FollowUpDialog({ open, onOpenChange, onConfirm, onSkip, dealName
   const loadTeamSettings = async () => {
     setLoading(true);
     try {
+      // Load the first enabled follow-up sequence for this stage
       const { data, error } = await supabase
-        .from('team_follow_up_settings')
+        .from('team_follow_up_flow_config')
         .select('*')
         .eq('team_id', teamId)
         .eq('pipeline_stage', stage)
+        .eq('enabled', true)
+        .order('sequence')
+        .limit(1)
         .maybeSingle();
 
+      if (error) throw error;
+
       if (data) {
-        setCreateFollowUp(data.suggest_follow_up);
-        setFollowUpDate(addDays(new Date(), data.default_days));
-        setFollowUpTime(data.default_time.slice(0, 5)); // Convert "10:00:00" to "10:00"
+        // Calculate follow-up date/time based on hours_after
+        const now = new Date();
+        const hoursToAdd = data.hours_after;
+        const targetDateTime = new Date(now.getTime() + (hoursToAdd * 60 * 60 * 1000));
+        
+        setCreateFollowUp(true);
+        setFollowUpDate(targetDateTime);
+        setFollowUpTime(format(targetDateTime, 'HH:mm'));
+      } else {
+        // Fallback to default values if no config found
+        const targetDate = addDays(new Date(), 1);
+        targetDate.setHours(10, 0, 0, 0);
+        setFollowUpDate(targetDate);
+        setFollowUpTime('10:00');
       }
     } catch (error) {
       console.error('Error loading follow-up settings:', error);

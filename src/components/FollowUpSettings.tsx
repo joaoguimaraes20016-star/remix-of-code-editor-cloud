@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Save } from 'lucide-react';
+import { Clock, Save, Plus } from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorUtils';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { FollowUpCard } from '@/components/task-flow/FollowUpCard';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface FollowUpSetting {
+interface FollowUpFlowConfig {
   id?: string;
   team_id: string;
   pipeline_stage: string;
-  default_days: number;
-  default_time: string;
-  suggest_follow_up: boolean;
+  sequence: number;
+  label: string;
+  hours_after: number;
+  assigned_role: string;
+  enabled: boolean;
 }
 
 interface FollowUpSettingsProps {
@@ -30,9 +35,21 @@ const STAGE_LABELS: Record<string, string> = {
 
 export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<FollowUpSetting[]>([]);
+  const [flowConfigs, setFlowConfigs] = useState<FollowUpFlowConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [openStages, setOpenStages] = useState<Record<string, boolean>>({
+    no_show: true,
+    canceled: false,
+    disqualified: false,
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     loadSettings();
@@ -41,29 +58,14 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
   const loadSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('team_follow_up_settings')
+        .from('team_follow_up_flow_config')
         .select('*')
         .eq('team_id', teamId)
-        .order('pipeline_stage');
+        .order('pipeline_stage, sequence');
 
       if (error) throw error;
 
-      // Ensure we have settings for all stages
-      const stages = ['no_show', 'canceled', 'disqualified'];
-      const existingStages = new Set(data?.map(s => s.pipeline_stage) || []);
-      
-      const allSettings: FollowUpSetting[] = stages.map(stage => {
-        const existing = data?.find(s => s.pipeline_stage === stage);
-        return existing || {
-          team_id: teamId,
-          pipeline_stage: stage,
-          default_days: stage === 'no_show' ? 1 : stage === 'canceled' ? 2 : 7,
-          default_time: '10:00:00',
-          suggest_follow_up: true,
-        };
-      });
-
-      setSettings(allSettings);
+      setFlowConfigs(data || []);
     } catch (error) {
       toast({
         title: 'Error loading settings',
@@ -75,29 +77,82 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
     }
   };
 
-  const updateSetting = (stage: string, field: keyof FollowUpSetting, value: any) => {
-    setSettings(prev =>
-      prev.map(s =>
-        s.pipeline_stage === stage ? { ...s, [field]: value } : s
-      )
+  const getStageConfigs = (stage: string) => {
+    return flowConfigs.filter(c => c.pipeline_stage === stage);
+  };
+
+  const updateConfig = (id: string, field: string, value: any) => {
+    setFlowConfigs(prev =>
+      prev.map(c => (c.id === id ? { ...c, [field]: value } : c))
     );
+  };
+
+  const addFollowUp = (stage: string) => {
+    const stageConfigs = getStageConfigs(stage);
+    const nextSequence = stageConfigs.length + 1;
+    
+    const newConfig: FollowUpFlowConfig = {
+      team_id: teamId,
+      pipeline_stage: stage,
+      sequence: nextSequence,
+      label: `Follow-Up #${nextSequence}`,
+      hours_after: 24,
+      assigned_role: 'setter',
+      enabled: true,
+    };
+
+    setFlowConfigs(prev => [...prev, newConfig]);
+  };
+
+  const removeFollowUp = (id: string) => {
+    setFlowConfigs(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent, stage: string) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const stageConfigs = getStageConfigs(stage);
+    const oldIndex = stageConfigs.findIndex(c => c.id === active.id);
+    const newIndex = stageConfigs.findIndex(c => c.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(stageConfigs, oldIndex, newIndex);
+    
+    // Update sequences
+    const updatedConfigs = reordered.map((config, index) => ({
+      ...config,
+      sequence: index + 1,
+    }));
+
+    // Replace configs for this stage
+    setFlowConfigs(prev => [
+      ...prev.filter(c => c.pipeline_stage !== stage),
+      ...updatedConfigs,
+    ]);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      for (const setting of settings) {
+      // Delete removed configs
+      const existingIds = flowConfigs.filter(c => c.id).map(c => c.id);
+      
+      // Upsert all configs
+      for (const config of flowConfigs) {
         const { error } = await supabase
-          .from('team_follow_up_settings')
+          .from('team_follow_up_flow_config')
           .upsert({
-            id: setting.id,
+            id: config.id,
             team_id: teamId,
-            pipeline_stage: setting.pipeline_stage,
-            default_days: setting.default_days,
-            default_time: setting.default_time,
-            suggest_follow_up: setting.suggest_follow_up,
-          }, {
-            onConflict: 'team_id,pipeline_stage'
+            pipeline_stage: config.pipeline_stage,
+            sequence: config.sequence,
+            label: config.label,
+            hours_after: config.hours_after,
+            assigned_role: config.assigned_role,
+            enabled: config.enabled,
           });
 
         if (error) throw error;
@@ -105,7 +160,7 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
 
       toast({
         title: 'Settings saved',
-        description: 'Follow-up defaults have been updated successfully',
+        description: 'Follow-up flow configurations have been updated successfully',
       });
 
       loadSettings(); // Reload to get IDs
@@ -130,78 +185,94 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
     );
   }
 
+  const renderStageSection = (stage: string, stageLabel: string) => {
+    const stageConfigs = getStageConfigs(stage).sort((a, b) => a.sequence - b.sequence);
+    const isOpen = openStages[stage];
+
+    return (
+      <Collapsible
+        key={stage}
+        open={isOpen}
+        onOpenChange={(open) => setOpenStages(prev => ({ ...prev, [stage]: open }))}
+        className="border rounded-lg"
+      >
+        <CollapsibleTrigger className="w-full">
+          <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-2">
+              <ChevronDown className={cn(
+                "h-4 w-4 transition-transform",
+                isOpen && "transform rotate-180"
+              )} />
+              <h3 className="font-semibold text-lg">{stageLabel}</h3>
+              <span className="text-sm text-muted-foreground">
+                ({stageConfigs.length} follow-up{stageConfigs.length !== 1 ? 's' : ''})
+              </span>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <div className="p-4 pt-0">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event) => handleDragEnd(event, stage)}
+            >
+              <SortableContext
+                items={stageConfigs.map(c => c.id || `temp-${c.sequence}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                {stageConfigs.map((config) => (
+                  <FollowUpCard
+                    key={config.id || `temp-${config.sequence}`}
+                    id={config.id || `temp-${config.sequence}`}
+                    sequence={config.sequence}
+                    label={config.label}
+                    hoursAfter={config.hours_after}
+                    assignedRole={config.assigned_role}
+                    enabled={config.enabled}
+                    stage={stage}
+                    onUpdate={(field, value) => updateConfig(config.id || `temp-${config.sequence}`, field, value)}
+                    onRemove={() => removeFollowUp(config.id || `temp-${config.sequence}`)}
+                    canRemove={stageConfigs.length > 1}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => addFollowUp(stage)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Follow-Up Attempt
+            </Button>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
   return (
     <Card className="border-primary/20 shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
-          Follow-Up Defaults
+          Follow-Up Flow Configuration
         </CardTitle>
         <CardDescription>
-          Configure default follow-up timing for each pipeline stage. Users can always override these when moving deals.
+          Configure multiple follow-up attempts for each pipeline stage with precise timing in hours. Create sophisticated follow-up sequences that automatically progress.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {settings.map((setting) => (
-          <div
-            key={setting.pipeline_stage}
-            className="p-4 rounded-lg border bg-card space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">
-                {STAGE_LABELS[setting.pipeline_stage] || setting.pipeline_stage}
-              </h3>
-              <div className="flex items-center gap-2">
-                <Label htmlFor={`suggest-${setting.pipeline_stage}`} className="text-sm">
-                  Auto-suggest follow-up
-                </Label>
-                <Switch
-                  id={`suggest-${setting.pipeline_stage}`}
-                  checked={setting.suggest_follow_up}
-                  onCheckedChange={(checked) =>
-                    updateSetting(setting.pipeline_stage, 'suggest_follow_up', checked)
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor={`days-${setting.pipeline_stage}`}>
-                  Default Days Until Follow-Up
-                </Label>
-                <Input
-                  id={`days-${setting.pipeline_stage}`}
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={setting.default_days}
-                  onChange={(e) =>
-                    updateSetting(setting.pipeline_stage, 'default_days', parseInt(e.target.value) || 1)
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor={`time-${setting.pipeline_stage}`}>
-                  Default Time
-                </Label>
-                <Input
-                  id={`time-${setting.pipeline_stage}`}
-                  type="time"
-                  value={setting.default_time.slice(0, 5)}
-                  onChange={(e) =>
-                    updateSetting(setting.pipeline_stage, 'default_time', e.target.value + ':00')
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        ))}
+      <CardContent className="space-y-4">
+        {renderStageSection('no_show', 'No Show Follow-Ups')}
+        {renderStageSection('canceled', 'Canceled Follow-Ups')}
+        {renderStageSection('disqualified', 'Disqualified Follow-Ups')}
 
         <Button onClick={handleSave} disabled={saving} className="w-full">
           <Save className="h-4 w-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Follow-Up Defaults'}
+          {saving ? 'Saving...' : 'Save Follow-Up Flow'}
         </Button>
       </CardContent>
     </Card>

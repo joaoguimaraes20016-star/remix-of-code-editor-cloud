@@ -460,6 +460,7 @@ export type Database = {
           due_at: string
           follow_up_date: string | null
           follow_up_reason: string | null
+          follow_up_sequence: number | null
           id: string
           is_overdue: boolean | null
           required_confirmations: number | null
@@ -484,6 +485,7 @@ export type Database = {
           due_at: string
           follow_up_date?: string | null
           follow_up_reason?: string | null
+          follow_up_sequence?: number | null
           id?: string
           is_overdue?: boolean | null
           required_confirmations?: number | null
@@ -508,6 +510,7 @@ export type Database = {
           due_at?: string
           follow_up_date?: string | null
           follow_up_reason?: string | null
+          follow_up_sequence?: number | null
           id?: string
           is_overdue?: boolean | null
           required_confirmations?: number | null
@@ -1085,6 +1088,53 @@ export type Database = {
           },
         ]
       }
+      team_follow_up_flow_config: {
+        Row: {
+          assigned_role: string
+          created_at: string | null
+          enabled: boolean | null
+          hours_after: number
+          id: string
+          label: string
+          pipeline_stage: string
+          sequence: number
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_role?: string
+          created_at?: string | null
+          enabled?: boolean | null
+          hours_after: number
+          id?: string
+          label: string
+          pipeline_stage: string
+          sequence: number
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_role?: string
+          created_at?: string | null
+          enabled?: boolean | null
+          hours_after?: number
+          id?: string
+          label?: string
+          pipeline_stage?: string
+          sequence?: number
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_follow_up_flow_config_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_follow_up_settings: {
         Row: {
           created_at: string
@@ -1512,6 +1562,7 @@ export type Database = {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
+      initialize_follow_up_flow_config: { Args: never; Returns: undefined }
       insert_appointments_batch: {
         Args: { appointments_data: Json }
         Returns: {

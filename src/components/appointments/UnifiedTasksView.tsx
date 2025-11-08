@@ -35,6 +35,7 @@ interface UnifiedTask {
   taskType?: string;
   followUpReason?: string;
   mrrAmount?: number;
+  follow_up_sequence?: number;
 }
 
 export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
@@ -197,6 +198,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             details: task.follow_up_reason || '',
             appointmentId: task.appointment_id,
             followUpReason: task.follow_up_reason,
+            follow_up_sequence: task.follow_up_sequence || 1,
           });
         });
       }
@@ -266,7 +268,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
     }
   };
 
-  const getTaskTypeBadge = (taskType: string, isMRRTask?: boolean) => {
+  const getTaskTypeBadge = (task: UnifiedTask, isMRRTask?: boolean) => {
     if (isMRRTask) {
       return (
         <Badge className="text-xs bg-emerald-500 hover:bg-emerald-600 text-white border-0">
@@ -276,7 +278,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       );
     }
     
-    switch (taskType) {
+    switch (task.type) {
       case 'call_confirmation':
         return (
           <Badge className="text-xs bg-blue-500 hover:bg-blue-600 text-white border-0">
@@ -285,10 +287,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           </Badge>
         );
       case 'follow_up':
+        const sequenceLabel = task.follow_up_sequence 
+          ? `${task.follow_up_sequence}${task.follow_up_sequence === 1 ? 'st' : task.follow_up_sequence === 2 ? 'nd' : task.follow_up_sequence === 3 ? 'rd' : 'th'} Follow-Up`
+          : 'Follow-Up';
         return (
           <Badge className="text-xs bg-purple-500 hover:bg-purple-600 text-white border-0">
             <RefreshCw className="h-3 w-3 mr-1" />
-            Follow-Up
+            {sequenceLabel}
           </Badge>
         );
       case 'reschedule':
@@ -569,7 +574,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                     {apt.event_type_name}
                   </Badge>
                 )}
-                {getTaskTypeBadge(task.type, isMRRTask)}
+                {getTaskTypeBadge(task, isMRRTask)}
                 {apt?.rescheduled_to_appointment_id && (
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -1013,7 +1018,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Task Type</Label>
-                  {getTaskTypeBadge(detailView.task.type, !!detailView.task.scheduleId)}
+                  {getTaskTypeBadge(detailView.task, !!detailView.task.scheduleId)}
                 </div>
               </div>
               {detailView.task.details && (
