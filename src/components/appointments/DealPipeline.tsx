@@ -227,7 +227,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     loadDeals();
 
     const appointmentsChannel = supabase
-      .channel(`deal-changes-${teamId}-${viewFilter}-${Date.now()}`)
+      .channel(`deal-changes-${teamId}-${viewFilter}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
@@ -243,7 +243,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       .subscribe();
 
     const stagesChannel = supabase
-      .channel(`stage-changes-${teamId}-${Date.now()}`)
+      .channel(`stage-changes-${teamId}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
@@ -368,6 +368,12 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
        targetStageData.stage_label.toLowerCase().includes('close'));
 
     if (isClosedStage) {
+      // Validate closer is assigned before moving to won
+      if (!appointment.closer_id) {
+        toast.error("Please assign a closer before closing this deal");
+        return;
+      }
+      
       // Move to closed stage
       await performStageMove(appointmentId, newStage, appointment);
       
@@ -465,6 +471,12 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
     // Check if moving to deposit stage
     if (newStage === "deposit" || targetStageData?.stage_label.toLowerCase().includes("deposit")) {
+      // Validate closer is assigned before moving to deposit
+      if (!appointment.closer_id) {
+        toast.error("Please assign a closer before moving to Deposit Collected stage");
+        return;
+      }
+      
       setDepositDialog({
         open: true,
         appointmentId,

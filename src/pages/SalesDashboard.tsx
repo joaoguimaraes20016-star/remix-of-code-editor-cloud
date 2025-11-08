@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { DollarSign, TrendingUp, Users, Calendar, ArrowLeft, Settings } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
@@ -830,16 +831,35 @@ const Index = () => {
                   }} />
                 </div>
               </div>
-              <SalesTable 
-                sales={filteredSales} 
-                userRole={normalizedRole || userRole}
-                currentUserName={currentUserName}
-                teamMembers={teamMembers}
-                onSaleDeleted={() => {
-                  loadSales();
-                  loadAppointments();
-                }}
-              />
+              {filteredSales.length === 0 ? (
+                <Card className="p-12">
+                  <div className="text-center">
+                    <p className="text-muted-foreground mb-4 text-lg">
+                      No sales recorded yet. Sales appear here when appointments reach the "Deposit Collected" or "Won" stages.
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Go to the <strong>Appointments</strong> tab to manage your pipeline and close deals.
+                    </p>
+                    <Button variant="outline" onClick={() => {
+                      const tabTrigger = document.querySelector('[data-state="inactive"][value="appointments"]') as HTMLElement;
+                      if (tabTrigger) tabTrigger.click();
+                    }}>
+                      View Appointments
+                    </Button>
+                  </div>
+                </Card>
+              ) : (
+                <SalesTable 
+                  sales={filteredSales} 
+                  userRole={normalizedRole || userRole}
+                  currentUserName={currentUserName}
+                  teamMembers={teamMembers}
+                  onSaleDeleted={() => {
+                    loadSales();
+                    loadAppointments();
+                  }}
+                />
+              )}
             </div>
           </TabsContent>
 
