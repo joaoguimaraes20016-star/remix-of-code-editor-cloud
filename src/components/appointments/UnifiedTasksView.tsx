@@ -133,9 +133,30 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       if (filterStatus === 'pending' || filterStatus === 'all' || filterStatus === 'completed') {
         const { data: confirmTasks } = await supabase
           .from('confirmation_tasks')
-          .select('*, appointment:appointments(start_at_utc, lead_name)')
+          .select('*, appointment:appointments(start_at_utc, lead_name, lead_email, lead_phone, rescheduled_to_appointment_id, pipeline_stage)')
           .eq('team_id', teamId)
           .in('status', statusFilter);
+
+        // Auto-complete tasks where client already rescheduled
+        if (confirmTasks) {
+          for (const task of confirmTasks) {
+            const appointment = task.appointment as any;
+            if (appointment?.rescheduled_to_appointment_id && 
+                (task.task_type === 'follow_up' || task.task_type === 'reschedule') &&
+                task.status === 'pending') {
+              
+              await supabase
+                .from('confirmation_tasks')
+                .update({
+                  status: 'completed',
+                  completed_at: new Date().toISOString(),
+                })
+                .eq('id', task.id);
+              
+              task.status = 'completed';
+            }
+          }
+        }
 
         // Fetch profile names separately
         const assignedUserIds = [...new Set(confirmTasks?.filter(t => t.assigned_to).map(t => t.assigned_to))];
@@ -200,7 +221,39 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
         });
       }
 
-      setTasks(unifiedTasks);
+      // Deduplicate tasks by lead email/phone
+      const tasksByLead = new Map<string, UnifiedTask>();
+      
+      unifiedTasks.forEach(task => {
+        const appointment = appointments.find(apt => apt.id === task.appointmentId);
+        if (!appointment && !task.scheduleId) {
+          tasksByLead.set(task.id, task);
+          return;
+        }
+        
+        const leadKey = appointment 
+          ? (appointment.lead_email || appointment.lead_phone || '').toLowerCase().trim()
+          : task.id;
+          
+        if (!leadKey || leadKey === '') {
+          tasksByLead.set(task.id, task);
+          return;
+        }
+        
+        const existingTask = tasksByLead.get(leadKey);
+        
+        if (!existingTask) {
+          tasksByLead.set(leadKey, task);
+        } else {
+          // Keep the task with earliest due date (most urgent)
+          if (task.dueDate < existingTask.dueDate) {
+            tasksByLead.set(leadKey, task);
+          }
+        }
+      });
+      
+      const deduplicatedTasks = Array.from(tasksByLead.values());
+      setTasks(deduplicatedTasks);
     } finally {
       setLoading(false);
     }
@@ -483,6 +536,12 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                   </Badge>
                 )}
                 {getTaskTypeBadge(task.type, isMRRTask)}
+                {apt?.rescheduled_to_appointment_id && (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Client Rescheduled
+                  </Badge>
+                )}
                 {isFollowUpFromOverdue && (
                   <Badge variant="outline" className="text-xs border-orange-500 text-orange-700 dark:text-orange-400">
                     <AlertCircle className="h-3 w-3 mr-1" />
