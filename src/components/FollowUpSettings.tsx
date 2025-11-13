@@ -21,6 +21,7 @@ interface FollowUpAttempt {
   timeValue: number;
   timeUnit: 'hours' | 'days';
   role: string;
+  requireNoStatusChange: boolean;
 }
 
 const DEFAULT_STAGES = [
@@ -132,13 +133,14 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
             timeUnit = 'hours';
           }
           
-          loadedSettings[config.pipeline_stage].push({
-            sequence: config.sequence,
-            enabled: config.enabled,
-            timeValue,
-            timeUnit,
-            role: config.assigned_role,
-          });
+        loadedSettings[config.pipeline_stage].push({
+          sequence: config.sequence,
+          enabled: config.enabled,
+          timeValue,
+          timeUnit,
+          role: config.assigned_role,
+          requireNoStatusChange: config.require_no_status_change_for_next ?? true,
+        });
         });
         
         setSettings(prev => ({ ...DEFAULT_ATTEMPTS, ...loadedSettings }));
