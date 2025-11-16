@@ -1,5 +1,8 @@
 project_id = "inbvluddkutyfhsxfqco"
 
+[functions.auto-create-tasks]
+verify_jwt = false
+
 [functions.data-integrity-check]
 verify_jwt = true
 
