@@ -80,7 +80,8 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
 
   useEffect(() => {
     // Auto-select if preselected or if there's only one offer owner
-    const offerOwners = teamMembers.filter(m => m.role === 'offer_owner' || m.role === 'admin');
+    // ONLY select people with the 'offer_owner' role, not admins
+    const offerOwners = teamMembers.filter(m => m.role === 'offer_owner');
     
     if (preselectedOfferOwner && !offerOwnerId) {
       const preselected = offerOwners.find(o => o.full_name === preselectedOfferOwner);
@@ -289,7 +290,8 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
             <div className="grid gap-2">
               <Label htmlFor="offerOwner">Offer Owner</Label>
               {(() => {
-                const offerOwners = teamMembers.filter(m => m.role === 'offer_owner' || m.role === 'admin');
+                // ONLY show people with the 'offer_owner' role
+                const offerOwners = teamMembers.filter(m => m.role === 'offer_owner');
                 if (offerOwners.length === 1) {
                   return (
                     <Input
