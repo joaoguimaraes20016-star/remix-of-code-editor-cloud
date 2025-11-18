@@ -25,9 +25,9 @@ export function CommissionBreakdown({ sales }: CommissionBreakdownProps) {
       return acc;
     }, {} as Record<string, { totalCommission: number; totalRevenue: number; salesCount: number }>);
 
-  // Calculate setter commission totals (exclude zero commissions and offer owners)
+  // Calculate setter commission totals (exclude zero commissions, empty setters, and offer owners)
   const setterCommissions = sales
-    .filter(s => s.status === 'closed' && s.setterCommission > 0 && s.setter !== s.offerOwner)
+    .filter(s => s.status === 'closed' && s.setterCommission > 0 && s.setter && s.setter.trim() !== '' && s.setter !== s.offerOwner)
     .reduce((acc, sale) => {
       if (!acc[sale.setter]) {
         acc[sale.setter] = {
