@@ -8,9 +8,9 @@ interface CommissionBreakdownProps {
 }
 
 export function CommissionBreakdown({ sales }: CommissionBreakdownProps) {
-  // Calculate closer commission totals (exclude zero commissions)
+  // Calculate closer commission totals (exclude zero commissions and offer owners)
   const closerCommissions = sales
-    .filter(s => s.status === 'closed' && s.commission > 0)
+    .filter(s => s.status === 'closed' && s.commission > 0 && s.salesRep !== s.offerOwner)
     .reduce((acc, sale) => {
       if (!acc[sale.salesRep]) {
         acc[sale.salesRep] = {
@@ -25,9 +25,9 @@ export function CommissionBreakdown({ sales }: CommissionBreakdownProps) {
       return acc;
     }, {} as Record<string, { totalCommission: number; totalRevenue: number; salesCount: number }>);
 
-  // Calculate setter commission totals (exclude zero commissions)
+  // Calculate setter commission totals (exclude zero commissions and offer owners)
   const setterCommissions = sales
-    .filter(s => s.status === 'closed' && s.setterCommission > 0)
+    .filter(s => s.status === 'closed' && s.setterCommission > 0 && s.setter !== s.offerOwner)
     .reduce((acc, sale) => {
       if (!acc[sale.setter]) {
         acc[sale.setter] = {

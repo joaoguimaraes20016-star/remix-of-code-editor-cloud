@@ -137,27 +137,41 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
       // 1. The appointment is scheduled today, OR
       // 2. The appointment has a task due today
       
-      // First, get all appointment IDs with tasks due today
+      // First, get all appointment IDs with tasks due today or overdue
       let tasksQuery = supabase
         .from('confirmation_tasks')
-        .select('appointment_id')
+        .select('appointment_id, is_overdue, due_at')
         .eq('team_id', teamId)
-        .eq('status', 'pending')
-        .gte('due_at', startOfToday)
-        .lte('due_at', endOfToday);
+        .eq('status', 'pending');
 
       // For setters, only get tasks assigned to them
       if (targetRole === 'setter') {
         tasksQuery = tasksQuery.eq('assigned_to', targetUserId);
       }
-
-      const { data: tasksDueToday } = await tasksQuery;
+      
+      const { data: allPendingTasks } = await tasksQuery;
+      
+      // Filter for tasks due today OR overdue
+      const endOfTodayDate = endOfDay(new Date());
+      const tasksDueTodayOrOverdue = (allPendingTasks || []).filter(task => {
+        if (!task.appointment_id) return false;
+        // Show if overdue
+        if (task.is_overdue) return true;
+        // Or if due_at is today or earlier
+        if (!task.due_at) return true; // backwards compatibility
+        try {
+          const dueDate = parseISO(task.due_at);
+          return dueDate <= endOfTodayDate;
+        } catch {
+          return false;
+        }
+      });
 
       const appointmentIdsWithTasksDueToday = new Set(
-        (tasksDueToday || []).map(t => t.appointment_id)
+        tasksDueTodayOrOverdue.map(t => t.appointment_id)
       );
 
-      console.log('[TodaysDashboard] Tasks due today:', {
+      console.log('[TodaysDashboard] Tasks due today or overdue:', {
         count: appointmentIdsWithTasksDueToday.size,
         ids: Array.from(appointmentIdsWithTasksDueToday)
       });
@@ -258,32 +272,32 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           }))
         });
         
-        // CRITICAL: Apply 48-hour filter to tasks
+        // Filter tasks: Show if due today OR overdue
         const now = new Date();
-        const fortyEightHoursFromNow = new Date(now.getTime() + (48 * 60 * 60 * 1000));
+        const endOfTodayDate = endOfDay(now);
         const filteredTasks = (tasks || []).filter(task => {
           if (!task.due_at) return true; // Show tasks without due_at (backwards compatibility)
           
           try {
             const dueDate = parseISO(task.due_at);
-            const shouldShow = dueDate <= fortyEightHoursFromNow || task.is_overdue;
+            // Show if: task is overdue OR due today (up to end of today)
+            const shouldShow = task.is_overdue || dueDate <= endOfTodayDate;
             
-            console.log(`[TodaysDashboard 48h Filter] Task ${task.id}:`, {
+            console.log(`[TodaysDashboard Today Filter] Task ${task.id}:`, {
               due_at: task.due_at,
-              hours_until_due: ((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60)).toFixed(2),
-              within_48h: dueDate <= fortyEightHoursFromNow,
               is_overdue: task.is_overdue,
+              due_today: dueDate <= endOfTodayDate,
               shouldShow
             });
             
             return shouldShow;
           } catch (error) {
-            console.error('[TodaysDashboard 48h Filter ERROR]:', error);
+            console.error('[TodaysDashboard Filter ERROR]:', error);
             return false; // Fail closed - don't show tasks that can't be parsed
           }
         });
         
-        console.log('[TodaysDashboard] Tasks loaded (AFTER 48h filter):', {
+        console.log('[TodaysDashboard] Tasks loaded (AFTER today filter):', {
           before: tasks?.length || 0,
           after: filteredTasks.length
         });
