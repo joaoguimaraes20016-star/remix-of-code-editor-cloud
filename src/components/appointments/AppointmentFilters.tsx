@@ -99,6 +99,8 @@ export function AppointmentFilters({
 
       const membersData = await membersResponse.json();
       const members = membersData.collection || [];
+      console.log(`[AppointmentFilters] Found ${members.length} organization members`);
+      console.log(`[AppointmentFilters] Selected event type URIs:`, selectedEventTypeUris);
 
       const allEventTypesMap = new Map<string, { uri: string; name: string }>();
       
@@ -137,7 +139,7 @@ export function AppointmentFilters({
 
       // Fetch organization-level event types (includes Round Robin)
       try {
-        console.log('Fetching organization-level event types...');
+        console.log('[AppointmentFilters] Fetching organization-level event types (Round Robin)...');
         const orgEventTypesResponse = await fetch(
           `https://api.calendly.com/event_types?organization=${encodeURIComponent(orgUri)}&count=100`,
           {
@@ -152,9 +154,13 @@ export function AppointmentFilters({
           const orgEventTypesData = await orgEventTypesResponse.json();
           const orgEventTypes = orgEventTypesData.collection || [];
           
+          console.log(`[AppointmentFilters] Found ${orgEventTypes.length} org-level event types`);
+          console.log(`[AppointmentFilters] Round Robin events found:`, orgEventTypes.filter((et: any) => et.pooling_type === 'round_robin').length);
+          
           orgEventTypes.forEach((et: any) => {
             // Only include if selected by admin
             if (selectedEventTypeUris.includes(et.uri)) {
+              console.log(`[AppointmentFilters] Adding org-level event type: ${et.name} (${et.pooling_type || 'single'})`);
               allEventTypesMap.set(et.uri, {
                 uri: et.uri,
                 name: et.name,
@@ -163,8 +169,11 @@ export function AppointmentFilters({
           });
         }
       } catch (error) {
-        console.error('Error fetching org-level event types:', error);
+        console.error('[AppointmentFilters] Error fetching org-level event types:', error);
       }
+
+      console.log(`[AppointmentFilters] Total event types in map: ${allEventTypesMap.size}`);
+      console.log(`[AppointmentFilters] Event types:`, Array.from(allEventTypesMap.values()).map(et => et.name));
 
       // Get appointment counts for each event type
       const { data: appointments, error: appointmentsError } = await supabase
