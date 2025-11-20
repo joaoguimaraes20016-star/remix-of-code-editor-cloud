@@ -137,13 +137,47 @@ export function CalendlyConfig({
     }
   }, [isConnected, currentAccessToken, currentOrgUri]);
 
+  // Auto-migrate old URLs on mount
   useEffect(() => {
-    // Clean up selectedEventTypes to only include API URIs (not scheduling_url)
+    const hasOldFormatUrls = (currentEventTypes || []).some(uri => 
+      !uri.includes('/event_types/')
+    );
+    
+    if (hasOldFormatUrls && currentAccessToken && isConnected) {
+      console.log('🔄 Auto-migrating old-format URLs to API URIs...');
+      
+      supabase.functions.invoke('migrate-event-type-urls', {
+        body: { teamId }
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error('Auto-migration error:', error);
+          toast({
+            title: "Migration Needed",
+            description: "Click 'Fix Now' to update event type URLs",
+            variant: "destructive",
+          });
+        } else if (data?.migratedCount > 0) {
+          console.log(`✓ Auto-migrated ${data.migratedCount} event types`);
+          toast({
+            title: "Event Types Updated",
+            description: `${data.migratedCount} event type${data.migratedCount === 1 ? '' : 's'} migrated to new format`,
+          });
+          // Reload to fetch with new URIs
+          setTimeout(() => {
+            onUpdate();
+          }, 500);
+        }
+      }).catch(error => {
+        console.error('Migration failed:', error);
+      });
+    }
+    
+    // Set clean URIs only
     const cleanedEventTypes = (currentEventTypes || []).filter(uri => 
       uri.includes('/event_types/')
     );
     setSelectedEventTypes(cleanedEventTypes);
-  }, [currentEventTypes]);
+  }, [currentEventTypes, currentAccessToken, isConnected, teamId, onUpdate, toast]);
 
   const fetchEventTypes = async () => {
     if (!currentAccessToken || !currentOrgUri || tokenRefreshInProgress) return;
