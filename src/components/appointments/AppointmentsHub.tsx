@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar, Plus, CheckSquare } from "lucide-react";
+import { Calendar, Plus, CheckSquare, AlertCircle, RefreshCw } from "lucide-react";
 import { CreateTaskDialog } from "./CreateTaskDialog";
 import { NewAppointments } from "@/components/NewAppointments";
 import { MyClaimed } from "@/components/MyClaimed";
@@ -71,6 +72,7 @@ export function AppointmentsHub({
   }>({ calendlyEventTypes: [], calendlyAccessToken: null, calendlyOrgUri: null });
   const [loadingCalendlySettings, setLoadingCalendlySettings] = useState(true);
   const [availableEventTypes, setAvailableEventTypes] = useState<any[]>([]);
+  const [calendlyLoadError, setCalendlyLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -130,9 +132,16 @@ export function AppointmentsHub({
       
       const validEventTypes = eventTypes.filter(Boolean);
       console.log('[AppointmentsHub] Valid event types fetched:', validEventTypes.length);
-      setAvailableEventTypes(validEventTypes);
+      
+      if (validEventTypes.length === 0) {
+        setCalendlyLoadError('No active event types found. Please check your Calendly settings.');
+      } else {
+        setAvailableEventTypes(validEventTypes);
+        setCalendlyLoadError(null);
+      }
     } catch (error) {
       console.error('[AppointmentsHub] Error fetching event type details:', error);
+      setCalendlyLoadError('Failed to load booking links. Please try again.');
     }
   };
 
@@ -176,6 +185,7 @@ export function AppointmentsHub({
   const handleRefreshCalendlySettings = async () => {
     console.log('[AppointmentsHub] Refreshing Calendly settings...');
     setAvailableEventTypes([]);
+    setCalendlyLoadError(null);
     await loadTeamCalendlySettings();
   };
 
@@ -315,6 +325,19 @@ export function AppointmentsHub({
                 <h3 className="text-lg font-semibold mb-4">My Booking Link</h3>
                 {loadingCalendlySettings ? (
                   <div className="text-sm text-muted-foreground">Loading settings...</div>
+                ) : calendlyLoadError ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3 text-destructive mb-4">
+                        <AlertCircle className="h-5 w-5" />
+                        <p className="font-medium">{calendlyLoadError}</p>
+                      </div>
+                      <Button onClick={handleRefreshCalendlySettings} variant="outline" size="sm">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ) : (
                   <SetterBookingLinks
                     teamId={teamId}
@@ -325,6 +348,7 @@ export function AppointmentsHub({
                     onRefresh={handleRefreshCalendlySettings}
                     currentUserId={user?.id}
                     isOwner={false}
+                    parentLoadingComplete={!loadingCalendlySettings}
                   />
                 )}
               </div>

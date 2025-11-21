@@ -32,9 +32,10 @@ interface SetterBookingLinksProps {
   onRefresh?: () => void;
   currentUserId?: string;
   isOwner?: boolean;
+  parentLoadingComplete?: boolean;
 }
 
-export function SetterBookingLinks({ teamId, calendlyEventTypes, availableEventTypes = [], calendlyAccessToken, calendlyOrgUri, onRefresh, currentUserId, isOwner = false }: SetterBookingLinksProps) {
+export function SetterBookingLinks({ teamId, calendlyEventTypes, availableEventTypes = [], calendlyAccessToken, calendlyOrgUri, onRefresh, currentUserId, isOwner = false, parentLoadingComplete = false }: SetterBookingLinksProps) {
   const [members, setMembers] = useState<TeamMemberWithBooking[]>([]);
   const [editingCodes, setEditingCodes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,8 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, availableEventT
       hasOrgUri: !!calendlyOrgUri,
       parentEventTypes: availableEventTypes?.length || 0,
       currentEventTypes: eventTypeDetails.length,
-      fetchingEventTypes
+      fetchingEventTypes,
+      parentLoadingComplete
     });
 
     // Use parent event types if available
@@ -68,8 +70,16 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, availableEventT
       return;
     }
     
+    // If parent finished loading but returned empty array, show error
+    if (parentLoadingComplete && (!availableEventTypes || availableEventTypes.length === 0)) {
+      console.warn('[SetterBookingLinks] ⚠️ Parent loading complete but no event types available');
+      setFetchError('No booking links available. Please configure event types in Team Settings.');
+      setFetchingEventTypes(false);
+      return;
+    }
+    
     // Try to fetch if we have credentials but no event details
-    if (calendlyAccessToken && calendlyOrgUri && eventTypeDetails.length === 0 && !fetchingEventTypes) {
+    if (calendlyAccessToken && calendlyOrgUri && eventTypeDetails.length === 0 && !fetchingEventTypes && !parentLoadingComplete) {
       console.log('[SetterBookingLinks] No parent event types, will fetch from API');
       setFetchingEventTypes(true);
       
@@ -82,7 +92,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, availableEventT
         if (fetchingEventTypes) {
           console.warn('[SetterBookingLinks] ⚠️ Loading timeout reached after 10s');
           setLoadingTimeout(true);
-          setFetchError('Loading is taking longer than expected');
+          setFetchError('Loading is taking longer than expected. Please refresh or check Team Settings.');
           setFetchingEventTypes(false);
         }
       }, 10000);
@@ -92,7 +102,7 @@ export function SetterBookingLinks({ teamId, calendlyEventTypes, availableEventT
         clearTimeout(loadingTimer);
       };
     }
-  }, [calendlyAccessToken, calendlyOrgUri, availableEventTypes]);
+  }, [calendlyAccessToken, calendlyOrgUri, availableEventTypes, parentLoadingComplete]);
 
   const fetchEventTypeNames = async () => {
     if (!calendlyAccessToken || !calendlyOrgUri) {
