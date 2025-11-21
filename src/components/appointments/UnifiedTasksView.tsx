@@ -639,14 +639,17 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                <span className={isUpcoming ? "text-base font-semibold text-orange-600 dark:text-orange-400" : "text-base font-semibold"}>
+                <span className={isUpcoming ? "text-lg font-bold text-orange-600 dark:text-orange-400" : "text-lg font-bold"}>
                   Due {formatDateTimeWithTimezone(task.dueDate, 'MMM d, h:mm a')}
                 </span>
               </div>
               {task.appointmentDate && (
-                <span className="text-sm font-medium">
-                  Appt: {formatDateTimeWithTimezone(task.appointmentDate, 'MMM d, h:mm a')}
-                </span>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  <span className="text-base font-bold">
+                    Appt: {formatDateTimeWithTimezone(task.appointmentDate, 'MMM d, h:mm a')}
+                  </span>
+                </div>
               )}
             </div>
           </div>
