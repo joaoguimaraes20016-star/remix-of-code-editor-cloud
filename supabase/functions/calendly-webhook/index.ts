@@ -509,6 +509,7 @@ serve(async (req) => {
                 
                 appointmentData.setter_id = teamMemberData.user_id;
                 appointmentData.setter_name = profile?.full_name || 'Unknown';
+                appointmentData.booking_code = bookingCode; // Store the booking code!
                 console.log(`Auto-assigned to setter: ${profile?.full_name} (${bookingCode})`);
               } else {
                 console.log('No team member found for booking code:', bookingCode);
@@ -652,6 +653,7 @@ serve(async (req) => {
         closer_name: appointmentData.closer_name || null,
         setter_id: appointmentData.setter_id || null,
         setter_name: appointmentData.setter_name || null,
+        booking_code: appointmentData.booking_code || null, // Include booking code
         status: appointmentData.status,
         event_type_uri: appointmentData.event_type_uri || null,
         event_type_name: appointmentData.event_type_name || null,
