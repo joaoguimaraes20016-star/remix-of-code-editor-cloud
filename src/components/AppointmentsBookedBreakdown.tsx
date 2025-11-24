@@ -305,6 +305,20 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
         .eq('team_id', teamId);
 
       if (error) throw error;
+      
+      // Fetch booking codes for team members to verify personal link usage
+      const { data: teamMembersData } = await supabase
+        .from('team_members')
+        .select('user_id, booking_code')
+        .eq('team_id', teamId)
+        .not('booking_code', 'is', null);
+      
+      const bookingCodeMap = new Map<string, string>();
+      teamMembersData?.forEach(tm => {
+        if (tm.booking_code) {
+          bookingCodeMap.set(tm.user_id, tm.booking_code);
+        }
+      });
 
       // Fetch all completed confirmation tasks to track confirmed appointments
       const { data: confirmedTasks, error: tasksError } = await supabase
@@ -347,13 +361,15 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           const showed = apt.status !== 'NO_SHOW' && apt.status !== 'CANCELLED';
           const closed = apt.status === 'CLOSED';
           
-          // Only count as "booked" if it actually came from their booking link
-          // Must have BOTH: correct assignment_source AND calendly_invitee_uri (proves it came from Calendly)
-          const wasActuallyBookedThroughLink = 
-            (apt.assignment_source === 'calendly' || apt.assignment_source === 'booking_link') && 
+          // Only count as "booked" if it came from THEIR SPECIFIC booking link
+          // Must have: their booking_code AND calendly_invitee_uri (proves it came from their personal Calendly link)
+          const setterBookingCode = bookingCodeMap.get(apt.setter_id);
+          const cameFromTheirPersonalLink = 
+            setterBookingCode && 
+            apt.booking_code === setterBookingCode && 
             apt.calendly_invitee_uri != null;
           
-          if (wasActuallyBookedThroughLink) {
+          if (cameFromTheirPersonalLink) {
             data.booked[0] += 1; // total
             
             if (createdDate >= monthStart) {

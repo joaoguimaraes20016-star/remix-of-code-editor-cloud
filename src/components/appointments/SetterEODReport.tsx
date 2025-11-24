@@ -76,9 +76,10 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
         { data: mrr },
         { data: overdue },
         { data: activity },
-        { data: noShowLogs }
+        { data: noShowLogs },
+        { data: teamMembersData }
       ] = await Promise.all([
-        // Load appointments booked in period
+        // Load appointments booked in period - only those from their specific booking link
         supabase
           .from('appointments')
           .select('*')
@@ -131,12 +132,27 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
           .eq('actor_id', userId)
           .eq('action_type', 'No Show')
           .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString())
+          .lte('created_at', endDate.toISOString()),
+        
+        // Get setter's booking code
+        supabase
+          .from('team_members')
+          .select('booking_code')
+          .eq('user_id', userId)
+          .maybeSingle()
       ]);
 
       const allTasks = tasks || [];
+      const setterBookingCode = teamMembersData?.booking_code;
       
-      setAppointmentsBooked(appts || []);
+      // Filter appointments to only those from their personal booking link
+      const appointmentsFromPersonalLink = (appts || []).filter(apt => 
+        setterBookingCode && 
+        apt.booking_code === setterBookingCode && 
+        apt.calendly_invitee_uri != null
+      );
+      
+      setAppointmentsBooked(appointmentsFromPersonalLink);
       setCallConfirmations(allTasks.filter(t => t.task_type === 'call_confirmation' && t.completed_at));
       setNoShows(noShowLogs || []);
       setReschedules(allTasks.filter(t => t.task_type === 'reschedule' && t.completed_at));
