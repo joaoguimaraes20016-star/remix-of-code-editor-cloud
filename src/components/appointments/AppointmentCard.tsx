@@ -143,17 +143,9 @@ export function AppointmentCard({
             >
               <ArrowRight className="h-3 w-3" />
               Rescheduled to New Time
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-5 px-1.5 ml-1 text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowRescheduleHistory(true);
-                }}
-              >
+              <span className="ml-1 px-1.5 py-0.5 bg-info/20 rounded text-xs font-medium hover:bg-info/30">
                 View
-              </Button>
+              </span>
             </Badge>
           )}
           
