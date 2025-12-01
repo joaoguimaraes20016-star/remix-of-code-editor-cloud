@@ -1416,6 +1416,7 @@ export type Database = {
           minimum_booking_notice_hours: number | null
           mrr_task_assignment: string | null
           name: string
+          no_answer_retry_minutes: number | null
           overdue_threshold_minutes: number | null
           setter_commission_percentage: number | null
           task_routing_config: Json | null
@@ -1444,6 +1445,7 @@ export type Database = {
           minimum_booking_notice_hours?: number | null
           mrr_task_assignment?: string | null
           name: string
+          no_answer_retry_minutes?: number | null
           overdue_threshold_minutes?: number | null
           setter_commission_percentage?: number | null
           task_routing_config?: Json | null
@@ -1472,6 +1474,7 @@ export type Database = {
           minimum_booking_notice_hours?: number | null
           mrr_task_assignment?: string | null
           name?: string
+          no_answer_retry_minutes?: number | null
           overdue_threshold_minutes?: number | null
           setter_commission_percentage?: number | null
           task_routing_config?: Json | null

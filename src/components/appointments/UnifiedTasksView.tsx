@@ -470,6 +470,19 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
 
   const handleNoAnswerRetry = async (taskId: string, appointmentId: string) => {
     try {
+      // Get team's retry minutes setting
+      const { data: teamSettings } = await supabase
+        .from('teams')
+        .select('no_answer_retry_minutes')
+        .eq('id', teamId)
+        .single();
+      
+      const retryMinutes = teamSettings?.no_answer_retry_minutes ?? 30;
+
+      // Get appointment time to check for overlap
+      const apt = appointments.find(a => a.id === appointmentId);
+      const appointmentTime = apt?.start_at_utc ? new Date(apt.start_at_utc) : null;
+      
       // Get current task data
       const { data: task, error: fetchError } = await supabase
         .from('confirmation_tasks')
@@ -483,12 +496,42 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       const newAttempt = {
         timestamp: new Date().toISOString(),
         confirmed_by: user?.id,
-        notes: 'No Answer - Retry scheduled',
+        notes: 'No Answer',
         type: 'no_answer'
       };
 
       const attempts = [...(Array.isArray(task?.confirmation_attempts) ? task.confirmation_attempts : []), newAttempt];
-      const newDueAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+      const newDueAt = new Date(Date.now() + retryMinutes * 60 * 1000);
+
+      // Check if retry would overlap with appointment time
+      if (appointmentTime && newDueAt >= appointmentTime) {
+        // Just log the attempt without rescheduling
+        const { error } = await supabase
+          .from('confirmation_tasks')
+          .update({
+            confirmation_attempts: attempts,
+          })
+          .eq('id', taskId);
+
+        if (error) throw error;
+
+        // Log activity
+        await supabase.from('activity_logs').insert({
+          team_id: teamId,
+          appointment_id: appointmentId,
+          actor_id: user?.id,
+          actor_name: 'Team Member',
+          action_type: 'No Answer',
+          note: 'No answer - retry skipped (too close to appointment)'
+        });
+
+        toast.warning('No answer recorded - retry skipped', {
+          description: 'Appointment is too soon to schedule another attempt'
+        });
+
+        loadData();
+        return;
+      }
 
       // Update task with new due_at
       const { error } = await supabase
