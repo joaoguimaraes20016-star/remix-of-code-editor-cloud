@@ -263,13 +263,12 @@ export function HorizontalAppointmentCard({
             {/* Rebooked for a New Time Badge */}
             {appointment.rescheduled_to_appointment_id && (
               <Badge 
-                variant="outline" 
-                className="text-xs font-medium cursor-pointer hover:bg-purple-400/20 border-purple-400/50 text-purple-500 dark:text-purple-300"
+                className="text-xs font-medium bg-purple-500 text-white border-0 cursor-pointer hover:bg-purple-600"
                 onClick={() => setShowRescheduleHistory(true)}
               >
                 <ArrowRight className="w-3 h-3 mr-1" />
-                Rebooked for a New Time
-                <span className="ml-1 px-1.5 py-0.5 bg-purple-400/30 rounded text-[10px] font-bold hover:bg-purple-400/40">
+                Rebooked
+                <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[10px] font-bold">
                   View
                 </span>
               </Badge>
@@ -457,8 +456,8 @@ export function HorizontalAppointmentCard({
       {/* Rebooked for New Time Warning */}
       {appointment.rescheduled_to_appointment_id && (
         <div className="mt-3 text-sm p-3 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
-          <strong className="text-purple-700 dark:text-purple-300">LEAD REBOOKED</strong>
-          <span className="text-foreground/70"> — This lead booked a new appointment. Click "View" above to see the new booking.</span>
+          <strong className="text-purple-700 dark:text-purple-300">REBOOKED</strong>
+          <span className="text-foreground/70"> — This lead booked a new appointment.{appointment.closer_name && ` Original closer: ${appointment.closer_name}.`} Click "View" above to see the new booking.</span>
         </div>
       )}
 
