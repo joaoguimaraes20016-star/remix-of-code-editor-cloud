@@ -306,6 +306,13 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       // NEW and BOOKED appointments go to "Appointments Booked"
       if (!apt.pipeline_stage || apt.pipeline_stage === 'new' || apt.pipeline_stage === 'booked') {
         grouped['appointments_booked'].push(apt);
+      } else if (apt.pipeline_stage === 'rescheduled' || apt.status === 'RESCHEDULED') {
+        // Rescheduled appointments appear in BOTH "Appointments Booked" (with tag) AND "rescheduled" stage
+        grouped['appointments_booked'].push(apt);
+        if (!grouped['rescheduled']) {
+          grouped['rescheduled'] = [];
+        }
+        grouped['rescheduled'].push(apt);
       } else {
         // Other appointments go to their pipeline stage
         const stageId = apt.pipeline_stage;
