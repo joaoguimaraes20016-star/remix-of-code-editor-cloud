@@ -249,7 +249,7 @@ export function HorizontalAppointmentCard({
                 onClick={() => setShowRescheduleHistory(true)}
               >
                 <History className="w-3 h-3 mr-1" />
-                Previously Rescheduled
+                Rebooked Lead
                 {appointment.reschedule_count && appointment.reschedule_count > 1 && (
                   <span className="ml-1 px-1.5 py-0.5 bg-purple-400/40 rounded-full text-[10px] font-bold">
                     {appointment.reschedule_count}x
