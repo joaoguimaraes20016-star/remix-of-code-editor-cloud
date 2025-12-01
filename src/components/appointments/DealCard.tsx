@@ -323,15 +323,18 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
               {appointment.original_appointment_id && (
                 <Badge 
                   variant="info" 
-                  className="cursor-pointer hover:bg-info/20"
+                  className="cursor-pointer hover:bg-info/20 flex items-center gap-1"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowRescheduleHistory(true);
                   }}
                 >
-                  <History className="h-3 w-3 mr-1" />
+                  <History className="h-3 w-3" />
                   Previously Rescheduled
                   {appointment.reschedule_count > 0 && ` (${appointment.reschedule_count}x)`}
+                  <span className="ml-1 px-1.5 py-0.5 bg-info/30 rounded text-[10px] font-bold hover:bg-info/50">
+                    View
+                  </span>
                 </Badge>
               )}
               {appointment.rescheduled_to_appointment_id && (

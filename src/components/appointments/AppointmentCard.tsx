@@ -129,6 +129,9 @@ export function AppointmentCard({
                   {appointment.reschedule_count}x
                 </span>
               )}
+              <span className="ml-1 px-1.5 py-0.5 bg-warning/20 rounded text-xs font-medium hover:bg-warning/30">
+                View
+              </span>
             </Badge>
           )}
           
