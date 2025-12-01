@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError } from "@/lib/errorUtils";
@@ -21,6 +22,7 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
   const [saving, setSaving] = useState(false);
   const [autoCreateTasks, setAutoCreateTasks] = useState(true);
   const [allowSetterPipelineUpdates, setAllowSetterPipelineUpdates] = useState(false);
+  const [noAnswerRetryMinutes, setNoAnswerRetryMinutes] = useState(30);
 
   useEffect(() => {
     loadSettings();
@@ -30,7 +32,7 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
     try {
       const { data, error } = await supabase
         .from("teams")
-        .select("auto_create_tasks, allow_setter_pipeline_updates")
+        .select("auto_create_tasks, allow_setter_pipeline_updates, no_answer_retry_minutes")
         .eq("id", teamId)
         .single();
 
@@ -38,6 +40,7 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
       if (data) {
         setAutoCreateTasks(data.auto_create_tasks ?? true);
         setAllowSetterPipelineUpdates(data.allow_setter_pipeline_updates ?? false);
+        setNoAnswerRetryMinutes(data.no_answer_retry_minutes ?? 30);
       }
     } catch (error: any) {
       toast({
@@ -58,7 +61,8 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
         .from("teams")
         .update({ 
           auto_create_tasks: autoCreateTasks,
-          allow_setter_pipeline_updates: allowSetterPipelineUpdates
+          allow_setter_pipeline_updates: allowSetterPipelineUpdates,
+          no_answer_retry_minutes: noAnswerRetryMinutes
         })
         .eq("id", teamId);
 
@@ -138,6 +142,27 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
               id="setter-pipeline"
               checked={allowSetterPipelineUpdates}
               onCheckedChange={setAllowSetterPipelineUpdates}
+            />
+          </div>
+
+          <div className="flex items-center justify-between space-x-4 pt-4 border-t">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="no-answer-retry" className="text-base font-medium">
+                No Answer retry delay (minutes)
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                When a call goes unanswered, schedule a retry after this many minutes. 
+                If retry would overlap with appointment time, only the attempt is logged.
+              </p>
+            </div>
+            <Input
+              id="no-answer-retry"
+              type="number"
+              min={5}
+              max={120}
+              className="w-24"
+              value={noAnswerRetryMinutes}
+              onChange={(e) => setNoAnswerRetryMinutes(parseInt(e.target.value) || 30)}
             />
           </div>
 
