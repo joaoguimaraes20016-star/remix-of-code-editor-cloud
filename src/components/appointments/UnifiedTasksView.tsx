@@ -39,6 +39,7 @@ interface UnifiedTask {
   total_follow_ups?: number;
   pipeline_stage?: string;
   is_overdue?: boolean;
+  noAnswerCount?: number;
 }
 
 export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
@@ -163,6 +164,12 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           .select('*, appointment:appointments(start_at_utc, lead_name, lead_email, lead_phone, rescheduled_to_appointment_id, pipeline_stage)')
           .eq('team_id', teamId)
           .in('status', statusFilter);
+        
+        // Helper to count no-answer attempts
+        const countNoAnswerAttempts = (attempts: any[]): number => {
+          if (!Array.isArray(attempts)) return 0;
+          return attempts.filter(a => a?.type === 'no_answer').length;
+        };
 
         // Auto-complete tasks where client already rescheduled
         if (confirmTasks) {
@@ -201,6 +208,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
         (confirmTasks || []).forEach(task => {
           const taskType = task.task_type as 'call_confirmation' | 'reschedule' | 'follow_up';
           const appointment = task.appointment as any;
+          const attempts = task.confirmation_attempts as any[];
           
           unifiedTasks.push({
             id: task.id,
@@ -221,6 +229,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             total_follow_ups: task.pipeline_stage ? totalsByStage[task.pipeline_stage] : undefined,
             pipeline_stage: task.pipeline_stage,
             is_overdue: task.is_overdue,
+            noAnswerCount: countNoAnswerAttempts(attempts),
           });
         });
       }
@@ -459,6 +468,61 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
     }
   };
 
+  const handleNoAnswerRetry = async (taskId: string, appointmentId: string) => {
+    try {
+      // Get current task data
+      const { data: task, error: fetchError } = await supabase
+        .from('confirmation_tasks')
+        .select('confirmation_attempts')
+        .eq('id', taskId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Record the no-answer attempt
+      const newAttempt = {
+        timestamp: new Date().toISOString(),
+        confirmed_by: user?.id,
+        notes: 'No Answer - Retry scheduled',
+        type: 'no_answer'
+      };
+
+      const attempts = [...(Array.isArray(task?.confirmation_attempts) ? task.confirmation_attempts : []), newAttempt];
+      const newDueAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+
+      // Update task with new due_at
+      const { error } = await supabase
+        .from('confirmation_tasks')
+        .update({
+          confirmation_attempts: attempts,
+          due_at: newDueAt.toISOString(),
+          is_overdue: false
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // Log activity
+      await supabase.from('activity_logs').insert({
+        team_id: teamId,
+        appointment_id: appointmentId,
+        actor_id: user?.id,
+        actor_name: 'Team Member',
+        action_type: 'No Answer',
+        note: `No answer - retry scheduled for ${format(newDueAt, 'h:mm a')}`
+      });
+
+      toast.success(`No answer - Call back at ${format(newDueAt, 'h:mm a')}`, {
+        description: 'Task will reappear when due'
+      });
+
+      loadData();
+    } catch (error) {
+      console.error('Error handling no answer:', error);
+      toast.error('Failed to record no answer');
+    }
+  };
+
   // Filter tasks
   const filteredTasks = tasks.filter((task) => {
     if (filterType !== "all" && task.type !== filterType) return false;
@@ -629,6 +693,12 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                     Assigned to {task.assignedToName}
                   </Badge>
                 )}
+                {task.noAnswerCount && task.noAnswerCount > 0 && (
+                  <Badge variant="outline" className="text-xs border-orange-400 text-orange-600 dark:text-orange-400">
+                    <Phone className="h-3 w-3 mr-1" />
+                    {task.noAnswerCount} attempt{task.noAnswerCount > 1 ? 's' : ''}
+                  </Badge>
+                )}
               </div>
               {task.details && (
                 <p className="text-xs text-muted-foreground border-l-2 pl-2 mt-1">
@@ -695,6 +765,14 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 >
                   <CalendarCheck className="h-4 w-4 mr-1" />
                   Confirm
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => apt && handleNoAnswerRetry(task.id, apt.id)}
+                >
+                  <Phone className="h-4 w-4 mr-1" />
+                  No Answer
                 </Button>
                 <Button
                   size="sm"
