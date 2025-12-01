@@ -3,13 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Mail, User, Phone, Clock, MessageSquare, DollarSign, UserPlus, Users, CheckCircle, Edit, CalendarClock, Wallet, AlertCircle, Wrench, Target, RefreshCw, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { EditAppointmentDialog } from "./EditAppointmentDialog";
 import { ConfirmationProgressTracker } from "./ConfirmationProgressTracker";
 import { RescheduleWithLinkDialog } from "./RescheduleWithLinkDialog";
 import { toast } from "sonner";
 import { cn, formatDateTimeWithTimezone } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 
 interface HorizontalAppointmentCardProps {
   appointment: {
@@ -85,7 +84,6 @@ export function HorizontalAppointmentCard({
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
-  const [originalCloserName, setOriginalCloserName] = useState<string | null>(null);
   const formattedDate = formatDateTimeWithTimezone(appointment.start_at_utc);
   const statusStyle = statusColors[appointment.status] || statusColors.NEW;
   
@@ -94,26 +92,10 @@ export function HorizontalAppointmentCard({
     ? 'Pending Confirmation' 
     : appointment.status;
 
-  // Check if this is a rescheduled appointment
+  // Check if this is a rescheduled appointment - use stored original_closer_name
   const isRescheduled = appointment.status === 'RESCHEDULED' || appointment.pipeline_stage === 'rescheduled';
+  const originalCloserName = (appointment as any).original_closer_name;
   const hasCloserReassignment = originalCloserName && appointment.closer_name && originalCloserName !== appointment.closer_name;
-
-  // Fetch original appointment's closer if this is a rescheduled appointment
-  useEffect(() => {
-    const fetchOriginalCloser = async () => {
-      if (appointment.original_appointment_id) {
-        const { data } = await supabase
-          .from('appointments')
-          .select('closer_name')
-          .eq('id', appointment.original_appointment_id)
-          .single();
-        if (data?.closer_name) {
-          setOriginalCloserName(data.closer_name);
-        }
-      }
-    };
-    fetchOriginalCloser();
-  }, [appointment.original_appointment_id]);
 
   // Determine visual indicators
   const appointmentDate = parseISO(appointment.start_at_utc);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { formatDateTimeWithTimezone } from "@/lib/utils";
@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface AppointmentCardProps {
   appointment: {
@@ -65,29 +64,14 @@ export function AppointmentCard({
 }: AppointmentCardProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRescheduleHistory, setShowRescheduleHistory] = useState(false);
-  const [originalCloserName, setOriginalCloserName] = useState<string | null>(null);
   const formattedDate = formatDateTimeWithTimezone(appointment.start_at_utc);
 
   // Check if this is a rescheduled appointment
   const isRescheduled = appointment.status === 'RESCHEDULED' || appointment.pipeline_stage === 'rescheduled';
+  
+  // Use stored original_closer_name from appointment record
+  const originalCloserName = (appointment as any).original_closer_name;
   const hasCloserReassignment = originalCloserName && appointment.closer_name && originalCloserName !== appointment.closer_name;
-
-  // Fetch original appointment's closer if this is a rescheduled appointment
-  useEffect(() => {
-    const fetchOriginalCloser = async () => {
-      if (appointment.original_appointment_id) {
-        const { data } = await supabase
-          .from('appointments')
-          .select('closer_name')
-          .eq('id', appointment.original_appointment_id)
-          .single();
-        if (data?.closer_name) {
-          setOriginalCloserName(data.closer_name);
-        }
-      }
-    };
-    fetchOriginalCloser();
-  }, [appointment.original_appointment_id]);
 
   return (
     <Card className="p-5 card-hover group relative overflow-hidden">

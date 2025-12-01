@@ -67,6 +67,8 @@ export type Database = {
           mrr_months: number | null
           original_appointment_id: string | null
           original_booking_date: string | null
+          original_closer_id: string | null
+          original_closer_name: string | null
           pipeline_stage: string | null
           previous_status: string | null
           product_name: string | null
@@ -104,6 +106,8 @@ export type Database = {
           mrr_months?: number | null
           original_appointment_id?: string | null
           original_booking_date?: string | null
+          original_closer_id?: string | null
+          original_closer_name?: string | null
           pipeline_stage?: string | null
           previous_status?: string | null
           product_name?: string | null
@@ -141,6 +145,8 @@ export type Database = {
           mrr_months?: number | null
           original_appointment_id?: string | null
           original_booking_date?: string | null
+          original_closer_id?: string | null
+          original_closer_name?: string | null
           pipeline_stage?: string | null
           previous_status?: string | null
           product_name?: string | null
@@ -1656,6 +1662,8 @@ export type Database = {
           mrr_months: number | null
           original_appointment_id: string | null
           original_booking_date: string | null
+          original_closer_id: string | null
+          original_closer_name: string | null
           pipeline_stage: string | null
           previous_status: string | null
           product_name: string | null
