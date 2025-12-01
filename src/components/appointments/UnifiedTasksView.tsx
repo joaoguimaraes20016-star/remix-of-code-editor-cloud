@@ -711,7 +711,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 {getTaskTypeBadge(task, isMRRTask)}
                 <Clock className="h-5 w-5" />
                 <span className={isUpcoming ? "text-lg font-bold text-orange-600 dark:text-orange-400" : "text-lg font-bold"}>
-                  due {formatDateTimeWithTimezone(task.dueDate, 'MMM d, h:mm a')}
+                  Due {formatDateTimeWithTimezone(task.dueDate, 'MMM d, h:mm a')}
                 </span>
               </div>
               {task.appointmentDate && (
