@@ -708,9 +708,10 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             </div>
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                <span className={isUpcoming ? "text-lg font-bold text-orange-600 dark:text-orange-400" : "text-lg font-bold"}>
-                  {task.title} due {formatDateTimeWithTimezone(task.dueDate, 'MMM d, h:mm a')}
+                {getTaskTypeBadge(task, isMRRTask)}
+                <Clock className="h-4 w-4" />
+                <span className={isUpcoming ? "text-sm font-medium text-orange-600 dark:text-orange-400" : "text-sm font-medium"}>
+                  due {formatDateTimeWithTimezone(task.dueDate, 'MMM d, h:mm a')}
                 </span>
               </div>
               {task.appointmentDate && (
