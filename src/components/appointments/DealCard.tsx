@@ -35,6 +35,7 @@ interface DealCardProps {
     original_appointment_id: string | null;
     rescheduled_to_appointment_id: string | null;
     reschedule_count: number;
+    rebooking_type?: string | null;
   };
   confirmationTask?: {
     completed_confirmations: number;
@@ -92,6 +93,8 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
   const isConfirmed = appointment.status === 'CONFIRMED' && !isNoShow && !isCancelled;
   const isRescheduled = appointment.status === 'RESCHEDULED' || appointment.pipeline_stage === 'rescheduled';
   const isClosed = appointment.pipeline_stage === 'won' || appointment.pipeline_stage?.toLowerCase().includes('closed');
+  const isRebookingConflict = appointment.pipeline_stage === 'rebooking_conflict';
+  const hasRebookingType = appointment.rebooking_type && ['rebooking', 'reschedule', 'returning_client', 'win_back'].includes(appointment.rebooking_type);
   const showUndoButton = (isClosed || hasRevenue) && onUndo;
 
   return (
@@ -251,6 +254,36 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
             <Badge variant="rescheduled" className="shadow-sm">
               <span className="flex items-center gap-1">
                 ⟳ Rescheduled
+              </span>
+            </Badge>
+          )}
+          {/* Rebooking Conflict Warning - BOTH appointments need confirmation */}
+          {isRebookingConflict && (
+            <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-sm animate-pulse">
+              <span className="flex items-center gap-1">
+                ⚠️ Rebooking Conflict
+              </span>
+            </Badge>
+          )}
+          {/* Rebooking Type Badges */}
+          {appointment.rebooking_type === 'rebooking' && (
+            <Badge className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-sm">
+              <span className="flex items-center gap-1">
+                ⚠️ Rebooked
+              </span>
+            </Badge>
+          )}
+          {appointment.rebooking_type === 'returning_client' && (
+            <Badge className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm">
+              <span className="flex items-center gap-1">
+                🎉 Returning Client
+              </span>
+            </Badge>
+          )}
+          {appointment.rebooking_type === 'win_back' && (
+            <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm">
+              <span className="flex items-center gap-1">
+                🔄 Win-Back
               </span>
             </Badge>
           )}

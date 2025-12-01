@@ -22,6 +22,8 @@ interface Task {
     lead_email: string;
     lead_phone: string | null;
     start_at_utc: string;
+    pipeline_stage: string | null;
+    rebooking_type: string | null;
   };
 }
 
@@ -74,7 +76,9 @@ export function CloserTasksView({ teamId, userId }: CloserTasksViewProps) {
             lead_email,
             lead_phone,
             start_at_utc,
-            closer_id
+            closer_id,
+            pipeline_stage,
+            rebooking_type
           )
         `)
         .eq('team_id', teamId)
@@ -84,7 +88,7 @@ export function CloserTasksView({ teamId, userId }: CloserTasksViewProps) {
         .order('follow_up_date', { ascending: true });
 
       if (error) throw error;
-      setFollowUpTasks(tasks || []);
+      setFollowUpTasks(tasks as Task[] || []);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast.error('Failed to load tasks');
@@ -211,16 +215,37 @@ function TaskCard({ task, onComplete, isOverdue = false }: {
   onComplete: (id: string) => void;
   isOverdue?: boolean;
 }) {
+  const isRebookingConflict = task.appointment.pipeline_stage === 'rebooking_conflict';
+  const hasRebookingWarning = task.appointment.rebooking_type && ['rebooking', 'reschedule'].includes(task.appointment.rebooking_type);
+  
   return (
-    <div className={`p-4 rounded-lg border ${isOverdue ? 'bg-destructive/10 border-destructive' : 'bg-card'}`}>
+    <div className={`p-4 rounded-lg border ${isOverdue ? 'bg-destructive/10 border-destructive' : isRebookingConflict ? 'bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-800' : 'bg-card'}`}>
       <div className="flex items-start justify-between">
         <div className="space-y-1 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h4 className="font-medium">{task.appointment.lead_name}</h4>
             {isOverdue && <Badge variant="destructive">Overdue</Badge>}
             {!isOverdue && <Badge variant="success">Follow Up</Badge>}
+            {isRebookingConflict && (
+              <Badge className="bg-red-500 text-white animate-pulse">⚠️ Rebooking Conflict</Badge>
+            )}
+            {task.appointment.rebooking_type === 'rebooking' && (
+              <Badge className="bg-cyan-500 text-white">⚠️ Rebooked</Badge>
+            )}
+            {task.appointment.rebooking_type === 'returning_client' && (
+              <Badge className="bg-emerald-500 text-white">🎉 Returning Client</Badge>
+            )}
+            {task.appointment.rebooking_type === 'win_back' && (
+              <Badge className="bg-blue-500 text-white">🔄 Win-Back</Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground">{task.appointment.lead_email}</p>
+          {/* Rebooking conflict warning */}
+          {isRebookingConflict && (
+            <div className="text-sm p-2 rounded bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-l-4 border-red-500 mt-2">
+              ⚠️ <strong>REBOOKING CONFLICT</strong> — This lead also booked another appointment! Verify which date they want.
+            </div>
+          )}
           {task.follow_up_reason && (
             <p className="text-sm mt-2">
               <span className="font-medium">Reason:</span> {task.follow_up_reason}

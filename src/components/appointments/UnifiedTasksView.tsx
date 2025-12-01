@@ -798,6 +798,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                     📅 Lead Rescheduled
                   </Badge>
                 )}
+                {/* Badge for rebooking conflict - BOTH appointments need confirmation */}
+                {task.pipeline_stage === 'rebooking_conflict' && (
+                  <Badge className="text-xs bg-red-500 text-white border-0 font-bold shadow-sm shadow-red-500/30 animate-pulse">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    ⚠️ Rebooking Conflict
+                  </Badge>
+                )}
               </div>
               {/* Rebooking warning message - BRIGHT and prominent with View Original link */}
               {task.rebooking_type && (
@@ -861,8 +868,18 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                   </div>
                 </div>
               )}
+              {/* Warning for rebooking conflict - ORIGINAL appointment where lead also booked another date */}
+              {task.pipeline_stage === 'rebooking_conflict' && (
+                <div className="text-sm p-3 rounded-lg border-l-4 mt-2 font-semibold shadow-sm bg-red-100 border-red-500 text-red-900 dark:bg-red-900/40 dark:text-red-100">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>
+                      ⚠️ <strong>REBOOKING CONFLICT</strong> — This lead ALSO booked another appointment! Confirm which date they actually want before proceeding.
+                    </span>
+                  </div>
+                </div>
+              )}
               {/* Show follow_up_reason warning (from webhook override) */}
-              {task.followUpReason && task.followUpReason.includes('REBOOKED') && !task.rebooking_type && (
+              {task.followUpReason && task.followUpReason.includes('REBOOKED') && !task.rebooking_type && !task.pipeline_stage?.includes('rebooking') && (
                 <div className="text-sm p-3 rounded-lg border-l-4 mt-2 font-semibold shadow-sm bg-cyan-100 border-cyan-500 text-cyan-900 dark:bg-cyan-900/40 dark:text-cyan-100">
                   {task.followUpReason}
                 </div>
