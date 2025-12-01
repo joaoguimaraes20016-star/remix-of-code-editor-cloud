@@ -69,6 +69,7 @@ export type Database = {
           original_booking_date: string | null
           original_closer_id: string | null
           original_closer_name: string | null
+          original_closer_notified_at: string | null
           pipeline_stage: string | null
           previous_status: string | null
           product_name: string | null
@@ -108,6 +109,7 @@ export type Database = {
           original_booking_date?: string | null
           original_closer_id?: string | null
           original_closer_name?: string | null
+          original_closer_notified_at?: string | null
           pipeline_stage?: string | null
           previous_status?: string | null
           product_name?: string | null
@@ -147,6 +149,7 @@ export type Database = {
           original_booking_date?: string | null
           original_closer_id?: string | null
           original_closer_name?: string | null
+          original_closer_notified_at?: string | null
           pipeline_stage?: string | null
           previous_status?: string | null
           product_name?: string | null
@@ -455,6 +458,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "clients_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closer_reassignment_history: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          new_closer_id: string | null
+          new_closer_name: string
+          notified_at: string | null
+          original_closer_id: string | null
+          original_closer_name: string
+          reason: string | null
+          reassigned_at: string
+          team_id: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          new_closer_id?: string | null
+          new_closer_name: string
+          notified_at?: string | null
+          original_closer_id?: string | null
+          original_closer_name: string
+          reason?: string | null
+          reassigned_at?: string
+          team_id: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          new_closer_id?: string | null
+          new_closer_name?: string
+          notified_at?: string | null
+          original_closer_id?: string | null
+          original_closer_name?: string
+          reason?: string | null
+          reassigned_at?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closer_reassignment_history_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closer_reassignment_history_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -1664,6 +1724,7 @@ export type Database = {
           original_booking_date: string | null
           original_closer_id: string | null
           original_closer_name: string | null
+          original_closer_notified_at: string | null
           pipeline_stage: string | null
           previous_status: string | null
           product_name: string | null

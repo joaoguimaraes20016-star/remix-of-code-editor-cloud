@@ -270,12 +270,12 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
               </span>
             </Badge>
           )}
-          {/* Closer Reassignment Warning */}
+          {/* Closer Reassignment Warning - On-brand styling */}
           {hasCloserReassignment && (
-            <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm animate-pulse">
+            <Badge variant="outline" className="border-warning bg-warning/10 text-warning-foreground shadow-sm">
               <span className="flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                Closer: {originalCloserName} → {appointment.closer_name}
+                Reassigned: {originalCloserName} → {appointment.closer_name}
               </span>
             </Badge>
           )}
@@ -337,14 +337,17 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
               {appointment.rescheduled_to_appointment_id && (
                 <Badge 
                   variant="warning"
-                  className="cursor-pointer hover:bg-chart-2/30"
+                  className="cursor-pointer hover:bg-chart-2/30 flex items-center gap-1"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowRescheduleHistory(true);
                   }}
                 >
-                  <ArrowRight className="h-3 w-3 mr-1" />
+                  <ArrowRight className="h-3 w-3" />
                   Rescheduled to New Time
+                  <span className="ml-1 px-1.5 py-0.5 bg-chart-2/30 rounded text-[10px] font-bold hover:bg-chart-2/50">
+                    View
+                  </span>
                 </Badge>
               )}
             </div>

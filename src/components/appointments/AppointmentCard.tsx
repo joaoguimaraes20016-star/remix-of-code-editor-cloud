@@ -108,11 +108,11 @@ export function AppointmentCard({
             </Badge>
           )}
 
-          {/* Closer Reassignment Warning */}
+          {/* Closer Reassignment Warning - On-brand styling */}
           {hasCloserReassignment && (
-            <Badge className="bg-orange-600 text-white border-0 gap-1 animate-pulse">
+            <Badge variant="outline" className="border-warning bg-warning/10 text-warning-foreground gap-1">
               <AlertTriangle className="h-3 w-3" />
-              Closer: {originalCloserName} → {appointment.closer_name}
+              Reassigned: {originalCloserName} → {appointment.closer_name}
             </Badge>
           )}
           
@@ -140,6 +140,17 @@ export function AppointmentCard({
             >
               <ArrowRight className="h-3 w-3" />
               Rescheduled to New Time
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-5 px-1.5 ml-1 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowRescheduleHistory(true);
+                }}
+              >
+                View
+              </Button>
             </Badge>
           )}
           
