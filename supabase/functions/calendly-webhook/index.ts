@@ -792,15 +792,16 @@ serve(async (req) => {
         }
       }
       
-      // ============= OVERRIDE ORIGINAL TASK WITH REBOOKING WARNING =============
-      // If this is a rebooking (not a recent Calendly reschedule), find and update the original task
+      // ============= HANDLE REBOOKING/RESCHEDULE TASK LOGIC =============
+      // Different behavior for native reschedule vs manual rebooking
       if (priorAppointment && !recentlyCancelled && insertedAppointment?.id) {
+        console.log(`[REBOOKING-TASK] Processing rebooking type: ${rebookingType}`);
         console.log(`[REBOOKING-TASK] Looking for existing task on prior appointment ${priorAppointment.id}...`);
         
         // Find existing pending confirmation task for the ORIGINAL appointment
         const { data: existingTask } = await adminClient
           .from('confirmation_tasks')
-          .select('id, status')
+          .select('id, status, task_type')
           .eq('appointment_id', priorAppointment.id)
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
@@ -808,26 +809,33 @@ serve(async (req) => {
           .maybeSingle();
         
         const newAppointmentDate = startTime ? new Date(startTime).toLocaleDateString() : 'soon';
-        const warningMsg = `⚠️ LEAD REBOOKED: Originally had appointment for ${new Date(priorAppointment.start_at_utc).toLocaleDateString()}. Now booked for ${newAppointmentDate}. Confirm they want the new date!`;
+        const originalDate = new Date(priorAppointment.start_at_utc).toLocaleDateString();
         
-        if (existingTask) {
-          // UPDATE the existing task to point to NEW appointment with warning
-          const { error: taskUpdateError } = await adminClient
-            .from('confirmation_tasks')
-            .update({
-              appointment_id: insertedAppointment.id,
-              follow_up_reason: warningMsg,
-              due_at: new Date().toISOString() // Make it urgent
-            })
-            .eq('id', existingTask.id);
+        // For NATIVE RESCHEDULE (via Calendly reschedule link): Move task to new appointment
+        if (rebookingType === 'reschedule') {
+          console.log(`[REBOOKING-TASK] Native reschedule detected - moving task to new appointment`);
           
-          if (taskUpdateError) {
-            console.error(`[REBOOKING-TASK] Failed to update existing task:`, taskUpdateError);
-          } else {
-            console.log(`[REBOOKING-TASK] ✓ Updated existing task ${existingTask.id} with rebooking warning`);
+          if (existingTask) {
+            const warningMsg = `📅 RESCHEDULED: Originally scheduled for ${originalDate}. Confirm they want the new date!`;
+            
+            // Move task to new appointment
+            const { error: taskUpdateError } = await adminClient
+              .from('confirmation_tasks')
+              .update({
+                appointment_id: insertedAppointment.id,
+                follow_up_reason: warningMsg,
+                due_at: new Date().toISOString()
+              })
+              .eq('id', existingTask.id);
+            
+            if (taskUpdateError) {
+              console.error(`[REBOOKING-TASK] Failed to update existing task:`, taskUpdateError);
+            } else {
+              console.log(`[REBOOKING-TASK] ✓ Moved task ${existingTask.id} to new appointment`);
+            }
           }
           
-          // Mark original appointment as rebooked
+          // Mark original appointment as rescheduled
           const { error: apptUpdateError } = await adminClient
             .from('appointments')
             .update({ 
@@ -839,10 +847,55 @@ serve(async (req) => {
           if (apptUpdateError) {
             console.error(`[REBOOKING-TASK] Failed to update prior appointment:`, apptUpdateError);
           } else {
-            console.log(`[REBOOKING-TASK] ✓ Marked prior appointment ${priorAppointment.id} as rescheduled`);
+            console.log(`[REBOOKING-TASK] ✓ Marked prior appointment as rescheduled`);
           }
-        } else {
-          console.log(`[REBOOKING-TASK] No pending task found for prior appointment - new task will be created by trigger`);
+        } 
+        // For MANUAL REBOOKING: Keep BOTH tasks active with warnings
+        else if (rebookingType === 'rebooking') {
+          console.log(`[REBOOKING-TASK] Manual rebooking detected - keeping BOTH tasks active`);
+          
+          if (existingTask) {
+            // Add warning to ORIGINAL task but keep it pointing to original appointment
+            const originalWarning = `⚠️ LEAD REBOOKED: This lead also booked for ${newAppointmentDate}. Verify which appointment they want!`;
+            
+            const { error: taskUpdateError } = await adminClient
+              .from('confirmation_tasks')
+              .update({
+                follow_up_reason: originalWarning,
+                due_at: new Date().toISOString() // Make it urgent
+              })
+              .eq('id', existingTask.id);
+            
+            if (taskUpdateError) {
+              console.error(`[REBOOKING-TASK] Failed to update original task warning:`, taskUpdateError);
+            } else {
+              console.log(`[REBOOKING-TASK] ✓ Added rebooking warning to original task ${existingTask.id}`);
+            }
+          }
+          
+          // DON'T set rescheduled_to_appointment_id - let both appointments stay active
+          // Just update pipeline_stage to show there's a potential conflict
+          const { error: apptUpdateError } = await adminClient
+            .from('appointments')
+            .update({ 
+              pipeline_stage: 'rebooking_conflict'
+            })
+            .eq('id', priorAppointment.id);
+          
+          if (apptUpdateError) {
+            console.error(`[REBOOKING-TASK] Failed to update prior appointment:`, apptUpdateError);
+          } else {
+            console.log(`[REBOOKING-TASK] ✓ Marked prior appointment as rebooking_conflict (both tasks active)`);
+          }
+          
+          // New appointment will get its own task via trigger - add warning there too
+          console.log(`[REBOOKING-TASK] New appointment will get its own task via trigger`);
+        }
+        // For RETURNING_CLIENT or WIN_BACK: Keep original as-is, new gets its own task
+        else {
+          console.log(`[REBOOKING-TASK] ${rebookingType} - original stays as-is, new appointment gets fresh task`);
+          // No changes to original appointment - it's historical
+          // New appointment will get its own task via trigger
         }
       }
       
