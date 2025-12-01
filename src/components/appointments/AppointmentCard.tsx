@@ -231,15 +231,17 @@ export function AppointmentCard({
 
         {/* Rebooked Lead Warning */}
         {appointment.original_appointment_id && (
-          <div className="text-sm p-3 rounded-lg border-l-4 font-semibold bg-purple-500/10 border-purple-400 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300">
-            <strong>REBOOKED LEAD</strong> — This lead has a previous booking. Click "View" above to see their booking history.
+          <div className="text-sm p-3 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
+            <strong className="text-purple-700 dark:text-purple-300">REBOOKED LEAD</strong>
+            <span className="text-foreground/70"> — This lead has a previous booking. Click "View" above to see their booking history.</span>
           </div>
         )}
 
         {/* Rebooked for New Time Warning */}
         {appointment.rescheduled_to_appointment_id && (
-          <div className="text-sm p-3 rounded-lg border-l-4 font-semibold bg-purple-500/10 border-purple-400 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300">
-            <strong>LEAD REBOOKED</strong> — This lead booked a new appointment. Click "View" above to see the new booking.
+          <div className="text-sm p-3 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
+            <strong className="text-purple-700 dark:text-purple-300">LEAD REBOOKED</strong>
+            <span className="text-foreground/70"> — This lead booked a new appointment. Click "View" above to see the new booking.</span>
           </div>
         )}
 
