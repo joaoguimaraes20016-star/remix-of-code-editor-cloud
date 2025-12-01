@@ -47,6 +47,7 @@ interface UnifiedTask {
   original_appointment_id?: string | null;
   rescheduled_to_appointment_id?: string | null;
   setter_notes?: string | null;
+  closer_name?: string | null;
 }
 
 export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
@@ -173,7 +174,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       if (filterStatus === 'pending' || filterStatus === 'all' || filterStatus === 'completed') {
         const { data: confirmTasks } = await supabase
           .from('confirmation_tasks')
-          .select('*, appointment:appointments(start_at_utc, lead_name, lead_email, lead_phone, rescheduled_to_appointment_id, pipeline_stage, rebooking_type, original_booking_date, previous_status, original_appointment_id, setter_notes)')
+          .select('*, appointment:appointments(start_at_utc, lead_name, lead_email, lead_phone, rescheduled_to_appointment_id, pipeline_stage, rebooking_type, original_booking_date, previous_status, original_appointment_id, setter_notes, closer_name)')
           .eq('team_id', teamId)
           .in('status', statusFilter);
         
@@ -249,6 +250,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
             original_appointment_id: appointment?.original_appointment_id,
             rescheduled_to_appointment_id: appointment?.rescheduled_to_appointment_id,
             setter_notes: appointment?.setter_notes,
+            closer_name: appointment?.closer_name,
           });
         });
       }
@@ -744,9 +746,9 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 )}
                 {getTaskTypeBadge(task, isMRRTask)}
                 {apt?.rescheduled_to_appointment_id && (
-                  <Badge variant="outline" className="bg-purple-50 text-purple-600 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-700">
+                  <Badge className="bg-purple-500 text-white border-0">
                     <ArrowRight className="h-3 w-3 mr-1" />
-                    Lead Rebooked
+                    Rebooked
                   </Badge>
                 )}
                 {isFollowUpFromOverdue && (
@@ -851,8 +853,8 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 <div className="text-sm p-3 rounded-lg border-l-4 mt-2 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
                   <div className="flex items-center justify-between gap-2">
                     <span>
-                      <strong className="text-purple-700 dark:text-purple-300">LEAD REBOOKED</strong>
-                      <span className="text-foreground/70"> — This lead booked a new appointment. See the new booking details!</span>
+                      <strong className="text-purple-700 dark:text-purple-300">REBOOKED</strong>
+                      <span className="text-foreground/70"> — This lead booked a new appointment.{task.closer_name && ` Original closer: ${task.closer_name}.`}</span>
                     </span>
                     <Button
                       size="sm"

@@ -137,13 +137,12 @@ export function AppointmentCard({
           
           {appointment.rescheduled_to_appointment_id && (
             <Badge 
-              variant="outline" 
-              className="cursor-pointer hover:bg-purple-400/20 border-purple-400/50 text-purple-500 dark:text-purple-300 gap-1"
+              className="bg-purple-500 text-white border-0 cursor-pointer hover:bg-purple-600 gap-1"
               onClick={() => setShowRescheduleHistory(true)}
             >
               <ArrowRight className="h-3 w-3" />
-              Rebooked for a New Time
-              <span className="ml-1 px-1.5 py-0.5 bg-purple-400/30 rounded text-xs font-medium hover:bg-purple-400/40">
+              Rebooked
+              <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs font-medium">
                 View
               </span>
             </Badge>
@@ -240,8 +239,8 @@ export function AppointmentCard({
         {/* Rebooked for New Time Warning */}
         {appointment.rescheduled_to_appointment_id && (
           <div className="text-sm p-3 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
-            <strong className="text-purple-700 dark:text-purple-300">LEAD REBOOKED</strong>
-            <span className="text-foreground/70"> — This lead booked a new appointment. Click "View" above to see the new booking.</span>
+            <strong className="text-purple-700 dark:text-purple-300">REBOOKED</strong>
+            <span className="text-foreground/70"> — This lead booked a new appointment.{appointment.closer_name && ` Original closer: ${appointment.closer_name}.`} Click "View" above to see the new booking.</span>
           </div>
         )}
 
