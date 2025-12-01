@@ -783,6 +783,37 @@ serve(async (req) => {
 
       console.log('Created appointment:', insertedAppointment?.id);
       
+      // Track closer reassignment history if closer changed on rebooking
+      if (insertedAppointment && 
+          insertedAppointment.original_closer_name && 
+          insertedAppointment.closer_name && 
+          insertedAppointment.original_closer_name !== insertedAppointment.closer_name) {
+        console.log(`[REASSIGNMENT] Closer changed from ${insertedAppointment.original_closer_name} to ${insertedAppointment.closer_name}`);
+        
+        try {
+          const { error: historyError } = await adminClient
+            .from('closer_reassignment_history')
+            .insert({
+              appointment_id: insertedAppointment.id,
+              team_id: teamId,
+              original_closer_id: insertedAppointment.original_closer_id,
+              original_closer_name: insertedAppointment.original_closer_name,
+              new_closer_id: insertedAppointment.closer_id,
+              new_closer_name: insertedAppointment.closer_name,
+              reason: `Rescheduled via ${(appointmentData as any).rebooking_type || 'rebooking'}`,
+              reassigned_at: new Date().toISOString()
+            });
+          
+          if (historyError) {
+            console.error('[REASSIGNMENT] Failed to log reassignment history:', historyError);
+          } else {
+            console.log('[REASSIGNMENT] ✓ Logged closer reassignment history');
+          }
+        } catch (err) {
+          console.error('[REASSIGNMENT] Error logging history:', err);
+        }
+      }
+      
       // If this was a reschedule and we have the old appointment, update any tasks to point to new appointment
       if (recentlyCancelled && insertedAppointment?.id) {
         const { error: taskUpdateError } = await supabase

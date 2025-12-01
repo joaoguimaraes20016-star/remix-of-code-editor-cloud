@@ -231,11 +231,11 @@ export function HorizontalAppointmentCard({
                 )}
               </Badge>
             )}
-            {/* Closer Reassignment Warning */}
+            {/* Closer Reassignment Warning - On-brand styling */}
             {hasCloserReassignment && (
-              <Badge className="text-xs font-semibold bg-orange-600 text-white border-0 animate-pulse">
+              <Badge variant="outline" className="text-xs font-medium border-warning bg-warning/10 text-warning-foreground">
                 <AlertTriangle className="w-3 h-3 mr-1" />
-                Closer Changed: {originalCloserName} → {appointment.closer_name}
+                Reassigned: {originalCloserName} → {appointment.closer_name}
               </Badge>
             )}
           </div>
