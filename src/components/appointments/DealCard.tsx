@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
@@ -17,7 +17,6 @@ import { differenceInDays, format, parseISO } from "date-fns";
 import { formatDateTimeWithTimezone } from "@/lib/utils";
 import { DealAvatar } from "./DealAvatar";
 import { ActivityTimeline } from "./ActivityTimeline";
-import { supabase } from "@/integrations/supabase/client";
 
 interface DealCardProps {
   id: string;
@@ -60,25 +59,9 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
   const [showTimeline, setShowTimeline] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRescheduleHistory, setShowRescheduleHistory] = useState(false);
-  const [originalCloserName, setOriginalCloserName] = useState<string | null>(null);
 
-  // Fetch original appointment's closer if this is a rescheduled appointment
-  useEffect(() => {
-    const fetchOriginalCloser = async () => {
-      if (appointment.original_appointment_id) {
-        const { data } = await supabase
-          .from('appointments')
-          .select('closer_name')
-          .eq('id', appointment.original_appointment_id)
-          .single();
-        if (data?.closer_name) {
-          setOriginalCloserName(data.closer_name);
-        }
-      }
-    };
-    fetchOriginalCloser();
-  }, [appointment.original_appointment_id]);
-
+  // Use stored original_closer_name from appointment record
+  const originalCloserName = (appointment as any).original_closer_name;
   const hasCloserReassignment = originalCloserName && appointment.closer_name && originalCloserName !== appointment.closer_name;
   
   // Determine if the user can drag this card

@@ -670,6 +670,9 @@ serve(async (req) => {
         (appointmentData as any).rebooking_type = rebookingType;
         (appointmentData as any).previous_status = previousStatus;
         (appointmentData as any).reschedule_count = (priorAppointment.reschedule_count || 0) + 1;
+        // Store original closer info for reassignment detection
+        (appointmentData as any).original_closer_id = priorAppointment.closer_id;
+        (appointmentData as any).original_closer_name = priorAppointment.closer_name;
         
       } else {
         console.log('[RETURNING-LEAD] No prior appointments found - treating as new lead');
@@ -727,6 +730,8 @@ serve(async (req) => {
         rebooking_type: (appointmentData as any).rebooking_type || null,
         previous_status: (appointmentData as any).previous_status || null,
         reschedule_count: (appointmentData as any).reschedule_count || 0,
+        original_closer_id: (appointmentData as any).original_closer_id || null,
+        original_closer_name: (appointmentData as any).original_closer_name || null,
       };
 
       console.log('Inserting appointment with data:', JSON.stringify(appointmentToInsert));
@@ -1216,6 +1221,9 @@ serve(async (req) => {
         rebooking_type: 'reschedule',
         original_booking_date: oldAppointment.original_booking_date || oldAppointment.start_at_utc,
         previous_status: 'booked',
+        // Store original closer info for reassignment detection
+        original_closer_id: oldAppointment.closer_id,
+        original_closer_name: oldAppointment.closer_name,
       };
 
       const { data: newAppointment, error: createError } = await adminClient
