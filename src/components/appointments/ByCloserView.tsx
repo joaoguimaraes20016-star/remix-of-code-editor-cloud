@@ -431,6 +431,13 @@ function CloserPipelineView({ group, stages, teamId, onReload, onCloseDeal }: Cl
       // NEW and BOOKED appointments go to "Appointments Booked"
       if (!apt.pipeline_stage || apt.pipeline_stage === 'new' || apt.pipeline_stage === 'booked') {
         grouped.get('appointments_booked')!.push(apt);
+      } else if (apt.pipeline_stage === 'rescheduled' || apt.status === 'RESCHEDULED') {
+        // Rescheduled appointments appear in BOTH "Appointments Booked" (with tag) AND "rescheduled" stage
+        grouped.get('appointments_booked')!.push(apt);
+        if (!grouped.has('rescheduled')) {
+          grouped.set('rescheduled', []);
+        }
+        grouped.get('rescheduled')!.push(apt);
       } else {
         // Other appointments go to their pipeline stage
         const stageId = apt.pipeline_stage;
