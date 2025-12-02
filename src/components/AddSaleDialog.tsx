@@ -262,9 +262,10 @@ export function AddSaleDialog({ onAddSale, preselectedOfferOwner }: AddSaleDialo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="text-sm md:text-base w-full sm:w-auto">
-          <Plus className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-          Add Sale
+        <Button className="text-[10px] sm:text-base h-7 sm:h-10 px-2 sm:px-4 flex-1 sm:flex-initial">
+          <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Add Sale</span>
+          <span className="sm:hidden">Sale</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
