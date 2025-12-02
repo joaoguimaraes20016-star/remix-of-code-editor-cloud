@@ -533,30 +533,30 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Rep Selector - Only show in main Today view, not when viewing specific reps */}
       {!sanitizedCloserId && !sanitizedSetterId && (
-        <Card className="p-4">
-          <div className="flex items-center gap-4">
-            <Users className="h-5 w-5 text-muted-foreground" />
+        <Card className="p-2.5 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground hidden sm:block" />
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">View As Team Member</label>
+              <label className="text-[10px] sm:text-sm font-medium mb-1 sm:mb-2 block">View As</label>
               <Select 
                 value={viewingAsUserId || user?.id || ''} 
                 onValueChange={(value) => setViewingAsUserId(value === user?.id ? null : value)}
               >
-                <SelectTrigger className="w-full max-w-xs">
+                <SelectTrigger className="w-full sm:max-w-xs h-8 sm:h-10 text-[11px] sm:text-sm">
                   <SelectValue placeholder="Select team member" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={user?.id || ''}>
-                    {teamMembers.find(m => m.id === user?.id)?.name || 'Me (Current User)'}
+                  <SelectItem value={user?.id || ''} className="text-[11px] sm:text-sm">
+                    {teamMembers.find(m => m.id === user?.id)?.name || 'Me'}
                   </SelectItem>
                   {teamMembers
                     .filter(m => m.id !== user?.id)
                     .map(member => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name} ({member.role === 'offer_owner' ? 'Offer Owner' : member.role.charAt(0).toUpperCase() + member.role.slice(1)})
+                      <SelectItem key={member.id} value={member.id} className="text-[11px] sm:text-sm">
+                        {member.name} ({member.role === 'offer_owner' ? 'Owner' : member.role.charAt(0).toUpperCase() + member.role.slice(1)})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -567,8 +567,9 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
                 variant="outline" 
                 size="sm"
                 onClick={() => setViewingAsUserId(null)}
+                className="h-7 sm:h-8 text-[10px] sm:text-sm px-2 sm:px-3"
               >
-                Reset to My View
+                Reset
               </Button>
             )}
           </div>
@@ -576,27 +577,28 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
       )}
 
       {/* Header with date */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 rounded-lg">
-            <Calendar className="h-6 w-6 text-primary" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-2 sm:p-3 bg-primary/10 rounded-lg">
+            <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
           </div>
           <div>
-            <h3 className="text-2xl font-bold">{format(new Date(), 'EEEE, MMMM d')}</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-base sm:text-2xl font-bold">{format(new Date(), 'EEE, MMM d')}</h3>
+            <p className="text-[10px] sm:text-sm text-muted-foreground hidden sm:block">
               {userRole === 'setter' ? 'Calls requiring confirmation' : 
                userRole === 'closer' ? 'Your booked calls for today' : 
                'Team schedule for today'}
             </p>
           </div>
         </div>
-        <Button onClick={loadTodaysAppointments} variant="outline" size="sm">
-          Refresh
+        <Button onClick={loadTodaysAppointments} variant="outline" size="sm" className="h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-3">
+          <span className="hidden sm:inline">Refresh</span>
+          <span className="sm:hidden">↻</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-4">
         <Card 
           className={cn(
             "bg-gradient-to-br from-primary/10 to-primary/5 cursor-pointer hover:shadow-lg transition-all duration-200",
@@ -604,13 +606,13 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           )}
           onClick={() => setActiveFilter('all')}
         >
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Calls</p>
-                <p className="text-3xl font-bold text-primary">{stats.total}</p>
+          <CardContent className="p-2 sm:p-4">
+            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-1 sm:gap-0">
+              <div className="text-center sm:text-left">
+                <p className="text-[9px] sm:text-sm text-muted-foreground">Total</p>
+                <p className="text-lg sm:text-3xl font-bold text-primary">{stats.total}</p>
               </div>
-              <Phone className="h-8 w-8 text-primary/50" />
+              <Phone className="h-4 w-4 sm:h-8 sm:w-8 text-primary/50 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
@@ -622,13 +624,13 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           )}
           onClick={() => setActiveFilter('confirmed')}
         >
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Confirmed</p>
-                <p className="text-3xl font-bold text-green-600">{stats.confirmed}</p>
+          <CardContent className="p-2 sm:p-4">
+            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-1 sm:gap-0">
+              <div className="text-center sm:text-left">
+                <p className="text-[9px] sm:text-sm text-muted-foreground">Conf</p>
+                <p className="text-lg sm:text-3xl font-bold text-green-600">{stats.confirmed}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-green-500/50" />
+              <TrendingUp className="h-4 w-4 sm:h-8 sm:w-8 text-green-500/50 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
@@ -640,13 +642,13 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           )}
           onClick={() => setActiveFilter('pending')}
         >
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
+          <CardContent className="p-2 sm:p-4">
+            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-1 sm:gap-0">
+              <div className="text-center sm:text-left">
+                <p className="text-[9px] sm:text-sm text-muted-foreground">Pend</p>
+                <p className="text-lg sm:text-3xl font-bold text-amber-600">{stats.pending}</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-amber-500/50" />
+              <AlertCircle className="h-4 w-4 sm:h-8 sm:w-8 text-amber-500/50 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
@@ -658,13 +660,13 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
           )}
           onClick={() => setActiveFilter('overdue')}
         >
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Overdue Tasks</p>
-                <p className="text-3xl font-bold text-red-600">{stats.overdue}</p>
+          <CardContent className="p-2 sm:p-4">
+            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-1 sm:gap-0">
+              <div className="text-center sm:text-left">
+                <p className="text-[9px] sm:text-sm text-muted-foreground">Over</p>
+                <p className="text-lg sm:text-3xl font-bold text-red-600">{stats.overdue}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-500/50" />
+              <AlertTriangle className="h-4 w-4 sm:h-8 sm:w-8 text-red-500/50 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
@@ -672,16 +674,17 @@ export function TodaysDashboard({ teamId, userRole, viewingAsCloserId, viewingAs
 
       {/* Active Filter Indicator */}
       {activeFilter !== 'all' && (
-        <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
-          <p className="text-sm font-medium">
-            Filtered by: <span className="font-bold capitalize">{activeFilter}</span>
+        <div className="flex items-center justify-between bg-muted/50 p-2 sm:p-3 rounded-lg">
+          <p className="text-[10px] sm:text-sm font-medium">
+            <span className="font-bold capitalize">{activeFilter}</span>
           </p>
           <Button 
             variant="ghost" 
             size="sm"
             onClick={() => setActiveFilter('all')}
+            className="h-6 sm:h-8 text-[10px] sm:text-sm px-2"
           >
-            Clear Filter
+            Clear
           </Button>
         </div>
       )}

@@ -709,27 +709,28 @@ const Index = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <div className="container mx-auto p-3 md:p-6 space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
         {/* Header */}
-        <div className="flex flex-col gap-3 md:gap-4">
+        <div className="flex flex-col gap-2 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')} className="text-xs md:text-sm">
-                <ArrowLeft className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')} className="h-6 sm:h-8 text-[10px] sm:text-sm px-1.5 sm:px-3">
+                <ArrowLeft className="h-2.5 w-2.5 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                 Back
               </Button>
             </div>
-            <div className="flex items-center gap-3 mb-2">
-              <Logo size="large" />
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{teamName}</h1>
+            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+              <Logo size="large" className="scale-75 sm:scale-100 origin-left" />
+              <h1 className="text-lg sm:text-3xl font-bold tracking-tight">{teamName}</h1>
             </div>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">
+            <p className="text-muted-foreground mt-0.5 sm:mt-1 text-[11px] sm:text-base">
               Track your sales performance and commissions
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex flex-row gap-1.5 sm:gap-2 w-full sm:w-auto">
             {(isAdmin || userRole === 'offer_owner') && (
-              <Button variant="outline" onClick={() => navigate(`/team/${teamId}/settings`)} className="text-sm md:text-base w-full sm:w-auto">
-                <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-                Settings
+              <Button variant="outline" onClick={() => navigate(`/team/${teamId}/settings`)} className="text-[10px] sm:text-base h-7 sm:h-10 px-2 sm:px-4 flex-1 sm:flex-initial">
+                <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Settings</span>
+                <span className="sm:hidden">Set</span>
               </Button>
             )}
             <AddSaleDialog onAddSale={handleAddSale} preselectedOfferOwner={userRole === 'offer_owner' ? currentUserName : undefined} />
@@ -743,41 +744,45 @@ const Index = () => {
               ? 'grid-cols-3' 
               : 'grid-cols-2'
           } md:w-auto md:inline-grid h-auto`}>
-            <TabsTrigger value="dashboard" className="text-xs md:text-sm py-2 md:py-2.5">
-              Dashboard
+            <TabsTrigger value="dashboard" className="text-[10px] sm:text-sm py-1.5 sm:py-2.5">
+              <span className="hidden sm:inline">Dashboard</span>
+              <span className="sm:hidden">Dash</span>
             </TabsTrigger>
-            <TabsTrigger value="appointments" className="text-xs md:text-sm py-2 md:py-2.5">CRM</TabsTrigger>
+            <TabsTrigger value="appointments" className="text-[10px] sm:text-sm py-1.5 sm:py-2.5">CRM</TabsTrigger>
             {(isAdmin || userRole === 'offer_owner') && (
-              <TabsTrigger value="integrations" className="text-xs md:text-sm py-2 md:py-2.5">Integrations</TabsTrigger>
+              <TabsTrigger value="integrations" className="text-[10px] sm:text-sm py-1.5 sm:py-2.5">
+                <span className="hidden sm:inline">Integrations</span>
+                <span className="sm:hidden">Integ</span>
+              </TabsTrigger>
             )}
           </TabsList>
 
-          <TabsContent value="dashboard" className="space-y-6 mt-6">
+          <TabsContent value="dashboard" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-3 md:gap-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2">
-            <label className="text-xs md:text-sm font-medium">Date Range:</label>
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <label className="text-[10px] sm:text-sm font-medium">Date:</label>
             <DateRangeFilter onRangeChange={setDateRange} />
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2">
-            <label className="text-xs md:text-sm font-medium">Sales Rep:</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <label className="text-[10px] sm:text-sm font-medium">Rep:</label>
             <Select value={selectedRep} onValueChange={setSelectedRep}>
-              <SelectTrigger className="w-full md:w-[200px] bg-card text-sm">
+              <SelectTrigger className="w-full sm:w-[200px] bg-card text-[11px] sm:text-sm h-8 sm:h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border z-50">
                 {salesReps.map((rep) => (
-                  <SelectItem key={rep} value={rep} className="text-sm">
-                    {rep === 'all' ? 'All Sales Reps' : rep}
+                  <SelectItem key={rep} value={rep} className="text-[11px] sm:text-sm">
+                    {rep === 'all' ? 'All Reps' : rep}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-        <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-2 sm:gap-4 grid-cols-2 lg:grid-cols-6">
           <MetricCard
             title="CC Revenue"
             value={`$${totalCCRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
