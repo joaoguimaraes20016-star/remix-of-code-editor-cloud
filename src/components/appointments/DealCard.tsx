@@ -108,11 +108,11 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
       <Card
         ref={setNodeRef}
         style={style}
-        className="group relative bg-gradient-to-br from-card via-card/95 to-secondary/50 p-4 cursor-grab active:cursor-grabbing hover:shadow-glow hover:scale-[1.03] hover:border-primary/60 transition-all duration-300 border border-border/50 backdrop-blur-sm overflow-hidden select-none"
+        className="group relative bg-gradient-to-br from-card via-card/95 to-secondary/50 p-3 sm:p-4 cursor-grab active:cursor-grabbing hover:shadow-glow hover:scale-[1.03] hover:border-primary/60 transition-all duration-300 border border-border/50 backdrop-blur-sm overflow-hidden select-none"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="relative z-10">
-        <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
           {canDrag && (
             <div 
               {...attributes} 
@@ -124,22 +124,22 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
           )}
           
           {hasRevenue && (
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-1.5 sm:space-y-2">
               {appointment.cc_collected && appointment.cc_collected > 0 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-success/10 border border-success/30 rounded-lg backdrop-blur-sm">
+                <div className="flex items-center justify-between px-2.5 sm:px-4 py-2 sm:py-3 bg-success/10 border border-success/30 rounded-lg backdrop-blur-sm">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-success font-bold uppercase tracking-wider">Cash Collected</span>
-                    <span className="text-2xl font-black text-success tabular-nums">
+                    <span className="text-[9px] sm:text-[10px] text-success font-bold uppercase tracking-wider">Cash Collected</span>
+                    <span className="text-lg sm:text-2xl font-black text-success tabular-nums">
                       ${appointment.cc_collected.toLocaleString()}
                     </span>
                   </div>
                 </div>
               )}
               {appointment.mrr_amount && appointment.mrr_amount > 0 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border border-primary/30 rounded-lg backdrop-blur-sm">
+                <div className="flex items-center justify-between px-2.5 sm:px-4 py-2 sm:py-3 bg-primary/10 border border-primary/30 rounded-lg backdrop-blur-sm">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-primary font-bold uppercase tracking-wider">Monthly Recurring</span>
-                    <span className="text-2xl font-black text-primary tabular-nums">
+                    <span className="text-[9px] sm:text-[10px] text-primary font-bold uppercase tracking-wider">Monthly Recurring</span>
+                    <span className="text-lg sm:text-2xl font-black text-primary tabular-nums">
                       ${appointment.mrr_amount.toLocaleString()}/mo
                     </span>
                   </div>
@@ -148,30 +148,30 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
             </div>
           )}
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             {showUndoButton && (
               <Button 
                 variant="outline" 
                 size="sm"
-                className="h-7 px-2 gap-1 bg-warning/10 hover:bg-warning/20 border-warning/30"
+                className="h-6 sm:h-7 px-1.5 sm:px-2 gap-0.5 sm:gap-1 bg-warning/10 hover:bg-warning/20 border-warning/30"
                 onClick={() => onUndo!(id)}
               >
                 <Undo2 className="h-3 w-3" />
-                <span className="text-xs font-medium">Undo</span>
+                <span className="text-[10px] sm:text-xs font-medium hidden sm:inline">Undo</span>
               </Button>
             )}
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7"
+              className="h-6 w-6 sm:h-7 sm:w-7"
               onClick={() => setShowTimeline(!showTimeline)}
             >
-              <MessageSquare className="h-4 w-4" />
+              <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
-                  <MoreVertical className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0">
+                  <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -209,7 +209,7 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 flex-wrap">
           {/* Confirmation Status Badge */}
           {confirmationTask && (
             <>
@@ -311,27 +311,27 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
           )}
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2 sm:space-y-2.5">
           <div>
-            <h4 className="font-medium text-base mb-1 truncate">{appointment.lead_name}</h4>
-            <p className="text-sm text-muted-foreground truncate">{appointment.lead_email}</p>
+            <h4 className="font-medium text-sm sm:text-base mb-0.5 sm:mb-1 truncate">{appointment.lead_name}</h4>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">{appointment.lead_email}</p>
           </div>
 
           {/* Reschedule Badges */}
           {(appointment.original_appointment_id || appointment.rescheduled_to_appointment_id) && (
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {/* Double Book badge (reschedule type) */}
               {appointment.rebooking_type === 'reschedule' && appointment.original_appointment_id && (
                 <Badge 
-                  className="bg-amber-500 text-white border-0 cursor-pointer hover:bg-amber-600 flex items-center gap-1"
+                  className="bg-amber-500 text-white border-0 cursor-pointer hover:bg-amber-600 flex items-center gap-1 text-[10px] sm:text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowRescheduleHistory(true);
                   }}
                 >
-                  <AlertTriangle className="h-3 w-3" />
+                  <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   Double Book
-                  <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[10px] font-bold">
+                  <span className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 py-0.5 bg-white/20 rounded text-[9px] sm:text-[10px] font-bold">
                     View
                   </span>
                 </Badge>
@@ -340,15 +340,15 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
               {appointment.rebooking_type === 'rebooking' && appointment.original_appointment_id && (
                 <Badge 
                   variant="outline" 
-                  className="cursor-pointer hover:bg-purple-400/20 border-purple-400/50 text-purple-500 dark:text-purple-300 flex items-center gap-1"
+                  className="cursor-pointer hover:bg-purple-400/20 border-purple-400/50 text-purple-500 dark:text-purple-300 flex items-center gap-1 text-[10px] sm:text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowRescheduleHistory(true);
                   }}
                 >
-                  <RefreshCw className="h-3 w-3" />
+                  <RefreshCw className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   Rebook
-                  <span className="ml-1 px-1.5 py-0.5 bg-purple-400/30 rounded text-[10px] font-bold hover:bg-purple-400/40">
+                  <span className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 py-0.5 bg-purple-400/30 rounded text-[9px] sm:text-[10px] font-bold hover:bg-purple-400/40">
                     View
                   </span>
                 </Badge>
@@ -357,20 +357,21 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
               {appointment.original_appointment_id && !appointment.rebooking_type && (
                 <Badge 
                   variant="outline" 
-                  className="cursor-pointer hover:bg-purple-400/20 border-purple-400/50 text-purple-500 dark:text-purple-300 flex items-center gap-1"
+                  className="cursor-pointer hover:bg-purple-400/20 border-purple-400/50 text-purple-500 dark:text-purple-300 flex items-center gap-1 text-[10px] sm:text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowRescheduleHistory(true);
                   }}
                 >
-                  <History className="h-3 w-3" />
-                  Rebooked Lead
+                  <History className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                  <span className="hidden sm:inline">Rebooked Lead</span>
+                  <span className="sm:hidden">Rebooked</span>
                   {appointment.reschedule_count > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 bg-purple-400/40 rounded-full text-[10px] font-bold">
+                    <span className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 py-0.5 bg-purple-400/40 rounded-full text-[9px] sm:text-[10px] font-bold">
                       {appointment.reschedule_count}x
                     </span>
                   )}
-                  <span className="ml-1 px-1.5 py-0.5 bg-purple-400/30 rounded text-[10px] font-bold hover:bg-purple-400/40">
+                  <span className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 py-0.5 bg-purple-400/30 rounded text-[9px] sm:text-[10px] font-bold hover:bg-purple-400/40">
                     View
                   </span>
                 </Badge>
@@ -378,15 +379,15 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
               {/* Double Book badge on ORIGINAL appointment */}
               {appointment.rescheduled_to_appointment_id && (
                 <Badge 
-                  className="bg-amber-500 text-white border-0 cursor-pointer hover:bg-amber-600 flex items-center gap-1"
+                  className="bg-amber-500 text-white border-0 cursor-pointer hover:bg-amber-600 flex items-center gap-1 text-[10px] sm:text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowRescheduleHistory(true);
                   }}
                 >
-                  <AlertTriangle className="h-3 w-3" />
+                  <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   Double Book
-                  <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[10px] font-bold">
+                  <span className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 py-0.5 bg-white/20 rounded text-[9px] sm:text-[10px] font-bold">
                     View
                   </span>
                 </Badge>
@@ -395,39 +396,39 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
           )}
 
           {/* Team Members - Always Show Both Fields */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {appointment.setter_name ? (
-              <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20 flex-1 min-w-0">
-                <DealAvatar name={appointment.setter_name} className="h-7 w-7 ring-2 ring-primary/30" />
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20 flex-1 min-w-0">
+                <DealAvatar name={appointment.setter_name} className="h-5 w-5 sm:h-7 sm:w-7 ring-2 ring-primary/30" />
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[10px] text-primary/70 font-semibold uppercase tracking-wider">Setter</span>
-                  <span className="text-xs font-medium truncate">{appointment.setter_name}</span>
+                  <span className="text-[9px] sm:text-[10px] text-primary/70 font-semibold uppercase tracking-wider">Setter</span>
+                  <span className="text-[10px] sm:text-xs font-medium truncate">{appointment.setter_name}</span>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg border border-muted flex-1 min-w-0">
-                <DealAvatar name="?" className="h-7 w-7 ring-2 ring-muted" />
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-muted/30 rounded-lg border border-muted flex-1 min-w-0">
+                <DealAvatar name="?" className="h-5 w-5 sm:h-7 sm:w-7 ring-2 ring-muted" />
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Setter</span>
-                  <span className="text-xs text-muted-foreground italic">Unassigned</span>
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Setter</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground italic">Unassigned</span>
                 </div>
               </div>
             )}
             
             {appointment.closer_name ? (
-              <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg border border-accent/20 flex-1 min-w-0">
-                <DealAvatar name={appointment.closer_name} className="h-7 w-7 ring-2 ring-accent/30" />
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg border border-accent/20 flex-1 min-w-0">
+                <DealAvatar name={appointment.closer_name} className="h-5 w-5 sm:h-7 sm:w-7 ring-2 ring-accent/30" />
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[10px] text-accent/70 font-semibold uppercase tracking-wider">Closer</span>
-                  <span className="text-xs font-medium truncate">{appointment.closer_name}</span>
+                  <span className="text-[9px] sm:text-[10px] text-accent/70 font-semibold uppercase tracking-wider">Closer</span>
+                  <span className="text-[10px] sm:text-xs font-medium truncate">{appointment.closer_name}</span>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg border border-muted flex-1 min-w-0">
-                <DealAvatar name="?" className="h-7 w-7 ring-2 ring-muted" />
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-muted/30 rounded-lg border border-muted flex-1 min-w-0">
+                <DealAvatar name="?" className="h-5 w-5 sm:h-7 sm:w-7 ring-2 ring-muted" />
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Closer</span>
-                  <span className="text-xs text-muted-foreground italic">Unassigned</span>
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Closer</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground italic">Unassigned</span>
                 </div>
               </div>
             )}
@@ -435,7 +436,7 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
 
           {/* Double Book Warning (reschedule type) */}
           {appointment.rebooking_type === 'reschedule' && appointment.original_appointment_id && (
-            <div className="text-xs p-2.5 rounded-lg border-l-4 bg-amber-500/10 border-amber-400 dark:bg-amber-500/15">
+            <div className="text-[10px] sm:text-xs p-2 sm:p-2.5 rounded-lg border-l-4 bg-amber-500/10 border-amber-400 dark:bg-amber-500/15">
               <strong className="text-amber-700 dark:text-amber-300">DOUBLE BOOK</strong>
               <span className="text-foreground/70"> — This lead has an existing appointment. Confirm which date is correct!</span>
             </div>
@@ -443,7 +444,7 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
 
           {/* Rebook Warning (rebooking type - original date passed) */}
           {appointment.rebooking_type === 'rebooking' && appointment.original_appointment_id && (
-            <div className="text-xs p-2.5 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
+            <div className="text-[10px] sm:text-xs p-2 sm:p-2.5 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
               <strong className="text-purple-700 dark:text-purple-300">REBOOK</strong>
               <span className="text-foreground/70"> — This lead previously booked (after original date passed). Click "View" above.</span>
             </div>
@@ -451,7 +452,7 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
 
           {/* Generic rebooked lead (no rebooking_type but has original) */}
           {appointment.original_appointment_id && !appointment.rebooking_type && (
-            <div className="text-xs p-2.5 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
+            <div className="text-[10px] sm:text-xs p-2 sm:p-2.5 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
               <strong className="text-purple-700 dark:text-purple-300">REBOOKED LEAD</strong>
               <span className="text-foreground/70"> — This lead has a previous booking. Click "View" above to see history.</span>
             </div>
@@ -459,19 +460,19 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
 
           {/* Original appointment that has a new booking */}
           {appointment.rescheduled_to_appointment_id && (
-            <div className="text-xs p-2.5 rounded-lg border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
-              <strong className="text-purple-700 dark:text-purple-300">LEAD REBOOKED</strong>
-              <span className="text-foreground/70"> — This lead booked a new appointment.{appointment.closer_name && ` Original closer: ${appointment.closer_name}.`} Click "View" above.</span>
+            <div className="text-[10px] sm:text-xs p-2 sm:p-2.5 rounded-lg border-l-4 bg-amber-500/10 border-amber-400 dark:bg-amber-500/15">
+              <strong className="text-amber-700 dark:text-amber-300">DOUBLE BOOK</strong>
+              <span className="text-foreground/70"> — This lead booked a new appointment. Click "View" above.</span>
             </div>
           )}
 
-          <div className="flex flex-col gap-1 text-xs pt-2 border-t border-primary/10">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Calendar className="h-3 w-3" />
+          <div className="flex flex-col gap-0.5 sm:gap-1 text-[10px] sm:text-xs pt-1.5 sm:pt-2 border-t border-primary/10">
+            <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+              <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               <span className="font-medium">{formatDateTimeWithTimezone(appointment.start_at_utc, "MMM d, yyyy 'at' h:mm a")}</span>
             </div>
-            <div className={`flex items-center gap-1.5 font-bold ${getDaysColor(daysInStage)}`}>
-              <div className="h-2 w-2 rounded-full bg-current animate-pulse" />
+            <div className={`flex items-center gap-1 sm:gap-1.5 font-bold ${getDaysColor(daysInStage)}`}>
+              <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-current animate-pulse" />
               {daysInStage} {daysInStage === 1 ? 'day' : 'days'} in stage
             </div>
           </div>

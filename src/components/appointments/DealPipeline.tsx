@@ -17,6 +17,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { DealCard } from "./DealCard";
 import { PipelineStageManager } from "./PipelineStageManager";
 import { AppointmentFilters } from "./AppointmentFilters";
+import { MobilePipelineView } from "./MobilePipelineView";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ import { ChangeStatusDialog } from "./ChangeStatusDialog";
 import { DepositCollectedDialog } from "./DepositCollectedDialog";
 import { format } from "date-fns";
 import { getUserFriendlyError } from "@/lib/errorUtils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 interface Appointment {
@@ -92,6 +94,7 @@ interface PipelineStage {
 }
 
 export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, viewFilter = 'all' }: DealPipelineProps) {
+  const isMobile = useIsMobile();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1301,150 +1304,169 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         </Button>
       </div>
 
-      <ScrollArea className="w-full">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex gap-4 pb-4">
-            {/* Appointments Booked Column */}
-            <DroppableStageColumn key="appointments_booked" id="appointments_booked">
-              <Card className="h-full" style={{ width: '300px' }}>
-                <div 
-                  className="p-4 border-b bg-primary/10 border-b-primary"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Appointments Booked</h3>
-                    <Badge variant="secondary">
-                      {dealsByStage['appointments_booked']?.length || 0}
-                    </Badge>
-                  </div>
-                </div>
-
-                <ScrollArea className="p-3" style={{ height: 'calc(100vh - 400px)' }}>
-                  <SortableContext
-                    items={(dealsByStage['appointments_booked'] || []).map((apt) => apt.id)}
-                    strategy={verticalListSortingStrategy}
-                    id="appointments_booked"
+      {/* Mobile View */}
+      {isMobile ? (
+        <MobilePipelineView
+          teamId={teamId}
+          stages={stages}
+          dealsByStage={dealsByStage}
+          confirmationTasks={confirmationTasks}
+          userRole={userRole}
+          allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+          onCloseDeal={handleCloseDeal}
+          onMoveTo={handleMoveTo}
+          onDelete={handleDelete}
+          onUndo={handleUndo}
+          onChangeStatus={handleChangeStatus}
+          onClearDealData={handleClearDealData}
+        />
+      ) : (
+        /* Desktop View - Horizontal Scroll Pipeline */
+        <ScrollArea className="w-full">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex gap-4 pb-4">
+              {/* Appointments Booked Column */}
+              <DroppableStageColumn key="appointments_booked" id="appointments_booked">
+                <Card className="h-full" style={{ width: '300px' }}>
+                  <div 
+                    className="p-4 border-b bg-primary/10 border-b-primary"
                   >
-                    <div className="space-y-3 min-h-[200px]">
-                      {(dealsByStage['appointments_booked']?.length || 0) === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">
-                          No deals
-                        </p>
-                      ) : (
-                        dealsByStage['appointments_booked'].map((appointment) => (
-                          <DealCard
-                            key={appointment.id}
-                            id={appointment.id}
-                            teamId={teamId}
-                            appointment={appointment}
-                            confirmationTask={confirmationTasks.get(appointment.id)}
-                            onCloseDeal={handleCloseDeal}
-                            onMoveTo={handleMoveTo}
-                            onDelete={handleDelete}
-                            onUndo={handleUndo}
-                            onChangeStatus={handleChangeStatus}
-                            onClearDealData={handleClearDealData}
-                            userRole={userRole}
-                            allowSetterPipelineUpdates={allowSetterPipelineUpdates}
-                          />
-                        ))
-                      )}
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Appointments Booked</h3>
+                      <Badge variant="secondary">
+                        {dealsByStage['appointments_booked']?.length || 0}
+                      </Badge>
                     </div>
-                  </SortableContext>
-                </ScrollArea>
-              </Card>
-            </DroppableStageColumn>
-            
-            {/* Other Pipeline Stages */}
-            {stages.filter(stage => stage.stage_id !== 'booked').map((stage) => {
-              const stageAppointments = dealsByStage[stage.stage_id] || [];
+                  </div>
 
-              return (
-                <DroppableStageColumn key={stage.id} id={stage.stage_id}>
-                  <Card className="h-full" style={{ width: '300px' }}>
-                    <div 
-                      className="p-4 border-b"
-                      style={{ 
-                        backgroundColor: `${stage.stage_color}15`,
-                        borderBottomColor: stage.stage_color
-                      }}
+                  <ScrollArea className="p-3" style={{ height: 'calc(100vh - 400px)' }}>
+                    <SortableContext
+                      items={(dealsByStage['appointments_booked'] || []).map((apt) => apt.id)}
+                      strategy={verticalListSortingStrategy}
+                      id="appointments_booked"
                     >
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{stage.stage_label}</h3>
-                        <Badge variant="secondary">
-                          {stageAppointments.length}
-                        </Badge>
+                      <div className="space-y-3 min-h-[200px]">
+                        {(dealsByStage['appointments_booked']?.length || 0) === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-8">
+                            No deals
+                          </p>
+                        ) : (
+                          dealsByStage['appointments_booked'].map((appointment) => (
+                            <DealCard
+                              key={appointment.id}
+                              id={appointment.id}
+                              teamId={teamId}
+                              appointment={appointment}
+                              confirmationTask={confirmationTasks.get(appointment.id)}
+                              onCloseDeal={handleCloseDeal}
+                              onMoveTo={handleMoveTo}
+                              onDelete={handleDelete}
+                              onUndo={handleUndo}
+                              onChangeStatus={handleChangeStatus}
+                              onClearDealData={handleClearDealData}
+                              userRole={userRole}
+                              allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+                            />
+                          ))
+                        )}
                       </div>
-                    </div>
+                    </SortableContext>
+                  </ScrollArea>
+                </Card>
+              </DroppableStageColumn>
+              
+              {/* Other Pipeline Stages */}
+              {stages.filter(stage => stage.stage_id !== 'booked').map((stage) => {
+                const stageAppointments = dealsByStage[stage.stage_id] || [];
 
-                    <ScrollArea className="p-3" style={{ height: 'calc(100vh - 400px)' }}>
-                      <SortableContext
-                        items={stageAppointments.map((apt) => apt.id)}
-                        strategy={verticalListSortingStrategy}
-                        id={stage.stage_id}
+                return (
+                  <DroppableStageColumn key={stage.id} id={stage.stage_id}>
+                    <Card className="h-full" style={{ width: '300px' }}>
+                      <div 
+                        className="p-4 border-b"
+                        style={{ 
+                          backgroundColor: `${stage.stage_color}15`,
+                          borderBottomColor: stage.stage_color
+                        }}
                       >
-                        <div className="space-y-3 min-h-[200px]">
-                          {stageAppointments.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-8">
-                              No deals
-                            </p>
-                          ) : (
-                            stageAppointments.map((appointment) => (
-                              <DealCard
-                                key={appointment.id}
-                                id={appointment.id}
-                                teamId={teamId}
-                                appointment={appointment}
-                                onCloseDeal={handleCloseDeal}
-                                onMoveTo={handleMoveTo}
-                                onDelete={handleDelete}
-                                onUndo={handleUndo}
-                                onChangeStatus={handleChangeStatus}
-                                onClearDealData={handleClearDealData}
-                                userRole={userRole}
-                                allowSetterPipelineUpdates={allowSetterPipelineUpdates}
-                              />
-                            ))
-                          )}
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold">{stage.stage_label}</h3>
+                          <Badge variant="secondary">
+                            {stageAppointments.length}
+                          </Badge>
                         </div>
-                      </SortableContext>
-                    </ScrollArea>
-                  </Card>
-                </DroppableStageColumn>
-              );
-            })}
-          </div>
+                      </div>
 
-          <DragOverlay dropAnimation={null}>
-            {activeId && (() => {
-              const activeAppointment = appointments.find(a => a.id === activeId);
-              return activeAppointment ? (
-                <div className="opacity-90 cursor-grabbing" style={{ width: '300px' }}>
-                  <DealCard
-                    id={activeId}
-                    teamId={teamId}
-                    appointment={activeAppointment}
-                    confirmationTask={confirmationTasks.get(activeId)}
-                    onCloseDeal={handleCloseDeal}
-                    onMoveTo={handleMoveTo}
-                    onDelete={handleDelete}
-                    onUndo={handleUndo}
-                    onChangeStatus={handleChangeStatus}
-                    onClearDealData={handleClearDealData}
-                    userRole={userRole}
-                    allowSetterPipelineUpdates={allowSetterPipelineUpdates}
-                  />
-                </div>
-              ) : null;
-            })()}
-          </DragOverlay>
-        </DndContext>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+                      <ScrollArea className="p-3" style={{ height: 'calc(100vh - 400px)' }}>
+                        <SortableContext
+                          items={stageAppointments.map((apt) => apt.id)}
+                          strategy={verticalListSortingStrategy}
+                          id={stage.stage_id}
+                        >
+                          <div className="space-y-3 min-h-[200px]">
+                            {stageAppointments.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-8">
+                                No deals
+                              </p>
+                            ) : (
+                              stageAppointments.map((appointment) => (
+                                <DealCard
+                                  key={appointment.id}
+                                  id={appointment.id}
+                                  teamId={teamId}
+                                  appointment={appointment}
+                                  onCloseDeal={handleCloseDeal}
+                                  onMoveTo={handleMoveTo}
+                                  onDelete={handleDelete}
+                                  onUndo={handleUndo}
+                                  onChangeStatus={handleChangeStatus}
+                                  onClearDealData={handleClearDealData}
+                                  userRole={userRole}
+                                  allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+                                />
+                              ))
+                            )}
+                          </div>
+                        </SortableContext>
+                      </ScrollArea>
+                    </Card>
+                  </DroppableStageColumn>
+                );
+              })}
+            </div>
+
+            <DragOverlay dropAnimation={null}>
+              {activeId && (() => {
+                const activeAppointment = appointments.find(a => a.id === activeId);
+                return activeAppointment ? (
+                  <div className="opacity-90 cursor-grabbing" style={{ width: '300px' }}>
+                    <DealCard
+                      id={activeId}
+                      teamId={teamId}
+                      appointment={activeAppointment}
+                      confirmationTask={confirmationTasks.get(activeId)}
+                      onCloseDeal={handleCloseDeal}
+                      onMoveTo={handleMoveTo}
+                      onDelete={handleDelete}
+                      onUndo={handleUndo}
+                      onChangeStatus={handleChangeStatus}
+                      onClearDealData={handleClearDealData}
+                      userRole={userRole}
+                      allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+                    />
+                  </div>
+                ) : null;
+              })()}
+            </DragOverlay>
+          </DndContext>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      )}
 
       <PipelineStageManager
         open={managerOpen}
