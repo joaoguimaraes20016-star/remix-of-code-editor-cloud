@@ -847,85 +847,54 @@ serve(async (req) => {
         const newAppointmentDate = startTime ? new Date(startTime).toLocaleDateString() : 'soon';
         const originalDate = new Date(priorAppointment.start_at_utc).toLocaleDateString();
         
-        // For NATIVE RESCHEDULE (via Calendly reschedule link): Move task to new appointment
+        // For DOUBLE BOOK (new appointment before original passes): Keep BOTH active with warnings
         if (rebookingType === 'reschedule') {
-          console.log(`[REBOOKING-TASK] Native reschedule detected - moving task to new appointment`);
+          console.log(`[DOUBLE-BOOK] Detected - keeping BOTH appointments active in schedule`);
           
           if (existingTask) {
-            const warningMsg = `📅 RESCHEDULED: Originally scheduled for ${originalDate}. Confirm they want the new date!`;
+            // Add warning to original task but DON'T move it - keep both tasks active
+            const warningMsg = `⚠️ DOUBLE BOOK: Lead also booked for ${newAppointmentDate}. Confirm which date is correct!`;
             
-            // Move task to new appointment
             const { error: taskUpdateError } = await adminClient
               .from('confirmation_tasks')
               .update({
-                appointment_id: insertedAppointment.id,
                 follow_up_reason: warningMsg,
-                due_at: new Date().toISOString()
-              })
-              .eq('id', existingTask.id);
-            
-            if (taskUpdateError) {
-              console.error(`[REBOOKING-TASK] Failed to update existing task:`, taskUpdateError);
-            } else {
-              console.log(`[REBOOKING-TASK] ✓ Moved task ${existingTask.id} to new appointment`);
-            }
-          }
-          
-          // Mark original appointment as rescheduled
-          const { error: apptUpdateError } = await adminClient
-            .from('appointments')
-            .update({ 
-              pipeline_stage: 'rescheduled',
-              rescheduled_to_appointment_id: insertedAppointment.id
-            })
-            .eq('id', priorAppointment.id);
-          
-          if (apptUpdateError) {
-            console.error(`[REBOOKING-TASK] Failed to update prior appointment:`, apptUpdateError);
-          } else {
-            console.log(`[REBOOKING-TASK] ✓ Marked prior appointment as rescheduled`);
-          }
-        } 
-        // For MANUAL REBOOKING: Keep BOTH tasks active with warnings
-        else if (rebookingType === 'rebooking') {
-          console.log(`[REBOOKING-TASK] Manual rebooking detected - keeping BOTH tasks active`);
-          
-          if (existingTask) {
-            // Add warning to ORIGINAL task but keep it pointing to original appointment
-            const originalWarning = `⚠️ LEAD REBOOKED: This lead also booked for ${newAppointmentDate}. Verify which appointment they want!`;
-            
-            const { error: taskUpdateError } = await adminClient
-              .from('confirmation_tasks')
-              .update({
-                follow_up_reason: originalWarning,
                 due_at: new Date().toISOString() // Make it urgent
               })
               .eq('id', existingTask.id);
             
             if (taskUpdateError) {
-              console.error(`[REBOOKING-TASK] Failed to update original task warning:`, taskUpdateError);
+              console.error(`[DOUBLE-BOOK] Failed to update original task warning:`, taskUpdateError);
             } else {
-              console.log(`[REBOOKING-TASK] ✓ Added rebooking warning to original task ${existingTask.id}`);
+              console.log(`[DOUBLE-BOOK] ✓ Added double book warning to original task ${existingTask.id}`);
             }
           }
           
-          // DON'T set rescheduled_to_appointment_id - let both appointments stay active
-          // Just update pipeline_stage to show there's a potential conflict
+          // DON'T change pipeline_stage - keep original in its current stage (e.g., 'booked')
+          // Just set rescheduled_to_appointment_id so we can link them for "View New Booking" button
           const { error: apptUpdateError } = await adminClient
             .from('appointments')
             .update({ 
-              pipeline_stage: 'rebooking_conflict'
+              rescheduled_to_appointment_id: insertedAppointment.id
+              // INTENTIONALLY NOT changing pipeline_stage - appointment stays active
             })
             .eq('id', priorAppointment.id);
           
           if (apptUpdateError) {
-            console.error(`[REBOOKING-TASK] Failed to update prior appointment:`, apptUpdateError);
+            console.error(`[DOUBLE-BOOK] Failed to link prior appointment:`, apptUpdateError);
           } else {
-            console.log(`[REBOOKING-TASK] ✓ Marked prior appointment as rebooking_conflict (both tasks active)`);
+            console.log(`[DOUBLE-BOOK] ✓ Linked prior appointment to new one (both stay active)`);
           }
+        }
+        // For REBOOK (original date has passed): Keep original as history, new gets own task
+        else if (rebookingType === 'rebooking') {
+          console.log(`[REBOOK] Original appointment date passed - keeping original as historical`);
           
-          // New appointment will get its own task via trigger - add warning there too
-          console.log(`[REBOOKING-TASK] New appointment will get its own task via trigger`);
+          // For rebooking, the original appointment is in the past (historical)
+          // Don't modify it - it should stay in whatever stage it was (no_show, cancelled, etc.)
+          // The new appointment will get its own task via trigger
+          console.log(`[REBOOK] Original stays in stage: ${priorAppointment.pipeline_stage}`);
+          console.log(`[REBOOK] New appointment will get its own task via trigger`);
         }
         // For RETURNING_CLIENT or WIN_BACK: Keep original as-is, new gets its own task
         else {

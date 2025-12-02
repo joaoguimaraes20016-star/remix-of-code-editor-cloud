@@ -106,7 +106,7 @@ export function ResolveDoubleBookDialog({
         .from("appointments")
         .update({
           rebooking_type: null, // Clear to make it a normal lead
-          pipeline_stage: "new", // Reset to new stage
+          pipeline_stage: "booked", // Reset to booked stage
         })
         .eq("id", newAppointment.id);
 
@@ -155,7 +155,7 @@ export function ResolveDoubleBookDialog({
           .from("appointments")
           .update({
             rescheduled_to_appointment_id: null,
-            pipeline_stage: "new", // Reset from rebooking_conflict if needed
+            // Keep original in its current stage (don't change)
           })
           .eq("id", fetchedOriginal.id);
 

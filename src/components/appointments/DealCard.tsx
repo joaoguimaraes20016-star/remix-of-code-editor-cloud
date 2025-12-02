@@ -100,7 +100,6 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
   const isConfirmed = appointment.status === 'CONFIRMED' && !isNoShow && !isCancelled;
   const isRescheduled = appointment.status === 'RESCHEDULED' || appointment.pipeline_stage === 'rescheduled';
   const isClosed = appointment.pipeline_stage === 'won' || appointment.pipeline_stage?.toLowerCase().includes('closed');
-  const isRebookingConflict = appointment.pipeline_stage === 'rebooking_conflict';
   const hasRebookingType = appointment.rebooking_type && ['rebooking', 'reschedule', 'returning_client', 'win_back'].includes(appointment.rebooking_type);
   const showUndoButton = (isClosed || hasRevenue) && onUndo;
 
@@ -279,15 +278,6 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
               </span>
             </Badge>
           )}
-          {/* Rebooking Conflict Warning - BOTH appointments need confirmation */}
-          {isRebookingConflict && (
-            <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-sm animate-pulse">
-              <span className="flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Rebooking Conflict
-              </span>
-            </Badge>
-          )}
           {/* Rebooking Type Badges */}
           {appointment.rebooking_type === 'rebooking' && (
             <Badge className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-sm">
@@ -385,16 +375,17 @@ export function DealCard({ id, teamId, appointment, confirmationTask, onCloseDea
                   </span>
                 </Badge>
               )}
+              {/* Double Book badge on ORIGINAL appointment */}
               {appointment.rescheduled_to_appointment_id && (
                 <Badge 
-                  className="bg-purple-500 text-white border-0 cursor-pointer hover:bg-purple-600 flex items-center gap-1"
+                  className="bg-amber-500 text-white border-0 cursor-pointer hover:bg-amber-600 flex items-center gap-1"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowRescheduleHistory(true);
                   }}
                 >
-                  <ArrowRight className="h-3 w-3" />
-                  Lead Rebooked
+                  <AlertTriangle className="h-3 w-3" />
+                  Double Book
                   <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[10px] font-bold">
                     View
                   </span>
