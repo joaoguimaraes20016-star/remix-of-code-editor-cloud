@@ -287,14 +287,14 @@ export function HorizontalAppointmentCard({
                 </span>
               </Badge>
             )}
-            {/* Lead Rebooked for a New Time Badge */}
+            {/* Double Book Badge on ORIGINAL appointment */}
             {appointment.rescheduled_to_appointment_id && (
               <Badge 
-                className="text-xs font-medium bg-purple-500 text-white border-0 cursor-pointer hover:bg-purple-600"
+                className="text-xs font-medium bg-amber-500 text-white border-0 cursor-pointer hover:bg-amber-600"
                 onClick={() => setShowRescheduleHistory(true)}
               >
-                <ArrowRight className="w-3 h-3 mr-1" />
-                Lead Rebooked
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Double Book
                 <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[10px] font-bold">
                   View
                 </span>

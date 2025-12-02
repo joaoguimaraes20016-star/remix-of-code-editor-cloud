@@ -745,10 +745,11 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                   </Badge>
                 )}
                 {getTaskTypeBadge(task, isMRRTask)}
-                {apt?.rescheduled_to_appointment_id && (
-                  <Badge className="bg-purple-500 text-white border-0">
-                    <ArrowRight className="h-3 w-3 mr-1" />
-                    Rebooked
+                {/* Show Double Book badge on ORIGINAL appointment */}
+                {apt?.rescheduled_to_appointment_id && !task.rebooking_type && (
+                  <Badge className="text-xs bg-amber-500 text-white border-0 font-bold shadow-sm shadow-amber-500/30">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    Double Book
                   </Badge>
                 )}
                 {isFollowUpFromOverdue && (
@@ -793,20 +794,6 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                     Double Book
                   </Badge>
                 )}
-                {/* Badge for ORIGINAL appointments that lead rebooked from */}
-                {task.rescheduled_to_appointment_id && !task.rebooking_type && (
-                  <Badge className="text-xs bg-purple-500 text-white border-0 font-bold shadow-sm shadow-purple-500/30">
-                    <ArrowRight className="h-3 w-3 mr-1" />
-                    Lead Rebooked
-                  </Badge>
-                )}
-                {/* Badge for rebooking conflict - BOTH appointments need confirmation */}
-                {task.pipeline_stage === 'rebooking_conflict' && (
-                  <Badge className="text-xs bg-red-500 text-white border-0 font-bold shadow-sm shadow-red-500/30 animate-pulse">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Rebooking Conflict
-                  </Badge>
-                )}
               </div>
               {/* Rebooking warning message - BRIGHT and prominent with View Original link */}
               {task.rebooking_type && (
@@ -849,18 +836,18 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                   </div>
                 </div>
               )}
-              {/* Warning for ORIGINAL appointments that have been rebooked */}
+              {/* Warning for ORIGINAL appointments where lead DOUBLE BOOKED */}
               {task.rescheduled_to_appointment_id && !task.rebooking_type && (
-                <div className="text-sm p-3 rounded-lg border-l-4 mt-2 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
+                <div className="text-sm p-3 rounded-lg border-l-4 mt-2 bg-amber-500/10 border-amber-400 dark:bg-amber-500/15">
                   <div className="flex items-center justify-between gap-2">
                     <span>
-                      <strong className="text-purple-700 dark:text-purple-300">REBOOKED</strong>
-                      <span className="text-foreground/70"> — This lead booked a new appointment.{task.closer_name && ` Original closer: ${task.closer_name}.`}</span>
+                      <strong className="text-amber-700 dark:text-amber-300">DOUBLE BOOK</strong>
+                      <span className="text-foreground/70"> — This lead also booked a NEW appointment. Confirm which date is correct!</span>
                     </span>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs h-7 bg-white/50 hover:bg-white border-current shrink-0"
+                      className="text-xs h-7 bg-white/50 hover:bg-white border-amber-500 text-amber-700 shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         viewNewAppointment(task.rescheduled_to_appointment_id!);
@@ -872,23 +859,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                   </div>
                 </div>
               )}
-              {/* Warning for rebooking conflict - ORIGINAL appointment where lead also booked another date */}
-              {task.pipeline_stage === 'rebooking_conflict' && (
-                <div className="text-sm p-3 rounded-lg border-l-4 mt-2 font-semibold shadow-sm bg-red-100 border-red-500 text-red-900 dark:bg-red-900/40 dark:text-red-100">
-                  <div className="flex items-center justify-between gap-2">
-                    <span>
-                      <strong>REBOOKING CONFLICT</strong> — This lead ALSO booked another appointment! Confirm which date they actually want before proceeding.
-                    </span>
-                  </div>
-                </div>
-              )}
               {/* Show follow_up_reason warning (from webhook override) */}
-              {task.followUpReason && task.followUpReason.includes('REBOOKED') && !task.rebooking_type && !task.pipeline_stage?.includes('rebooking') && (
-                <div className="text-sm p-3 rounded-lg border-l-4 mt-2 font-semibold shadow-sm bg-cyan-100 border-cyan-500 text-cyan-900 dark:bg-cyan-900/40 dark:text-cyan-100">
+              {task.followUpReason && task.followUpReason.includes('DOUBLE BOOK') && !task.rebooking_type && (
+                <div className="text-sm p-3 rounded-lg border-l-4 mt-2 font-semibold shadow-sm bg-amber-100 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
                   {task.followUpReason}
                 </div>
               )}
-              {task.details && !task.rebooking_type && !task.followUpReason?.includes('REBOOKED') && (
+              {task.details && !task.rebooking_type && !task.followUpReason?.includes('DOUBLE BOOK') && (
                 <p className="text-xs text-muted-foreground border-l-2 pl-2 mt-1">
                   {task.details}
                 </p>

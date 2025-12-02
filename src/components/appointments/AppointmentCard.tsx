@@ -165,13 +165,14 @@ export function AppointmentCard({
             </Badge>
           )}
           
+          {/* Double Book badge on ORIGINAL appointment */}
           {appointment.rescheduled_to_appointment_id && (
             <Badge 
-              className="bg-purple-500 text-white border-0 cursor-pointer hover:bg-purple-600 gap-1"
+              className="bg-amber-500 text-white border-0 cursor-pointer hover:bg-amber-600 gap-1"
               onClick={() => setShowRescheduleHistory(true)}
             >
-              <ArrowRight className="h-3 w-3" />
-              Lead Rebooked
+              <AlertTriangle className="h-3 w-3" />
+              Double Book
               <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs font-medium">
                 View
               </span>
