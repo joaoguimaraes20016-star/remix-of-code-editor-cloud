@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { InfoIcon, Calendar, Clock, Phone, CalendarCheck, CalendarClock, CalendarX, UserPlus, PenLine, Send, X, AlertCircle, Star, RotateCcw, RefreshCw, AlertTriangle, Eye } from "lucide-react";
+import { InfoIcon, Calendar, Clock, Phone, CalendarCheck, CalendarClock, CalendarX, UserPlus, PenLine, Send, X, AlertCircle, Star, RotateCcw, RefreshCw, AlertTriangle, Eye, Mail, MessageSquare, User } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useTeamRole } from "@/hooks/useTeamRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -408,164 +408,186 @@ export function TodaysSchedule({ teamId, currentUserId, onCloseDeal }: TodaysSch
 
   const renderTaskCard = (appointment: Appointment, task: Task) => {
     const noAnswerCount = countNoAnswerAttempts(task.confirmation_attempts || []);
+    const displayStatus = appointment.status === 'NEW' ? 'Pending Confirmation' : appointment.status;
+    const statusColors: Record<string, string> = {
+      NEW: "bg-orange-500 text-white",
+      SHOWED: "bg-green-500 text-white",
+      NO_SHOW: "bg-red-500 text-white",
+      CANCELLED: "bg-gray-500 text-white",
+      CLOSED: "bg-green-600 text-white",
+      RESCHEDULED: "bg-yellow-500 text-white",
+      CONFIRMED: "bg-green-500 text-white",
+    };
+    const statusColor = statusColors[appointment.status] || statusColors.NEW;
 
     return (
-      <Card key={appointment.id} className="bg-card card-hover border-l-4 border-l-blue-500">
-        <CardContent className="p-3 sm:p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div className="space-y-1 min-w-0 flex-1">
-              <p className="font-semibold truncate">{appointment.lead_name}</p>
-              <p className="text-sm text-muted-foreground truncate">{appointment.lead_email}</p>
-              {appointment.lead_phone && (
-                <p className="text-sm text-muted-foreground">{appointment.lead_phone}</p>
-              )}
-              <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                {appointment.event_type_name && (
-                  <Badge variant="outline" className="text-xs">
-                    {appointment.event_type_name}
-                  </Badge>
-                )}
-                <Badge className="text-xs bg-blue-500 text-white border-0">
+      <Card key={appointment.id} className="p-4 hover:shadow-md transition-all duration-200 border-l-4 border-l-orange-500 group">
+        {/* Main Content Row */}
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+          {/* Lead Information - Left Section */}
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <h3 className="text-lg font-semibold truncate">{appointment.lead_name}</h3>
+              <Badge className={cn("text-xs", statusColor)}>
+                {displayStatus}
+              </Badge>
+              {noAnswerCount > 0 && (
+                <Badge variant="outline" className="text-xs border-orange-400 text-orange-600 dark:text-orange-400">
                   <Phone className="h-3 w-3 mr-1" />
-                  {task.task_type === 'call_confirmation' ? 'Call Confirmation' : task.task_type}
+                  {noAnswerCount} attempt{noAnswerCount > 1 ? 's' : ''}
                 </Badge>
-                {noAnswerCount > 0 && (
-                  <Badge variant="outline" className="text-xs border-orange-400 text-orange-600 dark:text-orange-400">
-                    <Phone className="h-3 w-3 mr-1" />
-                    {noAnswerCount} attempt{noAnswerCount > 1 ? 's' : ''}
-                  </Badge>
-                )}
-                {/* Rebooking badges */}
-                {appointment.rebooking_type === 'returning_client' && (
-                  <Badge className="text-xs bg-emerald-500 text-white border-0">
-                    <Star className="h-3 w-3 mr-1" />
-                    Returning Client
-                  </Badge>
-                )}
-                {appointment.rebooking_type === 'win_back' && (
-                  <Badge className="text-xs bg-blue-500 text-white border-0">
-                    <RotateCcw className="h-3 w-3 mr-1" />
-                    Win-Back
-                  </Badge>
-                )}
-                {appointment.rebooking_type === 'rebooking' && (
-                  <Badge className="text-xs bg-purple-500 text-white border-0">
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Rebook
-                  </Badge>
-                )}
-                {appointment.rebooking_type === 'reschedule' && (
-                  <Badge className="text-xs bg-amber-500 text-white border-0">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Double Book
-                  </Badge>
-                )}
-              </div>
-
-              {/* Rebooking warnings */}
-              {appointment.rebooking_type && (
-                <div className={cn(
-                  "text-xs p-2 rounded-lg border-l-4 mt-2",
-                  appointment.rebooking_type === 'returning_client' && "bg-emerald-500/10 border-emerald-400",
-                  appointment.rebooking_type === 'win_back' && "bg-blue-500/10 border-blue-400",
-                  appointment.rebooking_type === 'rebooking' && "bg-purple-500/10 border-purple-400",
-                  appointment.rebooking_type === 'reschedule' && "bg-amber-500/10 border-amber-400",
-                )}>
-                  {appointment.rebooking_type === 'returning_client' && (
-                    <><strong className="text-emerald-700 dark:text-emerald-300">RETURNING CLIENT</strong><span className="text-foreground/70"> — Previously closed. Find out why they're booking again!</span></>
-                  )}
-                  {appointment.rebooking_type === 'win_back' && (
-                    <><strong className="text-blue-700 dark:text-blue-300">WIN-BACK</strong><span className="text-foreground/70"> — Was {appointment.previous_status?.replace('_', ' ')}. Another chance!</span></>
-                  )}
-                  {appointment.rebooking_type === 'rebooking' && (
-                    <><strong className="text-purple-700 dark:text-purple-300">REBOOK</strong><span className="text-foreground/70"> — Previously scheduled (after original date passed).</span></>
-                  )}
-                  {appointment.rebooking_type === 'reschedule' && (
-                    <><strong className="text-amber-700 dark:text-amber-300">DOUBLE BOOK</strong><span className="text-foreground/70"> — Has existing appointment. Confirm correct date!</span></>
-                  )}
-                </div>
               )}
-
-              {/* Setter notes */}
-              {appointment.setter_notes && (
-                <div className="text-xs p-2 bg-muted/50 rounded mt-2 whitespace-pre-line">
-                  {appointment.setter_notes}
+              {/* Rebooking badges */}
+              {appointment.rebooking_type === 'returning_client' && (
+                <Badge className="text-xs bg-emerald-500 text-white border-0">
+                  <Star className="h-3 w-3 mr-1" />
+                  Returning Client
+                </Badge>
+              )}
+              {appointment.rebooking_type === 'win_back' && (
+                <Badge className="text-xs bg-blue-500 text-white border-0">
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Win-Back
+                </Badge>
+              )}
+              {appointment.rebooking_type === 'rebooking' && (
+                <Badge className="text-xs bg-purple-500 text-white border-0">
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Rebook
+                </Badge>
+              )}
+              {appointment.rebooking_type === 'reschedule' && (
+                <Badge className="text-xs bg-amber-500 text-white border-0">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Double Book
+                </Badge>
+              )}
+            </div>
+            
+            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">{appointment.lead_email}</span>
+              </div>
+              {appointment.lead_phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{appointment.lead_phone}</span>
                 </div>
               )}
             </div>
 
-            {/* Time info */}
-            <div className="flex flex-col items-end gap-1 text-sm">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span className="font-bold">
-                  {formatDateTimeWithTimezone(appointment.start_at_utc, 'h:mm a')}
-                </span>
+            {/* Setter Notes */}
+            {appointment.setter_notes && (
+              <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <MessageSquare className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                  <span className="whitespace-pre-line">{appointment.setter_notes}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span className="text-xs">
-                  Due: {formatDateTimeWithTimezone(task.due_at, 'h:mm a')}
-                </span>
+            )}
+          </div>
+
+          {/* Appointment Details - Center Section */}
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium">{formatDateTimeWithTimezone(appointment.start_at_utc)}</span>
+            </div>
+            
+            {appointment.event_type_name && (
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{appointment.event_type_name}</span>
               </div>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              {appointment.setter_name ? (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-info/10 border border-info/30 rounded text-xs">
+                  <User className="w-3 h-3 text-info" />
+                  <span className="font-medium">Setter: {appointment.setter_name}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/30 border border-muted rounded text-xs">
+                  <User className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-muted-foreground italic">Setter: Unassigned</span>
+                </div>
+              )}
+              
+              {appointment.closer_name ? (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 border border-primary/30 rounded text-xs">
+                  <User className="w-3 h-3 text-primary" />
+                  <span className="font-medium">Closer: {appointment.closer_name}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/30 border border-muted rounded text-xs">
+                  <User className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-muted-foreground italic">Closer: Unassigned</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex gap-2 flex-wrap pt-2 border-t">
-            <Button 
-              size="sm"
-              onClick={() => setConfirmDialog({ 
-                open: true, 
-                taskId: task.id, 
-                appointmentId: appointment.id,
-                appointmentName: appointment.lead_name
-              })}
-            >
-              <CalendarCheck className="h-4 w-4 mr-1" />
-              Confirm
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setNoAnswerDialog({
-                open: true,
-                taskId: task.id,
-                appointmentId: appointment.id,
-                dealName: appointment.lead_name
-              })}
-            >
-              <Phone className="h-4 w-4 mr-1" />
-              No Answer
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                if (appointment.reschedule_url) {
-                  setRescheduleWithLinkDialog({
-                    open: true,
-                    taskId: task.id,
-                    appointmentId: appointment.id,
-                    appointmentName: appointment.lead_name,
-                    rescheduleUrl: appointment.reschedule_url
-                  });
-                } else {
-                  toast.error("No reschedule link available");
-                }
-              }}
-            >
-              <CalendarClock className="h-4 w-4 mr-1" />
-              Reschedule
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => handleNoShow(task.id, appointment.id, appointment.lead_name)}
-            >
-              <CalendarX className="h-4 w-4 mr-1" />
-              No-Show
-            </Button>
+          {/* Actions - Right Section */}
+          <div className="flex flex-col gap-2 lg:items-end">
+            <div className="flex gap-2 flex-wrap">
+              <Button 
+                size="sm"
+                onClick={() => setConfirmDialog({ 
+                  open: true, 
+                  taskId: task.id, 
+                  appointmentId: appointment.id,
+                  appointmentName: appointment.lead_name
+                })}
+              >
+                <CalendarCheck className="h-4 w-4 mr-1" />
+                Confirm
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setNoAnswerDialog({
+                  open: true,
+                  taskId: task.id,
+                  appointmentId: appointment.id,
+                  dealName: appointment.lead_name
+                })}
+              >
+                <Phone className="h-4 w-4 mr-1" />
+                No Answer
+              </Button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (appointment.reschedule_url) {
+                    setRescheduleWithLinkDialog({
+                      open: true,
+                      taskId: task.id,
+                      appointmentId: appointment.id,
+                      appointmentName: appointment.lead_name,
+                      rescheduleUrl: appointment.reschedule_url
+                    });
+                  } else {
+                    toast.error("No reschedule link available");
+                  }
+                }}
+              >
+                <CalendarClock className="h-4 w-4 mr-1" />
+                Reschedule
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => handleNoShow(task.id, appointment.id, appointment.lead_name)}
+              >
+                <CalendarX className="h-4 w-4 mr-1" />
+                No-Show
+              </Button>
+            </div>
             <Button
               size="sm"
               variant="outline"
@@ -575,12 +597,13 @@ export function TodaysSchedule({ teamId, currentUserId, onCloseDeal }: TodaysSch
                 appointmentName: appointment.lead_name,
                 currentNotes: appointment.setter_notes
               })}
+              className="w-full lg:w-auto"
             >
               <PenLine className="h-4 w-4 mr-1" />
               Add Update
             </Button>
           </div>
-        </CardContent>
+        </div>
       </Card>
     );
   };
