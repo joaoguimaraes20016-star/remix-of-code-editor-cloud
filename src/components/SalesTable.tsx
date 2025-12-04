@@ -67,6 +67,7 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
   const [tempCloserCommission, setTempCloserCommission] = useState("");
 
   const canEdit = userRole === 'admin' || userRole === 'offer_owner';
+  const canEditCloser = userRole === 'admin'; // Only admins can reassign closers
 
   const canDelete = (sale: Sale) => {
     return userRole === 'admin' || userRole === 'offer_owner' || sale.offerOwner === currentUserName;
@@ -327,7 +328,7 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
                   )}
                 </TableCell>
                 <TableCell>
-                  {canEdit && editingCloser === sale.id ? (
+                  {canEditCloser && editingCloser === sale.id ? (
                     <Select
                       value={sale.salesRep}
                       onValueChange={(value) => handleCloserChange(sale.id, value)}
@@ -345,8 +346,8 @@ export function SalesTable({ sales, userRole, currentUserName, onSaleDeleted, te
                     </Select>
                   ) : (
                     <div 
-                      onClick={() => canEdit && setEditingCloser(sale.id)}
-                      className={canEdit ? 'cursor-pointer hover:text-primary' : ''}
+                      onClick={() => canEditCloser && setEditingCloser(sale.id)}
+                      className={canEditCloser ? 'cursor-pointer hover:text-primary' : ''}
                     >
                       {sale.salesRep}
                     </div>

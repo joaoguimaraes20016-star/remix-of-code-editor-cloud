@@ -8,7 +8,8 @@ interface CommissionBreakdownProps {
 }
 
 export function CommissionBreakdown({ sales }: CommissionBreakdownProps) {
-  // Calculate closer commission totals (exclude zero commissions and offer owners)
+  // Calculate closer commission totals from CASH COLLECTED only (exclude zero commissions and offer owners)
+  // Note: MRR commissions are tracked separately in mrr_commissions table and shown in MRR dashboard
   const closerCommissions = sales
     .filter(s => s.status === 'closed' && s.commission > 0 && s.salesRep !== s.offerOwner)
     .reduce((acc, sale) => {
@@ -19,13 +20,14 @@ export function CommissionBreakdown({ sales }: CommissionBreakdownProps) {
           salesCount: 0,
         };
       }
+      // Commission is already calculated on CC only in the sales table
       acc[sale.salesRep].totalCommission += sale.commission;
       acc[sale.salesRep].totalRevenue += sale.revenue;
       acc[sale.salesRep].salesCount += 1;
       return acc;
     }, {} as Record<string, { totalCommission: number; totalRevenue: number; salesCount: number }>);
 
-  // Calculate setter commission totals (exclude zero commissions, empty setters, and offer owners)
+  // Calculate setter commission totals from CASH COLLECTED only (exclude zero commissions, empty setters, and offer owners)
   const setterCommissions = sales
     .filter(s => s.status === 'closed' && s.setterCommission > 0 && s.setter && s.setter.trim() !== '' && s.setter !== s.offerOwner)
     .reduce((acc, sale) => {
@@ -36,6 +38,7 @@ export function CommissionBreakdown({ sales }: CommissionBreakdownProps) {
           salesCount: 0,
         };
       }
+      // Commission is already calculated on CC only in the sales table
       acc[sale.setter].totalCommission += sale.setterCommission;
       acc[sale.setter].totalRevenue += sale.revenue;
       acc[sale.setter].salesCount += 1;
