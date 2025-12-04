@@ -43,6 +43,7 @@ import { DepositCollectedDialog } from "./DepositCollectedDialog";
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from "date-fns";
 import { getUserFriendlyError } from "@/lib/errorUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getActionPipelineMappings } from "@/lib/actionPipelineMappings";
 
 
 interface Appointment {

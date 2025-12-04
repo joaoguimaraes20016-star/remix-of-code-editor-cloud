@@ -8,6 +8,7 @@ import { Calendar, Clock, UserPlus, CalendarCheck, CalendarX, Loader2 } from "lu
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { FollowUpDialog } from "./FollowUpDialog";
+import { getActionPipelineMappings } from "@/lib/actionPipelineMappings";
 
 interface Appointment {
   id: string;
@@ -156,11 +157,15 @@ export function ConfirmTodayWorkspace({ teamId, userRole }: ConfirmTodayWorkspac
     if (!followUpDialog) return;
 
     try {
+      // Get action pipeline mappings for no_show
+      const mappings = await getActionPipelineMappings(teamId);
+      const targetStage = mappings.no_show || 'no_show';
+
       const { error } = await supabase
         .from('appointments')
         .update({
-          status: 'CANCELLED',
-          pipeline_stage: 'no_show',
+          status: 'NO_SHOW',
+          pipeline_stage: targetStage,
           retarget_date: format(followUpDate, "yyyy-MM-dd"),
           retarget_reason: reason
         })

@@ -118,10 +118,10 @@ serve(async (req) => {
       });
     }
 
-    // Fetch team's Calendly configuration including signing key for verification
+    // Fetch team's Calendly configuration including signing key for verification and action mappings
     const { data: team, error: teamError } = await supabase
       .from('teams')
-      .select('id, calendly_access_token, calendly_refresh_token, calendly_token_expires_at, calendly_event_types, calendly_webhook_signing_key')
+      .select('id, calendly_access_token, calendly_refresh_token, calendly_token_expires_at, calendly_event_types, calendly_webhook_signing_key, action_pipeline_mappings')
       .eq('id', teamIdParam)
       .not('calendly_access_token', 'is', null)
       .maybeSingle();
@@ -176,6 +176,20 @@ serve(async (req) => {
 
     const teamId = team.id;
     const allowedEventTypes = team.calendly_event_types || [];
+    
+    // Parse action pipeline mappings with defaults
+    const defaultMappings = {
+      double_book: "booked",
+      rebook: "booked",
+      no_show: "no_show",
+      cancelled: "canceled",
+      rescheduled: "rescheduled",
+      no_answer: null,
+    };
+    const actionMappings = team.action_pipeline_mappings 
+      ? { ...defaultMappings, ...(team.action_pipeline_mappings as Record<string, string | null>) }
+      : defaultMappings;
+    console.log('[CONFIG] Action pipeline mappings:', actionMappings);
     
     // Verify webhook signature if signing key is available
     const signature = req.headers.get('calendly-webhook-signature');
@@ -732,6 +746,18 @@ serve(async (req) => {
         }
       }
 
+      // Determine pipeline_stage based on rebooking type and action mappings
+      let determinedPipelineStage = appointmentData.pipeline_stage || 'booked';
+      if (rebookingType === 'reschedule') {
+        // Double book scenario - use configured mapping
+        determinedPipelineStage = actionMappings.double_book || 'booked';
+        console.log(`[PIPELINE] Double book detected - using pipeline stage: ${determinedPipelineStage}`);
+      } else if (rebookingType === 'rebooking') {
+        // Rebook scenario - use configured mapping
+        determinedPipelineStage = actionMappings.rebook || 'booked';
+        console.log(`[PIPELINE] Rebook detected - using pipeline stage: ${determinedPipelineStage}`);
+      }
+
       // Create new appointment using direct REST API to bypass auth context
       const appointmentToInsert = {
         team_id: appointmentData.team_id,
@@ -747,7 +773,7 @@ serve(async (req) => {
         status: appointmentData.status,
         event_type_uri: appointmentData.event_type_uri || null,
         event_type_name: appointmentData.event_type_name || null,
-        pipeline_stage: appointmentData.pipeline_stage || 'booked',
+        pipeline_stage: determinedPipelineStage,
         reschedule_url: rescheduleUrl,
         cancel_url: cancelUrl,
         calendly_invitee_uri: calendlyInviteeUri,
@@ -1077,12 +1103,16 @@ serve(async (req) => {
 
       console.log('[CANCEL] Updating appointment to CANCELLED:', appointment.id);
       
+      // Get pipeline stage from action mappings
+      const cancelledStage = actionMappings.cancelled || 'canceled';
+      console.log(`[CANCEL] Using pipeline stage from mappings: ${cancelledStage}`);
+      
       // Update the specific appointment
       const { error: updateError } = await supabase
         .from('appointments')
         .update({ 
           status: 'CANCELLED',
-          pipeline_stage: 'canceled'
+          pipeline_stage: cancelledStage
         })
         .eq('id', appointment.id);
 
@@ -1199,11 +1229,16 @@ serve(async (req) => {
       );
 
       console.log('[RESCHEDULE] Updating old appointment to rescheduled stage...');
-      // Move old appointment to "rescheduled" stage but keep it
+      
+      // Get pipeline stage from action mappings
+      const rescheduledStage = actionMappings.rescheduled || 'rescheduled';
+      console.log(`[RESCHEDULE] Using pipeline stage from mappings: ${rescheduledStage}`);
+      
+      // Move old appointment to configured stage but keep it
       const { error: updateOldError } = await adminClient
         .from('appointments')
         .update({ 
-          pipeline_stage: 'rescheduled',
+          pipeline_stage: rescheduledStage,
           status: 'RESCHEDULED',
         })
         .eq('id', oldAppointment.id);
