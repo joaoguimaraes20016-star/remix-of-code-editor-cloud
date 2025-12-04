@@ -342,6 +342,14 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     setActiveId(event.active.id as string);
   };
 
+  // Helper to get the logical stage for comparison (handles virtual stages)
+  const getLogicalStage = (apt: { pipeline_stage: string | null; status?: string }) => {
+    if (!apt.pipeline_stage || apt.pipeline_stage === 'new' || apt.pipeline_stage === 'booked') {
+      return 'appointments_booked';
+    }
+    return apt.pipeline_stage;
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
@@ -361,14 +369,36 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     const targetStage = stages.find(s => s.stage_id === overId);
     const targetCard = appointments.find(a => a.id === overId);
     
-    // Determine the new stage
-    const newStage = targetStage ? targetStage.stage_id : (targetCard?.pipeline_stage || null);
+    // Determine the new stage - handle virtual "appointments_booked" stage
+    let newStage: string | null = null;
     
-    if (!newStage) return;
+    if (overId === 'appointments_booked') {
+      newStage = 'booked'; // Map virtual stage to actual db value
+    } else if (targetStage) {
+      newStage = targetStage.stage_id;
+    } else if (targetCard) {
+      newStage = targetCard.pipeline_stage || 'booked';
+    }
+    
+    // Validate newStage is a known valid stage
+    const validStageIds = ['appointments_booked', 'booked', ...stages.map(s => s.stage_id)];
+    if (!newStage || !validStageIds.includes(newStage)) {
+      // Invalid stage - silently return
+      return;
+    }
 
     // Find the appointment being dragged
     const appointment = appointments.find(a => a.id === appointmentId);
-    if (!appointment || appointment.pipeline_stage === newStage) return;
+    if (!appointment) return;
+    
+    // Check if dropping in the same logical stage - if so, do nothing
+    const currentLogicalStage = getLogicalStage(appointment);
+    const targetLogicalStage = newStage === 'booked' ? 'appointments_booked' : newStage;
+    
+    if (currentLogicalStage === targetLogicalStage) {
+      // Same stage - no action needed, no toast
+      return;
+    }
 
     // Check if moving to won/closed stage - open close deal dialog
     const targetStageData = stages.find(s => s.stage_id === newStage);

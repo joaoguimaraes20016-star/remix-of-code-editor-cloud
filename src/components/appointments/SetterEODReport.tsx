@@ -412,7 +412,7 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
                   <Skeleton className="h-16 w-full" />
                   <Skeleton className="h-16 w-full" />
                 </div>
-              ) : appointmentsBooked.length === 0 && callConfirmations.length === 0 && mrrTasks.length === 0 && noShows.length === 0 && reschedules.length === 0 && overdueTasks.length === 0 ? (
+              ) : appointmentsBooked.length === 0 && callConfirmations.length === 0 && mrrTasks.length === 0 && noShows.length === 0 && reschedules.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No activity for this date</p>
               ) : (
                 <>
@@ -523,31 +523,7 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
                     </div>
                   ))}
 
-                  {/* Overdue Tasks */}
-                  {overdueTasks.map(task => (
-                    <div key={task.id} className="flex items-start gap-3 p-4 rounded-lg border-l-4 border-destructive bg-destructive/5 border border-destructive/20">
-                      <div className="text-xs text-destructive font-bold min-w-[80px]">OVERDUE</div>
-                      <Badge variant="destructive" className="shrink-0 gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        Overdue
-                      </Badge>
-                      <div className="flex-1 space-y-1">
-                        <p className="font-semibold text-destructive text-base">{task.appointment?.lead_name}</p>
-                        <p className="text-sm text-muted-foreground">{task.appointment?.lead_email}</p>
-                        {task.appointment?.lead_phone && (
-                          <p className="text-sm font-medium text-foreground flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {task.appointment?.lead_phone}
-                          </p>
-                        )}
-                        {task.appointment?.start_at_utc && (
-                          <p className="text-sm font-medium text-destructive mt-1">
-                            Due: {formatDateTimeWithTimezone(new Date(task.appointment.start_at_utc), 'MMM dd, h:mm a')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  {/* Overdue Tasks removed from activity - shown in metric card only */}
                 </>
               )}
             </div>

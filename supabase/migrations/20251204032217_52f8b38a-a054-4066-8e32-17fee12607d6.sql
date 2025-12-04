@@ -1,0 +1,1 @@
+ALTER TABLE public.teams ADD COLUMN no_answer_callback_options JSONB DEFAULT '[15, 30, 60, 120]'::jsonb;
