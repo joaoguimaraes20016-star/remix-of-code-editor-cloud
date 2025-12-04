@@ -980,7 +980,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 </Button>
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => apt && setNoAnswerDialog({
                     open: true,
                     taskId: task.id,
