@@ -15,6 +15,7 @@ import { NoAnswerDialog } from './NoAnswerDialog';
 import { toast } from "sonner";
 import { cn, formatDateTimeWithTimezone } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
+import { getActionPipelineMappings } from "@/lib/actionPipelineMappings";
 
 interface UnifiedTasksViewProps {
   teamId: string;
@@ -620,6 +621,15 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
         .eq('id', taskId);
 
       if (error) throw error;
+
+      // Apply no_answer pipeline mapping if configured
+      const mappings = await getActionPipelineMappings(teamId);
+      if (mappings.no_answer) {
+        await supabase
+          .from('appointments')
+          .update({ pipeline_stage: mappings.no_answer })
+          .eq('id', appointmentId);
+      }
 
       // Log activity
       await supabase.from('activity_logs').insert({
