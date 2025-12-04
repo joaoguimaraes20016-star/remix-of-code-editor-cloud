@@ -849,8 +849,22 @@ export function ByCloserView({ teamId, onCloseDeal }: ByCloserViewProps) {
 
     // Calculate stats for each closer
     const closerData: CloserGroup[] = Array.from(groups.entries()).map(([closerId, apts]) => {
-      const inPipeline = apts.filter(a => a.status === 'showed' && (!a.cc_collected || a.cc_collected === 0)).length;
-      const closed = apts.filter(a => a.cc_collected && a.cc_collected > 0).length;
+      // In pipeline: active appointments not yet closed (NEW, SHOWED, CONFIRMED, or pipeline stages before won)
+      const terminalStatuses = ['CLOSED', 'CANCELLED', 'NO_SHOW', 'RESCHEDULED'];
+      const terminalStages = ['won', 'closed', 'cancelled', 'no_show', 'disqualified', 'lost'];
+      
+      const inPipeline = apts.filter(a => 
+        !terminalStatuses.includes(a.status) && 
+        !terminalStages.includes(a.pipeline_stage?.toLowerCase())
+      ).length;
+      
+      // Closed: appointments with CLOSED status or won stage
+      const closed = apts.filter(a => 
+        a.status === 'CLOSED' || 
+        a.pipeline_stage === 'won' ||
+        (a.cc_collected && a.cc_collected > 0)
+      ).length;
+      
       const revenue = apts.reduce((sum, a) => sum + (Number(a.cc_collected) || 0), 0);
 
       return {
