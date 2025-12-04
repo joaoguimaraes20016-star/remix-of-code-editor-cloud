@@ -558,25 +558,38 @@ const Index = () => {
       
       return hasDeposit && repMatch && !hasSaleRecord;
     })
-    .map(apt => ({
-      id: apt.id,
-      customerName: apt.lead_name,
-      offerOwner: apt.closer_name || '',
-      setter: apt.setter_name || '',
-      salesRep: apt.closer_name || '',
-      date: apt.start_at_utc?.split('T')[0] || new Date().toISOString().split('T')[0],
-      revenue: Number(apt.cc_collected) || 0,
-      setterCommission: apt.setter_id ? (Number(apt.cc_collected) || 0) * (setterCommissionPct / 100) : 0,
-      commission: (() => {
-        if (!apt.closer_id) return 0;
-        const closerMember = teamMembers.find(m => m.id === apt.closer_id);
-        if (!closerMember) return 0;
-        return (closerMember.role !== 'offer_owner') ? (Number(apt.cc_collected) || 0) * (closerCommissionPct / 100) : 0;
-      })(),
-      status: apt.pipeline_stage?.toLowerCase().includes('deposit') ? 'pending' as const : 'closed' as const,
-      isAppointment: true, // Flag this as an appointment
-      productName: apt.product_name || '',
-    }));
+    .map(apt => {
+      // For closed deals, use updated_at (when deal was closed) or today's date
+      // For deposits still in progress, use the appointment date
+      const isClosed = apt.status === 'CLOSED' || apt.pipeline_stage?.toLowerCase() === 'won';
+      let saleDate: string;
+      if (isClosed && apt.updated_at) {
+        saleDate = apt.updated_at.split('T')[0];
+      } else {
+        saleDate = apt.start_at_utc?.split('T')[0] || new Date().toISOString().split('T')[0];
+      }
+      
+      return {
+        id: apt.id,
+        customerName: apt.lead_name,
+        offerOwner: apt.closer_name || '',
+        setter: apt.setter_name || '',
+        salesRep: apt.closer_name || '',
+        date: saleDate,
+        revenue: Number(apt.cc_collected) || 0,
+        // Commission is only on Cash Collected, not MRR
+        setterCommission: apt.setter_id ? (Number(apt.cc_collected) || 0) * (setterCommissionPct / 100) : 0,
+        commission: (() => {
+          if (!apt.closer_id) return 0;
+          const closerMember = teamMembers.find(m => m.id === apt.closer_id);
+          if (!closerMember) return 0;
+          return (closerMember.role !== 'offer_owner') ? (Number(apt.cc_collected) || 0) * (closerCommissionPct / 100) : 0;
+        })(),
+        status: apt.pipeline_stage?.toLowerCase().includes('deposit') ? 'pending' as const : 'closed' as const,
+        isAppointment: true, // Flag this as an appointment
+        productName: apt.product_name || '',
+      };
+    });
 
   // Filter sales by selected rep and date range
   const filteredSalesFromTable = sales.filter(s => {
@@ -680,14 +693,19 @@ const Index = () => {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
     date.setHours(0, 0, 0, 0); // Normalize to start of day
-    const dateStr = date.toISOString().split('T')[0];
+    // Use local date format for comparison to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     
     // Use filteredSales which already combines appointments with deposits AND manual sales
     const dayRevenue = filteredSales
       .filter(s => {
-        const saleDate = new Date(s.date);
-        saleDate.setHours(0, 0, 0, 0);
-        return s.date === dateStr && s.status === 'closed';
+        // Parse sale date and compare as local dates
+        const saleDateParts = s.date.split('T')[0].split('-');
+        const saleDateStr = saleDateParts.slice(0, 3).join('-');
+        return saleDateStr === dateStr && s.status === 'closed';
       })
       .reduce((sum, s) => sum + s.revenue, 0);
 
