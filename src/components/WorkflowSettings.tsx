@@ -22,7 +22,7 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
   const [saving, setSaving] = useState(false);
   const [autoCreateTasks, setAutoCreateTasks] = useState(true);
   const [allowSetterPipelineUpdates, setAllowSetterPipelineUpdates] = useState(false);
-  const [noAnswerRetryMinutes, setNoAnswerRetryMinutes] = useState(30);
+  const [noAnswerCallbackOptions, setNoAnswerCallbackOptions] = useState<number[]>([15, 30, 60, 120]);
 
   useEffect(() => {
     loadSettings();
@@ -32,7 +32,7 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
     try {
       const { data, error } = await supabase
         .from("teams")
-        .select("auto_create_tasks, allow_setter_pipeline_updates, no_answer_retry_minutes")
+        .select("auto_create_tasks, allow_setter_pipeline_updates, no_answer_callback_options")
         .eq("id", teamId)
         .single();
 
@@ -40,7 +40,8 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
       if (data) {
         setAutoCreateTasks(data.auto_create_tasks ?? true);
         setAllowSetterPipelineUpdates(data.allow_setter_pipeline_updates ?? false);
-        setNoAnswerRetryMinutes(data.no_answer_retry_minutes ?? 30);
+        const options = data.no_answer_callback_options as number[] | null;
+        setNoAnswerCallbackOptions(Array.isArray(options) ? options : [15, 30, 60, 120]);
       }
     } catch (error: any) {
       toast({
@@ -62,7 +63,7 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
         .update({ 
           auto_create_tasks: autoCreateTasks,
           allow_setter_pipeline_updates: allowSetterPipelineUpdates,
-          no_answer_retry_minutes: noAnswerRetryMinutes
+          no_answer_callback_options: noAnswerCallbackOptions
         })
         .eq("id", teamId);
 
@@ -147,22 +148,26 @@ export function WorkflowSettings({ teamId }: WorkflowSettingsProps) {
 
           <div className="flex items-center justify-between space-x-4 pt-4 border-t">
             <div className="flex-1 space-y-1">
-              <Label htmlFor="no-answer-retry" className="text-base font-medium">
-                No Answer retry delay (minutes)
+              <Label htmlFor="no-answer-callback" className="text-base font-medium">
+                No Answer callback options (minutes)
               </Label>
               <p className="text-sm text-muted-foreground">
-                When a call goes unanswered, schedule a retry after this many minutes. 
-                If retry would overlap with appointment time, only the attempt is logged.
+                When a call goes unanswered, these preset callback times will be shown. 
+                Comma-separated list of minutes (e.g., 15, 30, 60, 120).
               </p>
             </div>
             <Input
-              id="no-answer-retry"
-              type="number"
-              min={5}
-              max={120}
-              className="w-24"
-              value={noAnswerRetryMinutes}
-              onChange={(e) => setNoAnswerRetryMinutes(parseInt(e.target.value) || 30)}
+              id="no-answer-callback"
+              className="w-40"
+              value={noAnswerCallbackOptions.join(', ')}
+              onChange={(e) => {
+                const parsed = e.target.value
+                  .split(',')
+                  .map(s => parseInt(s.trim(), 10))
+                  .filter(n => !isNaN(n) && n > 0);
+                setNoAnswerCallbackOptions(parsed.length > 0 ? parsed : [30]);
+              }}
+              placeholder="15, 30, 60, 120"
             />
           </div>
 

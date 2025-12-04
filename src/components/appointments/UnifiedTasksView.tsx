@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RescheduleWithLinkDialog } from './RescheduleWithLinkDialog';
 import { FollowUpDialog } from './FollowUpDialog';
+import { NoAnswerDialog } from './NoAnswerDialog';
 import { toast } from "sonner";
 import { cn, formatDateTimeWithTimezone } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
@@ -91,6 +92,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
     appointment: any;
     loading: boolean;
   } | null>(null);
+  const [noAnswerDialog, setNoAnswerDialog] = useState<{
+    open: boolean;
+    taskId: string;
+    appointmentId: string;
+    dealName: string;
+  } | null>(null);
+  const [noAnswerCallbackOptions, setNoAnswerCallbackOptions] = useState<number[]>([15, 30, 60, 120]);
 
   useEffect(() => {
     loadData();
@@ -138,15 +146,21 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       const now = new Date();
       const unifiedTasks: UnifiedTask[] = [];
 
-      // Load team's overdue threshold
+      // Load team's overdue threshold and callback options
       const { data: teamData } = await supabase
         .from('teams')
-        .select('overdue_threshold_minutes')
+        .select('overdue_threshold_minutes, no_answer_callback_options')
         .eq('id', teamId)
         .single();
       
       if (teamData?.overdue_threshold_minutes) {
         setTeamOverdueThreshold(teamData.overdue_threshold_minutes);
+      }
+      
+      // Load callback options
+      const callbackOpts = teamData?.no_answer_callback_options as number[] | null;
+      if (Array.isArray(callbackOpts) && callbackOpts.length > 0) {
+        setNoAnswerCallbackOptions(callbackOpts);
       }
 
       // Load follow-up config to get total counts per stage
@@ -513,17 +527,8 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
     }
   };
 
-  const handleNoAnswerRetry = async (taskId: string, appointmentId: string) => {
+  const handleNoAnswerRetry = async (taskId: string, appointmentId: string, retryMinutes: number, notes: string) => {
     try {
-      // Get team's retry minutes setting
-      const { data: teamSettings } = await supabase
-        .from('teams')
-        .select('no_answer_retry_minutes')
-        .eq('id', teamId)
-        .single();
-      
-      const retryMinutes = teamSettings?.no_answer_retry_minutes ?? 30;
-
       // Get appointment time to check for overlap
       const apt = appointments.find(a => a.id === appointmentId);
       const appointmentTime = apt?.start_at_utc ? new Date(apt.start_at_utc) : null;
@@ -541,11 +546,38 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       const newAttempt = {
         timestamp: new Date().toISOString(),
         confirmed_by: user?.id,
-        notes: 'No Answer',
+        notes: notes || 'No Answer',
         type: 'no_answer'
       };
 
       const attempts = [...(Array.isArray(task?.confirmation_attempts) ? task.confirmation_attempts : []), newAttempt];
+      
+      // If retryMinutes is 0, it's a "double dial" - don't reschedule, just log
+      if (retryMinutes === 0) {
+        const { error } = await supabase
+          .from('confirmation_tasks')
+          .update({ confirmation_attempts: attempts })
+          .eq('id', taskId);
+
+        if (error) throw error;
+
+        await supabase.from('activity_logs').insert({
+          team_id: teamId,
+          appointment_id: appointmentId,
+          actor_id: user?.id,
+          actor_name: 'Team Member',
+          action_type: 'No Answer',
+          note: `Double dial attempted${notes ? ': ' + notes : ''}`
+        });
+
+        toast.success('No answer logged - Double dial', {
+          description: 'Attempt recorded'
+        });
+
+        loadData();
+        return;
+      }
+
       const newDueAt = new Date(Date.now() + retryMinutes * 60 * 1000);
 
       // Check if retry would overlap with appointment time
@@ -560,14 +592,13 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
 
         if (error) throw error;
 
-        // Log activity
         await supabase.from('activity_logs').insert({
           team_id: teamId,
           appointment_id: appointmentId,
           actor_id: user?.id,
           actor_name: 'Team Member',
           action_type: 'No Answer',
-          note: 'No answer - retry skipped (too close to appointment)'
+          note: `No answer - retry skipped (too close to appointment)${notes ? ': ' + notes : ''}`
         });
 
         toast.warning('No answer recorded - retry skipped', {
@@ -597,7 +628,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
         actor_id: user?.id,
         actor_name: 'Team Member',
         action_type: 'No Answer',
-        note: `No answer - retry scheduled for ${format(newDueAt, 'h:mm a')}`
+        note: `No answer - retry scheduled for ${format(newDueAt, 'h:mm a')}${notes ? ': ' + notes : ''}`
       });
 
       toast.success(`No answer - Call back at ${format(newDueAt, 'h:mm a')}`, {
@@ -605,6 +636,7 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
       });
 
       loadData();
+      setNoAnswerDialog(null);
     } catch (error) {
       console.error('Error handling no answer:', error);
       toast.error('Failed to record no answer');
@@ -939,7 +971,12 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => apt && handleNoAnswerRetry(task.id, apt.id)}
+                  onClick={() => apt && setNoAnswerDialog({
+                    open: true,
+                    taskId: task.id,
+                    appointmentId: apt.id,
+                    dealName: displayName
+                  })}
                 >
                   <Phone className="h-4 w-4 mr-1" />
                   No Answer
@@ -1423,6 +1460,19 @@ export function UnifiedTasksView({ teamId }: UnifiedTasksViewProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* No Answer Dialog */}
+      <NoAnswerDialog
+        open={noAnswerDialog?.open || false}
+        onOpenChange={(open) => !open && setNoAnswerDialog(null)}
+        onConfirm={(minutes, notes) => {
+          if (noAnswerDialog) {
+            handleNoAnswerRetry(noAnswerDialog.taskId, noAnswerDialog.appointmentId, minutes, notes);
+          }
+        }}
+        dealName={noAnswerDialog?.dealName || ""}
+        callbackOptions={noAnswerCallbackOptions}
+      />
     </div>
   );
 }
