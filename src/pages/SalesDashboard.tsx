@@ -857,7 +857,7 @@ const Index = () => {
         )}
 
         {/* Commission Breakdown */}
-        <CommissionBreakdown sales={filteredSales} />
+        <CommissionBreakdown sales={filteredSales} teamId={teamId} />
 
         {/* Chart */}
         <RevenueChart data={chartData} />
