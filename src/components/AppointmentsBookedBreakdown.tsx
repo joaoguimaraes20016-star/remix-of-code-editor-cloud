@@ -129,8 +129,11 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
 
   useEffect(() => {
-    loadAppointmentStats();
-    loadActivityAndTasks();
+    const loadData = async () => {
+      await loadAppointmentStats();
+      await loadActivityAndTasks();
+    };
+    loadData();
   }, [teamId]);
 
   const loadActivityAndTasks = async () => {
