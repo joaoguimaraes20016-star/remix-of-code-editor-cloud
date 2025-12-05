@@ -83,6 +83,7 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
         supabase
           .from('appointments')
           .select('*')
+          .eq('team_id', teamId)
           .eq('setter_id', userId)
           .gte('created_at', startDate.toISOString())
           .lte('created_at', endDate.toISOString())
@@ -137,10 +138,11 @@ export function SetterEODReport({ teamId, userId, userName, date }: SetterEODRep
           .gte('created_at', startDate.toISOString())
           .lte('created_at', endDate.toISOString()),
         
-        // Get setter's booking code
+        // Get setter's booking code - MUST filter by team for multi-team users
         supabase
           .from('team_members')
           .select('booking_code')
+          .eq('team_id', teamId)
           .eq('user_id', userId)
           .maybeSingle()
       ]);
