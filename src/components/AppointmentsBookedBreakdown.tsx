@@ -307,10 +307,13 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
     setLoading(true);
     try {
       const now = new Date();
-      const monthStart = startOfMonth(now);
-      const weekStart = startOfWeek(now, { weekStartsOn: 0 });
-      const todayStart = startOfDay(now);
-      const todayEnd = endOfDay(now);
+      // Use UTC-based date boundaries for consistent comparison with DB timestamps
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const weekDay = now.getUTCDay(); // 0 = Sunday
+      const weekStartDay = now.getUTCDate() - weekDay;
+      const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), weekStartDay, 0, 0, 0, 0));
+      const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
 
       // Fetch all appointments for this team
       const { data: appointments, error } = await supabase
