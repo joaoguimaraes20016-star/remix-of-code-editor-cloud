@@ -1428,51 +1428,22 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           </div>
         </div>
       <div className="flex items-center gap-3">
-          {/* Calls Booked Metric */}
-          {(() => {
-            const now = new Date();
-            const todayStart = startOfDay(now);
-            const todayEnd = endOfDay(now);
-            
-            // Count today's bookings
-            const todayCount = appointments.filter(apt => {
-              if (!apt.created_at) return false;
-              const createdAt = new Date(apt.created_at);
-              return isWithinInterval(createdAt, { start: todayStart, end: todayEnd });
-            }).length;
-            
-            // If date filter is set, calculate that range too
-            const hasCustomRange = dateFilter.from && (
-              startOfDay(dateFilter.from).getTime() !== todayStart.getTime() ||
-              (dateFilter.to && endOfDay(dateFilter.to).getTime() !== todayEnd.getTime())
-            );
-            
-            const rangeCount = hasCustomRange ? appointments.filter(apt => {
-              if (!apt.created_at) return false;
-              const createdAt = new Date(apt.created_at);
-              const filterStart = startOfDay(dateFilter.from!);
-              const filterEnd = dateFilter.to ? endOfDay(dateFilter.to) : endOfDay(dateFilter.from!);
-              return isWithinInterval(createdAt, { start: filterStart, end: filterEnd });
-            }).length : null;
-            
-            return (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="px-3 py-1.5 text-sm bg-secondary border border-border">
-                  <span className="text-muted-foreground mr-1.5">Booked Today:</span>
-                  <span className="font-bold text-primary">{todayCount}</span>
-                </Badge>
-                
-                {hasCustomRange && rangeCount !== null && (
-                  <Badge variant="outline" className="px-3 py-1.5 text-sm border-primary/30">
-                    <span className="text-muted-foreground mr-1.5">
-                      {format(dateFilter.from!, 'MMM d')}{dateFilter.to && dateFilter.to.getTime() !== dateFilter.from?.getTime() ? `-${format(dateFilter.to, 'MMM d')}` : ''}:
-                    </span>
-                    <span className="font-bold text-foreground">{rangeCount}</span>
-                  </Badge>
-                )}
-              </div>
-            );
-          })()}
+          {/* Calls Booked Metric - Compact inline display */}
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            Booked: <span className="font-semibold text-primary">
+              {(() => {
+                const now = new Date();
+                const todayStart = startOfDay(now);
+                const todayEnd = endOfDay(now);
+                return appointments.filter(apt => {
+                  if (!apt.created_at) return false;
+                  const createdAt = new Date(apt.created_at);
+                  return isWithinInterval(createdAt, { start: todayStart, end: todayEnd });
+                }).length;
+              })()}
+            </span>
+            <span className="text-muted-foreground/60"> today</span>
+          </span>
           <Button 
             onClick={() => setManagerOpen(true)} 
             variant="outline" 
