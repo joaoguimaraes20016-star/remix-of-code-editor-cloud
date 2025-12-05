@@ -99,15 +99,24 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
   const loadTaskSummary = async () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
     const sevenDaysFromNow = new Date(today);
     sevenDaysFromNow.setDate(today.getDate() + 7);
 
-    // Load confirmation tasks
+    // Load confirmation tasks with assigned user's role
     const { data: tasks } = await supabase
       .from('confirmation_tasks')
-      .select('*, appointment:appointments(start_at_utc, setter_id, closer_id)')
+      .select('*, assigned_to, due_at')
       .eq('team_id', teamId)
       .eq('status', 'pending');
+
+    // Get team members with roles to determine if assignee is setter or closer
+    const { data: teamMembers } = await supabase
+      .from('team_members')
+      .select('user_id, role')
+      .eq('team_id', teamId);
+
+    const memberRoles = new Map(teamMembers?.map(m => [m.user_id, m.role]) || []);
 
     // Load MRR tasks
     const { data: mrrTasks } = await supabase
@@ -120,19 +129,23 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
     let overdueSetters = 0, overdueClosers = 0, dueTodaySetters = 0, dueTodayClosers = 0;
 
     tasks?.forEach(task => {
-      const aptTime = new Date(task.appointment?.start_at_utc);
-      const isOverdue = aptTime < now;
-      const isDueToday = aptTime >= today && aptTime < new Date(today.getTime() + 24 * 60 * 60 * 1000);
-      const isUpcoming = aptTime >= new Date(today.getTime() + 24 * 60 * 60 * 1000) && aptTime <= sevenDaysFromNow;
+      const dueAt = new Date(task.due_at);
+      const isOverdue = dueAt < now;
+      const isDueToday = dueAt >= today && dueAt < tomorrow;
+      const isUpcoming = dueAt >= tomorrow && dueAt <= sevenDaysFromNow;
+      
+      const assigneeRole = task.assigned_to ? memberRoles.get(task.assigned_to) : null;
+      const isSetter = assigneeRole === 'setter';
+      const isCloser = assigneeRole === 'closer';
 
       if (isOverdue) {
         overdue++;
-        if (task.appointment?.setter_id) overdueSetters++;
-        if (task.appointment?.closer_id) overdueClosers++;
+        if (isSetter) overdueSetters++;
+        if (isCloser) overdueClosers++;
       } else if (isDueToday) {
         dueToday++;
-        if (task.appointment?.setter_id) dueTodaySetters++;
-        if (task.appointment?.closer_id) dueTodayClosers++;
+        if (isSetter) dueTodaySetters++;
+        if (isCloser) dueTodayClosers++;
       } else if (isUpcoming) {
         upcoming++;
       }
