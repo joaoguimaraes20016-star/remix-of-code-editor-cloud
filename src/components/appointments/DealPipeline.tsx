@@ -1424,35 +1424,32 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
                   </SelectContent>
                 </Select>
               </div>
+              {/* Calls Booked Metric - inline with filters */}
+              <span className="text-sm text-muted-foreground whitespace-nowrap hidden sm:inline">
+                <span className="font-semibold text-primary">
+                  {(() => {
+                    const now = new Date();
+                    const todayStart = startOfDay(now);
+                    const todayEnd = endOfDay(now);
+                    return appointments.filter(apt => {
+                      if (!apt.created_at) return false;
+                      const createdAt = new Date(apt.created_at);
+                      return isWithinInterval(createdAt, { start: todayStart, end: todayEnd });
+                    }).length;
+                  })()}
+                </span> booked today
+              </span>
             </div>
           </div>
         </div>
-      <div className="flex items-center gap-3">
-          {/* Calls Booked Metric - Compact inline display */}
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            Booked: <span className="font-semibold text-primary">
-              {(() => {
-                const now = new Date();
-                const todayStart = startOfDay(now);
-                const todayEnd = endOfDay(now);
-                return appointments.filter(apt => {
-                  if (!apt.created_at) return false;
-                  const createdAt = new Date(apt.created_at);
-                  return isWithinInterval(createdAt, { start: todayStart, end: todayEnd });
-                }).length;
-              })()}
-            </span>
-            <span className="text-muted-foreground/60"> today</span>
-          </span>
-          <Button 
-            onClick={() => setManagerOpen(true)} 
-            variant="outline" 
-            className="whitespace-nowrap border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Manage Pipeline
-          </Button>
-        </div>
+        <Button 
+          onClick={() => setManagerOpen(true)} 
+          variant="outline" 
+          className="whitespace-nowrap border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all"
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          Manage Pipeline
+        </Button>
       </div>
 
       {/* Mobile View */}
