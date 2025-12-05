@@ -74,6 +74,7 @@ interface Task {
   status: string;
   appointment_id: string;
   created_at: string;
+  due_at?: string;
   follow_up_date?: string;
   reschedule_date?: string;
   appointments?: {
@@ -129,167 +130,159 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      await loadAppointmentStats();
-      await loadActivityAndTasks();
-    };
-    loadData();
+    loadAppointmentStats();
   }, [teamId]);
 
-  const loadActivityAndTasks = async () => {
-    try {
-      const todayStart = startOfDay(new Date());
-      const todayEnd = endOfDay(new Date());
-      const fortyEightHoursAgo = subHours(new Date(), 48);
+  // Helper function to load activity and task data for team members
+  const loadActivityAndTasksForMembers = async (
+    setterIds: string[], 
+    closerIds: string[]
+  ): Promise<{
+    activitiesByUser: Map<string, ActivityLog[]>;
+    tasksByUser: Map<string, Task[]>;
+    accountabilityByUser: Map<string, AccountabilityMetrics>;
+  }> => {
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+    const fortyEightHoursAgo = subHours(new Date(), 48);
+    const now = new Date();
 
-      // Load today's activities
-      const { data: activities } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .eq('team_id', teamId)
-        .gte('created_at', todayStart.toISOString())
-        .lte('created_at', todayEnd.toISOString())
-        .order('created_at', { ascending: false });
+    const allUserIds = [...new Set([...setterIds, ...closerIds])];
 
-      // Load ALL activities for stale lead detection
-      const { data: allActivities } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .eq('team_id', teamId);
+    // Load today's activities
+    const { data: activities } = await supabase
+      .from('activity_logs')
+      .select('*')
+      .eq('team_id', teamId)
+      .gte('created_at', todayStart.toISOString())
+      .lte('created_at', todayEnd.toISOString())
+      .order('created_at', { ascending: false });
 
-      // Load pending tasks
-      const { data: tasks } = await supabase
-        .from('confirmation_tasks')
-        .select(`
-          *,
-          appointments!inner(lead_name, start_at_utc)
-        `)
-        .eq('team_id', teamId)
-        .eq('status', 'pending')
-        .not('assigned_to', 'is', null)
-        .order('created_at', { ascending: false });
+    // Load ALL activities for stale lead detection
+    const { data: allActivities } = await supabase
+      .from('activity_logs')
+      .select('*')
+      .eq('team_id', teamId);
 
-      // Load all appointments for accountability metrics
-      const { data: appointments } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('team_id', teamId)
-        .in('status', ['NEW', 'CONFIRMED', 'SHOWED']);
+    // Load pending tasks - use due_at for overdue calculation
+    const { data: tasks } = await supabase
+      .from('confirmation_tasks')
+      .select(`
+        *,
+        appointments!inner(lead_name, start_at_utc)
+      `)
+      .eq('team_id', teamId)
+      .eq('status', 'pending')
+      .not('assigned_to', 'is', null)
+      .order('due_at', { ascending: true });
 
-      // Group data by user
-      const activitiesByUser = new Map<string, ActivityLog[]>();
-      const tasksByUser = new Map<string, Task[]>();
-      const appointmentsByUser = new Map<string, any[]>();
+    // Load all appointments for accountability metrics
+    const { data: appointments } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('team_id', teamId)
+      .in('status', ['NEW', 'CONFIRMED', 'SHOWED']);
 
-      activities?.forEach(activity => {
-        if (activity.actor_id) {
-          if (!activitiesByUser.has(activity.actor_id)) {
-            activitiesByUser.set(activity.actor_id, []);
-          }
-          activitiesByUser.get(activity.actor_id)!.push(activity);
+    // Group data by user
+    const activitiesByUser = new Map<string, ActivityLog[]>();
+    const tasksByUser = new Map<string, Task[]>();
+    const appointmentsByUser = new Map<string, any[]>();
+
+    activities?.forEach(activity => {
+      if (activity.actor_id) {
+        if (!activitiesByUser.has(activity.actor_id)) {
+          activitiesByUser.set(activity.actor_id, []);
         }
+        activitiesByUser.get(activity.actor_id)!.push(activity);
+      }
+    });
+
+    tasks?.forEach(task => {
+      if (task.assigned_to) {
+        if (!tasksByUser.has(task.assigned_to)) {
+          tasksByUser.set(task.assigned_to, []);
+        }
+        tasksByUser.get(task.assigned_to)!.push(task);
+      }
+    });
+
+    appointments?.forEach(apt => {
+      const userId = apt.setter_id || apt.closer_id;
+      if (userId) {
+        if (!appointmentsByUser.has(userId)) {
+          appointmentsByUser.set(userId, []);
+        }
+        appointmentsByUser.get(userId)!.push(apt);
+      }
+    });
+
+    // Calculate accountability metrics for each user
+    const calculateAccountability = (userId: string): AccountabilityMetrics => {
+      const userTasks = tasksByUser.get(userId) || [];
+      const userAppointments = appointmentsByUser.get(userId) || [];
+
+      // Overdue tasks - use due_at field
+      const overdueTasks = userTasks.filter(task => {
+        const dueAt = task.due_at ? new Date(task.due_at) : null;
+        return dueAt && dueAt < now;
       });
 
-      tasks?.forEach(task => {
-        if (task.assigned_to) {
-          if (!tasksByUser.has(task.assigned_to)) {
-            tasksByUser.set(task.assigned_to, []);
-          }
-          tasksByUser.get(task.assigned_to)!.push(task);
-        }
+      // Due today tasks - use due_at field
+      const dueTodayTasks = userTasks.filter(task => {
+        const dueAt = task.due_at ? new Date(task.due_at) : null;
+        return dueAt && dueAt >= todayStart && dueAt < new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
       });
 
-      appointments?.forEach(apt => {
-        const userId = apt.setter_id || apt.closer_id;
-        if (userId) {
-          if (!appointmentsByUser.has(userId)) {
-            appointmentsByUser.set(userId, []);
-          }
-          appointmentsByUser.get(userId)!.push(apt);
-        }
-      });
+      // Stale leads (no activity in 48 hours)
+      const staleLeads: StaleLeadInfo[] = userAppointments
+        .filter(apt => {
+          const hasRecentActivity = allActivities?.some(act => 
+            act.appointment_id === apt.id && 
+            new Date(act.created_at) >= fortyEightHoursAgo
+          );
+          return !hasRecentActivity;
+        })
+        .map(apt => {
+          const lastActivity = allActivities
+            ?.filter(act => act.appointment_id === apt.id)
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+          
+          const hoursSinceActivity = lastActivity 
+            ? Math.floor((Date.now() - new Date(lastActivity.created_at).getTime()) / (1000 * 60 * 60))
+            : 999;
 
-      // Calculate accountability metrics for each user
-      const calculateAccountability = (userId: string): AccountabilityMetrics => {
-        const userTasks = tasksByUser.get(userId) || [];
-        const userAppointments = appointmentsByUser.get(userId) || [];
-
-        // Overdue tasks
-        const overdueTasks = userTasks.filter(task => {
-          if (task.follow_up_date && new Date(task.follow_up_date) < todayStart) return true;
-          if (task.reschedule_date && new Date(task.reschedule_date) < todayStart) return true;
-          return false;
-        });
-
-        // Due today tasks
-        const dueTodayTasks = userTasks.filter(task => {
-          if (task.follow_up_date && new Date(task.follow_up_date).toDateString() === todayStart.toDateString()) return true;
-          if (task.reschedule_date && new Date(task.reschedule_date).toDateString() === todayStart.toDateString()) return true;
-          return false;
-        });
-
-        // Stale leads (no activity in 48 hours)
-        const staleLeads: StaleLeadInfo[] = userAppointments
-          .filter(apt => {
-            const hasRecentActivity = allActivities?.some(act => 
-              act.appointment_id === apt.id && 
-              new Date(act.created_at) >= fortyEightHoursAgo
-            );
-            return !hasRecentActivity;
-          })
-          .map(apt => {
-            const lastActivity = allActivities
-              ?.filter(act => act.appointment_id === apt.id)
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-            
-            const hoursSinceActivity = lastActivity 
-              ? Math.floor((Date.now() - new Date(lastActivity.created_at).getTime()) / (1000 * 60 * 60))
-              : 999;
-
-            return {
-              id: apt.id,
-              lead_name: apt.lead_name,
-              start_at_utc: apt.start_at_utc,
-              status: apt.status,
-              hoursSinceActivity
-            };
-          });
-
-        // Missing notes
-        const missingNotes = userAppointments
-          .filter(apt => !apt.setter_notes || apt.setter_notes.trim() === '')
-          .map(apt => ({
+          return {
             id: apt.id,
             lead_name: apt.lead_name,
-            start_at_utc: apt.start_at_utc
-          }));
+            start_at_utc: apt.start_at_utc,
+            status: apt.status,
+            hoursSinceActivity
+          };
+        });
 
-        return {
-          overdueTasks,
-          dueTodayTasks,
-          staleLeads,
-          missingNotes
-        };
+      // Missing notes
+      const missingNotes = userAppointments
+        .filter(apt => !apt.setter_notes || apt.setter_notes.trim() === '')
+        .map(apt => ({
+          id: apt.id,
+          lead_name: apt.lead_name,
+          start_at_utc: apt.start_at_utc
+        }));
+
+      return {
+        overdueTasks,
+        dueTodayTasks,
+        staleLeads,
+        missingNotes
       };
+    };
 
-      // Update setter stats
-      setSetterStats(prev => prev.map(setter => ({
-        ...setter,
-        activityToday: activitiesByUser.get(setter.id) || [],
-        dueTasks: tasksByUser.get(setter.id) || [],
-        accountability: calculateAccountability(setter.id)
-      })));
+    const accountabilityByUser = new Map<string, AccountabilityMetrics>();
+    allUserIds.forEach(userId => {
+      accountabilityByUser.set(userId, calculateAccountability(userId));
+    });
 
-      // Update closer stats
-      setCloserStats(prev => prev.map(closer => ({
-        ...closer,
-        activityToday: activitiesByUser.get(closer.id) || [],
-        dueTasks: tasksByUser.get(closer.id) || [],
-        accountability: calculateAccountability(closer.id)
-      })));
-    } catch (error) {
-      console.error('Error loading activity and tasks:', error);
-    }
+    return { activitiesByUser, tasksByUser, accountabilityByUser };
   };
 
   const loadAppointmentStats = async () => {
@@ -563,8 +556,38 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
         }
       })).sort((a, b) => b.stats.closed.thisMonth - a.stats.closed.thisMonth);
 
-      setSetterStats(settersArray);
-      setCloserStats(closersArray);
+      // Load activity and task data for all members
+      const setterIds = settersArray.map(s => s.id);
+      const closerIds = closersArray.map(c => c.id);
+      const { activitiesByUser, tasksByUser, accountabilityByUser } = await loadActivityAndTasksForMembers(setterIds, closerIds);
+
+      // Merge activity data into setter/closer stats
+      const settersWithActivity = settersArray.map(setter => ({
+        ...setter,
+        activityToday: activitiesByUser.get(setter.id) || [],
+        dueTasks: tasksByUser.get(setter.id) || [],
+        accountability: accountabilityByUser.get(setter.id) || {
+          overdueTasks: [],
+          dueTodayTasks: [],
+          staleLeads: [],
+          missingNotes: []
+        }
+      }));
+
+      const closersWithActivity = closersArray.map(closer => ({
+        ...closer,
+        activityToday: activitiesByUser.get(closer.id) || [],
+        dueTasks: tasksByUser.get(closer.id) || [],
+        accountability: accountabilityByUser.get(closer.id) || {
+          overdueTasks: [],
+          dueTodayTasks: [],
+          staleLeads: [],
+          missingNotes: []
+        }
+      }));
+
+      setSetterStats(settersWithActivity);
+      setCloserStats(closersWithActivity);
     } catch (error) {
       console.error('Error loading appointment stats:', error);
     } finally {
@@ -1341,7 +1364,6 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           teamId={teamId}
           onSuccess={() => {
             loadAppointmentStats();
-            loadActivityAndTasks();
             toast.success('Appointment reassigned successfully');
           }}
         />
