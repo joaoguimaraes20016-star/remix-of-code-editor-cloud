@@ -8,6 +8,7 @@ import { Plus, FileText, Video, Link as LinkIcon, Trash2, Pencil, Check, X, BarC
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import AssetUploadDialog from './AssetUploadDialog';
+import EditAssetDialog from './EditAssetDialog';
 
 interface TeamAsset {
   id: string;
@@ -34,6 +35,8 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
   const [assets, setAssets] = useState<TeamAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<TeamAsset | null>(null);
   const [teamName, setTeamName] = useState('Team Hub');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -334,17 +337,31 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                       </span>
                     </div>
                     {canManageAssets && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive h-10 w-10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(asset.id, asset.file_path);
-                        }}
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-primary/10 hover:text-primary h-10 w-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingAsset(asset);
+                            setEditDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-destructive/10 hover:text-destructive h-10 w-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(asset.id, asset.file_path);
+                          }}
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </div>
                     )}
                   </button>
                 ))}
@@ -390,17 +407,31 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                     </span>
                   </div>
                   {canManageAssets && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(asset.id, asset.file_path);
-                      }}
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-primary/10 hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingAsset(asset);
+                          setEditDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(asset.id, asset.file_path);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </button>
               ))}
@@ -442,17 +473,31 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                     </span>
                   </div>
                   {canManageAssets && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(asset.id, asset.file_path);
-                      }}
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-primary/10 hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingAsset(asset);
+                          setEditDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(asset.id, asset.file_path);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </button>
               ))}
@@ -494,17 +539,31 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                     </span>
                   </div>
                   {canManageAssets && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(asset.id, asset.file_path);
-                      }}
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-primary/10 hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingAsset(asset);
+                          setEditDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(asset.id, asset.file_path);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </button>
               ))}
@@ -546,17 +605,31 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
                     </span>
                   </div>
                   {canManageAssets && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(asset.id, asset.file_path);
-                      }}
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-primary/10 hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingAsset(asset);
+                          setEditDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(asset.id, asset.file_path);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </button>
               ))}
@@ -572,6 +645,13 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
         open={uploadDialogOpen}
         onOpenChange={setUploadDialogOpen}
         teamId={teamId}
+        onSuccess={loadAssets}
+      />
+
+      <EditAssetDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        asset={editingAsset}
         onSuccess={loadAssets}
       />
     </div>
