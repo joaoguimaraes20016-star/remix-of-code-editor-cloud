@@ -525,16 +525,34 @@ export function StepPreview({
       case 'options':
         if (!content.options?.length) return null;
         return (
-          <div className="w-full max-w-xs space-y-2">
-            {content.options.map((option: string, index: number) => (
-              <button
-                key={index}
-                className="w-full px-4 py-3 hover:opacity-80 transition-colors text-sm font-medium"
-                style={{ backgroundColor: buttonColor, color: buttonTextColor, borderRadius: `${borderRadius}px` }}
-              >
-                {option}
-              </button>
-            ))}
+          <div className="w-full max-w-xs space-y-3">
+            {content.options.map((option: string | { text: string; emoji?: string }, index: number) => {
+              const optionText = typeof option === 'string' ? option : option.text;
+              const optionEmoji = typeof option === 'string' ? undefined : option.emoji;
+              
+              return (
+                <button
+                  key={index}
+                  className="w-full p-3 text-left rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02] flex items-center gap-3"
+                >
+                  {/* Emoji on left */}
+                  {optionEmoji && (
+                    <span className="text-xl shrink-0">{optionEmoji}</span>
+                  )}
+                  
+                  {/* Text in middle */}
+                  <span 
+                    className="flex-1 font-medium text-sm leading-snug"
+                    style={{ color: textColor }}
+                  >
+                    {optionText}
+                  </span>
+                  
+                  {/* Radio circle on right */}
+                  <div className="w-5 h-5 rounded-full border-2 border-white/40 shrink-0" />
+                </button>
+              );
+            })}
           </div>
         );
         

@@ -112,12 +112,24 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
     }
   }, [currentStep, currentStepIndex, steps, answers, funnel.id, utmSource, utmMedium, utmCampaign, isLastStep]);
 
-  const renderStep = (step: FunnelStep, isActive: boolean) => {
+  // Calculate question number for multi_choice steps (excluding welcome, thank_you, video)
+  const questionSteps = steps.filter(s => 
+    ['text_question', 'multi_choice', 'email_capture', 'phone_capture'].includes(s.step_type)
+  );
+
+  const renderStep = (step: FunnelStep, isActive: boolean, stepIndex: number) => {
+    // Calculate current question number for this step
+    const questionIndex = questionSteps.findIndex(q => q.id === step.id);
+    const currentQuestionNumber = questionIndex >= 0 ? questionIndex + 1 : undefined;
+    const totalQuestions = questionSteps.length;
+
     const commonProps = {
       content: step.content,
       settings: funnel.settings,
       onNext: handleNext,
       isActive,
+      currentStep: currentQuestionNumber,
+      totalSteps: totalQuestions,
     };
 
     switch (step.step_type) {
@@ -180,7 +192,7 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
             )}
           >
             <div className="w-full max-w-2xl mx-auto">
-              {renderStep(step, index === currentStepIndex)}
+              {renderStep(step, index === currentStepIndex, index)}
             </div>
           </div>
         ))}
