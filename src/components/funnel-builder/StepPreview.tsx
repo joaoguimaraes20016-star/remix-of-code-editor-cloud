@@ -178,32 +178,42 @@ export function StepPreview({
   const [editingElement, setEditingElement] = useState<string | null>(null);
   const [imagePickerOpen, setImagePickerOpen] = useState<string | null>(null);
   
-  // Use external dynamic content if provided, otherwise use local state
-  const dynamicContent = externalDynamicContent || {};
+  // Use external dynamic content if provided, otherwise fallback to step.content.dynamic_elements
+  const dynamicContent = useMemo(() => {
+    if (externalDynamicContent && Object.keys(externalDynamicContent).length > 0) {
+      return externalDynamicContent;
+    }
+    return content.dynamic_elements || {};
+  }, [externalDynamicContent, content.dynamic_elements]);
 
-  const textColor = design?.textColor || '#ffffff';
-  const buttonColor = design?.buttonColor || settings.primary_color;
-  const buttonTextColor = design?.buttonTextColor || '#ffffff';
-  const fontFamily = design?.fontFamily || 'system-ui';
-  const fontSize = design?.fontSize || 'medium';
-  const borderRadius = design?.borderRadius ?? 12;
+  const textColor = design?.textColor || content.design?.textColor || '#ffffff';
+  const buttonColor = design?.buttonColor || content.design?.buttonColor || settings.primary_color;
+  const buttonTextColor = design?.buttonTextColor || content.design?.buttonTextColor || '#ffffff';
+  const fontFamily = design?.fontFamily || content.design?.fontFamily || 'system-ui';
+  const fontSize = design?.fontSize || content.design?.fontSize || 'medium';
+  const borderRadius = design?.borderRadius ?? content.design?.borderRadius ?? 12;
 
   // Compute background style
   const backgroundStyle = useMemo(() => {
-    if (design?.useGradient && design.gradientFrom && design.gradientTo) {
+    const d = (design || content.design || {}) as StepDesign;
+    if (d.useGradient && d.gradientFrom && d.gradientTo) {
       return {
-        background: `linear-gradient(${design.gradientDirection || 'to bottom'}, ${design.gradientFrom}, ${design.gradientTo})`
+        background: `linear-gradient(${d.gradientDirection || 'to bottom'}, ${d.gradientFrom}, ${d.gradientTo})`
       };
     }
-    return { backgroundColor: design?.backgroundColor || settings.background_color };
-  }, [design, settings.background_color]);
+    return { backgroundColor: d.backgroundColor || settings.background_color };
+  }, [design, content.design, settings.background_color]);
 
+  // Use elementOrder prop, fallback to step.content.element_order, then default
   const currentOrder = useMemo(() => {
     if (elementOrder && elementOrder.length > 0) {
       return elementOrder;
     }
+    if (content.element_order && content.element_order.length > 0) {
+      return content.element_order;
+    }
     return DEFAULT_ELEMENT_ORDERS[step.step_type] || ['headline', 'subtext', 'button'];
-  }, [elementOrder, step.step_type]);
+  }, [elementOrder, content.element_order, step.step_type]);
 
   const handleAddElement = useCallback((elementType: string) => {
     const newElementId = `${elementType}_${Date.now()}`;
