@@ -4,9 +4,7 @@ import {
   ChevronDown, 
   Copy, 
   Trash2,
-  GripVertical,
-  Settings,
-  Palette
+  GripVertical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,8 +14,6 @@ interface ElementActionMenuProps {
   onMoveDown?: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
-  onOpenSettings?: () => void;
-  onOpenStyle?: () => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   className?: string;
@@ -30,8 +26,6 @@ export function ElementActionMenu({
   onMoveDown,
   onDuplicate,
   onDelete,
-  onOpenSettings,
-  onOpenStyle,
   canMoveUp = true,
   canMoveDown = true,
   className,
@@ -40,57 +34,52 @@ export function ElementActionMenu({
   return (
     <div 
       className={cn(
-        "absolute top-1/2 -translate-y-1/2 z-40 flex flex-col gap-1 p-1.5 bg-popover border rounded-lg shadow-lg animate-in fade-in-0 slide-in-from-left-2",
-        position === 'right' ? "-right-14" : "-left-14",
+        "absolute top-1/2 -translate-y-1/2 z-50 flex flex-col gap-0.5 p-1 bg-background border border-border rounded-lg shadow-lg animate-in fade-in-0 slide-in-from-left-2",
+        position === 'right' ? "-right-12" : "-left-12",
         className
       )}
       onClick={(e) => e.stopPropagation()}
     >
+      {/* Drag handle */}
+      <div className="flex items-center justify-center h-6 w-8 cursor-grab text-muted-foreground hover:text-foreground">
+        <GripVertical className="h-3.5 w-3.5" />
+      </div>
+      
+      <div className="w-full h-px bg-border" />
+      
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7"
+        className="h-6 w-8 rounded-sm"
         onClick={onMoveUp}
         disabled={!canMoveUp}
         title="Move up"
       >
-        <ChevronUp className="h-4 w-4" />
+        <ChevronUp className="h-3.5 w-3.5" />
       </Button>
       
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7"
+        className="h-6 w-8 rounded-sm"
         onClick={onMoveDown}
         disabled={!canMoveDown}
         title="Move down"
       >
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown className="h-3.5 w-3.5" />
       </Button>
       
-      <div className="w-full h-px bg-border my-0.5" />
-      
-      {onOpenStyle && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={onOpenStyle}
-          title="Style element"
-        >
-          <Palette className="h-4 w-4" />
-        </Button>
-      )}
+      <div className="w-full h-px bg-border" />
       
       {onDuplicate && (
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-6 w-8 rounded-sm"
           onClick={onDuplicate}
           title="Duplicate"
         >
-          <Copy className="h-4 w-4" />
+          <Copy className="h-3.5 w-3.5" />
         </Button>
       )}
       
@@ -98,11 +87,11 @@ export function ElementActionMenu({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-destructive hover:text-destructive"
+          className="h-6 w-8 rounded-sm text-destructive hover:text-destructive hover:bg-destructive/10"
           onClick={onDelete}
           title="Delete"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       )}
     </div>
