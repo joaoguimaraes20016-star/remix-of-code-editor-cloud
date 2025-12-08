@@ -32,9 +32,10 @@ export function MultiChoiceStep({ content, settings, onNext, isActive }: MultiCh
   return (
     <div className="w-full max-w-xl text-center">
       {content.headline && (
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">
-          {content.headline}
-        </h2>
+        <h2 
+          className="text-3xl md:text-4xl font-bold text-white mb-8"
+          dangerouslySetInnerHTML={{ __html: content.headline }}
+        />
       )}
 
       <div className="space-y-3">

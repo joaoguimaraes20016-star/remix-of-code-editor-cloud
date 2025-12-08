@@ -37,15 +37,17 @@ export function ThankYouStep({ content, settings, isActive }: ThankYouStepProps)
       </div>
 
       {content.headline && (
-        <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-          {content.headline}
-        </h2>
+        <h2 
+          className="text-4xl md:text-5xl font-bold text-white mb-4"
+          dangerouslySetInnerHTML={{ __html: content.headline }}
+        />
       )}
 
       {content.subtext && (
-        <p className="text-lg md:text-xl text-white/70">
-          {content.subtext}
-        </p>
+        <p 
+          className="text-lg md:text-xl text-white/70"
+          dangerouslySetInnerHTML={{ __html: content.subtext }}
+        />
       )}
 
       {content.redirect_url && (

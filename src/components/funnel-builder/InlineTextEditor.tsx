@@ -147,12 +147,12 @@ export function InlineTextEditor({
       debounceTimerRef.current = null;
     }
     
-    // Save immediately on blur
+    // Save immediately on blur - SAVE HTML to preserve formatting
     if (editorRef.current) {
-      const text = editorRef.current.innerText;
-      lastSavedValueRef.current = text;
-      onChange(text);
-      onHtmlChange?.(editorRef.current.innerHTML);
+      const html = editorRef.current.innerHTML;
+      lastSavedValueRef.current = html;
+      onChange(html); // Save HTML with formatting
+      onHtmlChange?.(html);
     }
     
     setTimeout(() => {
@@ -168,10 +168,10 @@ export function InlineTextEditor({
 
   const saveContent = useCallback(() => {
     if (editorRef.current) {
-      const text = editorRef.current.innerText;
-      lastSavedValueRef.current = text;
-      onChange(text);
-      onHtmlChange?.(editorRef.current.innerHTML);
+      const html = editorRef.current.innerHTML;
+      lastSavedValueRef.current = html;
+      onChange(html); // Save HTML with formatting
+      onHtmlChange?.(html);
     }
   }, [onChange, onHtmlChange]);
 

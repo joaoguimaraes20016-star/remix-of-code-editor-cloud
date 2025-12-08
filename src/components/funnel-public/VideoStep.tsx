@@ -72,9 +72,10 @@ export function VideoStep({ content, settings, onNext, isActive }: VideoStepProp
   return (
     <div className="w-full max-w-3xl text-center">
       {content.headline && (
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-          {content.headline}
-        </h2>
+        <h2 
+          className="text-3xl md:text-4xl font-bold text-white mb-6"
+          dangerouslySetInnerHTML={{ __html: content.headline }}
+        />
       )}
 
       {embedUrl && showVideo ? (
