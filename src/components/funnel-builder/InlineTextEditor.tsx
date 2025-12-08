@@ -485,6 +485,12 @@ export function InlineTextEditor({
     }
   }, [value, placeholder]);
 
+  // Check if the value contains color formatting - if so, don't apply default color
+  const hasColorFormatting = value?.includes('color=') || value?.includes('color:');
+  const computedStyle = hasColorFormatting 
+    ? { ...style, color: undefined } 
+    : style;
+
   return (
     <>
       <div
@@ -497,7 +503,7 @@ export function InlineTextEditor({
           !value && !isEditing && "text-white/30",
           className
         )}
-        style={style}
+        style={computedStyle}
         onClick={handleClick}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
