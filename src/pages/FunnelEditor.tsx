@@ -140,6 +140,7 @@ export default function FunnelEditor() {
   const [stepBlocks, setStepBlocks] = useState<Record<string, ContentBlock[]>>({});
   const [pageSettings, setPageSettingsState] = useState<Record<string, any>>({});
   const [dynamicElements, setDynamicElements] = useState<Record<string, Record<string, any>>>({});
+  const [isInitialized, setIsInitialized] = useState(false); // Track if initial load happened
   
   // Auto-save timer ref
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -210,9 +211,9 @@ export default function FunnelEditor() {
     enabled: !!funnelId,
   });
 
-  // Initialize the history state when data loads
+  // Initialize the history state ONLY on first load - not on refetch
   useEffect(() => {
-    if (funnel && initialSteps) {
+    if (funnel && initialSteps && !isInitialized) {
       // Load persisted designs, element orders, and dynamic elements from step content
       const loadedDesigns: Record<string, StepDesign> = {};
       const loadedOrders: Record<string, string[]> = {};
@@ -245,8 +246,10 @@ export default function FunnelEditor() {
       if (initialSteps.length > 0 && !selectedStepId) {
         setSelectedStepId(initialSteps[0].id);
       }
+      
+      setIsInitialized(true);
     }
-  }, [funnel, initialSteps, resetHistory]);
+  }, [funnel, initialSteps, resetHistory, isInitialized]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
