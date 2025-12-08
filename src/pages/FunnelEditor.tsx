@@ -15,6 +15,7 @@ import { PhoneMockup } from '@/components/funnel-builder/PhoneMockup';
 import { StepPreview } from '@/components/funnel-builder/StepPreview';
 import { PreviewNavigation } from '@/components/funnel-builder/PreviewNavigation';
 import { AddStepDialog } from '@/components/funnel-builder/AddStepDialog';
+import { ContentBlock } from '@/components/funnel-builder/ContentBlockEditor';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -92,9 +93,10 @@ export default function FunnelEditor() {
   const [showLeftPanel, setShowLeftPanel] = useState(!isMobile);
   const [showRightPanel, setShowRightPanel] = useState(!isMobile);
 
-  // Per-step design and settings state
+  // Per-step design, settings, and blocks state
   const [stepDesigns, setStepDesigns] = useState<Record<string, StepDesign>>({});
   const [stepSettings, setStepSettings] = useState<Record<string, StepSettings>>({});
+  const [stepBlocks, setStepBlocks] = useState<Record<string, ContentBlock[]>>({});
 
   const { data: funnel, isLoading: funnelLoading } = useQuery({
     queryKey: ['funnel', funnelId],
@@ -260,6 +262,15 @@ export default function FunnelEditor() {
     setHasUnsavedChanges(true);
   };
 
+  const handleUpdateBlocks = (stepId: string, blocks: ContentBlock[]) => {
+    setStepBlocks((prev) => ({ ...prev, [stepId]: blocks }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handlePreview = () => {
+    window.open(`/f/${funnel?.slug}`, '_blank');
+  };
+
   // Navigation between steps
   const currentStepIndex = steps.findIndex((s) => s.id === selectedStepId);
   const handleNavigatePrevious = () => {
@@ -360,17 +371,15 @@ export default function FunnelEditor() {
               <span className="hidden sm:inline">Settings</span>
             </Button>
 
-            {funnel.status === 'published' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(`/f/${funnel.slug}`, '_blank')}
-                className="hidden sm:flex"
-              >
-                <Eye className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Preview</span>
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePreview}
+              className="hidden sm:flex"
+            >
+              <Eye className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Preview</span>
+            </Button>
 
             <Button
               variant="outline"
@@ -487,8 +496,10 @@ export default function FunnelEditor() {
               onUpdateContent={(content) => handleUpdateStep(selectedStep.id, content)}
               onUpdateDesign={(design) => handleUpdateDesign(selectedStep.id, design)}
               onUpdateSettings={(settings) => handleUpdateSettings(selectedStep.id, settings)}
+              onUpdateBlocks={(blocks) => handleUpdateBlocks(selectedStep.id, blocks)}
               design={stepDesigns[selectedStep.id] || {}}
               settings={stepSettings[selectedStep.id] || {}}
+              blocks={stepBlocks[selectedStep.id] || []}
             />
           ) : (
             <div className="text-muted-foreground text-center py-8">

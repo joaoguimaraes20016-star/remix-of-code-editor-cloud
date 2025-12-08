@@ -3,9 +3,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StepContentEditor } from './StepContentEditor';
 import { DesignEditor } from './DesignEditor';
 import { SettingsEditor } from './SettingsEditor';
+import { ContentBlockEditor, ContentBlock } from './ContentBlockEditor';
 import { ImagePicker } from './ImagePicker';
 import { FunnelStep } from '@/pages/FunnelEditor';
-import { Type, Palette, Settings } from 'lucide-react';
+import { Type, Palette, Settings, LayoutGrid } from 'lucide-react';
 
 interface StepDesign {
   backgroundColor?: string;
@@ -35,8 +36,10 @@ interface EditorSidebarProps {
   onUpdateContent: (content: FunnelStep['content']) => void;
   onUpdateDesign: (design: StepDesign) => void;
   onUpdateSettings: (settings: StepSettings) => void;
+  onUpdateBlocks?: (blocks: ContentBlock[]) => void;
   design: StepDesign;
   settings: StepSettings;
+  blocks?: ContentBlock[];
 }
 
 export function EditorSidebar({
@@ -45,8 +48,10 @@ export function EditorSidebar({
   onUpdateContent,
   onUpdateDesign,
   onUpdateSettings,
+  onUpdateBlocks,
   design,
   settings,
+  blocks = [],
 }: EditorSidebarProps) {
   const [activeTab, setActiveTab] = useState('content');
   const [showImagePicker, setShowImagePicker] = useState(false);
@@ -54,18 +59,22 @@ export function EditorSidebar({
   return (
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 mb-4 flex-shrink-0">
+        <TabsList className="grid w-full grid-cols-4 mb-4 flex-shrink-0">
           <TabsTrigger value="content" className="gap-1.5 text-xs">
             <Type className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Content</span>
+            <span className="hidden lg:inline">Content</span>
+          </TabsTrigger>
+          <TabsTrigger value="blocks" className="gap-1.5 text-xs">
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Blocks</span>
           </TabsTrigger>
           <TabsTrigger value="design" className="gap-1.5 text-xs">
             <Palette className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Design</span>
+            <span className="hidden lg:inline">Design</span>
           </TabsTrigger>
           <TabsTrigger value="settings" className="gap-1.5 text-xs">
             <Settings className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Settings</span>
+            <span className="hidden lg:inline">Settings</span>
           </TabsTrigger>
         </TabsList>
 
@@ -75,6 +84,13 @@ export function EditorSidebar({
               step={step}
               onUpdate={onUpdateContent}
               selectedElement={selectedElement}
+            />
+          </TabsContent>
+
+          <TabsContent value="blocks" className="mt-0 h-full">
+            <ContentBlockEditor
+              blocks={blocks}
+              onBlocksChange={onUpdateBlocks || (() => {})}
             />
           </TabsContent>
 
