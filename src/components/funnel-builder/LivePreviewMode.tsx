@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { FunnelStep, FunnelSettings } from '@/pages/FunnelEditor';
 import { DynamicElementRenderer } from '@/components/funnel-public/DynamicElementRenderer';
+import { StepDesign } from '@/pages/FunnelEditor';
 
 interface LivePreviewModeProps {
   open: boolean;
@@ -24,6 +25,9 @@ interface LivePreviewModeProps {
     settings: FunnelSettings;
   };
   steps: FunnelStep[];
+  dynamicElements?: Record<string, Record<string, any>>;
+  stepDesigns?: Record<string, StepDesign>;
+  elementOrders?: Record<string, string[]>;
 }
 
 type DeviceType = 'mobile' | 'tablet' | 'desktop';
@@ -44,7 +48,15 @@ const DEFAULT_ELEMENT_ORDERS: Record<string, string[]> = {
   thank_you: ['headline', 'subtext'],
 };
 
-export function LivePreviewMode({ open, onClose, funnel, steps }: LivePreviewModeProps) {
+export function LivePreviewMode({ 
+  open, 
+  onClose, 
+  funnel, 
+  steps,
+  dynamicElements: externalDynamicElements,
+  stepDesigns: externalStepDesigns,
+  elementOrders: externalElementOrders,
+}: LivePreviewModeProps) {
   const [device, setDevice] = useState<DeviceType>('mobile');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
@@ -78,7 +90,11 @@ export function LivePreviewMode({ open, onClose, funnel, steps }: LivePreviewMod
 
   const currentStep = steps[currentStepIndex];
   const stepContent = currentStep?.content || {};
-  const stepDesign = (stepContent.design || {}) as Record<string, any>;
+  
+  // Use external state if provided, fallback to step content
+  const stepDesign = (externalStepDesigns?.[currentStep?.id] || stepContent.design || {}) as Record<string, any>;
+  const currentDynamicElements = externalDynamicElements?.[currentStep?.id] || stepContent.dynamic_elements || {};
+  const elementOrder = externalElementOrders?.[currentStep?.id] || stepContent.element_order || DEFAULT_ELEMENT_ORDERS[currentStep?.step_type] || ['headline', 'subtext', 'button'];
   
   // Get background style for the step
   const getBackgroundStyle = () => {
@@ -89,11 +105,6 @@ export function LivePreviewMode({ open, onClose, funnel, steps }: LivePreviewMod
     }
     return { backgroundColor: stepDesign.backgroundColor || funnel.settings.background_color };
   };
-
-  // Determine element order
-  const elementOrder = stepContent.element_order?.length > 0 
-    ? stepContent.element_order 
-    : DEFAULT_ELEMENT_ORDERS[currentStep?.step_type] || ['headline', 'subtext', 'button'];
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
@@ -200,7 +211,7 @@ export function LivePreviewMode({ open, onClose, funnel, steps }: LivePreviewMod
               <div className="w-full max-w-lg mx-auto text-center">
                 <DynamicElementRenderer
                   elementOrder={elementOrder}
-                  dynamicElements={stepContent.dynamic_elements || {}}
+                  dynamicElements={currentDynamicElements}
                   content={stepContent}
                   settings={funnel.settings}
                   design={stepDesign}

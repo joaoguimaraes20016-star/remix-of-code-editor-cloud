@@ -837,6 +837,9 @@ export default function FunnelEditor() {
         onClose={() => setShowLivePreview(false)}
         funnel={funnel}
         steps={steps}
+        dynamicElements={dynamicElements}
+        stepDesigns={stepDesigns}
+        elementOrders={elementOrders}
       />
 
       {pageSettingsStepId && (
