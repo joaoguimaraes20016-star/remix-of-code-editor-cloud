@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Settings, Eye, Save, Globe } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { StepTypePalette } from '@/components/funnel-builder/StepTypePalette';
-import { SortableStepList } from '@/components/funnel-builder/SortableStepList';
+import { PagesList } from '@/components/funnel-builder/PagesList';
 import { StepContentEditor } from '@/components/funnel-builder/StepContentEditor';
 import { FunnelSettingsDialog } from '@/components/funnel-builder/FunnelSettingsDialog';
+import { PhoneMockup } from '@/components/funnel-builder/PhoneMockup';
+import { StepPreview } from '@/components/funnel-builder/StepPreview';
+import { AddStepDialog } from '@/components/funnel-builder/AddStepDialog';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 
@@ -56,7 +58,9 @@ export default function FunnelEditor() {
   const [name, setName] = useState('');
   const [steps, setSteps] = useState<FunnelStep[]>([]);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAddStep, setShowAddStep] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { data: funnel, isLoading: funnelLoading } = useQuery({
@@ -106,7 +110,6 @@ export default function FunnelEditor() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // Update funnel name
       const { error: funnelError } = await supabase
         .from('funnels')
         .update({ name })
@@ -114,7 +117,6 @@ export default function FunnelEditor() {
 
       if (funnelError) throw funnelError;
 
-      // Delete existing steps and re-insert
       const { error: deleteError } = await supabase
         .from('funnel_steps')
         .delete()
@@ -122,7 +124,6 @@ export default function FunnelEditor() {
 
       if (deleteError) throw deleteError;
 
-      // Insert updated steps with correct order
       const stepsToInsert = steps.map((step, index) => ({
         id: step.id,
         funnel_id: funnelId,
@@ -150,10 +151,8 @@ export default function FunnelEditor() {
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      // Save first
       await saveMutation.mutateAsync();
 
-      // Then publish
       const { error } = await supabase
         .from('funnels')
         .update({ status: 'published' })
@@ -192,7 +191,6 @@ export default function FunnelEditor() {
       content: getDefaultContent(stepType),
     };
 
-    // Insert before thank_you step if it exists
     const thankYouIndex = steps.findIndex((s) => s.step_type === 'thank_you');
     if (thankYouIndex !== -1) {
       const newSteps = [...steps];
@@ -240,7 +238,7 @@ export default function FunnelEditor() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Bar */}
-      <div className="border-b bg-card px-4 py-3">
+      <div className="border-b bg-card px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -311,40 +309,52 @@ export default function FunnelEditor() {
         </div>
       </div>
 
-      {/* Main Editor Area */}
+      {/* Main Editor Area - 3 Column Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Step Palette */}
-        <div className="w-64 border-r bg-card p-4 overflow-y-auto">
-          <h3 className="font-semibold mb-4 text-sm text-muted-foreground uppercase tracking-wide">
-            Add Step
-          </h3>
-          <StepTypePalette onAddStep={handleAddStep} />
+        {/* Left Sidebar - Pages List */}
+        <div className="w-56 border-r bg-card p-4 overflow-y-auto flex-shrink-0">
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <PagesList
+              steps={steps}
+              selectedStepId={selectedStepId}
+              onSelectStep={(id) => {
+                setSelectedStepId(id);
+                setSelectedElement(null);
+              }}
+              onDeleteStep={handleDeleteStep}
+              onAddStep={() => setShowAddStep(true)}
+            />
+          </DndContext>
         </div>
 
-        {/* Center - Step List */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-xl mx-auto">
-            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableStepList
-                steps={steps}
-                selectedStepId={selectedStepId}
-                onSelectStep={setSelectedStepId}
-                onDeleteStep={handleDeleteStep}
+        {/* Center - Phone Mockup Preview */}
+        <div className="flex-1 flex items-center justify-center bg-zinc-900/50 overflow-hidden">
+          {selectedStep && (
+            <PhoneMockup 
+              backgroundColor={funnel.settings.background_color}
+              className="scale-90 lg:scale-100"
+            >
+              <StepPreview
+                step={selectedStep}
+                settings={funnel.settings}
+                selectedElement={selectedElement}
+                onSelectElement={setSelectedElement}
               />
-            </DndContext>
-          </div>
+            </PhoneMockup>
+          )}
         </div>
 
-        {/* Right Sidebar - Step Editor */}
-        <div className="w-80 border-l bg-card p-4 overflow-y-auto">
+        {/* Right Sidebar - Content Editor */}
+        <div className="w-80 border-l bg-card p-4 overflow-y-auto flex-shrink-0">
           {selectedStep ? (
             <StepContentEditor
               step={selectedStep}
               onUpdate={(content) => handleUpdateStep(selectedStep.id, content)}
+              selectedElement={selectedElement}
             />
           ) : (
             <div className="text-muted-foreground text-center py-8">
-              Select a step to edit its content
+              Select a page to edit
             </div>
           )}
         </div>
@@ -357,6 +367,12 @@ export default function FunnelEditor() {
         onSave={() => {
           queryClient.invalidateQueries({ queryKey: ['funnel', funnelId] });
         }}
+      />
+
+      <AddStepDialog
+        open={showAddStep}
+        onOpenChange={setShowAddStep}
+        onAddStep={handleAddStep}
       />
     </div>
   );
