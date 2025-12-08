@@ -97,11 +97,12 @@ export default function FunnelEditor() {
   const [showPageSettings, setShowPageSettings] = useState(false);
   const [pageSettingsStepId, setPageSettingsStepId] = useState<string | null>(null);
 
-  // Per-step design, settings, and blocks state
+  // Per-step design, settings, blocks, and element order state
   const [stepDesigns, setStepDesigns] = useState<Record<string, StepDesign>>({});
   const [stepSettings, setStepSettings] = useState<Record<string, StepSettings>>({});
   const [stepBlocks, setStepBlocks] = useState<Record<string, ContentBlock[]>>({});
   const [pageSettings, setPageSettings] = useState<Record<string, any>>({});
+  const [elementOrders, setElementOrders] = useState<Record<string, string[]>>({});
 
   const { data: funnel, isLoading: funnelLoading } = useQuery({
     queryKey: ['funnel', funnelId],
@@ -269,6 +270,11 @@ export default function FunnelEditor() {
 
   const handleUpdateBlocks = (stepId: string, blocks: ContentBlock[]) => {
     setStepBlocks((prev) => ({ ...prev, [stepId]: blocks }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleUpdateElementOrder = (stepId: string, order: string[]) => {
+    setElementOrders((prev) => ({ ...prev, [stepId]: order }));
     setHasUnsavedChanges(true);
   };
 
@@ -520,6 +526,8 @@ export default function FunnelEditor() {
                   selectedElement={selectedElement}
                   onSelectElement={setSelectedElement}
                   design={stepDesigns[selectedStep.id]}
+                  elementOrder={elementOrders[selectedStep.id]}
+                  onReorderElements={(order) => handleUpdateElementOrder(selectedStep.id, order)}
                 />
               </PhoneMockup>
 
