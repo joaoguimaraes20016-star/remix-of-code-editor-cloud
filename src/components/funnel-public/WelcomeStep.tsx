@@ -33,15 +33,17 @@ export function WelcomeStep({ content, settings, onNext, isActive }: WelcomeStep
   return (
     <div className="w-full max-w-xl text-center">
       {content.headline && (
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-          {content.headline}
-        </h1>
+        <h1 
+          className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight"
+          dangerouslySetInnerHTML={{ __html: content.headline }}
+        />
       )}
 
       {content.subtext && (
-        <p className="text-lg md:text-xl text-white/70 mb-8">
-          {content.subtext}
-        </p>
+        <p 
+          className="text-lg md:text-xl text-white/70 mb-8"
+          dangerouslySetInnerHTML={{ __html: content.subtext }}
+        />
       )}
 
       <button

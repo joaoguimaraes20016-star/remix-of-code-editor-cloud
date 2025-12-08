@@ -61,15 +61,17 @@ export function PhoneCaptureStep({ content, settings, onNext, isActive }: PhoneC
   return (
     <div className="w-full max-w-xl text-center">
       {content.headline && (
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-          {content.headline}
-        </h2>
+        <h2 
+          className="text-3xl md:text-4xl font-bold text-white mb-4"
+          dangerouslySetInnerHTML={{ __html: content.headline }}
+        />
       )}
 
       {content.subtext && (
-        <p className="text-lg text-white/70 mb-8">
-          {content.subtext}
-        </p>
+        <p 
+          className="text-lg text-white/70 mb-8"
+          dangerouslySetInnerHTML={{ __html: content.subtext }}
+        />
       )}
 
       <input
