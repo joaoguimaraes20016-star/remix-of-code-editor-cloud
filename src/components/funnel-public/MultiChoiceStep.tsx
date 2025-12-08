@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DynamicElementRenderer } from './DynamicElementRenderer';
 
 interface MultiChoiceStepProps {
   content: {
     headline?: string;
-    options?: string[];
+    options?: Array<string | { text: string; emoji?: string }>;
     is_required?: boolean;
     element_order?: string[];
     dynamic_elements?: Record<string, any>;
@@ -16,17 +16,30 @@ interface MultiChoiceStepProps {
   };
   onNext: (value: string) => void;
   isActive: boolean;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
-export function MultiChoiceStep({ content, settings, onNext, isActive }: MultiChoiceStepProps) {
-  const options = content.options || [];
+export function MultiChoiceStep({ content, settings, onNext, isActive, currentStep, totalSteps }: MultiChoiceStepProps) {
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  
+  // Normalize options to always have text and optional emoji
+  const options = (content.options || []).map(opt => {
+    if (typeof opt === 'string') {
+      return { text: opt, emoji: undefined };
+    }
+    return opt;
+  });
 
   useEffect(() => {
     if (isActive) {
       const handleKeyDown = (e: KeyboardEvent) => {
         const num = parseInt(e.key);
         if (num >= 1 && num <= options.length) {
-          onNext(options[num - 1]);
+          const option = options[num - 1];
+          setSelectedOption(option.text);
+          // Auto-advance after selection
+          setTimeout(() => onNext(option.text), 300);
         }
       };
       window.addEventListener('keydown', handleKeyDown);
@@ -34,35 +47,76 @@ export function MultiChoiceStep({ content, settings, onNext, isActive }: MultiCh
     }
   }, [isActive, options, onNext]);
 
+  const handleOptionClick = (optionText: string) => {
+    setSelectedOption(optionText);
+    // Auto-advance after selection with a small delay for visual feedback
+    setTimeout(() => onNext(optionText), 300);
+  };
+
   // Check if we have dynamic content
   const hasElementOrder = content.element_order && content.element_order.length > 0;
 
   const renderOptions = () => (
-    <div className="w-full max-w-sm space-y-2 md:space-y-3">
+    <div className="w-full max-w-sm space-y-3">
       {options.map((option, index) => (
         <button
           key={index}
-          onClick={() => onNext(option)}
-          className="w-full p-3 md:p-4 text-base md:text-lg font-medium text-white bg-white/10 rounded-lg border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-200 hover:scale-[1.02] flex items-center gap-3 md:gap-4"
+          onClick={() => handleOptionClick(option.text)}
+          className={`
+            w-full p-4 text-left rounded-xl
+            bg-white/5 border border-white/10
+            hover:bg-white/10 hover:border-white/20
+            transition-all duration-200 hover:scale-[1.02]
+            flex items-center gap-4
+            ${selectedOption === option.text ? 'bg-white/15 border-white/30 scale-[1.02]' : ''}
+          `}
         >
-          <span
-            className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-xs md:text-sm font-bold shrink-0"
-            style={{ backgroundColor: settings.primary_color }}
-          >
-            {index + 1}
+          {/* Emoji on left */}
+          {option.emoji && (
+            <span className="text-2xl shrink-0">{option.emoji}</span>
+          )}
+          
+          {/* Text in middle - grows to fill space */}
+          <span className="flex-1 text-white font-medium text-base leading-snug">
+            {option.text}
           </span>
-          <span className="text-left">{option}</span>
+          
+          {/* Radio circle on right */}
+          <div className={`
+            w-6 h-6 rounded-full border-2 shrink-0
+            flex items-center justify-center transition-all
+            ${selectedOption === option.text 
+              ? 'border-white bg-white' 
+              : 'border-white/40'
+            }
+          `}>
+            {selectedOption === option.text && (
+              <div className="w-2.5 h-2.5 rounded-full bg-black" />
+            )}
+          </div>
         </button>
       ))}
-      <p className="mt-4 md:mt-6 text-white/40 text-xs md:text-sm text-center">
-        Press 1-{options.length} to select
-      </p>
     </div>
   );
+
+  const renderProgressIndicator = () => {
+    if (currentStep && totalSteps) {
+      return (
+        <p 
+          className="text-sm font-semibold mb-6 tracking-wide"
+          style={{ color: settings.primary_color }}
+        >
+          Question {currentStep} of {totalSteps}
+        </p>
+      );
+    }
+    return null;
+  };
 
   if (hasElementOrder) {
     return (
       <div className="w-full max-w-xl text-center px-4">
+        {renderProgressIndicator()}
         <DynamicElementRenderer
           elementOrder={content.element_order || []}
           dynamicElements={content.dynamic_elements || {}}
@@ -79,9 +133,11 @@ export function MultiChoiceStep({ content, settings, onNext, isActive }: MultiCh
   // Fallback to original rendering
   return (
     <div className="w-full max-w-xl text-center px-4">
+      {renderProgressIndicator()}
+      
       {content.headline && (
         <h2 
-          className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-6 md:mb-8"
+          className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-8"
           dangerouslySetInnerHTML={{ __html: content.headline }}
         />
       )}

@@ -209,6 +209,25 @@ export function LivePreviewMode({
             {/* Current Step Preview using DynamicElementRenderer */}
             <div className="min-h-full w-full flex items-center justify-center py-8 px-4">
               <div className="w-full max-w-lg mx-auto text-center">
+                {/* Question progress indicator for multi-choice and question steps */}
+                {['multi_choice', 'text_question', 'email_capture', 'phone_capture'].includes(currentStep?.step_type) && (() => {
+                  const questionSteps = steps.filter(s => 
+                    ['text_question', 'multi_choice', 'email_capture', 'phone_capture'].includes(s.step_type)
+                  );
+                  const questionIndex = questionSteps.findIndex(q => q.id === currentStep?.id);
+                  if (questionIndex >= 0) {
+                    return (
+                      <p 
+                        className="text-sm font-semibold mb-6 tracking-wide"
+                        style={{ color: funnel.settings.primary_color }}
+                      >
+                        Question {questionIndex + 1} of {questionSteps.length}
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
+                
                 <DynamicElementRenderer
                   elementOrder={elementOrder}
                   dynamicElements={currentDynamicElements}
@@ -232,20 +251,34 @@ export function LivePreviewMode({
                     />
                   )}
                   renderOptions={() => (
-                    <div className="space-y-2 w-full max-w-xs mx-auto">
-                      {(stepContent.options || []).map((option: string, i: number) => (
-                        <button
-                          key={i}
-                          className="w-full px-4 py-3 rounded-xl text-sm font-medium transition-all hover:scale-105"
-                          style={{ 
-                            backgroundColor: stepDesign.buttonColor || funnel.settings.primary_color, 
-                            color: stepDesign.buttonTextColor || '#ffffff',
-                            borderRadius: `${stepDesign.borderRadius ?? 12}px`
-                          }}
-                        >
-                          {option}
-                        </button>
-                      ))}
+                    <div className="space-y-3 w-full max-w-sm mx-auto">
+                      {(stepContent.options || []).map((option: string | { text: string; emoji?: string }, i: number) => {
+                        const optionText = typeof option === 'string' ? option : option.text;
+                        const optionEmoji = typeof option === 'string' ? undefined : option.emoji;
+                        
+                        return (
+                          <button
+                            key={i}
+                            className="w-full p-4 text-left rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02] flex items-center gap-4"
+                          >
+                            {/* Emoji on left */}
+                            {optionEmoji && (
+                              <span className="text-2xl shrink-0">{optionEmoji}</span>
+                            )}
+                            
+                            {/* Text in middle */}
+                            <span 
+                              className="flex-1 font-medium text-base leading-snug"
+                              style={{ color: stepDesign.textColor || '#ffffff' }}
+                            >
+                              {optionText}
+                            </span>
+                            
+                            {/* Radio circle on right */}
+                            <div className="w-6 h-6 rounded-full border-2 border-white/40 shrink-0" />
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 />
