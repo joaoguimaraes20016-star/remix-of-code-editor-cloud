@@ -468,13 +468,22 @@ export function InlineTextEditor({
     document.body
   );
 
-  // Set initial content when component mounts
+  // Set initial content when component mounts or value changes from external source
   useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = value || placeholder;
-      lastSavedValueRef.current = value;
+    if (editorRef.current && !isEditingRef.current) {
+      // Always sync innerHTML with value when not editing
+      const currentHtml = editorRef.current.innerHTML;
+      const newValue = value || '';
+      // Only update if content is actually different (avoid flicker)
+      if (currentHtml !== newValue && currentHtml !== placeholder) {
+        editorRef.current.innerHTML = newValue || placeholder;
+        lastSavedValueRef.current = newValue;
+      } else if (!currentHtml || currentHtml === placeholder) {
+        editorRef.current.innerHTML = newValue || placeholder;
+        lastSavedValueRef.current = newValue;
+      }
     }
-  }, []);
+  }, [value, placeholder]);
 
   return (
     <>

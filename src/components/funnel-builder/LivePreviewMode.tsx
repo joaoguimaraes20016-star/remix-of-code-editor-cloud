@@ -203,24 +203,31 @@ export function LivePreviewMode({ open, onClose, funnel, steps }: LivePreviewMod
 }
 
 function PreviewStep({ step, settings }: { step: FunnelStep; settings: FunnelSettings }) {
-  const textColor = '#ffffff';
-  const buttonColor = settings.primary_color;
+  const textColor = step.content.design?.textColor || '#ffffff';
+  const buttonColor = step.content.design?.buttonColor || settings.primary_color;
+  const buttonTextColor = step.content.design?.buttonTextColor || '#ffffff';
 
   switch (step.step_type) {
     case 'welcome':
       return (
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold" style={{ color: textColor }}>
-            {step.content.headline || 'Welcome'}
-          </h1>
+          {step.content.headline && (
+            <h1 
+              className="text-xl sm:text-2xl font-bold leading-tight" 
+              style={{ color: textColor }}
+              dangerouslySetInnerHTML={{ __html: step.content.headline }}
+            />
+          )}
           {step.content.subtext && (
-            <p className="text-sm opacity-70" style={{ color: textColor }}>
-              {step.content.subtext}
-            </p>
+            <p 
+              className="text-sm opacity-70" 
+              style={{ color: textColor }}
+              dangerouslySetInnerHTML={{ __html: step.content.subtext }}
+            />
           )}
           <button
-            className="px-6 py-3 text-sm font-semibold rounded-xl text-white"
-            style={{ backgroundColor: buttonColor }}
+            className="px-6 py-3 text-sm font-semibold rounded-xl"
+            style={{ backgroundColor: buttonColor, color: buttonTextColor }}
           >
             {step.content.button_text || settings.button_text || 'Get Started'}
           </button>
@@ -231,9 +238,13 @@ function PreviewStep({ step, settings }: { step: FunnelStep; settings: FunnelSet
     case 'phone_capture':
       return (
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold" style={{ color: textColor }}>
-            {step.content.headline}
-          </h1>
+          {step.content.headline && (
+            <h1 
+              className="text-xl sm:text-2xl font-bold leading-tight" 
+              style={{ color: textColor }}
+              dangerouslySetInnerHTML={{ __html: step.content.headline }}
+            />
+          )}
           <input
             type="text"
             placeholder={step.content.placeholder}
@@ -246,15 +257,19 @@ function PreviewStep({ step, settings }: { step: FunnelStep; settings: FunnelSet
     case 'multi_choice':
       return (
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold" style={{ color: textColor }}>
-            {step.content.headline}
-          </h1>
+          {step.content.headline && (
+            <h1 
+              className="text-xl sm:text-2xl font-bold leading-tight" 
+              style={{ color: textColor }}
+              dangerouslySetInnerHTML={{ __html: step.content.headline }}
+            />
+          )}
           <div className="space-y-2 max-w-xs mx-auto">
             {(step.content.options || []).map((option: string, i: number) => (
               <button
                 key={i}
-                className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white"
-                style={{ backgroundColor: buttonColor }}
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium"
+                style={{ backgroundColor: buttonColor, color: buttonTextColor }}
               >
                 {option}
               </button>
@@ -265,9 +280,13 @@ function PreviewStep({ step, settings }: { step: FunnelStep; settings: FunnelSet
     case 'video':
       return (
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold" style={{ color: textColor }}>
-            {step.content.headline}
-          </h1>
+          {step.content.headline && (
+            <h1 
+              className="text-xl sm:text-2xl font-bold leading-tight" 
+              style={{ color: textColor }}
+              dangerouslySetInnerHTML={{ __html: step.content.headline }}
+            />
+          )}
           <div 
             className="w-full aspect-video bg-white/10 rounded-xl flex items-center justify-center"
           >
@@ -276,8 +295,8 @@ function PreviewStep({ step, settings }: { step: FunnelStep; settings: FunnelSet
             </span>
           </div>
           <button
-            className="px-6 py-3 text-sm font-semibold rounded-xl text-white"
-            style={{ backgroundColor: buttonColor }}
+            className="px-6 py-3 text-sm font-semibold rounded-xl"
+            style={{ backgroundColor: buttonColor, color: buttonTextColor }}
           >
             {step.content.button_text || 'Continue'}
           </button>
@@ -286,13 +305,19 @@ function PreviewStep({ step, settings }: { step: FunnelStep; settings: FunnelSet
     case 'thank_you':
       return (
         <div className="space-y-4">
-          <h1 className="text-2xl font-bold" style={{ color: textColor }}>
-            {step.content.headline || 'Thank You!'}
-          </h1>
+          {step.content.headline && (
+            <h1 
+              className="text-xl sm:text-2xl font-bold leading-tight" 
+              style={{ color: textColor }}
+              dangerouslySetInnerHTML={{ __html: step.content.headline || 'Thank You!' }}
+            />
+          )}
           {step.content.subtext && (
-            <p className="text-sm opacity-70" style={{ color: textColor }}>
-              {step.content.subtext}
-            </p>
+            <p 
+              className="text-sm opacity-70" 
+              style={{ color: textColor }}
+              dangerouslySetInnerHTML={{ __html: step.content.subtext }}
+            />
           )}
         </div>
       );
