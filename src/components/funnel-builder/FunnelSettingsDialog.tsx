@@ -35,7 +35,7 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
     mutationFn: async () => {
       const { error } = await supabase
         .from('funnels')
-        .update({ settings: settings as unknown as Record<string, unknown>, slug })
+        .update({ settings: JSON.parse(JSON.stringify(settings)), slug })
         .eq('id', funnel.id);
 
       if (error) throw error;
