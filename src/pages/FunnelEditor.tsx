@@ -147,6 +147,18 @@ export default function FunnelEditor() {
   
   // Destructure for convenience
   const { name, steps, stepDesigns, stepSettings, elementOrders } = funnelState;
+  
+  // Refs to track latest state values for save mutation (avoids stale closures)
+  const dynamicElementsRef = useRef(dynamicElements);
+  const stepDesignsRef = useRef(stepDesigns);
+  const elementOrdersRef = useRef(elementOrders);
+  const stepsRef = useRef(steps);
+  
+  // Keep refs in sync
+  useEffect(() => { dynamicElementsRef.current = dynamicElements; }, [dynamicElements]);
+  useEffect(() => { stepDesignsRef.current = stepDesigns; }, [stepDesigns]);
+  useEffect(() => { elementOrdersRef.current = elementOrders; }, [elementOrders]);
+  useEffect(() => { stepsRef.current = steps; }, [steps]);
 
   // Helper functions to update state through the history-tracked funnel state
   const setName = useCallback((newName: string) => {
@@ -263,6 +275,12 @@ export default function FunnelEditor() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      // Use refs to get latest values (avoids stale closure)
+      const currentSteps = stepsRef.current;
+      const currentStepDesigns = stepDesignsRef.current;
+      const currentElementOrders = elementOrdersRef.current;
+      const currentDynamicElements = dynamicElementsRef.current;
+      
       const { error: funnelError } = await supabase
         .from('funnels')
         .update({ name })
@@ -277,13 +295,13 @@ export default function FunnelEditor() {
 
       if (deleteError) throw deleteError;
 
-      const stepsToInsert = steps.map((step, index) => {
+      const stepsToInsert = currentSteps.map((step, index) => {
         // Merge current designs, element orders, and dynamic elements into content for persistence
         const contentWithDesign = {
           ...step.content,
-          design: stepDesigns[step.id] || step.content.design || null,
-          element_order: elementOrders[step.id] || step.content.element_order || null,
-          dynamic_elements: dynamicElements[step.id] || step.content.dynamic_elements || null,
+          design: currentStepDesigns[step.id] || step.content.design || null,
+          element_order: currentElementOrders[step.id] || step.content.element_order || null,
+          dynamic_elements: currentDynamicElements[step.id] || step.content.dynamic_elements || null,
         };
         
         return {
@@ -311,6 +329,13 @@ export default function FunnelEditor() {
   });
 
   // Immediate save on any change - completely silent
+  // Track dynamicElements changes to trigger saves
+  useEffect(() => {
+    if (isInitialized && Object.keys(dynamicElements).length > 0) {
+      setHasUnsavedChanges(true);
+    }
+  }, [dynamicElements, isInitialized]);
+
   useEffect(() => {
     if (hasUnsavedChanges && !saveMutation.isPending && steps.length > 0 && isInitialized) {
       // Clear any existing timer
@@ -330,7 +355,7 @@ export default function FunnelEditor() {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [hasUnsavedChanges, isInitialized]);
+  }, [hasUnsavedChanges, isInitialized, dynamicElements, stepDesigns, elementOrders]);
 
   const publishMutation = useMutation({
     mutationFn: async () => {
