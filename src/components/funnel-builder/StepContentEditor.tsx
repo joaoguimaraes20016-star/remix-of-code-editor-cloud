@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -5,29 +6,64 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Plus, X } from 'lucide-react';
 import { FunnelStep } from '@/pages/FunnelEditor';
+import { cn } from '@/lib/utils';
 
 interface StepContentEditorProps {
   step: FunnelStep;
   onUpdate: (content: FunnelStep['content']) => void;
+  selectedElement?: string | null;
 }
 
-export function StepContentEditor({ step, onUpdate }: StepContentEditorProps) {
+const stepTypeLabels = {
+  welcome: 'Welcome',
+  text_question: 'Text Question',
+  multi_choice: 'Multi Choice',
+  email_capture: 'Email Capture',
+  phone_capture: 'Phone Capture',
+  video: 'Video',
+  thank_you: 'Thank You',
+};
+
+export function StepContentEditor({ step, onUpdate, selectedElement }: StepContentEditorProps) {
   const content = step.content;
+  const headlineRef = useRef<HTMLInputElement>(null);
+  const subtextRef = useRef<HTMLTextAreaElement>(null);
+  const buttonRef = useRef<HTMLInputElement>(null);
+  const placeholderRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus based on selected element
+  useEffect(() => {
+    if (selectedElement === 'headline') headlineRef.current?.focus();
+    if (selectedElement === 'subtext') subtextRef.current?.focus();
+    if (selectedElement === 'button_text') buttonRef.current?.focus();
+    if (selectedElement === 'placeholder') placeholderRef.current?.focus();
+  }, [selectedElement]);
 
   const updateField = (field: string, value: any) => {
     onUpdate({ ...content, [field]: value });
   };
 
+  const isHighlighted = (field: string) => selectedElement === field;
+
   return (
     <div className="space-y-6">
-      <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-        Step Content
-      </h3>
+      <div>
+        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-1">
+          Content
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          {stepTypeLabels[step.step_type]}
+        </p>
+      </div>
 
       {/* Headline - all types */}
-      <div className="space-y-2">
-        <Label>Headline</Label>
+      <div className={cn(
+        "space-y-2 p-3 -mx-3 rounded-lg transition-colors",
+        isHighlighted('headline') && "bg-primary/10 ring-1 ring-primary/30"
+      )}>
+        <Label className="text-xs">Headline</Label>
         <Input
+          ref={headlineRef}
           value={content.headline || ''}
           onChange={(e) => updateField('headline', e.target.value)}
           placeholder="Enter headline..."
@@ -36,9 +72,13 @@ export function StepContentEditor({ step, onUpdate }: StepContentEditorProps) {
 
       {/* Subtext - most types */}
       {step.step_type !== 'multi_choice' && (
-        <div className="space-y-2">
-          <Label>Subtext</Label>
+        <div className={cn(
+          "space-y-2 p-3 -mx-3 rounded-lg transition-colors",
+          isHighlighted('subtext') && "bg-primary/10 ring-1 ring-primary/30"
+        )}>
+          <Label className="text-xs">Subtext</Label>
           <Textarea
+            ref={subtextRef}
             value={content.subtext || ''}
             onChange={(e) => updateField('subtext', e.target.value)}
             placeholder="Additional text (optional)..."
@@ -49,9 +89,13 @@ export function StepContentEditor({ step, onUpdate }: StepContentEditorProps) {
 
       {/* Button text - welcome, video */}
       {(step.step_type === 'welcome' || step.step_type === 'video') && (
-        <div className="space-y-2">
-          <Label>Button Text</Label>
+        <div className={cn(
+          "space-y-2 p-3 -mx-3 rounded-lg transition-colors",
+          isHighlighted('button_text') && "bg-primary/10 ring-1 ring-primary/30"
+        )}>
+          <Label className="text-xs">Button Text</Label>
           <Input
+            ref={buttonRef}
             value={content.button_text || ''}
             onChange={(e) => updateField('button_text', e.target.value)}
             placeholder="Continue"
@@ -61,9 +105,13 @@ export function StepContentEditor({ step, onUpdate }: StepContentEditorProps) {
 
       {/* Placeholder - text_question, email, phone */}
       {(step.step_type === 'text_question' || step.step_type === 'email_capture' || step.step_type === 'phone_capture') && (
-        <div className="space-y-2">
-          <Label>Placeholder</Label>
+        <div className={cn(
+          "space-y-2 p-3 -mx-3 rounded-lg transition-colors",
+          isHighlighted('placeholder') && "bg-primary/10 ring-1 ring-primary/30"
+        )}>
+          <Label className="text-xs">Placeholder</Label>
           <Input
+            ref={placeholderRef}
             value={content.placeholder || ''}
             onChange={(e) => updateField('placeholder', e.target.value)}
             placeholder="Type here..."
@@ -73,8 +121,11 @@ export function StepContentEditor({ step, onUpdate }: StepContentEditorProps) {
 
       {/* Video URL */}
       {step.step_type === 'video' && (
-        <div className="space-y-2">
-          <Label>Video URL</Label>
+        <div className={cn(
+          "space-y-2 p-3 -mx-3 rounded-lg transition-colors",
+          isHighlighted('video_url') && "bg-primary/10 ring-1 ring-primary/30"
+        )}>
+          <Label className="text-xs">Video URL</Label>
           <Input
             value={content.video_url || ''}
             onChange={(e) => updateField('video_url', e.target.value)}
@@ -88,8 +139,11 @@ export function StepContentEditor({ step, onUpdate }: StepContentEditorProps) {
 
       {/* Multi Choice Options */}
       {step.step_type === 'multi_choice' && (
-        <div className="space-y-2">
-          <Label>Options</Label>
+        <div className={cn(
+          "space-y-2 p-3 -mx-3 rounded-lg transition-colors",
+          isHighlighted('options') && "bg-primary/10 ring-1 ring-primary/30"
+        )}>
+          <Label className="text-xs">Options</Label>
           <div className="space-y-2">
             {(content.options || []).map((option, index) => (
               <div key={index} className="flex items-center gap-2">
@@ -133,8 +187,8 @@ export function StepContentEditor({ step, onUpdate }: StepContentEditorProps) {
 
       {/* Required toggle - questions only */}
       {(step.step_type === 'text_question' || step.step_type === 'multi_choice' || step.step_type === 'email_capture' || step.step_type === 'phone_capture') && (
-        <div className="flex items-center justify-between">
-          <Label>Required</Label>
+        <div className="flex items-center justify-between p-3 -mx-3 rounded-lg">
+          <Label className="text-xs">Required</Label>
           <Switch
             checked={content.is_required !== false}
             onCheckedChange={(checked) => updateField('is_required', checked)}
@@ -144,8 +198,8 @@ export function StepContentEditor({ step, onUpdate }: StepContentEditorProps) {
 
       {/* Redirect URL - thank_you only */}
       {step.step_type === 'thank_you' && (
-        <div className="space-y-2">
-          <Label>Redirect URL (optional)</Label>
+        <div className="space-y-2 p-3 -mx-3 rounded-lg">
+          <Label className="text-xs">Redirect URL (optional)</Label>
           <Input
             value={content.redirect_url || ''}
             onChange={(e) => updateField('redirect_url', e.target.value)}
