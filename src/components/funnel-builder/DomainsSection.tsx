@@ -681,38 +681,50 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
               </p>
             </div>
 
-            {/* Step 2 */}
+            {/* Step 2 - DNS Records Table */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-emerald-500 text-white text-sm font-bold flex items-center justify-center">2</div>
-                <h4 className="font-medium">Add CNAME Record</h4>
+                <h4 className="font-medium">Add DNS Records</h4>
               </div>
-              <div className="ml-8 bg-muted rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Type:</span>
-                  <span className="font-mono text-sm">CNAME</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Name:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">@</span>
-                    <span className="text-xs text-muted-foreground">(or www)</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Target:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm text-emerald-500">{HOSTING_DOMAIN}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => copyToClipboard(HOSTING_DOMAIN)}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
+              
+              {/* DNS Records Table */}
+              <div className="ml-8 bg-muted rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted-foreground/10">
+                    <tr>
+                      <th className="text-left px-4 py-2 font-medium">Type</th>
+                      <th className="text-left px-4 py-2 font-medium">Host</th>
+                      <th className="text-left px-4 py-2 font-medium">Points To</th>
+                      <th className="w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-t border-border/50">
+                      <td className="px-4 py-3 font-mono">CNAME</td>
+                      <td className="px-4 py-3 font-mono">www</td>
+                      <td className="px-4 py-3 font-mono text-emerald-500">{HOSTING_DOMAIN}</td>
+                      <td className="px-4 py-3">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => copyToClipboard(HOSTING_DOMAIN)}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Note about root domain */}
+              <div className="ml-8 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  <strong>Note:</strong> Most registrars (like GoDaddy) don't allow CNAME on root domain (@). 
+                  Use <strong>www</strong> as shown above, then set up a redirect from your root domain to www.
+                </p>
               </div>
             </div>
 
@@ -723,7 +735,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                 <h4 className="font-medium">Verify your DNS</h4>
               </div>
               <p className="text-sm text-muted-foreground ml-8">
-                Click "Verify DNS" to check if your settings are correct. SSL will be provisioned automatically once verified.
+                Click "Verify DNS" to check if your settings are correct. SSL is provided automatically by Cloudflare once your CNAME is verified.
               </p>
             </div>
 

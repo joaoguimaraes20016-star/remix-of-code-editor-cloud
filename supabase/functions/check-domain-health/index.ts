@@ -6,7 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const EXPECTED_IP = '185.158.133.1';
+// Our hosting domain for custom domains
+const HOSTING_DOMAIN = 'funnel.grwthop.com';
 
 interface Domain {
   id: string;
@@ -20,49 +21,80 @@ interface Domain {
   alert_sent_at: string | null;
 }
 
-async function checkDNSHealth(domain: string, verificationToken: string) {
+async function checkDNSHealth(domain: string) {
   const results = {
-    aRecordValid: false,
-    txtRecordValid: false,
-    aRecordValue: null as string | null,
-    txtRecordValue: null as string | null,
+    cnameValid: false,
+    cnameValue: null as string | null,
+    rootCnameValid: false,
+    rootCnameValue: null as string | null,
   };
 
   try {
-    // Check A record
-    const aResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=${domain}&type=A`, {
+    // Check CNAME record for www subdomain
+    const wwwCnameResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=www.${domain}&type=CNAME`, {
       headers: { 'Accept': 'application/dns-json' }
     });
     
-    if (aResponse.ok) {
-      const aData = await aResponse.json();
-      if (aData.Answer && aData.Answer.length > 0) {
-        const aRecords = aData.Answer.filter((r: any) => r.type === 1);
-        for (const record of aRecords) {
-          results.aRecordValue = record.data;
-          if (record.data === EXPECTED_IP) {
-            results.aRecordValid = true;
+    if (wwwCnameResponse.ok) {
+      const cnameData = await wwwCnameResponse.json();
+      if (cnameData.Answer && cnameData.Answer.length > 0) {
+        const cnameRecords = cnameData.Answer.filter((r: any) => r.type === 5);
+        for (const record of cnameRecords) {
+          const value = record.data?.replace(/\.$/, '').toLowerCase();
+          results.cnameValue = value;
+          if (value === HOSTING_DOMAIN || value === `${HOSTING_DOMAIN}.`) {
+            results.cnameValid = true;
             break;
           }
         }
       }
     }
 
-    // Check TXT record
-    const txtResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=_lovable.${domain}&type=TXT`, {
+    // Check CNAME record for root domain
+    const rootCnameResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=${domain}&type=CNAME`, {
       headers: { 'Accept': 'application/dns-json' }
     });
     
-    if (txtResponse.ok) {
-      const txtData = await txtResponse.json();
-      if (txtData.Answer && txtData.Answer.length > 0) {
-        const txtRecords = txtData.Answer.filter((r: any) => r.type === 16);
-        for (const record of txtRecords) {
-          const value = record.data?.replace(/"/g, '');
-          results.txtRecordValue = value;
-          if (value === `lovable_verify=${verificationToken}`) {
-            results.txtRecordValid = true;
+    if (rootCnameResponse.ok) {
+      const rootCnameData = await rootCnameResponse.json();
+      if (rootCnameData.Answer && rootCnameData.Answer.length > 0) {
+        const cnameRecords = rootCnameData.Answer.filter((r: any) => r.type === 5);
+        for (const record of cnameRecords) {
+          const value = record.data?.replace(/\.$/, '').toLowerCase();
+          results.rootCnameValue = value;
+          if (value === HOSTING_DOMAIN || value === `${HOSTING_DOMAIN}.`) {
+            results.rootCnameValid = true;
             break;
+          }
+        }
+      }
+    }
+
+    // Also check if domain resolves to our hosting via A record (CNAME flattening)
+    if (!results.cnameValid) {
+      const aResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=www.${domain}&type=A`, {
+        headers: { 'Accept': 'application/dns-json' }
+      });
+      
+      if (aResponse.ok) {
+        const aData = await aResponse.json();
+        if (aData.Answer && aData.Answer.length > 0) {
+          const hostingAResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=${HOSTING_DOMAIN}&type=A`, {
+            headers: { 'Accept': 'application/dns-json' }
+          });
+          
+          if (hostingAResponse.ok) {
+            const hostingAData = await hostingAResponse.json();
+            if (hostingAData.Answer && hostingAData.Answer.length > 0) {
+              const hostingIPs = hostingAData.Answer.filter((r: any) => r.type === 1).map((r: any) => r.data);
+              const domainIPs = aData.Answer.filter((r: any) => r.type === 1).map((r: any) => r.data);
+              
+              const matchingIPs = domainIPs.some((ip: string) => hostingIPs.includes(ip));
+              if (matchingIPs) {
+                results.cnameValid = true;
+                results.cnameValue = `Resolves to ${HOSTING_DOMAIN} IPs`;
+              }
+            }
           }
         }
       }
@@ -75,47 +107,17 @@ async function checkDNSHealth(domain: string, verificationToken: string) {
 }
 
 function determineHealthStatus(
-  aRecordValid: boolean, 
-  txtRecordValid: boolean, 
+  cnameValid: boolean, 
+  rootCnameValid: boolean, 
   currentStatus: string
 ): string {
-  if (aRecordValid && txtRecordValid) {
+  if (cnameValid || rootCnameValid) {
     return 'healthy';
-  } else if (aRecordValid || txtRecordValid) {
-    return 'degraded';
   } else if (currentStatus === 'verified') {
     // Was verified but now DNS is gone
     return 'offline';
   }
   return 'unknown';
-}
-
-function determineSSLStatus(
-  healthStatus: string,
-  currentSSLStatus: string,
-  sslExpiresAt: string | null
-): string {
-  // If domain is offline, SSL is invalid
-  if (healthStatus === 'offline') {
-    return 'failed';
-  }
-  
-  // Check if SSL is expired
-  if (sslExpiresAt && new Date(sslExpiresAt) < new Date()) {
-    return 'expired';
-  }
-  
-  // If healthy and was pending, start provisioning
-  if (healthStatus === 'healthy' && currentSSLStatus === 'pending') {
-    return 'provisioning';
-  }
-  
-  // If healthy and provisioning, mark as active (simulate provisioning completion)
-  if (healthStatus === 'healthy' && currentSSLStatus === 'provisioning') {
-    return 'active';
-  }
-  
-  return currentSSLStatus;
 }
 
 serve(async (req) => {
@@ -147,17 +149,11 @@ serve(async (req) => {
     for (const domain of (domains || []) as Domain[]) {
       console.log(`Checking domain: ${domain.domain}`);
       
-      const dnsResults = await checkDNSHealth(domain.domain, domain.verification_token);
+      const dnsResults = await checkDNSHealth(domain.domain);
       const healthStatus = determineHealthStatus(
-        dnsResults.aRecordValid, 
-        dnsResults.txtRecordValid,
+        dnsResults.cnameValid, 
+        dnsResults.rootCnameValid,
         domain.status
-      );
-      
-      const sslStatus = determineSSLStatus(
-        healthStatus,
-        domain.ssl_status,
-        null // Would pass ssl_expires_at here
       );
 
       // Determine if we need to send an alert
@@ -170,22 +166,21 @@ serve(async (req) => {
       const updateData: any = {
         last_health_check: new Date().toISOString(),
         health_status: healthStatus,
-        dns_a_record_valid: dnsResults.aRecordValid,
-        dns_txt_record_valid: dnsResults.txtRecordValid,
-        ssl_status: sslStatus,
+        dns_a_record_valid: dnsResults.rootCnameValid, // Repurposed for root check
+        dns_txt_record_valid: dnsResults.cnameValid, // Repurposed for www check
       };
-
-      // Set SSL provisioned timestamp if just became active
-      if (sslStatus === 'active' && domain.ssl_status !== 'active') {
-        updateData.ssl_provisioned_at = new Date().toISOString();
-        // Set expiry to 90 days (Let's Encrypt standard)
-        updateData.ssl_expires_at = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
-      }
 
       // Mark domain as offline if DNS completely gone
       if (healthStatus === 'offline') {
         updateData.status = 'offline';
         updateData.ssl_provisioned = false;
+        updateData.ssl_status = 'failed';
+      }
+
+      // If healthy, ensure SSL is active (Cloudflare handles SSL)
+      if (healthStatus === 'healthy') {
+        updateData.ssl_status = 'active';
+        updateData.ssl_provisioned = true;
       }
 
       const { error: updateError } = await supabase
@@ -206,7 +201,6 @@ serve(async (req) => {
           new_status: healthStatus,
         });
 
-        // Mark alert as sent
         await supabase
           .from('funnel_domains')
           .update({ alert_sent_at: new Date().toISOString() })
@@ -224,7 +218,6 @@ serve(async (req) => {
       results.push({
         domain: domain.domain,
         healthStatus,
-        sslStatus,
         dnsResults,
       });
     }
