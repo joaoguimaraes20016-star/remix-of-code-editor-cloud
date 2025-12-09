@@ -176,6 +176,23 @@ export function StepContentEditor({
         </div>
       )}
 
+      {/* Submit Button Text - text_question, email, phone */}
+      {(step.step_type === 'text_question' || step.step_type === 'email_capture' || step.step_type === 'phone_capture') && (
+        <div 
+          id="editor-section-submit-button"
+          className={cn(
+          "space-y-2 p-3 -mx-3 rounded-lg transition-colors",
+          isHighlighted('submit_button') && "bg-primary/10 ring-1 ring-primary/30"
+        )}>
+          <Label className="text-xs">Submit Button Text</Label>
+          <Input
+            value={content.submit_button_text || 'Submit'}
+            onChange={(e) => updateField('submit_button_text', e.target.value)}
+            placeholder="Submit"
+          />
+        </div>
+      )}
+
       {/* Video URL */}
       {step.step_type === 'video' && (
         <div 

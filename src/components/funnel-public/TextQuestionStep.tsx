@@ -30,6 +30,7 @@ interface TextQuestionStepProps {
     element_order?: string[];
     dynamic_elements?: Record<string, any>;
     design?: StepDesign;
+    submit_button_text?: string;
   };
   settings: {
     primary_color: string;
@@ -145,7 +146,7 @@ export function TextQuestionStep({ content, settings, onNext, isActive }: TextQu
         className={`relative mt-6 w-full px-6 py-4 text-base font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${buttonHoverClass}`}
         style={buttonStyle}
       >
-        Submit and proceed
+        {content.submit_button_text || 'Submit'}
       </button>
 
       <p className="mt-4 text-white/40 text-xs text-center">

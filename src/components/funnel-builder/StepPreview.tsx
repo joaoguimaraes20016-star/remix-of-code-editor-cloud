@@ -573,9 +573,10 @@ export function StepPreview({
         const inputRadius = design?.inputRadius || 12;
         const inputPlaceholderColor = design?.inputPlaceholderColor || '#9ca3af';
         const showInputIcon = design?.inputShowIcon !== false;
+        const submitButtonText = content.submit_button_text || 'Submit';
         
         return (
-          <div className="w-full max-w-sm">
+          <div className="w-full max-w-sm space-y-4">
             <div 
               className="relative flex items-start gap-3 p-4"
               style={{ 
@@ -593,6 +594,28 @@ export function StepPreview({
                 {placeholder}
               </span>
             </div>
+            
+            {/* Submit Button */}
+            <button
+              className="w-full px-6 py-4 text-base font-semibold transition-all"
+              style={{ 
+                background: design?.useButtonGradient && design?.buttonGradientFrom
+                  ? `linear-gradient(${design.buttonGradientDirection || '135deg'}, ${design.buttonGradientFrom}, ${design.buttonGradientTo || design.buttonGradientFrom})`
+                  : buttonColor,
+                color: buttonTextColor,
+                borderRadius: `${borderRadius}px`
+              }}
+            >
+              <InlineTextEditor
+                value={submitButtonText}
+                onChange={(val) => handleTextChange('submit_button_text', val)}
+                className="text-center"
+                style={{ color: buttonTextColor }}
+                isSelected={selectedElement === 'submit_button'}
+                onSelect={() => onSelectElement('submit_button')}
+                onEditingChange={(editing) => setEditingElement(editing ? 'submit_button' : null)}
+              />
+            </button>
           </div>
         );
         

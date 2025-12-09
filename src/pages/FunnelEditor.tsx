@@ -94,6 +94,8 @@ export interface FunnelStep {
     // Multi-choice specific
     next_button_text?: string;
     show_next_button?: boolean;
+    // Text/Email/Phone input submit button
+    submit_button_text?: string;
     // Persisted design and layout
     design?: StepDesign;
     element_order?: string[];
