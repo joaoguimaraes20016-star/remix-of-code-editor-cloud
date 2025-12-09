@@ -16,11 +16,13 @@ interface CalendlyBookingData {
 
 interface FunnelLeadRequest {
   funnel_id: string
+  lead_id?: string // For updating existing leads
   answers: Record<string, any>
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
   calendly_booking?: CalendlyBookingData
+  is_complete?: boolean // Whether this is the final submission
 }
 
 Deno.serve(async (req) => {
@@ -36,9 +38,15 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const body: FunnelLeadRequest = await req.json()
-    const { funnel_id, answers, utm_source, utm_medium, utm_campaign, calendly_booking } = body
+    const { funnel_id, lead_id, answers, utm_source, utm_medium, utm_campaign, calendly_booking, is_complete } = body
 
-    console.log('Received funnel lead submission:', { funnel_id, utm_source, has_calendly: !!calendly_booking })
+    console.log('Received funnel lead submission:', { 
+      funnel_id, 
+      lead_id, 
+      utm_source, 
+      has_calendly: !!calendly_booking,
+      is_complete 
+    })
 
     if (!funnel_id || !answers) {
       return new Response(
@@ -121,176 +129,214 @@ Deno.serve(async (req) => {
       name = calendly_booking.invitee_name
     }
 
-    // Determine lead status based on Calendly booking
-    const leadStatus = calendly_booking ? 'booked' : 'new'
+    // Determine lead status
+    let leadStatus = 'partial'
+    if (is_complete) {
+      leadStatus = calendly_booking ? 'booked' : 'new'
+    }
 
-    // Insert the lead
-    const { data: lead, error: insertError } = await supabase
-      .from('funnel_leads')
-      .insert({
-        funnel_id,
-        team_id: funnel.team_id,
-        answers,
+    let lead: any = null
+    let contactId: string | null = null
+
+    // Check if we're updating an existing lead or creating new
+    if (lead_id) {
+      // Update existing lead
+      const { data: updatedLead, error: updateError } = await supabase
+        .from('funnel_leads')
+        .update({
+          answers,
+          email: email || undefined,
+          phone: phone || undefined,
+          name: name || undefined,
+          calendly_booking_data: calendlyBookingData || undefined,
+          opt_in_status: optInStatus ?? undefined,
+          opt_in_timestamp: optInTimestamp || undefined,
+          status: leadStatus,
+        })
+        .eq('id', lead_id)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error('Error updating lead:', updateError)
+        // If update fails, try to create new lead
+      } else {
+        lead = updatedLead
+        console.log('Lead updated successfully:', lead.id)
+      }
+    }
+
+    // Create new lead if no lead_id or update failed
+    if (!lead) {
+      const { data: newLead, error: insertError } = await supabase
+        .from('funnel_leads')
+        .insert({
+          funnel_id,
+          team_id: funnel.team_id,
+          answers,
+          email,
+          phone,
+          name,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          calendly_booking_data: calendlyBookingData,
+          opt_in_status: optInStatus,
+          opt_in_timestamp: optInTimestamp,
+          status: leadStatus,
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Error inserting lead:', insertError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to save lead' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      lead = newLead
+      console.log('Lead created successfully:', lead.id)
+    }
+
+    // Only create/update contact and send webhooks on complete submission
+    if (is_complete) {
+      // Auto-create contact if enabled
+      if (funnel.auto_create_contact !== false && (email || phone)) {
+        // Check if contact already exists by email
+        let existingContact = null
+        if (email) {
+          const { data: existing } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('team_id', funnel.team_id)
+            .eq('email', email)
+            .maybeSingle()
+          existingContact = existing
+        }
+
+        if (existingContact) {
+          // Update existing contact
+          const { error: updateContactError } = await supabase
+            .from('contacts')
+            .update({
+              funnel_lead_id: lead.id,
+              name: name || undefined,
+              phone: phone || undefined,
+              opt_in: optInStatus ?? undefined,
+              calendly_booked_at: calendly_booking?.event_start_time || undefined,
+              custom_fields: answers,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingContact.id)
+          
+          if (!updateContactError) {
+            contactId = existingContact.id
+            console.log('Updated existing contact:', contactId)
+          }
+        } else {
+          // Create new contact
+          const { data: contact, error: contactError } = await supabase
+            .from('contacts')
+            .insert({
+              team_id: funnel.team_id,
+              funnel_lead_id: lead.id,
+              name,
+              email,
+              phone,
+              opt_in: optInStatus ?? false,
+              source: `Funnel: ${funnel.name}`,
+              calendly_booked_at: calendly_booking?.event_start_time || null,
+              custom_fields: answers,
+            })
+            .select('id')
+            .single()
+          
+          if (!contactError && contact) {
+            contactId = contact.id
+            console.log('Created new contact:', contactId)
+          } else {
+            console.error('Error creating contact:', contactError)
+          }
+        }
+      }
+
+      // Prepare webhook payload
+      const webhookPayload: Record<string, any> = {
+        lead_id: lead.id,
+        contact_id: contactId,
         email,
         phone,
         name,
+        source: `Funnel: ${funnel.name}`,
+        funnel_id: funnel_id,
+        funnel_name: funnel.name,
         utm_source,
         utm_medium,
         utm_campaign,
-        calendly_booking_data: calendlyBookingData,
-        opt_in_status: optInStatus,
+        opt_in: optInStatus,
         opt_in_timestamp: optInTimestamp,
-        status: leadStatus,
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error('Error inserting lead:', insertError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to save lead' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log('Lead saved successfully:', lead.id)
-
-    // Auto-create contact if enabled
-    let contactId: string | null = null
-    if (funnel.auto_create_contact !== false && (email || phone)) {
-      // Check if contact already exists by email
-      let existingContact = null
-      if (email) {
-        const { data: existing } = await supabase
-          .from('contacts')
-          .select('id')
-          .eq('team_id', funnel.team_id)
-          .eq('email', email)
-          .maybeSingle()
-        existingContact = existing
+        custom_fields: answers,
+        calendly_booked: !!calendly_booking,
+        calendly_event_time: calendly_booking?.event_start_time || null,
+        calendly_event_uri: calendly_booking?.event_uri || null,
+        submitted_at: new Date().toISOString(),
       }
 
-      if (existingContact) {
-        // Update existing contact
-        const { error: updateError } = await supabase
-          .from('contacts')
-          .update({
-            funnel_lead_id: lead.id,
-            name: name || undefined,
-            phone: phone || undefined,
-            opt_in: optInStatus ?? undefined,
-            calendly_booked_at: calendly_booking?.event_start_time || undefined,
-            custom_fields: answers,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingContact.id)
-        
-        if (!updateError) {
-          contactId = existingContact.id
-          console.log('Updated existing contact:', contactId)
-        }
-      } else {
-        // Create new contact
-        const { data: contact, error: contactError } = await supabase
-          .from('contacts')
-          .insert({
-            team_id: funnel.team_id,
-            funnel_lead_id: lead.id,
-            name,
-            email,
-            phone,
-            opt_in: optInStatus ?? false,
-            source: `Funnel: ${funnel.name}`,
-            calendly_booked_at: calendly_booking?.event_start_time || null,
-            custom_fields: answers,
-          })
-          .select('id')
-          .single()
-        
-        if (!contactError && contact) {
-          contactId = contact.id
-          console.log('Created new contact:', contactId)
-        } else {
-          console.error('Error creating contact:', contactError)
-        }
-      }
-    }
-
-    // Prepare webhook payload
-    const webhookPayload: Record<string, any> = {
-      lead_id: lead.id,
-      contact_id: contactId,
-      email,
-      phone,
-      name,
-      source: `Funnel: ${funnel.name}`,
-      funnel_id: funnel_id,
-      funnel_name: funnel.name,
-      utm_source,
-      utm_medium,
-      utm_campaign,
-      opt_in: optInStatus,
-      opt_in_timestamp: optInTimestamp,
-      custom_fields: answers,
-      calendly_booked: !!calendly_booking,
-      calendly_event_time: calendly_booking?.event_start_time || null,
-      calendly_event_uri: calendly_booking?.event_uri || null,
-      submitted_at: new Date().toISOString(),
-    }
-
-    // Send to GHL webhook if configured
-    const ghlWebhookUrl = funnel.settings?.ghl_webhook_url
-    if (ghlWebhookUrl) {
-      console.log('Sending to GHL webhook:', ghlWebhookUrl)
-      try {
-        const ghlResponse = await fetch(ghlWebhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(webhookPayload),
-        })
-
-        if (ghlResponse.ok) {
-          console.log('GHL webhook successful')
-          await supabase
-            .from('funnel_leads')
-            .update({ ghl_synced_at: new Date().toISOString() })
-            .eq('id', lead.id)
-        } else {
-          console.error('GHL webhook failed:', await ghlResponse.text())
-        }
-      } catch (ghlError) {
-        console.error('GHL webhook error:', ghlError)
-      }
-    }
-
-    // Send to Zapier webhook if configured
-    if (funnel.zapier_webhook_url) {
-      console.log('Sending to Zapier webhook')
-      try {
-        await fetch(funnel.zapier_webhook_url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(webhookPayload),
-        })
-        console.log('Zapier webhook sent')
-      } catch (zapierError) {
-        console.error('Zapier webhook error:', zapierError)
-      }
-    }
-
-    // Send to additional webhook URLs if configured
-    const webhookUrls = funnel.webhook_urls || []
-    for (const webhookUrl of webhookUrls) {
-      if (webhookUrl && typeof webhookUrl === 'string') {
-        console.log('Sending to custom webhook:', webhookUrl)
+      // Send to GHL webhook if configured
+      const ghlWebhookUrl = funnel.settings?.ghl_webhook_url
+      if (ghlWebhookUrl) {
+        console.log('Sending to GHL webhook:', ghlWebhookUrl)
         try {
-          await fetch(webhookUrl, {
+          const ghlResponse = await fetch(ghlWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(webhookPayload),
           })
-        } catch (webhookError) {
-          console.error('Custom webhook error:', webhookError)
+
+          if (ghlResponse.ok) {
+            console.log('GHL webhook successful')
+            await supabase
+              .from('funnel_leads')
+              .update({ ghl_synced_at: new Date().toISOString() })
+              .eq('id', lead.id)
+          } else {
+            console.error('GHL webhook failed:', await ghlResponse.text())
+          }
+        } catch (ghlError) {
+          console.error('GHL webhook error:', ghlError)
+        }
+      }
+
+      // Send to Zapier webhook if configured
+      if (funnel.zapier_webhook_url) {
+        console.log('Sending to Zapier webhook')
+        try {
+          await fetch(funnel.zapier_webhook_url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(webhookPayload),
+          })
+          console.log('Zapier webhook sent')
+        } catch (zapierError) {
+          console.error('Zapier webhook error:', zapierError)
+        }
+      }
+
+      // Send to additional webhook URLs if configured
+      const webhookUrls = funnel.webhook_urls || []
+      for (const webhookUrl of webhookUrls) {
+        if (webhookUrl && typeof webhookUrl === 'string') {
+          console.log('Sending to custom webhook:', webhookUrl)
+          try {
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(webhookPayload),
+            })
+          } catch (webhookError) {
+            console.error('Custom webhook error:', webhookError)
+          }
         }
       }
     }
