@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Globe, Plus, Copy, CheckCircle, AlertCircle, 
-  ExternalLink, Trash2, RefreshCw, Link2, Shield, ShieldCheck
+  ExternalLink, Trash2, RefreshCw, Link2, Shield, ShieldCheck,
+  Activity, Wifi, WifiOff, Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -32,6 +33,9 @@ interface Domain {
   verification_token: string;
   verified_at: string | null;
   ssl_provisioned: boolean;
+  ssl_status?: string;
+  health_status?: string;
+  last_health_check?: string | null;
   created_at: string;
 }
 
@@ -220,16 +224,34 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
       return;
     }
     
-    // Basic validation
-    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}$/;
-    const cleanDomain = newDomain.replace('www.', '').toLowerCase().trim();
+    // Updated regex to support subdomains (e.g., signup.mydomain.com, promo.site.co.uk)
+    const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+    const cleanDomain = newDomain.replace(/^www\./, '').toLowerCase().trim();
     if (!domainRegex.test(cleanDomain)) {
-      toast({ title: 'Please enter a valid domain', variant: 'destructive' });
+      toast({ title: 'Please enter a valid domain or subdomain', variant: 'destructive' });
       return;
     }
 
     addDomainMutation.mutate(cleanDomain);
   };
+
+  // Check domain health
+  const checkHealthMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('check-domain-health', {
+        body: {},
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+      toast({ title: 'Health check complete' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Health check failed', description: error.message, variant: 'destructive' });
+    },
+  });
 
   const handleVerifyRecords = () => {
     if (!currentDomain) return;
@@ -253,13 +275,24 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Domains</h1>
           <p className="text-muted-foreground mt-1">
-            Connect custom domains to your funnels for a branded experience
+            Connect custom domains and subdomains to your funnels
           </p>
         </div>
-        <Button onClick={() => setShowConnectDialog(true)} className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Domain
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => checkHealthMutation.mutate()}
+            disabled={checkHealthMutation.isPending}
+          >
+            <Activity className={cn("h-4 w-4 mr-2", checkHealthMutation.isPending && "animate-pulse")} />
+            {checkHealthMutation.isPending ? 'Checking...' : 'Check Health'}
+          </Button>
+          <Button onClick={() => setShowConnectDialog(true)} className="bg-emerald-600 hover:bg-emerald-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Domain
+          </Button>
+        </div>
       </div>
 
       {/* Domain List */}
@@ -275,14 +308,22 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "p-2 rounded-lg",
-                      domain.status === 'verified' ? "bg-emerald-500/10" : 
+                      domain.status === 'verified' && domain.health_status === 'healthy' ? "bg-emerald-500/10" : 
+                      domain.status === 'verified' && domain.health_status === 'degraded' ? "bg-amber-500/10" :
+                      domain.status === 'offline' || domain.health_status === 'offline' ? "bg-red-500/10" :
                       domain.status === 'failed' ? "bg-red-500/10" : "bg-amber-500/10"
                     )}>
-                      <Globe className={cn(
-                        "h-5 w-5",
-                        domain.status === 'verified' ? "text-emerald-500" : 
-                        domain.status === 'failed' ? "text-red-500" : "text-amber-500"
-                      )} />
+                      {domain.health_status === 'offline' ? (
+                        <WifiOff className="h-5 w-5 text-red-500" />
+                      ) : domain.health_status === 'healthy' ? (
+                        <Wifi className="h-5 w-5 text-emerald-500" />
+                      ) : (
+                        <Globe className={cn(
+                          "h-5 w-5",
+                          domain.status === 'verified' ? "text-emerald-500" : 
+                          domain.status === 'failed' ? "text-red-500" : "text-amber-500"
+                        )} />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -418,29 +459,35 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
           <div className="space-y-4 py-4">
             <div>
               <label className="text-sm font-medium">
-                Domain URL <span className="text-red-500">*</span>
+                Domain or Subdomain URL <span className="text-red-500">*</span>
               </label>
               <Input
-                placeholder="yourdomain.com"
+                placeholder="signup.yourdomain.com"
                 value={newDomain}
                 onChange={(e) => setNewDomain(e.target.value)}
                 className="mt-1.5"
               />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Examples: yourdomain.com, signup.yourdomain.com, promo.yourdomain.com
+              </p>
             </div>
             
-            <div className="flex items-start gap-2">
-              <Checkbox 
-                id="add-www" 
-                checked={addWww} 
-                onCheckedChange={(checked) => setAddWww(checked as boolean)}
-              />
-              <div>
-                <label htmlFor="add-www" className="text-sm cursor-pointer">
-                  Also add www.{newDomain || 'yourdomain.com'} and redirect traffic to {newDomain || 'yourdomain.com'}
-                </label>
-                <p className="text-xs text-emerald-600 mt-0.5">Recommended</p>
+            {/* Only show www option for root domains */}
+            {newDomain && !newDomain.includes('.') || (newDomain.match(/\./g) || []).length === 1 ? (
+              <div className="flex items-start gap-2">
+                <Checkbox 
+                  id="add-www" 
+                  checked={addWww} 
+                  onCheckedChange={(checked) => setAddWww(checked as boolean)}
+                />
+                <div>
+                  <label htmlFor="add-www" className="text-sm cursor-pointer">
+                    Also add www.{newDomain || 'yourdomain.com'} and redirect traffic
+                  </label>
+                  <p className="text-xs text-emerald-600 mt-0.5">Recommended for root domains</p>
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
 
           <div className="flex items-center justify-end pt-4 border-t">
