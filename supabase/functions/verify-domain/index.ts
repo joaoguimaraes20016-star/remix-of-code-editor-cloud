@@ -6,111 +6,97 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Our expected IP for A records
-const EXPECTED_IP = '185.158.133.1';
+// Our hosting domain for custom domains
+const HOSTING_DOMAIN = 'funnel.grwthop.com';
 
-interface DNSRecord {
-  type: string;
-  value: string;
-}
-
-async function checkDNSRecords(domain: string, verificationToken: string): Promise<{
-  aRecordValid: boolean;
-  txtRecordValid: boolean;
+async function checkDNSRecords(domain: string): Promise<{
   cnameValid: boolean;
-  aRecordValue: string | null;
-  txtRecordValue: string | null;
   cnameValue: string | null;
+  rootCnameValid: boolean;
+  rootCnameValue: string | null;
 }> {
   const results = {
-    aRecordValid: false,
-    txtRecordValid: false,
     cnameValid: false,
-    aRecordValue: null as string | null,
-    txtRecordValue: null as string | null,
     cnameValue: null as string | null,
+    rootCnameValid: false,
+    rootCnameValue: null as string | null,
   };
 
   try {
-    // Check A record using Cloudflare DNS API
-    const aResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=${domain}&type=A`, {
+    // Check CNAME record for www subdomain
+    const wwwCnameResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=www.${domain}&type=CNAME`, {
       headers: { 'Accept': 'application/dns-json' }
     });
     
-    if (aResponse.ok) {
-      const aData = await aResponse.json();
-      console.log(`A record response for ${domain}:`, JSON.stringify(aData));
-      
-      if (aData.Answer && aData.Answer.length > 0) {
-        const aRecords = aData.Answer.filter((r: any) => r.type === 1);
-        for (const record of aRecords) {
-          results.aRecordValue = record.data;
-          if (record.data === EXPECTED_IP) {
-            results.aRecordValid = true;
-            break;
-          }
-        }
-      }
-    }
-
-    // Check TXT record for _lovable verification
-    const txtResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=_lovable.${domain}&type=TXT`, {
-      headers: { 'Accept': 'application/dns-json' }
-    });
-    
-    if (txtResponse.ok) {
-      const txtData = await txtResponse.json();
-      console.log(`TXT record response for _lovable.${domain}:`, JSON.stringify(txtData));
-      
-      if (txtData.Answer && txtData.Answer.length > 0) {
-        const txtRecords = txtData.Answer.filter((r: any) => r.type === 16);
-        for (const record of txtRecords) {
-          // TXT records come with quotes
-          const value = record.data?.replace(/"/g, '');
-          results.txtRecordValue = value;
-          if (value === `lovable_verify=${verificationToken}`) {
-            results.txtRecordValid = true;
-            break;
-          }
-        }
-      }
-    }
-
-    // Check CNAME record for www
-    const cnameResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=www.${domain}&type=CNAME`, {
-      headers: { 'Accept': 'application/dns-json' }
-    });
-    
-    if (cnameResponse.ok) {
-      const cnameData = await cnameResponse.json();
+    if (wwwCnameResponse.ok) {
+      const cnameData = await wwwCnameResponse.json();
       console.log(`CNAME record response for www.${domain}:`, JSON.stringify(cnameData));
       
       if (cnameData.Answer && cnameData.Answer.length > 0) {
         const cnameRecords = cnameData.Answer.filter((r: any) => r.type === 5);
         for (const record of cnameRecords) {
           // Remove trailing dot from CNAME
-          const value = record.data?.replace(/\.$/, '');
+          const value = record.data?.replace(/\.$/, '').toLowerCase();
           results.cnameValue = value;
-          if (value === domain || value === `${domain}.`) {
+          if (value === HOSTING_DOMAIN || value === `${HOSTING_DOMAIN}.`) {
             results.cnameValid = true;
             break;
           }
         }
       }
+    }
+
+    // Check CNAME record for root domain (some registrars support this)
+    const rootCnameResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=${domain}&type=CNAME`, {
+      headers: { 'Accept': 'application/dns-json' }
+    });
+    
+    if (rootCnameResponse.ok) {
+      const rootCnameData = await rootCnameResponse.json();
+      console.log(`CNAME record response for ${domain}:`, JSON.stringify(rootCnameData));
       
-      // Also check if www points to our IP via A record
-      const wwwAResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=www.${domain}&type=A`, {
-        headers: { 'Accept': 'application/dns-json' }
-      });
+      if (rootCnameData.Answer && rootCnameData.Answer.length > 0) {
+        const cnameRecords = rootCnameData.Answer.filter((r: any) => r.type === 5);
+        for (const record of cnameRecords) {
+          const value = record.data?.replace(/\.$/, '').toLowerCase();
+          results.rootCnameValue = value;
+          if (value === HOSTING_DOMAIN || value === `${HOSTING_DOMAIN}.`) {
+            results.rootCnameValid = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // Also check if domain resolves to our hosting via A record (in case of CNAME flattening)
+    // Some DNS providers flatten CNAME to A records
+    const aResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=www.${domain}&type=A`, {
+      headers: { 'Accept': 'application/dns-json' }
+    });
+    
+    if (aResponse.ok && !results.cnameValid) {
+      const aData = await aResponse.json();
+      console.log(`A record response for www.${domain}:`, JSON.stringify(aData));
       
-      if (wwwAResponse.ok) {
-        const wwwAData = await wwwAResponse.json();
-        if (wwwAData.Answer && wwwAData.Answer.length > 0) {
-          const aRecords = wwwAData.Answer.filter((r: any) => r.type === 1);
-          for (const record of aRecords) {
-            if (record.data === EXPECTED_IP) {
+      // If we get A records and the CNAME check failed, it might be CNAME flattening
+      // We'll consider it valid if DNS resolves (user followed instructions)
+      if (aData.Answer && aData.Answer.length > 0) {
+        // Check if we can trace back to our hosting domain
+        const hostingAResponse = await fetch(`https://cloudflare-dns.com/dns-query?name=${HOSTING_DOMAIN}&type=A`, {
+          headers: { 'Accept': 'application/dns-json' }
+        });
+        
+        if (hostingAResponse.ok) {
+          const hostingAData = await hostingAResponse.json();
+          if (hostingAData.Answer && hostingAData.Answer.length > 0) {
+            const hostingIPs = hostingAData.Answer.filter((r: any) => r.type === 1).map((r: any) => r.data);
+            const domainIPs = aData.Answer.filter((r: any) => r.type === 1).map((r: any) => r.data);
+            
+            // If the domain resolves to the same IPs as our hosting, consider it valid
+            const matchingIPs = domainIPs.some((ip: string) => hostingIPs.includes(ip));
+            if (matchingIPs) {
               results.cnameValid = true;
-              break;
+              results.cnameValue = `Resolves to ${HOSTING_DOMAIN} IPs`;
             }
           }
         }
@@ -133,22 +119,22 @@ serve(async (req) => {
   try {
     const { domainId, domain, verificationToken } = await req.json();
     
-    if (!domainId || !domain || !verificationToken) {
+    if (!domainId || !domain) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Verifying domain: ${domain} with token: ${verificationToken}`);
+    console.log(`Verifying domain: ${domain}`);
 
     // Check DNS records
-    const dnsResults = await checkDNSRecords(domain, verificationToken);
+    const dnsResults = await checkDNSRecords(domain);
     
     console.log('DNS check results:', JSON.stringify(dnsResults));
 
-    // Determine status based on DNS results
-    const isVerified = dnsResults.aRecordValid && dnsResults.txtRecordValid;
+    // Domain is verified if either www or root CNAME points to our hosting
+    const isVerified = dnsResults.cnameValid || dnsResults.rootCnameValid;
     
     // Update database with results
     const supabase = createClient(
@@ -157,13 +143,19 @@ serve(async (req) => {
     );
 
     if (isVerified) {
-      // Domain is verified - update status and start SSL provisioning
+      // Domain is verified - update status and mark SSL as provisioned
+      // SSL is handled by Cloudflare automatically when proxied through grwthop.com
       const { error: updateError } = await supabase
         .from('funnel_domains')
         .update({
           status: 'verified',
           verified_at: new Date().toISOString(),
-          ssl_provisioned: true, // In production, this would be a separate process
+          ssl_provisioned: true, // Cloudflare handles SSL automatically
+          ssl_status: 'active',
+          dns_a_record_valid: dnsResults.rootCnameValid, // Repurposing for root domain check
+          dns_txt_record_valid: dnsResults.cnameValid, // Repurposing for www check
+          health_status: 'healthy',
+          last_health_check: new Date().toISOString(),
         })
         .eq('id', domainId);
 
@@ -175,9 +167,9 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           verified: true,
-          ssl_status: 'provisioned',
+          ssl_status: 'active',
           dns_results: dnsResults,
-          message: 'Domain verified successfully'
+          message: 'Domain verified successfully! SSL is provided by Cloudflare.'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -190,15 +182,18 @@ serve(async (req) => {
           dns_results: dnsResults,
           message: 'DNS records not yet configured correctly',
           requirements: {
-            a_record: {
-              required: EXPECTED_IP,
-              found: dnsResults.aRecordValue,
-              valid: dnsResults.aRecordValid
+            cname_record: {
+              host: 'www',
+              required: HOSTING_DOMAIN,
+              found: dnsResults.cnameValue,
+              valid: dnsResults.cnameValid
             },
-            txt_record: {
-              required: `lovable_verify=${verificationToken}`,
-              found: dnsResults.txtRecordValue,
-              valid: dnsResults.txtRecordValid
+            root_cname: {
+              host: '@',
+              required: HOSTING_DOMAIN,
+              found: dnsResults.rootCnameValue,
+              valid: dnsResults.rootCnameValid,
+              note: 'Optional - some registrars don\'t support root CNAME'
             }
           }
         }),
