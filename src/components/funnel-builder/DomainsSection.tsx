@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Globe, Plus, Copy, CheckCircle, AlertCircle, 
   ExternalLink, Trash2, RefreshCw, Link2, Shield, ShieldCheck,
-  Activity, Wifi, WifiOff, Clock
+  Activity, Wifi, WifiOff, Clock, Code, Settings, Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -71,6 +73,8 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
   const [showConnectDialog, setShowConnectDialog] = useState(false);
   const [showDNSDialog, setShowDNSDialog] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [showWorkerSetupDialog, setShowWorkerSetupDialog] = useState(false);
+  const [selectedWorkerDomain, setSelectedWorkerDomain] = useState<Domain | null>(null);
   const [newDomain, setNewDomain] = useState('');
   const [addWww, setAddWww] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -275,6 +279,40 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     return funnels.find(f => f.domain_id === domainId);
   };
 
+  const getWorkerScript = (domain: string) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://inbvluddkutyfhsxfqco.supabase.co';
+    return `// Cloudflare Worker for ${domain}
+// Deploy this to your Cloudflare Workers dashboard
+
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request))
+})
+
+async function handleRequest(request) {
+  const url = new URL(request.url)
+  const domain = url.hostname
+  
+  // Call the serve-funnel edge function
+  const response = await fetch('${supabaseUrl}/functions/v1/serve-funnel', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ domain })
+  })
+  
+  // Get the HTML content
+  const html = await response.text()
+  
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html',
+      'Cache-Control': 'public, max-age=300',
+    }
+  })
+}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -405,9 +443,22 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                       {linkedFunnel ? 'Change' : 'Link Funnel'}
                     </Button>
                     {domain.status === 'verified' && (
-                      <Button variant="ghost" size="sm" onClick={() => window.open(`https://${domain.domain}`, '_blank')}>
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedWorkerDomain(domain);
+                            setShowWorkerSetupDialog(true);
+                          }}
+                        >
+                          <Zap className="h-4 w-4 mr-1.5" />
+                          Setup Proxy
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => window.open(`https://${domain.domain}`, '_blank')}>
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </>
                     )}
                     {domain.status === 'pending' && (
                       <Button 
@@ -672,6 +723,150 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               {linkFunnelMutation.isPending ? 'Linking...' : 'Link Funnel'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cloudflare Worker Setup Dialog */}
+      <Dialog open={showWorkerSetupDialog} onOpenChange={setShowWorkerSetupDialog}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <Zap className="h-5 w-5 text-orange-500" />
+              </div>
+              <div>
+                <DialogTitle>Cloudflare Worker Proxy Setup</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  Set up a Cloudflare Worker to serve your funnel on {selectedWorkerDomain?.domain}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Why use this */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <h4 className="font-medium flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Why Cloudflare Worker?
+              </h4>
+              <ul className="text-sm text-muted-foreground space-y-1 ml-6 list-disc">
+                <li>Serves your funnel on your custom domain</li>
+                <li>Automatic SSL via Cloudflare</li>
+                <li>Fast edge delivery worldwide</li>
+                <li>Free tier is generous (100k requests/day)</li>
+              </ul>
+            </div>
+
+            <Tabs defaultValue="worker" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="worker">1. Worker Script</TabsTrigger>
+                <TabsTrigger value="dns">2. DNS Setup</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="worker" className="space-y-4 mt-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium">Cloudflare Worker Script</label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        copyToClipboard(getWorkerScript(selectedWorkerDomain?.domain || ''));
+                        toast({ title: 'Worker script copied!' });
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-1.5" />
+                      Copy Script
+                    </Button>
+                  </div>
+                  <pre className="bg-zinc-950 text-zinc-100 text-xs rounded-lg p-4 overflow-x-auto max-h-64 overflow-y-auto">
+                    <code>{getWorkerScript(selectedWorkerDomain?.domain || '')}</code>
+                  </pre>
+                </div>
+
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">How to deploy:</h4>
+                  <ol className="text-sm text-muted-foreground space-y-2 ml-4 list-decimal">
+                    <li>Go to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">dash.cloudflare.com</a> and sign in</li>
+                    <li>Navigate to <strong>Workers & Pages</strong> → <strong>Create Application</strong></li>
+                    <li>Choose <strong>Create Worker</strong></li>
+                    <li>Replace the default code with the script above</li>
+                    <li>Click <strong>Save and Deploy</strong></li>
+                    <li>Go to your Worker's <strong>Settings</strong> → <strong>Triggers</strong></li>
+                    <li>Add a <strong>Custom Domain</strong>: <code className="bg-muted px-1.5 py-0.5 rounded">{selectedWorkerDomain?.domain}</code></li>
+                  </ol>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="dns" className="space-y-4 mt-4">
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                  <h4 className="font-medium text-amber-600 dark:text-amber-400 mb-2">Important DNS Changes</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    When using Cloudflare Workers, your DNS setup changes:
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-2 ml-4 list-disc">
+                    <li>
+                      <strong>Keep Cloudflare Proxy ENABLED</strong> (orange cloud ☁️)
+                    </li>
+                    <li>
+                      The A record can point to any IP (e.g., <code className="bg-muted px-1.5 py-0.5 rounded">192.0.2.1</code>) - the Worker handles routing
+                    </li>
+                    <li>
+                      Remove the A record pointing to <code className="bg-muted px-1.5 py-0.5 rounded">185.158.133.1</code> (no longer needed)
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Record</p>
+                    <div className="px-3 py-2 bg-muted rounded-md font-mono">A</div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Host</p>
+                    <div className="px-3 py-2 bg-muted rounded-md font-mono">@</div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Value</p>
+                    <div className="px-3 py-2 bg-muted rounded-md flex items-center justify-between">
+                      <span className="font-mono text-xs">192.0.2.1</span>
+                      <button onClick={() => copyToClipboard('192.0.2.1')} className="hover:text-foreground text-muted-foreground">
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                      Proxy Status: ENABLED
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Make sure the orange cloud is ON in Cloudflare DNS settings
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t">
+            <a 
+              href="https://developers.cloudflare.com/workers/get-started/guide/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Cloudflare Workers Docs
+            </a>
+            <Button onClick={() => setShowWorkerSetupDialog(false)}>
+              Done
             </Button>
           </div>
         </DialogContent>
