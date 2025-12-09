@@ -132,6 +132,8 @@ export interface Funnel {
   slug: string;
   status: 'draft' | 'published';
   settings: FunnelSettings;
+  zapier_webhook_url?: string | null;
+  webhook_urls?: string[] | null;
 }
 
 // Using StepDesign from the exported interface above

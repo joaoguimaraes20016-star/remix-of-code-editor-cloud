@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { WelcomeStep } from './WelcomeStep';
 import { TextQuestionStep } from './TextQuestionStep';
@@ -49,8 +49,9 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [leadId, setLeadId] = useState<string | null>(null);
   const calendlyBookingRef = useRef<CalendlyBookingData | null>(null);
-  const hasSubmittedRef = useRef(false);
+  const pendingSaveRef = useRef(false);
 
   const currentStep = steps[currentStepIndex];
   const isLastStep = currentStepIndex === steps.length - 1;
@@ -64,69 +65,93 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
     }
   }, []);
 
-  // Submit lead data to edge function
-  const submitLead = useCallback(async (allAnswers: Record<string, any>) => {
-    if (hasSubmittedRef.current) return;
-    hasSubmittedRef.current = true;
-    
-    setIsSubmitting(true);
+  // Progressive lead save - creates or updates lead
+  const saveLead = useCallback(async (allAnswers: Record<string, any>, isComplete: boolean = false) => {
+    if (pendingSaveRef.current) return;
+    pendingSaveRef.current = true;
+
     try {
-      const { error } = await supabase.functions.invoke('submit-funnel-lead', {
+      const { data, error } = await supabase.functions.invoke('submit-funnel-lead', {
         body: {
           funnel_id: funnel.id,
+          lead_id: leadId, // Pass existing lead ID for updates
           answers: allAnswers,
           utm_source: utmSource,
           utm_medium: utmMedium,
           utm_campaign: utmCampaign,
           calendly_booking: calendlyBookingRef.current,
+          is_complete: isComplete,
         },
       });
 
       if (error) {
-        console.error('Failed to submit lead:', error);
-        hasSubmittedRef.current = false; // Allow retry on error
-      } else {
-        console.log('Lead submitted successfully');
+        console.error('Failed to save lead:', error);
+      } else if (data?.lead_id) {
+        setLeadId(data.lead_id);
+        console.log('Lead saved:', data.lead_id, isComplete ? '(complete)' : '(partial)');
       }
     } catch (err) {
-      console.error('Error submitting lead:', err);
-      hasSubmittedRef.current = false;
+      console.error('Error saving lead:', err);
     } finally {
-      setIsSubmitting(false);
+      pendingSaveRef.current = false;
     }
-  }, [funnel.id, utmSource, utmMedium, utmCampaign]);
+  }, [funnel.id, leadId, utmSource, utmMedium, utmCampaign]);
+
+  // Check if answer contains meaningful data worth saving
+  const hasMeaningfulData = useCallback((value: any, stepType: string): boolean => {
+    if (!value) return false;
+    
+    // Always save opt-in, email, phone captures immediately
+    if (['opt_in', 'email_capture', 'phone_capture'].includes(stepType)) {
+      return true;
+    }
+    
+    // For opt_in step, check if it has name, email, or phone
+    if (stepType === 'opt_in' && typeof value === 'object') {
+      return !!(value.email || value.phone || value.name);
+    }
+    
+    // For text questions, save if it looks like a name or has content
+    if (stepType === 'text_question' && typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+    
+    // For multi-choice, always save selections
+    if (stepType === 'multi_choice') {
+      return true;
+    }
+    
+    return false;
+  }, []);
 
   const handleNext = useCallback(async (value?: any) => {
+    let updatedAnswers = { ...answers };
+    
     // Save answer if value provided
     if (value !== undefined && currentStep) {
-      setAnswers((prev) => ({
-        ...prev,
+      updatedAnswers = {
+        ...answers,
         [currentStep.id]: {
           value,
           step_type: currentStep.step_type,
           content: currentStep.content,
         },
-      }));
+      };
+      setAnswers(updatedAnswers);
+      
+      // Progressive save on meaningful data
+      if (hasMeaningfulData(value, currentStep.step_type)) {
+        // Don't wait for save to complete before moving to next step
+        saveLead(updatedAnswers, false);
+      }
     }
 
-    // If this is the step before thank you, submit the form
+    // If this is the step before thank you, do final complete save
     const nextStep = steps[currentStepIndex + 1];
     if (nextStep?.step_type === 'thank_you') {
-      // Collect all answers including current
-      const allAnswers = {
-        ...answers,
-        ...(value !== undefined && currentStep
-          ? {
-              [currentStep.id]: {
-                value,
-                step_type: currentStep.step_type,
-                content: currentStep.content,
-              },
-            }
-          : {}),
-      };
-
-      await submitLead(allAnswers);
+      setIsSubmitting(true);
+      await saveLead(updatedAnswers, true);
+      setIsSubmitting(false);
     }
 
     // Move to next step
@@ -135,7 +160,7 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
     } else {
       setIsComplete(true);
     }
-  }, [currentStep, currentStepIndex, steps, answers, isLastStep, submitLead]);
+  }, [currentStep, currentStepIndex, steps, answers, isLastStep, saveLead, hasMeaningfulData]);
 
   // Calculate question number for multi_choice steps (excluding welcome, thank_you, video)
   const questionSteps = steps.filter(s => 

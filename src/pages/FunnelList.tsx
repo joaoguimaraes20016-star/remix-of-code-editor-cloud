@@ -9,7 +9,7 @@ import {
   Plus, ExternalLink, Edit, Trash2, Copy, Users, Search, 
   LayoutGrid, List, Link2, MoreHorizontal, Star, BarChart3,
   MessageSquare, Calendar, Download, TrendingUp, TrendingDown,
-  Phone, Mail, CheckCircle
+  Phone, Mail, CheckCircle, ArrowLeft
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { CreateFunnelDialog } from '@/components/funnel-builder/CreateFunnelDialog';
@@ -230,22 +230,37 @@ export default function FunnelList() {
       {/* Top Navigation */}
       <div className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-center gap-2 py-3">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  activeTab === tab.id
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex items-center justify-between py-3">
+            {/* Back Button */}
+            <button
+              onClick={() => navigate(`/team/${teamId}/dashboard`)}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="text-sm font-medium">Dashboard</span>
+            </button>
+            
+            {/* Tabs */}
+            <div className="flex items-center gap-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                    activeTab === tab.id
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Spacer for balance */}
+            <div className="w-24" />
           </div>
         </div>
       </div>
