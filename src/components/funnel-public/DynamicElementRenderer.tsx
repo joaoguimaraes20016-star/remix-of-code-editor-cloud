@@ -230,6 +230,28 @@ export function DynamicElementRenderer({
       );
     }
 
+    // Dynamic embeds (iframes)
+    if (elementId.startsWith('embed_')) {
+      const embedUrl = dynamicElements?.[elementId]?.embed_url || '';
+      const embedHeight = dynamicElements?.[elementId]?.embed_height || 400;
+      if (!embedUrl) return null;
+      
+      return (
+        <div 
+          className="w-full max-w-2xl mx-auto overflow-hidden"
+          style={{ borderRadius: `${borderRadius}px`, height: `${embedHeight}px` }}
+        >
+          <iframe
+            src={embedUrl}
+            className="w-full h-full"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
     // Dynamic headlines
     if (elementId.startsWith('headline_') && elementId !== 'headline') {
       const headlineText = dynamicElements?.[elementId]?.text || '';
@@ -336,6 +358,7 @@ export function DynamicElementRenderer({
     if (id.startsWith('button_') && id !== 'button') return true;
     if (id.startsWith('headline_') && id !== 'headline') return !!dynamicElements?.[id]?.text;
     if (id.startsWith('divider_')) return true;
+    if (id.startsWith('embed_')) return !!dynamicElements?.[id]?.embed_url;
     
     // Standard elements - basic checks
     if (id === 'headline') return !!content.headline;

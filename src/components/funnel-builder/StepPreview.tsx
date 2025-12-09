@@ -105,6 +105,7 @@ const ADD_ELEMENT_OPTIONS = [
   { id: 'button', label: 'Button', icon: Square },
   { id: 'divider', label: 'Divider', icon: Minus },
   { id: 'video', label: 'Video', icon: Video },
+  { id: 'embed', label: 'Embed/iFrame', icon: Square },
 ];
 
 // Helper to convert video URLs to embed URLs
@@ -169,6 +170,7 @@ function ElementWrapper({
     if (elementId.startsWith('image_')) return 'Image';
     if (elementId.startsWith('button_')) return 'Button';
     if (elementId.startsWith('divider_')) return 'Divider';
+    if (elementId.startsWith('embed_')) return 'Embed';
     return elementId;
   };
 
@@ -501,6 +503,45 @@ export function StepPreview({
           onSelect={() => onSelectElement(elementId)}
           onEditingChange={(editing) => setEditingElement(editing ? elementId : null)}
         />
+      );
+    }
+
+    // Dynamic embeds (iframes)
+    if (elementId.startsWith('embed_')) {
+      const embedUrl = dynamicContent[elementId]?.embed_url || '';
+      const embedHeight = dynamicContent[elementId]?.embed_height || 400;
+      
+      return (
+        <div 
+          className="w-full overflow-hidden bg-black/20"
+          style={{ borderRadius: `${borderRadius}px`, height: `${embedHeight}px` }}
+        >
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              className="w-full h-full"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <div 
+              className="w-full h-full flex flex-col items-center justify-center gap-2 p-4"
+              style={{ color: textColor }}
+            >
+              <Square className="w-8 h-8 opacity-50" />
+              <input
+                type="text"
+                placeholder="Paste embed URL (Calendly, etc.)"
+                className="w-full bg-white/10 border border-white/20 px-3 py-2 text-xs text-center rounded"
+                style={{ color: textColor }}
+                value={embedUrl}
+                onChange={(e) => handleDynamicContentChange(elementId, { ...dynamicContent[elementId], embed_url: e.target.value })}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+        </div>
       );
     }
 

@@ -44,6 +44,7 @@ const getElementTypeLabel = (elementId: string) => {
   if (elementId.startsWith('image_')) return 'Image';
   if (elementId.startsWith('button_')) return 'Button';
   if (elementId.startsWith('divider_')) return 'Divider';
+  if (elementId.startsWith('embed_')) return 'Embed';
   return elementId;
 };
 
@@ -54,6 +55,7 @@ const getElementIcon = (elementId: string) => {
   if (elementId.startsWith('image_')) return Image;
   if (elementId.startsWith('button_')) return Square;
   if (elementId.startsWith('divider_')) return Minus;
+  if (elementId.startsWith('embed_')) return Square;
   return Type;
 };
 
@@ -92,7 +94,8 @@ export function StepContentEditor({
     id.startsWith('video_') || 
     id.startsWith('image_') || 
     id.startsWith('button_') || 
-    id.startsWith('divider_')
+    id.startsWith('divider_') ||
+    id.startsWith('embed_')
   );
 
   return (
@@ -523,6 +526,28 @@ export function StepContentEditor({
                   {/* Divider - no input needed */}
                   {elementId.startsWith('divider_') && (
                     <p className="text-xs text-muted-foreground">Horizontal divider line</p>
+                  )}
+                  
+                  {/* Embed URL and height inputs */}
+                  {elementId.startsWith('embed_') && (
+                    <div className="space-y-2">
+                      <Input
+                        value={elementData.embed_url || ''}
+                        onChange={(e) => onUpdateDynamicContent?.(elementId, { ...elementData, embed_url: e.target.value })}
+                        placeholder="https://calendly.com/your-link"
+                        className="text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs whitespace-nowrap">Height:</Label>
+                        <Input
+                          type="number"
+                          value={elementData.embed_height || 400}
+                          onChange={(e) => onUpdateDynamicContent?.(elementId, { ...elementData, embed_height: parseInt(e.target.value) || 400 })}
+                          className="text-sm w-20"
+                        />
+                        <span className="text-xs text-muted-foreground">px</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               );
