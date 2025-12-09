@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Globe, Plus, Copy, CheckCircle, ExternalLink, Trash2, Link2, ArrowRight, AlertCircle
+  Globe, Plus, Copy, CheckCircle, ExternalLink, Trash2, Link2, ArrowRight, 
+  AlertCircle, Loader2, XCircle, Clock, RefreshCw, ShieldCheck
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -30,6 +31,10 @@ interface Domain {
   verification_token: string;
   verified_at: string | null;
   ssl_provisioned: boolean;
+  ssl_status: string | null;
+  health_status: string | null;
+  dns_a_record_valid: boolean | null;
+  dns_txt_record_valid: boolean | null;
   created_at: string;
 }
 
@@ -44,8 +49,56 @@ interface DomainsSectionProps {
   teamId: string;
 }
 
+interface VerificationResult {
+  verified: boolean;
+  aRecordValid: boolean;
+  txtRecordValid: boolean;
+  cnameValid?: boolean;
+  message?: string;
+}
+
 // The hosting subdomain - Cloudflare Worker deployed on funnel.grwthop.com
 const HOSTING_DOMAIN = 'funnel.grwthop.com';
+
+// Status display configuration
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
+  pending: {
+    label: 'Pending DNS',
+    color: 'border-amber-500/50 text-amber-600 bg-amber-50 dark:bg-amber-500/10',
+    icon: <Clock className="h-3 w-3 mr-1" />,
+    description: 'Configure your DNS settings'
+  },
+  verifying: {
+    label: 'Verifying',
+    color: 'border-blue-500/50 text-blue-600 bg-blue-50 dark:bg-blue-500/10',
+    icon: <Loader2 className="h-3 w-3 mr-1 animate-spin" />,
+    description: 'Checking DNS records...'
+  },
+  verified: {
+    label: 'DNS Verified',
+    color: 'border-teal-500/50 text-teal-600 bg-teal-50 dark:bg-teal-500/10',
+    icon: <ShieldCheck className="h-3 w-3 mr-1" />,
+    description: 'SSL provisioning in progress'
+  },
+  active: {
+    label: 'Active',
+    color: 'border-emerald-500/50 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10',
+    icon: <CheckCircle className="h-3 w-3 mr-1" />,
+    description: 'Domain is live and serving your funnel'
+  },
+  offline: {
+    label: 'Offline',
+    color: 'border-red-500/50 text-red-600 bg-red-50 dark:bg-red-500/10',
+    icon: <XCircle className="h-3 w-3 mr-1" />,
+    description: 'DNS issues detected'
+  },
+  failed: {
+    label: 'Failed',
+    color: 'border-red-500/50 text-red-600 bg-red-50 dark:bg-red-500/10',
+    icon: <AlertCircle className="h-3 w-3 mr-1" />,
+    description: 'Verification failed'
+  }
+};
 
 export function DomainsSection({ teamId }: DomainsSectionProps) {
   const queryClient = useQueryClient();
@@ -56,6 +109,8 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
   const [newDomain, setNewDomain] = useState('');
   const [selectedDomainForLink, setSelectedDomainForLink] = useState<Domain | null>(null);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string>('');
+  const [verifyingDomainId, setVerifyingDomainId] = useState<string | null>(null);
+  const [dnsCheckResult, setDnsCheckResult] = useState<VerificationResult | null>(null);
 
   // Fetch domains
   const { data: domains = [], isLoading: domainsLoading } = useQuery({
@@ -86,7 +141,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     },
   });
 
-  // Add domain mutation
+  // Add domain mutation - now creates with 'pending' status (database defaults)
   const addDomainMutation = useMutation({
     mutationFn: async (domain: string) => {
       const { data, error } = await supabase
@@ -94,9 +149,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
         .insert({
           team_id: teamId,
           domain: domain.toLowerCase().trim(),
-          status: 'verified',
-          verified_at: new Date().toISOString(),
-          ssl_provisioned: true,
+          // Let database defaults apply: status='pending', ssl_provisioned=false
         })
         .select()
         .single();
@@ -158,6 +211,78 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     },
   });
 
+  // Verify domain DNS
+  const verifyDomain = useCallback(async (domain: Domain) => {
+    setVerifyingDomainId(domain.id);
+    setDnsCheckResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-domain', {
+        body: {
+          domainId: domain.id,
+          domain: domain.domain,
+          verificationToken: domain.verification_token
+        }
+      });
+
+      if (error) throw error;
+
+      setDnsCheckResult({
+        verified: data.verified,
+        aRecordValid: data.dnsChecks?.aRecordValid || false,
+        txtRecordValid: data.dnsChecks?.txtRecordValid || false,
+        cnameValid: data.dnsChecks?.cnameValid || false,
+        message: data.message
+      });
+
+      // Refresh domains list
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+
+      if (data.verified) {
+        toast({ title: 'DNS verified! SSL is being provisioned.' });
+      } else {
+        toast({ 
+          title: 'DNS not ready yet', 
+          description: 'Please check your DNS settings and try again.',
+          variant: 'destructive' 
+        });
+      }
+    } catch (err) {
+      console.error('Verification error:', err);
+      toast({ 
+        title: 'Verification failed', 
+        description: 'Could not verify DNS settings. Please try again.',
+        variant: 'destructive' 
+      });
+    } finally {
+      setVerifyingDomainId(null);
+    }
+  }, [queryClient, teamId]);
+
+  // Auto-poll for pending domains when setup dialog is open
+  useEffect(() => {
+    if (!showSetupDialog || !selectedDomain) return;
+    if (selectedDomain.status === 'active') return;
+
+    const pollInterval = setInterval(async () => {
+      // Re-fetch domain status
+      const { data } = await supabase
+        .from('funnel_domains')
+        .select('*')
+        .eq('id', selectedDomain.id)
+        .single();
+
+      if (data) {
+        setSelectedDomain(data as Domain);
+        if (data.status === 'active' || (data.status === 'verified' && data.ssl_provisioned)) {
+          queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+        }
+      }
+    }, 10000); // Poll every 10 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [showSetupDialog, selectedDomain, queryClient, teamId]);
+
   const handleContinue = () => {
     if (!newDomain.trim()) {
       toast({ title: 'Please enter a domain', variant: 'destructive' });
@@ -183,6 +308,25 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     return funnels.find(f => f.domain_id === domainId);
   };
 
+  const getStatusConfig = (domain: Domain) => {
+    // Determine effective status
+    let effectiveStatus = domain.status || 'pending';
+    
+    // If verified and SSL provisioned, it's active
+    if (domain.status === 'verified' && domain.ssl_provisioned) {
+      effectiveStatus = 'active';
+    }
+    
+    // If health_status is set and domain was verified, use health status
+    if (domain.health_status === 'offline' && domain.verified_at) {
+      effectiveStatus = 'offline';
+    }
+
+    return STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.pending;
+  };
+
+  const isVerifying = (domainId: string) => verifyingDomainId === domainId;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -207,21 +351,43 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
           <div className="divide-y">
             {domains.map((domain) => {
               const linkedFunnel = getFunnelForDomain(domain.id);
+              const statusConfig = getStatusConfig(domain);
+              const effectiveStatus = domain.status === 'verified' && domain.ssl_provisioned ? 'active' : domain.status;
+              const isPending = effectiveStatus === 'pending';
+              const isActive = effectiveStatus === 'active';
+              const isOffline = effectiveStatus === 'offline' || domain.health_status === 'offline';
+
               return (
                 <div key={domain.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-emerald-500/10">
-                      <Globe className="h-5 w-5 text-emerald-500" />
+                    <div className={`p-2 rounded-lg ${isActive ? 'bg-emerald-500/10' : isPending ? 'bg-amber-500/10' : isOffline ? 'bg-red-500/10' : 'bg-blue-500/10'}`}>
+                      <Globe className={`h-5 w-5 ${isActive ? 'text-emerald-500' : isPending ? 'text-amber-500' : isOffline ? 'text-red-500' : 'text-blue-500'}`} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{domain.domain}</span>
                         <Badge 
                           variant="outline"
-                          className="text-xs border-emerald-500/50 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10"
+                          className={`text-xs ${statusConfig.color}`}
                         >
-                          <CheckCircle className="h-3 w-3 mr-1" /> Ready
+                          {isVerifying(domain.id) ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Checking...
+                            </>
+                          ) : (
+                            <>
+                              {statusConfig.icon}
+                              {statusConfig.label}
+                            </>
+                          )}
                         </Badge>
+                        {domain.ssl_provisioned && isActive && (
+                          <Badge variant="outline" className="text-xs border-emerald-500/50 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10">
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                            SSL
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         {linkedFunnel ? (
@@ -234,10 +400,31 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                             Not linked to any funnel
                           </p>
                         )}
+                        {isPending && (
+                          <span className="text-xs text-muted-foreground">
+                            • {statusConfig.description}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {/* Verify DNS button for pending/offline domains */}
+                    {(isPending || isOffline) && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => verifyDomain(domain)}
+                        disabled={isVerifying(domain.id)}
+                      >
+                        {isVerifying(domain.id) ? (
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-1.5" />
+                        )}
+                        {isOffline ? 'Re-verify' : 'Verify DNS'}
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -250,16 +437,25 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                       <Link2 className="h-4 w-4 mr-1.5" />
                       {linkedFunnel ? 'Change' : 'Link Funnel'}
                     </Button>
-                    {linkedFunnel && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDomain(domain);
+                        setDnsCheckResult(null);
+                        setShowSetupDialog(true);
+                      }}
+                    >
+                      DNS Setup
+                    </Button>
+                    {isActive && (
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => {
-                          setSelectedDomain(domain);
-                          setShowSetupDialog(true);
-                        }}
+                        onClick={() => window.open(`https://${domain.domain}`, '_blank')}
                       >
-                        DNS Setup
+                        <ExternalLink className="h-4 w-4 mr-1.5" />
+                        Test
                       </Button>
                     )}
                     <Button 
@@ -382,7 +578,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
         </DialogContent>
       </Dialog>
 
-      {/* DNS Setup Dialog - Simplified */}
+      {/* DNS Setup Dialog with Status */}
       <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -393,6 +589,71 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
           </DialogHeader>
           
           <div className="space-y-6 py-4">
+            {/* Current Status */}
+            {selectedDomain && (
+              <div className={`rounded-lg p-4 ${
+                getStatusConfig(selectedDomain).label === 'Active' 
+                  ? 'bg-emerald-500/10 border border-emerald-500/20' 
+                  : getStatusConfig(selectedDomain).label === 'Offline'
+                  ? 'bg-red-500/10 border border-red-500/20'
+                  : 'bg-amber-500/10 border border-amber-500/20'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {getStatusConfig(selectedDomain).label === 'Active' ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-500" />
+                    ) : getStatusConfig(selectedDomain).label === 'Offline' ? (
+                      <XCircle className="h-5 w-5 text-red-500" />
+                    ) : (
+                      <Clock className="h-5 w-5 text-amber-500" />
+                    )}
+                    <div>
+                      <p className="font-medium">
+                        {getStatusConfig(selectedDomain).label}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {getStatusConfig(selectedDomain).description}
+                      </p>
+                    </div>
+                  </div>
+                  {(selectedDomain.status === 'pending' || selectedDomain.health_status === 'offline') && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => verifyDomain(selectedDomain)}
+                      disabled={isVerifying(selectedDomain.id)}
+                    >
+                      {isVerifying(selectedDomain.id) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+
+                {/* DNS Check Results */}
+                {dnsCheckResult && (
+                  <div className="mt-3 pt-3 border-t border-current/10 space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      {dnsCheckResult.cnameValid ? (
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-500" />
+                      )}
+                      <span>CNAME Record</span>
+                    </div>
+                    {selectedDomain.ssl_provisioned && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                        <span>SSL Certificate</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Step 1 */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -443,26 +704,46 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-emerald-500 text-white text-sm font-bold flex items-center justify-center">3</div>
-                <h4 className="font-medium">Wait for DNS propagation</h4>
+                <h4 className="font-medium">Verify your DNS</h4>
               </div>
               <p className="text-sm text-muted-foreground ml-8">
-                Changes typically take 1-5 minutes, but can take up to 24 hours.
+                Click "Verify DNS" to check if your settings are correct. SSL will be provisioned automatically once verified.
               </p>
             </div>
 
           </div>
 
           <div className="flex justify-between items-center pt-4 border-t">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.open(`https://${selectedDomain?.domain}`, '_blank')}
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Test Domain
-            </Button>
-            <Button onClick={() => setShowSetupDialog(false)}>
-              Done
+            {selectedDomain && (selectedDomain.status === 'pending' || selectedDomain.health_status === 'offline') ? (
+              <Button 
+                onClick={() => verifyDomain(selectedDomain)}
+                disabled={isVerifying(selectedDomain.id)}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {isVerifying(selectedDomain.id) ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Verify DNS
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.open(`https://${selectedDomain?.domain}`, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Test Domain
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setShowSetupDialog(false)}>
+              Close
             </Button>
           </div>
         </DialogContent>
