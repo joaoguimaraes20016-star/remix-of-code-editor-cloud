@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.resolve-domain]
 verify_jwt = false
+
+[functions.check-domain-health]
+verify_jwt = false

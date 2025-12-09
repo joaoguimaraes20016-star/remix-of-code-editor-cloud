@@ -813,10 +813,18 @@ export type Database = {
       }
       funnel_domains: {
         Row: {
+          alert_sent_at: string | null
           created_at: string
+          dns_a_record_valid: boolean | null
+          dns_txt_record_valid: boolean | null
           domain: string
+          health_status: string | null
           id: string
+          last_health_check: string | null
+          ssl_expires_at: string | null
           ssl_provisioned: boolean | null
+          ssl_provisioned_at: string | null
+          ssl_status: string | null
           status: string
           team_id: string
           updated_at: string
@@ -824,10 +832,18 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          alert_sent_at?: string | null
           created_at?: string
+          dns_a_record_valid?: boolean | null
+          dns_txt_record_valid?: boolean | null
           domain: string
+          health_status?: string | null
           id?: string
+          last_health_check?: string | null
+          ssl_expires_at?: string | null
           ssl_provisioned?: boolean | null
+          ssl_provisioned_at?: string | null
+          ssl_status?: string | null
           status?: string
           team_id: string
           updated_at?: string
@@ -835,10 +851,18 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          alert_sent_at?: string | null
           created_at?: string
+          dns_a_record_valid?: boolean | null
+          dns_txt_record_valid?: boolean | null
           domain?: string
+          health_status?: string | null
           id?: string
+          last_health_check?: string | null
+          ssl_expires_at?: string | null
           ssl_provisioned?: boolean | null
+          ssl_provisioned_at?: string | null
+          ssl_status?: string | null
           status?: string
           team_id?: string
           updated_at?: string
