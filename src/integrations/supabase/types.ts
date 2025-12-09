@@ -814,6 +814,7 @@ export type Database = {
       funnel_domains: {
         Row: {
           alert_sent_at: string | null
+          cloudflare_hostname_id: string | null
           created_at: string
           dns_a_record_valid: boolean | null
           dns_txt_record_valid: boolean | null
@@ -833,6 +834,7 @@ export type Database = {
         }
         Insert: {
           alert_sent_at?: string | null
+          cloudflare_hostname_id?: string | null
           created_at?: string
           dns_a_record_valid?: boolean | null
           dns_txt_record_valid?: boolean | null
@@ -852,6 +854,7 @@ export type Database = {
         }
         Update: {
           alert_sent_at?: string | null
+          cloudflare_hostname_id?: string | null
           created_at?: string
           dns_a_record_valid?: boolean | null
           dns_txt_record_valid?: boolean | null

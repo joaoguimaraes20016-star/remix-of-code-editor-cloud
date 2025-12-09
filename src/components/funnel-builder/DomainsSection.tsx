@@ -35,6 +35,7 @@ interface Domain {
   health_status: string | null;
   dns_a_record_valid: boolean | null;
   dns_txt_record_valid: boolean | null;
+  cloudflare_hostname_id: string | null;
   created_at: string;
 }
 
@@ -147,21 +148,39 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     },
   });
 
-  // Add domain mutation - now creates with 'pending' status (database defaults)
+  // Add domain mutation - creates in DB then registers with Cloudflare
   const addDomainMutation = useMutation({
     mutationFn: async (domain: string) => {
+      const cleanDomain = domain.toLowerCase().trim();
+      
+      // Step 1: Create the domain record in DB
       const { data, error } = await supabase
         .from('funnel_domains')
         .insert({
           team_id: teamId,
-          domain: domain.toLowerCase().trim(),
-          // Let database defaults apply: status='pending', ssl_provisioned=false
+          domain: cleanDomain,
         })
         .select()
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Step 2: Register with Cloudflare Custom Hostnames
+      const { data: cfData, error: cfError } = await supabase.functions.invoke('manage-custom-hostname', {
+        body: {
+          action: 'create',
+          domainId: data.id,
+          domain: cleanDomain,
+        }
+      });
+      
+      if (cfError || !cfData?.success) {
+        // Cleanup the DB record if Cloudflare fails
+        await supabase.from('funnel_domains').delete().eq('id', data.id);
+        throw new Error(cfData?.error || cfError?.message || 'Failed to register domain with Cloudflare');
+      }
+      
+      return { ...data, cloudflare_hostname_id: cfData.hostnameId };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
@@ -177,13 +196,24 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     },
   });
 
-  // Delete domain mutation
+  // Delete domain mutation - also removes from Cloudflare
   const deleteDomainMutation = useMutation({
-    mutationFn: async (domainId: string) => {
+    mutationFn: async (domain: Domain) => {
+      // First delete from Cloudflare if we have a hostname ID
+      if (domain.cloudflare_hostname_id) {
+        await supabase.functions.invoke('manage-custom-hostname', {
+          body: {
+            action: 'delete',
+            hostnameId: domain.cloudflare_hostname_id,
+          }
+        });
+      }
+      
+      // Then delete from DB
       const { error } = await supabase
         .from('funnel_domains')
         .delete()
-        .eq('id', domainId);
+        .eq('id', domain.id);
       
       if (error) throw error;
     },
@@ -217,39 +247,47 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     },
   });
 
-  // Verify domain DNS
+  // Check domain status via Cloudflare Custom Hostnames API
   const verifyDomain = useCallback(async (domain: Domain) => {
     setVerifyingDomainId(domain.id);
     setDnsCheckResult(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('verify-domain', {
+      if (!domain.cloudflare_hostname_id) {
+        throw new Error('Domain not registered with Cloudflare');
+      }
+      
+      const { data, error } = await supabase.functions.invoke('manage-custom-hostname', {
         body: {
+          action: 'status',
           domainId: domain.id,
-          domain: domain.domain,
-          verificationToken: domain.verification_token
+          hostnameId: domain.cloudflare_hostname_id,
         }
       });
 
       if (error) throw error;
 
+      const isActive = data.domainStatus === 'verified' && data.sslProvisioned;
+      
       setDnsCheckResult({
-        verified: data.verified,
-        aRecordValid: data.dnsChecks?.aRecordValid || false,
-        txtRecordValid: data.dnsChecks?.txtRecordValid || false,
-        cnameValid: data.dnsChecks?.cnameValid || false,
-        message: data.message
+        verified: isActive,
+        aRecordValid: data.status === 'active',
+        txtRecordValid: true,
+        cnameValid: data.status === 'active' || data.status === 'pending',
+        message: data.ssl?.status || data.status
       });
 
       // Refresh domains list
       queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
 
-      if (data.verified) {
-        toast({ title: 'DNS verified! SSL is being provisioned.' });
+      if (isActive) {
+        toast({ title: 'Domain is active and ready!' });
+      } else if (data.status === 'active' && !data.sslProvisioned) {
+        toast({ title: 'DNS verified! SSL is being provisioned...' });
       } else {
         toast({ 
           title: 'DNS not ready yet', 
-          description: 'Please check your DNS settings and try again.',
+          description: 'Add the CNAME record and wait for propagation.',
           variant: 'destructive' 
         });
       }
@@ -257,7 +295,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
       console.error('Verification error:', err);
       toast({ 
         title: 'Verification failed', 
-        description: 'Could not verify DNS settings. Please try again.',
+        description: 'Could not check domain status. Please try again.',
         variant: 'destructive' 
       });
     } finally {
@@ -265,13 +303,23 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     }
   }, [queryClient, teamId]);
 
-  // Auto-poll for pending domains when setup dialog is open
+  // Auto-poll for pending domains when setup dialog is open - uses Cloudflare API
   useEffect(() => {
     if (!showSetupDialog || !selectedDomain) return;
-    if (selectedDomain.status === 'active') return;
+    if (selectedDomain.status === 'verified' && selectedDomain.ssl_provisioned) return;
+    if (!selectedDomain.cloudflare_hostname_id) return;
 
     const pollInterval = setInterval(async () => {
-      // Re-fetch domain status
+      // Check status via Cloudflare
+      const { data: cfData } = await supabase.functions.invoke('manage-custom-hostname', {
+        body: {
+          action: 'status',
+          domainId: selectedDomain.id,
+          hostnameId: selectedDomain.cloudflare_hostname_id,
+        }
+      });
+
+      // Re-fetch domain from DB (will have been updated by the edge function)
       const { data } = await supabase
         .from('funnel_domains')
         .select('*')
@@ -280,11 +328,12 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
 
       if (data) {
         setSelectedDomain(data as Domain);
-        if (data.status === 'active' || (data.status === 'verified' && data.ssl_provisioned)) {
+        if (data.status === 'verified' && data.ssl_provisioned) {
           queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+          toast({ title: 'Domain is now active!' });
         }
       }
-    }, 10000); // Poll every 10 seconds
+    }, 15000); // Poll every 15 seconds
 
     return () => clearInterval(pollInterval);
   }, [showSetupDialog, selectedDomain, queryClient, teamId]);
@@ -477,7 +526,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={() => deleteDomainMutation.mutate(domain.id)} 
+                      onClick={() => deleteDomainMutation.mutate(domain)} 
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -685,7 +734,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-emerald-500 text-white text-sm font-bold flex items-center justify-center">2</div>
-                <h4 className="font-medium">Add DNS Records</h4>
+                <h4 className="font-medium">Add a CNAME Record</h4>
               </div>
               
               {/* DNS Records Table */}
@@ -694,15 +743,21 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                   <thead className="bg-muted-foreground/10">
                     <tr>
                       <th className="text-left px-4 py-2 font-medium">Type</th>
-                      <th className="text-left px-4 py-2 font-medium">Host</th>
-                      <th className="text-left px-4 py-2 font-medium">Points To</th>
+                      <th className="text-left px-4 py-2 font-medium">Name/Host</th>
+                      <th className="text-left px-4 py-2 font-medium">Target/Points To</th>
                       <th className="w-8"></th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-t border-border/50">
                       <td className="px-4 py-3 font-mono">CNAME</td>
-                      <td className="px-4 py-3 font-mono">www</td>
+                      <td className="px-4 py-3 font-mono">
+                        {selectedDomain?.domain.split('.')[0] === 'www' 
+                          ? 'www' 
+                          : selectedDomain?.domain.includes('.') && selectedDomain.domain.split('.').length > 2
+                            ? selectedDomain.domain.split('.')[0]
+                            : '@'}
+                      </td>
                       <td className="px-4 py-3 font-mono text-emerald-500">{HOSTING_DOMAIN}</td>
                       <td className="px-4 py-3">
                         <Button 
@@ -719,11 +774,11 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                 </table>
               </div>
 
-              {/* Note about root domain */}
-              <div className="ml-8 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  <strong>Note:</strong> Most registrars (like GoDaddy) don't allow CNAME on root domain (@). 
-                  Use <strong>www</strong> as shown above, then set up a redirect from your root domain to www.
+              {/* SSL info */}
+              <div className="ml-8 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                  <ShieldCheck className="h-4 w-4 inline mr-1" />
+                  <strong>SSL is automatic!</strong> Once DNS propagates, we'll provision an SSL certificate for you automatically.
                 </p>
               </div>
             </div>
