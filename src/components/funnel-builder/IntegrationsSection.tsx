@@ -219,27 +219,26 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
     );
   };
 
-  const testWebhook = async (url: string) => {
+  const testWebhook = async (url: string, funnelName?: string) => {
     setIsTesting(true);
     try {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        mode: 'no-cors',
-        body: JSON.stringify({
-          test: true,
-          timestamp: new Date().toISOString(),
-          message: 'Test webhook from GRWTH OP',
-          data: {
-            name: 'Test Lead',
-            email: 'test@example.com',
-            phone: '+1234567890'
-          }
-        })
+      const { data, error } = await supabase.functions.invoke('test-ghl-webhook', {
+        body: { webhook_url: url, funnel_name: funnelName }
       });
-      toast({ title: 'Test sent', description: 'Check your webhook endpoint for the test payload' });
+      
+      if (error) throw error;
+      
+      toast({ 
+        title: 'Test sent successfully!', 
+        description: 'Check GHL and click "Check for new requests" to see the mapping' 
+      });
     } catch (error) {
-      toast({ title: 'Test failed', description: 'Could not reach the webhook URL', variant: 'destructive' });
+      console.error('Test webhook error:', error);
+      toast({ 
+        title: 'Test failed', 
+        description: error instanceof Error ? error.message : 'Could not reach the webhook URL', 
+        variant: 'destructive' 
+      });
     } finally {
       setIsTesting(false);
     }
