@@ -1466,6 +1466,7 @@ function generateFunnelHTML(
             answers: answers,
             calendly_booking_data: calendlyBookingData,
             is_complete: isComplete,
+            last_step_index: currentStepIndex,
           }),
         });
         

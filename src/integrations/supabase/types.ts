@@ -894,6 +894,7 @@ export type Database = {
           funnel_id: string
           ghl_synced_at: string | null
           id: string
+          last_step_index: number | null
           name: string | null
           opt_in_status: boolean | null
           opt_in_timestamp: string | null
@@ -913,6 +914,7 @@ export type Database = {
           funnel_id: string
           ghl_synced_at?: string | null
           id?: string
+          last_step_index?: number | null
           name?: string | null
           opt_in_status?: boolean | null
           opt_in_timestamp?: string | null
@@ -932,6 +934,7 @@ export type Database = {
           funnel_id?: string
           ghl_synced_at?: string | null
           id?: string
+          last_step_index?: number | null
           name?: string | null
           opt_in_status?: boolean | null
           opt_in_timestamp?: string | null
