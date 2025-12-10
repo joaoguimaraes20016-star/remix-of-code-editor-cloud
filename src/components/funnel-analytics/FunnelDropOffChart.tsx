@@ -28,56 +28,66 @@ export function FunnelDropOffChart({ steps, leads, funnelName }: FunnelDropOffCh
   const data = useMemo(() => {
     if (!steps.length || !leads.length) return [];
 
-    // Sort steps by order_index
+    // Sort ALL steps by order_index
     const sortedSteps = [...steps].sort((a, b) => a.order_index - b.order_index);
-    
-    // Filter to only question/input steps (skip welcome, video, embed, thank_you, divider)
-    const questionSteps = sortedSteps.filter(step => 
-      ['multi_choice', 'text_question', 'email_capture', 'phone_capture', 'opt_in'].includes(step.step_type)
-    );
 
-    // Build the answer key for each step using SEQUENTIAL question index (1, 2, 3...)
-    // NOT order_index which includes non-question steps
-    const getAnswerKeysForStep = (step: FunnelStep, questionIndex: number): string[] => {
-      const idx = questionIndex + 1; // 1-based index for just question steps
+    // Track question index separately for answer key mapping
+    let questionIndex = 0;
+    
+    // Build the answer key for each step
+    const getAnswerKeysForStep = (step: FunnelStep, qIdx: number): string[] => {
+      const idx = qIdx + 1; // 1-based index
       switch (step.step_type) {
         case 'multi_choice':
-          return [`choice_${idx}`, `choice_${step.order_index + 1}`]; // Try both patterns
+          return [`choice_${idx}`, `choice_${step.order_index + 1}`];
         case 'text_question':
-          return [`question_${idx}`, `question_${step.order_index + 1}`]; // Try both patterns
+          return [`question_${idx}`, `question_${step.order_index + 1}`];
         case 'email_capture':
           return ['email'];
         case 'phone_capture':
           return ['phone'];
         case 'opt_in':
-          return ['opt_in', 'name']; // opt_in submission usually has name
+          return ['opt_in', 'name'];
         default:
           return [];
       }
     };
 
-    // Count leads that reached each step based on last_step_index OR have answers
-    const stepCounts = questionSteps.map((step, questionIndex) => {
-      const answerKeys = getAnswerKeysForStep(step, questionIndex);
+    // Count leads that reached each step (ALL steps, not just questions)
+    const stepCounts = sortedSteps.map((step, displayIndex) => {
+      const isQuestionStep = ['multi_choice', 'text_question', 'email_capture', 'phone_capture', 'opt_in'].includes(step.step_type);
+      const currentQuestionIndex = isQuestionStep ? questionIndex : -1;
+      
+      if (isQuestionStep) {
+        questionIndex++;
+      }
+      
+      const answerKeys = isQuestionStep ? getAnswerKeysForStep(step, currentQuestionIndex) : [];
       
       const count = leads.filter(lead => {
-        // Method 1: Check if lead reached this step index or beyond
+        // Method 1: Check if lead reached this step index or beyond via last_step_index
         const reachedByIndex = lead.last_step_index !== undefined && 
                                lead.last_step_index !== null &&
                                lead.last_step_index >= step.order_index;
         
-        // Method 2: Check if any answer exists for this step
-        const hasAnswer = lead.answers && answerKeys.some(key => {
+        // Method 2: For question steps, check if answer exists
+        const hasAnswer = isQuestionStep && lead.answers && answerKeys.some(key => {
           const value = lead.answers[key];
           return value !== undefined && value !== null && value !== '';
         });
         
-        return reachedByIndex || hasAnswer;
+        // Method 3: For non-question steps (welcome, video, embed), 
+        // if they reached ANY later step, they passed this one
+        const passedThisStep = lead.last_step_index !== undefined && 
+                               lead.last_step_index !== null &&
+                               lead.last_step_index > step.order_index;
+        
+        return reachedByIndex || hasAnswer || passedThisStep;
       }).length;
       
       return {
-        name: getStepLabel(step, questionIndex),
-        fullName: getStepLabel(step, questionIndex),
+        name: getStepLabel(step, displayIndex),
+        fullName: getStepLabel(step, displayIndex),
         count,
         stepType: step.step_type,
         orderIndex: step.order_index,
@@ -211,11 +221,16 @@ function getStepLabel(step: FunnelStep, index: number): string {
   }
   
   const typeLabels: Record<string, string> = {
+    welcome: 'Welcome',
     multi_choice: `Q${index + 1}`,
     text_question: `Q${index + 1}`,
     email_capture: 'Email',
     phone_capture: 'Phone',
     opt_in: 'Opt-In',
+    video: 'Video',
+    embed: 'Embed',
+    thank_you: 'Thank You',
+    divider: 'Divider',
   };
   
   return typeLabels[step.step_type] || `Step ${index + 1}`;
