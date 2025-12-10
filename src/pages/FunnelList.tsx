@@ -20,6 +20,7 @@ import { format, formatDistanceToNow, subDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { generateCSV, downloadCSV, FUNNEL_LEAD_COLUMNS, CONTACT_COLUMNS } from '@/lib/csvExport';
 import { FunnelDropOffChart } from '@/components/funnel-analytics/FunnelDropOffChart';
+import { LeadsVsVisitorsChart } from '@/components/funnel-analytics/LeadsVsVisitorsChart';
 import { ExpandableLeadRow } from '@/components/funnel-analytics/ExpandableLeadRow';
 import {
   DropdownMenu,
@@ -747,7 +748,20 @@ export default function FunnelList() {
               </div>
             </div>
 
-            {/* Drop-off Analytics */}
+            {/* Leads vs Visitors Chart */}
+            {leads && leads.length > 0 && (
+              <div className="mb-8">
+                <LeadsVsVisitorsChart 
+                  leads={selectedFunnelId === 'all' 
+                    ? leads 
+                    : leads.filter(l => l.funnel?.id === selectedFunnelId)
+                  }
+                  selectedFunnelId={selectedFunnelId}
+                />
+              </div>
+            )}
+
+            {/* Drop-off Analytics - Only when specific funnel selected */}
             {selectedFunnelId !== 'all' && allSteps && leads && (
               <div className="mb-8">
                 <FunnelDropOffChart 
