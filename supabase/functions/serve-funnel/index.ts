@@ -618,16 +618,27 @@ function generateFunnelHTML(
       
       if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
         const match = videoUrl.match(/(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?)\\/|.*[?&]v=)|youtu\\.be\\/)([^"&?\\/\\s]{11})/);
-        if (match && match[1]) embedUrl = 'https://www.youtube.com/embed/' + match[1];
+        if (match && match[1]) {
+          embedUrl = 'https://www.youtube.com/embed/' + match[1];
+        } else {
+          // Try simpler patterns
+          const simpleMatch = videoUrl.match(/[?&]v=([^&]+)/) || videoUrl.match(/youtu\\.be\\/([^?&]+)/);
+          if (simpleMatch && simpleMatch[1]) embedUrl = 'https://www.youtube.com/embed/' + simpleMatch[1];
+        }
       } else if (videoUrl.includes('vimeo.com')) {
-        const match = videoUrl.match(/vimeo\\.com\\/(?:video\\/)?(\\d+)/);
+        const match = videoUrl.match(/vimeo\\.com\\/(\\d+)/) || videoUrl.match(/vimeo\\.com\\/video\\/(\\d+)/);
         if (match && match[1]) embedUrl = 'https://player.vimeo.com/video/' + match[1];
       } else if (videoUrl.includes('loom.com')) {
-        const match = videoUrl.match(/loom\\.com\\/(?:share|embed)\\/([a-zA-Z0-9]+)/);
+        const match = videoUrl.match(/loom\\.com\\/share\\/([a-zA-Z0-9]+)/) || videoUrl.match(/loom\\.com\\/embed\\/([a-zA-Z0-9]+)/);
         if (match && match[1]) embedUrl = 'https://www.loom.com/embed/' + match[1];
-      } else if (videoUrl.includes('wistia.com')) {
-        const match = videoUrl.match(/wistia\\.com\\/(?:medias|embed)\\/([a-zA-Z0-9]+)/);
+      } else if (videoUrl.includes('wistia.com') || videoUrl.includes('wistia.net')) {
+        const match = videoUrl.match(/wistia\\.[a-z]+\\/(?:medias|embed\\/iframe)\\/([a-zA-Z0-9]+)/);
         if (match && match[1]) embedUrl = 'https://fast.wistia.net/embed/iframe/' + match[1];
+      }
+      
+      // Fallback: if URL already looks like an embed URL, use it directly
+      if (!embedUrl && (videoUrl.includes('/embed/') || videoUrl.includes('/embed?'))) {
+        embedUrl = videoUrl;
       }
       
       if (embedUrl) {
