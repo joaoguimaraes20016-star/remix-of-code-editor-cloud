@@ -242,15 +242,42 @@ export function LivePreviewMode({
                       setCurrentStepIndex(prev => prev + 1);
                     }
                   }}
-                  renderInput={() => (
-                    <input
-                      type="text"
-                      placeholder={stepContent.placeholder || 'Enter your answer...'}
-                      className="w-full max-w-xs mx-auto bg-white/10 border border-white/20 px-4 py-3 rounded-xl text-center"
-                      style={{ color: stepDesign.textColor || '#ffffff' }}
-                      readOnly
-                    />
-                  )}
+                  renderInput={() => {
+                    // Use the design settings for input styling
+                    const inputBg = stepDesign.inputBg || '#ffffff';
+                    const inputTextColor = stepDesign.inputTextColor || '#000000';
+                    const inputBorder = stepDesign.inputBorder || '#e5e5e5';
+                    const inputRadius = stepDesign.inputRadius ?? 12;
+                    
+                    return (
+                      <div className="w-full max-w-xs mx-auto">
+                        <input
+                          type="text"
+                          placeholder={stepContent.placeholder || 'Type your answer here...'}
+                          className="w-full px-4 py-3 text-center outline-none transition-all"
+                          style={{ 
+                            backgroundColor: inputBg,
+                            color: inputTextColor,
+                            borderRadius: `${inputRadius}px`,
+                            border: `1px solid ${inputBorder}`,
+                          }}
+                          readOnly
+                        />
+                        <button
+                          className="w-full max-w-xs mt-4 px-6 py-3 font-semibold transition-all"
+                          style={{ 
+                            background: stepDesign.useButtonGradient && stepDesign.buttonGradientFrom 
+                              ? `linear-gradient(${stepDesign.buttonGradientDirection || '135deg'}, ${stepDesign.buttonGradientFrom}, ${stepDesign.buttonGradientTo || stepDesign.buttonGradientFrom})`
+                              : (stepDesign.buttonColor || funnel.settings.primary_color),
+                            color: stepDesign.buttonTextColor || '#ffffff',
+                            borderRadius: `${stepDesign.borderRadius ?? 12}px`,
+                          }}
+                        >
+                          {stepContent.button_text || 'Continue'}
+                        </button>
+                      </div>
+                    );
+                  }}
                   renderOptions={() => {
                     const showNextBtn = stepContent.show_next_button !== false;
                     const nextBtnText = stepContent.next_button_text || 'Next Question';
@@ -300,34 +327,80 @@ export function LivePreviewMode({
                       </div>
                     );
                   }}
-                  renderForm={() => (
-                    <div className="space-y-3 w-full max-w-sm mx-auto">
-                      {/* Preview opt-in form */}
-                      <div className="bg-white rounded-xl px-4 py-3 flex items-center gap-3">
-                        <span>👋</span>
-                        <input type="text" placeholder={stepContent.name_placeholder || 'Your name'} className="flex-1 bg-transparent outline-none text-black" readOnly />
+                  renderForm={() => {
+                    const inputBg = stepDesign.inputBg || '#ffffff';
+                    const inputTextColor = stepDesign.inputTextColor || '#000000';
+                    const inputBorder = stepDesign.inputBorder || '#e5e5e5';
+                    const inputRadius = stepDesign.inputRadius ?? 12;
+                    
+                    return (
+                      <div className="space-y-3 w-full max-w-sm mx-auto">
+                        <div 
+                          className="px-4 py-3 flex items-center gap-3"
+                          style={{ 
+                            backgroundColor: inputBg, 
+                            borderRadius: `${inputRadius}px`,
+                            border: `1px solid ${inputBorder}`,
+                          }}
+                        >
+                          <span>{(stepContent as any).name_emoji || '👋'}</span>
+                          <input 
+                            type="text" 
+                            placeholder={stepContent.name_placeholder || 'Your name'} 
+                            className="flex-1 bg-transparent outline-none" 
+                            style={{ color: inputTextColor }}
+                            readOnly 
+                          />
+                        </div>
+                        <div 
+                          className="px-4 py-3 flex items-center gap-3"
+                          style={{ 
+                            backgroundColor: inputBg, 
+                            borderRadius: `${inputRadius}px`,
+                            border: `1px solid ${inputBorder}`,
+                          }}
+                        >
+                          <span>{(stepContent as any).email_emoji || '✉️'}</span>
+                          <input 
+                            type="text" 
+                            placeholder={stepContent.email_placeholder || 'Your email'} 
+                            className="flex-1 bg-transparent outline-none" 
+                            style={{ color: inputTextColor }}
+                            readOnly 
+                          />
+                        </div>
+                        <div 
+                          className="px-4 py-3 flex items-center gap-3"
+                          style={{ 
+                            backgroundColor: inputBg, 
+                            borderRadius: `${inputRadius}px`,
+                            border: `1px solid ${inputBorder}`,
+                          }}
+                        >
+                          <span>{(stepContent as any).phone_emoji || '📱'}</span>
+                          <input 
+                            type="text" 
+                            placeholder={stepContent.phone_placeholder || 'Your phone'} 
+                            className="flex-1 bg-transparent outline-none" 
+                            style={{ color: inputTextColor }}
+                            readOnly 
+                          />
+                        </div>
+                        <button
+                          className="w-full p-4 font-semibold transition-all"
+                          style={{ 
+                            background: stepDesign.useButtonGradient && stepDesign.buttonGradientFrom 
+                              ? `linear-gradient(${stepDesign.buttonGradientDirection || '135deg'}, ${stepDesign.buttonGradientFrom}, ${stepDesign.buttonGradientTo || stepDesign.buttonGradientFrom})`
+                              : (stepDesign.buttonColor || funnel.settings.primary_color),
+                            color: stepDesign.buttonTextColor || '#ffffff',
+                            borderRadius: `${stepDesign.borderRadius ?? 12}px`,
+                          }}
+                        >
+                          {stepContent.submit_button_text || 'Continue'}
+                        </button>
                       </div>
-                      <div className="bg-white rounded-xl px-4 py-3 flex items-center gap-3">
-                        <span>✉️</span>
-                        <input type="text" placeholder={stepContent.email_placeholder || 'Your email'} className="flex-1 bg-transparent outline-none text-black" readOnly />
-                      </div>
-                      <div className="bg-white rounded-xl px-4 py-3 flex items-center gap-3">
-                        <span>📱</span>
-                        <input type="text" placeholder={stepContent.phone_placeholder || 'Your phone'} className="flex-1 bg-transparent outline-none text-black" readOnly />
-                      </div>
-                      <button
-                        className="w-full p-4 rounded-xl font-semibold transition-all"
-                        style={{ 
-                          background: stepDesign.useButtonGradient && stepDesign.buttonGradientFrom 
-                            ? `linear-gradient(${stepDesign.buttonGradientDirection || '135deg'}, ${stepDesign.buttonGradientFrom}, ${stepDesign.buttonGradientTo || stepDesign.buttonGradientFrom})`
-                            : (stepDesign.buttonColor || funnel.settings.primary_color),
-                          color: stepDesign.buttonTextColor || '#ffffff'
-                        }}
-                      >
-                        {stepContent.submit_button_text || 'Continue'}
-                      </button>
-                    </div>
-                  )}
+                    );
+                  }}
                 />
               </div>
             </div>
