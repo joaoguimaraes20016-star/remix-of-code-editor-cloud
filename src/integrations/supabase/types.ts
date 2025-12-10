@@ -1259,9 +1259,12 @@ export type Database = {
           created_at: string | null
           email: string | null
           full_name: string | null
+          google_meet_connected: boolean | null
           id: string
+          notification_preferences: Json | null
           phone_number: string | null
           updated_at: string | null
+          zoom_connected: boolean | null
         }
         Insert: {
           account_type?: string | null
@@ -1269,9 +1272,12 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           full_name?: string | null
+          google_meet_connected?: boolean | null
           id: string
+          notification_preferences?: Json | null
           phone_number?: string | null
           updated_at?: string | null
+          zoom_connected?: boolean | null
         }
         Update: {
           account_type?: string | null
@@ -1279,9 +1285,12 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           full_name?: string | null
+          google_meet_connected?: boolean | null
           id?: string
+          notification_preferences?: Json | null
           phone_number?: string | null
           updated_at?: string | null
+          zoom_connected?: boolean | null
         }
         Relationships: []
       }
