@@ -66,7 +66,9 @@ const App = () => (
             </Route>
             
             {/* Legacy routes - redirect to new structure */}
-            <Route path="/team/:teamId/sales" element={<Navigate to="../crm" replace />} />
+            <Route path="/team/:teamId/sales" element={<TeamLayout />}>
+              <Route index element={<SalesDashboard />} />
+            </Route>
             <Route path="/team/:teamId/assets" element={<Navigate to=".." replace />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
