@@ -243,19 +243,9 @@ export function MultiChoiceStep({ content, settings, onNext, isActive, currentSt
     return null;
   };
 
-  // Clean headline - strip excessive HTML styling but keep basic formatting
-  const cleanHeadline = (html: string) => {
-    // Remove font tags and excessive inline styles but keep basic tags
-    return html
-      .replace(/<font[^>]*>/gi, '')
-      .replace(/<\/font>/gi, '')
-      .replace(/style="[^"]*font-family[^"]*"/gi, '')
-      .replace(/class="[^"]*"/gi, '');
-  };
-
   if (hasElementOrder) {
     return (
-      <div className="w-full max-w-xl text-center px-4">
+      <div className="w-full max-w-xl text-center px-4 flex flex-col items-center">
         {renderProgressIndicator()}
         <DynamicElementRenderer
           elementOrder={content.element_order || []}
@@ -272,13 +262,13 @@ export function MultiChoiceStep({ content, settings, onNext, isActive, currentSt
 
   // Fallback to original rendering
   return (
-    <div className="w-full max-w-xl text-center px-4">
+    <div className="w-full max-w-xl text-center px-4 flex flex-col items-center">
       {renderProgressIndicator()}
       
       {content.headline && (
         <h2 
-          className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-8"
-          dangerouslySetInnerHTML={{ __html: cleanHeadline(content.headline) }}
+          className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-8 w-full text-center [&>*]:inline"
+          dangerouslySetInnerHTML={{ __html: content.headline }}
         />
       )}
 

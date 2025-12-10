@@ -226,6 +226,9 @@ export default function FunnelList() {
     toast({ title: 'URL copied to clipboard' });
   };
 
+  // Helper: A "real lead" has ALL THREE: name + phone + email
+  const isRealLead = (lead: FunnelLead) => !!(lead.name && lead.phone && lead.email);
+  
   // Calculate performance stats with real percentage changes
   const now = new Date();
   const todayStart = startOfDay(now);
@@ -236,27 +239,35 @@ export default function FunnelList() {
   const monthAgo = subDays(now, 30);
   const twoMonthsAgo = subDays(now, 60);
 
-  // Current period leads
-  const todayLeads = leads?.filter(l => new Date(l.created_at) >= todayStart).length || 0;
-  const weekLeads = leads?.filter(l => new Date(l.created_at) >= weekAgo).length || 0;
-  const monthLeads = leads?.filter(l => new Date(l.created_at) >= monthAgo).length || 0;
-  const totalLeads = leads?.length || 0;
+  // Filter to only real leads (name + phone + email)
+  const realLeads = leads?.filter(isRealLead) || [];
+  
+  // Current period - REAL LEADS only
+  const todayLeads = realLeads.filter(l => new Date(l.created_at) >= todayStart).length;
+  const weekLeads = realLeads.filter(l => new Date(l.created_at) >= weekAgo).length;
+  const monthLeads = realLeads.filter(l => new Date(l.created_at) >= monthAgo).length;
+  const totalLeads = realLeads.length;
 
-  // Previous period leads for comparison
-  const yesterdayLeads = leads?.filter(l => {
+  // Visitors (started but not real leads)
+  const totalVisitors = (leads?.length || 0) - realLeads.length;
+  const todayVisitors = (leads?.filter(l => new Date(l.created_at) >= todayStart).length || 0) - todayLeads;
+  const weekVisitors = (leads?.filter(l => new Date(l.created_at) >= weekAgo).length || 0) - weekLeads;
+
+  // Previous period leads for comparison (real leads only)
+  const yesterdayLeads = realLeads.filter(l => {
     const date = new Date(l.created_at);
     return date >= twoDaysAgo && date < yesterdayStart;
-  }).length || 0;
+  }).length;
   
-  const previousWeekLeads = leads?.filter(l => {
+  const previousWeekLeads = realLeads.filter(l => {
     const date = new Date(l.created_at);
     return date >= twoWeeksAgo && date < weekAgo;
-  }).length || 0;
+  }).length;
   
-  const previousMonthLeads = leads?.filter(l => {
+  const previousMonthLeads = realLeads.filter(l => {
     const date = new Date(l.created_at);
     return date >= twoMonthsAgo && date < monthAgo;
-  }).length || 0;
+  }).length;
 
   // Calculate percentage changes
   const calcPercentChange = (current: number, previous: number): number => {
@@ -267,6 +278,9 @@ export default function FunnelList() {
   const todayChange = calcPercentChange(todayLeads, yesterdayLeads);
   const weekChange = calcPercentChange(weekLeads, previousWeekLeads);
   const monthChange = calcPercentChange(monthLeads, previousMonthLeads);
+  
+  // Conversion rate: real leads / total visitors
+  const conversionRate = leads?.length ? Math.round((realLeads.length / leads.length) * 100) : 0;
 
   const optedInContacts = contacts?.filter(c => c.opt_in).length || 0;
   const bookedContacts = contacts?.filter(c => c.calendly_booked_at).length || 0;
@@ -643,7 +657,7 @@ export default function FunnelList() {
             </div>
 
             {/* Perspective-style Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
               <div className="bg-card border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground mb-1">Today</p>
                 <p className="text-2xl font-semibold">{todayLeads} Leads</p>
@@ -717,10 +731,18 @@ export default function FunnelList() {
               </div>
               
               <div className="bg-card border rounded-xl p-5">
-                <p className="text-sm text-muted-foreground mb-1">Total</p>
-                <p className="text-2xl font-semibold">{totalLeads} Leads</p>
+                <p className="text-sm text-muted-foreground mb-1">Total Leads</p>
+                <p className="text-2xl font-semibold">{totalLeads}</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  All time leads captured
+                  {totalVisitors} visitors
+                </p>
+              </div>
+              
+              <div className="bg-card border rounded-xl p-5">
+                <p className="text-sm text-muted-foreground mb-1">Conversion Rate</p>
+                <p className="text-2xl font-semibold">{conversionRate}%</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Visitors to leads
                 </p>
               </div>
             </div>
@@ -736,11 +758,11 @@ export default function FunnelList() {
               </div>
             )}
 
-            {/* Recent Leads Table with Expandable Rows */}
+            {/* Recent Leads Table - Only REAL leads (name + phone + email) */}
             <div className="bg-card border rounded-xl overflow-hidden">
               <div className="p-4 border-b">
                 <h2 className="font-semibold">Recent Leads</h2>
-                <p className="text-sm text-muted-foreground">Click a row to see full answers</p>
+                <p className="text-sm text-muted-foreground">Only showing leads with complete contact info (name, phone, email)</p>
               </div>
               <Table>
                 <TableHeader>
@@ -754,8 +776,8 @@ export default function FunnelList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(selectedFunnelId === 'all' ? leads : leads?.filter(l => l.funnel?.id === selectedFunnelId))
-                    ?.slice(0, 20)
+                  {(selectedFunnelId === 'all' ? realLeads : realLeads.filter(l => l.funnel?.id === selectedFunnelId))
+                    .slice(0, 20)
                     .map((lead) => (
                       <ExpandableLeadRow 
                         key={lead.id} 
@@ -765,9 +787,9 @@ export default function FunnelList() {
                     ))}
                 </TableBody>
               </Table>
-              {!leads?.length && (
+              {!realLeads.length && (
                 <div className="text-center py-12 text-muted-foreground">
-                  No leads captured yet
+                  No leads captured yet. Leads require name, phone, and email.
                 </div>
               )}
             </div>
