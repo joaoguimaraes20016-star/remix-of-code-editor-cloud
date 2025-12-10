@@ -238,28 +238,35 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
     }
   };
 
-  // Brand-accurate SVG icons
+  // Brand-accurate SVG icons matching real logos
   const GHLIcon = () => (
-    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#0066FF]">
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#0B1628]">
       <svg viewBox="0 0 40 40" className="w-8 h-8">
-        <path d="M8 12h8v4H8zM8 18h12v4H8zM8 24h16v4H8zM26 12h6v16h-6z" fill="white"/>
+        {/* Yellow arrow */}
+        <path d="M10 28V18l4-6 4 6v10h-8z" fill="#D4A847"/>
+        <path d="M14 12l-4 6h8l-4-6z" fill="#D4A847"/>
+        {/* Blue arrow (shorter) */}
+        <path d="M16 28V22l4-5 4 5v6h-8z" fill="#4A90D9"/>
+        <path d="M20 17l-4 5h8l-4-5z" fill="#4A90D9"/>
+        {/* Green arrow */}
+        <path d="M22 28V16l4-6 4 6v12h-8z" fill="#5CB85C"/>
+        <path d="M26 10l-4 6h8l-4-6z" fill="#5CB85C"/>
       </svg>
     </div>
   );
 
   const ZapierIcon = () => (
     <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#FF4A00]">
-      <svg viewBox="0 0 40 40" className="w-7 h-7">
-        <path d="M20 8l3 9h9l-7.5 5.5 3 9-7.5-5.5L12.5 31.5l3-9L8 17h9l3-9z" fill="white"/>
+      <svg viewBox="0 0 60 24" className="w-9 h-4">
+        <text x="2" y="18" fill="white" fontFamily="system-ui, -apple-system, sans-serif" fontSize="16" fontWeight="600">zapier</text>
       </svg>
     </div>
   );
 
   const CloseIcon = () => (
     <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#5D5CDE]">
-      <svg viewBox="0 0 40 40" className="w-6 h-6">
-        <rect x="10" y="10" width="20" height="20" rx="4" fill="white"/>
-        <path d="M16 16l8 8M24 16l-8 8" stroke="#5D5CDE" strokeWidth="2.5" strokeLinecap="round"/>
+      <svg viewBox="0 0 40 40" className="w-7 h-7">
+        <text x="7" y="28" fill="white" fontFamily="system-ui, -apple-system, sans-serif" fontSize="24" fontWeight="700">C</text>
       </svg>
     </div>
   );
@@ -267,40 +274,52 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
   const HubSpotIcon = () => (
     <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#FF7A59]">
       <svg viewBox="0 0 40 40" className="w-7 h-7">
-        <circle cx="20" cy="14" r="4" fill="white"/>
-        <circle cx="12" cy="26" r="3" fill="white"/>
-        <circle cx="28" cy="26" r="3" fill="white"/>
-        <path d="M20 18v4M16 24l-2-1M24 24l2-1" stroke="white" strokeWidth="2"/>
+        {/* HubSpot sprocket icon */}
+        <circle cx="20" cy="12" r="3" fill="white"/>
+        <circle cx="20" cy="20" r="5" stroke="white" strokeWidth="2" fill="none"/>
+        <rect x="18" y="15" width="4" height="5" fill="white"/>
+        <circle cx="12" cy="26" r="2.5" fill="white"/>
+        <circle cx="28" cy="26" r="2.5" fill="white"/>
+        <path d="M15 24l3-2M25 24l-3-2" stroke="white" strokeWidth="2"/>
       </svg>
     </div>
   );
 
   const ActiveCampaignIcon = () => (
     <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#356AE6]">
-      <svg viewBox="0 0 40 40" className="w-7 h-7">
-        <path d="M10 20l8 8 12-16" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      <svg viewBox="0 0 40 40" className="w-8 h-8">
+        {/* AC arrow/checkmark logo */}
+        <path d="M8 22l10 10 14-24" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
       </svg>
     </div>
   );
 
   const MakeIcon = () => (
     <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#6D00CC]">
-      <svg viewBox="0 0 40 40" className="w-7 h-7">
-        <circle cx="14" cy="20" r="5" fill="white"/>
-        <circle cx="26" cy="20" r="5" fill="white"/>
-        <path d="M19 20h2" stroke="white" strokeWidth="2"/>
+      <svg viewBox="0 0 40 40" className="w-8 h-8">
+        {/* Make/Integromat connected circles */}
+        <circle cx="13" cy="20" r="6" stroke="white" strokeWidth="2" fill="none"/>
+        <circle cx="27" cy="20" r="6" stroke="white" strokeWidth="2" fill="none"/>
       </svg>
     </div>
   );
 
   const SlackIcon = () => (
-    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#4A154B]">
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white border">
       <svg viewBox="0 0 40 40" className="w-7 h-7">
-        <path d="M14 10a2 2 0 014 0v6h-4a2 2 0 010-4zm0 0" fill="#E01E5A"/>
-        <path d="M30 14a2 2 0 01-4 0v-4a2 2 0 114 0v4z" fill="#36C5F0"/>
-        <path d="M26 30a2 2 0 01-4 0v-6h4a2 2 0 010 4z" fill="#2EB67D"/>
-        <path d="M10 26a2 2 0 014 0v4a2 2 0 11-4 0v-4z" fill="#ECB22E"/>
-        <rect x="14" y="14" width="12" height="12" rx="1" fill="white"/>
+        {/* Slack colored icons */}
+        <path d="M10 16a2 2 0 114 0v2h-2a2 2 0 01-2-2z" fill="#E01E5A"/>
+        <path d="M14 10a2 2 0 110 4h-2v-2a2 2 0 012-2z" fill="#E01E5A"/>
+        <path d="M24 10a2 2 0 110 4h-2a2 2 0 010-4h2z" fill="#36C5F0"/>
+        <path d="M30 16a2 2 0 110 4h-2v-2a2 2 0 012-2z" fill="#36C5F0"/>
+        <path d="M30 24a2 2 0 11-4 0v-2h2a2 2 0 012 2z" fill="#2EB67D"/>
+        <path d="M26 30a2 2 0 110-4h2v2a2 2 0 01-2 2z" fill="#2EB67D"/>
+        <path d="M16 30a2 2 0 110-4h2a2 2 0 010 4h-2z" fill="#ECB22E"/>
+        <path d="M10 24a2 2 0 110-4h2v2a2 2 0 01-2 2z" fill="#ECB22E"/>
+        <rect x="14" y="14" width="4" height="4" fill="#E01E5A"/>
+        <rect x="22" y="14" width="4" height="4" fill="#36C5F0"/>
+        <rect x="22" y="22" width="4" height="4" fill="#2EB67D"/>
+        <rect x="14" y="22" width="4" height="4" fill="#ECB22E"/>
       </svg>
     </div>
   );
