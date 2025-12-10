@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Plug, Plus, CheckCircle, AlertCircle, ExternalLink, 
-  Trash2, Settings2, Zap, Webhook, Send, ChevronRight
+  Trash2, Settings2, Zap, Webhook, Send, ChevronRight,
+  Copy, ArrowRight, Check, CircleDot
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -514,47 +516,186 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
         </div>
       )}
 
-      {/* GHL Dialog */}
+      {/* GHL Dialog - Enhanced */}
       <Dialog open={showGHLDialog} onOpenChange={setShowGHLDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">GHL</div>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <div className="flex items-center gap-3">
+              <GHLIcon />
               <div>
-                <DialogTitle>Connect GoHighLevel</DialogTitle>
-                <p className="text-sm text-muted-foreground">Enter your GHL webhook URL</p>
+                <DialogTitle className="text-xl">Connect GoHighLevel</DialogTitle>
+                <p className="text-sm text-muted-foreground">Set up your GHL webhook in 5 simple steps</p>
               </div>
             </div>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="text-sm font-medium">
-                Webhook URL <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="https://services.leadconnectorhq.com/hooks/..."
-                value={ghlWebhookUrl}
-                onChange={(e) => setGhlWebhookUrl(e.target.value)}
-                className="mt-1.5 font-mono text-sm"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Find this in GHL → Automation → Workflows → Webhook trigger
-              </p>
-            </div>
-          </div>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="p-6 space-y-6">
+              {/* Step-by-Step Setup Guide */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">How to Set Up</h3>
+                
+                <div className="space-y-3">
+                  {[
+                    { step: 1, title: 'Open GoHighLevel', desc: 'Go to your GHL account and navigate to Automation → Workflows' },
+                    { step: 2, title: 'Create or Edit a Workflow', desc: 'Click "+ Create Workflow" or open an existing workflow you want to trigger' },
+                    { step: 3, title: 'Add New Trigger', desc: 'Click "Add New Trigger" in your workflow builder' },
+                    { step: 4, title: 'Select Inbound Webhook', desc: 'Search and select "Inbound Webhook" as your trigger type' },
+                    { step: 5, title: 'Copy the Webhook URL', desc: 'Copy the URL that GHL generates (starts with https://services.leadconnectorhq.com/hooks/...)' },
+                  ].map(({ step, title, desc }) => (
+                    <div key={step} className="flex gap-3 items-start">
+                      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                        {step}
+                      </div>
+                      <div className="flex-1 pt-0.5">
+                        <p className="font-medium text-foreground">{title}</p>
+                        <p className="text-sm text-muted-foreground">{desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setShowGHLDialog(false)}>
-              Cancel
-            </Button>
+              {/* Webhook URL Input */}
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <label className="text-sm font-semibold text-foreground">
+                  Paste Your Webhook URL <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  placeholder="https://services.leadconnectorhq.com/hooks/..."
+                  value={ghlWebhookUrl}
+                  onChange={(e) => setGhlWebhookUrl(e.target.value)}
+                  className="font-mono text-sm bg-background"
+                />
+              </div>
+
+              {/* Field Mapping Reference */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Field Mapping Reference</h3>
+                  <Badge variant="outline" className="text-xs">For GHL Custom Values</Badge>
+                </div>
+                
+                <p className="text-sm text-muted-foreground">
+                  Use these field references in GHL to map incoming data to your CRM fields:
+                </p>
+
+                <div className="bg-card border rounded-lg overflow-hidden">
+                  <div className="grid grid-cols-[1fr,auto,1fr] text-xs font-medium text-muted-foreground bg-muted/50 px-4 py-2 border-b">
+                    <span>Our Data</span>
+                    <span></span>
+                    <span>GHL Field</span>
+                  </div>
+                  <div className="divide-y">
+                    {[
+                      { field: 'name', ghl: 'Full Name', desc: 'Lead\'s full name' },
+                      { field: 'email', ghl: 'Email', desc: 'Lead\'s email address' },
+                      { field: 'phone', ghl: 'Phone', desc: 'Lead\'s phone number' },
+                      { field: 'funnel_name', ghl: 'Source / Tags', desc: 'Which funnel they came from' },
+                      { field: 'custom_fields.*', ghl: 'Custom Fields', desc: 'All funnel question answers' },
+                      { field: 'opt_in', ghl: 'Tags', desc: 'Opt-in consent (true/false)' },
+                      { field: 'calendly_event_time', ghl: 'Appointment Date', desc: 'If Calendly booking was made' },
+                      { field: 'utm_source', ghl: 'UTM Source', desc: 'Traffic source tracking' },
+                      { field: 'utm_medium', ghl: 'UTM Medium', desc: 'Marketing medium' },
+                      { field: 'utm_campaign', ghl: 'UTM Campaign', desc: 'Campaign name' },
+                    ].map(({ field, ghl, desc }) => (
+                      <div key={field} className="grid grid-cols-[1fr,auto,1fr] items-center px-4 py-2.5 text-sm group hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <code className="px-2 py-0.5 bg-muted rounded text-xs font-mono text-foreground">{field}</code>
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(`{{${field}}}`);
+                              toast({ title: 'Copied!', description: `{{${field}}} copied to clipboard` });
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
+                          >
+                            <Copy className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground mx-2" />
+                        <div>
+                          <span className="font-medium text-foreground">{ghl}</span>
+                          <span className="text-muted-foreground ml-2 text-xs">— {desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sample Payload */}
+                <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">Sample Payload</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        const samplePayload = JSON.stringify({
+                          name: "John Doe",
+                          email: "john@example.com",
+                          phone: "+1234567890",
+                          funnel_name: "Lead Magnet Funnel",
+                          opt_in: true,
+                          custom_fields: {
+                            budget: "$5,000 - $10,000",
+                            timeline: "Within 30 days"
+                          },
+                          utm_source: "facebook",
+                          calendly_booked: true,
+                          calendly_event_time: "2024-01-15T10:00:00Z"
+                        }, null, 2);
+                        navigator.clipboard.writeText(samplePayload);
+                        toast({ title: 'Sample payload copied!' });
+                      }}
+                    >
+                      <Copy className="h-3 w-3 mr-1" /> Copy Sample
+                    </Button>
+                  </div>
+                  <pre className="text-xs text-muted-foreground font-mono bg-background/50 rounded p-3 overflow-x-auto">
+{`{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "funnel_name": "Lead Magnet Funnel",
+  "custom_fields": { "budget": "$5k-$10k" },
+  "opt_in": true,
+  "calendly_event_time": "2024-01-15T10:00:00Z"
+}`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <div className="flex justify-between items-center gap-2 p-4 border-t bg-muted/30">
             <Button 
-              onClick={connectGHL} 
-              disabled={connectMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                if (ghlWebhookUrl.trim()) {
+                  testWebhook(ghlWebhookUrl);
+                } else {
+                  toast({ title: 'Enter a webhook URL first', variant: 'destructive' });
+                }
+              }}
+              disabled={isTesting || !ghlWebhookUrl.trim()}
             >
-              {connectMutation.isPending ? 'Connecting...' : 'Connect GHL'}
+              <Send className="h-4 w-4 mr-2" />
+              {isTesting ? 'Sending...' : 'Send Test'}
             </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowGHLDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={connectGHL} 
+                disabled={connectMutation.isPending || !ghlWebhookUrl.trim()}
+                className="bg-[#0B1628] hover:bg-[#0B1628]/90"
+              >
+                {connectMutation.isPending ? 'Connecting...' : 'Connect GHL'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
