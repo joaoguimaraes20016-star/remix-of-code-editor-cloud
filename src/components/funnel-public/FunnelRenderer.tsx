@@ -60,19 +60,26 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const calendlyBookingRef = useRef<CalendlyBookingData | null>(null);
   const pendingSaveRef = useRef(false);
   const pixelsInitializedRef = useRef(false);
+  const firedEventsRef = useRef<Set<string>>(new Set()); // Track fired events to prevent duplicates
+  const externalIdRef = useRef<string>(crypto.randomUUID()); // Consistent ID for cross-device tracking
 
   const currentStep = steps[currentStepIndex];
   const isLastStep = currentStepIndex === steps.length - 1;
   const isThankYouStep = currentStep?.step_type === 'thank_you';
 
-  // Initialize pixel tracking scripts
+  // Generate unique event ID for deduplication
+  const generateEventId = useCallback(() => {
+    return `${funnel.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  }, [funnel.id]);
+
+  // Initialize pixel tracking scripts with advanced configuration
   useEffect(() => {
     if (pixelsInitializedRef.current) return;
     pixelsInitializedRef.current = true;
 
-    const { meta_pixel_id, google_analytics_id, tiktok_pixel_id } = funnel.settings;
+    const { meta_pixel_id, google_analytics_id, google_ads_id, tiktok_pixel_id } = funnel.settings;
 
-    // Meta Pixel
+    // Meta Pixel with advanced matching and external_id
     if (meta_pixel_id && !(window as any).fbq) {
       const script = document.createElement('script');
       script.innerHTML = `
@@ -84,13 +91,15 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
         t.src=v;s=b.getElementsByTagName(e)[0];
         s.parentNode.insertBefore(t,s)}(window, document,'script',
         'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', '${meta_pixel_id}');
+        fbq('init', '${meta_pixel_id}', {}, {
+          external_id: '${externalIdRef.current}'
+        });
         fbq('track', 'PageView');
       `;
       document.head.appendChild(script);
     }
 
-    // Google Analytics
+    // Google Analytics 4 with enhanced measurement
     if (google_analytics_id && !(window as any).gtag) {
       const gtagScript = document.createElement('script');
       gtagScript.async = true;
@@ -102,12 +111,17 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', '${google_analytics_id}');
+        gtag('config', '${google_analytics_id}', {
+          'send_page_view': true,
+          'allow_enhanced_conversions': true,
+          'user_id': '${externalIdRef.current}'
+        });
+        ${google_ads_id ? `gtag('config', '${google_ads_id}');` : ''}
       `;
       document.head.appendChild(configScript);
     }
 
-    // TikTok Pixel
+    // TikTok Pixel with identify
     if (tiktok_pixel_id && !(window as any).ttq) {
       const ttScript = document.createElement('script');
       ttScript.innerHTML = `
@@ -115,40 +129,99 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
           w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
           ttq.load('${tiktok_pixel_id}');
           ttq.page();
+          ttq.identify('${externalIdRef.current}');
         }(window, document, 'ttq');
       `;
       document.head.appendChild(ttScript);
     }
   }, [funnel.settings]);
 
-  // Fire pixel events helper
-  const firePixelEvent = useCallback((eventType: 'Lead' | 'CompleteRegistration' | 'Schedule', data?: Record<string, any>) => {
-    const { meta_pixel_id, google_analytics_id, tiktok_pixel_id } = funnel.settings;
+  // Fire pixel events with deduplication
+  const firePixelEvent = useCallback((
+    eventType: 'ViewContent' | 'Lead' | 'CompleteRegistration' | 'Schedule',
+    data?: Record<string, any>,
+    dedupeKey?: string
+  ) => {
+    // Prevent duplicate events using deduplication key
+    const eventKey = dedupeKey || `${eventType}_${JSON.stringify(data || {})}`;
+    if (firedEventsRef.current.has(eventKey)) {
+      console.log(`Skipping duplicate event: ${eventType}`);
+      return;
+    }
+    firedEventsRef.current.add(eventKey);
 
-    // Meta Pixel
+    const eventId = generateEventId();
+    const { meta_pixel_id, google_analytics_id, google_ads_id, tiktok_pixel_id } = funnel.settings;
+
+    // Meta Pixel with event_id for server-side deduplication
     if (meta_pixel_id && (window as any).fbq) {
-      (window as any).fbq('track', eventType, data);
-      console.log(`Meta Pixel: ${eventType}`, data);
+      const fbData = {
+        ...data,
+        content_name: funnel.name,
+        content_category: 'funnel',
+        external_id: externalIdRef.current,
+      };
+      (window as any).fbq('track', eventType, fbData, { eventID: eventId });
+      console.log(`Meta Pixel [${eventId}]: ${eventType}`, fbData);
     }
 
-    // Google Analytics
+    // Google Analytics 4 with proper event mapping
     if (google_analytics_id && (window as any).gtag) {
-      const gaEvent = eventType === 'Lead' ? 'generate_lead' 
-        : eventType === 'CompleteRegistration' ? 'conversion' 
-        : 'schedule';
-      (window as any).gtag('event', gaEvent, data);
-      console.log(`GA4: ${gaEvent}`, data);
+      const gaEventMap: Record<string, string> = {
+        'ViewContent': 'view_item',
+        'Lead': 'generate_lead',
+        'CompleteRegistration': 'sign_up',
+        'Schedule': 'schedule_appointment',
+      };
+      const gaEvent = gaEventMap[eventType] || eventType.toLowerCase();
+      const gaData = {
+        ...data,
+        event_id: eventId,
+        funnel_name: funnel.name,
+        currency: 'USD',
+        value: data?.value || 0,
+      };
+      (window as any).gtag('event', gaEvent, gaData);
+      
+      // Also send to Google Ads if configured
+      if (google_ads_id && eventType === 'Lead') {
+        (window as any).gtag('event', 'conversion', {
+          send_to: google_ads_id,
+          ...gaData,
+        });
+      }
+      console.log(`GA4 [${eventId}]: ${gaEvent}`, gaData);
     }
 
-    // TikTok Pixel
+    // TikTok Pixel with proper event mapping
     if (tiktok_pixel_id && (window as any).ttq) {
-      const ttEvent = eventType === 'Lead' ? 'SubmitForm' 
-        : eventType === 'CompleteRegistration' ? 'CompleteRegistration' 
-        : 'Schedule';
-      (window as any).ttq.track(ttEvent, data);
-      console.log(`TikTok Pixel: ${ttEvent}`, data);
+      const ttEventMap: Record<string, string> = {
+        'ViewContent': 'ViewContent',
+        'Lead': 'SubmitForm',
+        'CompleteRegistration': 'CompleteRegistration',
+        'Schedule': 'Schedule',
+      };
+      const ttEvent = ttEventMap[eventType] || eventType;
+      const ttData = {
+        ...data,
+        content_name: funnel.name,
+        event_id: eventId,
+      };
+      (window as any).ttq.track(ttEvent, ttData);
+      console.log(`TikTok Pixel [${eventId}]: ${ttEvent}`, ttData);
     }
-  }, [funnel.settings]);
+  }, [funnel.settings, funnel.name, generateEventId]);
+
+  // Fire ViewContent on step change
+  useEffect(() => {
+    if (currentStep) {
+      firePixelEvent('ViewContent', {
+        content_type: currentStep.step_type,
+        step_index: currentStepIndex,
+        step_name: currentStep.content?.headline || currentStep.step_type,
+      }, `view_step_${currentStepIndex}`);
+    }
+  }, [currentStepIndex, currentStep, firePixelEvent]);
 
   // Store Calendly booking data when detected
   const handleCalendlyBooking = useCallback((bookingData?: CalendlyBookingData) => {
@@ -160,7 +233,8 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
       firePixelEvent('Schedule', {
         event_start_time: bookingData.event_start_time,
         invitee_email: bookingData.invitee_email,
-      });
+        value: 100, // Default conversion value
+      }, `schedule_${bookingData.event_start_time}`);
     }
   }, [firePixelEvent]);
 
@@ -243,10 +317,18 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
         // Don't wait for save to complete before moving to next step
         saveLead(updatedAnswers, false);
         
-        // Fire Lead pixel event when contact info is captured
+        // Fire Lead pixel event when contact info is captured (with deduplication)
         if (['opt_in', 'email_capture', 'phone_capture'].includes(currentStep.step_type)) {
           const eventData = typeof value === 'object' ? value : { value };
-          firePixelEvent('Lead', eventData);
+          // Use email or phone as deduplication key to prevent duplicate Lead events
+          const dedupeKey = eventData.email ? `lead_${eventData.email}` 
+            : eventData.phone ? `lead_${eventData.phone}` 
+            : `lead_step_${currentStepIndex}`;
+          firePixelEvent('Lead', {
+            ...eventData,
+            value: 10, // Default lead value
+            currency: 'USD',
+          }, dedupeKey);
         }
       }
     }
@@ -259,7 +341,12 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
       setIsSubmitting(false);
       
       // Fire CompleteRegistration pixel event
-      firePixelEvent('CompleteRegistration', { funnel_id: funnel.id, funnel_name: funnel.name });
+      firePixelEvent('CompleteRegistration', { 
+        funnel_id: funnel.id, 
+        funnel_name: funnel.name,
+        value: 50, // Default completion value
+        currency: 'USD',
+      }, `complete_${funnel.id}`);
     }
 
     // Move to next step

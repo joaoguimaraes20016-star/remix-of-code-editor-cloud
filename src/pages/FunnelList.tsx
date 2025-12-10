@@ -5,14 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   Plus, ExternalLink, Edit, Trash2, Copy, Users, Search, 
   LayoutGrid, List, Link2, MoreHorizontal, Star, BarChart3,
   MessageSquare, Calendar, Download, TrendingUp, TrendingDown,
-  Phone, Mail, CheckCircle, ArrowLeft, Globe, Plug
+  Phone, Mail, CheckCircle, ArrowLeft, Globe, Plug, Settings,
+  ChevronRight, Archive, AppWindow, FolderInput
 } from 'lucide-react';
 import { DomainsSection } from '@/components/funnel-builder/DomainsSection';
 import { IntegrationsSection } from '@/components/funnel-builder/IntegrationsSection';
+import { FunnelSettingsDialog } from '@/components/funnel-builder/FunnelSettingsDialog';
 import { toast } from '@/hooks/use-toast';
 import { CreateFunnelDialog } from '@/components/funnel-builder/CreateFunnelDialog';
 import { useTeamRole } from '@/hooks/useTeamRole';
@@ -28,6 +31,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -39,6 +43,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -123,6 +134,9 @@ export default function FunnelList() {
   const [funnelToDelete, setFunnelToDelete] = useState<Funnel | null>(null);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string>('all');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [settingsFunnel, setSettingsFunnel] = useState<Funnel | null>(null);
+  const [renameFunnel, setRenameFunnel] = useState<Funnel | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   // Fetch funnels with lead counts
   const { data: funnels, isLoading: funnelsLoading } = useQuery({
@@ -223,6 +237,76 @@ export default function FunnelList() {
     },
     onError: (error: Error) => {
       toast({ title: 'Failed to delete funnel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase
+        .from('funnels')
+        .update({ name })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['funnels', teamId] });
+      toast({ title: 'Funnel renamed' });
+      setRenameFunnel(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to rename', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (funnel: Funnel) => {
+      // Create new funnel
+      const newSlug = `${funnel.slug}-copy-${Date.now().toString(36)}`;
+      const { data: newFunnel, error: funnelError } = await supabase
+        .from('funnels')
+        .insert({
+          name: `${funnel.name} (Copy)`,
+          slug: newSlug,
+          team_id: teamId,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          settings: funnel.settings,
+          status: 'draft',
+        })
+        .select()
+        .single();
+
+      if (funnelError) throw funnelError;
+
+      // Copy steps
+      const { data: steps } = await supabase
+        .from('funnel_steps')
+        .select('*')
+        .eq('funnel_id', funnel.id)
+        .order('order_index');
+
+      if (steps?.length) {
+        const { error: stepsError } = await supabase
+          .from('funnel_steps')
+          .insert(
+            steps.map(step => ({
+              funnel_id: newFunnel.id,
+              step_type: step.step_type,
+              order_index: step.order_index,
+              content: step.content,
+            }))
+          );
+        if (stepsError) throw stepsError;
+      }
+
+      return newFunnel;
+    },
+    onSuccess: (newFunnel) => {
+      queryClient.invalidateQueries({ queryKey: ['funnels', teamId] });
+      toast({ title: 'Funnel duplicated' });
+      navigate(`/team/${teamId}/funnels/${newFunnel.id}`);
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to duplicate', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -478,24 +562,47 @@ export default function FunnelList() {
                               <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/team/${teamId}/funnels/${funnel.id}`)}>
-                              <Edit className="h-4 w-4 mr-2" /> Edit
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedFunnelId(funnel.id);
+                              setActiveTab('contacts');
+                            }}>
+                              <Users className="h-4 w-4 mr-2" /> Contacts
                             </DropdownMenuItem>
-                            {funnel.status === 'published' && (
-                              <DropdownMenuItem onClick={() => window.open(`/f/${funnel.slug}`, '_blank')}>
-                                <ExternalLink className="h-4 w-4 mr-2" /> View Live
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => copyFunnelUrl(funnel.slug)}>
-                              <Copy className="h-4 w-4 mr-2" /> Copy URL
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedFunnelId(funnel.id);
+                              setActiveTab('performance');
+                            }}>
+                              <BarChart3 className="h-4 w-4 mr-2" /> Metrics
                             </DropdownMenuItem>
+                            <DropdownMenuItem disabled>
+                              <AppWindow className="h-4 w-4 mr-2" /> Apps
+                              <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setSettingsFunnel(funnel)}>
+                              <Settings className="h-4 w-4 mr-2" /> Settings
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setRenameFunnel(funnel);
+                              setRenameValue(funnel.name);
+                            }}>
+                              <Edit className="h-4 w-4 mr-2" /> Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => duplicateMutation.mutate(funnel)}>
+                              <Copy className="h-4 w-4 mr-2" /> Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem disabled>
+                              <FolderInput className="h-4 w-4 mr-2" /> Move to
+                              <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             {isAdmin && (
                               <DropdownMenuItem 
                                 onClick={() => setFunnelToDelete(funnel)}
-                                className="text-destructive"
+                                className="text-destructive focus:text-destructive"
                               >
-                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                <Archive className="h-4 w-4 mr-2" /> Archive
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -595,21 +702,47 @@ export default function FunnelList() {
                                 <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => navigate(`/team/${teamId}/funnels/${funnel.id}`)}>
-                                <Edit className="h-4 w-4 mr-2" /> Edit
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedFunnelId(funnel.id);
+                                setActiveTab('contacts');
+                              }}>
+                                <Users className="h-4 w-4 mr-2" /> Contacts
                               </DropdownMenuItem>
-                              {funnel.status === 'published' && (
-                                <DropdownMenuItem onClick={() => window.open(`/f/${funnel.slug}`, '_blank')}>
-                                  <ExternalLink className="h-4 w-4 mr-2" /> View Live
-                                </DropdownMenuItem>
-                              )}
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedFunnelId(funnel.id);
+                                setActiveTab('performance');
+                              }}>
+                                <BarChart3 className="h-4 w-4 mr-2" /> Metrics
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled>
+                                <AppWindow className="h-4 w-4 mr-2" /> Apps
+                                <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => setSettingsFunnel(funnel)}>
+                                <Settings className="h-4 w-4 mr-2" /> Settings
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setRenameFunnel(funnel);
+                                setRenameValue(funnel.name);
+                              }}>
+                                <Edit className="h-4 w-4 mr-2" /> Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => duplicateMutation.mutate(funnel)}>
+                                <Copy className="h-4 w-4 mr-2" /> Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled>
+                                <FolderInput className="h-4 w-4 mr-2" /> Move to
+                                <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               {isAdmin && (
                                 <DropdownMenuItem 
                                   onClick={() => setFunnelToDelete(funnel)}
-                                  className="text-destructive"
+                                  className="text-destructive focus:text-destructive"
                                 >
-                                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                  <Archive className="h-4 w-4 mr-2" /> Archive
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
@@ -982,9 +1115,9 @@ export default function FunnelList() {
       <AlertDialog open={!!funnelToDelete} onOpenChange={() => setFunnelToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Funnel</AlertDialogTitle>
+            <AlertDialogTitle>Archive Funnel</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{funnelToDelete?.name}"? This will also delete all leads captured by this funnel. This action cannot be undone.
+              Are you sure you want to archive "{funnelToDelete?.name}"? This will also delete all leads captured by this funnel. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -993,11 +1126,60 @@ export default function FunnelList() {
               onClick={() => funnelToDelete && deleteMutation.mutate(funnelToDelete.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Archive
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={!!renameFunnel} onOpenChange={() => setRenameFunnel(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Funnel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="funnel-name">Name</Label>
+              <Input
+                id="funnel-name"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="My Funnel"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && renameValue.trim() && renameFunnel) {
+                    renameMutation.mutate({ id: renameFunnel.id, name: renameValue.trim() });
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameFunnel(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => renameFunnel && renameMutation.mutate({ id: renameFunnel.id, name: renameValue.trim() })}
+              disabled={!renameValue.trim() || renameMutation.isPending}
+            >
+              {renameMutation.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      {settingsFunnel && (
+        <FunnelSettingsDialog
+          open={!!settingsFunnel}
+          onOpenChange={() => setSettingsFunnel(null)}
+          funnel={settingsFunnel as any}
+          onSave={() => {
+            queryClient.invalidateQueries({ queryKey: ['funnels', teamId] });
+            setSettingsFunnel(null);
+          }}
+        />
+      )}
     </div>
   );
 }
