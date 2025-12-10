@@ -129,10 +129,27 @@ Deno.serve(async (req) => {
       name = calendly_booking.invitee_name
     }
 
-    // Determine lead status
-    let leadStatus = 'partial'
+    // Determine lead status based on data captured:
+    // - 'started': Has answers but no email/phone yet (not a real lead)
+    // - 'partial': Has email OR phone captured but not opted in
+    // - 'lead': Has completed opt-in form (real lead)
+    // - 'booked': Has Calendly booking
+    let leadStatus = 'started'
+    
+    if (email || phone) {
+      leadStatus = 'partial'
+    }
+    
+    if (optInStatus === true && email) {
+      leadStatus = 'lead'
+    }
+    
     if (is_complete) {
-      leadStatus = calendly_booking ? 'booked' : 'new'
+      if (calendly_booking) {
+        leadStatus = 'booked'
+      } else if (optInStatus === true && email) {
+        leadStatus = 'lead'
+      }
     }
 
     let lead: any = null
