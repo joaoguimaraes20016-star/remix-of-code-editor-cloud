@@ -163,26 +163,31 @@ Deno.serve(async (req) => {
     }
 
     // Determine lead status based on data captured:
-    // - 'started': Has answers but no email/phone yet (not a real lead)
-    // - 'partial': Has email OR phone captured but not opted in
-    // - 'lead': Has completed opt-in form (real lead)
-    // - 'booked': Has Calendly booking
-    let leadStatus = 'started'
+    // - 'visitor': Has answers but no contact info (not a real lead)
+    // - 'partial': Has some contact info but not all three (name, phone, email)
+    // - 'lead': Has ALL THREE: name + phone + email (real lead, regardless of opt-in form)
+    // - 'booked': Has Calendly booking AND is a real lead
+    let leadStatus = 'visitor'
     
-    if (email || phone) {
+    // Check if they have ANY contact info
+    const hasAnyContactInfo = !!(email || phone || name)
+    // Check if they have ALL THREE required for a real lead
+    const isRealLead = !!(name && phone && email)
+    
+    if (hasAnyContactInfo && !isRealLead) {
       leadStatus = 'partial'
     }
     
-    if (optInStatus === true && email) {
+    if (isRealLead) {
       leadStatus = 'lead'
     }
     
-    if (is_complete) {
-      if (calendly_booking) {
-        leadStatus = 'booked'
-      } else if (optInStatus === true && email) {
-        leadStatus = 'lead'
-      }
+    // Booked status takes priority if they have a booking AND are a real lead
+    if (calendly_booking && isRealLead) {
+      leadStatus = 'booked'
+    } else if (calendly_booking) {
+      // Has booking but incomplete contact info
+      leadStatus = 'partial'
     }
 
     let lead: any = null
