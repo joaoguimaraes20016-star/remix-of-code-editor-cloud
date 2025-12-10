@@ -17,6 +17,7 @@ interface FunnelSettings {
   background_color: string;
   button_text: string;
   ghl_webhook_url?: string;
+  show_progress_bar?: boolean;
 }
 
 interface Funnel {
