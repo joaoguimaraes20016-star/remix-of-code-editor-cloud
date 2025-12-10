@@ -577,9 +577,12 @@ export default function FunnelList() {
                             }}>
                               <BarChart3 className="h-4 w-4 mr-2" /> Metrics
                             </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFunnelId(funnel.id);
+                              setActiveTab('integrations');
+                            }}>
                               <AppWindow className="h-4 w-4 mr-2" /> Apps
-                              <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={(e) => {
@@ -729,9 +732,12 @@ export default function FunnelList() {
                               }}>
                                 <BarChart3 className="h-4 w-4 mr-2" /> Metrics
                               </DropdownMenuItem>
-                              <DropdownMenuItem disabled>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedFunnelId(funnel.id);
+                                setActiveTab('integrations');
+                              }}>
                                 <AppWindow className="h-4 w-4 mr-2" /> Apps
-                                <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={(e) => {
