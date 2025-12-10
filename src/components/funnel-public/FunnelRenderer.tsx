@@ -31,6 +31,8 @@ interface FunnelSettings {
   google_analytics_id?: string;
   google_ads_id?: string;
   tiktok_pixel_id?: string;
+  // Display settings
+  show_progress_bar?: boolean;
 }
 
 interface Funnel {
