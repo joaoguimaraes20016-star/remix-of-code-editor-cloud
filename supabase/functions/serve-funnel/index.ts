@@ -653,13 +653,13 @@ function generateFunnelHTML(
       const elementOrder = content.element_order || [];
       const dynamicElements = content.dynamic_elements || {};
       const design = content.design || {};
-      const btnDesign = design.button || {};
       let html = '';
       
-      // Build button style with gradient
+      // Build button style with gradient - use camelCase properties
       let buttonStyle = '';
-      if (btnDesign.gradient_from && btnDesign.gradient_to) {
-        buttonStyle = 'background: linear-gradient(to bottom, ' + btnDesign.gradient_from + ', ' + btnDesign.gradient_to + ');';
+      if (design.useButtonGradient && design.buttonGradientFrom && design.buttonGradientTo) {
+        const direction = design.buttonGradientDirection || '135deg';
+        buttonStyle = 'background: linear-gradient(' + direction + ', ' + design.buttonGradientFrom + ', ' + design.buttonGradientTo + ');';
       }
       
       for (const elementId of elementOrder) {
@@ -669,7 +669,7 @@ function generateFunnelHTML(
         } else if (elementId === 'subheadline' && content.subheadline) {
           html += '<div class="element-subheadline">' + content.subheadline + '</div>';
         } else if (elementId === 'button') {
-          html += '<button class="element-button" style="' + buttonStyle + '" onclick="handleNext()">' + (content.button_text || btnDesign.text || 'Continue') + '</button>';
+          html += '<button class="element-button" style="' + buttonStyle + '" onclick="handleNext()">' + (content.button_text || design.buttonText || 'Continue') + '</button>';
         } else if (elementId === 'video' && content.video_url) {
           html += renderVideoElement(content.video_url);
         } else if (dynamicElements[elementId]) {
@@ -686,10 +686,10 @@ function generateFunnelHTML(
     
     function renderDynamicElement(elementId, element, design) {
       design = design || {};
-      const btnDesign = design.button || {};
       let buttonStyle = '';
-      if (btnDesign.gradient_from && btnDesign.gradient_to) {
-        buttonStyle = 'background: linear-gradient(to bottom, ' + btnDesign.gradient_from + ', ' + btnDesign.gradient_to + ');';
+      if (design.useButtonGradient && design.buttonGradientFrom && design.buttonGradientTo) {
+        const direction = design.buttonGradientDirection || '135deg';
+        buttonStyle = 'background: linear-gradient(' + direction + ', ' + design.buttonGradientFrom + ', ' + design.buttonGradientTo + ');';
       }
       
       if (elementId.startsWith('text_')) {
@@ -697,11 +697,11 @@ function generateFunnelHTML(
       } else if (elementId.startsWith('headline_copy') || elementId.startsWith('headline_')) {
         return '<div class="element-headline">' + (element.text || '') + '</div>';
       } else if (elementId.startsWith('button_')) {
-        const btnText = element.text || btnDesign.text || 'Continue';
+        const btnText = element.text || design.buttonText || 'Continue';
         // Check for element-specific gradient
         let elStyle = buttonStyle;
         if (element.gradient_from && element.gradient_to) {
-          elStyle = 'background: linear-gradient(to bottom, ' + element.gradient_from + ', ' + element.gradient_to + ');';
+          elStyle = 'background: linear-gradient(135deg, ' + element.gradient_from + ', ' + element.gradient_to + ');';
         }
         return '<button class="element-button" style="' + elStyle + '" onclick="handleNext()">' + btnText + '</button>';
       } else if (elementId.startsWith('image_')) {
@@ -785,16 +785,34 @@ function generateFunnelHTML(
     
     function renderTextQuestion(content, index) {
       const questionId = 'question_' + index;
+      const design = content.design || {};
+      const inputIcon = content.input_icon || '';
+      
+      // Build button style with gradient if configured
+      let buttonStyle = '';
+      if (design.useButtonGradient && design.buttonGradientFrom && design.buttonGradientTo) {
+        const direction = design.buttonGradientDirection || '135deg';
+        buttonStyle = 'background: linear-gradient(' + direction + ', ' + design.buttonGradientFrom + ', ' + design.buttonGradientTo + ');';
+      }
+      
+      // Count only question steps for counter
+      const questionSteps = STEPS_DATA.filter(s => ['text_question', 'multi_choice', 'email_capture', 'phone_capture', 'opt_in'].includes(s.step_type));
+      const questionIndex = questionSteps.findIndex(s => s.content && s.content === content) + 1;
+      const totalQuestions = questionSteps.length;
+      
+      const inputHtml = inputIcon 
+        ? '<div class="input-wrapper"><span class="input-icon">' + inputIcon + '</span><input type="text" class="input-field" id="' + questionId + '" placeholder="' + (content.placeholder || 'Type your answer...') + '"></div>'
+        : '<input type="text" class="input-field" id="' + questionId + '" placeholder="' + (content.placeholder || 'Type your answer...') + '">';
+      
       return '<div class="question-counter">Question ' + (index + 1) + ' of ' + STEPS_DATA.length + '</div>' +
-        '<div class="element-headline">' + (content.question || 'Your question') + '</div>' +
-        '<input type="text" class="input-field" id="' + questionId + '" placeholder="' + (content.placeholder || 'Type your answer...') + '">' +
-        '<button class="element-button" onclick="handleTextSubmit(\\'' + questionId + '\\')">Continue</button>';
+        '<div class="element-headline">' + (content.headline || content.question || 'Your question') + '</div>' +
+        inputHtml +
+        '<button class="element-button" style="' + buttonStyle + '" onclick="handleTextSubmit(\\'' + questionId + '\\')">Continue</button>';
     }
     
     function renderMultiChoice(content, index) {
       const options = content.options || [];
       const design = content.design || {};
-      const btnStyle = design.button || {};
       
       const optionsHTML = options.map((opt, i) => {
         // Safely extract label and emoji - check for label, text, or if opt is a string
@@ -809,16 +827,17 @@ function generateFunnelHTML(
         '</div>';
       }).join('');
       
-      // Build button style with gradient if configured
+      // Build button style with gradient if configured - use camelCase properties
       let buttonStyle = 'margin-top: 1rem;';
-      if (btnStyle.gradient_from && btnStyle.gradient_to) {
-        buttonStyle += ' background: linear-gradient(to bottom, ' + btnStyle.gradient_from + ', ' + btnStyle.gradient_to + ');';
+      if (design.useButtonGradient && design.buttonGradientFrom && design.buttonGradientTo) {
+        const direction = design.buttonGradientDirection || '135deg';
+        buttonStyle += ' background: linear-gradient(' + direction + ', ' + design.buttonGradientFrom + ', ' + design.buttonGradientTo + ');';
       }
       
       return '<div class="question-counter">Question ' + (index + 1) + ' of ' + STEPS_DATA.length + '</div>' +
-        '<div class="element-headline">' + (content.question || 'Choose an option') + '</div>' +
+        '<div class="element-headline">' + (content.headline || content.question || 'Choose an option') + '</div>' +
         '<div class="options-container">' + optionsHTML + '</div>' +
-        '<button class="element-button" style="' + buttonStyle + '" onclick="handleMultiChoiceSubmit(' + index + ')">' + (content.button_text || btnStyle.text || 'Continue') + '</button>';
+        '<button class="element-button" style="' + buttonStyle + '" onclick="handleMultiChoiceSubmit(' + index + ')">' + (content.next_button_text || content.button_text || 'Next Question') + '</button>';
     }
     
     function renderEmailCapture(content) {
@@ -837,12 +856,12 @@ function generateFunnelHTML(
     
     function renderOptIn(content) {
       const design = content.design || {};
-      const btnStyle = design.button || {};
       
-      // Build button style with gradient if configured
+      // Build button style with gradient if configured - use camelCase properties
       let buttonStyle = '';
-      if (btnStyle.gradient_from && btnStyle.gradient_to) {
-        buttonStyle = 'background: linear-gradient(to bottom, ' + btnStyle.gradient_from + ', ' + btnStyle.gradient_to + ');';
+      if (design.useButtonGradient && design.buttonGradientFrom && design.buttonGradientTo) {
+        const direction = design.buttonGradientDirection || '135deg';
+        buttonStyle = 'background: linear-gradient(' + direction + ', ' + design.buttonGradientFrom + ', ' + design.buttonGradientTo + ');';
       }
       
       // Input icons
@@ -862,7 +881,7 @@ function generateFunnelHTML(
         '<div class="input-wrapper"><span class="input-icon">' + emailIcon + '</span><input type="email" class="input-field" id="optin-email" placeholder="' + (content.email_placeholder || 'Your email') + '"></div>' +
         '<div class="input-wrapper"><span class="input-icon">' + phoneIcon + '</span><input type="tel" class="input-field" id="optin-phone" placeholder="' + (content.phone_placeholder || 'Your phone') + '"></div>' +
         privacyHtml +
-        '<button class="element-button" style="' + buttonStyle + '" onclick="handleOptInSubmit()">' + (content.submit_button_text || btnStyle.text || 'Continue') + '</button>';
+        '<button class="element-button" style="' + buttonStyle + '" onclick="handleOptInSubmit()">' + (content.submit_button_text || 'Continue') + '</button>';
     }
     
     function renderVideo(content) {
