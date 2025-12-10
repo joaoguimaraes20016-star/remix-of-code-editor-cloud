@@ -119,9 +119,9 @@ export function CommissionBreakdown({ sales, teamId }: CommissionBreakdownProps)
     loadUpcomingMRR();
   }, [teamId]);
 
-  // Calculate closer CC commission totals (from cash collected only)
+  // Calculate closer CC commission totals (from cash collected - includes deposits)
   const closerCommissions = sales
-    .filter(s => s.status === 'closed' && s.commission > 0)
+    .filter(s => s.commission > 0 && s.revenue > 0)
     .reduce((acc, sale) => {
       if (!acc[sale.salesRep]) {
         acc[sale.salesRep] = {
@@ -136,9 +136,9 @@ export function CommissionBreakdown({ sales, teamId }: CommissionBreakdownProps)
       return acc;
     }, {} as Record<string, { totalCommission: number; totalRevenue: number; salesCount: number }>);
 
-  // Calculate setter CC commission totals (from cash collected only)
+  // Calculate setter CC commission totals (from cash collected - includes deposits)
   const setterCommissions = sales
-    .filter(s => s.status === 'closed' && s.setterCommission > 0 && s.setter && s.setter.trim() !== '')
+    .filter(s => s.setterCommission > 0 && s.setter && s.setter.trim() !== '' && s.revenue > 0)
     .reduce((acc, sale) => {
       if (!acc[sale.setter]) {
         acc[sale.setter] = {

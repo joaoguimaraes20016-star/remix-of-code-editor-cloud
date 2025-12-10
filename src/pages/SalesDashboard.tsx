@@ -660,8 +660,8 @@ const Index = () => {
   // Total MRR: From closed appointments
   const totalMRR = closedAppointmentsForMRR.reduce((sum, apt) => sum + (Number(apt.mrr_amount) || 0), 0);
   
-  // Total Commissions (Closer only): From both sources
-  const totalCommissions = filteredSales.reduce((sum, sale) => sum + sale.commission, 0);
+  // Total Commissions: Closer + Setter from both sources
+  const totalCommissions = filteredSales.reduce((sum, sale) => sum + sale.commission + (sale.setterCommission || 0), 0);
   
   // Keep closedAppointments for other metrics (show rate, close rate, etc.)
   const closedAppointments = filteredAppointments.filter(apt => {
