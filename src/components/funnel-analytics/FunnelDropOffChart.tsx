@@ -27,56 +27,62 @@ export function FunnelDropOffChart({ steps, leads, funnelName }: FunnelDropOffCh
   const data = useMemo(() => {
     if (!steps.length || !leads.length) return [];
 
-    // Get question steps in order (skip welcome, video, embed, thank_you as they're not "questions")
-    const questionSteps = [...steps]
-      .sort((a, b) => a.order_index - b.order_index)
-      .filter(step => ['multi_choice', 'text_question', 'email_capture', 'phone_capture', 'opt_in'].includes(step.step_type));
+    // Sort steps by order_index
+    const sortedSteps = [...steps].sort((a, b) => a.order_index - b.order_index);
     
-    // Map step types to answer keys
-    const stepToAnswerKey = (step: FunnelStep, index: number): string[] => {
+    // Filter to only question/input steps (skip welcome, video, embed, thank_you)
+    const questionSteps = sortedSteps.filter(step => 
+      ['multi_choice', 'text_question', 'email_capture', 'phone_capture', 'opt_in'].includes(step.step_type)
+    );
+
+    // Build the answer key for each step based on its order_index
+    // The pattern is: choice_{order_index+1} for multi_choice, question_{order_index+1} for text_question
+    const getAnswerKeysForStep = (step: FunnelStep): string[] => {
+      const idx = step.order_index + 1; // 1-based index matching how answers are stored
       switch (step.step_type) {
         case 'multi_choice':
-          return [`choice_${index + 1}`];
+          return [`choice_${idx}`];
         case 'text_question':
-          return [`question_${index + 1}`];
+          return [`question_${idx}`];
         case 'email_capture':
           return ['email'];
         case 'phone_capture':
           return ['phone'];
         case 'opt_in':
-          return ['name', 'email', 'phone', 'opt_in'];
+          return ['opt_in']; // opt_in field indicates form was submitted
         default:
           return [];
       }
     };
 
     // Count leads that answered each question
-    let questionIndex = 0;
-    const stepCounts = questionSteps.map((step, i) => {
-      questionIndex++;
-      const answerKeys = stepToAnswerKey(step, questionIndex);
+    const stepCounts = questionSteps.map((step, displayIndex) => {
+      const answerKeys = getAnswerKeysForStep(step);
       
       const count = leads.filter(lead => {
         if (!lead.answers) return false;
-        // Check if any of the expected keys exist in answers
-        return answerKeys.some(key => lead.answers[key] !== undefined && lead.answers[key] !== '');
+        // Check if any of the expected keys exist and have a value
+        return answerKeys.some(key => {
+          const value = lead.answers[key];
+          return value !== undefined && value !== null && value !== '';
+        });
       }).length;
       
       return {
-        name: getStepLabel(step, i),
+        name: getStepLabel(step, displayIndex),
+        fullName: getStepLabel(step, displayIndex),
         count,
-        index: i,
+        stepType: step.step_type,
+        orderIndex: step.order_index,
       };
     });
 
-    // Add "Started" as first point and "Completed" as last
+    // Add "Started" as first point
     const totalStarted = leads.length;
-    const completed = leads.filter(l => l.status === 'lead').length;
     
     const chartData = [
-      { name: 'Started', count: totalStarted, index: -1 },
+      { name: 'Started', fullName: 'Started', count: totalStarted, stepType: 'start', orderIndex: -1 },
       ...stepCounts,
-      { name: 'Completed', count: completed, index: stepCounts.length },
     ];
 
     // Calculate retention percentages
@@ -90,7 +96,8 @@ export function FunnelDropOffChart({ steps, leads, funnelName }: FunnelDropOffCh
   }, [steps, leads]);
 
   const totalStarted = leads.length;
-  const totalCompleted = leads.filter(l => l.status === 'lead').length;
+  const lastStep = data[data.length - 1];
+  const totalCompleted = lastStep?.count || 0;
   const overallConversion = totalStarted > 0 ? Math.round((totalCompleted / totalStarted) * 100) : 0;
 
   if (!data.length) {
@@ -126,15 +133,19 @@ export function FunnelDropOffChart({ steps, leads, funnelName }: FunnelDropOffCh
               </defs>
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 10 }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 tickLine={false}
+                interval={0}
+                angle={-20}
+                textAnchor="end"
+                height={50}
               />
               <YAxis 
                 tick={{ fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                width={35}
+                width={30}
               />
               <Tooltip 
                 content={({ active, payload }) => {
@@ -142,7 +153,7 @@ export function FunnelDropOffChart({ steps, leads, funnelName }: FunnelDropOffCh
                   const d = payload[0].payload;
                   return (
                     <div className="bg-popover border rounded-lg p-2 shadow-lg text-sm">
-                      <p className="font-medium">{d.name}</p>
+                      <p className="font-medium">{d.fullName}</p>
                       <p className="text-muted-foreground">{d.count} users ({d.retention}%)</p>
                       {d.dropOff > 0 && <p className="text-destructive">-{d.dropOff}% drop</p>}
                     </div>
@@ -155,7 +166,7 @@ export function FunnelDropOffChart({ steps, leads, funnelName }: FunnelDropOffCh
                 stroke="hsl(var(--primary))" 
                 strokeWidth={2}
                 fill="url(#dropOffGradient)"
-                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 3 }}
+                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 4 }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -166,7 +177,12 @@ export function FunnelDropOffChart({ steps, leads, funnelName }: FunnelDropOffCh
       <div className="space-y-1">
         {data.map((step, i) => (
           <div key={i} className="flex items-center justify-between py-2 px-3 rounded hover:bg-muted/50 text-sm">
-            <span className="text-muted-foreground">{step.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">
+                {i + 1}
+              </span>
+              <span className="text-muted-foreground">{step.fullName}</span>
+            </div>
             <div className="flex items-center gap-4">
               <span className="font-medium">{step.count}</span>
               {step.dropOff > 0 && (
@@ -184,15 +200,15 @@ function getStepLabel(step: FunnelStep, index: number): string {
   const headline = step.content?.headline || step.content?.question;
   if (headline) {
     const text = headline.replace(/<[^>]*>/g, '').trim();
-    return text.length > 25 ? text.slice(0, 25) + '...' : text;
+    return text.length > 20 ? text.slice(0, 20) + '...' : text;
   }
   
   const typeLabels: Record<string, string> = {
-    multi_choice: `Question ${index + 1}`,
-    text_question: `Question ${index + 1}`,
+    multi_choice: `Q${index + 1}`,
+    text_question: `Q${index + 1}`,
     email_capture: 'Email',
     phone_capture: 'Phone',
-    opt_in: 'Opt-In Form',
+    opt_in: 'Opt-In',
   };
   
   return typeLabels[step.step_type] || `Step ${index + 1}`;
