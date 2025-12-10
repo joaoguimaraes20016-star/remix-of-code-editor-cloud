@@ -35,21 +35,26 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
-      const dayLeads = leads.filter(l => {
+      // All funnel interactions for this day
+      const dayInteractions = leads.filter(l => {
         const date = new Date(l.created_at);
         return date >= dayStart && date < dayEnd;
       });
 
-      const realLeads = dayLeads.filter(isRealLead).length;
-      const visitors = dayLeads.length - realLeads;
+      // Real leads = have name + phone + email
+      const realLeads = dayInteractions.filter(isRealLead).length;
+      // Visitors = started funnel but didn't complete with full contact info
+      const visitors = dayInteractions.length - realLeads;
+      // Total = all funnel starts
+      const total = dayInteractions.length;
 
       return {
         date: format(day, 'MMM d'),
         fullDate: format(day, 'EEEE, MMM d'),
         visitors,
         leads: realLeads,
-        total: dayLeads.length,
-        conversion: dayLeads.length > 0 ? Math.round((realLeads / dayLeads.length) * 100) : 0,
+        total,
+        conversion: total > 0 ? Math.round((realLeads / total) * 100) : 0,
       };
     });
   }, [leads]);
@@ -98,7 +103,7 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-sm bg-muted-foreground/30" />
-            <span className="text-muted-foreground">{totalVisitors} Visitors</span>
+            <span className="text-muted-foreground">{totalVisitors} Incomplete</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-sm bg-primary" />
@@ -137,7 +142,7 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
                       <div className="space-y-1">
                         <p className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-sm bg-muted-foreground/30" />
-                          <span className="text-muted-foreground">{d.visitors} visitors</span>
+                          <span className="text-muted-foreground">{d.visitors} incomplete</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-sm bg-primary" />
@@ -174,7 +179,7 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
           <span className="text-amber-500">Insight:</span>
           <span>
-            {biggestDropOff.count} visitors dropped off without converting on {biggestDropOff.day}
+            {biggestDropOff.count} funnel starts dropped off without becoming leads on {biggestDropOff.day}
           </span>
         </div>
       )}

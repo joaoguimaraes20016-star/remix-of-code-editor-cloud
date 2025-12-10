@@ -393,9 +393,12 @@ export function DynamicElementRenderer({
       const hasColorFormatting = headlineText.includes('color=') || headlineText.includes('color:');
       return (
         <h2 
-          className={cn(sizes.headline, "font-bold leading-tight text-center w-full [&_*]:inline [&_br]:block")}
-          style={{ ...fontStyle, ...(hasColorFormatting ? {} : { color: textColor }) }}
-          dangerouslySetInnerHTML={{ __html: headlineText }}
+          className={cn(sizes.headline, "font-bold leading-tight text-center w-full")}
+          style={{ 
+            ...fontStyle, 
+            ...(hasColorFormatting ? {} : { color: textColor }),
+          }}
+          dangerouslySetInnerHTML={{ __html: headlineText.replace(/<font/g, '<font style="display:inline"') }}
         />
       );
     }
@@ -416,9 +419,9 @@ export function DynamicElementRenderer({
         const headlineHasColor = cleanedHeadline.includes('color=') || cleanedHeadline.includes('color:');
         return (
           <h1 
-            className={cn(sizes.headline, "font-bold leading-tight text-center w-full [&_*]:inline [&_br]:block")}
+            className={cn(sizes.headline, "font-bold leading-tight text-center w-full")}
             style={{ ...fontStyle, ...(headlineHasColor ? {} : { color: textColor }) }}
-            dangerouslySetInnerHTML={{ __html: cleanedHeadline }}
+            dangerouslySetInnerHTML={{ __html: cleanedHeadline.replace(/<font/g, '<font style="display:inline"') }}
           />
         );
         

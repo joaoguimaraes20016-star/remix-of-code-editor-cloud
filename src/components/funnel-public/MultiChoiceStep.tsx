@@ -267,8 +267,8 @@ export function MultiChoiceStep({ content, settings, onNext, isActive, currentSt
       
       {content.headline && (
         <h2 
-          className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-8 w-full text-center [&_*]:inline [&_br]:block"
-          dangerouslySetInnerHTML={{ __html: content.headline }}
+          className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-8 w-full text-center"
+          dangerouslySetInnerHTML={{ __html: content.headline.replace(/<font/g, '<font style="display:inline"') }}
         />
       )}
 
