@@ -162,20 +162,29 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
+// Safely escape JSON for embedding in script tags
+function escapeJsonForScript(obj: unknown): string {
+  return JSON.stringify(obj)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/'/g, '\\u0027');
+}
+
 function generateFunnelHTML(
   funnel: { id: string; slug: string; name: string; team_id: string },
   steps: FunnelStep[],
   settings: FunnelSettings,
   domain: string
 ): string {
-  const funnelData = JSON.stringify({
+  const funnelData = escapeJsonForScript({
     id: funnel.id,
     slug: funnel.slug,
     name: funnel.name,
     team_id: funnel.team_id,
     settings,
   });
-  const stepsData = JSON.stringify(steps);
+  const stepsData = escapeJsonForScript(steps);
   const primaryColor = settings.primary_color || '#22c55e';
   const bgColor = settings.background_color || '#0a0a0a';
 
