@@ -600,6 +600,8 @@ function generateFunnelHTML(
     function renderDynamicElement(elementId, element) {
       if (elementId.startsWith('text_')) {
         return '<div class="element-text">' + (element.text || '') + '</div>';
+      } else if (elementId.startsWith('headline_copy') || elementId.startsWith('headline_')) {
+        return '<div class="element-headline">' + (element.text || '') + '</div>';
       } else if (elementId.startsWith('button_')) {
         return '<button class="element-button" onclick="handleNext()">' + (element.text || 'Continue') + '</button>';
       } else if (elementId.startsWith('image_')) {
@@ -610,7 +612,7 @@ function generateFunnelHTML(
       } else if (elementId.startsWith('video_')) {
         return renderVideoElement(element.video_url || '');
       } else if (elementId.startsWith('embed_')) {
-        const scale = element.scale || 0.75;
+        var scale = element.embed_scale || element.scale || 0.75;
         return '<div class="element-embed" style="transform: scale(' + scale + '); transform-origin: top center;">' +
           '<iframe src="' + (element.embed_url || '') + '" allow="camera; microphone"></iframe>' +
         '</div>';
@@ -625,28 +627,47 @@ function generateFunnelHTML(
       
       let embedUrl = '';
       
-      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-        const match = videoUrl.match(/(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?)\\/|.*[?&]v=)|youtu\\.be\\/)([^"&?\\/\\s]{11})/);
-        if (match && match[1]) {
-          embedUrl = 'https://www.youtube.com/embed/' + match[1];
-        } else {
-          // Try simpler patterns
-          const simpleMatch = videoUrl.match(/[?&]v=([^&]+)/) || videoUrl.match(/youtu\\.be\\/([^?&]+)/);
-          if (simpleMatch && simpleMatch[1]) embedUrl = 'https://www.youtube.com/embed/' + simpleMatch[1];
+      // YouTube
+      if (videoUrl.indexOf('youtube.com') !== -1 || videoUrl.indexOf('youtu.be') !== -1) {
+        var vidId = '';
+        if (videoUrl.indexOf('v=') !== -1) {
+          vidId = videoUrl.split('v=')[1];
+          var ampPos = vidId.indexOf('&');
+          if (ampPos !== -1) vidId = vidId.substring(0, ampPos);
+        } else if (videoUrl.indexOf('youtu.be/') !== -1) {
+          vidId = videoUrl.split('youtu.be/')[1];
+          var qPos = vidId.indexOf('?');
+          if (qPos !== -1) vidId = vidId.substring(0, qPos);
         }
-      } else if (videoUrl.includes('vimeo.com')) {
-        const match = videoUrl.match(/vimeo\\.com\\/(\\d+)/) || videoUrl.match(/vimeo\\.com\\/video\\/(\\d+)/);
-        if (match && match[1]) embedUrl = 'https://player.vimeo.com/video/' + match[1];
-      } else if (videoUrl.includes('loom.com')) {
-        const match = videoUrl.match(/loom\\.com\\/share\\/([a-zA-Z0-9]+)/) || videoUrl.match(/loom\\.com\\/embed\\/([a-zA-Z0-9]+)/);
-        if (match && match[1]) embedUrl = 'https://www.loom.com/embed/' + match[1];
-      } else if (videoUrl.includes('wistia.com') || videoUrl.includes('wistia.net')) {
-        const match = videoUrl.match(/wistia\\.[a-z]+\\/(?:medias|embed\\/iframe)\\/([a-zA-Z0-9]+)/);
-        if (match && match[1]) embedUrl = 'https://fast.wistia.net/embed/iframe/' + match[1];
+        if (vidId) embedUrl = 'https://www.youtube.com/embed/' + vidId;
+      }
+      // Vimeo
+      else if (videoUrl.indexOf('vimeo.com') !== -1) {
+        var parts = videoUrl.split('/');
+        var vimeoId = parts[parts.length - 1].split('?')[0];
+        if (vimeoId) embedUrl = 'https://player.vimeo.com/video/' + vimeoId;
+      }
+      // Loom
+      else if (videoUrl.indexOf('loom.com') !== -1) {
+        if (videoUrl.indexOf('/share/') !== -1) {
+          var loomId = videoUrl.split('/share/')[1].split('?')[0];
+          if (loomId) embedUrl = 'https://www.loom.com/embed/' + loomId;
+        } else if (videoUrl.indexOf('/embed/') !== -1) {
+          embedUrl = videoUrl;
+        }
+      }
+      // Wistia (handles subdomains like legitstealthy07.wistia.com)
+      else if (videoUrl.indexOf('wistia.com') !== -1 || videoUrl.indexOf('wistia.net') !== -1) {
+        if (videoUrl.indexOf('/medias/') !== -1) {
+          var wistiaId = videoUrl.split('/medias/')[1].split('?')[0].split('/')[0];
+          if (wistiaId) embedUrl = 'https://fast.wistia.net/embed/iframe/' + wistiaId;
+        } else if (videoUrl.indexOf('/embed/iframe/') !== -1) {
+          embedUrl = videoUrl;
+        }
       }
       
       // Fallback: if URL already looks like an embed URL, use it directly
-      if (!embedUrl && (videoUrl.includes('/embed/') || videoUrl.includes('/embed?'))) {
+      if (!embedUrl && (videoUrl.indexOf('/embed/') !== -1 || videoUrl.indexOf('/embed?') !== -1)) {
         embedUrl = videoUrl;
       }
       
