@@ -53,13 +53,11 @@ interface DomainsSectionProps {
 interface VerificationResult {
   verified: boolean;
   aRecordValid: boolean;
-  txtRecordValid: boolean;
-  cnameValid?: boolean;
   message?: string;
 }
 
-// The hosting subdomain - Cloudflare Worker deployed on funnel.grwthop.com
-const HOSTING_DOMAIN = 'funnel.grwthop.com';
+// VPS IP where Caddy is running
+const VPS_IP = '159.223.210.203';
 
 // Status display configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
@@ -76,16 +74,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
     description: 'Checking DNS records...'
   },
   verified: {
-    label: 'DNS Verified',
-    color: 'border-teal-500/50 text-teal-600 bg-teal-50 dark:bg-teal-500/10',
-    icon: <ShieldCheck className="h-3 w-3 mr-1" />,
-    description: 'SSL provisioning in progress'
-  },
-  ready: {
-    label: 'Pending DNS',
-    color: 'border-amber-500/50 text-amber-600 bg-amber-50 dark:bg-amber-500/10',
-    icon: <Clock className="h-3 w-3 mr-1" />,
-    description: 'Configure your DNS settings'
+    label: 'Active',
+    color: 'border-emerald-500/50 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10',
+    icon: <CheckCircle className="h-3 w-3 mr-1" />,
+    description: 'Domain is live and serving your funnel'
   },
   active: {
     label: 'Active',
@@ -148,39 +140,24 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     },
   });
 
-  // Add domain mutation - creates in DB then registers with Cloudflare
+  // Add domain mutation - simplified without Cloudflare
   const addDomainMutation = useMutation({
     mutationFn: async (domain: string) => {
       const cleanDomain = domain.toLowerCase().trim();
       
-      // Step 1: Create the domain record in DB
       const { data, error } = await supabase
         .from('funnel_domains')
         .insert({
           team_id: teamId,
           domain: cleanDomain,
+          status: 'pending',
+          ssl_provisioned: false,
         })
         .select()
         .single();
       
       if (error) throw error;
-      
-      // Step 2: Register with Cloudflare Custom Hostnames
-      const { data: cfData, error: cfError } = await supabase.functions.invoke('manage-custom-hostname', {
-        body: {
-          action: 'create',
-          domainId: data.id,
-          domain: cleanDomain,
-        }
-      });
-      
-      if (cfError || !cfData?.success) {
-        // Cleanup the DB record if Cloudflare fails
-        await supabase.from('funnel_domains').delete().eq('id', data.id);
-        throw new Error(cfData?.error || cfError?.message || 'Failed to register domain with Cloudflare');
-      }
-      
-      return { ...data, cloudflare_hostname_id: cfData.hostnameId };
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
@@ -196,20 +173,9 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     },
   });
 
-  // Delete domain mutation - also removes from Cloudflare
+  // Delete domain mutation
   const deleteDomainMutation = useMutation({
     mutationFn: async (domain: Domain) => {
-      // First delete from Cloudflare if we have a hostname ID
-      if (domain.cloudflare_hostname_id) {
-        await supabase.functions.invoke('manage-custom-hostname', {
-          body: {
-            action: 'delete',
-            hostnameId: domain.cloudflare_hostname_id,
-          }
-        });
-      }
-      
-      // Then delete from DB
       const { error } = await supabase
         .from('funnel_domains')
         .delete()
@@ -247,47 +213,36 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     },
   });
 
-  // Check domain status via Cloudflare Custom Hostnames API
+  // Verify domain via edge function
   const verifyDomain = useCallback(async (domain: Domain) => {
     setVerifyingDomainId(domain.id);
     setDnsCheckResult(null);
     
     try {
-      if (!domain.cloudflare_hostname_id) {
-        throw new Error('Domain not registered with Cloudflare');
-      }
-      
-      const { data, error } = await supabase.functions.invoke('manage-custom-hostname', {
+      const { data, error } = await supabase.functions.invoke('verify-domain', {
         body: {
-          action: 'status',
           domainId: domain.id,
-          hostnameId: domain.cloudflare_hostname_id,
+          domain: domain.domain,
         }
       });
 
       if (error) throw error;
 
-      const isActive = data.domainStatus === 'verified' && data.sslProvisioned;
-      
       setDnsCheckResult({
-        verified: isActive,
-        aRecordValid: data.status === 'active',
-        txtRecordValid: true,
-        cnameValid: data.status === 'active' || data.status === 'pending',
-        message: data.ssl?.status || data.status
+        verified: data.verified,
+        aRecordValid: data.dnsCheck?.aRecordValid || false,
+        message: data.message
       });
 
       // Refresh domains list
       queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
 
-      if (isActive) {
-        toast({ title: 'Domain is active and ready!' });
-      } else if (data.status === 'active' && !data.sslProvisioned) {
-        toast({ title: 'DNS verified! SSL is being provisioned...' });
+      if (data.verified) {
+        toast({ title: 'Domain verified and active!' });
       } else {
         toast({ 
           title: 'DNS not ready yet', 
-          description: 'Add the CNAME record and wait for propagation.',
+          description: `Add an A record pointing to ${VPS_IP}`,
           variant: 'destructive' 
         });
       }
@@ -303,32 +258,30 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
     }
   }, [queryClient, teamId]);
 
-  // Auto-poll for pending domains when setup dialog is open - uses Cloudflare API
+  // Auto-poll for pending domains when setup dialog is open
   useEffect(() => {
     if (!showSetupDialog || !selectedDomain) return;
-    if (selectedDomain.status === 'verified' && selectedDomain.ssl_provisioned) return;
-    if (!selectedDomain.cloudflare_hostname_id) return;
+    if (selectedDomain.status === 'verified') return;
 
     const pollInterval = setInterval(async () => {
-      // Check status via Cloudflare
-      const { data: cfData } = await supabase.functions.invoke('manage-custom-hostname', {
+      // Verify domain
+      const { data } = await supabase.functions.invoke('verify-domain', {
         body: {
-          action: 'status',
           domainId: selectedDomain.id,
-          hostnameId: selectedDomain.cloudflare_hostname_id,
+          domain: selectedDomain.domain,
         }
       });
 
-      // Re-fetch domain from DB (will have been updated by the edge function)
-      const { data } = await supabase
-        .from('funnel_domains')
-        .select('*')
-        .eq('id', selectedDomain.id)
-        .single();
+      if (data?.verified) {
+        // Re-fetch domain from DB
+        const { data: domainData } = await supabase
+          .from('funnel_domains')
+          .select('*')
+          .eq('id', selectedDomain.id)
+          .single();
 
-      if (data) {
-        setSelectedDomain(data as Domain);
-        if (data.status === 'verified' && data.ssl_provisioned) {
+        if (domainData) {
+          setSelectedDomain(domainData as Domain);
           queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
           toast({ title: 'Domain is now active!' });
         }
@@ -364,27 +317,14 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
   };
 
   const getStatusConfig = (domain: Domain) => {
-    // Determine effective status based on actual verification state
     let effectiveStatus = domain.status || 'pending';
     
-    // Map "ready" to pending (legacy status)
-    if (effectiveStatus === 'ready') {
-      effectiveStatus = 'pending';
-    }
-    
-    // Only mark as active if BOTH verified AND SSL provisioned
-    if (domain.status === 'verified' && domain.ssl_provisioned === true) {
+    if (domain.status === 'verified' && domain.ssl_provisioned) {
       effectiveStatus = 'active';
     }
     
-    // If health_status is offline and domain was previously verified, use offline
     if (domain.health_status === 'offline' && domain.verified_at) {
       effectiveStatus = 'offline';
-    }
-    
-    // Don't mark as active if SSL is not provisioned, even if status is verified
-    if (domain.status === 'verified' && !domain.ssl_provisioned) {
-      effectiveStatus = 'verified'; // DNS verified, awaiting SSL
     }
 
     return STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.pending;
@@ -417,10 +357,9 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
             {domains.map((domain) => {
               const linkedFunnel = getFunnelForDomain(domain.id);
               const statusConfig = getStatusConfig(domain);
-              const effectiveStatus = domain.status === 'verified' && domain.ssl_provisioned ? 'active' : domain.status;
-              const isPending = effectiveStatus === 'pending';
-              const isActive = effectiveStatus === 'active';
-              const isOffline = effectiveStatus === 'offline' || domain.health_status === 'offline';
+              const isPending = domain.status === 'pending';
+              const isActive = domain.status === 'verified' && domain.ssl_provisioned;
+              const isOffline = domain.health_status === 'offline';
 
               return (
                 <div key={domain.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -447,7 +386,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                             </>
                           )}
                         </Badge>
-                        {domain.ssl_provisioned && isActive && (
+                        {isActive && (
                           <Badge variant="outline" className="text-xs border-emerald-500/50 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10">
                             <ShieldCheck className="h-3 w-3 mr-1" />
                             SSL
@@ -483,25 +422,33 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                         disabled={isVerifying(domain.id)}
                       >
                         {isVerifying(domain.id) ? (
-                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <RefreshCw className="h-4 w-4 mr-1.5" />
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                            Verify DNS
+                          </>
                         )}
-                        {isOffline ? 'Re-verify' : 'Verify DNS'}
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedDomainForLink(domain);
-                        setSelectedFunnelId(linkedFunnel?.id || '');
-                        setShowLinkDialog(true);
-                      }}
-                    >
-                      <Link2 className="h-4 w-4 mr-1.5" />
-                      {linkedFunnel ? 'Change' : 'Link Funnel'}
-                    </Button>
+                    
+                    {/* Link funnel button */}
+                    {!linkedFunnel && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDomainForLink(domain);
+                          setSelectedFunnelId('');
+                          setShowLinkDialog(true);
+                        }}
+                      >
+                        <Link2 className="h-4 w-4 mr-1" />
+                        Link Funnel
+                      </Button>
+                    )}
+
+                    {/* DNS Setup button */}
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -513,21 +460,28 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                     >
                       DNS Setup
                     </Button>
+
+                    {/* Test link for active domains */}
                     {isActive && (
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => window.open(`https://${domain.domain}`, '_blank')}
                       >
-                        <ExternalLink className="h-4 w-4 mr-1.5" />
-                        Test
+                        <ExternalLink className="h-4 w-4" />
                       </Button>
                     )}
+
+                    {/* Delete button */}
                     <Button 
                       variant="ghost" 
-                      size="sm" 
-                      onClick={() => deleteDomainMutation.mutate(domain)} 
-                      className="text-destructive hover:text-destructive"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to remove this domain?')) {
+                          deleteDomainMutation.mutate(domain);
+                        }
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -538,13 +492,11 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
           </div>
         </div>
       ) : (
-        <div className="text-center py-16 border rounded-xl bg-card">
-          <div className="p-4 rounded-full bg-muted w-fit mx-auto mb-4">
-            <Globe className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">No domains connected</h3>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            Connect a custom domain to publish your funnels on your own branded URLs
+        <div className="text-center py-12 bg-card border rounded-xl">
+          <Globe className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="font-medium text-lg mb-2">No domains connected</h3>
+          <p className="text-muted-foreground mb-4">
+            Add a custom domain to serve your funnels on your own URL
           </p>
           <Button onClick={() => setShowConnectDialog(true)} className="bg-emerald-600 hover:bg-emerald-700">
             <Plus className="h-4 w-4 mr-2" />
@@ -643,13 +595,13 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
         </DialogContent>
       </Dialog>
 
-      {/* DNS Setup Dialog with Status */}
+      {/* DNS Setup Dialog */}
       <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>DNS Setup for {selectedDomain?.domain}</DialogTitle>
             <DialogDescription>
-              Point your domain to {HOSTING_DOMAIN} with a simple CNAME record
+              Point your domain to our server with an A record
             </DialogDescription>
           </DialogHeader>
           
@@ -681,7 +633,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                       </p>
                     </div>
                   </div>
-                  {(selectedDomain.status === 'pending' || selectedDomain.health_status === 'offline') && (
+                  {selectedDomain.status === 'pending' && (
                     <Button 
                       size="sm" 
                       variant="outline"
@@ -701,17 +653,17 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                 {dnsCheckResult && (
                   <div className="mt-3 pt-3 border-t border-current/10 space-y-2">
                     <div className="flex items-center gap-2 text-sm">
-                      {dnsCheckResult.cnameValid ? (
+                      {dnsCheckResult.aRecordValid ? (
                         <CheckCircle className="h-4 w-4 text-emerald-500" />
                       ) : (
                         <XCircle className="h-4 w-4 text-red-500" />
                       )}
-                      <span>CNAME Record</span>
+                      <span>A Record → {VPS_IP}</span>
                     </div>
-                    {selectedDomain.ssl_provisioned && (
+                    {dnsCheckResult.verified && (
                       <div className="flex items-center gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-emerald-500" />
-                        <span>SSL Certificate</span>
+                        <span>SSL Certificate (Auto)</span>
                       </div>
                     )}
                   </div>
@@ -734,7 +686,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-emerald-500 text-white text-sm font-bold flex items-center justify-center">2</div>
-                <h4 className="font-medium">Add a CNAME Record</h4>
+                <h4 className="font-medium">Add an A Record</h4>
               </div>
               
               {/* DNS Records Table */}
@@ -744,90 +696,85 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                     <tr>
                       <th className="text-left px-4 py-2 font-medium">Type</th>
                       <th className="text-left px-4 py-2 font-medium">Name/Host</th>
-                      <th className="text-left px-4 py-2 font-medium">Target/Points To</th>
+                      <th className="text-left px-4 py-2 font-medium">Value/Points To</th>
                       <th className="w-8"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-t border-border/50">
-                      <td className="px-4 py-3 font-mono">CNAME</td>
-                      <td className="px-4 py-3 font-mono">
-                        {selectedDomain?.domain.split('.')[0] === 'www' 
-                          ? 'www' 
-                          : selectedDomain?.domain.includes('.') && selectedDomain.domain.split('.').length > 2
-                            ? selectedDomain.domain.split('.')[0]
-                            : '@'}
+                    <tr className="border-t border-muted-foreground/10">
+                      <td className="px-4 py-3">
+                        <Badge variant="outline">A</Badge>
                       </td>
-                      <td className="px-4 py-3 font-mono text-emerald-500">{HOSTING_DOMAIN}</td>
+                      <td className="px-4 py-3 font-mono text-xs">@</td>
+                      <td className="px-4 py-3 font-mono text-xs">{VPS_IP}</td>
                       <td className="px-4 py-3">
                         <Button 
                           variant="ghost" 
-                          size="sm" 
-                          onClick={() => copyToClipboard(HOSTING_DOMAIN)}
-                          className="h-7 w-7 p-0"
+                          size="sm"
+                          onClick={() => copyToClipboard(VPS_IP)}
                         >
-                          <Copy className="h-3.5 w-3.5" />
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                    <tr className="border-t border-muted-foreground/10">
+                      <td className="px-4 py-3">
+                        <Badge variant="outline">A</Badge>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs">www</td>
+                      <td className="px-4 py-3 font-mono text-xs">{VPS_IP}</td>
+                      <td className="px-4 py-3">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => copyToClipboard(VPS_IP)}
+                        >
+                          <Copy className="h-3 w-3" />
                         </Button>
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-
-              {/* SSL info */}
-              <div className="ml-8 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                  <ShieldCheck className="h-4 w-4 inline mr-1" />
-                  <strong>SSL is automatic!</strong> Once DNS propagates, we'll provision an SSL certificate for you automatically.
-                </p>
-              </div>
+              
+              <p className="text-xs text-muted-foreground ml-8">
+                Add both records to support root domain and www subdomain
+              </p>
             </div>
 
             {/* Step 3 */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-emerald-500 text-white text-sm font-bold flex items-center justify-center">3</div>
-                <h4 className="font-medium">Verify your DNS</h4>
+                <h4 className="font-medium">Wait for DNS propagation</h4>
               </div>
               <p className="text-sm text-muted-foreground ml-8">
-                Click "Verify DNS" to check if your settings are correct. SSL is provided automatically by Cloudflare once your CNAME is verified.
+                DNS changes can take up to 24-48 hours to propagate worldwide. We'll automatically check and provision SSL once ready.
               </p>
             </div>
 
-          </div>
-
-          <div className="flex justify-between items-center pt-4 border-t">
-            {selectedDomain && (selectedDomain.status === 'pending' || selectedDomain.health_status === 'offline') ? (
-              <Button 
-                onClick={() => verifyDomain(selectedDomain)}
-                disabled={isVerifying(selectedDomain.id)}
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                {isVerifying(selectedDomain.id) ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Checking...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Verify DNS
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open(`https://${selectedDomain?.domain}`, '_blank')}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Test Domain
-              </Button>
+            {/* Verify Button */}
+            {selectedDomain && selectedDomain.status === 'pending' && (
+              <div className="pt-4 border-t">
+                <Button 
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => verifyDomain(selectedDomain)}
+                  disabled={isVerifying(selectedDomain.id)}
+                >
+                  {isVerifying(selectedDomain.id) ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Checking DNS...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Verify DNS Configuration
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
-            <Button variant="outline" onClick={() => setShowSetupDialog(false)}>
-              Close
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
