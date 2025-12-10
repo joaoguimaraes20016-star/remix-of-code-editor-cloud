@@ -15,6 +15,7 @@ interface FunnelLead {
   status: string;
   email?: string;
   phone?: string;
+  last_step_index?: number;
 }
 
 interface FunnelDropOffChartProps {
@@ -30,47 +31,53 @@ export function FunnelDropOffChart({ steps, leads, funnelName }: FunnelDropOffCh
     // Sort steps by order_index
     const sortedSteps = [...steps].sort((a, b) => a.order_index - b.order_index);
     
-    // Filter to only question/input steps (skip welcome, video, embed, thank_you)
+    // Filter to only question/input steps (skip welcome, video, embed, thank_you, divider)
     const questionSteps = sortedSteps.filter(step => 
       ['multi_choice', 'text_question', 'email_capture', 'phone_capture', 'opt_in'].includes(step.step_type)
     );
 
-    // Build the answer key for each step based on its order_index
-    // The pattern is: choice_{order_index+1} for multi_choice, question_{order_index+1} for text_question
-    const getAnswerKeysForStep = (step: FunnelStep): string[] => {
-      const idx = step.order_index + 1; // 1-based index matching how answers are stored
+    // Build the answer key for each step using SEQUENTIAL question index (1, 2, 3...)
+    // NOT order_index which includes non-question steps
+    const getAnswerKeysForStep = (step: FunnelStep, questionIndex: number): string[] => {
+      const idx = questionIndex + 1; // 1-based index for just question steps
       switch (step.step_type) {
         case 'multi_choice':
-          return [`choice_${idx}`];
+          return [`choice_${idx}`, `choice_${step.order_index + 1}`]; // Try both patterns
         case 'text_question':
-          return [`question_${idx}`];
+          return [`question_${idx}`, `question_${step.order_index + 1}`]; // Try both patterns
         case 'email_capture':
           return ['email'];
         case 'phone_capture':
           return ['phone'];
         case 'opt_in':
-          return ['opt_in']; // opt_in field indicates form was submitted
+          return ['opt_in', 'name']; // opt_in submission usually has name
         default:
           return [];
       }
     };
 
-    // Count leads that answered each question
-    const stepCounts = questionSteps.map((step, displayIndex) => {
-      const answerKeys = getAnswerKeysForStep(step);
+    // Count leads that reached each step based on last_step_index OR have answers
+    const stepCounts = questionSteps.map((step, questionIndex) => {
+      const answerKeys = getAnswerKeysForStep(step, questionIndex);
       
       const count = leads.filter(lead => {
-        if (!lead.answers) return false;
-        // Check if any of the expected keys exist and have a value
-        return answerKeys.some(key => {
+        // Method 1: Check if lead reached this step index or beyond
+        const reachedByIndex = lead.last_step_index !== undefined && 
+                               lead.last_step_index !== null &&
+                               lead.last_step_index >= step.order_index;
+        
+        // Method 2: Check if any answer exists for this step
+        const hasAnswer = lead.answers && answerKeys.some(key => {
           const value = lead.answers[key];
           return value !== undefined && value !== null && value !== '';
         });
+        
+        return reachedByIndex || hasAnswer;
       }).length;
       
       return {
-        name: getStepLabel(step, displayIndex),
-        fullName: getStepLabel(step, displayIndex),
+        name: getStepLabel(step, questionIndex),
+        fullName: getStepLabel(step, questionIndex),
         count,
         stepType: step.step_type,
         orderIndex: step.order_index,
