@@ -135,6 +135,11 @@ export interface FunnelSettings {
   seo_title?: string;
   seo_description?: string;
   seo_image?: string;
+  // Pixel Tracking
+  meta_pixel_id?: string;
+  google_analytics_id?: string;
+  google_ads_id?: string;
+  tiktok_pixel_id?: string;
 }
 
 export interface Funnel {

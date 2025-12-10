@@ -26,6 +26,11 @@ interface FunnelSettings {
   background_color: string;
   button_text: string;
   ghl_webhook_url?: string;
+  // Pixel Tracking
+  meta_pixel_id?: string;
+  google_analytics_id?: string;
+  google_ads_id?: string;
+  tiktok_pixel_id?: string;
 }
 
 interface Funnel {
@@ -52,18 +57,110 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const [leadId, setLeadId] = useState<string | null>(null);
   const calendlyBookingRef = useRef<CalendlyBookingData | null>(null);
   const pendingSaveRef = useRef(false);
+  const pixelsInitializedRef = useRef(false);
 
   const currentStep = steps[currentStepIndex];
   const isLastStep = currentStepIndex === steps.length - 1;
   const isThankYouStep = currentStep?.step_type === 'thank_you';
+
+  // Initialize pixel tracking scripts
+  useEffect(() => {
+    if (pixelsInitializedRef.current) return;
+    pixelsInitializedRef.current = true;
+
+    const { meta_pixel_id, google_analytics_id, tiktok_pixel_id } = funnel.settings;
+
+    // Meta Pixel
+    if (meta_pixel_id && !(window as any).fbq) {
+      const script = document.createElement('script');
+      script.innerHTML = `
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '${meta_pixel_id}');
+        fbq('track', 'PageView');
+      `;
+      document.head.appendChild(script);
+    }
+
+    // Google Analytics
+    if (google_analytics_id && !(window as any).gtag) {
+      const gtagScript = document.createElement('script');
+      gtagScript.async = true;
+      gtagScript.src = `https://www.googletagmanager.com/gtag/js?id=${google_analytics_id}`;
+      document.head.appendChild(gtagScript);
+
+      const configScript = document.createElement('script');
+      configScript.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${google_analytics_id}');
+      `;
+      document.head.appendChild(configScript);
+    }
+
+    // TikTok Pixel
+    if (tiktok_pixel_id && !(window as any).ttq) {
+      const ttScript = document.createElement('script');
+      ttScript.innerHTML = `
+        !function (w, d, t) {
+          w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
+          ttq.load('${tiktok_pixel_id}');
+          ttq.page();
+        }(window, document, 'ttq');
+      `;
+      document.head.appendChild(ttScript);
+    }
+  }, [funnel.settings]);
+
+  // Fire pixel events helper
+  const firePixelEvent = useCallback((eventType: 'Lead' | 'CompleteRegistration' | 'Schedule', data?: Record<string, any>) => {
+    const { meta_pixel_id, google_analytics_id, tiktok_pixel_id } = funnel.settings;
+
+    // Meta Pixel
+    if (meta_pixel_id && (window as any).fbq) {
+      (window as any).fbq('track', eventType, data);
+      console.log(`Meta Pixel: ${eventType}`, data);
+    }
+
+    // Google Analytics
+    if (google_analytics_id && (window as any).gtag) {
+      const gaEvent = eventType === 'Lead' ? 'generate_lead' 
+        : eventType === 'CompleteRegistration' ? 'conversion' 
+        : 'schedule';
+      (window as any).gtag('event', gaEvent, data);
+      console.log(`GA4: ${gaEvent}`, data);
+    }
+
+    // TikTok Pixel
+    if (tiktok_pixel_id && (window as any).ttq) {
+      const ttEvent = eventType === 'Lead' ? 'SubmitForm' 
+        : eventType === 'CompleteRegistration' ? 'CompleteRegistration' 
+        : 'Schedule';
+      (window as any).ttq.track(ttEvent, data);
+      console.log(`TikTok Pixel: ${ttEvent}`, data);
+    }
+  }, [funnel.settings]);
 
   // Store Calendly booking data when detected
   const handleCalendlyBooking = useCallback((bookingData?: CalendlyBookingData) => {
     if (bookingData) {
       calendlyBookingRef.current = bookingData;
       console.log('Stored Calendly booking data:', bookingData);
+      
+      // Fire Schedule pixel event for Calendly booking
+      firePixelEvent('Schedule', {
+        event_start_time: bookingData.event_start_time,
+        invitee_email: bookingData.invitee_email,
+      });
     }
-  }, []);
+  }, [firePixelEvent]);
 
   // Progressive lead save - creates or updates lead
   const saveLead = useCallback(async (allAnswers: Record<string, any>, isComplete: boolean = false) => {
@@ -143,6 +240,12 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
       if (hasMeaningfulData(value, currentStep.step_type)) {
         // Don't wait for save to complete before moving to next step
         saveLead(updatedAnswers, false);
+        
+        // Fire Lead pixel event when contact info is captured
+        if (['opt_in', 'email_capture', 'phone_capture'].includes(currentStep.step_type)) {
+          const eventData = typeof value === 'object' ? value : { value };
+          firePixelEvent('Lead', eventData);
+        }
       }
     }
 
@@ -152,6 +255,9 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
       setIsSubmitting(true);
       await saveLead(updatedAnswers, true);
       setIsSubmitting(false);
+      
+      // Fire CompleteRegistration pixel event
+      firePixelEvent('CompleteRegistration', { funnel_id: funnel.id, funnel_name: funnel.name });
     }
 
     // Move to next step

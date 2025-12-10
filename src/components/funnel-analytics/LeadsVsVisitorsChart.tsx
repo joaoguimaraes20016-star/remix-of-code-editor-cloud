@@ -35,7 +35,7 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
-      // All funnel interactions for this day
+      // All funnel interactions for this day = total visitors
       const dayInteractions = leads.filter(l => {
         const date = new Date(l.created_at);
         return date >= dayStart && date < dayEnd;
@@ -43,27 +43,30 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
 
       // Real leads = have name + phone + email
       const realLeads = dayInteractions.filter(isRealLead).length;
-      // Visitors = started funnel but didn't complete with full contact info
-      const visitors = dayInteractions.length - realLeads;
-      // Total = all funnel starts
-      const total = dayInteractions.length;
+      // Dropped off = started but didn't complete
+      const droppedOff = dayInteractions.length - realLeads;
+      // Total visitors = all funnel starts
+      const totalVisitors = dayInteractions.length;
 
       return {
         date: format(day, 'MMM d'),
         fullDate: format(day, 'EEEE, MMM d'),
-        visitors,
+        droppedOff,
         leads: realLeads,
-        total,
-        conversion: total > 0 ? Math.round((realLeads / total) * 100) : 0,
+        totalVisitors,
+        // Conversion = leads / total visitors (all starts)
+        conversion: totalVisitors > 0 ? Math.round((realLeads / totalVisitors) * 100) : 0,
       };
     });
   }, [leads]);
 
-  // Summary stats
-  const totalVisitors = data.reduce((sum, d) => sum + d.visitors, 0);
+  // Summary stats - use total visitors (all funnel starts)
+  const totalAllVisitors = data.reduce((sum, d) => sum + d.totalVisitors, 0);
   const totalLeads = data.reduce((sum, d) => sum + d.leads, 0);
-  const overallConversion = (totalVisitors + totalLeads) > 0 
-    ? Math.round((totalLeads / (totalVisitors + totalLeads)) * 100) 
+  const totalDroppedOff = data.reduce((sum, d) => sum + d.droppedOff, 0);
+  // Conversion rate = leads / all visitors
+  const overallConversion = totalAllVisitors > 0 
+    ? Math.round((totalLeads / totalAllVisitors) * 100) 
     : 0;
 
   // Find biggest drop-off point
@@ -72,10 +75,10 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
     let maxDrop = 0;
     let dropDay = '';
     
-    data.forEach((d, i) => {
-      if (d.visitors > 0 && d.leads === 0) {
-        if (d.visitors > maxDrop) {
-          maxDrop = d.visitors;
+    data.forEach((d) => {
+      if (d.droppedOff > 0 && d.leads === 0) {
+        if (d.droppedOff > maxDrop) {
+          maxDrop = d.droppedOff;
           dropDay = d.fullDate;
         }
       }
@@ -95,15 +98,18 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
   return (
     <div className="space-y-4">
       {/* Header with summary */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h3 className="font-semibold text-lg">Leads vs Visitors</h3>
+          <h3 className="font-semibold text-lg">Visitor to Lead Conversion</h3>
           <p className="text-sm text-muted-foreground">Last 14 days</p>
         </div>
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-4 text-sm flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">{totalAllVisitors} Total Visitors</span>
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-sm bg-muted-foreground/30" />
-            <span className="text-muted-foreground">{totalVisitors} Incomplete</span>
+            <span className="text-muted-foreground">{totalDroppedOff} Dropped</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-sm bg-primary" />
@@ -141,15 +147,18 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
                       <p className="font-medium mb-2">{d.fullDate}</p>
                       <div className="space-y-1">
                         <p className="flex items-center gap-2">
+                          <span className="text-muted-foreground">{d.totalVisitors} visitors</span>
+                        </p>
+                        <p className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-sm bg-muted-foreground/30" />
-                          <span className="text-muted-foreground">{d.visitors} incomplete</span>
+                          <span className="text-muted-foreground">{d.droppedOff} dropped</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-sm bg-primary" />
                           <span className="font-medium">{d.leads} leads</span>
                         </p>
                         <p className="text-muted-foreground pt-1 border-t mt-1">
-                          {d.conversion}% converted
+                          {d.conversion}% converted ({d.leads}/{d.totalVisitors})
                         </p>
                       </div>
                     </div>
@@ -157,7 +166,7 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
                 }}
               />
               <Bar 
-                dataKey="visitors" 
+                dataKey="droppedOff" 
                 stackId="a"
                 fill="hsl(var(--muted-foreground))"
                 opacity={0.3}
