@@ -52,6 +52,11 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
   const [webhookResults, setWebhookResults] = useState<Record<string, 'success' | 'error'>>({});
   const [showProgressBar, setShowProgressBar] = useState(settings.show_progress_bar !== false);
+  
+  // ImagePicker states
+  const [showOgImagePicker, setShowOgImagePicker] = useState(false);
+  const [showFaviconPicker, setShowFaviconPicker] = useState(false);
+  const [showLogoPicker, setShowLogoPicker] = useState(false);
 
   useEffect(() => {
     setSettings(funnel.settings);
@@ -190,7 +195,10 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                 <p className="text-xs text-muted-foreground mb-2">
                   Recommended size: 1200 x 630 pixels (1.91:1 ratio)
                 </p>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 bg-muted/30">
+                <div 
+                  className="border-2 border-dashed border-border rounded-lg p-6 bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => setShowOgImagePicker(true)}
+                >
                   {settings.seo_image ? (
                     <div className="space-y-3">
                       <img 
@@ -199,18 +207,13 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                         className="w-full max-h-48 object-cover rounded-lg"
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={settings.seo_image}
-                          onChange={(e) => updateSetting('seo_image', e.target.value || null)}
-                          placeholder="Image URL"
-                          className="flex-1"
-                        />
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground truncate flex-1">{settings.seo_image}</span>
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => updateSetting('seo_image', null)}
-                          className="text-destructive"
+                          onClick={(e) => { e.stopPropagation(); updateSetting('seo_image', null); }}
+                          className="text-destructive ml-2"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -219,14 +222,10 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                   ) : (
                     <div className="text-center">
                       <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Drop an image here or enter a URL
+                      <p className="text-sm font-medium">Click to upload image</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        PNG, JPG, WebP up to 10MB
                       </p>
-                      <Input
-                        value={settings.seo_image || ''}
-                        onChange={(e) => updateSetting('seo_image', e.target.value || null)}
-                        placeholder="https://yourdomain.com/og-image.png"
-                      />
                     </div>
                   )}
                 </div>
@@ -287,6 +286,13 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                 </div>
               </div>
             </div>
+
+            <ImagePicker
+              open={showOgImagePicker}
+              onOpenChange={setShowOgImagePicker}
+              onSelect={(url) => updateSetting('seo_image', url)}
+              aspectRatio="L"
+            />
           </div>
         );
 
@@ -301,8 +307,11 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 border rounded-lg flex items-center justify-center bg-muted/30">
+              <div 
+                className="flex items-start gap-4 p-4 border-2 border-dashed border-border rounded-lg bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => setShowFaviconPicker(true)}
+              >
+                <div className="w-16 h-16 border rounded-lg flex items-center justify-center bg-background">
                   {settings.favicon_url ? (
                     <img 
                       src={settings.favicon_url} 
@@ -314,19 +323,33 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                     <Globe className="w-6 h-6 text-muted-foreground" />
                   )}
                 </div>
-                <div className="flex-1 space-y-2">
-                  <Label>Favicon URL</Label>
-                  <Input
-                    value={settings.favicon_url || ''}
-                    onChange={(e) => updateSetting('favicon_url', e.target.value || null)}
-                    placeholder="https://yourdomain.com/favicon.png"
-                  />
-                  <p className="text-xs text-muted-foreground">
+                <div className="flex-1">
+                  <p className="font-medium text-sm">
+                    {settings.favicon_url ? 'Change favicon' : 'Upload favicon'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Recommended: 32x32 or 64x64 PNG/ICO
                   </p>
+                  {settings.favicon_url && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); updateSetting('favicon_url', null); }}
+                      className="text-destructive mt-2 -ml-2"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" /> Remove
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
+
+            <ImagePicker
+              open={showFaviconPicker}
+              onOpenChange={setShowFaviconPicker}
+              onSelect={(url) => updateSetting('favicon_url', url)}
+              aspectRatio="XL"
+            />
           </div>
         );
 
@@ -341,7 +364,10 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
             </div>
 
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-border rounded-lg p-6 bg-muted/30">
+              <div 
+                className="border-2 border-dashed border-border rounded-lg p-6 bg-muted/30 cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => setShowLogoPicker(true)}
+              >
                 {settings.logo_url ? (
                   <div className="space-y-3">
                     <div className="flex justify-center">
@@ -352,38 +378,35 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={settings.logo_url}
-                        onChange={(e) => updateSetting('logo_url', e.target.value || null)}
-                        placeholder="Logo URL"
-                        className="flex-1"
-                      />
+                    <div className="flex items-center justify-center">
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => updateSetting('logo_url', null)}
+                        onClick={(e) => { e.stopPropagation(); updateSetting('logo_url', null); }}
                         className="text-destructive"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 mr-1" /> Remove logo
                       </Button>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center">
                     <Image className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Add your logo
+                    <p className="text-sm font-medium">Click to upload logo</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PNG, JPG, WebP up to 10MB
                     </p>
-                    <Input
-                      value={settings.logo_url || ''}
-                      onChange={(e) => updateSetting('logo_url', e.target.value || null)}
-                      placeholder="https://yourdomain.com/logo.png"
-                    />
                   </div>
                 )}
               </div>
             </div>
+
+            <ImagePicker
+              open={showLogoPicker}
+              onOpenChange={setShowLogoPicker}
+              onSelect={(url) => updateSetting('logo_url', url)}
+              aspectRatio="M"
+            />
           </div>
         );
 
