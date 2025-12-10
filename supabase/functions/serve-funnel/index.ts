@@ -1160,6 +1160,10 @@ function generateFunnelHTML(
       if (dropdown && !e.target.closest('.country-selector')) {
         dropdown.classList.remove('open');
       }
+      var optinDropdown = document.getElementById('optin-country-dropdown');
+      if (optinDropdown && !e.target.closest('.country-selector')) {
+        optinDropdown.classList.remove('open');
+      }
     });
     
     function renderOptIn(content) {
@@ -1193,26 +1197,69 @@ function generateFunnelHTML(
       
       var nameIcon = content.name_icon || '👋';
       var emailIcon = content.email_icon || '✉️';
-      var phoneIcon = content.phone_icon || '🇺🇸';
       
       var inputStyle = 'display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: ' + inputBg + '; border: ' + inputBorderWidth + 'px solid ' + inputBorder + '; border-radius: ' + inputRadius + 'px; margin-bottom: 0.25rem;';
       var fieldStyle = 'flex: 1; border: none; background: transparent; color: ' + inputTextColor + '; font-size: 1rem; outline: none;';
       
       var privacyText = content.privacy_text || 'I have read and accept the';
       var privacyLink = content.privacy_link || '#';
-      var privacyHtml = '<div class="privacy-row"><input type="checkbox" class="privacy-checkbox" id="privacy-check"><span class="privacy-text">' + privacyText + ' <a href="' + privacyLink + '" target="_blank">privacy policy</a>.</span></div>';
+      var privacyHtml = '<div class="privacy-row" style="margin-top: 0.5rem;"><input type="checkbox" class="privacy-checkbox" id="privacy-check"><span class="privacy-text">' + privacyText + ' <a href="' + privacyLink + '" target="_blank">privacy policy</a>.</span></div>';
       
       var fontStyle = design.fontFamily ? 'font-family: ' + design.fontFamily + ';' : '';
+      
+      // Country selector for phone field
+      var countryDropdownHTML = 
+        '<div class="country-selector" onclick="toggleOptInCountryDropdown(event)">' +
+          '<span id="optin-selected-flag">🇺🇸</span>' +
+          '<span id="optin-selected-code" style="font-size: 0.875rem; color: ' + inputTextColor + ';">+1</span>' +
+          '<span style="font-size: 0.5rem; color: #9ca3af;">▼</span>' +
+          '<div class="country-dropdown" id="optin-country-dropdown">' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+1\\', \\'🇺🇸\\')">🇺🇸 United States (+1)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+1\\', \\'🇨🇦\\')">🇨🇦 Canada (+1)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+44\\', \\'🇬🇧\\')">🇬🇧 United Kingdom (+44)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+61\\', \\'🇦🇺\\')">🇦🇺 Australia (+61)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+52\\', \\'🇲🇽\\')">🇲🇽 Mexico (+52)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+55\\', \\'🇧🇷\\')">🇧🇷 Brazil (+55)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+49\\', \\'🇩🇪\\')">🇩🇪 Germany (+49)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+33\\', \\'🇫🇷\\')">🇫🇷 France (+33)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+34\\', \\'🇪🇸\\')">🇪🇸 Spain (+34)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+39\\', \\'🇮🇹\\')">🇮🇹 Italy (+39)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+81\\', \\'🇯🇵\\')">🇯🇵 Japan (+81)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+91\\', \\'🇮🇳\\')">🇮🇳 India (+91)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+86\\', \\'🇨🇳\\')">🇨🇳 China (+86)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+351\\', \\'🇵🇹\\')">🇵🇹 Portugal (+351)</div>' +
+            '<div class="country-option" onclick="selectOptInCountry(event, \\'+234\\', \\'🇳🇬\\')">🇳🇬 Nigeria (+234)</div>' +
+          '</div>' +
+        '</div>';
       
       return '<div class="element-headline" style="' + fontStyle + '">' + (content.headline || 'Complete your information') + '</div>' +
         '<div id="name-container" style="' + inputStyle + '">' + (showInputIcon ? '<span style="font-size: 1.25rem;">' + nameIcon + '</span>' : '') + '<input type="text" style="' + fieldStyle + '" id="name-input" placeholder="' + (content.name_placeholder || 'Your name') + '" data-required="' + isRequired + '"></div>' +
         '<div id="name-error" class="error-message"></div>' +
         '<div id="email-container" style="' + inputStyle + '">' + (showInputIcon ? '<span style="font-size: 1.25rem;">' + emailIcon + '</span>' : '') + '<input type="email" style="' + fieldStyle + '" id="optin-email" placeholder="' + (content.email_placeholder || 'Your email address') + '" data-required="' + isRequired + '"></div>' +
         '<div id="email-error" class="error-message"></div>' +
-        '<div id="phone-container" style="' + inputStyle + '">' + (showInputIcon ? '<span style="font-size: 1.25rem;">' + phoneIcon + '</span>' : '') + '<span style="color: ' + inputPlaceholderColor + '; font-size: 0.875rem; flex-shrink: 0;">+1</span><input type="tel" style="' + fieldStyle + '" id="optin-phone" placeholder="' + (content.phone_placeholder || 'Your phone number') + '" maxlength="14" data-required="' + isRequired + '" oninput="formatPhoneInput(this)"></div>' +
+        '<div id="phone-container" style="' + inputStyle + '">' + countryDropdownHTML + '<input type="tel" style="' + fieldStyle + '" id="optin-phone" placeholder="' + (content.phone_placeholder || 'Your phone number') + '" maxlength="14" data-required="' + isRequired + '" oninput="formatPhoneInput(this)"></div>' +
         '<div id="phone-error" class="error-message"></div>' +
         privacyHtml +
         '<button class="element-button' + hoverClass + '" style="' + buttonStyle + '" onclick="handleOptInSubmit(' + isRequired + ')">' + (content.submit_button_text || 'Submit and proceed') + '</button>';
+    }
+    
+    var optInSelectedCountryCode = '+1';
+    
+    function toggleOptInCountryDropdown(e) {
+      e.stopPropagation();
+      var dropdown = document.getElementById('optin-country-dropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    
+    function selectOptInCountry(e, code, flag) {
+      e.stopPropagation();
+      optInSelectedCountryCode = code;
+      var flagEl = document.getElementById('optin-selected-flag');
+      var codeEl = document.getElementById('optin-selected-code');
+      if (flagEl) flagEl.textContent = flag;
+      if (codeEl) codeEl.textContent = code;
+      var dropdown = document.getElementById('optin-country-dropdown');
+      if (dropdown) dropdown.classList.remove('open');
     }
     
     function renderVideo(content) {
@@ -1365,7 +1412,7 @@ function generateFunnelHTML(
       
       if (nameVal) answers.name = nameVal;
       if (emailVal) answers.email = emailVal;
-      if (phoneVal) answers.phone = phoneVal;
+      if (phoneVal) answers.phone = optInSelectedCountryCode + ' ' + phoneVal;
       answers.opt_in = document.getElementById('privacy-check') ? document.getElementById('privacy-check').checked : false;
       handleNext();
     }
@@ -1394,6 +1441,13 @@ function generateFunnelHTML(
     async function saveLead() {
       if (!answers.email && !answers.phone && !answers.name && Object.keys(answers).length === 0) return;
       
+      // Determine if this is a complete submission
+      var currentStep = STEPS_DATA[currentStepIndex];
+      var isThankYouStep = currentStep && currentStep.step_type === 'thank_you';
+      var hasValidOptIn = answers.email && answers.phone && answers.name && answers.opt_in === true;
+      var hasCalendlyBooking = calendlyBookingData !== null;
+      var isComplete = isThankYouStep || hasValidOptIn || hasCalendlyBooking;
+      
       try {
         var response = await fetch(SUPABASE_URL + '/functions/v1/submit-funnel-lead', {
           method: 'POST',
@@ -1411,6 +1465,7 @@ function generateFunnelHTML(
             opt_in: answers.opt_in || false,
             answers: answers,
             calendly_booking_data: calendlyBookingData,
+            is_complete: isComplete,
           }),
         });
         
