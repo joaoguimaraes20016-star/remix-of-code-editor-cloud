@@ -16,6 +16,7 @@ interface CalendlyBookingData {
 
 interface FunnelLeadRequest {
   funnel_id: string
+  team_id?: string
   lead_id?: string // For updating existing leads
   answers: Record<string, any>
   // Direct fields from serve-funnel client-side
@@ -27,7 +28,9 @@ interface FunnelLeadRequest {
   utm_medium?: string
   utm_campaign?: string
   calendly_booking?: CalendlyBookingData
+  calendly_booking_data?: CalendlyBookingData  // Alternative key name
   is_complete?: boolean // Whether this is the final submission
+  last_step_index?: number // Track which step the user reached
 }
 
 Deno.serve(async (req) => {
@@ -43,7 +46,8 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const body: FunnelLeadRequest = await req.json()
-    const { funnel_id, lead_id, answers, utm_source, utm_medium, utm_campaign, calendly_booking, is_complete } = body
+    const { funnel_id, lead_id, answers, utm_source, utm_medium, utm_campaign, is_complete, last_step_index } = body
+    const calendly_booking = body.calendly_booking || body.calendly_booking_data
     
     // Extract direct fields sent from serve-funnel client
     const directEmail = body.email
@@ -198,6 +202,7 @@ Deno.serve(async (req) => {
           opt_in_status: optInStatus ?? undefined,
           opt_in_timestamp: optInTimestamp || undefined,
           status: leadStatus,
+          last_step_index: last_step_index ?? undefined,
         })
         .eq('id', lead_id)
         .select()
@@ -230,6 +235,7 @@ Deno.serve(async (req) => {
           opt_in_status: optInStatus,
           opt_in_timestamp: optInTimestamp,
           status: leadStatus,
+          last_step_index: last_step_index ?? 0,
         })
         .select()
         .single()

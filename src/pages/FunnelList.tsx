@@ -19,6 +19,8 @@ import { useTeamRole } from '@/hooks/useTeamRole';
 import { format, formatDistanceToNow, subDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { generateCSV, downloadCSV, FUNNEL_LEAD_COLUMNS, CONTACT_COLUMNS } from '@/lib/csvExport';
+import { FunnelDropOffChart } from '@/components/funnel-analytics/FunnelDropOffChart';
+import { ExpandableLeadRow } from '@/components/funnel-analytics/ExpandableLeadRow';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +45,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Funnel {
   id: string;
@@ -69,7 +78,17 @@ interface FunnelLead {
   opt_in_status: boolean | null;
   calendly_booking_data: any;
   created_at: string;
-  funnel: { name: string } | null;
+  answers: Record<string, any>;
+  last_step_index: number | null;
+  funnel: { name: string; id: string } | null;
+}
+
+interface FunnelStep {
+  id: string;
+  order_index: number;
+  step_type: string;
+  content: { headline?: string; question?: string };
+  funnel_id: string;
 }
 
 interface Contact {
@@ -97,6 +116,7 @@ export default function FunnelList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [funnelToDelete, setFunnelToDelete] = useState<Funnel | null>(null);
+  const [selectedFunnelId, setSelectedFunnelId] = useState<string>('all');
 
   // Fetch funnels with lead counts
   const { data: funnels, isLoading: funnelsLoading } = useQuery({
@@ -136,7 +156,7 @@ export default function FunnelList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('funnel_leads')
-        .select('*, funnel:funnels(name)')
+        .select('*, funnel:funnels(name, id)')
         .eq('team_id', teamId)
         .order('created_at', { ascending: false });
 
@@ -144,6 +164,25 @@ export default function FunnelList() {
       return data as FunnelLead[];
     },
     enabled: !!teamId,
+  });
+
+  // Fetch all funnel steps for drop-off analytics
+  const { data: allSteps } = useQuery({
+    queryKey: ['funnel-steps', teamId],
+    queryFn: async () => {
+      if (!funnels?.length) return [];
+      
+      const funnelIds = funnels.map(f => f.id);
+      const { data, error } = await supabase
+        .from('funnel_steps')
+        .select('*')
+        .in('funnel_id', funnelIds)
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+      return data as FunnelStep[];
+    },
+    enabled: !!funnels?.length,
   });
 
   // Fetch contacts
@@ -553,10 +592,23 @@ export default function FunnelList() {
           <>
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-bold text-foreground">Performance</h1>
-              <Button variant="outline" onClick={exportLeads} disabled={!leads?.length}>
-                <Download className="h-4 w-4 mr-2" />
-                Export Leads
-              </Button>
+              <div className="flex items-center gap-3">
+                <Select value={selectedFunnelId} onValueChange={setSelectedFunnelId}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="All Funnels" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Funnels</SelectItem>
+                    {funnels?.map((funnel) => (
+                      <SelectItem key={funnel.id} value={funnel.id}>{funnel.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={exportLeads} disabled={!leads?.length}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Leads
+                </Button>
+              </div>
             </div>
 
             {/* Stats Cards */}
@@ -564,37 +616,37 @@ export default function FunnelList() {
               <div className="bg-card border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground mb-1">Today</p>
                 <p className="text-2xl font-bold">{todayLeads} Leads</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <TrendingDown className="h-3 w-3 inline text-red-500" /> vs. yesterday
-                </p>
               </div>
               <div className="bg-card border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground mb-1">Last 7 days</p>
                 <p className="text-2xl font-bold">{weekLeads} Leads</p>
-                <p className="text-xs mt-1">
-                  <TrendingUp className="h-3 w-3 inline text-emerald-500" /> 
-                  <span className="text-emerald-500 ml-1">vs. 7 days ago</span>
-                </p>
               </div>
               <div className="bg-card border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground mb-1">Last 30 days</p>
                 <p className="text-2xl font-bold">{monthLeads} Leads</p>
-                <p className="text-xs mt-1">
-                  <TrendingUp className="h-3 w-3 inline text-emerald-500" /> 
-                  <span className="text-emerald-500 ml-1">vs. 30 days ago</span>
-                </p>
               </div>
               <div className="bg-card border rounded-xl p-5">
                 <p className="text-sm text-muted-foreground mb-1">Total</p>
                 <p className="text-2xl font-bold">{totalLeads} Leads</p>
-                <p className="text-xs text-blue-500 mt-1">All time</p>
               </div>
             </div>
 
-            {/* Recent Leads Table */}
+            {/* Drop-off Analytics */}
+            {selectedFunnelId !== 'all' && allSteps && leads && (
+              <div className="mb-8">
+                <FunnelDropOffChart 
+                  steps={allSteps.filter(s => s.funnel_id === selectedFunnelId)}
+                  leads={leads.filter(l => l.funnel?.id === selectedFunnelId)}
+                  funnelName={funnels?.find(f => f.id === selectedFunnelId)?.name || ''}
+                />
+              </div>
+            )}
+
+            {/* Recent Leads Table with Expandable Rows */}
             <div className="bg-card border rounded-xl overflow-hidden">
               <div className="p-4 border-b">
                 <h2 className="font-semibold">Recent Leads</h2>
+                <p className="text-sm text-muted-foreground">Click a row to see full answers</p>
               </div>
               <Table>
                 <TableHeader>
@@ -608,37 +660,25 @@ export default function FunnelList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leads?.slice(0, 10).map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="font-medium">{lead.name || '—'}</TableCell>
-                      <TableCell>{lead.email || '—'}</TableCell>
-                      <TableCell>{lead.phone || '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {lead.funnel?.name || 'Unknown'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant="outline"
-                          className={cn(
-                            "text-xs",
-                            lead.calendly_booking_data 
-                              ? "border-emerald-500/50 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10"
-                              : lead.opt_in_status
-                              ? "border-blue-500/50 text-blue-600 bg-blue-50 dark:bg-blue-500/10"
-                              : ""
-                          )}
-                        >
-                          {lead.calendly_booking_data ? 'Booked' : lead.opt_in_status ? 'Opted In' : lead.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {(selectedFunnelId === 'all' ? leads : leads?.filter(l => l.funnel?.id === selectedFunnelId))
+                    ?.slice(0, 20)
+                    .map((lead) => (
+                      <ExpandableLeadRow 
+                        key={lead.id} 
+                        lead={lead} 
+                        steps={allSteps?.filter(s => s.funnel_id === lead.funnel?.id)}
+                      />
+                    ))}
                 </TableBody>
+              </Table>
+              {!leads?.length && (
+                <div className="text-center py-12 text-muted-foreground">
+                  No leads captured yet
+                </div>
+              )}
+            </div>
+          </>
+        )}
               </Table>
               {!leads?.length && (
                 <div className="text-center py-12 text-muted-foreground">
