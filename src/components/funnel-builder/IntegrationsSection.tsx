@@ -238,13 +238,80 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
     }
   };
 
+  // Brand-accurate SVG icons
+  const GHLIcon = () => (
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#0066FF]">
+      <svg viewBox="0 0 40 40" className="w-8 h-8">
+        <path d="M8 12h8v4H8zM8 18h12v4H8zM8 24h16v4H8zM26 12h6v16h-6z" fill="white"/>
+      </svg>
+    </div>
+  );
+
+  const ZapierIcon = () => (
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#FF4A00]">
+      <svg viewBox="0 0 40 40" className="w-7 h-7">
+        <path d="M20 8l3 9h9l-7.5 5.5 3 9-7.5-5.5L12.5 31.5l3-9L8 17h9l3-9z" fill="white"/>
+      </svg>
+    </div>
+  );
+
+  const CloseIcon = () => (
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#5D5CDE]">
+      <svg viewBox="0 0 40 40" className="w-6 h-6">
+        <rect x="10" y="10" width="20" height="20" rx="4" fill="white"/>
+        <path d="M16 16l8 8M24 16l-8 8" stroke="#5D5CDE" strokeWidth="2.5" strokeLinecap="round"/>
+      </svg>
+    </div>
+  );
+
+  const HubSpotIcon = () => (
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#FF7A59]">
+      <svg viewBox="0 0 40 40" className="w-7 h-7">
+        <circle cx="20" cy="14" r="4" fill="white"/>
+        <circle cx="12" cy="26" r="3" fill="white"/>
+        <circle cx="28" cy="26" r="3" fill="white"/>
+        <path d="M20 18v4M16 24l-2-1M24 24l2-1" stroke="white" strokeWidth="2"/>
+      </svg>
+    </div>
+  );
+
+  const ActiveCampaignIcon = () => (
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#356AE6]">
+      <svg viewBox="0 0 40 40" className="w-7 h-7">
+        <path d="M10 20l8 8 12-16" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      </svg>
+    </div>
+  );
+
+  const MakeIcon = () => (
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#6D00CC]">
+      <svg viewBox="0 0 40 40" className="w-7 h-7">
+        <circle cx="14" cy="20" r="5" fill="white"/>
+        <circle cx="26" cy="20" r="5" fill="white"/>
+        <path d="M19 20h2" stroke="white" strokeWidth="2"/>
+      </svg>
+    </div>
+  );
+
+  const SlackIcon = () => (
+    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-[#4A154B]">
+      <svg viewBox="0 0 40 40" className="w-7 h-7">
+        <path d="M14 10a2 2 0 014 0v6h-4a2 2 0 010-4zm0 0" fill="#E01E5A"/>
+        <path d="M30 14a2 2 0 01-4 0v-4a2 2 0 114 0v4z" fill="#36C5F0"/>
+        <path d="M26 30a2 2 0 01-4 0v-6h4a2 2 0 010 4z" fill="#2EB67D"/>
+        <path d="M10 26a2 2 0 014 0v4a2 2 0 11-4 0v-4z" fill="#ECB22E"/>
+        <rect x="14" y="14" width="12" height="12" rx="1" fill="white"/>
+      </svg>
+    </div>
+  );
+
   // All available integrations as cards
   const allIntegrations = [
     {
       id: 'ghl',
       name: 'GoHighLevel',
       type: 'ghl',
-      icon: <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs">GHL</div>,
+      icon: <GHLIcon />,
       description: 'Send leads directly to your GHL CRM and trigger automations',
       connected: ghlIntegration?.is_connected || false,
       url: ghlIntegration?.config?.webhook_url,
@@ -255,7 +322,7 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
       id: 'zapier',
       name: 'Zapier',
       type: 'zapier',
-      icon: <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center"><Zap className="h-5 w-5 text-white" /></div>,
+      icon: <ZapierIcon />,
       description: 'Connect to 5,000+ apps with Zapier webhooks',
       connected: zapierIntegration?.is_connected || false,
       url: zapierIntegration?.config?.webhook_url,
@@ -275,7 +342,7 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
       id: 'close',
       name: 'Close CRM',
       type: 'close',
-      icon: <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm">C</div>,
+      icon: <CloseIcon />,
       description: 'Send funnel data to Close CRM for sales automation',
       connected: false,
       available: false,
@@ -284,7 +351,7 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
       id: 'hubspot',
       name: 'HubSpot',
       type: 'hubspot',
-      icon: <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm">H</div>,
+      icon: <HubSpotIcon />,
       description: 'Sync contacts and leads to HubSpot CRM',
       connected: false,
       available: false,
@@ -293,7 +360,7 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
       id: 'activecampaign',
       name: 'ActiveCampaign',
       type: 'activecampaign',
-      icon: <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm">AC</div>,
+      icon: <ActiveCampaignIcon />,
       description: 'Send lead data from funnels to ActiveCampaign',
       connected: false,
       available: false,
@@ -302,7 +369,7 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
       id: 'make',
       name: 'Make',
       type: 'make',
-      icon: <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">M</div>,
+      icon: <MakeIcon />,
       description: 'Send funnel data to Make and connect 1000+ apps',
       connected: false,
       available: false,
@@ -311,7 +378,7 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
       id: 'slack',
       name: 'Slack',
       type: 'slack',
-      icon: <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-2xl">💬</div>,
+      icon: <SlackIcon />,
       description: 'Get notified in Slack when leads are captured',
       connected: false,
       available: false,
