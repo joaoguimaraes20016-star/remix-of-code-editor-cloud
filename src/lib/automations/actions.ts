@@ -1,6 +1,6 @@
 // src/lib/automations/actions.ts
-import { type AutomationActionConfig } from './types';
-import { renderTemplate } from './templateUtils';
+import type { AutomationActionConfig } from "./types";
+import { dispatchMessage } from "../messaging/dispatcher";
 
 interface RunActionParams {
   teamId: string;
@@ -10,93 +10,66 @@ interface RunActionParams {
 }
 
 /**
- * Execute a single automation action.
- * Stub implementation - will be wired to real handlers later.
+ * Takes a generic action config and does the thing.
+ * Messaging is routed through the provider-agnostic dispatcher.
  */
-export async function runAction({
-  teamId,
-  automationId,
-  actionConfig,
-  eventPayload,
-}: RunActionParams): Promise<void> {
-  console.log('[automations] runAction', {
-    teamId,
-    automationId,
-    actionType: actionConfig.type,
-    params: actionConfig.params,
-  });
+export async function runAction({ teamId, automationId, actionConfig, eventPayload }: RunActionParams) {
+  const { type, params } = actionConfig;
 
-  switch (actionConfig.type) {
-    case 'send_message':
-      await handleSendMessage(teamId, actionConfig.params, eventPayload);
-      break;
-    case 'add_task':
-      await handleAddTask(teamId, actionConfig.params, eventPayload);
-      break;
-    case 'add_tag':
-      await handleAddTag(teamId, actionConfig.params, eventPayload);
-      break;
-    case 'notify_team':
-      await handleNotifyTeam(teamId, actionConfig.params, eventPayload);
-      break;
-    case 'enqueue_dialer':
-      await handleEnqueueDialer(teamId, actionConfig.params, eventPayload);
-      break;
-    case 'custom_webhook':
-      await handleCustomWebhook(teamId, actionConfig.params, eventPayload);
-      break;
-    default:
-      console.warn('[automations] Unknown action type:', actionConfig.type);
+  try {
+    switch (type) {
+      case "send_message": {
+        await dispatchMessage({
+          teamId,
+          channel: params.channel ?? "sms", // default to SMS
+          toPhone: params.toPhone ?? eventPayload.lead?.phone ?? eventPayload.appointment?.phone,
+          toEmail: params.toEmail ?? eventPayload.lead?.email ?? eventPayload.appointment?.email,
+          subject: params.subject,
+          text: params.text ?? "",
+          html: params.html,
+          metadata: {
+            ...params.metadata,
+            automationId,
+            leadId: eventPayload.lead?.id,
+            appointmentId: eventPayload.appointment?.id,
+          },
+        });
+        break;
+      }
+
+      case "enqueue_dialer": {
+        await dispatchMessage({
+          teamId,
+          channel: "voice",
+          toPhone: params.toPhone ?? eventPayload.lead?.phone ?? eventPayload.appointment?.phone,
+          text: params.script ?? "",
+          metadata: {
+            ...params.metadata,
+            automationId,
+            mode: "dialer_queue",
+            leadId: eventPayload.lead?.id,
+            appointmentId: eventPayload.appointment?.id,
+          },
+        });
+        break;
+      }
+
+      // These we’ll wire into tasks / tags / team notifications later
+      case "add_task":
+      case "add_tag":
+      case "notify_team":
+      case "custom_webhook":
+        console.info("[automations] stub action type", type, params);
+        break;
+
+      default:
+        console.warn("[automations] unknown action type", type);
+    }
+  } catch (error) {
+    console.error("[automations] runAction failed", {
+      automationId,
+      type,
+      error,
+    });
   }
-}
-
-// Stub handlers - to be implemented
-async function handleSendMessage(
-  teamId: string,
-  params: Record<string, any>,
-  payload: Record<string, any>,
-): Promise<void> {
-  const message = renderTemplate(params.message || '', payload);
-  console.log('[automations] handleSendMessage', { teamId, message, channel: params.channel });
-}
-
-async function handleAddTask(
-  teamId: string,
-  params: Record<string, any>,
-  payload: Record<string, any>,
-): Promise<void> {
-  console.log('[automations] handleAddTask', { teamId, params, payload });
-}
-
-async function handleAddTag(
-  teamId: string,
-  params: Record<string, any>,
-  payload: Record<string, any>,
-): Promise<void> {
-  console.log('[automations] handleAddTag', { teamId, tag: params.tag });
-}
-
-async function handleNotifyTeam(
-  teamId: string,
-  params: Record<string, any>,
-  payload: Record<string, any>,
-): Promise<void> {
-  const message = renderTemplate(params.message || '', payload);
-  console.log('[automations] handleNotifyTeam', { teamId, message });
-}
-
-async function handleEnqueueDialer(
-  teamId: string,
-  params: Record<string, any>,
-  payload: Record<string, any>,
-): Promise<void> {
-  console.log('[automations] handleEnqueueDialer', { teamId, params, payload });
-}
-
-async function handleCustomWebhook(
-  teamId: string,
-  params: Record<string, any>,
-  payload: Record<string, any>,
-): Promise<void> {
-  console.log('[automations] handleCustomWebhook', { teamId, url: params.url, payload });
 }
