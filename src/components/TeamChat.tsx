@@ -4,7 +4,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, MessageSquare, Mic, Square, Image as ImageIcon, X, Play, Pause } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Send, MessageSquare, Mic, Square, Image as ImageIcon, X, Play, Pause, MoreVertical, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -27,6 +33,9 @@ interface TeamChatProps {
   teamId: string;
 }
 
+// Track deleted message IDs locally (for "delete for me")
+const deletedForMe = new Set<string>();
+
 export default function TeamChat({ teamId }: TeamChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,6 +45,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [hiddenMessages, setHiddenMessages] = useState<Set<string>>(new Set(deletedForMe));
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -189,7 +199,17 @@ export default function TeamChat({ teamId }: TeamChatProps) {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      
+      // Try to use a more compatible format
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : MediaRecorder.isTypeSupported('audio/mp4')
+            ? 'audio/mp4'
+            : 'audio/ogg';
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -200,12 +220,12 @@ export default function TeamChat({ teamId }: TeamChatProps) {
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach(track => track.stop());
-        await uploadVoiceMessage(audioBlob);
+        await uploadVoiceMessage(audioBlob, mimeType);
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(100); // Collect data every 100ms
       setIsRecording(true);
       setRecordingTime(0);
 
@@ -214,7 +234,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
       }, 1000);
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      toast.error('Could not access microphone');
+      toast.error('Could not access microphone. Please allow microphone permissions.');
     }
   };
 
@@ -236,18 +256,23 @@ export default function TeamChat({ teamId }: TeamChatProps) {
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
       }
+      audioChunksRef.current = [];
     }
   };
 
-  const uploadVoiceMessage = async (audioBlob: Blob) => {
+  const uploadVoiceMessage = async (audioBlob: Blob, mimeType: string) => {
     if (!user) return;
 
     setSending(true);
     try {
-      const fileName = `${user.id}/${Date.now()}_voice.webm`;
+      const extension = mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'mp4' : 'ogg';
+      const fileName = `${user.id}/${Date.now()}_voice.${extension}`;
+      
       const { error: uploadError } = await supabase.storage
         .from('team-chat-files')
-        .upload(fileName, audioBlob);
+        .upload(fileName, audioBlob, {
+          contentType: mimeType
+        });
 
       if (uploadError) throw uploadError;
 
@@ -268,6 +293,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
 
       if (error) throw error;
       setRecordingTime(0);
+      toast.success('Voice message sent');
     } catch (error) {
       console.error('Error uploading voice message:', error);
       toast.error('Failed to upload voice message');
@@ -281,9 +307,16 @@ export default function TeamChat({ teamId }: TeamChatProps) {
     
     if (!audio) {
       audio = new Audio(audioUrl);
+      audio.preload = 'auto';
       audioRefs.current.set(messageId, audio);
       
       audio.onended = () => {
+        setPlayingAudioId(null);
+      };
+      
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        toast.error('Could not play audio');
         setPlayingAudioId(null);
       };
     }
@@ -297,8 +330,33 @@ export default function TeamChat({ teamId }: TeamChatProps) {
         const currentAudio = audioRefs.current.get(playingAudioId);
         currentAudio?.pause();
       }
-      audio.play();
+      audio.currentTime = 0;
+      audio.play().catch(err => {
+        console.error('Playback failed:', err);
+        toast.error('Could not play audio');
+      });
       setPlayingAudioId(messageId);
+    }
+  };
+
+  const deleteForMe = (messageId: string) => {
+    deletedForMe.add(messageId);
+    setHiddenMessages(new Set(deletedForMe));
+    toast.success('Message hidden');
+  };
+
+  const deleteForEveryone = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('team_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+      toast.success('Message deleted');
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
     }
   };
 
@@ -323,13 +381,14 @@ export default function TeamChat({ teamId }: TeamChatProps) {
     return format(date, 'MMMM d, yyyy');
   };
 
-  // Group messages by date and consecutive sender
-  const groupedMessages = messages.reduce((acc, msg, index) => {
+  // Filter out hidden messages and group by date
+  const visibleMessages = messages.filter(m => !hiddenMessages.has(m.id));
+  
+  const groupedMessages = visibleMessages.reduce((acc, msg, index) => {
     const msgDate = new Date(msg.created_at);
-    const prevMsg = messages[index - 1];
+    const prevMsg = visibleMessages[index - 1];
     const prevMsgDate = prevMsg ? new Date(prevMsg.created_at) : null;
     
-    // Check if we need a date header
     const needsDateHeader = !prevMsgDate || !isSameDay(msgDate, prevMsgDate);
     
     const isSameUser = prevMsg && prevMsg.user_id === msg.user_id;
@@ -360,10 +419,10 @@ export default function TeamChat({ teamId }: TeamChatProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#0b141a] overflow-hidden">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2">
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="p-4 rounded-full bg-muted/20 mb-4">
               <MessageSquare className="h-8 w-8 text-muted-foreground" />
@@ -376,7 +435,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
             if (item.type === 'date') {
               return (
                 <div key={item.id} className="flex justify-center my-4">
-                  <span className="px-3 py-1 rounded-lg bg-[#1f2c33] text-xs text-gray-400">
+                  <span className="px-3 py-1 rounded-lg bg-secondary text-xs text-muted-foreground">
                     {formatDateHeader(item.date)}
                   </span>
                 </div>
@@ -390,7 +449,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
               <div
                 key={msg.id}
                 className={cn(
-                  "flex gap-2 mb-1",
+                  "flex gap-2 mb-1 group",
                   isOwnMessage ? "flex-row-reverse" : "",
                   msg.isGroupStart ? "mt-3" : "mt-0.5"
                 )}
@@ -398,7 +457,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                 {!isOwnMessage && msg.isGroupStart ? (
                   <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
                     <AvatarImage src={msg.profiles?.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs bg-emerald-600 text-white">
+                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
                       {getUserInitials(msg.profiles?.full_name)}
                     </AvatarFallback>
                   </Avatar>
@@ -407,19 +466,19 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                 ) : null}
                 
                 <div className={cn(
-                  "flex flex-col max-w-[75%]",
-                  isOwnMessage ? "items-end" : "items-start"
+                  "flex items-center gap-1 max-w-[75%]",
+                  isOwnMessage ? "flex-row-reverse" : ""
                 )}>
                   <div
                     className={cn(
                       "px-3 py-2 rounded-lg text-sm relative",
                       isOwnMessage
-                        ? "bg-[#005c4b] text-white rounded-tr-none"
-                        : "bg-[#1f2c33] text-white rounded-tl-none"
+                        ? "bg-primary text-primary-foreground rounded-tr-none"
+                        : "bg-secondary text-foreground rounded-tl-none"
                     )}
                   >
                     {!isOwnMessage && msg.isGroupStart && (
-                      <p className="text-xs font-medium text-emerald-400 mb-1">
+                      <p className="text-xs font-medium text-primary mb-1">
                         {msg.profiles?.full_name || 'Unknown'}
                       </p>
                     )}
@@ -440,7 +499,12 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                       <div className="flex items-center gap-3 min-w-[200px]">
                         <button
                           onClick={() => toggleAudioPlayback(msg.id, msg.file_url!)}
-                          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                          className={cn(
+                            "p-2 rounded-full transition-colors",
+                            isOwnMessage 
+                              ? "bg-primary-foreground/20 hover:bg-primary-foreground/30" 
+                              : "bg-muted hover:bg-muted/80"
+                          )}
                         >
                           {playingAudioId === msg.id ? (
                             <Pause className="h-4 w-4" />
@@ -449,11 +513,17 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                           )}
                         </button>
                         <div className="flex-1">
-                          <div className="h-1 bg-white/20 rounded-full">
-                            <div className="h-full w-0 bg-white/60 rounded-full"></div>
+                          <div className={cn(
+                            "h-1 rounded-full",
+                            isOwnMessage ? "bg-primary-foreground/30" : "bg-muted-foreground/30"
+                          )}>
+                            <div className="h-full w-0 bg-current rounded-full opacity-60"></div>
                           </div>
                         </div>
-                        <span className="text-xs text-white/70">
+                        <span className={cn(
+                          "text-xs",
+                          isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"
+                        )}>
                           {formatDuration(msg.voice_duration || 0)}
                         </span>
                       </div>
@@ -466,11 +536,35 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                     
                     <p className={cn(
                       "text-[10px] mt-1 text-right",
-                      isOwnMessage ? "text-white/60" : "text-gray-500"
+                      isOwnMessage ? "text-primary-foreground/60" : "text-muted-foreground"
                     )}>
                       {formatMessageTime(new Date(msg.created_at))}
                     </p>
                   </div>
+                  
+                  {/* Message actions */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted">
+                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align={isOwnMessage ? "end" : "start"}>
+                      <DropdownMenuItem onClick={() => deleteForMe(msg.id)}>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete for me
+                      </DropdownMenuItem>
+                      {isOwnMessage && (
+                        <DropdownMenuItem 
+                          onClick={() => deleteForEveryone(msg.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete for everyone
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             );
@@ -480,22 +574,22 @@ export default function TeamChat({ teamId }: TeamChatProps) {
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-[#1f2c33]">
+      <div className="p-3 bg-secondary">
         {isRecording ? (
-          <div className="flex items-center gap-3 px-3 py-2 bg-[#0b141a] rounded-full">
+          <div className="flex items-center gap-3 px-3 py-2 bg-background rounded-full">
             <button
               onClick={cancelRecording}
-              className="p-2 rounded-full hover:bg-white/10 text-red-500"
+              className="p-2 rounded-full hover:bg-muted text-destructive"
             >
               <X className="h-5 w-5" />
             </button>
             <div className="flex-1 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-white text-sm">{formatDuration(recordingTime)}</span>
+              <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+              <span className="text-foreground text-sm">{formatDuration(recordingTime)}</span>
             </div>
             <button
               onClick={stopRecording}
-              className="p-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white"
+              className="p-3 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Send className="h-5 w-5" />
             </button>
@@ -513,7 +607,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded-full hover:bg-white/10 text-gray-400"
+              className="p-2 rounded-full hover:bg-muted text-muted-foreground"
               disabled={sending}
             >
               <ImageIcon className="h-5 w-5" />
@@ -523,7 +617,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type a message"
-              className="flex-1 bg-[#2a3942] border-0 rounded-full text-white placeholder:text-gray-500 focus-visible:ring-0"
+              className="flex-1 bg-muted border-0 rounded-full text-foreground placeholder:text-muted-foreground focus-visible:ring-0"
               disabled={sending}
             />
             
@@ -531,7 +625,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
               <button 
                 type="submit" 
                 disabled={sending}
-                className="p-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                className="p-3 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
               >
                 <Send className="h-5 w-5" />
               </button>
@@ -540,7 +634,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                 type="button"
                 onClick={startRecording}
                 disabled={sending}
-                className="p-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                className="p-3 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
               >
                 <Mic className="h-5 w-5" />
               </button>
