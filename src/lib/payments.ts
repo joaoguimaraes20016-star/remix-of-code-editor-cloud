@@ -138,3 +138,32 @@ export function sumPayments(payments: { amount: number }[] | null | undefined): 
   if (!Array.isArray(payments)) return 0;
   return payments.reduce((acc, p) => acc + (p.amount || 0), 0);
 }
+/**
+ * Fetches all payments for a team between two timestamps (ISO strings).
+ * Read-only. Errors return [] and never break flows.
+ */
+export async function getTeamPaymentsInRange(
+  teamId: string,
+  fromIso: string,
+  toIso: string,
+): Promise<{ amount: number; type: string; processed_at: string }[]> {
+  try {
+    const { data, error } = await supabase
+      .from("payments")
+      .select("amount, type, processed_at")
+      .eq("team_id", teamId)
+      .gte("processed_at", fromIso)
+      .lte("processed_at", toIso)
+      .order("processed_at", { ascending: false });
+
+    if (error) {
+      console.warn("[payments] Failed to fetch team payments in range:", error);
+      return [];
+    }
+
+    return (data || []) as { amount: number; type: string; processed_at: string }[];
+  } catch (err) {
+    console.warn("[payments] Exception fetching team payments in range:", err);
+    return [];
+  }
+}
