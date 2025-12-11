@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -10,7 +9,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Send, MessageSquare, Mic, Square, Image as ImageIcon, X, Play, Pause, MoreVertical, Trash2 } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { Send, MessageSquare, Mic, Image as ImageIcon, X, Play, Pause, MoreVertical, Trash2, Users, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -29,6 +35,23 @@ interface Message {
   };
 }
 
+interface TeamMember {
+  id: string;
+  user_id: string;
+  role: string | null;
+  profiles: {
+    full_name: string | null;
+    avatar_url: string | null;
+    email: string | null;
+  } | null;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  logo_url: string | null;
+}
+
 interface TeamChatProps {
   teamId: string;
 }
@@ -39,6 +62,8 @@ const deletedForMe = new Set<string>();
 export default function TeamChat({ teamId }: TeamChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -60,6 +85,26 @@ export default function TeamChat({ teamId }: TeamChatProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load team info and members
+  useEffect(() => {
+    const loadTeamInfo = async () => {
+      const [teamRes, membersRes] = await Promise.all([
+        supabase.from('teams').select('id, name, logo_url').eq('id', teamId).single(),
+        supabase.from('team_members').select(`
+          id,
+          user_id,
+          role,
+          profiles:user_id (full_name, avatar_url, email)
+        `).eq('team_id', teamId).eq('is_active', true)
+      ]);
+
+      if (teamRes.data) setTeam(teamRes.data);
+      if (membersRes.data) setMembers(membersRes.data as unknown as TeamMember[]);
+    };
+
+    loadTeamInfo();
+  }, [teamId]);
 
   const loadMessages = async () => {
     try {
@@ -116,8 +161,13 @@ export default function TeamChat({ teamId }: TeamChatProps) {
           table: 'team_messages',
           filter: `team_id=eq.${teamId}`,
         },
-        () => {
-          loadMessages();
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            // Immediately remove from local state
+            setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+          } else {
+            loadMessages();
+          }
         }
       )
       .subscribe();
@@ -200,7 +250,6 @@ export default function TeamChat({ teamId }: TeamChatProps) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Try to use a more compatible format
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
         ? 'audio/webm;codecs=opus'
         : MediaRecorder.isTypeSupported('audio/webm')
@@ -225,7 +274,7 @@ export default function TeamChat({ teamId }: TeamChatProps) {
         await uploadVoiceMessage(audioBlob, mimeType);
       };
 
-      mediaRecorder.start(100); // Collect data every 100ms
+      mediaRecorder.start(100);
       setIsRecording(true);
       setRecordingTime(0);
 
@@ -325,7 +374,6 @@ export default function TeamChat({ teamId }: TeamChatProps) {
       audio.pause();
       setPlayingAudioId(null);
     } else {
-      // Pause any currently playing audio
       if (playingAudioId) {
         const currentAudio = audioRefs.current.get(playingAudioId);
         currentAudio?.pause();
@@ -346,6 +394,9 @@ export default function TeamChat({ teamId }: TeamChatProps) {
   };
 
   const deleteForEveryone = async (messageId: string) => {
+    // Optimistic update - remove immediately from UI
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+    
     try {
       const { error } = await supabase
         .from('team_messages')
@@ -357,6 +408,8 @@ export default function TeamChat({ teamId }: TeamChatProps) {
     } catch (error) {
       console.error('Error deleting message:', error);
       toast.error('Failed to delete message');
+      // Reload messages on error to restore state
+      loadMessages();
     }
   };
 
@@ -381,7 +434,6 @@ export default function TeamChat({ teamId }: TeamChatProps) {
     return format(date, 'MMMM d, yyyy');
   };
 
-  // Filter out hidden messages and group by date
   const visibleMessages = messages.filter(m => !hiddenMessages.has(m.id));
   
   const groupedMessages = visibleMessages.reduce((acc, msg, index) => {
@@ -410,6 +462,8 @@ export default function TeamChat({ teamId }: TeamChatProps) {
     return acc;
   }, [] as (({ type: 'date'; date: Date; id: string }) | (Message & { type: 'message'; isGroupStart: boolean }))[]);
 
+  const onlineMembers = members.length;
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -420,6 +474,69 @@ export default function TeamChat({ teamId }: TeamChatProps) {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* Header */}
+      <Sheet>
+        <SheetTrigger asChild>
+          <div className="flex items-center gap-3 px-4 py-3 bg-card border-b border-border cursor-pointer hover:bg-secondary/50 transition-colors">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={team?.logo_url || undefined} />
+              <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                {team?.name?.charAt(0) || 'T'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-semibold text-foreground truncate">{team?.name || 'Team Chat'}</h2>
+              <p className="text-xs text-muted-foreground">{onlineMembers} members</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </SheetTrigger>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={team?.logo_url || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-lg">
+                  {team?.name?.charAt(0) || 'T'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-lg font-semibold">{team?.name}</p>
+                <p className="text-sm text-muted-foreground font-normal">{members.length} members</p>
+              </div>
+            </SheetTitle>
+          </SheetHeader>
+          
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Members</span>
+            </div>
+            <div className="space-y-3">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={member.profiles?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-secondary text-foreground text-sm">
+                      {getUserInitials(member.profiles?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {member.profiles?.full_name || 'Unknown'}
+                      {member.user_id === user?.id && (
+                        <span className="text-muted-foreground ml-1">(You)</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground capitalize">{member.role || 'Member'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2">
         {visibleMessages.length === 0 ? (
@@ -483,7 +600,6 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                       </p>
                     )}
                     
-                    {/* Image message */}
                     {msg.file_type === 'image' && msg.file_url && (
                       <div className="mb-1">
                         <img 
@@ -494,7 +610,6 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                       </div>
                     )}
                     
-                    {/* Voice message */}
                     {msg.file_type === 'voice' && msg.file_url && (
                       <div className="flex items-center gap-3 min-w-[200px]">
                         <button
@@ -529,7 +644,6 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                       </div>
                     )}
                     
-                    {/* Text message */}
                     {msg.message && (
                       <p className="whitespace-pre-wrap break-words">{msg.message}</p>
                     )}
@@ -542,7 +656,6 @@ export default function TeamChat({ teamId }: TeamChatProps) {
                     </p>
                   </div>
                   
-                  {/* Message actions */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted">
