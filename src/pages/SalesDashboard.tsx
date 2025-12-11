@@ -641,7 +641,6 @@ const Index = () => {
   // BUT exclude appointments that already have a sale record (to prevent duplicates)
   const depositsAsSales: Sale[] = filteredAppointments
     .filter((apt) => {
-      const hasClosedWithRevenue = isClosedAppointmentWithRevenue(apt);
       const repMatch = selectedRep === "all" || apt.closer_name === selectedRep || apt.setter_name === selectedRep;
 
       // Check if a sale record already exists for this appointment by name + closer
@@ -717,7 +716,7 @@ const Index = () => {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
   // Treat an appointment as a "closed deal with revenue"
-  const isClosedAppointmentWithRevenue = (apt: any) => {
+  function isClosedAppointmentWithRevenue(apt: any) {
     const statusClosed = apt.status === "CLOSED";
 
     const pipeline = (apt.pipeline_stage || "").toLowerCase();
@@ -727,7 +726,7 @@ const Index = () => {
     const hasRevenue = Number(apt.cc_collected || 0) > 0 || Number(apt.mrr_amount || 0) > 0;
 
     return statusClosed || ((hasDepositStage || hasWonStage) && hasRevenue);
-  };
+  }
 
   // SIMPLIFIED METRICS CALCULATION
   // Sales table is source of truth for CC Revenue and Commissions (created by close_deal_transaction)
