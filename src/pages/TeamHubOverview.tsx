@@ -14,19 +14,37 @@ import {
   ExternalLink,
   Play,
   ChevronRight,
-  Loader2
+  Loader2,
+  Plus,
+  Video,
+  FileSpreadsheet,
+  Briefcase,
+  GraduationCap,
+  BookOpen
 } from "lucide-react";
+import { useState } from "react";
+import AssetUploadDialog from "@/components/AssetUploadDialog";
 
 interface TeamContext {
   teamName: string;
   teamLogo: string | null;
 }
 
+// Category configs with colors
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+  training: { label: "Training", color: "text-orange-500", bgColor: "bg-orange-500/20", icon: Video },
+  resources: { label: "Scripts", color: "text-blue-500", bgColor: "bg-blue-500/20", icon: BookOpen },
+  team_onboarding: { label: "Onboarding", color: "text-emerald-500", bgColor: "bg-emerald-500/20", icon: Users },
+  tracking: { label: "Tracking", color: "text-pink-500", bgColor: "bg-pink-500/20", icon: FileSpreadsheet },
+  client_onboarding: { label: "Offer", color: "text-primary", bgColor: "bg-primary/20", icon: Briefcase },
+};
+
 export function TeamHubOverview() {
   const { teamId } = useParams();
   const navigate = useNavigate();
   const { role, isAdmin } = useTeamRole(teamId || "");
   const { teamName, teamLogo } = useOutletContext<TeamContext>() || { teamName: "", teamLogo: null };
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   // Fetch team stats
   const { data: stats, isLoading: loadingStats } = useQuery({
@@ -49,7 +67,7 @@ export function TeamHubOverview() {
   });
 
   // Fetch team assets
-  const { data: assets, isLoading: loadingAssets } = useQuery({
+  const { data: assets, isLoading: loadingAssets, refetch: refetchAssets } = useQuery({
     queryKey: ["team-hub-assets", teamId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -89,15 +107,18 @@ export function TeamHubOverview() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "video":
-        return <Play className="h-4 w-4" />;
-      case "document":
-        return <FileText className="h-4 w-4" />;
-      default:
-        return <ExternalLink className="h-4 w-4" />;
-    }
+  const getCategoryConfig = (category: string) => {
+    return CATEGORY_CONFIG[category] || { 
+      label: category, 
+      color: "text-muted-foreground", 
+      bgColor: "bg-muted",
+      icon: ExternalLink
+    };
+  };
+
+  const isVideo = (asset: any) => {
+    const url = asset.loom_url || asset.external_url || "";
+    return url.includes('loom.com') || url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com') || url.includes('wistia.com');
   };
 
   return (
@@ -204,8 +225,13 @@ export function TeamHubOverview() {
             <CardDescription>Training materials and resources</CardDescription>
           </div>
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => navigate(`/team/${teamId}/settings`)}>
-              Manage
+            <Button 
+              onClick={() => setUploadDialogOpen(true)} 
+              className="gap-2"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              Add Asset
             </Button>
           )}
         </CardHeader>
@@ -216,33 +242,48 @@ export function TeamHubOverview() {
             </div>
           ) : assets && assets.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {assets.map((asset) => (
-                <Card 
-                  key={asset.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors border-border/50"
-                  onClick={() => {
-                    if (asset.loom_url) window.open(asset.loom_url, "_blank");
-                    else if (asset.external_url) window.open(asset.external_url, "_blank");
-                  }}
-                >
-                  <CardContent className="pt-4">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        {getCategoryIcon(asset.category)}
+              {assets.map((asset) => {
+                const config = getCategoryConfig(asset.category);
+                const CategoryIcon = config.icon;
+                const videoAsset = isVideo(asset);
+                
+                return (
+                  <Card 
+                    key={asset.id} 
+                    className="cursor-pointer hover:bg-muted/50 transition-all border-border/50 hover:border-border group"
+                    onClick={() => {
+                      if (asset.loom_url) window.open(asset.loom_url, "_blank");
+                      else if (asset.external_url) window.open(asset.external_url, "_blank");
+                    }}
+                  >
+                    <CardContent className="pt-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`h-10 w-10 rounded-lg ${config.bgColor} flex items-center justify-center shrink-0`}>
+                          {videoAsset ? (
+                            <Play className={`h-4 w-4 ${config.color}`} />
+                          ) : (
+                            <ExternalLink className={`h-4 w-4 ${config.color}`} />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                            {asset.title}
+                          </h4>
+                          {asset.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{asset.description}</p>
+                          )}
+                          <Badge 
+                            variant="outline" 
+                            className={`mt-2 text-xs border-0 ${config.bgColor} ${config.color}`}
+                          >
+                            {config.label}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-foreground truncate">{asset.title}</h4>
-                        {asset.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{asset.description}</p>
-                        )}
-                        <Badge variant="outline" className="mt-2 text-xs capitalize">
-                          {asset.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -253,8 +294,9 @@ export function TeamHubOverview() {
                   variant="outline" 
                   size="sm" 
                   className="mt-4"
-                  onClick={() => navigate(`/team/${teamId}/settings`)}
+                  onClick={() => setUploadDialogOpen(true)}
                 >
+                  <Plus className="h-4 w-4 mr-2" />
                   Add Assets
                 </Button>
               )}
@@ -262,6 +304,16 @@ export function TeamHubOverview() {
           )}
         </CardContent>
       </Card>
+
+      {/* Upload Dialog */}
+      {teamId && (
+        <AssetUploadDialog
+          open={uploadDialogOpen}
+          onOpenChange={setUploadDialogOpen}
+          teamId={teamId}
+          onSuccess={() => refetchAssets()}
+        />
+      )}
     </div>
   );
 }
