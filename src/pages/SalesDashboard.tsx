@@ -30,6 +30,21 @@ import { DollarSign, TrendingUp, Users, Calendar, ArrowLeft, Settings } from "lu
 import { Logo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useTeamRole } from "@/hooks/useTeamRole";
+// Helper: check if an appointment is "closed with revenue"
+const hasClosedWithRevenue = (apt: any): boolean => {
+  if (!apt) return false;
+
+  const stage = apt.pipeline_stage?.toLowerCase() ?? "";
+  const status = (apt.status ?? "").toString().toUpperCase();
+  const revenue = Number(apt.cc_collected ?? 0);
+
+  const isDepositStage = stage.includes("deposit");
+  const isClosedStatus = status === "CLOSED" || status === "CLOSED_WON";
+
+  // "Closed with revenue" = in deposit/closed stage AND some cash collected
+  return (isDepositStage || isClosedStatus) && revenue > 0;
+};
+
 const RevenueSummaryCard = ({ teamId }: { teamId: string }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [todayTotal, setTodayTotal] = useState(0);
@@ -653,7 +668,8 @@ const Index = () => {
         );
       });
 
-      return hasClosedWithRevenue && repMatch && !hasSaleRecord;
+      // 👉 THIS is the important line:
+      return hasClosedWithRevenue(apt) && repMatch && !hasSaleRecord;
     })
     .map((apt) => {
       // Use updated_at for both deposits and closed deals (when the action was taken)
