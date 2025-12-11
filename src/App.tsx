@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import TeamSettings from "./pages/TeamSettings";
 import Workflows from "./pages/Workflows";
 import ClientAssets from "./pages/ClientAssets";
+import Schedule from "./pages/Schedule";
 import OnboardingForm from "./pages/OnboardingForm";
 import NotFound from "./pages/NotFound";
 import FunnelList from "./pages/FunnelList";
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="crm" element={<SalesDashboard />} />
               <Route path="funnels" element={<FunnelList />} />
               <Route path="funnels/:funnelId" element={<FunnelEditor />} />
+              <Route path="schedule" element={<Schedule />} />
               <Route path="chat" element={<TeamChatPage />} />
               <Route path="apps" element={<AppsPortal />} />
               <Route path="profile" element={<PersonalSettings />} />
