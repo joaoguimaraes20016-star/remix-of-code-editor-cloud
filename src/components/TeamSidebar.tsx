@@ -11,7 +11,8 @@ import {
   LogOut,
   UserCircle,
   Settings2,
-  Workflow
+  Workflow,
+  CalendarDays
 } from "lucide-react";
 import { useTeamRole } from "@/hooks/useTeamRole";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ const mainNavItems = [
   { id: "home", label: "Team Hub", icon: Home, path: "" },
   { id: "crm", label: "Sales CRM", icon: TrendingUp, path: "/crm" },
   { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
+  { id: "schedule", label: "Schedule", icon: CalendarDays, path: "/schedule" },
   { id: "chat", label: "Team Chat", icon: MessageCircle, path: "/chat" },
   { id: "apps", label: "Apps", icon: Grid3X3, path: "/apps" },
 ];
