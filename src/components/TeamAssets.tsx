@@ -4,15 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
   Plus, GraduationCap, Users, FileSpreadsheet, BookOpen, Briefcase, 
-  Loader2, Play, FileText, Link as LinkIcon, Pencil, Trash2, 
-  GripVertical, ExternalLink, ChevronRight, X
+  Loader2, Play, Link as LinkIcon, Pencil, Trash2, X, Video, FileText
 } from "lucide-react";
 import AssetUploadDialog from "./AssetUploadDialog";
 import EditAssetDialog from "./EditAssetDialog";
 import { toast } from "sonner";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 interface TeamAsset {
   id: string;
@@ -32,24 +28,22 @@ interface TeamAssetsProps {
 }
 
 const ASSET_CATEGORIES = [
-  { id: "training", label: "Training", icon: GraduationCap, gradient: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50 dark:bg-blue-950/30" },
-  { id: "team_onboarding", label: "Team Onboarding", icon: Users, gradient: "from-emerald-500 to-teal-600", lightBg: "bg-emerald-50 dark:bg-emerald-950/30" },
-  { id: "client_onboarding", label: "Client Onboarding", icon: Briefcase, gradient: "from-violet-500 to-purple-600", lightBg: "bg-violet-50 dark:bg-violet-950/30" },
-  { id: "tracking", label: "Tracking Sheets", icon: FileSpreadsheet, gradient: "from-amber-500 to-orange-600", lightBg: "bg-amber-50 dark:bg-amber-950/30" },
-  { id: "resources", label: "Resources & Scripts", icon: BookOpen, gradient: "from-cyan-500 to-blue-600", lightBg: "bg-cyan-50 dark:bg-cyan-950/30" },
+  { id: "training", label: "TRAINING", icon: Video, color: "text-orange-500", bgColor: "bg-orange-500/20" },
+  { id: "resources", label: "SCRIPTS", icon: FileText, color: "text-blue-500", bgColor: "bg-blue-500/20" },
+  { id: "team_onboarding", label: "ONBOARDING", icon: Users, color: "text-emerald-500", bgColor: "bg-emerald-500/20" },
+  { id: "tracking", label: "TRACKING SHEETS", icon: FileSpreadsheet, color: "text-pink-500", bgColor: "bg-pink-500/20" },
+  { id: "client_onboarding", label: "COMPLETE OFFER", icon: Briefcase, color: "text-primary", bgColor: "bg-primary/20" },
 ];
 
 // Helper to extract video embed URL
 const getVideoEmbedUrl = (url: string): string | null => {
   if (!url) return null;
   
-  // Loom
   if (url.includes('loom.com')) {
     const match = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
     if (match) return `https://www.loom.com/embed/${match[1]}`;
   }
   
-  // YouTube
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     let videoId = '';
     if (url.includes('youtu.be/')) {
@@ -60,13 +54,11 @@ const getVideoEmbedUrl = (url: string): string | null => {
     if (videoId) return `https://www.youtube.com/embed/${videoId}`;
   }
   
-  // Vimeo
   if (url.includes('vimeo.com')) {
     const match = url.match(/vimeo\.com\/(\d+)/);
     if (match) return `https://player.vimeo.com/video/${match[1]}`;
   }
   
-  // Wistia
   if (url.includes('wistia.com') || url.includes('wi.st')) {
     const match = url.match(/(?:wistia\.com\/medias\/|wi\.st\/medias\/)([a-zA-Z0-9]+)/);
     if (match) return `https://fast.wistia.net/embed/iframe/${match[1]}`;
@@ -76,13 +68,7 @@ const getVideoEmbedUrl = (url: string): string | null => {
 };
 
 // Video Player Modal
-function VideoModal({ 
-  asset, 
-  onClose 
-}: { 
-  asset: TeamAsset; 
-  onClose: () => void;
-}) {
+function VideoModal({ asset, onClose }: { asset: TeamAsset; onClose: () => void }) {
   const videoUrl = asset.loom_url || asset.external_url;
   const embedUrl = videoUrl ? getVideoEmbedUrl(videoUrl) : null;
 
@@ -90,7 +76,7 @@ function VideoModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-fade-in"
       onClick={onClose}
     >
       <div 
@@ -105,9 +91,9 @@ function VideoModal({
         >
           <X className="h-6 w-6" />
         </Button>
-        <div className="bg-card rounded-xl overflow-hidden shadow-2xl">
-          <div className="p-4 border-b border-border">
-            <h3 className="font-semibold">{asset.title}</h3>
+        <div className="bg-card rounded-2xl overflow-hidden shadow-2xl border border-border/50">
+          <div className="p-4 border-b border-border/50 bg-card/80 backdrop-blur">
+            <h3 className="font-semibold text-lg">{asset.title}</h3>
             {asset.description && (
               <p className="text-sm text-muted-foreground mt-1">{asset.description}</p>
             )}
@@ -127,44 +113,25 @@ function VideoModal({
   );
 }
 
-// Asset Card Component
-function AssetCard({ 
+// Asset Item Component
+function AssetItem({ 
   asset, 
   canManage, 
-  gradient,
   onEdit, 
   onDelete, 
   onDownload,
-  onPlayVideo,
-  index
+  onPlayVideo
 }: { 
   asset: TeamAsset; 
   canManage: boolean; 
-  gradient: string;
   onEdit: (asset: TeamAsset) => void;
   onDelete: (asset: TeamAsset) => void;
   onDownload: (filePath: string, title: string) => void;
   onPlayVideo: (asset: TeamAsset) => void;
-  index: number;
 }) {
   const videoUrl = asset.loom_url || asset.external_url;
   const embedUrl = videoUrl ? getVideoEmbedUrl(videoUrl) : null;
   const isVideo = !!embedUrl;
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: asset.id, disabled: !canManage });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
 
   const handleClick = () => {
     if (isVideo) {
@@ -177,231 +144,137 @@ function AssetCard({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="group relative bg-card border border-border/60 rounded-xl overflow-hidden hover:border-border hover:shadow-lg transition-all duration-300 animate-fade-in"
+    <div 
+      className="group flex items-center gap-3 py-3 px-1 cursor-pointer hover:bg-muted/30 rounded-lg transition-all duration-200"
+      onClick={handleClick}
     >
-      {/* Card Content */}
-      <div 
-        className="flex items-center gap-4 p-4 cursor-pointer"
-        onClick={handleClick}
-      >
-        {/* Drag Handle */}
-        {canManage && (
-          <button 
-            type="button"
-            {...attributes} 
-            {...listeners}
-            className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity touch-none shrink-0"
-            onClick={(e) => e.stopPropagation()}
+      {isVideo ? (
+        <Play className="h-4 w-4 text-primary shrink-0" />
+      ) : (
+        <LinkIcon className="h-4 w-4 text-primary shrink-0" />
+      )}
+      <span className="flex-1 text-sm font-medium group-hover:text-primary transition-colors truncate">
+        {asset.title}
+      </span>
+      {canManage && (
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(asset);
+            }}
           >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </button>
-        )}
-        
-        {/* Module Number / Icon */}
-        <div className={`relative shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
-          {isVideo ? (
-            <Play className="h-5 w-5 text-white fill-white" />
-          ) : asset.external_url ? (
-            <LinkIcon className="h-5 w-5 text-white" />
-          ) : (
-            <FileText className="h-5 w-5 text-white" />
-          )}
-          <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background border-2 border-border text-[10px] font-bold flex items-center justify-center">
-            {index + 1}
-          </span>
+            <Pencil className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(asset);
+            }}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
-        
-        {/* Title & Description */}
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
-            {asset.title}
-          </h4>
-          {asset.description && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-              {asset.description}
-            </p>
-          )}
-          <div className="flex items-center gap-2 mt-1">
-            {isVideo && (
-              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                VIDEO
-              </span>
-            )}
-            {asset.file_path && (
-              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                FILE
-              </span>
-            )}
-            {asset.external_url && !isVideo && (
-              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                LINK
-              </span>
-            )}
-          </div>
-        </div>
-        
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
-          {isVideo ? (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 gap-1.5 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Play className="h-3.5 w-3.5" />
-              Watch
-            </Button>
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-          )}
-          
-          {canManage && (
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(asset);
-                }}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(asset);
-                }}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
-// Category Section Component
-function CategorySection({
+// Category Card Component
+function CategoryCard({
   category,
   assets,
   canManage,
-  onReorder,
   onEdit,
   onDelete,
   onDownload,
   onPlayVideo,
   onAddAsset,
+  isLarge = false,
 }: {
   category: typeof ASSET_CATEGORIES[0];
   assets: TeamAsset[];
   canManage: boolean;
-  onReorder: (assets: TeamAsset[]) => void;
   onEdit: (asset: TeamAsset) => void;
   onDelete: (asset: TeamAsset) => void;
   onDownload: (filePath: string, title: string) => void;
   onPlayVideo: (asset: TeamAsset) => void;
   onAddAsset: () => void;
+  isLarge?: boolean;
 }) {
   const Icon = category.icon;
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = assets.findIndex((a) => a.id === active.id);
-      const newIndex = assets.findIndex((a) => a.id === over.id);
-      onReorder(arrayMove(assets, oldIndex, newIndex));
-    }
-  };
+  const videoCount = assets.filter(a => getVideoEmbedUrl(a.loom_url || a.external_url || '')).length;
+  const assetCount = assets.length;
 
   return (
-    <div className={`rounded-2xl ${category.lightBg} p-6 transition-all duration-300`}>
-      {/* Section Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl bg-gradient-to-br ${category.gradient} shadow-lg`}>
-            <Icon className="h-5 w-5 text-white" />
+    <div className={`rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:border-border hover:shadow-lg ${isLarge ? 'col-span-full' : ''}`}>
+      {/* Header */}
+      <div className="p-5 pb-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${category.bgColor}`}>
+              <Icon className={`h-5 w-5 ${category.color}`} />
+            </div>
+            <h3 className="font-bold text-base tracking-wide">{category.label}</h3>
           </div>
-          <div>
-            <h3 className="font-semibold text-base">{category.label}</h3>
-            <p className="text-xs text-muted-foreground">
-              {assets.length} {assets.length === 1 ? 'item' : 'items'}
-            </p>
-          </div>
+          {canManage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={onAddAsset}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add
+            </Button>
+          )}
         </div>
-        {canManage && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 bg-background/80 backdrop-blur-sm"
-            onClick={onAddAsset}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add
-          </Button>
+        
+        {/* Stats badges for larger cards */}
+        {isLarge && assetCount > 0 && (
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-sm">
+              <FileText className="h-4 w-4" />
+              {assetCount} Assets
+            </div>
+            {videoCount > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-sm">
+                <Video className="h-4 w-4" />
+                {videoCount} Videos
+              </div>
+            )}
+          </div>
         )}
       </div>
       
       {/* Assets List */}
-      {assets.length === 0 ? (
-        <div className="text-center py-10 border-2 border-dashed border-border/50 rounded-xl bg-background/50">
-          <div className={`w-14 h-14 mx-auto rounded-xl bg-gradient-to-br ${category.gradient} opacity-20 flex items-center justify-center mb-3`}>
-            <Icon className="h-7 w-7 text-white" />
-          </div>
-          <p className="text-sm text-muted-foreground mb-3">
-            No {category.label.toLowerCase()} added yet
+      <div className="px-5 pb-5">
+        {assets.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">
+            No {category.label.toLowerCase()} materials yet.
           </p>
-          {canManage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onAddAsset}
-              className="bg-background"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add First Item
-            </Button>
-          )}
-        </div>
-      ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={assets.map(a => a.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {assets.map((asset, idx) => (
-                <AssetCard
-                  key={asset.id}
-                  asset={asset}
-                  canManage={canManage}
-                  gradient={category.gradient}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onDownload={onDownload}
-                  onPlayVideo={onPlayVideo}
-                  index={idx}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+        ) : (
+          <div className="space-y-0.5">
+            {assets.map((asset) => (
+              <AssetItem
+                key={asset.id}
+                asset={asset}
+                canManage={canManage}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onDownload={onDownload}
+                onPlayVideo={onPlayVideo}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -482,29 +355,6 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
     }
   };
 
-  const handleReorder = async (reorderedAssets: TeamAsset[]) => {
-    setAssets(prev => {
-      const otherAssets = prev.filter(a => a.category !== reorderedAssets[0]?.category);
-      return [...otherAssets, ...reorderedAssets].sort((a, b) => {
-        if (a.category !== b.category) return a.category.localeCompare(b.category);
-        return (a.order_index || 0) - (b.order_index || 0);
-      });
-    });
-
-    try {
-      for (let i = 0; i < reorderedAssets.length; i++) {
-        await supabase
-          .from("team_assets")
-          .update({ order_index: i })
-          .eq("id", reorderedAssets[i].id);
-      }
-    } catch (error) {
-      console.error("Error reordering assets:", error);
-      toast.error("Failed to reorder assets");
-      loadAssets();
-    }
-  };
-
   const getAssetsByCategory = (categoryId: string) => {
     return assets.filter((asset) => asset.category === categoryId);
   };
@@ -513,6 +363,10 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
     setSelectedCategory(categoryId);
     setUploadDialogOpen(true);
   };
+
+  // Calculate totals for hero section
+  const totalAssets = assets.length;
+  const totalVideos = assets.filter(a => getVideoEmbedUrl(a.loom_url || a.external_url || '')).length;
 
   if (loading) {
     return (
@@ -524,31 +378,77 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Team Assets</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Training materials, onboarding resources, and team documentation
-          </p>
+      {/* Hero Section */}
+      <div className="relative rounded-2xl bg-gradient-to-br from-amber-900/40 via-amber-800/30 to-background border border-primary/20 p-6 overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        
+        <div className="relative flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">Team Assets</h2>
+              {canManage && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setUploadDialogOpen(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Everything you need to succeed, all in one place
+            </p>
+            
+            {/* Stats */}
+            <div className="flex items-center gap-3 mt-4">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-background/60 backdrop-blur-sm border border-border/50">
+                <FileText className="h-4 w-4" />
+                <span className="text-sm font-medium">{totalAssets} Assets</span>
+              </div>
+              {totalVideos > 0 && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-background/60 backdrop-blur-sm border border-border/50">
+                  <Video className="h-4 w-4" />
+                  <span className="text-sm font-medium">{totalVideos} Videos</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {canManage && (
+            <Button 
+              onClick={() => setUploadDialogOpen(true)} 
+              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Add Asset
+            </Button>
+          )}
         </div>
-        {canManage && (
-          <Button onClick={() => setUploadDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Asset
-          </Button>
-        )}
       </div>
 
-      {/* All Category Sections */}
-      <div className="grid gap-6">
-        {ASSET_CATEGORIES.map((category) => (
-          <CategorySection
+      {/* Complete Offer - Full Width */}
+      <CategoryCard
+        category={ASSET_CATEGORIES.find(c => c.id === 'client_onboarding')!}
+        assets={getAssetsByCategory('client_onboarding')}
+        canManage={canManage}
+        onEdit={(asset) => setEditAsset(asset)}
+        onDelete={handleDelete}
+        onDownload={handleDownload}
+        onPlayVideo={(asset) => setVideoModal(asset)}
+        onAddAsset={() => openUploadWithCategory('client_onboarding')}
+        isLarge
+      />
+
+      {/* 2x2 Grid for other categories */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {ASSET_CATEGORIES.filter(c => c.id !== 'client_onboarding').map((category) => (
+          <CategoryCard
             key={category.id}
             category={category}
             assets={getAssetsByCategory(category.id)}
             canManage={canManage}
-            onReorder={handleReorder}
             onEdit={(asset) => setEditAsset(asset)}
             onDelete={handleDelete}
             onDownload={handleDownload}
