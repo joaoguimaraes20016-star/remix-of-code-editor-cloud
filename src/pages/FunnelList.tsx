@@ -841,10 +841,12 @@ export default function FunnelList() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={exportLeads} disabled={!leads?.length}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Leads
-                </Button>
+                {isAdmin && (
+                  <Button variant="outline" onClick={exportLeads} disabled={!leads?.length}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Leads
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -1006,10 +1008,12 @@ export default function FunnelList() {
           <>
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
-              <Button variant="outline" onClick={exportContacts} disabled={!contacts?.length}>
-                <Download className="h-4 w-4 mr-2" />
-                Export to CRM
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" onClick={exportContacts} disabled={!contacts?.length}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export to CRM
+                </Button>
+              )}
             </div>
 
             {/* Contact Stats */}
