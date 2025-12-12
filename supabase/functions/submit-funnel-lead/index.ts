@@ -195,4 +195,50 @@ serve(async (req) => {
         }
 
         lead = createdLead;
-        console.log("Lead created successfully:"
+        console.log("Lead created successfully");
+      }
+    }
+
+    // NOW: check submitMode — only fire automation-trigger on explicit "submit"
+    if (submitMode === "submit") {
+      const eventId = `lead_created:${lead.id}`;
+      console.log("[submit-funnel-lead] Invoking automation-trigger with eventId:", eventId);
+
+      // Fire-and-forget (we don't block the response on automation execution)
+      supabase.functions.invoke("automation-trigger", {
+        body: {
+          triggerType: "lead_created",
+          teamId: funnel.team_id,
+          eventId,
+          eventPayload: { lead },
+        },
+      }).catch((err: any) => {
+        console.error("Failed to invoke automation-trigger:", err);
+      });
+    } else {
+      console.log("[submit-funnel-lead] submitMode=draft, skipping automation-trigger");
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        lead_id: lead.id,
+        lead,
+        status: leadStatus,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  } catch (err) {
+    console.error("[submit-funnel-lead] Unhandled error:", err);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+});
