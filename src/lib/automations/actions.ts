@@ -34,6 +34,12 @@ export async function runAction({ teamId, automationId, actionConfig, eventPaylo
             appointmentId: eventPayload.appointment?.id,
           },
         });
+
+        console.log("[automations] send_message executed", {
+          automationId,
+          channel: params.channel ?? "sms",
+        });
+
         break;
       }
 
@@ -51,6 +57,11 @@ export async function runAction({ teamId, automationId, actionConfig, eventPaylo
             appointmentId: eventPayload.appointment?.id,
           },
         });
+
+        console.log("[automations] enqueue_dialer executed", {
+          automationId,
+        });
+
         break;
       }
 
