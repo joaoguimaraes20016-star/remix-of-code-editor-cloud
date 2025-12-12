@@ -454,6 +454,114 @@ async function runAutomation(
     const conditionsMet = evaluateConditions(step.conditions, context);
 
     if (!conditionsMet) {
+      logs.push({
+        stepId: step.id,
+        actionType: step.type,
+        skipped: true,
+        skipReason: "conditions_not_met",
+      });
+      continue;
+    }
+
+    const log: StepExecutionLog = {
+      stepId: step.id,
+      actionType: step.type,
+      skipped: false,
+    };
+
+    try {
+      switch (step.type) {
+        case "send_message": {
+          const channel = step.config.channel || "sms";
+          const template = step.config.template || "";
+          const provider = "stub";
+
+          const toPhone =
+            context.lead?.phone ||
+            context.appointment?.lead_phone ||
+            step.config.to ||
+            "";
+
+          const renderedBody = renderTemplate(template, context);
+          const messageId = `stub_${Date.now()}_${Math.random()
+            .toString(36)
+            .substring(7)}`;
+
+          log.channel = channel;
+          log.provider = provider;
+          log.to = toPhone;
+          log.messageId = messageId;
+          log.renderedBody = renderedBody;
+          log.templateVariables = extractTemplateVariables(
+            template,
+            context
+          );
+
+          if (channel === "sms" && toPhone) {
+            await logMessage(supabase, {
+              teamId: context.teamId,
+              automationId: automation.id,
+              runId,
+              channel: "sms",
+              provider,
+              toAddress: toPhone,
+              template,
+              payload: {
+                renderedBody,
+                messageId,
+              },
+            });
+          }
+
+          break;
+        }
+
+        case "time_delay": {
+          // Stubbed delay (no blocking)
+          break;
+        }
+
+        case "assign_owner": {
+          // Already implemented elsewhere
+          break;
+        }
+
+        case "update_stage": {
+          // Already implemented elsewhere
+          break;
+        }
+
+        default:
+          console.warn(`[Automation] Unknown step type: ${step.type}`);
+      }
+    } catch (err: any) {
+      log.error = err?.message || "step_execution_failed";
+    }
+
+    logs.push(log);
+  }
+
+  // 🔑 THIS IS THE MISSING PIECE
+  await supabase.from("automation_runs").insert({
+    automation_id: automation.id ?? null,
+    team_id: context.teamId,
+    trigger_type: automation.trigger.type,
+    status: "success",
+    steps_executed: logs,
+    context_snapshot: context,
+  });
+
+  return logs;
+}
+
+  const logs: StepExecutionLog[] = [];
+
+  console.log(`[Automation] Running "${automation.name}" (${automation.id})`);
+
+  for (const step of automation.steps.sort((a, b) => a.order - b.order)) {
+    const conditionsMet = evaluateConditions(step.conditions, context);
+
+    if (!conditionsMet) {
       console.log(`[Automation] Skipping step ${step.id} – conditions not met`);
       logs.push({
         stepId: step.id,
