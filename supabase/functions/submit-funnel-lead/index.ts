@@ -259,13 +259,17 @@ Deno.serve(async (req) => {
 
       // Trigger lead_created automation for new leads
       try {
+        const eventId = `lead_created:${newLead.id}`;
+
         await supabase.functions.invoke("automation-trigger", {
           body: {
             triggerType: "lead_created",
             teamId: funnel.team_id,
+            eventId,
             eventPayload: { lead: newLead },
           },
         });
+
         console.log("Lead created automation triggered for:", newLead.id);
       } catch (automationError) {
         console.error("Automation trigger error (non-blocking):", automationError);

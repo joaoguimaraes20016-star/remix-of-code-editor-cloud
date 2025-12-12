@@ -316,6 +316,7 @@ async function createAutomationRun(
     teamId: string;
     triggerType: TriggerType;
     context?: AutomationContext;
+    eventId?: string | null;
   },
 ): Promise<string | null> {
   try {
@@ -323,12 +324,15 @@ async function createAutomationRun(
       .from("automation_runs")
       .insert([
         {
-          automation_id: params.automationId ?? null, // IMPORTANT: allow null
+          automation_id: params.automationId ?? null,
           team_id: params.teamId,
           trigger_type: params.triggerType,
-          status: "running", // Set to running initially, update to success/error after completion
+          status: "running",
           steps_executed: [],
-          context_snapshot: params.context ? JSON.parse(JSON.stringify(params.context)) : null,
+          context_snapshot: (() => {
+            const base = params.context ? JSON.parse(JSON.stringify(params.context)) : {};
+            return params.eventId ? { ...base, eventId: params.eventId } : base;
+          })(),
         },
       ])
       .select("id")
@@ -683,7 +687,8 @@ Deno.serve(async (req) => {
 
   try {
     const body: TriggerRequest = await req.json();
-    const { triggerType, teamId, eventPayload } = body;
+
+    const { triggerType, teamId, automationId, eventPayload, eventId } = body as any;
 
     if (!triggerType || !teamId) {
       return new Response(
@@ -693,6 +698,33 @@ Deno.serve(async (req) => {
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // ---- Idempotency / de-dupe guard ----
+    const stableEventId =
+      eventId ??
+      (eventPayload as any)?.eventId ??
+      (triggerType === "lead_created" && (eventPayload as any)?.lead?.id
+        ? `lead_created:${(eventPayload as any).lead.id}`
+        : null);
+
+    if (stableEventId) {
+      const { data: existingRuns, error: existingErr } = await supabase
+        .from("automation_runs")
+        .select("id, created_at")
+        .eq("team_id", teamId)
+        .eq("trigger_type", triggerType)
+        .contains("context_snapshot", { eventId: stableEventId })
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (existingErr) {
+        console.error("[automation-trigger] idempotency lookup failed:", existingErr);
+      } else if (existingRuns && existingRuns.length > 0) {
+        return new Response(JSON.stringify({ ok: true, deduped: true, runId: existingRuns[0].id }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     console.log(`[Automation Trigger] Received ${triggerType} for team ${teamId}`);
@@ -725,6 +757,7 @@ Deno.serve(async (req) => {
         teamId,
         triggerType,
         context,
+        eventId: stableEventId,
       });
 
       try {
