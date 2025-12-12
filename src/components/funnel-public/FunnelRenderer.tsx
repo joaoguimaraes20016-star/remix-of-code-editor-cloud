@@ -402,23 +402,27 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
         };
         setAnswers(updatedAnswers);
 
-        // Determine submitMode:
-        // - opt_in step = FINAL SUBMIT (triggers automations)
-        // - All other steps = DRAFT (progressive save, no automations)
-        const isOptInSubmit = currentStep.step_type === "opt_in";
-        const submitMode = isOptInSubmit ? "submit" : "draft";
+        // FINAL: Opt-in step submit must NOT depend on `value`
+// Clicking the submit button often passes value === undefined.
+const isOptInStep = currentStep.step_type === "opt_in";
 
-        // Progressive save on meaningful data
-        if (hasMeaningfulData(value, currentStep.step_type)) {
-          if (isOptInSubmit) {
-            // Opt-in is a FINAL submit - wait for it and trigger automations
-            setIsSubmitting(true);
-            await saveLead(updatedAnswers, "submit");
-            setIsSubmitting(false);
-          } else {
-            // Draft save - don't wait, don't trigger automations
-            saveLead(updatedAnswers, "draft");
-          }
+// If opt-in step: submit immediately (triggers automations exactly once)
+if (isOptInStep) {
+  if (isSubmitting) return;
+
+  try {
+    setIsSubmitting(true);
+    await saveLead(updatedAnswers, "submit");
+  } finally {
+    setIsSubmitting(false);
+  }
+} else {
+  // Non opt-in steps: progressive saves only when meaningful data exists
+  if (hasMeaningfulData(value, currentStep.step_type)) {
+    saveLead(updatedAnswers, "draft");
+  }
+}
+
 
           // Fire Lead pixel event when contact info is captured (with deduplication)
           if (["opt_in", "email_capture", "phone_capture"].includes(currentStep.step_type)) {
