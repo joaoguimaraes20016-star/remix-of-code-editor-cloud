@@ -391,22 +391,22 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
       let updatedAnswers = { ...answers };
 
       // Save answer if value provided
-      if (value !== undefined && currentStep) {
-        updatedAnswers = {
-          ...answers,
-          [currentStep.id]: {
-            value,
-            step_type: currentStep.step_type,
-            content: currentStep.content,
-          },
-        };
-        setAnswers(updatedAnswers);
+     if (value !== undefined && currentStep) {
+  updatedAnswers = {
+    ...answers,
+    [currentStep.id]: {
+      value,
+      step_type: currentStep.step_type,
+      content: currentStep.content,
+    },
+  };
 
-        // FINAL: Opt-in step submit must NOT depend on `value`
-// Clicking the submit button often passes value === undefined.
-const isOptInStep = currentStep.step_type === "opt_in";
+  setAnswers(updatedAnswers);
+}
+    
+      // FINAL: Opt-in step submit must NOT depend on `value`
+const isOptInStep = currentStep?.step_type === "opt_in";
 
-// If opt-in step: submit immediately (triggers automations exactly once)
 if (isOptInStep) {
   if (isSubmitting) return;
 
@@ -417,8 +417,7 @@ if (isOptInStep) {
     setIsSubmitting(false);
   }
 } else {
-  // Non opt-in steps: progressive saves only when meaningful data exists
-  if (hasMeaningfulData(value, currentStep.step_type)) {
+  if (hasMeaningfulData(value, currentStep?.step_type)) {
     saveLead(updatedAnswers, "draft");
   }
 }
