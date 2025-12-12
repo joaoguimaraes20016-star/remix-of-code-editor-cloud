@@ -1,3 +1,4 @@
+import { runAutomationsForTrigger } from "@/lib/automations/engine";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Zap, GitBranch, Workflow } from "lucide-react";
@@ -12,18 +13,36 @@ export default function Workflows() {
   if (!teamId) {
     return <div className="p-8 text-center text-muted-foreground">Team not found</div>;
   }
+  // TEMP DEV BUTTON: Fire a test automation trigger manually
+  const handleTestAutomation = async () => {
+    await runAutomationsForTrigger({
+      teamId,
+      triggerType: "appointment_booked",
+      eventPayload: {
+        appointment: {
+          id: "test-appointment",
+          lead_name: "Test Lead",
+          start_at_utc: new Date().toISOString(),
+        },
+      },
+    });
+
+    console.log("[DEV] Test automation trigger fired.");
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       {/* Header */}
+      <button onClick={handleTestAutomation} className="border px-3 py-1 text-xs rounded-md bg-muted hover:bg-muted/70">
+        Run test automation trigger
+      </button>
+
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold flex items-center gap-2">
           <Workflow className="h-6 w-6 text-primary" />
           Workflows & Automations
         </h1>
-        <p className="text-muted-foreground">
-          Configure automated task flows, follow-ups, and pipeline actions
-        </p>
+        <p className="text-muted-foreground">Configure automated task flows, follow-ups, and pipeline actions</p>
       </div>
 
       {/* Tabs */}
@@ -63,9 +82,7 @@ export default function Workflows() {
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Automated Follow-Up Flows</CardTitle>
-              <CardDescription>
-                Set up automatic follow-up tasks based on pipeline stage changes
-              </CardDescription>
+              <CardDescription>Set up automatic follow-up tasks based on pipeline stage changes</CardDescription>
             </CardHeader>
             <CardContent>
               <FollowUpSettings teamId={teamId} />
@@ -78,9 +95,7 @@ export default function Workflows() {
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Action → Pipeline Mappings</CardTitle>
-              <CardDescription>
-                Define which pipeline stage leads move to when specific actions occur
-              </CardDescription>
+              <CardDescription>Define which pipeline stage leads move to when specific actions occur</CardDescription>
             </CardHeader>
             <CardContent>
               <ActionPipelineMappings teamId={teamId} />
