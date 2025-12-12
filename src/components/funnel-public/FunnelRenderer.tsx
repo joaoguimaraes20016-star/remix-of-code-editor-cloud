@@ -276,32 +276,79 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
 
   // Progressive lead save - creates or updates lead
   // Uses pendingSaveRef as a mutex to prevent concurrent/duplicate submissions
-  const saveLead = useCallback(async (allAnswers: Record<string, any>, isComplete: boolean = false) => {
+ // Progressive lead save - creates or updates lead
+// GHL-style: draft saves never trigger workflows; submit saves do.
+type SubmitMode = "draft" | "submit";
+
+const saveLead = useCallback(
+  async (allAnswers: Record<string, any>, submitMode: SubmitMode = "draft") => {
     // Prevent duplicate submissions - if already submitting, ignore this call
     if (pendingSaveRef.current) {
-      console.log('Ignoring duplicate save request - submission in progress');
+      console.log("Ignoring duplicate save request - submission in progress");
       return;
     }
+
     pendingSaveRef.current = true;
-    
-    // Generate unique client request ID for debugging duplicate calls
-    const clientRequestId = crypto.randomUUID();
-    console.log(`[saveLead] clientRequestId=${clientRequestId}, isComplete=${isComplete}`);
+
+    // Stable client request ID for SUBMIT only (so retries reuse same event)
+    let clientRequestId: string;
+    if (submitMode === "submit") {
+      const key = `submitReq:${funnel.id}:${currentStepIndex}`;
+      const existing = sessionStorage.getItem(key);
+      clientRequestId = existing || crypto.randomUUID();
+      if (!existing) sessionStorage.setItem(key, clientRequestId);
+    } else {
+      clientRequestId = crypto.randomUUID();
+    }
+
+    console.log(`[saveLead] clientRequestId=${clientRequestId}, submitMode=${submitMode}`);
 
     try {
-      const { data, error } = await supabase.functions.invoke('submit-funnel-lead', {
+      const { data, error } = await supabase.functions.invoke("submit-funnel-lead", {
         body: {
           funnel_id: funnel.id,
           lead_id: leadId, // Pass existing lead ID for updates
           answers: allAnswers,
+
           utm_source: utmSource,
           utm_medium: utmMedium,
           utm_campaign: utmCampaign,
+
           calendly_booking: calendlyBookingRef.current,
-          is_complete: isComplete,
-          clientRequestId, // For debugging
+
+          // NEW: use submitMode instead of is_complete gating
+          submitMode,
+
+          clientRequestId, // For debugging + idempotency
         },
       });
+
+      if (error) {
+        console.error("Failed to save lead:", error);
+      } else {
+        // Support BOTH response shapes (old + new) so this won’t break either way:
+        const returnedLeadId = data?.lead_id || data?.lead?.id || data?.leadId || data?.id;
+
+        if (returnedLeadId) {
+          setLeadId(returnedLeadId);
+          console.log(
+            "Lead saved:",
+            returnedLeadId,
+            submitMode === "submit" ? "(submit)" : "(draft)"
+          );
+        } else {
+          console.log("Lead saved (no lead id returned)", submitMode);
+        }
+      }
+    } catch (err) {
+      console.error("Error saving lead:", err);
+    } finally {
+      pendingSaveRef.current = false;
+    }
+  },
+  [funnel.id, leadId, utmSource, utmMedium, utmCampaign, currentStepIndex]
+);
+
 
       if (error) {
         console.error('Failed to save lead:', error);
