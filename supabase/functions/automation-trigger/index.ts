@@ -274,13 +274,12 @@ async function getAutomationsForTrigger(
 
     if (error) {
       console.error("[Automation Trigger] Error fetching automations:", error);
-      return getDefaultTemplateAutomations(teamId).filter(
-        (a) => a.trigger?.type === triggerType || a.triggerType === triggerType,
-      );
+      // On DB error, return empty - do NOT fall back to templates (prevents duplicates)
+      return [];
     }
 
     if (data && data.length > 0) {
-      console.log(`[Automation Trigger] Found ${data.length} automations in DB`);
+      console.log(`[Automation Trigger] Found ${data.length} automations in DB for ${triggerType}`);
       return data.map((row: any) => {
         const definition = row.definition || {};
         return {
@@ -296,15 +295,12 @@ async function getAutomationsForTrigger(
       });
     }
 
-    console.log("[Automation Trigger] No DB automations found, using templates");
-    return getDefaultTemplateAutomations(teamId).filter(
-      (a) => a.trigger?.type === triggerType || a.triggerType === triggerType,
-    );
+    // No saved automations - return empty (do NOT use templates to prevent duplicates)
+    console.log(`[Automation Trigger] No DB automations found for ${triggerType}, returning empty`);
+    return [];
   } catch (err) {
     console.error("[Automation Trigger] Unexpected error fetching automations:", err);
-    return getDefaultTemplateAutomations(teamId).filter(
-      (a) => a.trigger?.type === triggerType || a.triggerType === triggerType,
-    );
+    return [];
   }
 }
 
@@ -708,6 +704,7 @@ Deno.serve(async (req) => {
     }
 
     // ---- Idempotency / de-dupe guard ----
+    // Generate a stable eventId from incoming data or lead.id
     const stableEventId =
       eventId ??
       (eventPayload as any)?.eventId ??
@@ -715,19 +712,22 @@ Deno.serve(async (req) => {
         ? `lead_created:${(eventPayload as any).lead.id}`
         : null);
 
+    // Check if we already processed this exact event (prevents duplicate runs on retries)
     if (stableEventId) {
+      // Use textSearch on context_snapshot->>'eventId' for reliable deduplication
       const { data: existingRuns, error: existingErr } = await supabase
         .from("automation_runs")
         .select("id, created_at")
         .eq("team_id", teamId)
         .eq("trigger_type", triggerType)
-        .contains("context_snapshot", { eventId: stableEventId })
+        .filter("context_snapshot->>eventId", "eq", stableEventId)
         .order("created_at", { ascending: false })
         .limit(1);
 
       if (existingErr) {
         console.error("[automation-trigger] idempotency lookup failed:", existingErr);
       } else if (existingRuns && existingRuns.length > 0) {
+        console.log(`[automation-trigger] Deduped: eventId=${stableEventId} already processed as run ${existingRuns[0].id}`);
         return new Response(JSON.stringify({ ok: true, deduped: true, runId: existingRuns[0].id }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
