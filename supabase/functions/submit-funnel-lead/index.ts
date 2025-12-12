@@ -226,53 +226,88 @@ Deno.serve(async (req) => {
 
     // Create new lead if no lead_id or update failed
     if (!lead) {
-      const { data: newLead, error: insertError } = await supabase
-        .from("funnel_leads")
-        .insert({
-          funnel_id,
-          team_id: funnel.team_id,
-          answers,
-          email,
-          phone,
-          name,
-          utm_source,
-          utm_medium,
-          utm_campaign,
-          calendly_booking_data: calendlyBookingData,
-          opt_in_status: optInStatus,
-          opt_in_timestamp: optInTimestamp,
-          status: leadStatus,
-          last_step_index: last_step_index ?? 0,
-        })
-        .select()
-        .single();
+      // 10-second dedupe window: check if a lead with same team + funnel + (email OR phone) was created recently
+      // This prevents duplicate automation triggers from retries or double-submits
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+      let recentLead = null;
 
-      if (insertError) {
-        console.error("Error inserting lead:", insertError);
-        return new Response(JSON.stringify({ error: "Failed to save lead" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (email || phone) {
+        let query = supabase
+          .from("funnel_leads")
+          .select("*")
+          .eq("funnel_id", funnel_id)
+          .eq("team_id", funnel.team_id)
+          .gte("created_at", tenSecondsAgo);
+
+        // Check by email OR phone
+        if (email && phone) {
+          query = query.or(`email.eq.${email},phone.eq.${phone}`);
+        } else if (email) {
+          query = query.eq("email", email);
+        } else if (phone) {
+          query = query.eq("phone", phone);
+        }
+
+        const { data: recentLeads } = await query.limit(1);
+        if (recentLeads && recentLeads.length > 0) {
+          recentLead = recentLeads[0];
+          console.log("Found recent lead within 10s dedupe window:", recentLead.id, "- skipping automation trigger");
+        }
       }
-      lead = newLead;
-      console.log("Lead created successfully:", lead.id);
 
-      // Trigger lead_created automation for new leads
-      try {
-        const eventId = `lead_created:${newLead.id}`;
+      if (recentLead) {
+        // Return existing lead without triggering automation again
+        lead = recentLead;
+      } else {
+        // No recent duplicate, create new lead
+        const { data: newLead, error: insertError } = await supabase
+          .from("funnel_leads")
+          .insert({
+            funnel_id,
+            team_id: funnel.team_id,
+            answers,
+            email,
+            phone,
+            name,
+            utm_source,
+            utm_medium,
+            utm_campaign,
+            calendly_booking_data: calendlyBookingData,
+            opt_in_status: optInStatus,
+            opt_in_timestamp: optInTimestamp,
+            status: leadStatus,
+            last_step_index: last_step_index ?? 0,
+          })
+          .select()
+          .single();
 
-        await supabase.functions.invoke("automation-trigger", {
-          body: {
-            triggerType: "lead_created",
-            teamId: funnel.team_id,
-            eventId,
-            eventPayload: { lead: newLead },
-          },
-        });
+        if (insertError) {
+          console.error("Error inserting lead:", insertError);
+          return new Response(JSON.stringify({ error: "Failed to save lead" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        lead = newLead;
+        console.log("Lead created successfully:", lead.id);
 
-        console.log("Lead created automation triggered for:", newLead.id);
-      } catch (automationError) {
-        console.error("Automation trigger error (non-blocking):", automationError);
+        // Trigger lead_created automation for NEW leads only (not deduped ones)
+        try {
+          const eventId = `lead_created:${newLead.id}`;
+
+          await supabase.functions.invoke("automation-trigger", {
+            body: {
+              triggerType: "lead_created",
+              teamId: funnel.team_id,
+              eventId,
+              eventPayload: { lead: newLead },
+            },
+          });
+
+          console.log("Lead created automation triggered for:", newLead.id);
+        } catch (automationError) {
+          console.error("Automation trigger error (non-blocking):", automationError);
+        }
       }
     }
 

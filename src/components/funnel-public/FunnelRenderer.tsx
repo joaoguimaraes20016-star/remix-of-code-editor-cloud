@@ -275,8 +275,13 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   }, [firePixelEvent]);
 
   // Progressive lead save - creates or updates lead
+  // Uses pendingSaveRef as a mutex to prevent concurrent/duplicate submissions
   const saveLead = useCallback(async (allAnswers: Record<string, any>, isComplete: boolean = false) => {
-    if (pendingSaveRef.current) return;
+    // Prevent duplicate submissions - if already submitting, ignore this call
+    if (pendingSaveRef.current) {
+      console.log('Ignoring duplicate save request - submission in progress');
+      return;
+    }
     pendingSaveRef.current = true;
 
     try {
