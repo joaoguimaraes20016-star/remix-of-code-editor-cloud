@@ -346,18 +346,25 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
           if (returnedLeadId) {
             setLeadId(returnedLeadId);
             console.log("Lead saved:", returnedLeadId, submitMode === "submit" ? "(submit)" : "(draft)");
-          } else {
-            console.log("Lead saved (no lead id returned)", submitMode);
-          }
-        }
-      } catch (err) {
-        console.error("Error saving lead:", err);
-      } finally {
-        pendingSaveRef.current = false;
-      }
-    },
-    [funnel.id, leadId, utmSource, utmMedium, utmCampaign, currentStepIndex],
-  );
+         } else {
+  console.log("Lead saved (no id returned)", data);
+}
+          
+}
+        
+} catch (err) {
+  console.error("Error saving lead:", err);
+} finally {
+  pendingSaveRef.current = false;
+}
+}, [
+  funnel?.id,
+  leadId,
+  utmSource,
+  utmMedium,
+  utmCampaign,
+  currentStepIndex,
+]);
 
   // Check if answer contains meaningful data worth saving
   const hasMeaningfulData = useCallback((value: any, stepType: string): boolean => {
