@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type AutomationRunRow = {
   id: string;
@@ -15,23 +13,23 @@ type AutomationRunRow = {
   created_at: string;
 };
 
-function safeJson(value: any) {
+function formatDate(ts: string) {
   try {
-    return JSON.stringify(value ?? null, null, 2);
+    return new Date(ts).toLocaleString();
   } catch {
-    return String(value);
+    return ts;
   }
 }
 
 export default function AutomationRunsList({ teamId }: { teamId: string }) {
-  const [runs, setRuns] = useState<AutomationRunRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<AutomationRunRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const expandedRun = useMemo(() => runs.find((r) => r.id === expandedId) ?? null, [runs, expandedId]);
+  const sorted = useMemo(() => rows, [rows]);
 
-  async function loadRuns() {
+  async function load() {
     setLoading(true);
     setError(null);
 
@@ -41,94 +39,114 @@ export default function AutomationRunsList({ teamId }: { teamId: string }) {
         "id, team_id, automation_id, trigger_type, status, error_message, steps_executed, context_snapshot, created_at",
       )
       .eq("team_id", teamId)
-      // IMPORTANT: no filter on automation_id — funnel/template runs often have NULL
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(100);
 
     if (error) {
       setError(error.message);
-      setRuns([]);
-    } else {
-      setRuns((data as AutomationRunRow[]) ?? []);
+      setRows([]);
+      setLoading(false);
+      return;
     }
 
+    setRows((data ?? []) as AutomationRunRow[]);
     setLoading(false);
   }
 
   useEffect(() => {
     if (!teamId) return;
-    loadRuns();
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
   return (
-    <Card className="bg-background/40 border-border">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Automation History</CardTitle>
-        <Button variant="secondary" onClick={loadRuns} disabled={loading}>
-          {loading ? "Refreshing..." : "Refresh"}
-        </Button>
-      </CardHeader>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-lg font-semibold">Automation History</div>
+          <div className="text-sm text-muted-foreground">
+            Shows ALL rows from <code>public.automation_runs</code> for this team.
+          </div>
+        </div>
+        <button onClick={load} className="rounded-md border px-3 py-2 text-sm hover:bg-muted" disabled={loading}>
+          {loading ? "Loading..." : "Refresh"}
+        </button>
+      </div>
 
-      <CardContent className="space-y-3">
-        {error ? <div className="text-sm text-red-400">History failed to load: {error}</div> : null}
+      {error && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+          <div className="font-medium">Query error</div>
+          <div className="opacity-90">{error}</div>
+          <div className="mt-2 opacity-80">
+            If you see an RLS error here, the table policy isn’t letting your user read runs for this team.
+          </div>
+        </div>
+      )}
 
-        {!loading && !error && runs.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No automation runs found for this team yet.</div>
-        ) : null}
+      {!error && !loading && sorted.length === 0 && (
+        <div className="rounded-md border p-6 text-sm text-muted-foreground">
+          No automation runs found for this team yet.
+        </div>
+      )}
 
-        <div className="space-y-2">
-          {runs.map((r) => {
-            const label = r.automation_id ? "Saved Automation" : "Inline Automation";
-            const statusOk = String(r.status).toLowerCase() === "success";
-            const isOpen = expandedId === r.id;
-
-            return (
-              <div key={r.id} className="flex flex-col gap-2 rounded-xl border border-border bg-background/30 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-muted px-3 py-1 text-xs">{label}</span>
-                    <span className="rounded-full bg-muted px-3 py-1 text-xs">{r.trigger_type}</span>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs ${
-                        statusOk ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"
-                      }`}
-                    >
-                      {r.status}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
-                  </div>
-
-                  <Button variant="ghost" onClick={() => setExpandedId(isOpen ? null : r.id)}>
-                    {isOpen ? "Hide details" : "View details"}
-                  </Button>
+      <div className="space-y-2">
+        {sorted.map((r) => {
+          const isExpanded = expandedId === r.id;
+          const label = r.automation_id ? "Saved Automation" : "Inline Automation";
+          return (
+            <div key={r.id} className="rounded-lg border p-3">
+              <div className="flex flex-wrap items-center gap-2 justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-muted px-2 py-1 text-xs">{label}</span>
+                  <span className="rounded-full bg-muted px-2 py-1 text-xs">{r.trigger_type}</span>
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs ${
+                      r.status === "success"
+                        ? "bg-emerald-500/15 text-emerald-200"
+                        : r.status === "error"
+                          ? "bg-red-500/15 text-red-200"
+                          : "bg-muted text-foreground"
+                    }`}
+                  >
+                    {r.status}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{formatDate(r.created_at)}</span>
                 </div>
 
-                {isOpen ? (
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-lg border border-border bg-background/40 p-3">
-                      <div className="mb-2 text-xs text-muted-foreground">steps_executed</div>
-                      <pre className="max-h-72 overflow-auto text-xs">{safeJson(r.steps_executed)}</pre>
-                    </div>
-
-                    <div className="rounded-lg border border-border bg-background/40 p-3">
-                      <div className="mb-2 text-xs text-muted-foreground">context_snapshot</div>
-                      <pre className="max-h-72 overflow-auto text-xs">{safeJson(r.context_snapshot)}</pre>
-                    </div>
-
-                    {r.error_message ? (
-                      <div className="md:col-span-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-                        <div className="mb-1 text-xs text-red-300">error_message</div>
-                        <pre className="text-xs text-red-200">{r.error_message}</pre>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+                <button
+                  onClick={() => setExpandedId(isExpanded ? null : r.id)}
+                  className="rounded-md border px-3 py-2 text-sm hover:bg-muted"
+                >
+                  {isExpanded ? "Hide details" : "View details"}
+                </button>
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+
+              {r.error_message && (
+                <div className="mt-2 text-sm text-red-200">
+                  <span className="font-medium">Error:</span> {r.error_message}
+                </div>
+              )}
+
+              {isExpanded && (
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs font-medium mb-2">steps_executed</div>
+                    <pre className="text-xs overflow-auto whitespace-pre-wrap">
+                      {JSON.stringify(r.steps_executed, null, 2)}
+                    </pre>
+                  </div>
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs font-medium mb-2">context_snapshot</div>
+                    <pre className="text-xs overflow-auto whitespace-pre-wrap">
+                      {JSON.stringify(r.context_snapshot, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
