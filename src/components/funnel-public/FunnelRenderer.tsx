@@ -349,20 +349,6 @@ const saveLead = useCallback(
   [funnel.id, leadId, utmSource, utmMedium, utmCampaign, currentStepIndex]
 );
 
-
-      if (error) {
-        console.error('Failed to save lead:', error);
-      } else if (data?.lead_id) {
-        setLeadId(data.lead_id);
-        console.log('Lead saved:', data.lead_id, isComplete ? '(complete)' : '(partial)');
-      }
-    } catch (err) {
-      console.error('Error saving lead:', err);
-    } finally {
-      pendingSaveRef.current = false;
-    }
-  }, [funnel.id, leadId, utmSource, utmMedium, utmCampaign]);
-
   // Check if answer contains meaningful data worth saving
   const hasMeaningfulData = useCallback((value: any, stepType: string): boolean => {
     if (!value) return false;
@@ -408,7 +394,7 @@ const saveLead = useCallback(
       // Progressive save on meaningful data
       if (hasMeaningfulData(value, currentStep.step_type)) {
         // Don't wait for save to complete before moving to next step
-        saveLead(updatedAnswers, false);
+        saveLead(updatedAnswers, "draft");
         
         // Fire Lead pixel event when contact info is captured (with deduplication)
         if (['opt_in', 'email_capture', 'phone_capture'].includes(currentStep.step_type)) {
@@ -430,7 +416,7 @@ const saveLead = useCallback(
     const nextStep = steps[currentStepIndex + 1];
     if (nextStep?.step_type === 'thank_you') {
       setIsSubmitting(true);
-      await saveLead(updatedAnswers, true);
+      await saveLead(updatedAnswers, "submit");
       setIsSubmitting(false);
       
       // Fire CompleteRegistration pixel event
