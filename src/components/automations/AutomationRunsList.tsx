@@ -24,7 +24,8 @@ function pretty(obj: any) {
   }
 }
 
-export default function AutomationRunsList({ teamId }: { teamId: string }) {
+// ✅ IMPORTANT: named export to match Workflows.tsx import
+export function AutomationRunsList({ teamId }: { teamId: string }) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AutomationRunRow[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -42,7 +43,14 @@ export default function AutomationRunsList({ teamId }: { teamId: string }) {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    if (!error) setRows((data ?? []) as AutomationRunRow[]);
+    if (error) {
+      console.error("Failed to load automation_runs:", error);
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    setRows((data ?? []) as AutomationRunRow[]);
     setLoading(false);
   };
 
