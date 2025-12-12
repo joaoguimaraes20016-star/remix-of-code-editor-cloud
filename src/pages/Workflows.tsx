@@ -1,10 +1,11 @@
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Zap, GitBranch, Workflow, Bot } from "lucide-react";
+import { Zap, GitBranch, Workflow, Bot, History } from "lucide-react";
 import { TaskFlowBuilder } from "@/components/TaskFlowBuilder";
 import { FollowUpSettings } from "@/components/FollowUpSettings";
 import { ActionPipelineMappings } from "@/components/ActionPipelineMappings";
 import { AutomationsList } from "@/components/automations/AutomationsList";
+import { AutomationRunsList } from "@/components/automations/AutomationRunsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Workflows() {
@@ -31,6 +32,10 @@ export default function Workflows() {
             <Bot className="h-4 w-4" />
             Automations
           </TabsTrigger>
+          <TabsTrigger value="history" className="gap-2">
+            <History className="h-4 w-4" />
+            History
+          </TabsTrigger>
           <TabsTrigger value="confirmations" className="gap-2">
             <Zap className="h-4 w-4" />
             Call Confirmations
@@ -48,6 +53,11 @@ export default function Workflows() {
         {/* Automations Tab */}
         <TabsContent value="automations" className="space-y-4">
           <AutomationsList teamId={teamId} />
+        </TabsContent>
+
+        {/* History Tab */}
+        <TabsContent value="history" className="space-y-4">
+          <AutomationRunsList teamId={teamId} />
         </TabsContent>
 
         {/* Call Confirmation Flow */}
