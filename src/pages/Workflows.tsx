@@ -5,7 +5,7 @@ import { TaskFlowBuilder } from "@/components/TaskFlowBuilder";
 import { FollowUpSettings } from "@/components/FollowUpSettings";
 import { ActionPipelineMappings } from "@/components/ActionPipelineMappings";
 import { AutomationsList } from "@/components/automations/AutomationsList";
-import { AutomationRunsList } from "@/components/automations/AutomationRunsList";
+import AutomationRunsList from "@/components/automations/AutomationRunsList";
 import { MessageLogsList } from "@/components/automations/MessageLogsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -33,7 +33,7 @@ export default function Workflows() {
             <Bot className="h-4 w-4" />
             Automations
           </TabsTrigger>
-        <TabsTrigger value="history" className="gap-2">
+          <TabsTrigger value="history" className="gap-2">
             <History className="h-4 w-4" />
             History
           </TabsTrigger>
