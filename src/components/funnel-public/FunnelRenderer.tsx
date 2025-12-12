@@ -346,25 +346,18 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
           if (returnedLeadId) {
             setLeadId(returnedLeadId);
             console.log("Lead saved:", returnedLeadId, submitMode === "submit" ? "(submit)" : "(draft)");
-         } else {
-  console.log("Lead saved (no id returned)", data);
-}
-          
-}
-        
-} catch (err) {
-  console.error("Error saving lead:", err);
-} finally {
-  pendingSaveRef.current = false;
-}
-}, [
-  funnel?.id,
-  leadId,
-  utmSource,
-  utmMedium,
-  utmCampaign,
-  currentStepIndex,
-]);
+          } else {
+            console.log("Lead saved (no id returned)", data);
+          }
+        }
+      } catch (err) {
+        console.error("Error saving lead:", err);
+      } finally {
+        pendingSaveRef.current = false;
+      }
+    },
+    [funnel?.id, leadId, utmSource, utmMedium, utmCampaign, currentStepIndex],
+  );
 
   // Check if answer contains meaningful data worth saving
   const hasMeaningfulData = useCallback((value: any, stepType: string): boolean => {
@@ -393,84 +386,73 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
     return false;
   }, []);
 
-const handleNext = useCallback(async (value?: any) => {
-let updatedAnswers = answers;
-  
+  const handleNext = useCallback(
+    async (value?: any) => {
+      let updatedAnswers = answers;
+
       // Save answer if value provided
-     if (value !== undefined && currentStep) {
-  updatedAnswers = {
-    ...answers,
-    [currentStep.id]: {
-      value,
-      step_type: currentStep.step_type,
-      content: currentStep.content,
-    },
-  };
+      if (value !== undefined && currentStep) {
+        updatedAnswers = {
+          ...answers,
+          [currentStep.id]: {
+            value,
+            step_type: currentStep.step_type,
+            content: currentStep.content,
+          },
+        };
 
-  setAnswers(updatedAnswers);
-}
-    
+        setAnswers(updatedAnswers);
+      }
+
       // FINAL: Opt-in step submit must NOT depend on `value`
-const isOptInStep = currentStep?.step_type === "opt_in";
+      const isOptInStep = currentStep?.step_type === "opt_in";
 
-if (isOptInStep) {
-  if (isSubmitting) return;
+      if (isOptInStep) {
+        if (isSubmitting) return;
 
-  try {
-    setIsSubmitting(true);
-    await saveLead(updatedAnswers, "submit");
-  } finally {
-    setIsSubmitting(false);
-  }
-} else {
-  if (hasMeaningfulData(value, currentStep?.step_type)) {
-    saveLead(updatedAnswers, "draft");
-  }
-}
-
-          // Fire Lead pixel event when contact info is captured (with deduplication)
-         if (currentStep && ["opt_in", "email_capture", "phone_capture"].includes(currentStep.step_type)) {
-
-                 const eventData = typeof value === "object" ? value : { value };
-
-      // Use email or phone as deduplication key to prevent duplicate Lead events
-      const dedupeKey = eventData.email
-        ? `lead_${eventData.email}`
-        : eventData.phone
-          ? `lead_${eventData.phone}`
-          : `lead_step_${currentStepIndex}`;
-
-      firePixelEvent(
-        "Lead",
-        {
-          ...eventData,
-          value: 10, // Default lead value
-          currency: "USD",
-        },
-        dedupeKey,
-      );
-
-          }
+        try {
+          setIsSubmitting(true);
+          await saveLead(updatedAnswers, "submit");
+        } finally {
+          setIsSubmitting(false);
         }
+      } else {
+        if (hasMeaningfulData(value, currentStep?.step_type)) {
+          saveLead(updatedAnswers, "draft");
+        }
+      }
 
-  // Move to next step
-  if (!isLastStep) {
-    setCurrentStepIndex((prev) => prev + 1);
-  } else {
-    setIsComplete(true);
-  }
-}, [
-  currentStep,
-  currentStepIndex,
-  steps,
-  answers,
-  isLastStep,
-  saveLead,
-  hasMeaningfulData,
-  isSubmitting,
-]);
+      // Fire Lead pixel event when contact info is captured (with deduplication)
+      if (currentStep && ["opt_in", "email_capture", "phone_capture"].includes(currentStep.step_type)) {
+        const eventData = typeof value === "object" ? value : { value };
 
+        // Use email or phone as deduplication key to prevent duplicate Lead events
+        const dedupeKey = eventData.email
+          ? `lead_${eventData.email}`
+          : eventData.phone
+            ? `lead_${eventData.phone}`
+            : `lead_step_${currentStepIndex}`;
 
+        firePixelEvent(
+          "Lead",
+          {
+            ...eventData,
+            value: 10, // Default lead value
+            currency: "USD",
+          },
+          dedupeKey,
+        );
+      }
+
+      // Move to next step
+      if (!isLastStep) {
+        setCurrentStepIndex((prev) => prev + 1);
+      } else {
+        setIsComplete(true);
+      }
+    },
+    [currentStep, currentStepIndex, steps, answers, isLastStep, saveLead, hasMeaningfulData, isSubmitting],
+  );
 
   // Calculate question number for multi_choice steps (excluding welcome, thank_you, video)
   const questionSteps = steps.filter((s) =>
