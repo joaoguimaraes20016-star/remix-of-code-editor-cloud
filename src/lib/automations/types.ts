@@ -16,6 +16,7 @@ export type ActionType =
   | 'add_tag'
   | 'notify_team'
   | 'enqueue_dialer'      // generic power dialer
+  | 'time_delay'          // wait before next action
   | 'custom_webhook';
 
 export interface AutomationCondition {
