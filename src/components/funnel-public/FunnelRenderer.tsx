@@ -443,7 +443,6 @@ if (isOptInStep) {
             );
           }
         }
-      }
 
       // Move to next step
       if (!isLastStep) {
