@@ -12,27 +12,13 @@ import { EmbedStep } from "./EmbedStep";
 import { ProgressDots } from "./ProgressDots";
 import { cn } from "@/lib/utils";
 import type { CalendlyBookingData } from "./DynamicElementRenderer";
+import { getDefaultIntent, getStepDefinition } from "@/lib/funnel/stepDefinitions";
+import type { StepIntent } from "@/lib/funnel/types";
 
-// Step Intent type - separates UI from semantics
-type StepIntent = 'capture' | 'collect' | 'schedule' | 'complete';
-
-// Get default intent based on step_type (for backward compatibility with older funnels)
-const getDefaultIntent = (stepType: string): StepIntent => {
-  switch (stepType) {
-    case 'opt_in':
-    case 'email_capture':
-    case 'phone_capture':
-      return 'capture';
-    case 'embed':
-      return 'schedule';
-    case 'thank_you':
-      return 'complete';
-    default:
-      return 'collect';
-  }
-};
-
-// Get step intent - uses content.intent if set, otherwise derives from step_type
+/**
+ * Get step intent - uses content.intent if set, otherwise derives from step_type
+ * This is the canonical source of truth for step semantics at runtime
+ */
 const getStepIntent = (step: FunnelStep): StepIntent => {
   return (step.content?.intent as StepIntent) || getDefaultIntent(step.step_type);
 };
