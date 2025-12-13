@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "supabase:deploy:migrations": "pnpm exec supabase migration deploy",
-    "supabase:deploy:functions": "pnpm exec supabase functions deploy record-funnel-event",
+    "supabase:deploy:migrations": "pnpm dlx supabase@latest migration deploy",
+    "supabase:deploy:functions": "pnpm dlx supabase@latest functions deploy record-funnel-event",
     "supabase:deploy": "bash ./supabase/deploy-record-events.sh",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",

@@ -4,13 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "Using local supabase CLI via pnpm exec (falls back to pnpm dlx)"
+echo "Using pnpm dlx supabase@latest to run Supabase CLI (no global install required)"
 
-if command -v pnpm >/dev/null 2>&1; then
-  SUPABASE_CMD="pnpm exec supabase"
-else
-  SUPABASE_CMD="pnpm dlx supabase@latest"
-fi
+SUPABASE_CMD="pnpm dlx supabase@latest"
 
 echo "Deploying Supabase migrations..."
 $SUPABASE_CMD migration deploy
