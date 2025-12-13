@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import type { CalendlyBookingData } from "./DynamicElementRenderer";
 import { getDefaultIntent, getStepDefinition } from "@/lib/funnel/stepDefinitions";
 import type { StepIntent } from "@/lib/funnel/types";
+import recordEvent from "@/lib/events/recordEvent";
+import elementDefinitions from "@/components/funnel/elementDefinitions";
 
 /**
  * Get step intent - uses content.intent if set, otherwise derives from step_type
@@ -274,6 +276,31 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
         },
         `view_step_${currentStepIndex}`,
       );
+
+      // Also record canonical step_viewed to the events stream
+      (async () => {
+        try {
+          const def = elementDefinitions[currentStep.step_type];
+          const dedupe = def?.buildDedupeKey
+            ? def.buildDedupeKey(funnel.id, currentStep.id, { step_index: currentStepIndex })
+            : `view_step:${funnel.id}:${currentStep.id}`;
+
+          await recordEvent({
+            team_id: funnel.team_id,
+            funnel_id: funnel.id,
+            event_type: def?.viewEvent || "step_viewed",
+            dedupe_key: dedupe,
+            payload: {
+              step_id: currentStep.id,
+              step_type: currentStep.step_type,
+              step_index: currentStepIndex,
+              headline: currentStep.content?.headline,
+            },
+          });
+        } catch (err) {
+          console.debug("Failed recording step_viewed event:", err);
+        }
+      })();
     }
   }, [currentStepIndex, currentStep, firePixelEvent]);
 
@@ -444,6 +471,24 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
             ? `lead_${eventData.phone}`
             : `lead_step_${currentStepIndex}`;
         firePixelEvent("Lead", { ...eventData, value: 10, currency: "USD" }, dedupeKey);
+        // Record canonical lead_submitted event
+        (async () => {
+          try {
+            await recordEvent({
+              team_id: funnel.team_id,
+              funnel_id: funnel.id,
+              event_type: "lead_submitted",
+              dedupe_key: dedupeKey,
+              payload: {
+                step_id: stepId,
+                answers: updatedAnswers,
+                lead_id: leadId,
+              },
+            });
+          } catch (err) {
+            console.debug("Failed recording lead_submitted event:", err);
+          }
+        })();
         
       } else if (stepIntent === "schedule") {
         // SCHEDULE intent = save draft + fire Schedule event
@@ -451,6 +496,24 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
           await saveLead(updatedAnswers, "draft", stepId, stepIntent);
         }
         firePixelEvent("Schedule", { step_id: stepId }, `schedule_${stepId}`);
+
+        // Record schedule event
+        (async () => {
+          try {
+            await recordEvent({
+              team_id: funnel.team_id,
+              funnel_id: funnel.id,
+              event_type: "schedule",
+              dedupe_key: `schedule:${funnel.id}:${stepId}`,
+              payload: {
+                step_id: stepId,
+                calendly_booking: calendlyBookingRef.current,
+              },
+            });
+          } catch (err) {
+            console.debug("Failed recording schedule event:", err);
+          }
+        })();
         
       } else {
         // COLLECT or COMPLETE intent = draft save only
