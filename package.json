@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "supabase:deploy:migrations": "supabase migration deploy",
+    "supabase:deploy:functions": "supabase functions deploy record-funnel-event",
+    "supabase:deploy": "bash ./supabase/deploy-record-events.sh",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview"
