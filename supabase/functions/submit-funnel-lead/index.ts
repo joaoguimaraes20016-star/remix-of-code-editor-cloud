@@ -1,9 +1,10 @@
 // supabase/functions/submit-funnel-lead/index.ts
+// Canonical Funnel Lead Submission Handler
 // GHL-style behavior:
 // - ALWAYS upsert the lead (draft saves allowed)
-// - ONLY trigger automations on explicit submitMode === "submit"
+// - ONLY trigger automations on explicit submitMode === "submit" OR step_intent === "capture"
 // - Keep dedupe window to avoid double-submit inserts
-// Constraints: no DB schema changes, do NOT touch automation-trigger
+// - Uses canonical step definitions for intent derivation
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -16,6 +17,23 @@ const corsHeaders = {
 };
 
 type SubmitMode = "draft" | "submit";
+type StepIntent = "capture" | "collect" | "schedule" | "complete";
+
+// Canonical default intent derivation (mirrors frontend stepDefinitions.ts)
+function getDefaultIntent(stepType: string): StepIntent {
+  switch (stepType) {
+    case 'opt_in':
+    case 'email_capture':
+    case 'phone_capture':
+      return 'capture';
+    case 'embed':
+      return 'schedule';
+    case 'thank_you':
+      return 'complete';
+    default:
+      return 'collect';
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -51,24 +69,32 @@ serve(async (req) => {
     const calendly_booking = body.calendly_booking ?? null;
     const calendlyBookingData = body.calendly_booking_data ?? null;
 
-  // NEW: explicit submit mode (draft vs submit)
-  const submitMode: SubmitMode = (body.submitMode ?? "draft") as SubmitMode;
-  
-  // NEW: step semantics for backend safety net
-  const step_id: string | null = body.step_id ?? null;
-  const step_intent: string | null = body.step_intent ?? null;
+    // Submit mode and step semantics
+    const submitMode: SubmitMode = (body.submitMode ?? "draft") as SubmitMode;
+    const step_id: string | null = body.step_id ?? null;
+    const step_type: string | null = body.step_type ?? null;
+    const step_intent_raw: string | null = body.step_intent ?? null;
 
-  // For tracing + optional event id stability
-  const clientRequestId: string | null = body.clientRequestId ?? null;
+    // For tracing + optional event id stability
+    const clientRequestId: string | null = body.clientRequestId ?? null;
+    
+    // Derive step_intent using canonical rules if not provided
+    let step_intent: StepIntent | null = step_intent_raw as StepIntent | null;
+    if (!step_intent && step_type) {
+      step_intent = getDefaultIntent(step_type);
+      console.log(`[submit-funnel-lead] Derived step_intent=${step_intent} from step_type=${step_type}`);
+    }
   
-  // Compute effectiveSubmitMode: if submitMode is draft but step_intent is capture, upgrade to submit
-  let effectiveSubmitMode: SubmitMode = submitMode;
-  if (submitMode === "draft" && step_intent === "capture") {
-    effectiveSubmitMode = "submit";
-    console.log("[submit-funnel-lead] Safety net: upgrading draft->submit because step_intent=capture");
-  }
+    // Compute effectiveSubmitMode: 
+    // - If submitMode is "submit", use it
+    // - If step_intent is "capture", upgrade draft to submit
+    let effectiveSubmitMode: SubmitMode = submitMode;
+    if (submitMode === "draft" && step_intent === "capture") {
+      effectiveSubmitMode = "submit";
+      console.log("[submit-funnel-lead] Safety net: upgrading draft->submit because step_intent=capture");
+    }
   
-  console.log(`[submit-funnel-lead] step_id=${step_id}, step_intent=${step_intent}, submitMode=${submitMode}, effectiveSubmitMode=${effectiveSubmitMode}, clientRequestId=${clientRequestId}`);
+    console.log(`[submit-funnel-lead] step_id=${step_id}, step_type=${step_type}, step_intent=${step_intent}, submitMode=${submitMode}, effectiveSubmitMode=${effectiveSubmitMode}, clientRequestId=${clientRequestId}`);
 
     if (!funnel_id) {
       return new Response(JSON.stringify({ error: "Missing funnel_id" }), {

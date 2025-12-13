@@ -6,7 +6,7 @@ import { Json } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Settings, Eye, Save, Globe, Play, Maximize2, Minimize2, ChevronLeft, ChevronRight, Undo2, Redo2, Link2 } from 'lucide-react';
+import { ArrowLeft, Settings, Eye, Save, Globe, Play, Maximize2, Minimize2, ChevronLeft, ChevronRight, Undo2, Redo2, Link2, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { PagesList } from '@/components/funnel-builder/PagesList';
 import { EditorSidebar } from '@/components/funnel-builder/EditorSidebar';
@@ -26,6 +26,7 @@ import { useFunnelHistory } from '@/hooks/useFunnelHistory';
 import { useTeamRole } from '@/hooks/useTeamRole';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getDefaultIntent, validateFunnelStructure, countCaptureSteps } from '@/lib/funnel/stepDefinitions';
 import {
   Dialog,
   DialogContent,
@@ -343,6 +344,7 @@ export default function FunnelEditor() {
   });
 
   // Initialize the history state ONLY on first load - not on refetch
+  // Also auto-persist default intents for steps missing them (migration for old funnels)
   useEffect(() => {
     if (funnel && initialSteps && !isInitialized) {
       // Load persisted designs, element orders, and dynamic elements from step content
@@ -350,7 +352,9 @@ export default function FunnelEditor() {
       const loadedOrders: Record<string, string[]> = {};
       const loadedDynamicElements: Record<string, Record<string, any>> = {};
       
-      initialSteps.forEach(step => {
+      // Auto-fill missing intents using the canonical Step Definitions
+      const migratedSteps = initialSteps.map(step => {
+        // Load designs, orders, dynamic elements
         if (step.content.design) {
           loadedDesigns[step.id] = step.content.design;
         }
@@ -360,25 +364,53 @@ export default function FunnelEditor() {
         if (step.content.dynamic_elements) {
           loadedDynamicElements[step.id] = step.content.dynamic_elements;
         }
+        
+        // If step is missing intent, derive and persist the default
+        if (!step.content.intent) {
+          const defaultIntent = getDefaultIntent(step.step_type);
+          return {
+            ...step,
+            content: {
+              ...step.content,
+              intent: defaultIntent,
+            },
+          };
+        }
+        return step;
       });
       
       // Set dynamic elements state
       setDynamicElements(loadedDynamicElements);
       
-      // Reset the history with the loaded state
+      // Reset the history with the loaded state (with migrated intents)
       resetHistory({
         name: funnel.name,
-        steps: initialSteps,
+        steps: migratedSteps,
         stepDesigns: loadedDesigns,
         stepSettings: {},
         elementOrders: loadedOrders,
       });
       
-      if (initialSteps.length > 0 && !selectedStepId) {
-        setSelectedStepId(initialSteps[0].id);
+      if (migratedSteps.length > 0 && !selectedStepId) {
+        setSelectedStepId(migratedSteps[0].id);
       }
       
       setIsInitialized(true);
+      
+      // Check for steps that needed migration and trigger auto-save
+      const neededMigration = initialSteps.some(step => !step.content.intent);
+      if (neededMigration) {
+        console.log('[FunnelEditor] Auto-migrated step intents for', 
+          initialSteps.filter(s => !s.content.intent).length, 'steps');
+        // Mark as having changes to trigger auto-save
+        setHasUnsavedChanges(true);
+      }
+      
+      // Validate funnel structure and show warnings
+      const warnings = validateFunnelStructure(migratedSteps);
+      if (warnings.length > 0 && process.env.NODE_ENV === 'development') {
+        console.warn('[FunnelEditor] Structure warnings:', warnings);
+      }
     }
   }, [funnel, initialSteps, resetHistory, isInitialized]);
 

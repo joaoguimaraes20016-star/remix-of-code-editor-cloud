@@ -4,54 +4,28 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Plus, X, Type, Video, Image, Square, Minus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, X, Type, Video, Image, Square, Minus, AlertTriangle, Lock } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FunnelStep } from '@/pages/FunnelEditor';
 import { cn } from '@/lib/utils';
 import { EmojiPicker } from './EmojiPicker';
+import { 
+  getDefaultIntent, 
+  getAllowedIntents, 
+  isIntentLocked,
+  getStepTypeLabel,
+  INTENT_LABELS,
+  INTENT_DESCRIPTIONS,
+  getStepDefinition,
+} from '@/lib/funnel/stepDefinitions';
+import type { StepIntent } from '@/lib/funnel/types';
 
 // Strip HTML tags and decode entities for display in input fields
 const stripHtml = (html: string): string => {
   if (!html) return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
   return doc.body.textContent || '';
-};
-
-// Step Intent Types - separates UI from semantics
-export type StepIntent = 'capture' | 'collect' | 'schedule' | 'complete';
-
-// Get default intent based on step_type (for backward compatibility)
-export const getDefaultIntent = (stepType: string): StepIntent => {
-  switch (stepType) {
-    case 'opt_in':
-    case 'email_capture':
-    case 'phone_capture':
-      return 'capture';
-    case 'embed':
-      return 'schedule'; // Calendly embeds typically schedule
-    case 'thank_you':
-      return 'complete';
-    case 'welcome':
-    case 'video':
-    case 'text_question':
-    case 'multi_choice':
-    default:
-      return 'collect';
-  }
-};
-
-const intentLabels: Record<StepIntent, string> = {
-  capture: 'Capture (Triggers Workflow)',
-  collect: 'Collect (Save Draft)',
-  schedule: 'Schedule (Booking)',
-  complete: 'Complete (End)',
-};
-
-const intentDescriptions: Record<StepIntent, string> = {
-  capture: 'Submits lead & triggers automations',
-  collect: 'Saves progress without triggering workflows',
-  schedule: 'For Calendly/scheduling embeds',
-  complete: 'Final step, no further action',
 };
 
 interface StepContentEditorProps {
@@ -62,18 +36,6 @@ interface StepContentEditorProps {
   dynamicContent?: Record<string, any>;
   onUpdateDynamicContent?: (elementId: string, value: any) => void;
 }
-
-const stepTypeLabels: Record<string, string> = {
-  welcome: 'Welcome',
-  text_question: 'Text Question',
-  multi_choice: 'Multi Choice',
-  email_capture: 'Email Capture',
-  phone_capture: 'Phone Capture',
-  video: 'Video',
-  thank_you: 'Thank You',
-  opt_in: 'Opt-In Form',
-  embed: 'Embed/iFrame',
-};
 
 const getElementTypeLabel = (elementId: string) => {
   if (elementId.startsWith('text_')) return 'Text Block';
@@ -111,8 +73,15 @@ export function StepContentEditor({
   const buttonRef = useRef<HTMLInputElement>(null);
   const placeholderRef = useRef<HTMLInputElement>(null);
 
-  // Current intent (from content or default)
+  // Get step definition for this step type
+  const stepDefinition = getStepDefinition(step.step_type);
+  
+  // Current intent (from content or default) - using canonical source
   const currentIntent: StepIntent = (content.intent as StepIntent) || getDefaultIntent(step.step_type);
+  
+  // Get allowed intents and locked status from step definition
+  const allowedIntents = getAllowedIntents(step.step_type);
+  const intentLocked = isIntentLocked(step.step_type);
 
   // Auto-focus based on selected element
   useEffect(() => {
@@ -146,33 +115,59 @@ export function StepContentEditor({
           Content
         </h3>
         <p className="text-xs text-muted-foreground">
-          {stepTypeLabels[step.step_type]}
+          {getStepTypeLabel(step.step_type)}
         </p>
       </div>
 
-      {/* Step Intent Selector */}
+      {/* Step Intent Selector - Uses canonical step definitions */}
       <div className="space-y-2 p-3 -mx-3 rounded-lg bg-muted/50 border border-border/50">
-        <Label className="text-xs font-medium">Step Intent</Label>
-        <Select
-          value={currentIntent}
-          onValueChange={(value: StepIntent) => updateField('intent', value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(intentLabels) as StepIntent[]).map((intent) => (
-              <SelectItem key={intent} value={intent}>
-                <div className="flex flex-col">
-                  <span>{intentLabels[intent]}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium">Step Intent</Label>
+          {intentLocked && (
+            <Badge variant="secondary" className="text-xs gap-1">
+              <Lock className="h-3 w-3" />
+              Locked
+            </Badge>
+          )}
+        </div>
+        
+        {intentLocked ? (
+          <div className="px-3 py-2 rounded-md bg-muted text-sm">
+            {INTENT_LABELS[currentIntent]}
+          </div>
+        ) : (
+          <Select
+            value={currentIntent}
+            onValueChange={(value: StepIntent) => updateField('intent', value)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {allowedIntents.map((intent) => (
+                <SelectItem key={intent} value={intent}>
+                  <div className="flex flex-col">
+                    <span>{INTENT_LABELS[intent]}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        
         <p className="text-xs text-muted-foreground">
-          {intentDescriptions[currentIntent]}
+          {INTENT_DESCRIPTIONS[currentIntent]}
         </p>
+        
+        {/* Capture authority warning */}
+        {currentIntent === 'capture' && stepDefinition?.capabilities.canFinalizeLead && (
+          <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
+            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              This step will trigger workflows when submitted. Only one step per funnel should have "Capture" intent.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Headline - all types */}
