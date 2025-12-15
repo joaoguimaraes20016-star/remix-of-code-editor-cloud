@@ -163,8 +163,9 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
     return "text-destructive";
   };
 
-  // Show revenue clearly
-  const hasRevenue = (appointment.cc_collected || 0) > 0 || (appointment.mrr_amount || 0) > 0;
+  // Show revenue clearly (use canonical cc_collected only)
+  const depositAmount = Number(appointment.cc_collected ?? 0);
+  const hasRevenue = depositAmount > 0 || (appointment.mrr_amount || 0) > 0;
   const isNoShow = appointment.pipeline_stage === 'no_show';
   const isCancelled = appointment.pipeline_stage === 'cancelled';
   const isConfirmed = appointment.status === 'CONFIRMED' && !isNoShow && !isCancelled;
@@ -178,25 +179,31 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
       <Card
         ref={setNodeRef}
         style={style}
-        {...attributes}
-        {...listeners}
-        className="group relative bg-card p-3 sm:p-4 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary/40 transition-all duration-200 border border-border/50 overflow-hidden select-none"
+        className="group relative bg-card p-3 sm:p-4 hover:shadow-md hover:border-primary/40 transition-all duration-200 border border-border/50 overflow-hidden select-none"
       >
         <div className="relative z-10">
           {canDrag && (
-            <div className="opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0 transition-opacity pointer-events-none">
-              <GripVertical className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <div className="opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0 transition-opacity">
+              <div
+                className="p-1 rounded-md hover:bg-muted/50 cursor-grab"
+                {...attributes}
+                {...listeners}
+                aria-label="Drag handle"
+                title="Drag"
+              >
+                <GripVertical className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              </div>
             </div>
           )}
           
           {hasRevenue && (
             <div className="flex-1 space-y-1 sm:space-y-2">
-              {appointment.cc_collected && appointment.cc_collected > 0 && (
+              {depositAmount > 0 && (
                 <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-3 bg-success/10 border border-success/30 rounded-md sm:rounded-lg backdrop-blur-sm">
                   <div className="flex flex-col">
                     <span className="text-[8px] sm:text-[10px] text-success font-bold uppercase tracking-wider">Cash</span>
                     <span className="text-sm sm:text-2xl font-black text-success tabular-nums">
-                      ${appointment.cc_collected.toLocaleString()}
+                      ${depositAmount.toLocaleString()}
                     </span>
                   </div>
                 </div>

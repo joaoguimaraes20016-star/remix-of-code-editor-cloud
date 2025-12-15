@@ -15,3 +15,52 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+// DEV-only startup health check: log project ref and list non-system schemas/tables
+if (import.meta.env.DEV) {
+  (async () => {
+    try {
+      const rawUrl = SUPABASE_URL || (import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string) || '';
+      let projectRef = 'unset';
+      try {
+        if (rawUrl) {
+          const u = new URL(rawUrl);
+          projectRef = u.hostname.split('.')[0] || projectRef;
+        }
+      } catch (e) {
+        projectRef = rawUrl;
+      }
+
+      console.debug('[Supabase][dev] SUPABASE_URL=', rawUrl);
+      console.debug('[Supabase][dev] projectRef=', projectRef);
+
+      // Query information_schema.tables to detect available schemas/tables (may be restricted by PostgREST permissions)
+      try {
+        const { data, error } = await supabase
+          .from('information_schema.tables')
+          .select('table_schema,table_name')
+          .neq('table_schema', 'pg_catalog')
+          .neq('table_schema', 'information_schema')
+          .order('table_schema', { ascending: true })
+          .limit(50);
+
+        if (error) {
+          console.debug('[Supabase][dev] information_schema query error:', error);
+        } else {
+          console.debug('[Supabase][dev] discovered tables count=', Array.isArray(data) ? data.length : 0);
+          console.debug('[Supabase][dev] sample tables=', (data || []).slice(0, 20));
+
+          const crmTables = ['appointments', 'payments', 'team_pipeline_stages', 'confirmation_tasks'];
+          const found = (data || []).some((r: any) => crmTables.includes(r.table_name));
+          if (!found) {
+            console.warn('[Supabase][dev] Connected DB has no CRM tables; check Supabase project ref or run migrations.');
+          }
+        }
+      } catch (err) {
+        console.debug('[Supabase][dev] information_schema query failed:', err);
+      }
+    } catch (err) {
+      console.debug('[Supabase][dev] startup health check failed:', err);
+    }
+  })();
+}

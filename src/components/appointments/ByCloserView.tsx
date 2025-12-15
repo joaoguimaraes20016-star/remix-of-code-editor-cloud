@@ -5,11 +5,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { DealCard } from "./DealCard";
+import { DealPipeline } from "./DealPipeline";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { TodaysDashboard } from "./TodaysDashboard";
-import { DroppableStageColumn } from "./DroppableStageColumn";
 import { RescheduleDialog } from "./RescheduleDialog";
 import { RescheduleWithLinkDialog } from "./RescheduleWithLinkDialog";
 import { FollowUpDialog } from "./FollowUpDialog";
@@ -22,15 +19,7 @@ import { BulkAssignCloser } from "./BulkAssignCloser";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getActionPipelineMappings } from "@/lib/actionPipelineMappings";
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+// ByCloserView must NOT create its own DnDContext — it renders the canonical DealPipeline (single brain)
 
 interface ByCloserViewProps {
   teamId: string;
@@ -1025,16 +1014,6 @@ export function ByCloserView({ teamId, onCloseDeal }: ByCloserViewProps) {
 
         {closerGroups.map(group => (
           <TabsContent key={group.closerId} value={group.closerId} className="mt-4 md:mt-6">
-            {/* Today's Schedule for this Closer */}
-            <div className="mb-4 md:mb-8">
-              <h3 className="text-sm md:text-lg font-semibold mb-2 md:mb-4">Today's Schedule - {group.closerName}</h3>
-              <TodaysDashboard 
-                teamId={teamId} 
-                userRole="closer"
-                viewingAsCloserId={group.closerId}
-              />
-            </div>
-
             {/* Stats Cards */}
             <div className="grid grid-cols-4 gap-1.5 md:gap-4 mb-4 md:mb-6">
               <Card className="p-2 md:p-4">
@@ -1055,15 +1034,15 @@ export function ByCloserView({ teamId, onCloseDeal }: ByCloserViewProps) {
               </Card>
             </div>
 
-            {/* Pipeline View */}
+            {/* Pipeline View - use canonical DealPipeline filtered by closer */}
             <h3 className="text-sm md:text-lg font-semibold mb-2 md:mb-4">Full Pipeline</h3>
             {group.closerId === selectedCloser && (
-              <CloserPipelineView 
-                group={group} 
-                stages={stages} 
+              <DealPipeline
                 teamId={teamId}
-                onReload={loadCloserGroups}
+                userRole={"closer"}
+                currentUserId={group.closerId}
                 onCloseDeal={handleCloseDeal}
+                viewFilter={group.closerId}
               />
             )}
           </TabsContent>

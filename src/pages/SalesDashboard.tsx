@@ -74,9 +74,80 @@ const RevenueSummaryCard = ({ teamId }: { teamId: string }) => {
           getTeamPaymentsInRange(teamId, startOfMonth.toISOString(), endOfToday.toISOString()),
         ]);
 
-        setTodayTotal(sumPayments(todayPayments));
-        setWeekTotal(sumPayments(weekPayments));
-        setMonthTotal(sumPayments(monthPayments));
+        // Also include deposits recorded on appointments (cc_collected) for the same ranges
+        // Helper: fetch appointments by timestamp field (try updated_at, fallback to created_at) and sum cc_collected for deposit/closed
+        const fetchAppointmentsAndSum = async (startIso: string, endIso: string, label: string) => {
+          const tryQuery = async (tsField: string) => {
+            const { data, error } = await supabase
+              .from('appointments')
+              .select('id,cc_collected,pipeline_stage,status,created_at,updated_at')
+              .eq('team_id', teamId)
+              .gte(tsField, startIso)
+              .lte(tsField, endIso);
+            return { data, error };
+          };
+
+          // Try updated_at first
+          let result = await tryQuery('updated_at');
+          let arr = result.data || [];
+          const computeSum = (rows: any[]) =>
+            rows.reduce((s: number, r: any) => {
+              const stage = (r.pipeline_stage || '').toLowerCase();
+              const status = (r.status || '').toString().toUpperCase();
+              const isDepositStage = stage.includes('deposit');
+              const isClosedStatus = status === 'CLOSED' || status === 'CLOSED_WON';
+              if ((isDepositStage || isClosedStatus) && Number(r.cc_collected || 0) > 0) {
+                return s + Number(r.cc_collected || 0);
+              }
+              return s;
+            }, 0);
+
+          let sum = computeSum(arr);
+
+          if (import.meta.env.DEV) {
+            try {
+              console.debug(`[SalesDashboard][dev][${label}] using updated_at range`, { start: startIso, end: endIso });
+              console.debug(`[SalesDashboard][dev][${label}] fetched count`, arr.length);
+              console.debug(`[SalesDashboard][dev][${label}] sample rows`, arr.slice(0, 5).map((r: any) => ({ id: r.id, cc_collected: r.cc_collected, status: r.status, pipeline_stage: r.pipeline_stage, created_at: r.created_at, updated_at: r.updated_at })));
+              console.debug(`[SalesDashboard][dev][${label}] computed deposit sum (updated_at)`, sum);
+            } catch (err) {
+              console.debug('[SalesDashboard][dev] logging failed', err);
+            }
+          }
+
+          // If no rows or sum is zero, try fallback using created_at
+          if ((arr.length === 0 || sum === 0) && import.meta.env.DEV) {
+            try {
+              const fallback = await tryQuery('created_at');
+              const fallbackArr = fallback.data || [];
+              const fallbackSum = computeSum(fallbackArr);
+              console.debug(`[SalesDashboard][dev][${label}] fallback using created_at range`, { start: startIso, end: endIso });
+              console.debug(`[SalesDashboard][dev][${label}] fallback fetched count`, fallbackArr.length);
+              console.debug(`[SalesDashboard][dev][${label}] fallback sample rows`, fallbackArr.slice(0, 5).map((r: any) => ({ id: r.id, cc_collected: r.cc_collected, status: r.status, pipeline_stage: r.pipeline_stage, created_at: r.created_at, updated_at: r.updated_at })));
+              console.debug(`[SalesDashboard][dev][${label}] computed deposit sum (created_at)`, fallbackSum);
+
+              // If fallback returned more useful data, prefer it
+              if (fallbackArr.length > 0 || fallbackSum > 0) {
+                arr = fallbackArr;
+                sum = fallbackSum;
+              }
+            } catch (err) {
+              console.debug('[SalesDashboard][dev] fallback query failed', err);
+            }
+          }
+
+          return { rows: arr, sum };
+        };
+
+        const [todayA, weekA, monthA] = await Promise.all([
+          fetchAppointmentsAndSum(startOfToday.toISOString(), endOfToday.toISOString(), 'today'),
+          fetchAppointmentsAndSum(startOfWeek.toISOString(), endOfToday.toISOString(), 'week'),
+          fetchAppointmentsAndSum(startOfMonth.toISOString(), endOfToday.toISOString(), 'month'),
+        ]);
+
+        setTodayTotal(sumPayments(todayPayments) + todayA.sum);
+        setWeekTotal(sumPayments(weekPayments) + weekA.sum);
+        setMonthTotal(sumPayments(monthPayments) + monthA.sum);
       } catch (err) {
         console.warn("[RevenueSummaryCard] Failed to load revenue:", err);
       } finally {
@@ -665,8 +736,8 @@ const Index = () => {
         );
       });
 
-      // 👉 THIS is the important line:
-      return hasClosedWithRevenue(apt) && repMatch && !hasSaleRecord;
+      // Use appointment-aware closed/deposit check (include Deposit Collected stage)
+      return isAppointmentClosedWithRevenue(apt) && repMatch && !hasSaleRecord;
     })
     .map((apt) => {
       // Use updated_at for both deposits and closed deals (when the action was taken)

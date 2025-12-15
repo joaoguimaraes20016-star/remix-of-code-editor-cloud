@@ -129,8 +129,8 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      // reduce activation distance to make drag feel more responsive
-      activationConstraint: { distance: 4 },
+      // require small intentional movement before dragging to avoid accidental drags
+      activationConstraint: { distance: 8 },
     })
   );
 
@@ -172,7 +172,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       
       let query = supabase
         .from("appointments")
-        .select("*")
+        .select("id, lead_name, lead_email, start_at_utc, cc_collected, mrr_amount, mrr_months, product_name, setter_name, setter_id, closer_id, closer_name, team_id, event_type_name, updated_at, created_at, pipeline_stage, status, reschedule_url, calendly_invitee_uri, original_appointment_id, rescheduled_to_appointment_id, reschedule_count, rebooking_type, setter_notes, closer_notes")
         .eq("team_id", teamId)
         .gte('created_at', ninetyDaysAgo.toISOString()) // Only load last 90 days
         .limit(500); // Hard limit for safety
@@ -193,7 +193,22 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
       const { data, error } = await query.order("updated_at", { ascending: false });
       console.log("Loaded appointments:", data?.length);
-      setAppointments(data || []);
+
+      const appointmentsData = data || [];
+
+      // DEV-only logging: show team id, rows fetched, and sample cc_collected values
+      if (process.env.NODE_ENV !== "production") {
+        try {
+          console.debug('[DealPipeline][dev] teamId=', teamId);
+          console.debug('[DealPipeline][dev] rowsFetched=', appointmentsData.length);
+          console.debug('[DealPipeline][dev] sampleRows=', appointmentsData.slice(0, 3).map(r => ({ id: r.id, cc_collected: r.cc_collected })));
+        } catch (err) {
+          console.debug('[DealPipeline][dev] logging error', err);
+        }
+      }
+
+      // Use the appointment rows as-is; keep cc_collected from DB for display
+      setAppointments(appointmentsData);
 
       // Load confirmation tasks for all appointments
       if (data && data.length > 0) {
@@ -387,6 +402,17 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    if (process.env.NODE_ENV === 'production') return;
+    try {
+      const activeIdLog = event.active?.id || null;
+      const overIdLog = event.over?.id || null;
+      console.debug('[DRAG-OVER]', { activeId: activeIdLog, overId: overIdLog });
+    } catch (err) {
+      // ignore
+    }
   };
 
   const stripPrefix = (nsId: string | null | undefined) => {
@@ -1530,12 +1556,13 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
             <div className="flex gap-4 pb-4">
               {/* Appointments Booked Column */}
               <DroppableStageColumn key="appointments_booked" id="appointments_booked">
-                <Card className="h-full" style={{ width: '300px' }}>
+                <Card className="h-full" style={{ minWidth: '340px' }}>
                   <div 
                     className="p-4 border-b bg-primary/10 border-b-primary"
                   >
@@ -1605,7 +1632,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
                 return (
                   <DroppableStageColumn key={stage.id} id={stage.stage_id}>
-                    <Card className="h-full" style={{ width: '300px' }}>
+                    <Card className="h-full" style={{ minWidth: '340px' }}>
                       <div 
                         className="p-4 border-b"
                         style={{ 
@@ -1663,10 +1690,10 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
               {activeId && (() => {
                 const activeAppointment = appointments.find(a => a.id === stripPrefix(activeId));
                 return activeAppointment ? (
-                  <div className="opacity-95 cursor-grabbing bg-card p-3 rounded-md shadow-lg" style={{ width: '300px' }}>
+                  <div className="opacity-95 cursor-grabbing bg-card p-3 rounded-md shadow-lg" style={{ minWidth: '340px' }}>
                     <div className="font-medium truncate">{activeAppointment.lead_name}</div>
                     <div className="text-xs text-muted-foreground">{activeAppointment.lead_email}</div>
-                    <div className="mt-2 text-sm font-semibold">{(activeAppointment.cc_collected || 0) > 0 ? `$${(activeAppointment.cc_collected || 0).toLocaleString()}` : activeAppointment.mrr_amount ? `$${activeAppointment.mrr_amount}/mo` : ''}</div>
+                    <div className="mt-2 text-sm font-semibold">{(Number(activeAppointment.cc_collected || 0) > 0) ? `$${Number(activeAppointment.cc_collected).toLocaleString()}` : activeAppointment.mrr_amount ? `$${activeAppointment.mrr_amount}/mo` : ''}</div>
                   </div>
                 ) : null;
               })()}

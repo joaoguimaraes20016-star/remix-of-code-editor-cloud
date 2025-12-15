@@ -10,7 +10,7 @@ import type {
 
 /**
  * This file DOES NOT talk directly to OpenAI.
- * Instead, call a backend route (or Lovable function) you create later.
+* Instead, call a backend route you create later (keeps API keys off the client).
  *
  * That way we don't leak API keys in the browser and your build stays safe.
  */

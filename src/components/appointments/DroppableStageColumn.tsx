@@ -13,7 +13,7 @@ function DroppableStageColumnComponent({ id, children }: DroppableStageColumnPro
     <div
       ref={setNodeRef}
       className={`flex flex-col flex-shrink-0 transition-all ${isOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-      style={{ width: '300px' }}
+      style={{ minWidth: '340px' }}
     >
       {children}
     </div>
