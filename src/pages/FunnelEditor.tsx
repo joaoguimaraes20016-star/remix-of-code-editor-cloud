@@ -463,6 +463,16 @@ export default function FunnelEditor() {
     onSuccess: () => {
       // Silent background save - no state updates that cause re-renders
       setLastSaved(new Date());
+
+      // DEV-only: log saved intents for verification
+      if (import.meta.env.DEV) {
+        try {
+          const intents = stepsRef.current.map(s => ({ id: s.id, intent: s.content?.intent }));
+          console.debug('[FunnelEditor][dev] saved step intents:', intents);
+        } catch (err) {
+          console.debug('[FunnelEditor][dev] failed to log saved intents', err);
+        }
+      }
     },
     onError: (error: Error) => {
       toast({ title: 'Failed to save', description: error.message, variant: 'destructive' });

@@ -14,16 +14,11 @@ import { cn } from "@/lib/utils";
 import type { CalendlyBookingData } from "./DynamicElementRenderer";
 import { getDefaultIntent, getStepDefinition } from "@/lib/funnel/stepDefinitions";
 import type { StepIntent } from "@/lib/funnel/types";
+import getStepIntent from '@/lib/funnels/stepIntent';
 import recordEvent from "@/lib/events/recordEvent";
 import elementDefinitions from "@/components/funnel/elementDefinitions";
 
-/**
- * Get step intent - uses content.intent if set, otherwise derives from step_type
- * This is the canonical source of truth for step semantics at runtime
- */
-const getStepIntent = (step: FunnelStep): StepIntent => {
-  return (step.content?.intent as StepIntent) || getDefaultIntent(step.step_type);
-};
+// Use the shared getStepIntent helper (falls back to defaults).
 
 interface FunnelStep {
   id: string;
@@ -81,6 +76,8 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const pendingSaveRef = useRef(false);
   const pixelsInitializedRef = useRef(false);
   const firedEventsRef = useRef<Set<string>>(new Set()); // Track fired events to prevent duplicates
+  // Track funnel event timestamps to dedupe rapid duplicate emissions
+  const firedFunnelEventsRef = useRef<Map<string, number>>(new Map());
   const externalIdRef = useRef<string>(crypto.randomUUID()); // Consistent ID for cross-device tracking
 
   // Fetch team's Calendly settings for funnel embed override
@@ -263,6 +260,107 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
     },
     [funnel.settings, funnel.name, generateEventId],
   );
+
+    // Unified funnel event emission (internal events only, not automations)
+    const emitFunnelEvent = useCallback(async (opts: { funnel_id: string; step_id: string; lead_id?: string | null; intent: StepIntent; payload?: Record<string, any> }) => {
+      const { funnel_id, step_id, lead_id, intent, payload } = opts;
+      // Include lead_id in dedupe key when available so we dedupe per lead+step+intent
+      const dedupeKey = `funnel_event:${funnel_id}:${step_id}:${intent}:${lead_id || 'no_lead'}`;
+
+      const DEDUPE_WINDOW_MS = 10_000; // 10 seconds
+      const now = Date.now();
+      const last = firedFunnelEventsRef.current.get(dedupeKey);
+      if (last && now - last < DEDUPE_WINDOW_MS) {
+        if (import.meta.env.DEV) {
+          try {
+            console.debug('[FunnelRenderer][dev] emitFunnelEvent deduped', { dedupeKey, last, now, windowMs: DEDUPE_WINDOW_MS });
+            // Dev hook: dispatch a DOM event so dev test pages can observe dedupe
+            try {
+              window.dispatchEvent(new CustomEvent('dev:funnelEventEmitted', { detail: { dedupeKey, emitted: false, reason: 'deduped', last, now } }));
+            } catch (e) {
+              // ignore
+            }
+          } catch (err) {
+            // ignore
+          }
+        }
+        return;
+      }
+
+      // Mark as fired immediately to prevent races (will expire by time window)
+      firedFunnelEventsRef.current.set(dedupeKey, now);
+
+      if (import.meta.env.DEV) {
+        try {
+          console.debug('[FunnelRenderer][dev] emitFunnelEvent', { funnel_id, step_id, lead_id, intent, payload, dedupeKey });
+        } catch (err) {
+          // ignore
+        }
+      }
+
+      try {
+        await recordEvent({
+          team_id: funnel.team_id,
+          funnel_id: funnel_id,
+          event_type: 'funnel_step_intent',
+          dedupe_key: dedupeKey,
+          payload: {
+            step_id,
+            intent,
+            lead_id: lead_id || null,
+            meta: payload || {},
+          },
+        });
+
+        // Dev hook: dispatch a DOM event so dev test pages can observe the emitted payload
+        if (import.meta.env.DEV) {
+          try {
+            window.dispatchEvent(new CustomEvent('dev:funnelEventEmitted', { detail: { dedupeKey, emitted: true, step_id, intent, lead_id: lead_id || null, payload: payload || {} } }));
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        // Map step intent to workflow trigger names and record a backend trigger event.
+        const intentToTriggerMap: Record<string, string> = {
+          capture: "lead_captured",
+          collect: "info_collected",
+          schedule: "appointment_scheduled",
+          complete: "funnel_completed",
+        };
+
+        const triggerName = intentToTriggerMap[intent] as string | undefined;
+        if (triggerName) {
+          const triggerDedupeKey = `${dedupeKey}:trigger`;
+          if (import.meta.env.DEV) {
+            try {
+              console.debug('[FunnelRenderer][dev] emitting workflow trigger', { triggerName, triggerDedupeKey });
+            } catch (err) {
+              // ignore
+            }
+          }
+
+          try {
+            await recordEvent({
+              team_id: funnel.team_id,
+              funnel_id: funnel_id,
+              event_type: triggerName,
+              dedupe_key: triggerDedupeKey,
+              payload: {
+                step_id,
+                intent,
+                lead_id: lead_id || null,
+                meta: payload || {},
+              },
+            });
+          } catch (err) {
+            if (import.meta.env.DEV) console.debug('[FunnelRenderer][dev] failed emitting workflow trigger', err);
+          }
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.debug('[FunnelRenderer][dev] emitFunnelEvent failed', err);
+      }
+    }, [funnel.team_id]);
 
   // Fire ViewContent on step change
   useEffect(() => {
@@ -458,6 +556,15 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
 
         try {
           setIsSubmitting(true);
+          // DEV-only visibility for submit intent
+          if (import.meta.env.DEV) {
+            try {
+              console.debug('[FunnelRenderer][dev] submit payload', { funnelId: funnel.id, stepId, intent: stepIntent });
+            } catch (err) {
+              // ignore
+            }
+          }
+
           await saveLead(updatedAnswers, "submit", stepId, stepIntent);
         } finally {
           setIsSubmitting(false);
@@ -520,6 +627,19 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
         if (hasMeaningfulData(value, currentStep.step_type)) {
           await saveLead(updatedAnswers, "draft", stepId, stepIntent);
         }
+      }
+
+      // Emit unified funnel event (internal only) once per step/intent
+      try {
+        await emitFunnelEvent({
+          funnel_id: funnel.id,
+          step_id: stepId,
+          lead_id: leadId,
+          intent: stepIntent,
+          payload: { answers: updatedAnswers },
+        });
+      } catch (err) {
+        if (import.meta.env.DEV) console.debug('[FunnelRenderer][dev] emitFunnelEvent error on next', err);
       }
 
       // Move to next step

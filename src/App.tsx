@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +19,14 @@ import NotFound from "./pages/NotFound";
 import FunnelList from "./pages/FunnelList";
 import FunnelEditor from "./pages/FunnelEditor";
 import PublicFunnel from "./pages/PublicFunnel";
+// Dev-only funnel test route (dynamically imported so it is not included in production builds)
+let DevFunnelTest: React.LazyExoticComponent<any> | null = null;
+if (import.meta.env.DEV) {
+  // dynamic import is removed in production builds by the bundler
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  DevFunnelTest = React.lazy(() => import("./pages/__dev/FunnelTest"));
+}
 import { TeamLayout } from "./layouts/TeamLayout";
 import { TeamHubOverview } from "./pages/TeamHubOverview";
 import { TeamChatPage } from "./pages/TeamChat";
@@ -44,6 +53,9 @@ const App = () => (
             {/* Public routes - no auth required */}
             <Route path="/onboard/:token" element={<OnboardingForm />} />
             <Route path="/f/:slug" element={<PublicFunnel />} />
+            {import.meta.env.DEV && DevFunnelTest && (
+              <Route path="/__dev/funnel-test" element={<React.Suspense fallback={<div>Loading...</div>}><DevFunnelTest /></React.Suspense>} />
+            )}
             
             {/* Auth routes */}
             <Route path="/" element={<Auth />} />

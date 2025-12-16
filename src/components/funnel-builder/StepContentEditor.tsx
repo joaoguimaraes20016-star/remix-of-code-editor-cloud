@@ -20,6 +20,7 @@ import {
   getStepDefinition,
 } from '@/lib/funnel/stepDefinitions';
 import type { StepIntent } from '@/lib/funnel/types';
+import getStepIntent from '@/lib/funnels/stepIntent';
 
 // Strip HTML tags and decode entities for display in input fields
 const stripHtml = (html: string): string => {
@@ -76,8 +77,10 @@ export function StepContentEditor({
   // Get step definition for this step type
   const stepDefinition = getStepDefinition(step.step_type);
   
-  // Current intent (from content or default) - using canonical source
-  const currentIntent: StepIntent = (content.intent as StepIntent) || getDefaultIntent(step.step_type);
+  // Current intent (from content or inferred via helper) - using canonical source
+  // We initialize using `getStepIntent` so existing funnels get reasonable defaults
+  // but we still persist only when the user explicitly changes the dropdown.
+  const currentIntent: StepIntent = (content.intent as StepIntent) || getStepIntent(step);
   
   // Get allowed intents and locked status from step definition
   const allowedIntents = getAllowedIntents(step.step_type);
