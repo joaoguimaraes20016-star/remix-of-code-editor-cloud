@@ -8,17 +8,23 @@ WHERE id = 'a1e3ee56-f991-4d23-a4e0-0e5399ca26ab'
   AND closer_id IS NULL;
 
 -- 2. Ensure default pipeline stages exist for the team
-INSERT INTO team_pipeline_stages (team_id, stage_id, stage_label, stage_color, order_index, is_default)
-VALUES
-  ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'booked', 'Appointment Booked', '#3b82f6', 0, true),
-  ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'showed', 'Showed', '#10b981', 1, true),
-  ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'no_show', 'No-Show', '#f97316', 2, true),
-  ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'canceled', 'Canceled', '#6b7280', 3, true),
-  ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'rescheduled', 'Rescheduled', '#eab308', 4, true),
-  ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'deposit', 'Deposit Collected', '#14b8a6', 5, true),
-  ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'won', 'Closed', '#22c55e', 6, true),
-  ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'disqualified', 'Disqualified', '#ef4444', 7, true)
-ON CONFLICT (team_id, stage_id) DO NOTHING;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM teams WHERE id = '5cf316b0-a6f1-4b14-825c-e6c596f85ff2') THEN
+    INSERT INTO team_pipeline_stages (team_id, stage_id, stage_label, stage_color, order_index, is_default)
+    VALUES
+      ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'booked', 'Appointment Booked', '#3b82f6', 0, true),
+      ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'showed', 'Showed', '#10b981', 1, true),
+      ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'no_show', 'No-Show', '#f97316', 2, true),
+      ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'canceled', 'Canceled', '#6b7280', 3, true),
+      ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'rescheduled', 'Rescheduled', '#eab308', 4, true),
+      ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'deposit', 'Deposit Collected', '#14b8a6', 5, true),
+      ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'won', 'Closed', '#22c55e', 6, true),
+      ('5cf316b0-a6f1-4b14-825c-e6c596f85ff2', 'disqualified', 'Disqualified', '#ef4444', 7, true)
+    ON CONFLICT (team_id, stage_id) DO NOTHING;
+  END IF;
+END $$;
+
 
 -- 3. Create missing RPC function: cleanup_appointment_tasks
 CREATE OR REPLACE FUNCTION public.cleanup_appointment_tasks(appt_id UUID)
