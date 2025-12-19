@@ -26,17 +26,40 @@ serve(async (req) => {
     const body = await req.json();
 
     const event_type: string = body.event_type;
-    const funnel_id: string = body.funnel_id;
-    const step_id: string = body.step_id;
-    const element_id: string | null = body.element_id ?? null;
-    const lead_id: string | null = body.lead_id ?? null;
-    const session_id: string = body.session_id;
     const dedupe_key: string = body.dedupe_key;
-    const payload = body.payload ?? {};
+    const payload: Record<string, any> = body.payload ?? {};
 
-    if (!event_type || !funnel_id || !step_id || !session_id || !dedupe_key) {
-      return new Response(JSON.stringify({ error: "Missing required fields: event_type, funnel_id, step_id, session_id, dedupe_key" }), {
+    const funnel_id: string | null = body.funnel_id ?? payload.funnel_id ?? null;
+    const step_id: string | null = body.step_id ?? payload.step_id ?? null;
+    const element_id: string | null = body.element_id ?? payload.element_id ?? null;
+    const lead_id: string | null = body.lead_id ?? payload.lead_id ?? null;
+    const session_id: string = body.session_id ?? payload.session_id ?? crypto.randomUUID();
+
+    if (!event_type || !funnel_id || !step_id || !dedupe_key) {
+      return new Response(JSON.stringify({ error: "Missing required fields: event_type, funnel_id, step_id, dedupe_key" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Pre-check: if an event with this dedupe_key already exists, return it.
+    const { data: existing, error: precheckError } = await supabase
+      .from("events")
+      .select("*")
+      .eq("dedupe_key", dedupe_key)
+      .limit(1)
+      .maybeSingle();
+
+    if (precheckError) {
+      console.error("record-funnel-event precheck error:", precheckError);
+      return new Response(JSON.stringify({ error: "Failed to check existing event" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (existing) {
+      return new Response(JSON.stringify({ inserted: false, event: existing }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -52,14 +75,29 @@ serve(async (req) => {
       payload,
     };
 
-    // Attempt insert. If duplicate key violation occurs, treat as success (inserted: false).
     const { data, error } = await supabase.from("events").insert(record).select().single();
 
     if (error) {
-      const msg = (error?.message || "").toString().toLowerCase();
-      if (msg.includes("duplicate") || msg.includes("unique")) {
-        // Already exists - idempotent
-        return new Response(JSON.stringify({ inserted: false }), {
+      const code = (error as any).code ?? (error as any).status ?? null;
+      const msg = (error as any).message?.toString().toLowerCase() ?? "";
+
+      if (String(code) === "23505" || msg.includes("duplicate") || msg.includes("unique")) {
+        const { data: existingAfterInsert, error: fetchError } = await supabase
+          .from("events")
+          .select("*")
+          .eq("dedupe_key", dedupe_key)
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError || !existingAfterInsert) {
+          console.error("record-funnel-event fetch-after-duplicate error:", fetchError);
+          return new Response(JSON.stringify({ error: "Failed to fetch existing event after duplicate" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify({ inserted: false, event: existingAfterInsert }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
