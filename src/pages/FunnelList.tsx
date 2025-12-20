@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -172,7 +172,12 @@ export default function FunnelList() {
   });
 
   // Fetch leads for performance and contacts
-  const { data: leads } = useQuery({
+  const {
+    data: leads,
+    isFetching: leadsIsFetching,
+    refetch: refetchLeads,
+    dataUpdatedAt: leadsUpdatedAt,
+  } = useQuery({
     queryKey: ['funnel-leads', teamId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -186,7 +191,19 @@ export default function FunnelList() {
     },
     enabled: !!teamId,
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
+
+  // Refetch leads when switching into the Performance tab
+  const previousTabRef = useRef<TabType | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'performance' && previousTabRef.current && previousTabRef.current !== 'performance') {
+      refetchLeads();
+    }
+    previousTabRef.current = activeTab;
+  }, [activeTab, refetchLeads]);
 
   // Fetch all funnel steps for drop-off analytics
   const { data: allSteps } = useQuery({
@@ -376,6 +393,10 @@ export default function FunnelList() {
 
   const optedInContacts = contacts?.filter(c => c.opt_in).length || 0;
   const bookedContacts = contacts?.filter(c => c.calendly_booked_at).length || 0;
+
+  const leadsLastUpdatedLabel = leadsUpdatedAt
+    ? formatDistanceToNow(new Date(leadsUpdatedAt), { addSuffix: true })
+    : null;
 
   // Filter funnels by search and role (non-admins only see published)
   const filteredFunnels = funnels?.filter(f => {
@@ -841,6 +862,14 @@ export default function FunnelList() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => refetchLeads()}
+                  disabled={leadsIsFetching}
+                >
+                  Refresh
+                </Button>
                 {isAdmin && (
                   <Button variant="outline" onClick={exportLeads} disabled={!leads?.length}>
                     <Download className="h-4 w-4 mr-2" />
@@ -968,8 +997,17 @@ export default function FunnelList() {
             {/* Recent Leads Table - Only REAL leads (name + phone + email) */}
             <div className="bg-card border rounded-xl overflow-hidden">
               <div className="p-4 border-b">
-                <h2 className="font-semibold">Recent Leads</h2>
-                <p className="text-sm text-muted-foreground">Only showing leads with complete contact info (name, phone, email)</p>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-semibold">Recent Leads</h2>
+                    <p className="text-sm text-muted-foreground">Only showing leads with complete contact info (name, phone, email)</p>
+                  </div>
+                  {leadsLastUpdatedLabel && (
+                    <p className="text-xs text-muted-foreground whitespace-nowrap">
+                      Last updated {leadsLastUpdatedLabel}
+                    </p>
+                  )}
+                </div>
               </div>
               <Table>
                 <TableHeader>
