@@ -375,3 +375,4 @@ setActivities(mapped);
     </Card>
   );
 }
+

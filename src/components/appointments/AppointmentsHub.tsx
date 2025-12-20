@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,38 @@ export function AppointmentsHub({
   const [loadingCalendlySettings, setLoadingCalendlySettings] = useState(true);
   const [availableEventTypes, setAvailableEventTypes] = useState<any[]>([]);
   const [calendlyLoadError, setCalendlyLoadError] = useState<string | null>(null);
+  const [adminTab, setAdminTab] = useState<string>("today");
+
+  const isSalesTeamMode = useMemo(() => {
+    const userId = user?.id || null;
+
+    // Rule 1: current user explicitly has a sales role
+    const hasSalesRole = userRole === "setter" || userRole === "closer";
+
+    // Rule 2 & 3: inspect existing appointments for sales-style assignments
+    let hasSalesAssignedAppointment = false;
+    let hasOtherAssignee = false;
+
+    appointments.forEach((apt) => {
+      const closerId = (apt as any).closer_id as string | null | undefined;
+      const setterId = (apt as any).setter_id as string | null | undefined;
+
+      if (closerId || setterId) {
+        hasSalesAssignedAppointment = true;
+      }
+
+      if (userId) {
+        if (closerId && closerId !== userId) {
+          hasOtherAssignee = true;
+        }
+        if (setterId && setterId !== userId) {
+          hasOtherAssignee = true;
+        }
+      }
+    });
+
+    return hasSalesRole || hasSalesAssignedAppointment || hasOtherAssignee;
+  }, [appointments, user?.id, userRole]);
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -249,9 +281,11 @@ export function AppointmentsHub({
               <TabsTrigger value="all" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
                 Assigned
               </TabsTrigger>
-              <TabsTrigger value="pipeline" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-                Team Pipeline
-              </TabsTrigger>
+              {isSalesTeamMode && (
+                <TabsTrigger value="pipeline" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
+                  Team Pipeline
+                </TabsTrigger>
+              )}
               <TabsTrigger value="stats" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
                 My Stats
               </TabsTrigger>
@@ -300,15 +334,17 @@ export function AppointmentsHub({
             />
           </TabsContent>
 
-          <TabsContent value="pipeline" className="mt-6">
-            <DealPipeline
-              teamId={teamId}
-              userRole="setter"
-              currentUserId={user?.id || ''}
-              onCloseDeal={() => {}}
-              viewFilter="all"
-            />
-          </TabsContent>
+          {isSalesTeamMode && (
+            <TabsContent value="pipeline" className="mt-6">
+              <DealPipeline
+                teamId={teamId}
+                userRole="setter"
+                currentUserId={user?.id || ''}
+                onCloseDeal={() => {}}
+                viewFilter="all"
+              />
+            </TabsContent>
+          )}
 
           <TabsContent value="stats" className="mt-6">
             <SetterEODReport
@@ -413,9 +449,11 @@ export function AppointmentsHub({
               <TabsTrigger value="pipeline" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
                 My Pipeline
               </TabsTrigger>
-              <TabsTrigger value="all" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-                Team Pipeline
-              </TabsTrigger>
+              {isSalesTeamMode && (
+                <TabsTrigger value="all" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
+                  Team Pipeline
+                </TabsTrigger>
+              )}
               <TabsTrigger value="stats" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
                 My Stats
               </TabsTrigger>
@@ -458,15 +496,17 @@ export function AppointmentsHub({
             />
           </TabsContent>
 
-          <TabsContent value="all" className="mt-6">
-            <DealPipeline
-              teamId={teamId}
-              userRole={userRole}
-              currentUserId={user?.id || ''}
-              onCloseDeal={handleCloseDeal}
-              viewFilter="all"
-            />
-          </TabsContent>
+          {isSalesTeamMode && (
+            <TabsContent value="all" className="mt-6">
+              <DealPipeline
+                teamId={teamId}
+                userRole={userRole}
+                currentUserId={user?.id || ''}
+                onCloseDeal={handleCloseDeal}
+                viewFilter="all"
+              />
+            </TabsContent>
+          )}
 
           <TabsContent value="stats" className="mt-6">
             <CloserEODReport
@@ -574,7 +614,7 @@ export function AppointmentsHub({
         </div>
       </div>
       
-      <Tabs defaultValue="today" className="w-full">
+      <Tabs value={adminTab} onValueChange={setAdminTab} className="w-full">
         <div className="w-full overflow-x-auto -mx-1 px-1">
           <TabsList className="w-max min-w-full h-9 sm:h-12">
             <TabsTrigger value="today" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
@@ -586,12 +626,16 @@ export function AppointmentsHub({
             <TabsTrigger value="pipeline" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
               Team Pipeline
             </TabsTrigger>
-            <TabsTrigger value="setters" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-              Setters View
-            </TabsTrigger>
-            <TabsTrigger value="closers" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-              Closers View
-            </TabsTrigger>
+            {isSalesTeamMode && (
+              <TabsTrigger value="setters" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
+                Setters View
+              </TabsTrigger>
+            )}
+            {isSalesTeamMode && (
+              <TabsTrigger value="closers" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
+                Closers View
+              </TabsTrigger>
+            )}
             <TabsTrigger value="mrr" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
               MRR {counts.mrrDue > 0 && <Badge className="ml-1 sm:ml-2 text-[8px] sm:text-xs h-4 sm:h-5 px-1" variant="secondary">{counts.mrrDue}</Badge>}
             </TabsTrigger>
@@ -627,17 +671,25 @@ export function AppointmentsHub({
           />
         </TabsContent>
 
-        <TabsContent value="setters" className="mt-6">
-          <SettersView
-            teamId={teamId}
-            closerCommissionPct={closerCommissionPct}
-            setterCommissionPct={setterCommissionPct}
-          />
-        </TabsContent>
+        {isSalesTeamMode && (
+          <TabsContent value="setters" className="mt-6">
+            <SettersView
+              teamId={teamId}
+              closerCommissionPct={closerCommissionPct}
+              setterCommissionPct={setterCommissionPct}
+            />
+          </TabsContent>
+        )}
 
-        <TabsContent value="closers" className="mt-6">
-          <ByCloserView teamId={teamId} onCloseDeal={handleCloseDeal} />
-        </TabsContent>
+        {isSalesTeamMode && (
+          <TabsContent value="closers" className="mt-6">
+            <ByCloserView
+              teamId={teamId}
+              onCloseDeal={handleCloseDeal}
+              onViewTeamPipeline={() => setAdminTab("pipeline")}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="mrr" className="mt-6">
           <div className="space-y-6">

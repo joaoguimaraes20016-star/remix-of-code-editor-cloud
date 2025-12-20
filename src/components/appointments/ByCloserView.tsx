@@ -24,6 +24,7 @@ import { getActionPipelineMappings } from "@/lib/actionPipelineMappings";
 interface ByCloserViewProps {
   teamId: string;
   onCloseDeal: (appointment: any, undoHandlers?: any) => void;
+  onViewTeamPipeline?: () => void;
 }
 
 interface CloserGroup {
@@ -804,7 +805,7 @@ function CloserPipelineView({ group, stages, teamId, onReload, onCloseDeal }: Cl
   );
 }
 
-export function ByCloserView({ teamId, onCloseDeal }: ByCloserViewProps) {
+export function ByCloserView({ teamId, onCloseDeal, onViewTeamPipeline }: ByCloserViewProps) {
   const [loading, setLoading] = useState(true);
   const [allAppointments, setAllAppointments] = useState<any[]>([]);
   const [selectedCloser, setSelectedCloser] = useState<string | null>(null);
@@ -957,10 +958,27 @@ export function ByCloserView({ teamId, onCloseDeal }: ByCloserViewProps) {
   }
 
   if (closerGroups.length === 0) {
+    const hasToggle = typeof onViewTeamPipeline === "function";
     return (
-      <Card className="p-8 text-center">
-        <p className="text-muted-foreground">No closers with appointments found</p>
-      </Card>
+      <div className="flex items-center justify-center py-12">
+        <Card className="p-6 sm:p-8 text-center max-w-md w-full">
+          <p className="text-sm font-medium">No appointments assigned yet</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            You can run everything from Team Pipeline as a solo operator.
+          </p>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="mt-4"
+            disabled={!hasToggle}
+            onClick={() => {
+              if (hasToggle) onViewTeamPipeline?.();
+            }}
+          >
+            View Team Pipeline
+          </Button>
+        </Card>
+      </div>
     );
   }
 
