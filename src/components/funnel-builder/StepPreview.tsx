@@ -17,6 +17,7 @@ import {
   AlignLeft,
   Upload
 } from 'lucide-react';
+import { getTermsUrl, shouldShowConsentCheckbox } from '@/components/funnel-public/consent';
 
 interface StepDesign {
   backgroundColor?: string;
@@ -801,6 +802,8 @@ export function StepPreview({
         const optInInputPlaceholderColor = design?.inputPlaceholderColor || '#9ca3af';
         const optInShowIcon = design?.inputShowIcon !== false;
         const optInSubmitText = content.submit_button_text || 'Submit and proceed';
+        const optInTermsUrl = getTermsUrl({ step_type: step.step_type, content });
+        const optInShowConsentCheckbox = shouldShowConsentCheckbox({ step_type: step.step_type, content }, optInTermsUrl);
         
         return (
           <div className="w-full max-w-sm space-y-3">
@@ -856,17 +859,19 @@ export function StepPreview({
               </span>
             </div>
 
-            {/* Privacy Checkbox */}
-            <label className="flex items-start gap-2 cursor-pointer px-1">
-              <div 
-                className="w-4 h-4 mt-0.5 rounded border-2 flex-shrink-0"
-                style={{ borderColor: 'rgba(255,255,255,0.3)' }}
-              />
-              <span className="text-xs" style={{ color: textColor, opacity: 0.8 }}>
-                {content.privacy_text || 'I have read and accept the'}{' '}
-                <span className="underline">privacy policy</span>.
-              </span>
-            </label>
+            {/* Privacy Checkbox Preview - uses canonical consent contract */}
+            {optInShowConsentCheckbox && (
+              <label className="flex items-start gap-2 cursor-pointer px-1">
+                <div 
+                  className="w-4 h-4 mt-0.5 rounded border-2 flex-shrink-0"
+                  style={{ borderColor: 'rgba(255,255,255,0.3)' }}
+                />
+                <span className="text-xs" style={{ color: textColor, opacity: 0.8 }}>
+                  I have read and accept the{' '}
+                  <span className="underline">Privacy Policy</span>.
+                </span>
+              </label>
+            )}
 
             {/* Submit Button */}
             <button

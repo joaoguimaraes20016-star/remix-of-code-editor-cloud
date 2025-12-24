@@ -19,7 +19,7 @@ import { formatDateTimeWithTimezone } from "@/lib/utils";
 import { DealAvatar } from "./DealAvatar";
 import { ActivityTimeline } from "./ActivityTimeline";
 
-interface DealCardProps {
+export interface DealCardProps {
   id: string;
   teamId: string;
   appointment: {
@@ -57,6 +57,7 @@ interface DealCardProps {
   onClearDealData?: (id: string) => void;
   userRole?: string;
   allowSetterPipelineUpdates?: boolean;
+  mode?: "appointment" | "lead";
 }
 
 // Meeting Link Dropdown Component
@@ -125,7 +126,7 @@ function MeetingLinkDropdown({ meetingLink }: { meetingLink: string }) {
   );
 }
 
-function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseDeal, onMoveTo, onDelete, onUndo, onChangeStatus, onClearDealData, userRole, allowSetterPipelineUpdates }: DealCardProps) {
+function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseDeal, onMoveTo, onDelete, onUndo, onChangeStatus, onClearDealData, userRole, allowSetterPipelineUpdates, mode = "appointment" }: DealCardProps) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRescheduleHistory, setShowRescheduleHistory] = useState(false);
@@ -165,7 +166,9 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
 
   // Show revenue clearly (use canonical cc_collected only)
   const depositAmount = Number(appointment.cc_collected ?? 0);
-  const hasRevenue = depositAmount > 0 || (appointment.mrr_amount || 0) > 0;
+  const hasRevenue = mode === "appointment" && (depositAmount > 0 || (appointment.mrr_amount || 0) > 0);
+  const rawAnswers = (appointment as any)?.answers ?? {};
+  const isLead = mode === "lead";
   const isNoShow = appointment.pipeline_stage === 'no_show';
   const isCancelled = appointment.pipeline_stage === 'cancelled';
   const isConfirmed = appointment.status === 'CONFIRMED' && !isNoShow && !isCancelled;
@@ -248,26 +251,30 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
-                  Edit Appointment
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onCloseDeal(appointment)}>
-                  Close Deal
-                </DropdownMenuItem>
-                {canDrag && (
-                  <DropdownMenuItem onClick={() => onMoveTo(appointment.id, 'lost')}>
-                    Mark as Lost
-                  </DropdownMenuItem>
-                )}
-                {onChangeStatus && (
-                  <DropdownMenuItem onClick={() => onChangeStatus(appointment.id, appointment.status, appointment.lead_name)}>
-                    Change Status
-                  </DropdownMenuItem>
-                )}
-                {hasRevenue && onClearDealData && (
-                  <DropdownMenuItem onClick={() => onClearDealData(appointment.id)}>
-                    Clear Deal Data
-                  </DropdownMenuItem>
+                {mode === "appointment" && (
+                  <>
+                    <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                      Edit Appointment
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onCloseDeal(appointment)}>
+                      Close Deal
+                    </DropdownMenuItem>
+                    {canDrag && (
+                      <DropdownMenuItem onClick={() => onMoveTo(appointment.id, 'lost')}>
+                        Mark as Lost
+                      </DropdownMenuItem>
+                    )}
+                    {onChangeStatus && (
+                      <DropdownMenuItem onClick={() => onChangeStatus(appointment.id, appointment.status, appointment.lead_name)}>
+                        Change Status
+                      </DropdownMenuItem>
+                    )}
+                    {hasRevenue && onClearDealData && (
+                      <DropdownMenuItem onClick={() => onClearDealData(appointment.id)}>
+                        Clear Deal Data
+                      </DropdownMenuItem>
+                    )}
+                  </>
                 )}
                 {canDelete && onDelete && (
                   <DropdownMenuItem 
@@ -283,54 +290,68 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
         </div>
 
         <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 sm:mb-3 flex-wrap">
-          {/* Confirmation Status Badge */}
-          {confirmationTask && (
+          {/* Confirmation / Status Badges */}
+          {mode === "appointment" && confirmationTask && (
+            confirmationTask.completed_confirmations >= confirmationTask.required_confirmations ? (
+              <Badge variant="confirmed" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+                <span className="flex items-center gap-0.5">
+                  ✓ <span className="hidden sm:inline">Confirmed</span><span className="sm:hidden">Conf</span>
+                </span>
+              </Badge>
+            ) : confirmationTask.completed_confirmations > 0 ? (
+              <Badge variant="confirmed" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+                <span className="flex items-center gap-0.5">
+                  {confirmationTask.completed_confirmations}/{confirmationTask.required_confirmations}
+                </span>
+              </Badge>
+            ) : (
+              <Badge variant="pending" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+                <span className="flex items-center gap-0.5">
+                  Pending
+                </span>
+              </Badge>
+            )
+          )}
+
+          {/* Lead status badges (Opt-In / Awaiting scheduling) */}
+          {isLead && (
             <>
-              {confirmationTask.completed_confirmations >= confirmationTask.required_confirmations ? (
-                <Badge variant="confirmed" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
-                  <span className="flex items-center gap-0.5">
-                    ✓ <span className="hidden sm:inline">Confirmed</span><span className="sm:hidden">Conf</span>
-                  </span>
-                </Badge>
-              ) : confirmationTask.completed_confirmations > 0 ? (
-                <Badge variant="confirmed" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
-                  <span className="flex items-center gap-0.5">
-                    {confirmationTask.completed_confirmations}/{confirmationTask.required_confirmations}
-                  </span>
-                </Badge>
-              ) : (
-                <Badge variant="pending" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
-                  <span className="flex items-center gap-0.5">
-                    Pending
-                  </span>
-                </Badge>
-              )}
+              <Badge className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+                <span className="flex items-center gap-0.5">
+                  Opt-In
+                </span>
+              </Badge>
+              <Badge variant="pending" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+                <span className="flex items-center gap-0.5">
+                  Awaiting scheduling
+                </span>
+              </Badge>
             </>
           )}
-          
-          {isNoShow && (
-            <Badge variant="default" className="bg-gradient-to-r from-red-600 to-rose-600 shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+
+          {mode === "appointment" && isNoShow && (
+            <Badge className="bg-gradient-to-r from-red-600 to-rose-600 shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 ✗ No Show
               </span>
             </Badge>
           )}
-          {isCancelled && (
-            <Badge variant="default" className="bg-gradient-to-r from-gray-600 to-slate-600 shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+          {mode === "appointment" && isCancelled && (
+            <Badge className="bg-gradient-to-r from-gray-600 to-slate-600 shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 ✗ Cancelled
               </span>
             </Badge>
           )}
-          {isConfirmed && !confirmationTask && (
-            <Badge variant="confirmed" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+          {mode === "appointment" && isConfirmed && !confirmationTask && (
+            <Badge className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 ✓ Confirmed
               </span>
             </Badge>
           )}
-          {isRescheduled && !appointment.original_appointment_id && !appointment.rescheduled_to_appointment_id && (
-            <Badge variant="rescheduled" className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+          {mode === "appointment" && isRescheduled && !appointment.original_appointment_id && !appointment.rescheduled_to_appointment_id && (
+            <Badge className="shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 <RefreshCw className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 <span className="hidden sm:inline">Rescheduled</span><span className="sm:hidden">Resch</span>
@@ -338,8 +359,8 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
             </Badge>
           )}
           {/* Closer Reassignment Warning */}
-          {hasCloserReassignment && (
-            <Badge variant="outline" className="border-warning bg-warning/10 text-warning-foreground shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
+          {mode === "appointment" && hasCloserReassignment && (
+            <Badge className="border-warning bg-warning/10 text-warning-foreground shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 <span className="hidden sm:inline">Reassigned</span>
@@ -347,7 +368,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
             </Badge>
           )}
           {/* Rebooking Type Badges */}
-          {appointment.rebooking_type === 'rebooking' && (
+          {mode === "appointment" && appointment.rebooking_type === 'rebooking' && (
             <Badge className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 <RefreshCw className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -355,7 +376,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
               </span>
             </Badge>
           )}
-          {appointment.rebooking_type === 'reschedule' && (
+          {mode === "appointment" && appointment.rebooking_type === 'reschedule' && (
             <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -363,14 +384,14 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
               </span>
             </Badge>
           )}
-          {appointment.rebooking_type === 'returning_client' && (
+          {mode === "appointment" && appointment.rebooking_type === 'returning_client' && (
             <Badge className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 <span className="hidden sm:inline">Returning</span><span className="sm:hidden">Return</span>
               </span>
             </Badge>
           )}
-          {appointment.rebooking_type === 'win_back' && (
+          {mode === "appointment" && appointment.rebooking_type === 'win_back' && (
             <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 pointer-events-none">
               <span className="flex items-center gap-0.5">
                 Win-Back
@@ -386,7 +407,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
           </div>
 
           {/* Reschedule Badges */}
-          {(appointment.original_appointment_id || appointment.rescheduled_to_appointment_id) && (
+          {mode === "appointment" && (appointment.original_appointment_id || appointment.rescheduled_to_appointment_id) && (
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {/* Double Book badge (reschedule type) */}
               {appointment.rebooking_type === 'reschedule' && appointment.original_appointment_id && (
@@ -454,7 +475,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
             </div>
           )}
 
-          {/* Team Members - Compact on mobile */}
+          {/* Team Members - Compact on mobile (show for both appointments and leads, with placeholders when missing) */}
           <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
             {appointment.setter_name ? (
               <div className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-1 sm:py-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-md sm:rounded-lg border border-primary/20 flex-1 min-w-0">
@@ -493,20 +514,22 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
             )}
           </div>
 
-          {/* Setter & Closer Notes - Collapsible */}
-          <CollapsibleNotes 
-            title="Setter Notes" 
-            notes={appointment.setter_notes} 
-            variant="setter" 
-          />
-          <CollapsibleNotes 
-            title="Closer Notes" 
-            notes={appointment.closer_notes} 
-            variant="closer" 
-          />
+          {/* Setter & Closer Notes - Collapsible (renders for leads too; notes components handle empty states) */}
+          <>
+            <CollapsibleNotes 
+              title="Setter Notes" 
+              notes={appointment.setter_notes} 
+              variant="setter" 
+            />
+            <CollapsibleNotes 
+              title="Closer Notes" 
+              notes={appointment.closer_notes} 
+              variant="closer" 
+            />
+          </>
 
           {/* Double Book Warning (reschedule type) */}
-          {appointment.rebooking_type === 'reschedule' && appointment.original_appointment_id && (
+          {mode === "appointment" && appointment.rebooking_type === 'reschedule' && appointment.original_appointment_id && (
             <div className="text-[9px] sm:text-xs p-1.5 sm:p-2.5 rounded-md sm:rounded-lg border-l-2 sm:border-l-4 bg-amber-500/10 border-amber-400 dark:bg-amber-500/15">
               <strong className="text-amber-700 dark:text-amber-300">DBL BOOK</strong>
               <span className="text-foreground/70 hidden sm:inline"> — Confirm which date is correct!</span>
@@ -514,7 +537,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
           )}
 
           {/* Rebook Warning */}
-          {appointment.rebooking_type === 'rebooking' && appointment.original_appointment_id && (
+          {mode === "appointment" && appointment.rebooking_type === 'rebooking' && appointment.original_appointment_id && (
             <div className="text-[9px] sm:text-xs p-1.5 sm:p-2.5 rounded-md sm:rounded-lg border-l-2 sm:border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
               <strong className="text-purple-700 dark:text-purple-300">REBOOK</strong>
               <span className="text-foreground/70 hidden sm:inline"> — Previously booked lead</span>
@@ -522,7 +545,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
           )}
 
           {/* Generic rebooked lead */}
-          {appointment.original_appointment_id && !appointment.rebooking_type && (
+          {mode === "appointment" && appointment.original_appointment_id && !appointment.rebooking_type && (
             <div className="text-[9px] sm:text-xs p-1.5 sm:p-2.5 rounded-md sm:rounded-lg border-l-2 sm:border-l-4 bg-purple-500/10 border-purple-400 dark:bg-purple-500/15">
               <strong className="text-purple-700 dark:text-purple-300">REBOOKED</strong>
               <span className="text-foreground/70 hidden sm:inline"> — Has previous booking</span>
@@ -530,7 +553,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
           )}
 
           {/* Original appointment with new booking */}
-          {appointment.rescheduled_to_appointment_id && (
+          {mode === "appointment" && appointment.rescheduled_to_appointment_id && (
             <div className="text-[9px] sm:text-xs p-1.5 sm:p-2.5 rounded-md sm:rounded-lg border-l-2 sm:border-l-4 bg-amber-500/10 border-amber-400 dark:bg-amber-500/15">
               <strong className="text-amber-700 dark:text-amber-300">DBL BOOK</strong>
               <span className="text-foreground/70 hidden sm:inline"> — New appointment exists</span>
@@ -540,21 +563,30 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
           <div className="flex flex-col gap-0 sm:gap-1 text-[9px] sm:text-xs pt-1 sm:pt-2 border-t border-primary/10">
             <div className="flex items-center gap-1 text-muted-foreground">
               <Calendar className="h-2 w-2 sm:h-3 sm:w-3" />
-              <span className="font-medium">{formatDateTimeWithTimezone(appointment.start_at_utc, "MMM d 'at' h:mm a")}</span>
+              <span className="font-medium">
+                {mode === "appointment"
+                  ? formatDateTimeWithTimezone(appointment.start_at_utc, "MMM d 'at' h:mm a")
+                  : "Not booked yet"}
+              </span>
             </div>
-            {/* Meeting Link Dropdown */}
-            {appointment.meeting_link && (
-              <MeetingLinkDropdown meetingLink={appointment.meeting_link} />
+            {mode === "appointment" ? (
+              appointment.meeting_link && (
+                <MeetingLinkDropdown meetingLink={appointment.meeting_link} />
+              )
+            ) : (
+              <span className="text-muted-foreground">
+                Awaiting scheduling
+              </span>
             )}
-            <div className={`flex items-center gap-1 font-bold ${getDaysColor(daysInStage)}`}>
+            <div className={`flex items-center gap-1 font-bold ${mode === "appointment" ? getDaysColor(daysInStage) : "text-muted-foreground"}`}>
               <div className="h-1 w-1 sm:h-2 sm:w-2 rounded-full bg-current animate-pulse" />
-              {daysInStage}d in stage
+              {mode === "appointment" ? `${daysInStage}d in stage` : "New lead"}
             </div>
           </div>
         </div>
       </Card>
       
-      {showTimeline && (
+      {mode === "appointment" && showTimeline && (
         <ActivityTimeline 
           appointmentId={appointment.id}
           teamId={teamId}
@@ -562,7 +594,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
         />
       )}
       
-      {showEditDialog && (
+      {mode === "appointment" && showEditDialog && (
         <EditAppointmentDialog
           open={showEditDialog}
           onOpenChange={setShowEditDialog}
@@ -571,7 +603,7 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
         />
       )}
 
-      {showRescheduleHistory && (
+      {mode === "appointment" && showRescheduleHistory && (
         <RescheduleHistory
           open={showRescheduleHistory}
           onOpenChange={setShowRescheduleHistory}

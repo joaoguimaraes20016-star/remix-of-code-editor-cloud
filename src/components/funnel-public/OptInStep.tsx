@@ -49,15 +49,29 @@ interface OptInStepProps {
     primary_color: string;
     button_text: string;
   };
-  onNext: (value: { name: string; email: string; phone: string; opt_in: boolean }) => void;
+  onNext: (value: { name: string; email: string; phone: string }) => void;
   isActive: boolean;
+  termsUrl: string;
+  showConsentCheckbox?: boolean;
+  consentChecked: boolean;
+  consentError: string | null;
+  onConsentChange: (checked: boolean) => void;
 }
 
-export function OptInStep({ content, settings, onNext, isActive }: OptInStepProps) {
+export function OptInStep({
+  content,
+  settings,
+  onNext,
+  isActive,
+  termsUrl,
+  showConsentCheckbox,
+  consentChecked,
+  consentError,
+  onConsentChange,
+}: OptInStepProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [optIn, setOptIn] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -106,7 +120,7 @@ export function OptInStep({ content, settings, onNext, isActive }: OptInStepProp
       return;
     }
 
-    onNext({ name, email, phone, opt_in: optIn });
+    onNext({ name, email, phone });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -220,29 +234,45 @@ export function OptInStep({ content, settings, onNext, isActive }: OptInStepProp
       {errors.phone && <p className="text-red-400 text-xs -mt-2">{errors.phone}</p>}
 
       {/* Privacy Checkbox */}
-      <label className="flex items-start gap-3 cursor-pointer">
-        <Checkbox
-          checked={optIn}
-          onCheckedChange={(checked) => setOptIn(checked === true)}
-          className="mt-0.5 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-        />
-        <span className="text-sm text-white/80">
-          {content.privacy_text || 'I have read and accept the'}{' '}
-          {content.privacy_link ? (
-            <a 
-              href={content.privacy_link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="underline text-white hover:text-white/90"
-            >
-              privacy policy
-            </a>
-          ) : (
-            <span className="underline">privacy policy</span>
-          )}
-          .
-        </span>
-      </label>
+      {showConsentCheckbox && (
+        <div
+          id="consent-container"
+          className="mt-2 rounded-md px-1 py-1 flex items-start gap-3 cursor-pointer"
+          style={{ border: `1px solid ${consentError ? '#ef4444' : 'rgba(148,163,184,0.4)'}` }}
+        >
+          <Checkbox
+            id="funnel-consent"
+            checked={consentChecked}
+            onCheckedChange={(checked) => onConsentChange(checked === true)}
+            className="mt-0.5 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+          />
+          <span className="text-sm text-white/80">
+            I have read and accept the{' '}
+            {termsUrl ? (
+              <a
+                href={termsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-white hover:text-white/90"
+              >
+                Privacy Policy
+              </a>
+            ) : (
+              <span className="underline">Privacy Policy</span>
+            )}
+            .
+          </span>
+        </div>
+      )}
+      {consentError && (
+        <p
+          id="consent-error"
+          aria-live="polite"
+          className="text-red-400 text-xs mt-1"
+        >
+          {consentError}
+        </p>
+      )}
 
       {/* Submit Button */}
       <button

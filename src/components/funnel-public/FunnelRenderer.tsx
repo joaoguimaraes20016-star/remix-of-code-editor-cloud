@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { WelcomeStep } from "./WelcomeStep";
 import { TextQuestionStep } from "./TextQuestionStep";
@@ -17,6 +18,7 @@ import type { StepIntent } from "@/lib/funnel/types";
 import getStepIntent from '@/lib/funnels/stepIntent';
 import recordEvent from "@/lib/events/recordEvent";
 import elementDefinitions from "@/components/funnel/elementDefinitions";
+import { getConsentMode, isConsentRequired, shouldShowConsentCheckbox, resolvePrivacyPolicyUrl } from "./consent";
 
 // Use the shared getStepIntent helper (falls back to defaults).
 
@@ -71,6 +73,8 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const [isComplete, setIsComplete] = useState(false);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [teamCalendlySettings, setTeamCalendlySettings] = useState<TeamCalendlySettings | null>(null);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
 
   const calendlyBookingRef = useRef<CalendlyBookingData | null>(null);
   const pendingSaveRef = useRef(false);
@@ -79,6 +83,7 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   // Track funnel event timestamps to dedupe rapid duplicate emissions
   const firedFunnelEventsRef = useRef<Map<string, number>>(new Map());
   const externalIdRef = useRef<string>(crypto.randomUUID()); // Consistent ID for cross-device tracking
+  const queryClient = useQueryClient();
 
   // Fetch team's Calendly settings for funnel embed override
   // This is read-only and uses safe fallback if fetch fails
@@ -112,6 +117,12 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const currentStep = steps[currentStepIndex];
   const isLastStep = currentStepIndex === steps.length - 1;
   const isThankYouStep = currentStep?.step_type === "thank_you";
+  const resolvedTermsUrl = resolvePrivacyPolicyUrl(currentStep, funnel, undefined);
+
+  useEffect(() => {
+    setConsentChecked(false);
+    setConsentError(null);
+  }, [currentStepIndex, currentStep?.id]);
 
   // Generate unique event ID for deduplication
   const generateEventId = useCallback(() => {
@@ -498,6 +509,11 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
           if (returnedLeadId) {
             setLeadId(returnedLeadId);
             console.log("Lead saved:", returnedLeadId, submitMode === "submit" ? "(submit)" : "(draft)");
+            try {
+              queryClient.invalidateQueries({ queryKey: ["funnel-leads", funnel.team_id] });
+            } catch (invalidateError) {
+              console.warn("Failed to invalidate funnel-leads query after submit:", invalidateError);
+            }
           } else {
             console.log("Lead saved (no id returned)", data);
           }
@@ -562,12 +578,27 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
       const stepIntent = getStepIntent(currentStep);
       const stepId = currentStep.id;
       const stepType = currentStep.step_type;
+      const consentRequired =
+        isConsentRequired(currentStep) && shouldShowConsentCheckbox(currentStep, resolvedTermsUrl);
       
       // Debug logging
       console.log(`[handleNext] stepId=${stepId}, step_type=${currentStep.step_type}, intent=${stepIntent}`);
 
       if (stepIntent === "capture") {
         // CAPTURE intent = real submit, triggers automations
+
+        // For opt-in steps, a Privacy Policy URL is mandatory in runtime as well.
+        // If it's missing entirely, block submit even before consent checkbox state.
+        if (stepType === "opt_in" && !resolvedTermsUrl) {
+          setConsentError("Add a Privacy Policy URL in Funnel Settings before publishing.");
+          return;
+        }
+
+        if (consentRequired && !consentChecked) {
+          setConsentError("You must accept the privacy policy to continue.");
+          return;
+        }
+
         if (isSubmitting) return;
 
         try {
@@ -581,7 +612,24 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
             }
           }
 
-          await saveLead(updatedAnswers, "submit", stepId, stepIntent, stepType);
+          let submitAnswers = updatedAnswers;
+
+          if (consentRequired && consentChecked) {
+            const consentMode = getConsentMode(currentStep, resolvedTermsUrl);
+            submitAnswers = {
+              ...updatedAnswers,
+              opt_in: true,
+              legal: {
+                terms_url: resolvedTermsUrl,
+                consent_mode: consentMode,
+                accepted_at: new Date().toISOString(),
+              },
+            };
+            setAnswers(submitAnswers);
+          }
+
+          await saveLead(submitAnswers, "submit", stepId, stepIntent, stepType);
+          updatedAnswers = submitAnswers;
         } finally {
           setIsSubmitting(false);
         }
@@ -665,7 +713,17 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
         setIsComplete(true);
       }
     },
-    [answers, currentStep, currentStepIndex, firePixelEvent, hasMeaningfulData, isLastStep, isSubmitting, saveLead],
+    [
+      answers,
+      currentStep,
+      currentStepIndex,
+      firePixelEvent,
+      hasMeaningfulData,
+      isLastStep,
+      isSubmitting,
+      saveLead,
+      resolvedTermsUrl,
+    ],
   );
 
   // Calculate question number for multi_choice steps (excluding welcome, thank_you, video)
@@ -701,7 +759,22 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
       case "phone_capture":
         return <PhoneCaptureStep {...commonProps} />;
       case "opt_in":
-        return <OptInStep {...commonProps} />;
+        // Use the globally resolved privacy policy URL for the active step
+        const stepTermsUrl =
+          step.id === currentStep?.id ? resolvedTermsUrl : resolvePrivacyPolicyUrl(step, funnel, undefined);
+        return (
+          <OptInStep
+            {...commonProps}
+            termsUrl={stepTermsUrl}
+            showConsentCheckbox={shouldShowConsentCheckbox(step, stepTermsUrl)}
+            consentChecked={consentChecked}
+            consentError={consentError}
+            onConsentChange={(checked) => {
+              setConsentChecked(checked);
+              if (checked) setConsentError(null);
+            }}
+          />
+        );
       case "video":
         return <VideoStep {...commonProps} />;
       case "embed": {

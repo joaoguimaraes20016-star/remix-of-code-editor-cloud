@@ -65,6 +65,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Funnel {
   id: string;
@@ -225,14 +231,59 @@ export default function FunnelList() {
   });
 
   // Fetch contacts
-  const { data: contacts } = useQuery({
+  const {
+    data: contacts,
+    isLoading: contactsLoading,
+    isFetching: contactsFetching,
+    error: contactsError,
+  } = useQuery({
     queryKey: ['contacts', teamId],
     queryFn: async () => {
+      console.log('[Contacts] teamId:', teamId);
+
       const { data, error } = await supabase
         .from('contacts')
-        .select('*')
+        .select(`
+          id,
+          team_id,
+          display_name,
+          name:display_name,
+          primary_email_normalized,
+          email:primary_email_normalized,
+          primary_phone_normalized,
+          phone:primary_phone_normalized,
+          opt_in,
+          source,
+          calendly_booked_at,
+          custom_fields,
+          tags,
+          created_at,
+          updated_at
+        `)
         .eq('team_id', teamId)
         .order('created_at', { ascending: false });
+
+      console.log('[Contacts] query:', {
+        select:
+          'id, team_id, display_name, name:display_name, primary_email_normalized, email:primary_email_normalized, primary_phone_normalized, phone:primary_phone_normalized, opt_in, source, calendly_booked_at, custom_fields, tags, created_at, updated_at',
+        order: 'created_at.desc',
+      });
+
+      console.log('[Contacts] result:', {
+        teamId,
+        count: data?.length ?? 0,
+        error,
+        errorJson: error
+          ? {
+              message: error.message,
+              details: (error as any).details,
+              hint: (error as any).hint,
+              code: (error as any).code,
+              status: (error as any).status,
+            }
+          : null,
+        sample: data?.[0],
+      });
 
       if (error) throw error;
       return data as Contact[];
@@ -418,6 +469,86 @@ export default function FunnelList() {
     const csv = generateCSV(contacts, CONTACT_COLUMNS);
     downloadCSV(csv, `contacts-${format(now, 'yyyy-MM-dd')}.csv`);
     toast({ title: 'Contacts exported' });
+  };
+
+  const handleViewInPipeline = async (contact: Contact) => {
+    if (!teamId) return;
+
+    const anyContact = contact as any;
+    const funnelLead = anyContact.funnel_lead as { id?: string; contact_id?: string } | undefined;
+    const leadId = funnelLead?.id ?? null;
+    const pipelineContactId = funnelLead?.contact_id ?? null;
+
+    try {
+      let appointmentId: string | null = null;
+
+      if (pipelineContactId) {
+        const { data: byContact, error: byContactError } = await supabase
+          .from('appointments')
+          .select('id')
+          .eq('team_id', teamId)
+          .eq('contact_id', pipelineContactId)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (!byContactError && byContact && byContact.length > 0) {
+          appointmentId = byContact[0].id as string;
+        }
+      }
+
+      if (!appointmentId && (contact.email || contact.phone)) {
+        const orConditions: string[] = [];
+        if (contact.email) {
+          orConditions.push(`lead_email.eq.${contact.email}`);
+        }
+        if (contact.phone) {
+          orConditions.push(`lead_phone.eq.${contact.phone}`);
+        }
+
+        if (orConditions.length > 0) {
+          const { data: byIdentity, error: byIdentityError } = await supabase
+            .from('appointments')
+            .select('id')
+            .eq('team_id', teamId)
+            .or(orConditions.join(','))
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (!byIdentityError && byIdentity && byIdentity.length > 0) {
+            appointmentId = byIdentity[0].id as string;
+          }
+        }
+      }
+
+      if (appointmentId) {
+        const focusContact = pipelineContactId || contact.id;
+        navigate(
+          `/team/${teamId}/crm?tab=pipeline&teamId=${teamId}&focusContactId=${focusContact}&focus=appointment&appointment_id=${appointmentId}`
+        );
+        return;
+      }
+
+      if (leadId) {
+        navigate(
+          `/team/${teamId}/crm?tab=pipeline&teamId=${teamId}&focusContactId=${contact.id}&focus=lead&lead_id=${leadId}`
+        );
+      } else {
+        navigate(
+          `/team/${teamId}/crm?tab=pipeline&teamId=${teamId}&focusContactId=${contact.id}`
+        );
+      }
+    } catch (error) {
+      console.error('[FunnelList] Error resolving pipeline view for contact:', error);
+      if (leadId) {
+        navigate(
+          `/team/${teamId}/crm?tab=pipeline&teamId=${teamId}&focusContactId=${contact.id}&focus=lead&lead_id=${leadId}`
+        );
+      } else {
+        navigate(
+          `/team/${teamId}/crm?tab=pipeline&teamId=${teamId}&focusContactId=${contact.id}`
+        );
+      }
+    }
   };
 
   // Tabs - only admins see domains/integrations
@@ -1044,6 +1175,13 @@ export default function FunnelList() {
         {/* Contacts Tab */}
         {activeTab === 'contacts' && (
           <>
+            {console.log('[Contacts] render:', {
+              teamId,
+              isLoading: contactsLoading,
+              isFetching: contactsFetching,
+              error: contactsError,
+              rows: contacts?.length ?? 0,
+            })}
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
               {isAdmin && (
@@ -1073,7 +1211,7 @@ export default function FunnelList() {
                     <CheckCircle className="h-5 w-5 text-emerald-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Opted In</p>
+                    <p className="text-sm text-muted-foreground">Consent</p>
                     <p className="text-2xl font-bold">{optedInContacts}</p>
                   </div>
                 </div>
@@ -1102,8 +1240,23 @@ export default function FunnelList() {
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Source</TableHead>
-                    <TableHead>Opt-In</TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <span>Consent</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help text-xs text-muted-foreground">?</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>True only when explicit consent was captured.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </TableHead>
                     <TableHead>Added</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1126,6 +1279,11 @@ export default function FunnelList() {
                               <p className="text-xs text-muted-foreground">
                                 {Object.keys(contact.custom_fields).length} response{Object.keys(contact.custom_fields).length !== 1 ? 's' : ''}
                               </p>
+                            )}
+                            {(contact.email || contact.phone) && (
+                              <Badge variant="outline" className="mt-1 text-[10px] px-1.5 py-0">
+                                Has Contact Info
+                              </Badge>
                             )}
                           </div>
                         </div>
@@ -1164,11 +1322,24 @@ export default function FunnelList() {
                       <TableCell className="text-muted-foreground text-sm">
                         {formatDistanceToNow(new Date(contact.created_at), { addSuffix: true })}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewInPipeline(contact);
+                          }}
+                        >
+                          View in Pipeline
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-              {!contacts?.length && (
+              {teamId && !contactsLoading && contacts && contacts.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No contacts yet</p>

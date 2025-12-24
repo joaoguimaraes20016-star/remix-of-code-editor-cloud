@@ -370,7 +370,7 @@
     const fieldStyle = `flex:1;border:none;background:transparent;color:${inputTextColor};font-size:1rem;outline:none;resize:none;min-height:80px;`;
     
     const btnStyle = getButtonStyle(design, settings);
-    
+
     return `
       <div class="styled-input-container" style="${containerStyle}">
         ${showInputIcon ? `<span style="color:${inputPlaceholderColor};font-size:1.25rem;flex-shrink:0;">💬</span>` : ''}
@@ -550,6 +550,8 @@
     const primaryColor = settings.primary_color || '#22c55e';
     const isRequired = content.is_required !== false;
     const fontStyle = design.fontFamily ? `font-family: ${design.fontFamily};` : '';
+    const termsUrl = content.privacy_link || content.terms_url || content.terms_link || '';
+    const showCheckbox = content.show_checkbox !== false;
     
     const inputBg = design.inputBg || '#ffffff';
     const inputTextColor = design.inputTextColor || '#0a0a0a';
@@ -605,10 +607,15 @@
         </div>
         <div id="phone-error" class="error-message"></div>
       </div>
-      <label class="privacy-row" style="cursor:pointer;">
-        <input type="checkbox" id="funnel-consent" class="privacy-checkbox">
-        <span class="privacy-text">${content.privacy_text || 'I have read and accept the'} ${content.privacy_link ? `<a href="${escapeHtml(content.privacy_link)}" target="_blank">privacy policy</a>` : '<span style="text-decoration:underline;">privacy policy</span>'}.</span>
-      </label>
+      <div class="privacy-row" style="margin-top:0.5rem;">
+        ${termsUrl
+          ? `<span class="privacy-text">${content.privacy_text || 'By continuing, you agree to our'} <a href="${escapeHtml(termsUrl)}" target="_blank" rel="noopener noreferrer">terms &amp; conditions</a>.</span>`
+          : `<span class="privacy-text">${content.privacy_text || 'By continuing, you agree to our terms &amp; conditions.'}</span>`}
+        ${showCheckbox
+          ? `<div id="consent-container" style="margin-top:0.4rem;padding:0.25rem 0;border:1px solid transparent;border-radius:6px;display:flex;align-items:center;gap:0.5rem;cursor:pointer;"><input type="checkbox" id="funnel-consent" class="privacy-checkbox"><span>I have read and accept the Privacy Policy.</span></div>`
+          : ''}
+        <div id="consent-error" class="error-message" aria-live="polite" style="display:none;color:#ef4444;font-size:0.8rem;margin-top:0.25rem;"></div>
+      </div>
       <button class="element-button${hoverClass}" data-action="submit-optin" data-required="${isRequired}" style="${buttonStyle}padding:1rem 2rem;border:none;font-size:1rem;font-weight:600;cursor:pointer;width:100%;">${content.submit_button_text || content.button_text || settings.button_text || 'Submit'}</button>
     `;
   }
@@ -724,14 +731,22 @@
       });
     });
 
-    // Opt-in submission with validation
+    // Opt-in submission with validation and consent enforcement
     document.querySelectorAll('[data-action="submit-optin"]').forEach(btn => {
+      if (btn.dataset.boundOptin === 'true') return;
+      btn.dataset.boundOptin = 'true';
+
       btn.addEventListener('click', () => {
         const isRequired = btn.dataset.required === 'true';
         const name = document.getElementById('funnel-name')?.value?.trim() || '';
         const email = document.getElementById('funnel-email')?.value?.trim() || '';
         const phone = document.getElementById('funnel-phone')?.value?.trim() || '';
-        const consent = document.getElementById('funnel-consent')?.checked;
+        const termsUrl = step?.content?.privacy_link || step?.content?.terms_url || step?.content?.terms_link || '';
+        const consentMode = step?.content?.consent_mode || (termsUrl ? 'implicit' : 'explicit');
+        const checkboxEl = document.getElementById('funnel-consent');
+
+        const consentErrorEl = document.getElementById('consent-error');
+        const consentContainerEl = document.getElementById('consent-container');
 
         // Clear previous errors
         ['name', 'email', 'phone'].forEach(field => {
@@ -740,6 +755,13 @@
           if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
           if (containerEl) containerEl.style.borderColor = '';
         });
+        if (consentErrorEl) {
+          consentErrorEl.style.display = 'none';
+          consentErrorEl.textContent = '';
+        }
+        if (consentContainerEl) {
+          consentContainerEl.style.borderColor = 'transparent';
+        }
 
         let hasErrors = false;
 
@@ -769,12 +791,39 @@
           }
         }
 
+        // Consent enforcement (no soft consent)
+        const requiresConsent = step?.step_type === 'opt_in' || step?.content?.requires_consent === true;
+        const showConsentCheckbox =
+          step?.content?.requires_consent === true ||
+          step?.content?.show_consent_checkbox === true ||
+          Boolean(termsUrl);
+
+        if (requiresConsent && showConsentCheckbox) {
+          const consentResolved = checkboxEl ? checkboxEl.checked : false;
+          if (!consentResolved) {
+            hasErrors = true;
+            if (consentErrorEl) {
+              consentErrorEl.textContent = 'You must accept the privacy policy to continue.';
+              consentErrorEl.style.display = 'block';
+            }
+            if (consentContainerEl) {
+              consentContainerEl.style.borderColor = '#ef4444';
+            }
+          }
+        }
+
         if (hasErrors) return;
 
         answers.name = name;
         answers.email = email;
         answers.phone = phone;
-        answers.opt_in = consent;
+        answers.opt_in = true;
+        answers.legal = {
+          consent_given: true,
+          consent_mode: consentMode,
+          terms_url: termsUrl || null,
+          consent_ts: new Date().toISOString()
+        };
         saveLead();
         nextStep();
       });
@@ -795,14 +844,40 @@
       });
     }
 
+    // Clear consent error immediately when checkbox is checked
+    const consentCheckbox = document.getElementById('funnel-consent');
+    if (consentCheckbox && consentCheckbox instanceof HTMLInputElement) {
+      if (consentCheckbox.dataset.boundConsentChange !== 'true') {
+        consentCheckbox.dataset.boundConsentChange = 'true';
+        consentCheckbox.addEventListener('change', () => {
+          const consentErrorEl = document.getElementById('consent-error');
+          const consentContainerEl = document.getElementById('consent-container');
+          if (consentCheckbox.checked) {
+            if (consentErrorEl) {
+              consentErrorEl.style.display = 'none';
+              consentErrorEl.textContent = '';
+            }
+            if (consentContainerEl) {
+              consentContainerEl.style.borderColor = 'transparent';
+            }
+          }
+        });
+      }
+    }
+
     // Enter key for text input
     const textInput = document.getElementById('funnel-input');
     if (textInput && textInput.tagName === 'TEXTAREA') {
       textInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          const submitBtn = document.querySelector('[data-action="submit-text"]');
-          if (submitBtn) submitBtn.click();
+          const optinBtn = document.querySelector('[data-action="submit-optin"]');
+          if (optinBtn) {
+            optinBtn.click();
+          } else {
+            const submitBtn = document.querySelector('[data-action="submit-text"]');
+            if (submitBtn) submitBtn.click();
+          }
         }
       });
     }

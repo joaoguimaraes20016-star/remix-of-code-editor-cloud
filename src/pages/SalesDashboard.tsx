@@ -1,6 +1,6 @@
 import { hasClosedWithRevenue } from "@/lib/dealStatus";
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamPaymentsInRange, sumPayments } from "@/lib/payments";
@@ -198,6 +198,7 @@ const RevenueSummaryCard = ({ teamId }: { teamId: string }) => {
 const Index = () => {
   const { teamId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
   const { role: userRole, isAdmin } = useTeamRole(teamId);
@@ -302,6 +303,29 @@ const Index = () => {
       supabase.removeChannel(salesChannel);
     };
   }, [user, teamId, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || "");
+    const tab = params.get("tab");
+    const appointmentId = params.get("appointment_id");
+    const leadId = params.get("lead_id");
+    const focusContactId = params.get("focusContactId");
+
+    const hasPipelineIntent =
+      tab === "pipeline" ||
+      !!appointmentId ||
+      !!leadId ||
+      !!focusContactId;
+
+    if (!hasPipelineIntent) {
+      return;
+    }
+
+    // Always land on the pipeline (appointments) tab when there is pipeline intent
+    if (activeTab !== "appointments") {
+      setActiveTab("appointments");
+    }
+  }, [location.search, activeTab]);
 
   const loadUserProfile = async () => {
     try {

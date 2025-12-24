@@ -40,10 +40,23 @@ interface Appointment {
   rebooking_type?: string | null;
 }
 
+type PipelineCard =
+  | { kind: "appointment"; appointment: Appointment }
+  | { kind: "lead"; lead: {
+      id: string;
+      name: string | null;
+      email: string | null;
+      phone: string | null;
+      created_at: string | null;
+      contact_id: string | null;
+      pipeline_stage?: string | null;
+      answers?: Record<string, any> | null;
+    } };
+
 interface MobilePipelineViewProps {
   teamId: string;
   stages: PipelineStage[];
-  dealsByStage: Record<string, Appointment[]>;
+  cardsByStage: Record<string, PipelineCard[]>;
   confirmationTasks: Map<string, any>;
   userRole: string;
   allowSetterPipelineUpdates: boolean;
@@ -58,7 +71,7 @@ interface MobilePipelineViewProps {
 export function MobilePipelineView({
   teamId,
   stages,
-  dealsByStage,
+  cardsByStage,
   confirmationTasks,
   userRole,
   allowSetterPipelineUpdates,
@@ -69,15 +82,11 @@ export function MobilePipelineView({
   onChangeStatus,
   onClearDealData,
 }: MobilePipelineViewProps) {
-  // Build ordered list of stages including "appointments_booked" first
-  const orderedStages = [
-    { id: 'appointments_booked', stage_id: 'appointments_booked', stage_label: 'Appointments Booked', stage_color: 'hsl(var(--primary))', order_index: -1, is_default: true },
-    ...stages.filter(s => s.stage_id !== 'booked')
-  ];
+  const orderedStages = stages;
 
   const [selectedStageIndex, setSelectedStageIndex] = useState(0);
   const selectedStage = orderedStages[selectedStageIndex];
-  const stageAppointments = dealsByStage[selectedStage.stage_id] || [];
+  const stageCards = cardsByStage[selectedStage.stage_id] || [];
 
   const goToPrevStage = () => {
     setSelectedStageIndex((prev) => Math.max(0, prev - 1));
@@ -105,7 +114,7 @@ export function MobilePipelineView({
         <ScrollArea className="flex-1">
           <div className="flex gap-1 pb-0.5">
             {orderedStages.map((stage, index) => {
-              const count = dealsByStage[stage.stage_id]?.length || 0;
+              const count = cardsByStage[stage.stage_id]?.length || 0;
               const isSelected = index === selectedStageIndex;
               
               return (
@@ -118,7 +127,7 @@ export function MobilePipelineView({
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   )}
-                  style={isSelected && stage.stage_id !== 'appointments_booked' ? {
+                  style={isSelected ? {
                     backgroundColor: stage.stage_color,
                     color: 'white'
                   } : undefined}
@@ -148,21 +157,17 @@ export function MobilePipelineView({
       </div>
 
       {/* Stage Header - minimal */}
-      <div 
+      <div
         className="mb-2 px-2 py-1.5 rounded-lg border-l-2"
-        style={{ 
-          borderLeftColor: selectedStage.stage_id === 'appointments_booked' 
-            ? 'hsl(var(--primary))' 
-            : selectedStage.stage_color,
-          backgroundColor: selectedStage.stage_id === 'appointments_booked'
-            ? 'hsl(var(--primary) / 0.08)'
-            : `${selectedStage.stage_color}10`
+        style={{
+          borderLeftColor: selectedStage.stage_color,
+          backgroundColor: `${selectedStage.stage_color}10`,
         }}
       >
         <div className="flex items-center justify-between">
           <span className="font-semibold text-[11px]">{selectedStage.stage_label}</span>
           <span className="text-[10px] text-muted-foreground">
-            {stageAppointments.length} {stageAppointments.length === 1 ? 'deal' : 'deals'}
+            {stageCards.length} {stageCards.length === 1 ? 'deal' : 'deals'}
           </span>
         </div>
       </div>
@@ -170,28 +175,83 @@ export function MobilePipelineView({
       {/* Appointments List */}
       <ScrollArea className="flex-1 -mx-0.5 px-0.5">
         <div className="space-y-2 pb-3">
-          {stageAppointments.length === 0 ? (
+          {stageCards.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-[11px] text-muted-foreground">
               No deals in this stage
             </div>
           ) : (
-            stageAppointments.map((appointment) => (
-              <DealCard
-                key={appointment.id}
-                id={appointment.id}
-                teamId={teamId}
-                appointment={appointment}
-                confirmationTask={confirmationTasks.get(appointment.id)}
-                onCloseDeal={onCloseDeal}
-                onMoveTo={onMoveTo}
-                onDelete={onDelete}
-                onUndo={onUndo}
-                onChangeStatus={onChangeStatus}
-                onClearDealData={onClearDealData}
-                userRole={userRole}
-                allowSetterPipelineUpdates={allowSetterPipelineUpdates}
-              />
-            ))
+            stageCards.map((card) => {
+              if (card.kind === "lead") {
+                const lead = card.lead;
+                const baseAppointment: Appointment = {
+                  id: lead.id,
+                  lead_name: lead.name || lead.email || "Unnamed lead",
+                  lead_email: lead.email || "",
+                  start_at_utc: lead.created_at || new Date().toISOString(),
+                  cc_collected: null,
+                  mrr_amount: null,
+                  mrr_months: null,
+                  product_name: null,
+                  setter_name: null,
+                  setter_id: null,
+                  closer_id: null,
+                  closer_name: null,
+                  team_id: teamId,
+                  event_type_name: null,
+                  updated_at: lead.created_at || new Date().toISOString(),
+                  pipeline_stage: lead.pipeline_stage ?? "opt_in",
+                  status: null,
+                  reschedule_url: null,
+                  calendly_invitee_uri: null,
+                  original_appointment_id: null,
+                  rescheduled_to_appointment_id: null,
+                  reschedule_count: 0,
+                  rebooking_type: null,
+                };
+
+                const adaptedAppointment = {
+                  ...baseAppointment,
+                  ...(lead.answers ? { answers: lead.answers } : {}),
+                } as Appointment & Record<string, any>;
+
+                return (
+                  <DealCard
+                    key={`lead:${lead.id}`}
+                    id={`lead:${lead.id}`}
+                    teamId={teamId}
+                    appointment={adaptedAppointment}
+                    onCloseDeal={() => {}}
+                    onMoveTo={() => {}}
+                    onDelete={() => {}}
+                    onUndo={() => {}}
+                    onChangeStatus={() => {}}
+                    onClearDealData={() => {}}
+                    userRole={userRole}
+                    allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+                    mode="lead"
+                  />
+                );
+              }
+
+              const appointment = card.appointment;
+              return (
+                <DealCard
+                  key={appointment.id}
+                  id={appointment.id}
+                  teamId={teamId}
+                  appointment={appointment}
+                  confirmationTask={confirmationTasks.get(appointment.id)}
+                  onCloseDeal={onCloseDeal}
+                  onMoveTo={onMoveTo}
+                  onDelete={onDelete}
+                  onUndo={onUndo}
+                  onChangeStatus={onChangeStatus}
+                  onClearDealData={onClearDealData}
+                  userRole={userRole}
+                  allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+                />
+              );
+            })
           )}
         </div>
       </ScrollArea>

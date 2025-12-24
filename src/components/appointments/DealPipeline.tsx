@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, MutableRefObject } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUndoAction } from "@/hooks/useUndoAction";
@@ -15,6 +15,8 @@ import {
   useDroppable,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { DealCard } from "./DealCard";
 import { PipelineStageManager } from "./PipelineStageManager";
 import { AppointmentFilters } from "./AppointmentFilters";
@@ -46,12 +48,14 @@ import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from "date-f
 import { getUserFriendlyError } from "@/lib/errorUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getActionPipelineMappings } from "@/lib/actionPipelineMappings";
+import { useSearchParams } from "react-router-dom";
 
 
 interface Appointment {
   id: string;
   lead_name: string;
   lead_email: string;
+  lead_phone: string | null;
   start_at_utc: string;
   cc_collected: number | null;
   mrr_amount: number | null;
@@ -75,6 +79,48 @@ interface Appointment {
   rebooking_type?: string | null;
   setter_notes?: string | null;
   closer_notes?: string | null;
+  contact_id?: string | null;
+}
+
+interface OptInLead {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  created_at: string | null;
+  contact_id: string | null;
+  pipeline_stage?: string | null;
+  answers?: Record<string, any> | null;
+}
+
+interface PipelineStageResolverContext {
+  hasActiveAppointmentForContactId?: (contactId: string | null) => boolean;
+}
+
+function resolvePipelineStageForLead(
+  lead: OptInLead,
+  ctx?: PipelineStageResolverContext
+): string {
+  const explicitStage = (lead.pipeline_stage || "").trim();
+  if (explicitStage) {
+    return explicitStage;
+  }
+
+  const hasContactInfo = Boolean(
+    (lead.email && lead.email.trim()) ||
+    (lead.phone && lead.phone.trim()) ||
+    (lead.name && lead.name.trim()) ||
+    lead.contact_id
+  );
+
+  const hasActiveAppointment =
+    !!lead.contact_id && ctx?.hasActiveAppointmentForContactId?.(lead.contact_id ?? null);
+
+  if (hasContactInfo && !hasActiveAppointment) {
+    return "opt_in";
+  }
+
+  return "unassigned";
 }
 
 interface DealPipelineProps {
@@ -100,11 +146,96 @@ interface PipelineStage {
   is_default: boolean;
 }
 
+interface OptInLeadCardProps {
+  id: string;
+  lead: OptInLead;
+  refMap: MutableRefObject<Record<string, HTMLDivElement | null>>;
+  isFocused: boolean;
+  teamId: string;
+  userRole: string;
+  allowSetterPipelineUpdates: boolean;
+}
+
+type PipelineCard =
+  | { kind: "appointment"; appointment: Appointment }
+  | { kind: "lead"; lead: OptInLead };
+
+function OptInLeadCard({ id, lead, refMap, isFocused, teamId, userRole, allowSetterPipelineUpdates }: OptInLeadCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const baseAppointment: Appointment = {
+    id: lead.id,
+    lead_name: lead.name || lead.email || "Unnamed lead",
+    lead_email: lead.email || "",
+    lead_phone: lead.phone || null,
+    start_at_utc: lead.created_at || new Date().toISOString(),
+    cc_collected: null,
+    mrr_amount: null,
+    mrr_months: null,
+    product_name: null,
+    setter_name: null,
+    setter_id: null,
+    closer_id: null,
+    closer_name: null,
+    team_id: teamId,
+    event_type_name: null,
+    updated_at: lead.created_at || new Date().toISOString(),
+    created_at: lead.created_at || null,
+    pipeline_stage: lead.pipeline_stage ?? "opt_in",
+    status: null,
+    reschedule_url: null,
+    calendly_invitee_uri: null,
+    original_appointment_id: null,
+    rescheduled_to_appointment_id: null,
+    reschedule_count: 0,
+    rebooking_type: null,
+    setter_notes: null,
+    closer_notes: null,
+  };
+
+  const adaptedAppointment = {
+    ...baseAppointment,
+    ...(lead.answers ? { answers: lead.answers } : {}),
+  } as Appointment;
+
+  return (
+    <div
+      ref={(el) => {
+        setNodeRef(el);
+        refMap.current[lead.id] = el;
+      }}
+      style={style}
+      className={cn(isFocused ? "ring-2 ring-primary rounded-md" : "")}
+      {...attributes}
+      {...listeners}
+    >
+      <DealCard
+        id={id}
+        teamId={teamId}
+        appointment={adaptedAppointment}
+        onCloseDeal={() => {}}
+        onMoveTo={() => {}}
+        userRole={userRole}
+        allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+        mode="lead"
+      />
+    </div>
+  );
+}
+
 export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, viewFilter = 'all' }: DealPipelineProps) {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
+  const [optInLeads, setOptInLeads] = useState<OptInLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -121,6 +252,19 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
   const [pipelineMoveDialog, setPipelineMoveDialog] = useState<{ open: boolean; appointmentId: string; stageId: string; dealName: string; fromStage: string; toStage: string } | null>(null);
   const [confirmationTasks, setConfirmationTasks] = useState<Map<string, any>>(new Map());
   const [allowSetterPipelineUpdates, setAllowSetterPipelineUpdates] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [focusedLeadId, setFocusedLeadId] = useState<string | null>(null);
+  const [focusedAppointmentId, setFocusedAppointmentId] = useState<string | null>(null);
+  const optInLeadRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const appointmentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const focusConfigRef = useRef<{
+    targetType: "appointment" | "lead" | null;
+    targetId: string | null;
+    focusContactId: string | null;
+  } | null>(null);
+  const focusAppliedRef = useRef(false);
+  const focusAttemptStartedRef = useRef(false);
+  const optInLeadListRef = useRef<OptInLead[]>([]);
   
   const { trackAction, showUndoToast } = useUndoAction(() => {
     // Refresh appointments after undo
@@ -164,15 +308,13 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
   const loadDeals = async () => {
     try {
-      console.log("Loading deals for team:", teamId);
-      
       // Only load appointments from the last 90 days for better performance
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       
       let query = supabase
         .from("appointments")
-        .select("id, lead_name, lead_email, start_at_utc, cc_collected, mrr_amount, mrr_months, product_name, setter_name, setter_id, closer_id, closer_name, team_id, event_type_name, updated_at, created_at, pipeline_stage, status, reschedule_url, calendly_invitee_uri, original_appointment_id, rescheduled_to_appointment_id, reschedule_count, rebooking_type, setter_notes, closer_notes")
+        .select("id, lead_name, lead_email, lead_phone, start_at_utc, cc_collected, mrr_amount, mrr_months, product_name, setter_name, setter_id, closer_id, closer_name, team_id, event_type_name, updated_at, created_at, pipeline_stage, status, reschedule_url, calendly_invitee_uri, original_appointment_id, rescheduled_to_appointment_id, reschedule_count, rebooking_type, setter_notes, closer_notes, contact_id")
         .eq("team_id", teamId)
         .gte('created_at', ninetyDaysAgo.toISOString()) // Only load last 90 days
         .limit(500); // Hard limit for safety
@@ -192,27 +334,15 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       }
 
       const { data, error } = await query.order("updated_at", { ascending: false });
-      console.log("Loaded appointments:", data?.length);
 
-      const appointmentsData = data || [];
-
-      // DEV-only logging: show team id, rows fetched, and sample cc_collected values
-      if (process.env.NODE_ENV !== "production") {
-        try {
-          console.debug('[DealPipeline][dev] teamId=', teamId);
-          console.debug('[DealPipeline][dev] rowsFetched=', appointmentsData.length);
-          console.debug('[DealPipeline][dev] sampleRows=', appointmentsData.slice(0, 3).map(r => ({ id: r.id, cc_collected: r.cc_collected })));
-        } catch (err) {
-          console.debug('[DealPipeline][dev] logging error', err);
-        }
-      }
+      const appointmentsData = (data || []) as any[];
 
       // Use the appointment rows as-is; keep cc_collected from DB for display
-      setAppointments(appointmentsData);
+      setAppointments(appointmentsData as unknown as Appointment[]);
 
       // Load confirmation tasks for all appointments
       if (data && data.length > 0) {
-        const appointmentIds = data.map(a => a.id);
+        const appointmentIds = (data as any[]).map((a) => (a as any).id);
         const { data: tasks } = await supabase
           .from('confirmation_tasks')
           .select('*')
@@ -227,18 +357,12 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
       // Auto-backfill missing reschedule URLs in background
       if (data && data.length > 0) {
-        const missingUrls = data.filter(apt => !apt.reschedule_url && apt.calendly_invitee_uri);
+        const missingUrls = (data as any[]).filter((apt: any) => !apt.reschedule_url && apt.calendly_invitee_uri);
         if (missingUrls.length > 0) {
-          console.log(`Found ${missingUrls.length} appointments missing reschedule URLs, auto-backfilling...`);
-          // Run backfill in background without awaiting
           supabase.functions.invoke('backfill-reschedule-urls', {
             body: { teamId }
           }).then(({ data: result, error: backfillError }) => {
-            if (backfillError) {
-              console.error("Auto-backfill error:", backfillError);
-            } else if (result?.updated > 0) {
-              console.log(`Auto-backfilled ${result.updated} reschedule URLs`);
-              // Reload appointments to get the updated URLs
+            if (!backfillError && result?.updated > 0) {
               loadDeals();
             }
           });
@@ -252,9 +376,40 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     }
   };
 
+  const loadOptInLeads = async () => {
+    try {
+      const { data: leadsData, error: leadsError } = await supabase
+        .from("funnel_leads")
+        .select("id, name, email, phone, created_at, contact_id, pipeline_stage, answers")
+        .eq("team_id", teamId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (leadsError) throw leadsError;
+
+      const leads = (leadsData || []) as any[];
+
+      setOptInLeads(
+        leads.map((l) => ({
+          id: String(l.id),
+          name: (l.name as string | null) ?? null,
+          email: (l.email as string | null) ?? null,
+          phone: (l.phone as string | null) ?? null,
+          created_at: (l.created_at as string | null) ?? null,
+          contact_id: l.contact_id ? String(l.contact_id) : null,
+          pipeline_stage: (l as any).pipeline_stage ?? null,
+          answers: (l as any).answers ?? null,
+        }))
+      );
+    } catch (error) {
+      console.error("[DealPipeline] Error loading opt-in leads:", error);
+    }
+  };
+
   useEffect(() => {
     loadStages();
     loadDeals();
+    loadOptInLeads();
 
     const appointmentsChannel = supabase
       .channel(`deal-changes-${teamId}-${viewFilter}-${crypto.randomUUID()}`)
@@ -268,6 +423,7 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         },
         () => {
           loadDeals();
+          loadOptInLeads();
         }
       )
       .subscribe();
@@ -333,60 +489,123 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     });
   }, [appointments, searchQuery, eventTypeFilter, dateFilter]);
 
-  const dealsByStage = useMemo(() => {
-    const grouped: Record<string, Appointment[]> = {};
-    
-    // Initialize all stages with empty arrays (except 'booked' which we'll handle separately)
-    stages.forEach((stage) => {
-      if (stage.stage_id !== 'booked') {
-        grouped[stage.stage_id] = [];
-      }
+  const filteredOptInLeads = useMemo(() => {
+    return optInLeads.filter((lead) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      const name = (lead.name || "").toLowerCase();
+      const email = (lead.email || "").toLowerCase();
+      const phone = (lead.phone || "").toLowerCase();
+      return name.includes(query) || email.includes(query) || phone.includes(query);
     });
-    
-    // Add "Appointments Booked" for NEW and BOOKED appointments
-    grouped['appointments_booked'] = [];
-    
-    // Group appointments
+  }, [optInLeads, searchQuery]);
+
+  const stagesWithOptIn = useMemo(() => {
+    const byId = new Map(stages.map((stage) => [stage.stage_id, stage] as const));
+    const augmented: PipelineStage[] = [...stages];
+
+    // Inject missing core stages with stable ordering: opt_in < booked < rest
+    if (!byId.has("opt_in")) {
+      augmented.push({
+        id: "opt_in",
+        stage_id: "opt_in",
+        stage_label: "Opt-Ins",
+        stage_color: "hsl(var(--warning))",
+        order_index: -2,
+        is_default: false,
+      });
+    }
+
+    if (!byId.has("booked")) {
+      augmented.push({
+        id: "booked",
+        stage_id: "booked",
+        stage_label: "Booked",
+        stage_color: "hsl(var(--primary))",
+        order_index: -1,
+        is_default: false,
+      });
+    }
+
+    return augmented.sort((a, b) => a.order_index - b.order_index);
+  }, [stages]);
+
+  const normalizeEmail = (value: string | null | undefined) =>
+    (value || "").trim().toLowerCase();
+  const normalizePhone = (value: string | null | undefined) =>
+    (value || "").replace(/\D/g, "");
+
+  // Keep latest opt-in leads in a ref for focus helper
+  useEffect(() => {
+    optInLeadListRef.current = optInLeads;
+  }, [optInLeads]);
+
+  const cardsByStage = useMemo(() => {
+    const grouped: Record<string, PipelineCard[]> = {};
+
+    stagesWithOptIn.forEach((stage) => {
+      grouped[stage.stage_id] = [];
+    });
+
+    const activeAppointmentContactIds = new Set<string>();
+    (filteredAppointments as any[]).forEach((apt: any) => {
+      const cid = apt.contact_id ? String(apt.contact_id) : null;
+      if (!cid) return;
+      const status = (apt.status || "").toUpperCase();
+      if (status === "CANCELLED" || status === "CANCELED" || status === "NO_SHOW") return;
+      activeAppointmentContactIds.add(cid);
+    });
+
+    const resolverContext: PipelineStageResolverContext = {
+      hasActiveAppointmentForContactId: (contactId: string | null) => {
+        if (!contactId) return false;
+        return activeAppointmentContactIds.has(String(contactId));
+      },
+    };
+
     filteredAppointments.forEach((apt) => {
-      // NEW and BOOKED appointments go to "Appointments Booked"
-      if (!apt.pipeline_stage || apt.pipeline_stage === 'new' || apt.pipeline_stage === 'booked') {
-        grouped['appointments_booked'].push(apt);
-      } else if (apt.pipeline_stage === 'rescheduled' || apt.status === 'RESCHEDULED') {
-        // Rescheduled appointments appear in BOTH "Appointments Booked" (with tag) AND "rescheduled" stage
-        grouped['appointments_booked'].push(apt);
-        if (!grouped['rescheduled']) {
-          grouped['rescheduled'] = [];
-        }
-        grouped['rescheduled'].push(apt);
-      } else {
-        // Other appointments go to their pipeline stage
-        const stageId = apt.pipeline_stage;
-        if (!grouped[stageId]) {
-          grouped[stageId] = [];
-        }
-        grouped[stageId].push(apt);
+      const stageId = apt.pipeline_stage || "booked";
+      if (!grouped[stageId]) {
+        grouped[stageId] = [];
       }
+      grouped[stageId].push({ kind: "appointment", appointment: apt });
     });
-    
-    // Sort by date within each stage
+
+    filteredOptInLeads.forEach((lead) => {
+      const stageId = resolvePipelineStageForLead(lead, resolverContext);
+      if (!stageId || stageId === "unassigned") return;
+      if (!grouped[stageId]) {
+        grouped[stageId] = [];
+      }
+      grouped[stageId].push({ kind: "lead", lead });
+    });
+
     Object.keys(grouped).forEach((stageId) => {
       grouped[stageId].sort((a, b) => {
-        const dateA = new Date(a.start_at_utc).getTime();
-        const dateB = new Date(b.start_at_utc).getTime();
-        return sortBy === "closest" ? dateA - dateB : dateB - dateA;
+        const aTime =
+          a.kind === "appointment"
+            ? new Date(a.appointment.start_at_utc).getTime()
+            : new Date(a.lead.created_at || 0).getTime();
+        const bTime =
+          b.kind === "appointment"
+            ? new Date(b.appointment.start_at_utc).getTime()
+            : new Date(b.lead.created_at || 0).getTime();
+        return sortBy === "closest" ? aTime - bTime : bTime - aTime;
       });
     });
-    
+
     return grouped;
-  }, [filteredAppointments, stages, sortBy, confirmationTasks]);
+  }, [filteredAppointments, filteredOptInLeads, stagesWithOptIn, sortBy]);
 
   // Dev-only duplicate detection: warn when same appointment appears in multiple stage buckets
   useEffect(() => {
     try {
       if (process.env.NODE_ENV === 'production') return;
       const counts: Record<string, string[]> = {};
-      Object.keys(dealsByStage).forEach((stageKey) => {
-        (dealsByStage[stageKey] || []).forEach((apt) => {
+      Object.keys(cardsByStage).forEach((stageKey) => {
+        (cardsByStage[stageKey] || []).forEach((card) => {
+          if (card.kind !== 'appointment') return;
+          const apt = card.appointment;
           counts[apt.id] = counts[apt.id] || [];
           counts[apt.id].push(stageKey);
         });
@@ -398,21 +617,114 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     } catch (err) {
       // ignore
     }
-  }, [dealsByStage]);
+  }, [cardsByStage]);
+
+  // Robust focusing helper with retries for appointments and opt-in leads
+  useEffect(() => {
+    // Reset focus state when search params change
+    focusConfigRef.current = null;
+    focusAppliedRef.current = false;
+    focusAttemptStartedRef.current = false;
+
+    const focus = searchParams.get("focus");
+    const appointmentId = searchParams.get("appointment_id");
+    const leadId = searchParams.get("lead_id");
+    const focusContactId = searchParams.get("focusContactId");
+
+    let targetType: "appointment" | "lead" | null = null;
+    let targetId: string | null = null;
+    let contactIdForLead: string | null = null;
+
+    if (appointmentId) {
+      targetType = "appointment";
+      targetId = appointmentId;
+    } else if (leadId) {
+      targetType = "lead";
+      targetId = leadId;
+    } else if (focusContactId) {
+      targetType = "lead";
+      contactIdForLead = focusContactId;
+    }
+
+    if (!targetType) return;
+
+    focusConfigRef.current = {
+      targetType,
+      targetId,
+      focusContactId: contactIdForLead,
+    };
+    focusAttemptStartedRef.current = true;
+
+    let attempts = 0;
+    const maxAttempts = 60;
+    const delayMs = 250;
+
+    const attemptFocus = () => {
+      const config = focusConfigRef.current;
+      if (!config || focusAppliedRef.current) return;
+
+      attempts += 1;
+
+      let { targetType, targetId, focusContactId } = config;
+
+      // Resolve lead id from contact_id if needed
+      if (targetType === "lead" && !targetId && focusContactId) {
+        const match = optInLeadListRef.current.find(
+          (l) => l.contact_id && String(l.contact_id) === focusContactId
+        );
+        if (match) {
+          targetId = match.id;
+          focusConfigRef.current = { ...config, targetId };
+        }
+      }
+
+      let el: HTMLDivElement | null = null;
+      if (targetType === "appointment" && targetId) {
+        el = appointmentRefs.current[targetId] || null;
+      } else if (targetType === "lead" && targetId) {
+        el = optInLeadRefs.current[targetId] || null;
+      }
+
+      const hasRef = !!el;
+
+      if (el && targetId) {
+        focusAppliedRef.current = true;
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        if (targetType === "appointment") {
+          setFocusedAppointmentId(targetId);
+        } else {
+          setFocusedLeadId(targetId);
+        }
+
+        setTimeout(() => {
+          if (targetType === "appointment") {
+            setFocusedAppointmentId((current) =>
+              current === targetId ? null : current
+            );
+          } else {
+            setFocusedLeadId((current) =>
+              current === targetId ? null : current
+            );
+          }
+        }, 2000);
+        return;
+      }
+
+      if (attempts < maxAttempts) {
+        setTimeout(attemptFocus, delayMs);
+      }
+    };
+
+    setTimeout(attemptFocus, delayMs);
+  }, [searchParams]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    if (process.env.NODE_ENV === 'production') return;
-    try {
-      const activeIdLog = event.active?.id || null;
-      const overIdLog = event.over?.id || null;
-      console.debug('[DRAG-OVER]', { activeId: activeIdLog, overId: overIdLog });
-    } catch (err) {
-      // ignore
-    }
+    // no-op in production; dev drag-over logging removed
   };
 
   const stripPrefix = (nsId: string | null | undefined) => {
@@ -421,21 +733,11 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     return parts.length > 1 ? parts.slice(1).join(":") : nsId;
   };
 
-  // Helper to get the logical stage for comparison (handles virtual stages)
-  const getLogicalStage = (apt: { pipeline_stage: string | null; status?: string }) => {
-    if (!apt.pipeline_stage || apt.pipeline_stage === 'new' || apt.pipeline_stage === 'booked') {
-      return 'appointments_booked';
-    }
-    return apt.pipeline_stage;
-  };
-
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
 
     if (!over) return;
-
-    console.log('[DRAG-END] userRole:', userRole, 'userId:', user?.id, 'active:', active.id, 'over:', over.id);
 
     // Check if setter is allowed to move deals in pipeline
     if (userRole === 'setter' && !allowSetterPipelineUpdates) {
@@ -444,29 +746,58 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     }
 
     const appointmentIdNs = active.id as string;
+    const isLeadCard = appointmentIdNs.startsWith("lead:");
     const overIdNs = over.id as string;
     const appointmentId = stripPrefix(appointmentIdNs);
     const overId = stripPrefix(overIdNs);
     
     // Check if we dropped over a stage or over another card
-    const targetStage = stages.find(s => s.stage_id === overIdNs || s.stage_id === overId);
+    const targetStage = stagesWithOptIn.find(s => s.stage_id === overIdNs || s.stage_id === overId);
     const targetCard = appointments.find(a => a.id === overId);
     
-    // Determine the new stage - handle virtual "appointments_booked" stage
+    // Determine the new stage
     let newStage: string | null = null;
     
-    if (overIdNs === 'appointments_booked' || overId === 'appointments_booked') {
-      newStage = 'booked'; // Map virtual stage to actual db value
-    } else if (targetStage) {
+    if (targetStage) {
       newStage = targetStage.stage_id;
     } else if (targetCard) {
       newStage = targetCard.pipeline_stage || 'booked';
     }
     
     // Validate newStage is a known valid stage
-    const validStageIds = ['appointments_booked', 'booked', ...stages.map(s => s.stage_id)];
-    if (!newStage || !validStageIds.includes(newStage)) {
-      // Invalid stage - silently return
+    const validStageIds = stagesWithOptIn.map(s => s.stage_id);
+    if (!newStage) {
+      return;
+    }
+
+    if (!isLeadCard && (!validStageIds.includes(newStage) || newStage === 'opt_in')) {
+      // Invalid stage for appointments or attempting to drop into opt_in
+      return;
+    }
+
+    // Handle dragging of opt-in lead cards
+    if (isLeadCard) {
+      const leadId = stripPrefix(appointmentIdNs);
+      const lead = optInLeads.find((l) => l.id === leadId);
+      if (!lead || !newStage) {
+        return;
+      }
+
+      try {
+        await supabase
+          .from('funnel_leads')
+          .update({ pipeline_stage: (newStage === 'opt_in' ? 'opt_in' : newStage) } as any)
+          .eq('id', lead.id)
+          .eq('team_id', teamId);
+
+        setOptInLeads((prev) =>
+          prev.map((l) => (l.id === lead.id ? { ...l, pipeline_stage: newStage } : l))
+        );
+      } catch (error) {
+        console.error('[Inbound] Error moving lead to stage:', error);
+        toast.error('Failed to move lead');
+      }
+
       return;
     }
 
@@ -474,11 +805,9 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     const appointment = appointments.find(a => a.id === appointmentId);
     if (!appointment) return;
     
-    // Check if dropping in the same logical stage - if so, do nothing
-    const currentLogicalStage = getLogicalStage(appointment);
-    const targetLogicalStage = newStage === 'booked' ? 'appointments_booked' : newStage;
-    
-    if (currentLogicalStage === targetLogicalStage) {
+    // Check if dropping in the same stage - if so, do nothing
+    const currentStage = appointment.pipeline_stage || 'booked';
+    if (currentStage === newStage) {
       // Same stage - no action needed, no toast
       return;
     }
@@ -714,11 +1043,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     appointment: Appointment,
     additionalData?: { rescheduleDate?: Date; followUpDate?: Date; followUpReason?: string }
   ) => {
-    console.log('[STAGE-MOVE] Starting performStageMove');
-    console.log('[STAGE-MOVE] Appointment ID:', appointmentId);
-    console.log('[STAGE-MOVE] New stage:', newStageId);
-    console.log('[STAGE-MOVE] Additional data:', additionalData);
-    
     try {
       const updateData: any = { pipeline_stage: newStageId };
 
@@ -729,17 +1053,14 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       if (newStageId === "rescheduled" && additionalData?.rescheduleDate) {
         updateData.retarget_date = format(additionalData.rescheduleDate, "yyyy-MM-dd");
         updateData.retarget_reason = "Rescheduled by user";
-        console.log('[STAGE-MOVE] Adding reschedule data:', updateData);
       }
 
       // Add retarget_date for follow-ups (no-show/cancelled)
       if (additionalData?.followUpDate && additionalData?.followUpReason) {
         updateData.retarget_date = format(additionalData.followUpDate, "yyyy-MM-dd");
         updateData.retarget_reason = additionalData.followUpReason;
-        console.log('[STAGE-MOVE] Adding follow-up retarget data:', updateData);
       }
 
-      console.log('[STAGE-MOVE] Updating appointment with data:', updateData);
       const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
 
       if (error) {
@@ -748,7 +1069,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
         await loadDeals();
         throw error;
       }
-      console.log('[STAGE-MOVE] ✓ Appointment updated successfully');
 
       // Log activity for pipeline stage change
       const { data: { user } } = await supabase.auth.getUser();
@@ -769,52 +1089,37 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
 
       // Create follow-up or reschedule task if needed
       if (additionalData?.rescheduleDate) {
-        console.log('[STAGE-MOVE] Creating reschedule task...');
         const { error: rpcError } = await supabase.rpc("create_task_with_assignment", {
           p_team_id: appointment.team_id,
           p_appointment_id: appointmentId,
           p_task_type: "reschedule",
           p_follow_up_date: null,
           p_follow_up_reason: null,
-          p_reschedule_date: format(additionalData.rescheduleDate, "yyyy-MM-dd")
+          p_reschedule_date: format(additionalData.rescheduleDate, "yyyy-MM-dd"),
         });
         if (rpcError) {
           console.error("[STAGE-MOVE] ❌ Error creating reschedule task:", rpcError);
           throw rpcError;
         }
-        console.log('[STAGE-MOVE] ✓ Reschedule task created');
       } else if (additionalData?.followUpDate && additionalData?.followUpReason) {
-        console.log('[STAGE-MOVE] Creating follow-up task...');
-        console.log('[STAGE-MOVE] RPC params:', {
+        const { error: rpcError } = await supabase.rpc("create_task_with_assignment", {
           p_team_id: appointment.team_id,
           p_appointment_id: appointmentId,
           p_task_type: "follow_up",
           p_follow_up_date: format(additionalData.followUpDate, "yyyy-MM-dd"),
           p_follow_up_reason: additionalData.followUpReason,
-          p_reschedule_date: null
+          p_reschedule_date: null,
         });
-        
-        const { data: rpcData, error: rpcError } = await supabase.rpc("create_task_with_assignment", {
-          p_team_id: appointment.team_id,
-          p_appointment_id: appointmentId,
-          p_task_type: "follow_up",
-          p_follow_up_date: format(additionalData.followUpDate, "yyyy-MM-dd"),
-          p_follow_up_reason: additionalData.followUpReason,
-          p_reschedule_date: null
-        });
-        
+
         if (rpcError) {
           console.error("[STAGE-MOVE] ❌ Error creating follow-up task:", rpcError);
           console.error("[STAGE-MOVE] RPC error details:", JSON.stringify(rpcError, null, 2));
           throw rpcError;
         }
-        console.log('[STAGE-MOVE] ✓ Follow-up task created successfully, task ID:', rpcData);
       }
 
       toast.success("Deal moved successfully");
-      console.log('[STAGE-MOVE] Reloading deals...');
       await loadDeals();
-      console.log('[STAGE-MOVE] ✓ Complete!');
     } catch (error: any) {
       console.error("[STAGE-MOVE] ❌ Fatal error in performStageMove:", error);
       console.error("[STAGE-MOVE] Error stack:", error.stack);
@@ -911,28 +1216,20 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
   };
 
   const handleFollowUpConfirm = async (followUpDate: Date, reason: string) => {
-    console.log('[FOLLOW-UP] handleFollowUpConfirm called');
-    console.log('[FOLLOW-UP] Dialog state:', followUpDialog);
-    console.log('[FOLLOW-UP] Follow-up date:', followUpDate);
-    console.log('[FOLLOW-UP] Reason:', reason);
-    
     if (!followUpDialog) {
       console.error('[FOLLOW-UP] ❌ No dialog state!');
       return;
     }
     
     const appointment = appointments.find((a) => a.id === followUpDialog.appointmentId);
-    console.log('[FOLLOW-UP] Found appointment:', appointment?.id, '-', appointment?.lead_name);
     
     if (appointment) {
-      console.log('[FOLLOW-UP] Calling performStageMove...');
       await performStageMove(
         followUpDialog.appointmentId,
         followUpDialog.stageId,
         appointment,
         { followUpDate, followUpReason: reason }
       );
-      console.log('[FOLLOW-UP] ✓ performStageMove completed');
     } else {
       console.error('[FOLLOW-UP] ❌ Appointment not found!');
     }
@@ -947,15 +1244,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
     
     if (appointment) {
       try {
-        console.log("💰 Saving deposit:", {
-          appointmentId: depositDialog.appointmentId,
-          stageId: depositDialog.stageId,
-          depositAmount,
-          notes,
-          followUpDate,
-          currentUser: appointment.closer_name
-        });
-
         // Update appointment with deposit amount and move to deposit stage
         const { data, error } = await supabase
           .from("appointments")
@@ -993,9 +1281,6 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
           console.error("❌ Deposit update error:", error);
           throw error;
         }
-
-        console.log("✅ Deposit saved successfully:", data);
-
         // Create follow-up task
         const { error: taskError } = await supabase.rpc("create_task_with_assignment", {
           p_team_id: appointment.team_id,
@@ -1537,8 +1822,8 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
       {isMobile ? (
         <MobilePipelineView
           teamId={teamId}
-          stages={stages}
-          dealsByStage={dealsByStage}
+          stages={stagesWithOptIn}
+          cardsByStage={cardsByStage}
           confirmationTasks={confirmationTasks}
           userRole={userRole}
           allowSetterPipelineUpdates={allowSetterPipelineUpdates}
@@ -1560,122 +1845,120 @@ export function DealPipeline({ teamId, userRole, currentUserId, onCloseDeal, vie
             onDragEnd={handleDragEnd}
           >
             <div className="flex gap-4 pb-4">
-              {/* Appointments Booked Column */}
-              <DroppableStageColumn key="appointments_booked" id="appointments_booked">
-                <Card className="h-full" style={{ minWidth: '340px' }}>
-                  <div 
-                    className="p-4 border-b bg-primary/10 border-b-primary"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">Appointments Booked</h3>
-                        <span className="text-xs text-muted-foreground">
-                          <span className="text-primary font-medium">
-                            {(() => {
-                              const now = new Date();
-                              const todayStart = startOfDay(now);
-                              const todayEnd = endOfDay(now);
-                              return appointments.filter(apt => {
-                                if (!apt.created_at) return false;
-                                const createdAt = new Date(apt.created_at);
-                                return isWithinInterval(createdAt, { start: todayStart, end: todayEnd });
-                              }).length;
-                            })()}
-                          </span> booked today
-                        </span>
-                      </div>
-                      <Badge variant="secondary">
-                        {dealsByStage['appointments_booked']?.length || 0}
-                      </Badge>
-                    </div>
-                  </div>
+              {stagesWithOptIn.map((stage) => {
+                const stageCards = cardsByStage[stage.stage_id] || [];
+                const isOptInStage = stage.stage_id === 'opt_in';
+                const isBookedStage = stage.stage_id === 'booked';
 
-                  <ScrollArea className="p-3" style={{ height: 'calc(100vh - 400px)' }}>
-                    <SortableContext
-                      items={(dealsByStage['appointments_booked'] || []).map((apt) => `booked:${apt.id}`)}
-                      strategy={verticalListSortingStrategy}
-                      id="appointments_booked"
-                    >
-                      <div className="space-y-3 min-h-[200px]">
-                        {(dealsByStage['appointments_booked']?.length || 0) === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-8">
-                            No deals
-                          </p>
-                        ) : (
-                          dealsByStage['appointments_booked'].map((appointment) => (
-                            <DealCard
-                              key={`booked:${appointment.id}`}
-                              id={`booked:${appointment.id}`}
-                              teamId={teamId}
-                              appointment={appointment}
-                              confirmationTask={confirmationTasks.get(appointment.id)}
-                              onCloseDeal={handleCloseDeal}
-                              onMoveTo={handleMoveTo}
-                              onDelete={handleDelete}
-                              onUndo={handleUndo}
-                              onChangeStatus={handleChangeStatus}
-                              onClearDealData={handleClearDealData}
-                              userRole={userRole}
-                              allowSetterPipelineUpdates={allowSetterPipelineUpdates}
-                            />
-                          ))
-                        )}
-                      </div>
-                    </SortableContext>
-                  </ScrollArea>
-                </Card>
-              </DroppableStageColumn>
-              
-              {/* Other Pipeline Stages */}
-              {stages.filter(stage => stage.stage_id !== 'booked').map((stage) => {
-                const stageAppointments = dealsByStage[stage.stage_id] || [];
+                const emptyMessage = isOptInStage
+                  ? "No Opt-Ins yet — leads appear here when they submit info but haven’t booked."
+                  : "No deals";
 
                 return (
                   <DroppableStageColumn key={stage.id} id={stage.stage_id}>
                     <Card className="h-full" style={{ minWidth: '340px' }}>
-                      <div 
+                      <div
                         className="p-4 border-b"
-                        style={{ 
+                        style={{
                           backgroundColor: `${stage.stage_color}15`,
-                          borderBottomColor: stage.stage_color
+                          borderBottomColor: stage.stage_color,
                         }}
                       >
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold">{stage.stage_label}</h3>
+                          <div>
+                            <h3 className="font-semibold">{stage.stage_label}</h3>
+                            {isOptInStage && (
+                              <span className="text-xs text-muted-foreground">
+                                Opted in — no appointment yet
+                              </span>
+                            )}
+                            {isBookedStage && (
+                              <span className="text-xs text-muted-foreground block">
+                                <span className="text-primary font-medium">
+                                  {(() => {
+                                    const now = new Date();
+                                    const todayStart = startOfDay(now);
+                                    const todayEnd = endOfDay(now);
+                                    return appointments.filter(apt => {
+                                      if (!apt.created_at) return false;
+                                      const createdAt = new Date(apt.created_at);
+                                      return isWithinInterval(createdAt, { start: todayStart, end: todayEnd });
+                                    }).length;
+                                  })()}
+                                </span>{' '}
+                                booked today
+                              </span>
+                            )}
+                          </div>
                           <Badge variant="secondary">
-                            {stageAppointments.length}
+                            {stageCards.length}
                           </Badge>
                         </div>
                       </div>
 
                       <ScrollArea className="p-3" style={{ height: 'calc(100vh - 400px)' }}>
                         <SortableContext
-                          items={stageAppointments.map((apt) => `pipeline:${apt.id}`)}
+                          items={stageCards.map((card) =>
+                            card.kind === 'lead'
+                              ? `lead:${card.lead.id}`
+                              : `apt:${card.appointment.id}`
+                          )}
                           strategy={verticalListSortingStrategy}
                           id={stage.stage_id}
                         >
                           <div className="space-y-3 min-h-[200px]">
-                            {stageAppointments.length === 0 ? (
+                            {stageCards.length === 0 ? (
                               <p className="text-sm text-muted-foreground text-center py-8">
-                                No deals
+                                {emptyMessage}
                               </p>
                             ) : (
-                              stageAppointments.map((appointment) => (
-                                <DealCard
-                                  key={`pipeline:${appointment.id}`}
-                                  id={`pipeline:${appointment.id}`}
-                                  teamId={teamId}
-                                  appointment={appointment}
-                                  onCloseDeal={handleCloseDeal}
-                                  onMoveTo={handleMoveTo}
-                                  onDelete={handleDelete}
-                                  onUndo={handleUndo}
-                                  onChangeStatus={handleChangeStatus}
-                                  onClearDealData={handleClearDealData}
-                                  userRole={userRole}
-                                  allowSetterPipelineUpdates={allowSetterPipelineUpdates}
-                                />
-                              ))
+                              stageCards.map((card) => {
+                                if (card.kind === 'lead') {
+                                  const lead = card.lead;
+                                  return (
+                                    <OptInLeadCard
+                                      key={lead.id}
+                                      id={`lead:${lead.id}`}
+                                      lead={lead}
+                                      refMap={optInLeadRefs}
+                                      isFocused={focusedLeadId === lead.id}
+                                      teamId={teamId}
+                                      userRole={userRole}
+                                      allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+                                    />
+                                  );
+                                }
+
+                                const appointment = card.appointment;
+                                return (
+                                  <div
+                                    key={`apt:${appointment.id}`}
+                                    ref={(el) => {
+                                      appointmentRefs.current[appointment.id] = el;
+                                    }}
+                                    className={cn(
+                                      focusedAppointmentId === appointment.id
+                                        ? "ring-2 ring-primary rounded-md"
+                                        : ""
+                                    )}
+                                  >
+                                    <DealCard
+                                      id={`apt:${appointment.id}`}
+                                      teamId={teamId}
+                                      appointment={appointment}
+                                      confirmationTask={confirmationTasks.get(appointment.id)}
+                                      onCloseDeal={handleCloseDeal}
+                                      onMoveTo={handleMoveTo}
+                                      onDelete={handleDelete}
+                                      onUndo={handleUndo}
+                                      onChangeStatus={handleChangeStatus}
+                                      onClearDealData={handleClearDealData}
+                                      userRole={userRole}
+                                      allowSetterPipelineUpdates={allowSetterPipelineUpdates}
+                                    />
+                                  </div>
+                                );
+                              })
                             )}
                           </div>
                         </SortableContext>

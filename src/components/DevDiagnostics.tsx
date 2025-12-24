@@ -5,12 +5,17 @@ import { useAuth } from "@/hooks/useAuth";
 interface HealthState {
   status: "idle" | "ok" | "error";
   message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+  table?: string;
+  rlsLikely?: boolean;
 }
 
 interface AuthHealthState {
   status: "idle" | "ok" | "error" | "skipped";
-  httpStatus?: number;
   message?: string;
+  sessionExists?: boolean;
 }
 
 const isDev = import.meta.env.DEV;
@@ -109,7 +114,7 @@ export function DevDiagnostics() {
       console.info("[DevDiagnostics] Running Supabase health check (dev only)");
       try {
         const { data, error } = await supabase
-          .from("events")
+          .from("teams")
           .select("id")
           .limit(1);
 
@@ -120,10 +125,27 @@ export function DevDiagnostics() {
             details: (error as any).details,
             hint: (error as any).hint,
           });
+
+          const code = (error as any).code as string | undefined;
+          const message = error.message;
+          const details = (error as any).details as string | undefined;
+          const hint = (error as any).hint as string | undefined;
+
+          const rlsLikely =
+            /permission denied|row-level security|rls|not allowed/i.test(
+              message + " " + (details || "") + " " + (hint || "")
+            ) || code === "PGRST301";
+
           setHealth({
             status: "error",
-            message:
-              "Supabase query failed. Possible causes: RLS blocking dev user, wrong project, or missing migrations.",
+            message: rlsLikely
+              ? "Supabase query failed due to row-level security (RLS) or permissions."
+              : "Supabase query failed. See error details below.",
+            code,
+            details,
+            hint,
+            table: "teams",
+            rlsLikely,
           });
           return;
         }
@@ -141,7 +163,8 @@ export function DevDiagnostics() {
           message:
             rowCount > 0
               ? `Connected. Sample query returned ${rowCount} row(s).`
-              : "Connected. Query returned 0 rows (check RLS or data).",
+              : "Connected. Query returned 0 rows (check RLS or seed data).",
+          table: "teams",
         });
       } catch (err: any) {
         console.error("[DevDiagnostics] Supabase health exception", {
@@ -151,7 +174,9 @@ export function DevDiagnostics() {
         setHealth({
           status: "error",
           message:
-            "Network or connection error talking to Supabase. Check VITE_SUPABASE_URL, Codespaces networking, and project ref.",
+            "Network or connection error talking to Supabase. Check VITE_SUPABASE_URL, networking, and project ref.",
+          table: "teams",
+          code: err?.code,
         });
       }
     };
@@ -162,42 +187,33 @@ export function DevDiagnostics() {
   useEffect(() => {
     if (!isDev) return;
 
-    const rawUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-    if (!rawUrl) {
-      setAuthHealth({ status: "skipped", message: "VITE_SUPABASE_URL not set" });
-      return;
-    }
-
-    if (typeof fetch === "undefined") {
-      setAuthHealth({ status: "skipped", message: "fetch not available in this environment" });
-      return;
-    }
-
-    const base = rawUrl.replace(/\/+$/, "");
-    const healthUrl = `${base}/auth/v1/health`;
-    console.info("[DevDiagnostics] Running auth health check (dev only)", { healthUrl });
-
     const run = async () => {
       try {
-        const res = await fetch(healthUrl, { method: "GET" });
-        const allowOrigin = res.headers.get("access-control-allow-origin");
-        const allowCreds = res.headers.get("access-control-allow-credentials");
+        const { data, error } = await supabase.auth.getSession();
 
-        console.info("[DevDiagnostics] Auth health response", {
-          status: res.status,
-          accessControlAllowOrigin: allowOrigin,
-          accessControlAllowCredentials: allowCreds,
-        });
-
-        if (res.ok) {
-          setAuthHealth({ status: "ok", httpStatus: res.status, message: "Auth health OK" });
-        } else {
+        if (error) {
+          console.error("[DevDiagnostics] Auth health error", {
+            message: error.message,
+            code: (error as any).code,
+          });
           setAuthHealth({
             status: "error",
-            httpStatus: res.status,
-            message: `Auth health returned ${res.status}`,
+            message: error.message,
+            sessionExists: false,
           });
+          return;
         }
+
+        const exists = Boolean(data?.session);
+        console.info("[DevDiagnostics] Auth session check", {
+          sessionExists: exists,
+        });
+
+        setAuthHealth({
+          status: "ok",
+          message: exists ? "Session exists" : "No active session",
+          sessionExists: exists,
+        });
       } catch (err: any) {
         console.error("[DevDiagnostics] Auth health exception", {
           message: err?.message,
@@ -205,8 +221,8 @@ export function DevDiagnostics() {
         });
         setAuthHealth({
           status: "error",
-          message:
-            "Network or CORS error calling auth health endpoint. Check Codespaces URL and Supabase project.",
+          message: "Error checking auth session via supabase.auth.getSession()",
+          sessionExists: false,
         });
       }
     };
@@ -250,6 +266,35 @@ export function DevDiagnostics() {
         <div>
           <span className="font-semibold">Health:</span>{" "}
           {health.status === "idle" ? "checking..." : `${health.status} – ${health.message}`}
+          {health.status === "error" && (
+            <div className="mt-0.5 space-y-0.5">
+              {health.table && (
+                <div>
+                  <span className="font-semibold">Table:</span> {health.table}
+                </div>
+              )}
+              {health.code && (
+                <div>
+                  <span className="font-semibold">Error code:</span> {health.code}
+                </div>
+              )}
+              {health.details && (
+                <div>
+                  <span className="font-semibold">Details:</span> {health.details}
+                </div>
+              )}
+              {health.hint && (
+                <div>
+                  <span className="font-semibold">Hint:</span> {health.hint}
+                </div>
+              )}
+              {health.rlsLikely && (
+                <div>
+                  <span className="font-semibold">RLS:</span> likely blocking this query for the current user
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div>
           <span className="font-semibold">Auth health:</span>{" "}
@@ -257,8 +302,8 @@ export function DevDiagnostics() {
             ? "checking..."
             : authHealth.status === "skipped"
             ? `skipped – ${authHealth.message}`
-            : `${authHealth.status} – ${
-                authHealth.httpStatus ? `HTTP ${authHealth.httpStatus}` : authHealth.message ?? "no message"
+            : `${authHealth.status} – session exists: ${
+                authHealth.sessionExists === undefined ? "unknown" : authHealth.sessionExists ? "true" : "false"
               }`}
         </div>
         <div>

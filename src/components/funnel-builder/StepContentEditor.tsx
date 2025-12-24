@@ -457,12 +457,80 @@ export function StepContentEditor({
           </div>
           
           <div className="space-y-2">
-            <Label className="text-xs">Privacy Policy Link (optional)</Label>
+            <Label className="text-xs">Privacy Policy Link (required if consent is required)</Label>
             <Input
               value={content.privacy_link || ''}
-              onChange={(e) => updateField('privacy_link', e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                const next = {
+                  ...content,
+                  privacy_link: value,
+                  // If a privacy link is provided on an opt-in step,
+                  // treat it as consent-gated by default.
+                  requires_consent: value ? true : content.requires_consent,
+                  show_consent_checkbox: value ? true : content.show_consent_checkbox,
+                };
+                onUpdate(next);
+              }}
               placeholder="https://yoursite.com/privacy"
             />
+          </div>
+          
+          <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
+            <div className="space-y-0.5">
+              <Label className="text-xs">Require consent to submit</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Step will be treated as consent-gated and blocked if unchecked.
+              </p>
+            </div>
+            <Switch
+              checked={content.requires_consent === true}
+              onCheckedChange={(checked) => {
+                const next = {
+                  ...content,
+                  requires_consent: checked,
+                  // When consent is required, always show checkbox.
+                  show_consent_checkbox: checked ? true : content.show_consent_checkbox,
+                };
+                onUpdate(next);
+              }}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+            <div className="space-y-0.5">
+              <Label className="text-xs">Show consent checkbox (UI only)</Label>
+              <p className="text-[11px] text-muted-foreground">
+                When consent is not required, this only shows the checkbox UI.
+              </p>
+            </div>
+            <Switch
+              checked={content.show_consent_checkbox !== false}
+              disabled={content.requires_consent === true}
+              onCheckedChange={(checked) => {
+                const next = {
+                  ...content,
+                  show_consent_checkbox: checked,
+                };
+                onUpdate(next);
+              }}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label className="text-xs">Consent Mode</Label>
+            <Select
+              value={content.consent_mode || ''}
+              onValueChange={(value) => updateField('consent_mode', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Implicit (default if link present)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="implicit">Implicit (link present)</SelectItem>
+                <SelectItem value="explicit">Explicit (stronger wording)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">

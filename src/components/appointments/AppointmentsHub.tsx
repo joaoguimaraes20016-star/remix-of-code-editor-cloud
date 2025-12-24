@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ import { UnassignedAppointments } from "./UnassignedAppointments";
 import { SetterBookingLinks } from "@/components/SetterBookingLinks";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 interface AppointmentsHubProps {
   teamId: string;
@@ -52,6 +53,7 @@ export function AppointmentsHub({
   onUpdate,
 }: AppointmentsHubProps) {
   const { user } = useAuth();
+  const location = useLocation();
   const counts = useTabCounts(teamId, user?.id || '', userRole);
   const [selectedStage, setSelectedStage] = useState<{ id: string; name: string; color: string } | null>(null);
   const [showCreateTask, setShowCreateTask] = useState(false);
@@ -74,6 +76,9 @@ export function AppointmentsHub({
   const [availableEventTypes, setAvailableEventTypes] = useState<any[]>([]);
   const [calendlyLoadError, setCalendlyLoadError] = useState<string | null>(null);
   const [adminTab, setAdminTab] = useState<string>("today");
+  const [setterTab, setSetterTab] = useState<string>("today");
+  const [closerTab, setCloserTab] = useState<string>("today");
+  const didApplyDeepLinkRef = useRef(false);
 
   const isSalesTeamMode = useMemo(() => {
     const userId = user?.id || null;
@@ -105,6 +110,43 @@ export function AppointmentsHub({
 
     return hasSalesRole || hasSalesAssignedAppointment || hasOtherAssignee;
   }, [appointments, user?.id, userRole]);
+
+  const pipelineIntent = useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const tab = params.get("tab");
+    const focus = params.get("focus");
+    return (
+      tab === "pipeline" ||
+      params.has("appointment_id") ||
+      params.has("lead_id") ||
+      params.has("focusContactId") ||
+      focus === "appointment" ||
+      focus === "lead"
+    );
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!pipelineIntent) return;
+    if (didApplyDeepLinkRef.current) return;
+
+    if (userRole === "setter") {
+      // Setter: always go to Team Pipeline tab (DealPipeline)
+      setSetterTab("pipeline");
+      didApplyDeepLinkRef.current = true;
+      return;
+    }
+
+    if (userRole === "closer") {
+      // Closer: team-mode -> Team Pipeline board, solo-like -> My Pipeline
+      setCloserTab(isSalesTeamMode ? "all" : "pipeline");
+      didApplyDeepLinkRef.current = true;
+      return;
+    }
+
+    // Admin/other roles: always go to Team Pipeline board
+    setAdminTab("pipeline");
+    didApplyDeepLinkRef.current = true;
+  }, [pipelineIntent, isSalesTeamMode, userRole]);
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -261,7 +303,7 @@ export function AppointmentsHub({
           </div>
         </div>
         
-        <Tabs defaultValue="today" className="w-full">
+        <Tabs value={setterTab} onValueChange={setSetterTab} className="w-full">
           <div className="w-full overflow-x-auto -mx-1 px-1">
             <TabsList className="w-max min-w-full h-9 sm:h-12">
               <TabsTrigger value="today" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
@@ -437,7 +479,7 @@ export function AppointmentsHub({
           </div>
         </div>
         
-        <Tabs defaultValue="today" className="w-full">
+        <Tabs value={closerTab} onValueChange={setCloserTab} className="w-full">
           <div className="w-full overflow-x-auto -mx-1 px-1">
             <TabsList className="w-max min-w-full h-9 sm:h-12">
               <TabsTrigger value="today" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">

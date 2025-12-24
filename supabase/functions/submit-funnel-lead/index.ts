@@ -35,6 +35,193 @@ function getDefaultIntent(stepType: string): StepIntent {
   }
 }
 
+function normalizeEmail(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.toLowerCase();
+}
+
+function normalizeName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizePhone(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("+")) {
+    const digits = trimmed.slice(1).replace(/[^0-9]/g, "");
+    const withPlus = digits.length > 0 ? `+${digits}` : "";
+    return withPlus || null;
+  }
+
+  const digits = trimmed.replace(/[^0-9]/g, "");
+  return digits.length > 0 ? digits : null;
+}
+
+async function resolveContact(
+  supabase: any,
+  team_id: string,
+  emailNorm: string | null,
+  phoneNorm: string | null,
+  nameNorm: string | null,
+): Promise<{
+  contactId: string | null;
+  identity_match_type: "email" | "phone" | "none";
+  identity_mismatch: boolean;
+  identity_mismatch_reason: string | null;
+}> {
+  if (!emailNorm && !phoneNorm && !nameNorm) {
+    return {
+      contactId: null,
+      identity_match_type: "none",
+      identity_mismatch: false,
+      identity_mismatch_reason: null,
+    };
+  }
+
+  let contactByEmail: any = null;
+  let contactByPhone: any = null;
+
+  try {
+    if (emailNorm) {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("team_id", team_id)
+        .eq("primary_email_normalized", emailNorm)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("[submit-funnel-lead] Error looking up contact by email:", error);
+      } else {
+        contactByEmail = data;
+      }
+    }
+
+    if (phoneNorm) {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("team_id", team_id)
+        .eq("primary_phone_normalized", phoneNorm)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("[submit-funnel-lead] Error looking up contact by phone:", error);
+      } else {
+        contactByPhone = data;
+      }
+    }
+  } catch (lookupErr) {
+    console.error("[submit-funnel-lead] Unexpected error during contact lookup:", lookupErr);
+  }
+
+  let chosenContact: any = null;
+  let identity_match_type: "email" | "phone" | "none" = "none";
+  let identity_mismatch = false;
+  let identity_mismatch_reason: string | null = null;
+
+  if (contactByEmail && contactByPhone && contactByEmail.id !== contactByPhone.id) {
+    chosenContact = contactByEmail;
+    identity_match_type = "email";
+    identity_mismatch = true;
+    identity_mismatch_reason = "email_phone_conflict";
+  } else if (contactByEmail || contactByPhone) {
+    chosenContact = contactByEmail ?? contactByPhone;
+
+    if (contactByEmail && contactByPhone && contactByEmail.id === contactByPhone.id) {
+      identity_match_type = emailNorm ? "email" : "phone";
+    } else if (contactByEmail) {
+      identity_match_type = "email";
+    } else if (contactByPhone) {
+      identity_match_type = "phone";
+    }
+  }
+
+  if (!chosenContact) {
+    try {
+      const { data: newContact, error: insertError } = await supabase
+        .from("contacts")
+        .insert({
+          team_id,
+          primary_email_normalized: emailNorm,
+          primary_phone_normalized: phoneNorm,
+          display_name: nameNorm,
+        })
+        .select("*")
+        .single();
+
+      if (insertError) {
+        console.error("[submit-funnel-lead] Error creating new contact:", insertError);
+        return {
+          contactId: null,
+          identity_match_type: "none",
+          identity_mismatch: false,
+          identity_mismatch_reason: null,
+        };
+      }
+
+      chosenContact = newContact;
+      identity_match_type = "none";
+      identity_mismatch = false;
+      identity_mismatch_reason = null;
+    } catch (insertErr) {
+      console.error("[submit-funnel-lead] Unexpected error creating new contact:", insertErr);
+      return {
+        contactId: null,
+        identity_match_type: "none",
+        identity_mismatch: false,
+        identity_mismatch_reason: null,
+      };
+    }
+  } else if (identity_match_type !== "none" && identity_mismatch_reason !== "email_phone_conflict") {
+    const contactEmailNorm = normalizeEmail(
+      chosenContact.primary_email_normalized ?? chosenContact.email ?? null,
+    );
+    const contactPhoneNorm = normalizePhone(
+      chosenContact.primary_phone_normalized ?? chosenContact.phone ?? null,
+    );
+    const contactNameNorm = normalizeName(
+      chosenContact.display_name ?? chosenContact.name ?? null,
+    );
+
+    const mismatches: string[] = [];
+
+    if (emailNorm && contactEmailNorm && emailNorm !== contactEmailNorm) {
+      mismatches.push("email");
+    }
+
+    if (phoneNorm && contactPhoneNorm && phoneNorm !== contactPhoneNorm) {
+      mismatches.push("phone");
+    }
+
+    if (nameNorm && contactNameNorm && nameNorm !== contactNameNorm) {
+      mismatches.push("name");
+    }
+
+    if (mismatches.length > 0) {
+      identity_mismatch = true;
+      if (!identity_mismatch_reason) {
+        identity_mismatch_reason = mismatches.join(",");
+      }
+    }
+  }
+
+  return {
+    contactId: chosenContact ? chosenContact.id : null,
+    identity_match_type,
+    identity_mismatch,
+    identity_mismatch_reason,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -248,24 +435,103 @@ serve(async (req) => {
       leadStatus = "lead";
     }
 
+    const emailNormalized = normalizeEmail(email);
+    const phoneNormalized = normalizePhone(phone);
+    const nameNormalized = normalizeName(name);
+
+    let contactId: string | null = null;
+    let identityMatchType: "email" | "phone" | "none" = "none";
+    let identityMismatch: boolean | null = null;
+    let identityMismatchReason: string | null = null;
+    let identityFieldsResolved = false;
+
+    // If a lead_id was provided, try to load the existing lead first so we can
+    // decide whether to attach a contact and avoid overwriting non-null
+    // identity fields.
+    let existingLead: any = null;
+    if (lead_id) {
+      try {
+        const { data: existing, error: existingError } = await supabase
+          .from("funnel_leads")
+          .select("*")
+          .eq("id", lead_id)
+          .eq("team_id", funnel.team_id)
+          .maybeSingle();
+
+        if (existingError) {
+          console.error("[submit-funnel-lead] Error loading existing funnel_lead for lead_id", lead_id, existingError);
+        } else {
+          existingLead = existing;
+        }
+      } catch (existingErr) {
+        console.error("[submit-funnel-lead] Unexpected error loading existing funnel_lead", existingErr);
+      }
+    }
+
+    const hasIdentityInput = !!(emailNormalized || phoneNormalized || nameNormalized);
+    const autoCreateAllowed = funnel.auto_create_contact !== false;
+
+    const shouldAttemptContactResolution =
+      autoCreateAllowed &&
+      hasIdentityInput &&
+      // For existing leads, only resolve if they don't already have a contact.
+      (!existingLead || !existingLead.contact_id);
+
+    if (shouldAttemptContactResolution) {
+      const contactResult = await resolveContact(
+        supabase,
+        funnel.team_id,
+        emailNormalized,
+        phoneNormalized,
+        nameNormalized,
+      );
+
+      contactId = contactResult.contactId;
+      identityMatchType = contactResult.identity_match_type;
+      identityMismatch = contactResult.identity_mismatch;
+      identityMismatchReason = contactResult.identity_mismatch_reason;
+      identityFieldsResolved = true;
+    }
+
     let lead: any = null;
 
-    // 1) Update existing lead if lead_id provided
-    if (lead_id) {
+    // 1) Update existing lead if lead_id provided and row exists
+    if (lead_id && existingLead) {
+      const updatePayload: any = {
+        answers,
+        email: email || undefined,
+        phone: phone || undefined,
+        name: name || undefined,
+        calendly_booking_data: calendlyBookingData || undefined,
+        opt_in_status: optInStatus ?? undefined,
+        opt_in_timestamp: optInTimestamp || undefined,
+        status: leadStatus,
+        last_step_index: last_step_index ?? undefined,
+      };
+
+      if (contactId && !existingLead.contact_id) {
+        updatePayload.contact_id = contactId;
+      }
+
+      if (identityFieldsResolved) {
+        if (existingLead.identity_match_type == null) {
+          updatePayload.identity_match_type = identityMatchType;
+        }
+
+        if (existingLead.identity_mismatch == null && typeof identityMismatch === "boolean") {
+          updatePayload.identity_mismatch = identityMismatch;
+        }
+
+        if (existingLead.identity_mismatch_reason == null && identityMismatchReason) {
+          updatePayload.identity_mismatch_reason = identityMismatchReason;
+        }
+      }
+
       const { data: updatedLead, error: updateError } = await supabase
         .from("funnel_leads")
-        .update({
-          answers,
-          email: email || undefined,
-          phone: phone || undefined,
-          name: name || undefined,
-          calendly_booking_data: calendlyBookingData || undefined,
-          opt_in_status: optInStatus ?? undefined,
-          opt_in_timestamp: optInTimestamp || undefined,
-          status: leadStatus,
-          last_step_index: last_step_index ?? undefined,
-        })
+        .update(updatePayload)
         .eq("id", lead_id)
+        .eq("team_id", funnel.team_id)
         .select()
         .single();
 
@@ -322,6 +588,10 @@ serve(async (req) => {
             email: email || null,
             phone: phone || null,
             name: name || null,
+            contact_id: contactId,
+            identity_match_type: identityMatchType,
+            identity_mismatch: identityMismatch,
+            identity_mismatch_reason: identityMismatchReason,
             calendly_booking_data: calendlyBookingData || null,
             opt_in_status: optInStatus,
             opt_in_timestamp: optInTimestamp,

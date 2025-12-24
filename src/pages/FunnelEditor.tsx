@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { resolvePrivacyPolicyUrl } from "@/components/funnel-public/consent";
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +28,7 @@ import { useTeamRole } from '@/hooks/useTeamRole';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getDefaultIntent, validateFunnelStructure, countCaptureSteps } from '@/lib/funnel/stepDefinitions';
+import { getTermsUrl } from '@/components/funnel-public/consent';
 import {
   Dialog,
   DialogContent,
@@ -115,6 +117,10 @@ export interface FunnelStep {
     phone_icon?: string;
     privacy_text?: string;
     privacy_link?: string;
+    // Consent / compliance
+    requires_consent?: boolean;
+    show_consent_checkbox?: boolean;
+    consent_mode?: 'explicit' | 'implicit';
     // Embed specific
     embed_url?: string;
     embed_height?: number;
@@ -134,6 +140,7 @@ export interface FunnelSettings {
   background_color: string;
   button_text: string;
   ghl_webhook_url?: string;
+  privacy_policy_url?: string;
   // SEO settings
   favicon_url?: string;
   seo_title?: string;
@@ -437,9 +444,28 @@ export default function FunnelEditor() {
       if (deleteError) throw deleteError;
 
       const stepsToInsert = currentSteps.map((step, index) => {
+        // Normalize consent/opt-in contract before persisting
+        const baseContent = { ...step.content } as FunnelStep['content'];
+        const termsUrl =
+          baseContent.privacy_link ||
+          (baseContent as any).terms_url ||
+          (baseContent as any).terms_link ||
+          '';
+
+        // Auto-migrate opt-in steps: if step_type is opt_in and a termsUrl is present
+        // but requires_consent is not explicitly true, treat as consent-gated.
+        if (step.step_type === 'opt_in' && termsUrl && baseContent.requires_consent !== true) {
+          baseContent.requires_consent = true;
+        }
+
+        // When consent is required, always show the consent checkbox.
+        if (baseContent.requires_consent === true && baseContent.show_consent_checkbox !== true) {
+          baseContent.show_consent_checkbox = true;
+        }
+
         // Merge current designs, element orders, and dynamic elements into content for persistence
         const contentWithDesign = {
-          ...step.content,
+          ...baseContent,
           design: currentStepDesigns[step.id] || step.content.design || null,
           element_order: currentElementOrders[step.id] || step.content.element_order || null,
           dynamic_elements: currentDynamicElements[step.id] || step.content.dynamic_elements || null,
@@ -510,6 +536,23 @@ export default function FunnelEditor() {
 
   const publishMutation = useMutation({
     mutationFn: async () => {
+      // Validate consent configuration before publishing
+      const stepsToValidate = stepsRef.current;
+
+      for (const step of stepsToValidate) {
+        const requiresConsent =
+          step?.content?.requires_consent === true || step?.step_type === "opt_in";
+
+        if (!requiresConsent) continue;
+
+        // Global privacy policy resolution (step override f funnel settings f team settings)
+        const termsUrl = resolvePrivacyPolicyUrl(step, funnel, undefined);
+
+        if (!termsUrl) {
+          throw new Error("Add a Privacy Policy URL in Funnel Settings before publishing.");
+        }
+      }
+
       await saveMutation.mutateAsync();
 
       const { error } = await supabase
@@ -1098,15 +1141,22 @@ export default function FunnelEditor() {
         )}
       </div>
 
-      <FunnelSettingsDialog
-        open={showSettings}
-        onOpenChange={setShowSettings}
-        funnel={funnel}
-        onSave={() => {
-          // Don't invalidate queries - it resets local state!
-          // Settings are saved directly by the dialog
-        }}
-      />
+      {funnel && (
+        <FunnelSettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
+          funnel={funnel}
+          onSave={() => {
+            // Mirror latest settings from dialog into local funnelState-aware view
+            setFunnelState((prev) => ({
+              ...prev,
+              // FunnelState itself doesnt store settings, but publish validation reads
+              // from the funnel query object, which the dialog just persisted. No extra
+              // state is required here beyond triggering a re-render if needed.
+            }));
+          }}
+        />
+      )}
 
       <AddStepDialog
         open={showAddStep}

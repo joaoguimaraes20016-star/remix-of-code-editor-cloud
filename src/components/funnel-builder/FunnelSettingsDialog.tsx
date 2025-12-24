@@ -457,6 +457,15 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                   />
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label>Privacy Policy URL</Label>
+                <Input
+                  value={settings.privacy_policy_url || ''}
+                  onChange={(e) => updateSetting('privacy_policy_url', e.target.value || null)}
+                  placeholder="https://yourdomain.com/privacy"
+                />
+              </div>
             </div>
           </div>
         );
