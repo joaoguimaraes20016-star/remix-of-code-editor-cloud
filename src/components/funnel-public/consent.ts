@@ -25,9 +25,12 @@ export function isConsentRequired(step?: ConsentStep): boolean {
 }
 
 export function shouldShowConsentCheckbox(step?: ConsentStep, termsUrl?: string): boolean {
-  if (!step) return false;
-  // Checkbox is deterministic for opt-in: only when a terms URL exists.
-  return step.step_type === "opt_in" && !!termsUrl;
+  if (!step || !termsUrl) return false;
+
+  const stepType = step.step_type || "";
+  const consentSteps = ["opt_in", "email_capture", "phone_capture", "contact_capture"];
+
+  return consentSteps.includes(stepType);
 }
 
 interface DefaultPrivacyContext {

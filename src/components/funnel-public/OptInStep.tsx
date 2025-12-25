@@ -119,6 +119,7 @@ export function OptInStep({
       setErrors(newErrors);
       return;
     }
+    console.log("[OPTIN_SUBMIT_CLICK]", { consentChecked, showConsentCheckbox, termsUrl });
 
     onNext({ name, email, phone });
   };
@@ -268,7 +269,7 @@ export function OptInStep({
         <p
           id="consent-error"
           aria-live="polite"
-          className="text-red-400 text-xs mt-1"
+          className="mt-2 text-sm text-red-400"
         >
           {consentError}
         </p>
