@@ -536,21 +536,18 @@ export default function FunnelEditor() {
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      // Validate consent configuration before publishing
-      const stepsToValidate = stepsRef.current;
+      // Validate that a Privacy Policy URL can be resolved globally before publishing.
+      // This relies on the same resolver used at runtime so that publishing
+      // succeeds whenever the runtime opt-in experience has a valid link.
+      const resolvedPrivacyUrl = resolvePrivacyPolicyUrl(
+        undefined,
+        funnel,
+        undefined,
+        typeof window !== "undefined" ? window.location.origin : undefined,
+      );
 
-      for (const step of stepsToValidate) {
-        const requiresConsent =
-          step?.content?.requires_consent === true || step?.step_type === "opt_in";
-
-        if (!requiresConsent) continue;
-
-        // Global privacy policy resolution (step override f funnel settings f team settings)
-        const termsUrl = resolvePrivacyPolicyUrl(step, funnel, undefined);
-
-        if (!termsUrl) {
-          throw new Error("Add a Privacy Policy URL in Funnel Settings before publishing.");
-        }
+      if (!resolvedPrivacyUrl) {
+        throw new Error("Privacy Policy URL could not be resolved");
       }
 
       await saveMutation.mutateAsync();

@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import FunnelList from "./pages/FunnelList";
 import FunnelEditor from "./pages/FunnelEditor";
 import PublicFunnel from "./pages/PublicFunnel";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 // Dev-only funnel test route (dynamically imported so it is not included in production builds)
 let DevFunnelTest: React.LazyExoticComponent<any> | null = null;
 if (import.meta.env.DEV) {
@@ -54,6 +55,7 @@ const App = () => (
             {/* Public routes - no auth required */}
             <Route path="/onboard/:token" element={<OnboardingForm />} />
             <Route path="/f/:slug" element={<PublicFunnel />} />
+            <Route path="/legal/privacy" element={<PrivacyPolicy />} />
             {import.meta.env.DEV && DevFunnelTest && (
               <Route path="/__dev/funnel-test" element={<React.Suspense fallback={<div>Loading...</div>}><DevFunnelTest /></React.Suspense>} />
             )}

@@ -30,17 +30,51 @@ export function shouldShowConsentCheckbox(step?: ConsentStep, termsUrl?: string)
   return step.step_type === "opt_in" && !!termsUrl;
 }
 
+interface DefaultPrivacyContext {
+  team?: any;
+  funnel?: any;
+  domainOrigin?: string | null;
+}
+
+export function getDefaultPrivacyPolicyUrl({ team, funnel, domainOrigin }: DefaultPrivacyContext): string {
+  const funnelUrl = funnel?.settings?.privacy_policy_url;
+  if (typeof funnelUrl === "string" && funnelUrl.trim().length > 0) {
+    return funnelUrl.trim();
+  }
+
+  const teamUrl = team?.settings?.privacy_policy_url;
+  if (typeof teamUrl === "string" && teamUrl.trim().length > 0) {
+    return teamUrl.trim();
+  }
+
+  let origin = domainOrigin || null;
+
+  if (!origin && typeof window !== "undefined" && window.location?.origin) {
+    origin = window.location.origin;
+  }
+
+  if (!origin) {
+    return "/legal/privacy";
+  }
+
+  const normalizedOrigin = origin.replace(/\/$/, "");
+  return `${normalizedOrigin}/legal/privacy`;
+}
+
 export function resolvePrivacyPolicyUrl(
   step: any | undefined,
   funnel: any | undefined,
-  team: any | undefined
+  team: any | undefined,
+  domainOrigin?: string,
 ): string {
-  return (
+  const stepUrl =
     step?.content?.privacy_link ||
     step?.content?.terms_url ||
-    step?.content?.terms_link ||
-    funnel?.settings?.privacy_policy_url ||
-    team?.settings?.privacy_policy_url ||
-    ""
-  );
+    step?.content?.terms_link;
+
+  if (typeof stepUrl === "string" && stepUrl.trim().length > 0) {
+    return stepUrl.trim();
+  }
+
+  return getDefaultPrivacyPolicyUrl({ team, funnel, domainOrigin });
 }

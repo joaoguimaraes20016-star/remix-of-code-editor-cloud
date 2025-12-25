@@ -243,7 +243,7 @@ export function OptInStep({
           <Checkbox
             id="funnel-consent"
             checked={consentChecked}
-            onCheckedChange={(checked) => onConsentChange(checked === true)}
+            onCheckedChange={(checked) => onConsentChange?.(checked === true)}
             className="mt-0.5 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           />
           <span className="text-sm text-white/80">
@@ -276,6 +276,7 @@ export function OptInStep({
 
       {/* Submit Button */}
       <button
+        type="button"
         onClick={handleSubmit}
         className={`w-full px-6 py-4 text-base font-semibold transition-all duration-200 ${buttonHoverClass}`}
         style={{ 
