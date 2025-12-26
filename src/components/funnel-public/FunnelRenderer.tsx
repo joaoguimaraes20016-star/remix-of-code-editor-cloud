@@ -133,22 +133,6 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   // Single source of truth for the active step's terms URL and consent behavior.
   const { termsUrl: activeTermsUrl, requireConsent: activeRequireConsent } = getConsentRequirementForStep(currentStep);
 
-  // Signal to any legacy runtimes that the React funnel renderer
-  // is active, so they can disable their own submission handlers.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    (window as any).__GRWTH_REACT_FUNNEL_RUNTIME_ACTIVE__ = true;
-    return () => {
-      try {
-        if ((window as any).__GRWTH_REACT_FUNNEL_RUNTIME_ACTIVE__ === true) {
-          delete (window as any).__GRWTH_REACT_FUNNEL_RUNTIME_ACTIVE__;
-        }
-      } catch {
-        // ignore
-      }
-    };
-  }, []);
-
   // Reset consent UI whenever the active step changes.
   useEffect(() => {
     setConsentError(null);
