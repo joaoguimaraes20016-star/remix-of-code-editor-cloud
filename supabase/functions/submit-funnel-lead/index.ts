@@ -1,9 +1,9 @@
 // supabase/functions/submit-funnel-lead/index.ts
 // Canonical Funnel Lead Submission Handler
 // - ALWAYS upsert the lead (draft saves allowed)
-// - ONLY trigger automations on explicit submit OR step_intent === "capture"
+// - ONLY trigger automations on explicit submit (submitMode === "submit")
 // - Backend-authoritative consent enforcement (explicit requires checkbox acceptance)
-// - Keeps a short dedupe window to avoid double inserts
+// - NO backend guessing/auto-upgrade of submit intent
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -450,13 +450,8 @@ serve(async (req) => {
       );
     }
 
-    let effectiveSubmitMode: SubmitMode = submitMode;
-    if (submitMode === "draft" && step_intent === "capture") {
-      effectiveSubmitMode = "submit";
-      console.log(
-        "[submit-funnel-lead] Safety net: upgrading draft->submit because step_intent=capture",
-      );
-    }
+    // CRITICAL: backend must NEVER upgrade draft->submit.
+    const effectiveSubmitMode: SubmitMode = submitMode;
 
     console.log(
       `[submit-funnel-lead] step_id=${step_id}, step_type=${step_type}, step_intent=${step_intent}, submitMode=${submitMode}, effectiveSubmitMode=${effectiveSubmitMode}, clientRequestId=${clientRequestId}`,
@@ -520,12 +515,13 @@ serve(async (req) => {
       team,
     });
 
-    // Consent enforcement is ONLY hard-blocked for submit/capture flows
-    const isSubmitLike = effectiveSubmitMode === "submit" || step_intent === "capture";
+    // ONLY explicit submit counts as "submit-like"
+    const isSubmitLike = effectiveSubmitMode === "submit";
 
     const existingLegal =
       answers && (answers as any).legal ? ((answers as any).legal as Record<string, any>) : null;
 
+    // Consent enforcement is ONLY hard-blocked for explicit submits
     if (isSubmitLike && requireConsent) {
       const accepted =
         existingLegal?.accepted === true || existingLegal?.consent_given === true;
@@ -599,7 +595,7 @@ serve(async (req) => {
     if (calendly_booking?.invitee_phone && !phone) phone = calendly_booking.invitee_phone;
     if (calendly_booking?.invitee_name && !name) name = calendly_booking.invitee_name;
 
-    // Lead status
+    // Lead status: ONLY becomes "lead" on explicit submit
     let leadStatus = "visitor";
     const hasAnyContactInfo = !!(email || phone || name);
     if (hasAnyContactInfo) leadStatus = "partial";
@@ -770,7 +766,7 @@ serve(async (req) => {
       }
     }
 
-    // Fire automations only on real submit
+    // Fire automations ONLY on explicit submit
     if (effectiveSubmitMode === "submit") {
       const eventId = `lead_created:${lead.id}`;
       console.log("[submit-funnel-lead] Invoking automation-trigger with eventId:", eventId);
@@ -793,61 +789,63 @@ serve(async (req) => {
       );
     }
 
-    // Optional audit log (kept from your existing file; safe + deduped)
-    try {
-      const auditEventType = "lead_submitted";
-      const DEDUPE_WINDOW_MS = 10_000;
-      const since = new Date(Date.now() - DEDUPE_WINDOW_MS).toISOString();
+    // Optional audit log — ONLY on explicit submit (prevents “draft” looking like a submit)
+    if (effectiveSubmitMode === "submit") {
+      try {
+        const auditEventType = "lead_submitted";
+        const DEDUPE_WINDOW_MS = 10_000;
+        const since = new Date(Date.now() - DEDUPE_WINDOW_MS).toISOString();
 
-      const auditDetails: Record<string, any> = {
-        lead_id: lead.id,
-        funnel_id,
-        step_id,
-        step_type,
-        step_intent,
-        submitMode,
-      };
-
-      if (name) auditDetails.name = name;
-      if (email) auditDetails.email = email;
-      if (phone) auditDetails.phone = phone;
-
-      let duplicateExists = false;
-      let auditQuery = supabase
-        .from("webhook_audit_logs")
-        .select("id")
-        .eq("team_id", funnel.team_id)
-        .eq("event_type", auditEventType)
-        .gte("created_at", since)
-        .eq("details->>lead_id", lead.id as string);
-
-      if (step_id) auditQuery = auditQuery.eq("details->>step_id", step_id as string);
-
-      const { data: existingLogs, error: existingError } = await auditQuery.limit(1);
-      if (!existingError && existingLogs && existingLogs.length > 0) duplicateExists = true;
-
-      if (!duplicateExists) {
-        const { error: auditError } = await supabase.from("webhook_audit_logs").insert({
-          team_id: funnel.team_id,
-          event_type: auditEventType,
-          status: "success",
-          details: auditDetails,
-          received_at: new Date().toISOString(),
-        });
-
-        if (auditError) {
-          console.error("[submit-funnel-lead] Failed inserting webhook_audit_logs:", auditError);
-        }
-      } else {
-        console.log("[submit-funnel-lead] Skipping webhook_audit_logs insert due to recent duplicate", {
-          team_id: funnel.team_id,
-          event_type: auditEventType,
+        const auditDetails: Record<string, any> = {
           lead_id: lead.id,
+          funnel_id,
           step_id,
-        });
+          step_type,
+          step_intent,
+          submitMode,
+        };
+
+        if (name) auditDetails.name = name;
+        if (email) auditDetails.email = email;
+        if (phone) auditDetails.phone = phone;
+
+        let duplicateExists = false;
+        let auditQuery = supabase
+          .from("webhook_audit_logs")
+          .select("id")
+          .eq("team_id", funnel.team_id)
+          .eq("event_type", auditEventType)
+          .gte("created_at", since)
+          .eq("details->>lead_id", lead.id as string);
+
+        if (step_id) auditQuery = auditQuery.eq("details->>step_id", step_id as string);
+
+        const { data: existingLogs, error: existingError } = await auditQuery.limit(1);
+        if (!existingError && existingLogs && existingLogs.length > 0) duplicateExists = true;
+
+        if (!duplicateExists) {
+          const { error: auditError } = await supabase.from("webhook_audit_logs").insert({
+            team_id: funnel.team_id,
+            event_type: auditEventType,
+            status: "success",
+            details: auditDetails,
+            received_at: new Date().toISOString(),
+          });
+
+          if (auditError) {
+            console.error("[submit-funnel-lead] Failed inserting webhook_audit_logs:", auditError);
+          }
+        } else {
+          console.log("[submit-funnel-lead] Skipping webhook_audit_logs insert due to recent duplicate", {
+            team_id: funnel.team_id,
+            event_type: auditEventType,
+            lead_id: lead.id,
+            step_id,
+          });
+        }
+      } catch (auditOuterErr) {
+        console.error("[submit-funnel-lead] Error while logging to webhook_audit_logs:", auditOuterErr);
       }
-    } catch (auditOuterErr) {
-      console.error("[submit-funnel-lead] Error while logging to webhook_audit_logs:", auditOuterErr);
     }
 
     console.log("[submit-funnel-lead] result", {
