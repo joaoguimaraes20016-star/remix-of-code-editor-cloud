@@ -468,11 +468,18 @@ const deleteMutation = useMutation({
     : null;
 
   // Filter funnels by search and role (non-admins only see published)
-  const filteredFunnels = funnels?.filter(f => {
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
+const filteredFunnels = useMemo(() => {
+  return (funnels ?? []).filter(f => {
+    const matchesSearch = f.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
     const canSee = isAdmin || f.status === 'published';
+
     return matchesSearch && canSee;
   });
+}, [funnels, searchQuery, isAdmin]);
+
 
   // Export functions
   const exportLeads = () => {
