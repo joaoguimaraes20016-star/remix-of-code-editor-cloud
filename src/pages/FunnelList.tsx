@@ -290,7 +290,7 @@ export default function FunnelList() {
     enabled: !!teamId,
   });
 
-const deleteMutation = useMutation({
+  const deleteMutation = useMutation({
   mutationFn: async (funnelId: string) => {
     const { error } = await supabase
       .from('funnels')
@@ -324,6 +324,7 @@ const deleteMutation = useMutation({
   },
 });
 
+
   const renameMutation = useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
       const { error } = await supabase
@@ -332,9 +333,15 @@ const deleteMutation = useMutation({
         .eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey[0] === 'funnels',
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['funnels', teamId],
+        exact: true,
+      });
+
+      await queryClient.refetchQueries({
+        queryKey: ['funnels', teamId],
+        exact: true,
       });
       toast({ title: 'Funnel renamed' });
       setRenameFunnel(null);
@@ -386,9 +393,15 @@ const deleteMutation = useMutation({
 
       return newFunnel;
     },
-    onSuccess: (newFunnel) => {
-      queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey[0] === 'funnels',
+    onSuccess: async (newFunnel) => {
+      await queryClient.invalidateQueries({
+        queryKey: ['funnels', teamId],
+        exact: true,
+      });
+
+      await queryClient.refetchQueries({
+        queryKey: ['funnels', teamId],
+        exact: true,
       });
       toast({ title: 'Funnel duplicated' });
       navigate(`/team/${teamId}/funnels/${newFunnel.id}`);
@@ -468,18 +481,11 @@ const deleteMutation = useMutation({
     : null;
 
   // Filter funnels by search and role (non-admins only see published)
-const filteredFunnels = useMemo(() => {
-  return (funnels ?? []).filter(f => {
-    const matchesSearch = f.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-
+  const filteredFunnels = funnels?.filter(f => {
+    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
     const canSee = isAdmin || f.status === 'published';
-
     return matchesSearch && canSee;
   });
-}, [funnels, searchQuery, isAdmin]);
-
 
   // Export functions
   const exportLeads = () => {

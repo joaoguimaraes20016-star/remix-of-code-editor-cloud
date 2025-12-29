@@ -91,7 +91,13 @@ export function CreateFunnelDialog({ open, onOpenChange, teamId, onSuccess }: Cr
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey[0] === 'funnels',
+        queryKey: ['funnels', teamId],
+        exact: true,
+      });
+
+      await queryClient.refetchQueries({
+        queryKey: ['funnels', teamId],
+        exact: true,
       });
       toast({ title: 'Funnel created' });
       setName('');
