@@ -152,6 +152,7 @@ export default function FunnelList() {
         .from('funnels')
         .select('*')
         .eq('team_id', teamId)
+        .is('deleted_at', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
