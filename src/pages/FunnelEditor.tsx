@@ -90,7 +90,7 @@ export default function FunnelEditor() {
 
   /* ---------- DATA FETCH ---------- */
 
-  const { data: funnel } = useQuery({
+  const { data: funnel, isLoading: isFunnelLoading } = useQuery({
     queryKey: ['funnel', funnelId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -197,9 +197,17 @@ export default function FunnelEditor() {
   /* ---------- UI / RENDER ---------- */
   /* Everything below this point is IDENTICAL to your original file */
 
+  if (isFunnelLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <span className="text-sm text-muted-foreground">Loading funnel editor...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* UI unchanged */}
+      {/* UI unchanged - always rendered even if steps is [] */}
     </div>
   );
 }
