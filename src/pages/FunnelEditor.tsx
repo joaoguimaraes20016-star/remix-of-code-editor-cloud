@@ -959,6 +959,13 @@ export default function FunnelEditor() {
   };
 
   // Navigation between steps
+  const selectedStepId =
+    selection.type === 'step' ? selection.stepId :
+    selection.type === 'element' ? selection.stepId :
+    selection.type === 'block' ? selection.stepId :
+    null;
+  const selectedElement = selection.type === 'element' ? selection.elementId : null;
+  const selectedBlockId = selection.type === 'block' ? selection.blockId : null;
   const currentStepIndex = steps.findIndex((s) => s.id === selectedStepId);
   const handleNavigatePrevious = () => {
     if (currentStepIndex > 0) {
