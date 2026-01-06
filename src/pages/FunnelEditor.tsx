@@ -454,6 +454,16 @@ export default function FunnelEditor() {
         });
 
         const { error: upsertError } = await supabase
+      if (stepIds.length > 0) {
+        const notInFilter = `(${stepIds.join(',')})`;
+        const { error: deleteError } = await supabase
+          .from('funnel_steps')
+          .delete()
+          .eq('funnel_id', cleanFunnelId)
+          .not('id', 'in', notInFilter);
+        if (deleteError) throw deleteError;
+      } else {
+        const { error: deleteError } = await supabase
           .from('funnel_steps')
           .upsert(stepsToInsert, { onConflict: 'id' });
 
