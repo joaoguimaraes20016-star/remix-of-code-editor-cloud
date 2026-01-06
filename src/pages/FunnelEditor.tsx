@@ -406,13 +406,23 @@ export default function FunnelEditor() {
         if (funnelError) throw funnelError;
 
         if (stepIds.length > 0) {
-          const notInFilter = buildNotInFilter(stepIds);
-          const { error: deleteError } = await supabase
+          const { data: existingSteps, error: existingError } = await supabase
             .from('funnel_steps')
-            .delete()
-            .eq('funnel_id', cleanFunnelId)
-            .not('id', 'in', notInFilter);
-          if (deleteError) throw deleteError;
+            .select('id')
+            .eq('funnel_id', cleanFunnelId);
+          if (existingError) throw existingError;
+
+          const idsToDelete = (existingSteps ?? [])
+            .map((step) => step.id)
+            .filter((id) => !stepIds.includes(id));
+
+          if (idsToDelete.length > 0) {
+            const { error: deleteError } = await supabase
+              .from('funnel_steps')
+              .delete()
+              .in('id', idsToDelete);
+            if (deleteError) throw deleteError;
+          }
         } else {
           const { error: deleteError } = await supabase
             .from('funnel_steps')
@@ -1334,7 +1344,7 @@ export default function FunnelEditor() {
 
         {/* Right Sidebar - Editor Panel */}
         <div className={cn(
-          "border-l bg-card overflow-y-auto flex-shrink-0 transition-all duration-300 relative",
+          "border-l bg-card overflow-hidden flex flex-col flex-shrink-0 transition-all duration-300 relative",
           focusMode ? "w-0 p-0 overflow-hidden border-0" :
           showRightPanel ? "w-60 lg:w-72 p-2 sm:p-3" : "w-0 p-0 overflow-hidden border-0"
         )}>

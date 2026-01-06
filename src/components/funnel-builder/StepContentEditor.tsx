@@ -176,12 +176,12 @@ export function StepContentEditor({
           {INTENT_DESCRIPTIONS[currentIntent]}
         </p>
         
-        {/* Capture authority warning */}
+        {/* Submit authority warning */}
         {currentIntent === 'capture' && stepDefinition?.capabilities.canFinalizeLead && (
           <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
             <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              This step will trigger workflows when submitted. Only one step per funnel should have "Capture" intent.
+              This step will submit the lead. Only one step per funnel should be set to Submit.
             </p>
           </div>
         )}
