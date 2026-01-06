@@ -43,6 +43,7 @@ const validateUuid = (value: string | null | undefined, label: string): string =
   if (!UUID_RE.test(cleaned)) throw new Error(`Invalid ${label}`);
   return cleaned;
 };
+const buildNotInFilter = (ids: string[]) => `(${ids.map(id => `"${id}"`).join(',')})`;
 
 type DeviceType = 'mobile' | 'tablet' | 'desktop';
 
@@ -404,7 +405,7 @@ export default function FunnelEditor() {
         if (funnelError) throw funnelError;
 
         if (stepIds.length > 0) {
-          const notInFilter = `(${stepIds.map(id => `"${id}"`).join(',')})`;
+          const notInFilter = buildNotInFilter(stepIds);
           const { error: deleteError } = await supabase
             .from('funnel_steps')
             .delete()
