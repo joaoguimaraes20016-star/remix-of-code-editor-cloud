@@ -259,6 +259,13 @@ export default function FunnelEditor() {
   });
 
   const [selection, setSelection] = useState<EditorSelection>({ type: 'funnel' });
+  const selectedStepId =
+    selection.type === 'step' ? selection.stepId :
+    selection.type === 'element' ? selection.stepId :
+    selection.type === 'block' ? selection.stepId :
+    null;
+  const selectedElement = selection.type === 'element' ? selection.elementId : null;
+  const selectedBlockId = selection.type === 'block' ? selection.blockId : null;
   const [showSettings, setShowSettings] = useState(false);
   const [showAddStep, setShowAddStep] = useState(false);
   const [dirtyState, setDirtyState] = useState<{ funnel: boolean; steps: Record<string, boolean> }>({
