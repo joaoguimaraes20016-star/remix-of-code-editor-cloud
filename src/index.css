@@ -166,6 +166,16 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  html.editor-no-scroll,
+  body.editor-no-scroll {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body.editor-no-scroll {
+    overscroll-behavior: none;
+  }
 }
 
 @layer components {
@@ -198,6 +208,57 @@
 
   .glow-effect {
     box-shadow: var(--shadow-glow);
+  }
+
+  .editor-shell {
+    --editor-left-width: 11rem;
+    --editor-right-width: 15rem;
+    display: grid;
+    grid-template-columns: var(--editor-left-width) minmax(0, 1fr) var(--editor-right-width);
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  @media (min-width: 1024px) {
+    .editor-shell {
+      --editor-left-width: 13rem;
+      --editor-right-width: 18rem;
+    }
+  }
+
+  .editor-shell--left-collapsed {
+    --editor-left-width: 0px;
+  }
+
+  .editor-shell--right-collapsed {
+    --editor-right-width: 0px;
+  }
+
+  .editor-shell--focus {
+    --editor-left-width: 0px;
+    --editor-right-width: 0px;
+  }
+
+  .editor-shell__panel {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .editor-shell__panel--left,
+  .editor-shell__panel--right {
+    overscroll-behavior: contain;
+  }
+
+  .editor-shell__overlays {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .editor-shell__overlays > * {
+    pointer-events: auto;
   }
 
   @keyframes shimmer {

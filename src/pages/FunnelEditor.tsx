@@ -9,6 +9,7 @@ import { ArrowLeft, Settings, Eye, Save, Globe, Play, Maximize2, Minimize2, Chev
 import { toast } from '@/hooks/use-toast';
 import { PagesList } from '@/components/funnel-builder/PagesList';
 import { EditorSidebar } from '@/components/funnel-builder/EditorSidebar';
+import { EditorShell } from '@/components/funnel-builder/EditorShell';
 import type { EditorSelection } from '@/components/funnel-builder/editorSelection';
 import { buildSelectionId, parseSelectionId } from '@/components/funnel-builder/editorSelection';
 import { FunnelSettingsDialog } from '@/components/funnel-builder/FunnelSettingsDialog';
@@ -238,6 +239,16 @@ export default function FunnelEditor() {
       navigate(`/team/${teamId}/funnels`, { replace: true });
     }
   }, [roleLoading, isAdmin, teamId, navigate]);
+
+  useEffect(() => {
+    document.documentElement.classList.add('editor-no-scroll');
+    document.body.classList.add('editor-no-scroll');
+
+    return () => {
+      document.documentElement.classList.remove('editor-no-scroll');
+      document.body.classList.remove('editor-no-scroll');
+    };
+  }, []);
 
   // Use the history hook for undo/redo
   const {
@@ -1115,7 +1126,7 @@ export default function FunnelEditor() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Top Bar */}
       <div className="border-b bg-card px-2 sm:px-4 py-2 sm:py-3 flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
@@ -1264,196 +1275,208 @@ export default function FunnelEditor() {
       </div>
 
       {/* Main Editor Area - Responsive 3 Column Layout */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Sidebar Toggle Button */}
-        {!focusMode && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "absolute left-0 top-1/2 -translate-y-1/2 z-30 h-8 w-6 rounded-l-none bg-card border border-l-0 hover:bg-accent",
-              showLeftPanel ? "hidden" : "flex"
-            )}
-            onClick={() => setShowLeftPanel(true)}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+      <EditorShell
+        className={cn(
+          "flex-1",
+          focusMode && "editor-shell--focus",
+          !showLeftPanel && "editor-shell--left-collapsed",
+          !showRightPanel && "editor-shell--right-collapsed"
         )}
-
-        {/* Left Sidebar - Pages List */}
-        <div className={cn(
-          "border-r bg-card overflow-y-auto flex-shrink-0 transition-all duration-300 relative",
-          focusMode ? "w-0 p-0 overflow-hidden border-0" :
-          showLeftPanel ? "w-44 lg:w-52 p-2 sm:p-3 pt-8" : "w-0 p-0 overflow-hidden border-0"
-        )}>
-          {/* Collapse button */}
-          {showLeftPanel && !focusMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-1 h-6 w-6 z-10"
-              onClick={() => setShowLeftPanel(false)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          )}
-          
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <PagesList
-              steps={steps}
-              selectedStepId={selectedStepId}
-              onSelectStep={(id) => {
-                setSelection({ type: 'step', id });
-              }}
-              onDeleteStep={handleDeleteStep}
-              onAddStep={() => setShowAddStep(true)}
-              onDuplicateStep={handleDuplicateStep}
-              onRenameStep={handleRenameStep}
-              onOpenPageSettings={handleOpenPageSettings}
-              onMoveStep={handleMoveStep}
-            />
-          </DndContext>
-        </div>
-
-        {/* Center - Device Preview - full scrollable area */}
-        <div className="flex-1 flex flex-col items-center bg-zinc-900/50 overflow-x-auto overflow-y-auto py-6 px-4">
-          {selectedStep ? (
-            <>
-              <DevicePreview 
-                backgroundColor={stepDesigns[selectedStep.id]?.backgroundColor || funnel.settings.background_color}
-                device={devicePreview}
-                onDeviceChange={setDevicePreview}
-                className={cn(
-                  "transition-transform duration-300",
-                  focusMode 
-                    ? "scale-100" 
-                    : devicePreview === 'desktop' ? "scale-[0.7] lg:scale-[0.85]" :
-                      devicePreview === 'tablet' ? "scale-[0.8] lg:scale-90" :
-                      "scale-[0.9] lg:scale-100"
-                )}
+        left={(
+          <div
+            className={cn(
+              "border-r bg-card transition-all duration-300 relative h-full",
+              focusMode || !showLeftPanel ? "opacity-0 pointer-events-none" : "p-2 sm:p-3 pt-8"
+            )}
+          >
+            {/* Collapse button */}
+            {showLeftPanel && !focusMode && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-1 h-6 w-6 z-10"
+                onClick={() => setShowLeftPanel(false)}
               >
-                <StepPreview
-                  step={selectedStep}
-                  settings={funnel.settings}
-                  funnel={funnel}
-                  selectedElement={selectedElement}
-                  onSelectElement={(elementId) => {
-                    setSelection({ type: 'element', id: buildSelectionId(selectedStep.id, elementId) });
-                  }}
-                  onSelectStep={() => {
-                    setSelection({ type: 'step', id: selectedStep.id });
-                  }}
-                  design={stepDesigns[selectedStep.id]}
-                  elementOrder={elementOrders[selectedStep.id]}
-                  onReorderElements={(order) => handleUpdateElementOrder(selectedStep.id, order)}
-                  onUpdateContent={(field, value) => {
-                    updateStepContent(selectedStep.id, { [field]: value });
-                  }}
-                  dynamicContent={dynamicElements[selectedStep.id] || {}}
-                  onUpdateDynamicContent={(elementId, value) => {
-                    updateDynamicElement(selectedStep.id, elementId, value);
-                  }}
-                />
-              </DevicePreview>
-
-              {/* Navigation Arrows */}
-              <PreviewNavigation
-                currentIndex={currentStepIndex}
-                totalSteps={steps.length}
-                onPrevious={handleNavigatePrevious}
-                onNext={handleNavigateNext}
-                className="mt-4"
-              />
-            </>
-          ) : (
-            <div className="text-muted-foreground text-center mt-12">
-              No steps yet. Add a step to get started.
-            </div>
-          )}
-        </div>
-
-        {/* Right Sidebar Toggle Button */}
-        {!focusMode && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "absolute right-0 top-1/2 -translate-y-1/2 z-30 h-8 w-6 rounded-r-none bg-card border border-r-0 hover:bg-accent",
-              showRightPanel ? "hidden" : "flex"
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
             )}
-            onClick={() => setShowRightPanel(true)}
+
+            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <PagesList
+                steps={steps}
+                selectedStepId={selectedStepId}
+                onSelectStep={(id) => {
+                  setSelection({ type: 'step', id });
+                }}
+                onDeleteStep={handleDeleteStep}
+                onAddStep={() => setShowAddStep(true)}
+                onDuplicateStep={handleDuplicateStep}
+                onRenameStep={handleRenameStep}
+                onOpenPageSettings={handleOpenPageSettings}
+                onMoveStep={handleMoveStep}
+              />
+            </DndContext>
+          </div>
+        )}
+        center={(
+          <div className="flex flex-col items-center bg-zinc-900/50 py-6 px-4">
+            {selectedStep ? (
+              <>
+                <DevicePreview
+                  backgroundColor={stepDesigns[selectedStep.id]?.backgroundColor || funnel.settings.background_color}
+                  device={devicePreview}
+                  onDeviceChange={setDevicePreview}
+                  className={cn(
+                    "transition-transform duration-300",
+                    focusMode
+                      ? "scale-100"
+                      : devicePreview === 'desktop' ? "scale-[0.7] lg:scale-[0.85]" :
+                        devicePreview === 'tablet' ? "scale-[0.8] lg:scale-90" :
+                        "scale-[0.9] lg:scale-100"
+                  )}
+                >
+                  <StepPreview
+                    step={selectedStep}
+                    settings={funnel.settings}
+                    funnel={funnel}
+                    selectedElement={selectedElement}
+                    onSelectElement={(elementId) => {
+                      setSelection({ type: 'element', id: buildSelectionId(selectedStep.id, elementId) });
+                    }}
+                    onSelectStep={() => {
+                      setSelection({ type: 'step', id: selectedStep.id });
+                    }}
+                    design={stepDesigns[selectedStep.id]}
+                    elementOrder={elementOrders[selectedStep.id]}
+                    onReorderElements={(order) => handleUpdateElementOrder(selectedStep.id, order)}
+                    onUpdateContent={(field, value) => {
+                      updateStepContent(selectedStep.id, { [field]: value });
+                    }}
+                    dynamicContent={dynamicElements[selectedStep.id] || {}}
+                    onUpdateDynamicContent={(elementId, value) => {
+                      updateDynamicElement(selectedStep.id, elementId, value);
+                    }}
+                  />
+                </DevicePreview>
+
+                {/* Navigation Arrows */}
+                <PreviewNavigation
+                  currentIndex={currentStepIndex}
+                  totalSteps={steps.length}
+                  onPrevious={handleNavigatePrevious}
+                  onNext={handleNavigateNext}
+                  className="mt-4"
+                />
+              </>
+            ) : (
+              <div className="text-muted-foreground text-center mt-12">
+                No steps yet. Add a step to get started.
+              </div>
+            )}
+          </div>
+        )}
+        right={(
+          <div
+            className={cn(
+              "border-l bg-card transition-all duration-300 relative h-full flex flex-col",
+              focusMode || !showRightPanel ? "opacity-0 pointer-events-none" : "p-2 sm:p-3 pt-8"
+            )}
           >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+            {/* Collapse button */}
+            {showRightPanel && !focusMode && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 left-1 h-6 w-6 z-10"
+                onClick={() => setShowRightPanel(false)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+            <EditorSidebar
+              selection={selection}
+              funnel={funnel}
+              step={selectedStep}
+              selectedElement={selectedElement}
+              selectedBlockId={selectedBlockId}
+              onUpdateContent={(patch) => {
+                if (!selectedStep) return;
+                updateStepContent(selectedStep.id, patch);
+              }}
+              onUpdateDesign={(design) => {
+                if (!selectedStep) return;
+                handleUpdateDesign(selectedStep.id, design);
+              }}
+              onUpdateSettings={(settings) => {
+                if (!selectedStep) return;
+                handleUpdateSettings(selectedStep.id, settings);
+              }}
+              onUpdateBlocks={(blocks) => {
+                if (!selectedStep) return;
+                handleUpdateBlocks(selectedStep.id, blocks);
+              }}
+              onSelectBlock={(blockId) => {
+                if (!selectedStep) return;
+                setSelection({ type: 'block', id: buildSelectionId(selectedStep.id, blockId) });
+              }}
+              onOpenFunnelSettings={() => setShowSettings(true)}
+              design={selectedStep ? stepDesigns[selectedStep.id] || {} : {}}
+              settings={selectedStep ? stepSettings[selectedStep.id] || {} : {}}
+              blocks={selectedStep ? stepBlocks[selectedStep.id] || [] : []}
+              elementOrder={selectedStep ? elementOrders[selectedStep.id] || [] : []}
+              dynamicContent={selectedStep ? dynamicElements[selectedStep.id] || {} : {}}
+              onUpdateDynamicContent={(elementId, value) => {
+                if (!selectedStep) return;
+                updateDynamicElement(selectedStep.id, elementId, value);
+              }}
+            />
+          </div>
         )}
+        overlays={(
+          <>
+            {/* Left Sidebar Toggle Button */}
+            {!focusMode && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "absolute left-0 top-1/2 -translate-y-1/2 z-30 h-8 w-6 rounded-l-none bg-card border border-l-0 hover:bg-accent",
+                  showLeftPanel ? "hidden" : "flex"
+                )}
+                onClick={() => setShowLeftPanel(true)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
 
-        {/* Right Sidebar - Editor Panel */}
-        <div className={cn(
-          "border-l bg-card overflow-hidden flex flex-col flex-shrink-0 transition-all duration-300 relative",
-          focusMode ? "w-0 p-0 overflow-hidden border-0" :
-          showRightPanel ? "w-60 lg:w-72 p-2 sm:p-3 pt-8" : "w-0 p-0 overflow-hidden border-0"
-        )}>
-          {/* Collapse button */}
-          {showRightPanel && !focusMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 left-1 h-6 w-6 z-10"
-              onClick={() => setShowRightPanel(false)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          )}
-          <EditorSidebar
-            selection={selection}
-            funnel={funnel}
-            step={selectedStep}
-            selectedElement={selectedElement}
-            selectedBlockId={selectedBlockId}
-            onUpdateContent={(patch) => {
-              if (!selectedStep) return;
-              updateStepContent(selectedStep.id, patch);
-            }}
-            onUpdateDesign={(design) => {
-              if (!selectedStep) return;
-              handleUpdateDesign(selectedStep.id, design);
-            }}
-            onUpdateSettings={(settings) => {
-              if (!selectedStep) return;
-              handleUpdateSettings(selectedStep.id, settings);
-            }}
-            onUpdateBlocks={(blocks) => {
-              if (!selectedStep) return;
-              handleUpdateBlocks(selectedStep.id, blocks);
-            }}
-            onSelectBlock={(blockId) => {
-              if (!selectedStep) return;
-              setSelection({ type: 'block', id: buildSelectionId(selectedStep.id, blockId) });
-            }}
-            onOpenFunnelSettings={() => setShowSettings(true)}
-            design={selectedStep ? stepDesigns[selectedStep.id] || {} : {}}
-            settings={selectedStep ? stepSettings[selectedStep.id] || {} : {}}
-            blocks={selectedStep ? stepBlocks[selectedStep.id] || [] : []}
-            elementOrder={selectedStep ? elementOrders[selectedStep.id] || [] : []}
-            dynamicContent={selectedStep ? dynamicElements[selectedStep.id] || {} : {}}
-            onUpdateDynamicContent={(elementId, value) => {
-              if (!selectedStep) return;
-              updateDynamicElement(selectedStep.id, elementId, value);
-            }}
-          />
-        </div>
+            {/* Right Sidebar Toggle Button */}
+            {!focusMode && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "absolute right-0 top-1/2 -translate-y-1/2 z-30 h-8 w-6 rounded-r-none bg-card border border-r-0 hover:bg-accent",
+                  showRightPanel ? "hidden" : "flex"
+                )}
+                onClick={() => setShowRightPanel(true)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
 
-        {/* Mobile overlay */}
-        {isMobile && (showLeftPanel || showRightPanel) && (
-          <div 
-            className="absolute inset-0 bg-black/50 z-10"
-            onClick={() => {
-              setShowLeftPanel(false);
-              setShowRightPanel(false);
-            }}
-          />
+            {/* Mobile overlay */}
+            {isMobile && (showLeftPanel || showRightPanel) && (
+              <div
+                className="absolute inset-0 bg-black/50 z-10"
+                onClick={() => {
+                  setShowLeftPanel(false);
+                  setShowRightPanel(false);
+                }}
+              />
+            )}
+          </>
         )}
-      </div>
+      />
 
       {funnel && (
         <FunnelSettingsDialog
