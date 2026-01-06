@@ -862,8 +862,9 @@ export function StepPreview({
                   style={{ borderColor: 'rgba(255,255,255,0.3)' }}
                 />
                 <span className="text-xs" style={{ color: textColor, opacity: 0.8 }}>
-                  I have read and accept the{' '}
-                  <span className="underline">Privacy Policy</span>.
+                  {content.privacy_text || 'I have read and accept the'}{' '}
+                  <span className="underline">Privacy Policy</span>
+                  .
                 </span>
               </label>
             )}
