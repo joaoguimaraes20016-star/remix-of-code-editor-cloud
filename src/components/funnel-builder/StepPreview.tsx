@@ -174,7 +174,7 @@ function ElementWrapper({
   return (
     <div
       className={cn(
-        "relative transition-all w-full cursor-pointer group",
+        "relative transition-all duration-100 w-full cursor-pointer group active:scale-[0.99]",
         isSelected 
           ? "ring-2 ring-primary rounded-md shadow-lg shadow-primary/20" 
           : "hover:ring-2 hover:ring-primary/50 rounded-md"

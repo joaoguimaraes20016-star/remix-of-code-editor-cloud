@@ -90,10 +90,10 @@ function PageItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all",
+        "group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-100 active:scale-[0.99]",
         isSelected 
           ? "bg-primary/20 text-primary" 
-          : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+          : "hover:bg-secondary text-muted-foreground hover:text-foreground active:bg-secondary/80"
       )}
       onClick={onSelect}
     >

@@ -97,8 +97,8 @@ export function EditorSidebar({
   }, [stepIntent]);
   const showStructure = selection.type !== 'funnel' && selection.type !== 'element' && intentSections.structure;
   const showBehavior = selection.type === 'step' && intentSections.behavior;
-  const showContent = selection.type !== 'funnel' && !!step;
-  const showDesign = selection.type !== 'funnel' && !!step;
+  const showContent = selection.type !== 'funnel' && selection.type !== 'block' && !!step;
+  const showDesign = selection.type !== 'funnel' && selection.type !== 'block' && !!step;
   const availableSections = useMemo(() => {
     const sections: string[] = [];
     if (selection.type === 'funnel') {
@@ -118,6 +118,7 @@ export function EditorSidebar({
       return next.length > 0 ? next : availableSections;
     });
   }, [availableSections]);
+  const hasSections = availableSections.length > 0;
   const selectedBlock = useMemo(
     () => blocks.find((block) => block.id === selectedBlockId) || null,
     [blocks, selectedBlockId]
@@ -170,22 +171,22 @@ export function EditorSidebar({
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 pt-4">
-          <Accordion
-            type="multiple"
-            value={openSections}
-            onValueChange={setOpenSections}
-            className="space-y-3"
-          >
+          {hasSections ? (
+            <Accordion
+              type="multiple"
+              value={openSections}
+              onValueChange={setOpenSections}
+              className="space-y-3"
+            >
             {selection.type === 'funnel' && (
               <AccordionItem value="content" className="border rounded-lg">
-                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline hover:bg-muted/40 active:bg-muted/60 rounded-md">
                   <span className="flex items-center gap-2">
                     <LayoutGrid className="h-3.5 w-3.5" />
                     Content
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
                 </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                <AccordionContent className="px-3 pb-3">
                   <div className="space-y-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
                     <p>Choose a step to edit its structure, content, or style.</p>
                     <div className="flex flex-col gap-2">
@@ -203,14 +204,13 @@ export function EditorSidebar({
 
             {showStructure && step && (
               <AccordionItem value="structure" className="border rounded-lg">
-                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline hover:bg-muted/40 active:bg-muted/60 rounded-md">
                   <span className="flex items-center gap-2">
                     <LayoutGrid className="h-3.5 w-3.5" />
                     Structure
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
                 </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                <AccordionContent className="px-3 pb-3">
                   <ContentBlockEditor
                     blocks={blocks}
                     onBlocksChange={onUpdateBlocks || (() => {})}
@@ -224,14 +224,13 @@ export function EditorSidebar({
 
             {showContent && step && (
               <AccordionItem value="content" className="border rounded-lg">
-                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline hover:bg-muted/40 active:bg-muted/60 rounded-md">
                   <span className="flex items-center gap-2">
                     <Wand2 className="h-3.5 w-3.5" />
                     Content
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
                 </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                <AccordionContent className="px-3 pb-3">
                   <StepContentEditor
                     step={step}
                     onUpdate={onUpdateContent}
@@ -246,14 +245,13 @@ export function EditorSidebar({
 
             {showDesign && step && (
               <AccordionItem value="style" className="border rounded-lg">
-                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline hover:bg-muted/40 active:bg-muted/60 rounded-md">
                   <span className="flex items-center gap-2">
                     <Palette className="h-3.5 w-3.5" />
                     Style
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
                 </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                <AccordionContent className="px-3 pb-3">
                   <DesignEditor
                     step={step}
                     design={design}
@@ -267,14 +265,13 @@ export function EditorSidebar({
 
             {showBehavior && step && (
               <AccordionItem value="behavior" className="border rounded-lg">
-                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline hover:bg-muted/40 active:bg-muted/60 rounded-md">
                   <span className="flex items-center gap-2">
                     <SettingsIcon className="h-3.5 w-3.5" />
                     Behavior
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
                 </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                <AccordionContent className="px-3 pb-3">
                   <SettingsEditor
                     step={step}
                     settings={settings}
@@ -283,7 +280,12 @@ export function EditorSidebar({
                 </AccordionContent>
               </AccordionItem>
             )}
-          </Accordion>
+            </Accordion>
+          ) : (
+            <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+              Select a step or element to start editing.
+            </div>
+          )}
         </div>
       </div>
 

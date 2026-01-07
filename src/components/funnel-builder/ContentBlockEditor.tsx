@@ -92,7 +92,10 @@ function SortableBlock({
         isDragging && "opacity-50 shadow-lg"
       )}
     >
-      <div className="flex items-center gap-2 p-2" onClick={onSelect}>
+      <div
+        className="flex items-center gap-2 p-2 cursor-pointer transition-colors duration-100 hover:bg-muted/40 active:bg-muted/60"
+        onClick={onSelect}
+      >
         <button {...attributes} {...listeners} className="cursor-grab hover:text-primary p-1">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </button>
