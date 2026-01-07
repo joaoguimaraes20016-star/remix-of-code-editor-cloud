@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { StepContentEditor } from './StepContentEditor';
 import { DesignEditor } from './DesignEditor';
 import { SettingsEditor } from './SettingsEditor';
 import { ContentBlockEditor, ContentBlock } from './ContentBlockEditor';
 import { ImagePicker } from './ImagePicker';
 import { Funnel, FunnelStep } from '@/pages/FunnelEditor';
-import { LayoutGrid, Settings as SettingsIcon, Wand2, Palette } from 'lucide-react';
+import { ChevronDown, LayoutGrid, Settings as SettingsIcon, Wand2, Palette } from 'lucide-react';
 import { getStepDefinition, getStepTypeLabel } from '@/lib/funnel/stepDefinitions';
 import getStepIntent from '@/lib/funnels/stepIntent';
 import type { StepIntent } from '@/lib/funnel/types';
@@ -98,6 +99,25 @@ export function EditorSidebar({
   const showBehavior = selection.type === 'step' && intentSections.behavior;
   const showContent = selection.type !== 'funnel' && !!step;
   const showDesign = selection.type !== 'funnel' && !!step;
+  const availableSections = useMemo(() => {
+    const sections: string[] = [];
+    if (selection.type === 'funnel') {
+      sections.push('content');
+      return sections;
+    }
+    if (showStructure) sections.push('structure');
+    if (showContent) sections.push('content');
+    if (showDesign) sections.push('style');
+    if (showBehavior) sections.push('behavior');
+    return sections;
+  }, [selection.type, showBehavior, showContent, showDesign, showStructure]);
+  const [openSections, setOpenSections] = useState<string[]>([]);
+  useEffect(() => {
+    setOpenSections((prev) => {
+      const next = prev.filter((section) => availableSections.includes(section));
+      return next.length > 0 ? next : availableSections;
+    });
+  }, [availableSections]);
   const selectedBlock = useMemo(
     () => blocks.find((block) => block.id === selectedBlockId) || null,
     [blocks, selectedBlockId]
@@ -149,89 +169,121 @@ export function EditorSidebar({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4 px-2 pt-4">
-          {selection.type === 'funnel' && (
-            <section className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <LayoutGrid className="h-3.5 w-3.5" />
-                Funnel
-              </div>
-              <div className="space-y-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                <p>Choose a step to edit its structure, content, or style.</p>
-                <div className="flex flex-col gap-2">
-                  <Button size="sm" variant="outline" onClick={onOpenFunnelSettings} disabled={!onOpenFunnelSettings}>
-                    Open Funnel Settings
-                  </Button>
-                  <div className="text-[11px] text-muted-foreground">
-                    {funnel ? `${funnel.name} · ${funnel.status}` : 'No funnel loaded'}
+        <div className="flex-1 overflow-y-auto px-2 pt-4">
+          <Accordion
+            type="multiple"
+            value={openSections}
+            onValueChange={setOpenSections}
+            className="space-y-3"
+          >
+            {selection.type === 'funnel' && (
+              <AccordionItem value="content" className="border rounded-lg">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    Content
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                  <div className="space-y-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                    <p>Choose a step to edit its structure, content, or style.</p>
+                    <div className="flex flex-col gap-2">
+                      <Button size="sm" variant="outline" onClick={onOpenFunnelSettings} disabled={!onOpenFunnelSettings}>
+                        Open Funnel Settings
+                      </Button>
+                      <div className="text-[11px] text-muted-foreground">
+                        {funnel ? `${funnel.name} · ${funnel.status}` : 'No funnel loaded'}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </section>
-          )}
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
-          {showStructure && step && (
-            <section className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <LayoutGrid className="h-3.5 w-3.5" />
-                Structure
-              </div>
-              <ContentBlockEditor
-                blocks={blocks}
-                onBlocksChange={onUpdateBlocks || (() => {})}
-                selection={selection}
-                stepId={step?.id}
-                onSelectBlock={onSelectBlock}
-              />
-            </section>
-          )}
+            {showStructure && step && (
+              <AccordionItem value="structure" className="border rounded-lg">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    Structure
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                  <ContentBlockEditor
+                    blocks={blocks}
+                    onBlocksChange={onUpdateBlocks || (() => {})}
+                    selection={selection}
+                    stepId={step?.id}
+                    onSelectBlock={onSelectBlock}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
-          {showContent && step && (
-            <section className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <Wand2 className="h-3.5 w-3.5" />
-                Content
-              </div>
-              <StepContentEditor
-                step={step}
-                onUpdate={onUpdateContent}
-                selection={selection}
-                elementOrder={elementOrder}
-                dynamicContent={dynamicContent}
-                onUpdateDynamicContent={onUpdateDynamicContent}
-              />
-            </section>
-          )}
+            {showContent && step && (
+              <AccordionItem value="content" className="border rounded-lg">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Content
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                  <StepContentEditor
+                    step={step}
+                    onUpdate={onUpdateContent}
+                    selection={selection}
+                    elementOrder={elementOrder}
+                    dynamicContent={dynamicContent}
+                    onUpdateDynamicContent={onUpdateDynamicContent}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
-          {showDesign && step && (
-            <section className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <Palette className="h-3.5 w-3.5" />
-                Style
-              </div>
-              <DesignEditor
-                step={step}
-                design={design}
-                onUpdateDesign={onUpdateDesign}
-                onOpenImagePicker={() => setShowImagePicker(true)}
-                highlightedSection={selectedElementId}
-              />
-            </section>
-          )}
+            {showDesign && step && (
+              <AccordionItem value="style" className="border rounded-lg">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    <Palette className="h-3.5 w-3.5" />
+                    Style
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                  <DesignEditor
+                    step={step}
+                    design={design}
+                    onUpdateDesign={onUpdateDesign}
+                    onOpenImagePicker={() => setShowImagePicker(true)}
+                    highlightedSection={selectedElementId}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
-          {showBehavior && step && (
-            <section className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <SettingsIcon className="h-3.5 w-3.5" />
-                Behavior
-              </div>
-              <SettingsEditor
-                step={step}
-                settings={settings}
-                onUpdateSettings={onUpdateSettings}
-              />
-            </section>
-          )}
+            {showBehavior && step && (
+              <AccordionItem value="behavior" className="border rounded-lg">
+                <AccordionTrigger className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    <SettingsIcon className="h-3.5 w-3.5" />
+                    Behavior
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                  <SettingsEditor
+                    step={step}
+                    settings={settings}
+                    onUpdateSettings={onUpdateSettings}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
+          </Accordion>
         </div>
       </div>
 
