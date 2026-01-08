@@ -19,6 +19,9 @@ import {
   ThankYouStep,
 } from '../components/steps';
 
+// Import primitives CSS
+import '../components/primitives/primitives.css';
+
 import type { ComponentCategory } from '../layout/presenceResolver';
 import type { IntentDefaultsContext, IntentDefaultsResult } from './creationHelpers';
 import {
@@ -27,6 +30,9 @@ import {
   buttonIntentDefaults,
   textIntentDefaults,
 } from './creationHelpers';
+
+// Import primitive registry
+import { PrimitiveRegistry } from './primitiveRegistry';
 
 export type InspectorField = {
   label: string;
@@ -467,6 +473,9 @@ export const ComponentRegistry: Record<string, ComponentDefinition> = {
     constraints: { canHaveChildren: false },
     presenceCategory: 'section',
   },
+  
+  // Include all primitive components
+  ...PrimitiveRegistry,
 };
 
 export const fallbackComponent: ComponentDefinition = {
