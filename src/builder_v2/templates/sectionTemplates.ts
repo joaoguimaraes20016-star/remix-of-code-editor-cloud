@@ -443,6 +443,88 @@ export const featuresList: SectionTemplate = {
 };
 
 // ============================================================================
+// LEGAL / CONSENT SECTIONS
+// ============================================================================
+
+export const legalConsent: SectionTemplate = {
+  id: 'legal-consent',
+  name: 'Privacy Consent',
+  description: 'GDPR-compliant consent checkbox',
+  category: 'form',
+  icon: 'shield-check',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'form' },
+    children: [
+      {
+        id: genId('consent'),
+        type: 'consent_checkbox',
+        props: {
+          label: 'I agree to receive communications and accept the',
+          linkText: 'Privacy Policy',
+          linkUrl: '/legal/privacy',
+          required: true,
+          fieldName: 'consent',
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const legalOptInForm: SectionTemplate = {
+  id: 'legal-optin',
+  name: 'Opt-In Form',
+  description: 'Email + consent + CTA',
+  category: 'form',
+  icon: 'clipboard-list',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'form' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get instant access', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('input'),
+        type: 'email_input',
+        props: { placeholder: 'Enter your email', fieldName: 'email', required: true },
+        children: [],
+      },
+      {
+        id: genId('consent'),
+        type: 'consent_checkbox',
+        props: {
+          label: 'I agree to receive emails and accept the',
+          linkText: 'Privacy Policy',
+          linkUrl: '/legal/privacy',
+          required: true,
+          fieldName: 'consent',
+        },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 16 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get Access Now', variant: 'primary', action: 'submit' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -465,6 +547,8 @@ export const allSectionTemplates: SectionTemplate[] = [
   formFull,
   formMultiChoice,
   formCalendar,
+  legalConsent,
+  legalOptInForm,
   // Social Proof
   socialProofBadges,
   // Features
@@ -476,7 +560,7 @@ export const sectionTemplatesByCategory = {
   content: [contentText, contentHeadingText],
   cta: [ctaSimple, ctaWithText],
   media: [mediaVideo, mediaImage],
-  form: [formEmail, formPhone, formFull, formMultiChoice, formCalendar],
+  form: [formEmail, formPhone, formFull, formMultiChoice, formCalendar, legalConsent, legalOptInForm],
   social_proof: [socialProofBadges],
   features: [featuresList],
 };

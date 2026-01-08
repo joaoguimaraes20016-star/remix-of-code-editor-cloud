@@ -15,9 +15,6 @@ import {
   Smartphone,
   Tablet,
   Monitor,
-  Layers,
-  MoreHorizontal,
-  Copy,
   Sparkles,
   PanelLeft,
   PanelRight,
@@ -30,13 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
@@ -159,32 +149,47 @@ function AddPageModal({ open, onOpenChange, onAddPage }: { open: boolean; onOpen
   );
 }
 
-// Pages Header
+// Pages Header - Minimal Perspective-style
 function PagesHeader({ pages, activePageId, onSelectPage, onAddPage, onDeletePage }: { pages: Page[]; activePageId: string; onSelectPage: (id: string) => void; onAddPage: () => void; onDeletePage: (id: string) => void }) {
   return (
-    <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2"><Layers size={14} className="text-slate-500" /><span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Pages</span></div>
-        <button onClick={onAddPage} className="flex items-center justify-center w-6 h-6 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"><Plus size={14} /></button>
+    <div className="px-3 py-2 border-b border-slate-100">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Pages</span>
+        <button 
+          onClick={onAddPage} 
+          className="ml-auto w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+        >
+          <Plus size={12} />
+        </button>
       </div>
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
+      <div className="flex flex-col gap-0.5">
         {pages.map((page, i) => (
-          <div key={page.id} className="relative group shrink-0">
-            <button onClick={() => onSelectPage(page.id)} className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all", page.id === activePageId ? "bg-primary text-primary-foreground shadow-sm" : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50")}>
-              <span className="w-4 h-4 flex items-center justify-center rounded text-[10px] font-bold bg-black/10">{i + 1}</span>
-              <span className="max-w-[80px] truncate">{page.name}</span>
-            </button>
-            {pages.length > 1 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild><button className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-slate-200 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" onClick={(e) => e.stopPropagation()}><MoreHorizontal size={10} /></button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-32">
-                  <DropdownMenuItem><Copy size={12} className="mr-2" /> Duplicate</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onDeletePage(page.id)} className="text-destructive focus:text-destructive"><Trash2 size={12} className="mr-2" /> Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          <button 
+            key={page.id} 
+            onClick={() => onSelectPage(page.id)} 
+            className={cn(
+              "flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-all text-xs",
+              page.id === activePageId 
+                ? "bg-primary/10 text-primary font-medium" 
+                : "text-slate-600 hover:bg-slate-50"
             )}
-          </div>
+          >
+            <span className={cn(
+              "w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold",
+              page.id === activePageId ? "bg-primary text-white" : "bg-slate-200 text-slate-500"
+            )}>
+              {i + 1}
+            </span>
+            <span className="truncate">{page.name}</span>
+            {pages.length > 1 && page.id === activePageId && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); onDeletePage(page.id); }}
+                className="ml-auto p-0.5 text-slate-400 hover:text-destructive transition-colors"
+              >
+                <Trash2 size={10} />
+              </button>
+            )}
+          </button>
         ))}
       </div>
     </div>
@@ -277,7 +282,7 @@ function EditorContent({ funnel, teamId, onSave, onPublish, onUpdateSettings, is
 
       <div className="flex flex-1 overflow-hidden">
         {mode === 'edit' && leftPanelOpen && (
-          <aside className="w-64 shrink-0 border-r border-slate-200 bg-white flex flex-col overflow-hidden">
+          <aside className="w-56 shrink-0 border-r border-slate-100 bg-white flex flex-col overflow-hidden">
             <PagesHeader pages={pages} activePageId={activePageId} onSelectPage={setActivePage} onAddPage={() => setShowAddPage(true)} onDeletePage={handleDeletePage} />
             <div className="flex-1 overflow-hidden"><SectionPicker onAddSection={handleAddSection} /></div>
           </aside>
