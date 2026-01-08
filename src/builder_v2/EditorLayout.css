@@ -1,525 +1,645 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+/* ============================================================================
+   BUILDER V2 - FRAMER/PERSPECTIVE STYLE
+   Clean, professional, calm editor experience
+   ============================================================================ */
 
 :root {
-  /* Core palette - darker, calmer, more depth */
-  --builder-v2-bg: #030406;
-  --builder-v2-bg-elevated: #080a10;
-  --builder-v2-panel-bg: rgba(6, 8, 14, 0.88);
-  --builder-v2-panel-border: rgba(255, 255, 255, 0.05);
-  --builder-v2-text: #f5f7fa;
-  --builder-v2-text-muted: rgba(245, 247, 250, 0.55);
-  --builder-v2-text-dim: rgba(245, 247, 250, 0.35);
+  /* Core colors - Framer-inspired light mode */
+  --builder-bg: #f5f5f5;
+  --builder-panel-bg: #ffffff;
+  --builder-border: #e5e5e5;
+  --builder-border-subtle: #ebebeb;
+  --builder-text: #171717;
+  --builder-text-secondary: #737373;
+  --builder-text-muted: #a3a3a3;
   
-  /* Outlines - softer, less "engineer-y" */
-  --builder-v2-outline-soft: rgba(148, 163, 184, 0.12);
-  --builder-v2-outline-strong: rgba(139, 92, 246, 0.4);
+  /* Accent - clean blue */
+  --builder-accent: #0066ff;
+  --builder-accent-soft: rgba(0, 102, 255, 0.08);
+  --builder-accent-hover: rgba(0, 102, 255, 0.12);
   
-  /* Accent - softer glow, less saturated at rest */
-  --builder-v2-accent: #8b5cf6;
-  --builder-v2-accent-soft: rgba(139, 92, 246, 0.15);
-  --builder-v2-accent-glow: rgba(139, 92, 246, 0.25);
-  --builder-v2-accent-strong: #a78bfa;
-  --builder-v2-danger: #f87171;
+  /* Selection */
+  --builder-selection: #0066ff;
+  --builder-selection-bg: rgba(0, 102, 255, 0.06);
   
-  /* Transitions - slightly slower for calm feel */
-  --builder-v2-transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  --builder-v2-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --builder-v2-transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Transitions */
+  --builder-transition: 150ms ease;
+  --builder-transition-slow: 200ms ease;
   
-  /* Canvas surface - the "stage" feel */
-  --builder-v2-canvas-surface: rgba(12, 14, 22, 0.6);
-  --builder-v2-canvas-glow: rgba(139, 92, 246, 0.04);
-  --builder-v2-canvas-vignette: radial-gradient(
-    ellipse 80% 60% at 50% 50%,
-    transparent 0%,
-    rgba(3, 4, 6, 0.4) 100%
-  );
-  
-  /* Phase 22: Editor Focus Framing */
-  --builder-v2-center-focus-gradient: radial-gradient(
-    ellipse 70% 50% at 50% 45%,
-    rgba(139, 92, 246, 0.015) 0%,
-    transparent 70%
-  );
-  --builder-v2-working-surface-glow: rgba(139, 92, 246, 0.025);
-
-  /* ============================================================================
-     PHASE 35: EDITOR EXPRESSIVE TOKENS
-     Richer interaction feedback for editor context. Subtle, premium, deliberate.
-     Editor-specific enhancements on top of the base expression system.
-     ============================================================================ */
-
-  /* Editor hover expression - slightly richer than runtime */
-  --editor-expr-hover-lift: 1.5px;
-  --editor-expr-hover-shadow-grow: 1.08;
-  --editor-expr-hover-surface-brighten: 0.025;
-  --editor-expr-hover-border-reveal: 0.03;
-
-  /* Editor focus expression - enhanced clarity for workspace */
-  --editor-expr-focus-ring-opacity: 0.18;
-  --editor-expr-focus-ring-spread: 3px;
-  --editor-expr-focus-ring-blur: 8px;
-  --editor-expr-focus-bg-clarity: 0.015;
-
-  /* Editor press expression - tactile workspace feedback */
-  --editor-expr-press-depth: 1.5px;
-  --editor-expr-press-shadow-collapse: 0.45;
-
-  /* Editor transition softness - responsive but calm */
-  --editor-expr-transition-hover: 180ms cubic-bezier(0.4, 0, 0.2, 1);
-  --editor-expr-transition-focus: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --editor-expr-transition-press: 70ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Panel dimensions */
+  --builder-panel-width: 240px;
 }
 
-.builder-v2-shell {
+/* ============================================================================
+   SHELL LAYOUT
+   ============================================================================ */
+
+.builder-shell {
   display: flex;
   height: 100%;
   width: 100%;
-  overflow: hidden;
-  color: var(--builder-v2-text);
-  background: inherit;
-  font-family: 'Space Grotesk', 'Sora', system-ui, -apple-system, sans-serif;
+  background: var(--builder-bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  color: var(--builder-text);
+  -webkit-font-smoothing: antialiased;
 }
 
-.builder-v2-panel {
+/* ============================================================================
+   PANELS
+   ============================================================================ */
+
+.builder-panel {
   display: flex;
   flex-direction: column;
+  background: var(--builder-panel-bg);
+  border-right: 1px solid var(--builder-border);
   min-width: 0;
-  min-height: 0;
-  /* Softer border - less "wall", more "edge" */
-  border-right: 1px solid rgba(255, 255, 255, 0.03);
-  background: var(--builder-v2-panel-bg);
-  backdrop-filter: blur(32px);
-  /* Side panels fade into background mentally */
-  transition: opacity var(--builder-v2-transition-slow);
 }
 
-.builder-v2-panel:last-child {
+.builder-panel:last-child {
   border-right: none;
+  border-left: 1px solid var(--builder-border);
 }
 
-.builder-v2-panel--left,
-.builder-v2-panel--right {
-  width: 280px;
-  /* Subtle fade effect - panels are contextual, not primary */
-  opacity: 0.95;
+.builder-panel--left {
+  width: var(--builder-panel-width);
 }
 
-.builder-v2-panel--left:hover,
-.builder-v2-panel--right:hover {
-  opacity: 1;
+.builder-panel--right {
+  width: var(--builder-panel-width);
 }
 
-.builder-v2-panel--center {
-  flex: 1;
-  /* Canvas is the stage - visually primary */
-  position: relative;
-  z-index: 1;
+/* ============================================================================
+   PANEL TABS (Pages/Layers)
+   ============================================================================ */
+
+.builder-panel-tabs {
+  display: flex;
+  padding: 8px 12px;
+  gap: 4px;
+  border-bottom: 1px solid var(--builder-border);
+  background: var(--builder-panel-bg);
+}
+
+.builder-tab {
+  appearance: none;
+  border: none;
   background: transparent;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--builder-text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--builder-transition);
 }
 
-/* Phase 22: Working surface background layer */
-.builder-v2-panel--center::before {
-  content: none;
+.builder-tab:hover {
+  background: var(--builder-selection-bg);
+  color: var(--builder-text);
 }
 
-/* Phase 22: Working surface intensifies on interaction */
-.builder-v2-panel--center:hover::before {
-  opacity: 1;
+.builder-tab--active {
+  background: var(--builder-accent-soft);
+  color: var(--builder-accent);
 }
 
-.builder-v2-panel-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  /* Subtle - headers should whisper, not shout */
-  color: var(--builder-v2-text-muted);
-  transition: color var(--builder-v2-transition);
-}
+/* ============================================================================
+   PANEL CONTENT
+   ============================================================================ */
 
-.builder-v2-panel-header:hover {
-  color: var(--builder-v2-text);
-}
-
-.builder-v2-mode-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  /* Softer badge - informative but not loud */
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  color: rgba(167, 139, 250, 0.8);
-  transition: all var(--builder-v2-transition);
-}
-
-.builder-v2-mode-badge:hover {
-  background: rgba(139, 92, 246, 0.12);
-  color: var(--builder-v2-accent-strong);
-}
-
-.builder-v2-panel-scroll {
+.builder-panel-content {
   flex: 1;
-  overflow: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  /* Smoother scrolling */
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  overflow-y: auto;
+  padding: 8px;
 }
 
-.builder-v2-panel-scroll::-webkit-scrollbar {
+.builder-panel-content::-webkit-scrollbar {
   width: 6px;
 }
 
-.builder-v2-panel-scroll::-webkit-scrollbar-track {
+.builder-panel-content::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.builder-v2-panel-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.06);
+.builder-panel-content::-webkit-scrollbar-thumb {
+  background: var(--builder-border);
   border-radius: 3px;
 }
 
-.builder-v2-panel-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
+/* ============================================================================
+   PAGES LIST
+   ============================================================================ */
 
-.builder-v2-preview-hint {
-  font-size: 12px;
-  color: var(--builder-v2-text-dim);
-  padding: 12px 14px;
-  border-radius: 12px;
-  /* Solid but soft border - less "alert" feel */
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.015);
-  line-height: 1.5;
-}
-
-.builder-v2-mode-toggle {
-  display: inline-flex;
-  padding: 3px;
-  border-radius: 999px;
-  /* Subtler container - almost invisible */
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+.builder-pages-list {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
 }
 
-.builder-v2-mode-toggle button {
+.builder-page-item {
   appearance: none;
   border: none;
-  border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 11px;
-  color: var(--builder-v2-text-dim);
   background: transparent;
-  cursor: pointer;
-  transition: all var(--builder-v2-transition);
-}
-
-.builder-v2-mode-toggle button:hover {
-  color: var(--builder-v2-text-muted);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.builder-v2-mode-toggle button[aria-pressed="true"] {
-  /* Soft glow, not hard box */
-  background: rgba(139, 92, 246, 0.12);
-  color: var(--builder-v2-text);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
-}
-
-.builder-v2-placeholder {
-  padding: 16px;
-  border-radius: 12px;
-  /* Soft solid border instead of dashed - calmer */
-  background: rgba(255, 255, 255, 0.015);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--builder-v2-text-dim);
-}
-
-.builder-v2-hidden {
-  display: none;
-}
-
-.builder-v2-shell--preview .builder-v2-panel--center {
-  box-shadow: none;
-}
-
-.builder-v2-inspector {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-height: 200px;
-}
-
-.builder-v2-inspector-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.builder-v2-inspector-header-row {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.builder-v2-inspector-title {
-  margin: 0;
-  font-size: 18px;
-}
-
-/* 
- * Layout Intelligence Indicator
- * A subtle dot that appears when suggestions are available.
- * Intentionally minimal - this is infrastructure, not a feature launch.
- */
-.builder-v2-inspector-suggestion-indicator {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(99, 102, 241, 0.6);
-  flex-shrink: 0;
-  cursor: help;
-  transition: 
-    background var(--builder-v2-transition),
-    transform var(--builder-v2-transition);
-}
-
-.builder-v2-inspector-suggestion-indicator:hover {
-  background: rgba(99, 102, 241, 0.9);
-  transform: scale(1.2);
-}
-
-.builder-v2-inspector-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: var(--builder-v2-text-muted);
-}
-
-.builder-v2-inspector-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 14px;
-  /* Softer borders - less "boxed" */
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.015);
-  transition: 
-    border-color var(--builder-v2-transition),
-    background var(--builder-v2-transition),
-    box-shadow var(--builder-v2-transition-slow);
-}
-
-/* Phase 37: Collapsed section state */
-.builder-v2-inspector-section--collapsed {
-  gap: 0;
-  padding: 10px 14px;
-}
-
-.builder-v2-inspector-section:hover {
-  border-color: rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.builder-v2-inspector-section-header {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* Phase 37: Clickable header for collapsible sections */
-.builder-v2-inspector-section-header--clickable {
-  appearance: none;
-  border: none;
-  background: transparent;
   width: 100%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 0;
-  text-align: left;
+  padding: 8px 10px;
   border-radius: 6px;
-  transition: background var(--builder-v2-transition);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--builder-transition);
 }
 
-.builder-v2-inspector-section-header--clickable:hover {
-  background: rgba(255, 255, 255, 0.03);
+.builder-page-item:hover {
+  background: var(--builder-selection-bg);
 }
 
-.builder-v2-inspector-section-header--clickable:focus-visible {
-  outline: none;
-  background: rgba(139, 92, 246, 0.08);
+.builder-page-item--active {
+  background: var(--builder-accent-soft);
 }
 
-.builder-v2-inspector-section-header-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.builder-page-item--active .builder-page-name {
+  color: var(--builder-accent);
+  font-weight: 500;
 }
 
-.builder-v2-inspector-section-chevron {
-  font-size: 10px;
-  color: var(--builder-v2-text-dim);
-  transition: transform var(--builder-v2-transition);
+.builder-page-icon {
+  font-size: 14px;
+  opacity: 0.6;
 }
 
-.builder-v2-inspector-section--collapsed .builder-v2-inspector-section-chevron {
-  transform: rotate(0deg);
+.builder-page-name {
+  font-size: 13px;
+  color: var(--builder-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.builder-v2-inspector-section:not(.builder-v2-inspector-section--collapsed) .builder-v2-inspector-section-chevron {
-  transform: rotate(0deg);
-}
+/* ============================================================================
+   CANVAS AREA
+   ============================================================================ */
 
-.builder-v2-inspector-section-title {
-  margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--builder-v2-text-dim);
-}
-
-.builder-v2-inspector-section-description {
-  margin: 0;
-  font-size: 11px;
-  color: rgba(245, 247, 250, 0.35);
-  line-height: 1.4;
-}
-
-.builder-v2-inspector-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.builder-v2-inspector-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.builder-v2-inspector-label-row {
+.builder-canvas-area {
+  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: center;
+  background: var(--builder-bg);
+  overflow: hidden;
+  padding: 24px;
 }
 
-.builder-v2-inspector-label {
+/* ============================================================================
+   INSPECTOR
+   ============================================================================ */
+
+.builder-inspector {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.builder-inspector--empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.builder-inspector-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--builder-border);
+}
+
+.builder-inspector-type {
   font-size: 13px;
-  color: var(--builder-v2-text-muted);
+  font-weight: 600;
+  color: var(--builder-text);
 }
 
-.builder-v2-inspector-reset {
+/* ============================================================================
+   INSPECTOR SECTIONS
+   ============================================================================ */
+
+.builder-inspector-section {
+  border-bottom: 1px solid var(--builder-border-subtle);
+}
+
+.builder-inspector-section-header {
   appearance: none;
   border: none;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--builder-v2-text);
-  border-radius: 6px;
-  padding: 2px 10px;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: opacity var(--builder-v2-transition), background var(--builder-v2-transition);
-}
-
-.builder-v2-inspector-reset:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.builder-v2-inspector-input {
-  background: rgba(6, 8, 14, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  color: var(--builder-v2-text);
-  padding: 10px 12px;
-  font-size: 13px;
-  transition: 
-    border-color var(--builder-v2-transition),
-    box-shadow var(--builder-v2-transition-slow),
-    background var(--builder-v2-transition);
-  resize: vertical;
-}
-
-.builder-v2-inspector-input:hover {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(8, 10, 16, 0.8);
-}
-
-.builder-v2-inspector-input:focus {
-  outline: none;
-  border-color: rgba(139, 92, 246, 0.3);
-  /* Soft glow instead of hard ring */
-  box-shadow: 
-    0 0 0 3px rgba(139, 92, 246, 0.08),
-    0 0 20px -4px rgba(139, 92, 246, 0.15);
-  background: rgba(10, 12, 20, 0.9);
-}
-
-.builder-v2-inspector-empty {
-  margin: 0;
-  font-size: 13px;
-  color: var(--builder-v2-text-muted);
-}
-
-.builder-v2-inspector--disabled {
-  /* Soft solid border instead of dashed */
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 14px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.01);
-}
-
-.builder-v2-inspector-preview {
+  background: transparent;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background var(--builder-transition);
+}
+
+.builder-inspector-section-header:hover {
+  background: var(--builder-selection-bg);
+}
+
+.builder-inspector-section-header--static {
+  cursor: default;
+}
+
+.builder-inspector-section-header--static:hover {
+  background: transparent;
+}
+
+.builder-inspector-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--builder-text-secondary);
+}
+
+.builder-inspector-section-icon {
+  font-size: 14px;
+  color: var(--builder-text-muted);
+  font-weight: 400;
+  width: 16px;
   text-align: center;
 }
 
-.builder-v2-inspector-preview-title {
-  margin: 0;
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--builder-v2-text);
+.builder-inspector-section-content {
+  padding: 0 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.builder-v2-inspector-preview-description {
-  margin: 0;
-  font-size: 13px;
-  color: var(--builder-v2-text-muted);
+/* ============================================================================
+   FIELD - INLINE LAYOUT (Framer-style)
+   ============================================================================ */
+
+.builder-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 28px;
 }
 
-.builder-v2-structure-tree {
+.builder-field--textarea {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.builder-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.builder-field-label {
+  font-size: 12px;
+  color: var(--builder-text-secondary);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.builder-field-control {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.builder-field-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--builder-text);
+  background: var(--builder-bg);
+  border: 1px solid var(--builder-border);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color var(--builder-transition), box-shadow var(--builder-transition);
+}
+
+.builder-field-input:focus {
+  border-color: var(--builder-accent);
+  box-shadow: 0 0 0 2px var(--builder-accent-soft);
+}
+
+.builder-field-input::placeholder {
+  color: var(--builder-text-muted);
+}
+
+textarea.builder-field-input {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.builder-field-color {
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--builder-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.builder-field-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.builder-field-color::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+.builder-field-reset {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  font-size: 12px;
+  color: var(--builder-text-muted);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--builder-transition);
+}
+
+.builder-field-reset:hover {
+  opacity: 1;
+}
+
+/* ============================================================================
+   SEGMENT CONTROL
+   ============================================================================ */
+
+.builder-segment-control {
+  display: inline-flex;
+  background: var(--builder-bg);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.builder-segment {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--builder-text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--builder-transition);
+}
+
+.builder-segment:hover {
+  color: var(--builder-text);
+}
+
+.builder-segment--active {
+  background: var(--builder-panel-bg);
+  color: var(--builder-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================================
+   EMPTY STATES
+   ============================================================================ */
+
+.builder-empty-state {
+  color: var(--builder-text-muted);
+  font-size: 12px;
+  text-align: center;
+  padding: 24px 16px;
+}
+
+/* ============================================================================
+   STRUCTURE TREE (Layers Panel)
+   ============================================================================ */
+
+/* ============================================================================
+   LAYERS PANEL (Cleaner Tree)
+   ============================================================================ */
+
+.builder-layer-node {
+  display: flex;
+  flex-direction: column;
+}
+
+.builder-layer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background var(--builder-transition);
+  min-height: 28px;
+}
+
+.builder-layer-row:hover {
+  background: var(--builder-selection-bg);
+}
+
+.builder-layer-row--selected {
+  background: var(--builder-accent-soft);
+}
+
+.builder-layer-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.builder-layer-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.builder-layer-label {
+  font-size: 12px;
+  color: var(--builder-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.builder-layer-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.builder-layer-row:hover .builder-layer-actions {
+  display: flex;
+}
+
+.builder-layer-action {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--builder-text-muted);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all var(--builder-transition);
+}
+
+.builder-layer-action:hover {
+  background: var(--builder-border);
+  color: var(--builder-text);
+}
+
+.builder-layer-action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.builder-layer-action--danger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.builder-layer-children {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================================
+   CANVAS OVERRIDES (Cleaner for light mode)
+   ============================================================================ */
+
+.builder-v2-canvas {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  min-height: 400px;
+  padding: 32px 24px;
 }
+
+.builder-v2-node {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+
+.builder-v2-node:hover > .builder-v2-node-overlay {
+  border-color: var(--builder-accent);
+  opacity: 0.5;
+}
+
+.builder-v2-node[data-selected="true"] > .builder-v2-node-overlay {
+  border-color: var(--builder-accent);
+  opacity: 1;
+}
+
+.builder-v2-node-overlay {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: all var(--builder-transition);
+}
+
+.builder-v2-node-surface {
+  width: 100%;
+  max-width: 672px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Component base styles */
+.builder-v2-component {
+  width: 100%;
+  max-width: 672px;
+  margin: 0 auto;
+}
+
+.builder-v2-component--text {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  color: #171717;
+}
+
+.builder-v2-component--button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 320px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  background: var(--builder-accent);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all var(--builder-transition);
+}
+
+.builder-v2-component--button:hover {
+  opacity: 0.9;
+}
+
+.builder-v2-component--hero {
+  background: #1f2937;
+  border-radius: 12px;
+  padding: 32px;
+  color: white;
+  text-align: center;
+}
+
+.builder-v2-component--hero-headline {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 8px 0;
+}
+
+.builder-v2-component--hero-subheadline {
+  font-size: 14px;
+  opacity: 0.8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ============================================================================
+   STRUCTURE TREE COMPAT (for existing StructureTree component)
+   ============================================================================ */
 
 .builder-v2-structure-node {
   display: flex;
@@ -527,880 +647,92 @@
 }
 
 .builder-v2-structure-row {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  margin-left: calc(var(--builder-v2-structure-depth, 0) * 8px);
-  /* Softer borders - almost invisible at rest */
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.01);
-  cursor: grab;
-  transition: 
-    border-color var(--builder-v2-transition),
-    box-shadow var(--builder-v2-transition-slow),
-    background var(--builder-v2-transition);
-}
-
-.builder-v2-structure-row[data-depth='0'] {
-  cursor: default;
-}
-
-.builder-v2-structure-row::after {
-  content: '';
-  position: absolute;
-  inset: 4px;
-  border-radius: inherit;
-  border: 1px solid transparent;
-  opacity: 0;
-  transition: 
-    opacity var(--builder-v2-transition),
-    border-color var(--builder-v2-transition);
+  padding: 6px 8px;
+  padding-left: calc(8px + (var(--builder-v2-structure-depth, 0) * 12px));
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background var(--builder-transition);
 }
 
 .builder-v2-structure-row:hover {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.05);
+  background: var(--builder-selection-bg);
 }
 
-.builder-v2-structure-row:hover::after {
-  border-color: rgba(255, 255, 255, 0.06);
-  opacity: 1;
-}
-
-/* ============================================================================
-   PHASE 23: STRUCTURE TREE SELECTION FRAMING
-   Structure panel mirrors canvas focus mode - reinforces selection intent
-   ============================================================================ */
-
-/* All rows in a tree with selection: prepare for focus mode */
-.builder-v2-structure-tree:has(.builder-v2-structure-row[data-selected='true']) .builder-v2-structure-row {
-  transition:
-    opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-    background 200ms cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Non-selected rows fade in structure tree */
-.builder-v2-structure-tree:has(.builder-v2-structure-row[data-selected='true']) .builder-v2-structure-row:not([data-selected='true']) {
-  opacity: 0.55;
-}
-
-/* Non-selected rows: hover restores visibility temporarily */
-.builder-v2-structure-tree:has(.builder-v2-structure-row[data-selected='true']) .builder-v2-structure-row:not([data-selected='true']):hover {
-  opacity: 0.85;
-}
-
-/* Parent rows containing selected: less fade for hierarchy awareness */
-.builder-v2-structure-tree:has(.builder-v2-structure-row[data-selected='true']) .builder-v2-structure-row:not([data-selected='true']):has(.builder-v2-structure-row[data-selected='true']) {
-  opacity: 0.75;
-}
-
-.builder-v2-structure-row[data-selected='true'] {
-  /* Soft selection glow - not harsh border */
-  border-color: rgba(139, 92, 246, 0.25);
-  background: rgba(139, 92, 246, 0.05);
-  box-shadow: 
-    0 0 16px -4px rgba(139, 92, 246, 0.15),
-    0 4px 12px -4px rgba(0, 0, 0, 0.2);
-  /* Phase 23: Selected row stays fully opaque */
-  opacity: 1 !important;
-}
-
-.builder-v2-structure-row[data-selected='true']::after {
-  border-color: rgba(139, 92, 246, 0.3);
-  opacity: 1;
+.builder-v2-structure-row[data-selected="true"] {
+  background: var(--builder-accent-soft);
 }
 
 .builder-v2-structure-row-content {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .builder-v2-structure-row-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  color: var(--builder-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .builder-v2-structure-row-type {
   font-size: 10px;
-  letter-spacing: 0.06em;
+  color: var(--builder-text-muted);
   text-transform: uppercase;
-  color: var(--builder-v2-text-dim);
+  letter-spacing: 0.02em;
 }
 
 .builder-v2-structure-row-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--builder-v2-transition);
+  display: none;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .builder-v2-structure-row:hover .builder-v2-structure-row-controls {
-  opacity: 1;
-  pointer-events: auto;
+  display: flex;
 }
 
 .builder-v2-structure-row-controls-group {
-  display: inline-flex;
-  gap: 6px;
+  display: flex;
+  gap: 2px;
 }
 
 .builder-v2-structure-chip {
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  padding: 4px 12px;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--builder-v2-text);
+  border: none;
+  background: var(--builder-bg);
+  padding: 2px 6px;
+  font-size: 10px;
+  color: var(--builder-text-secondary);
+  border-radius: 3px;
   cursor: pointer;
-  transition: opacity var(--builder-v2-transition), border-color var(--builder-v2-transition);
+  transition: all var(--builder-transition);
+}
+
+.builder-v2-structure-chip:hover {
+  background: var(--builder-border);
+  color: var(--builder-text);
 }
 
 .builder-v2-structure-chip:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.builder-v2-structure-chip--danger {
-  border-color: rgba(251, 113, 133, 0.5);
-  color: var(--builder-v2-danger);
-}
-
-.builder-v2-structure-children {
-  margin-left: 10px;
-  padding-left: 10px;
-  /* Softer connector line */
-  border-left: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.builder-v2-structure-tree--disabled .builder-v2-structure-row {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.builder-v2-structure-tree--disabled .builder-v2-structure-row-controls {
-  display: none;
-}
-
-.builder-v2-structure-disabled-banner {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--builder-v2-text-dim);
-  padding: 10px 12px;
-  border-radius: 10px;
-  /* Softer border - not dashed */
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.01);
-}
-
-.builder-v2-dnd-ghost {
-  position: fixed;
-  pointer-events: none;
-  opacity: 0.95;
-  /* Softer container with glow */
-  background: rgba(8, 10, 18, 0.95);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 10px;
-  padding: 10px 14px;
-  color: var(--builder-v2-text);
-  box-shadow: 
-    0 12px 32px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(139, 92, 246, 0.15);
-  z-index: 9999;
-  font-size: 12px;
-  font-weight: 600;
-  backdrop-filter: blur(8px);
-}
-
-@keyframes builder-v2-drop-line {
-  from {
-    opacity: 0;
-    transform: scaleX(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scaleX(1);
-  }
-}
-
-.builder-v2-dnd-line {
-  position: fixed;
-  height: 2px;
-  /* Softer glow */
-  background: linear-gradient(90deg, transparent, var(--builder-v2-accent), transparent);
-  border-radius: 999px;
-  z-index: 9998;
-  animation: builder-v2-drop-line 180ms ease;
-  box-shadow: 0 0 16px rgba(139, 92, 246, 0.4);
-}
-
-/* ==================================================
-   Phase 26: Suggestions Panel & Node Highlighting
-   ================================================== */
-
-/* Suggestions Panel Container */
-.builder-v2-suggestions-panel {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--builder-v2-panel-border);
-}
-
-.builder-v2-suggestions-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  cursor: pointer;
-  user-select: none;
-  border-radius: 8px;
-  transition: background var(--builder-v2-transition-fast);
-}
-
-.builder-v2-suggestions-header:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.builder-v2-suggestions-header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.builder-v2-suggestions-title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--builder-v2-text-muted);
-}
-
-.builder-v2-suggestions-badge {
-  font-size: 10px;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: var(--builder-v2-accent-soft);
-  color: var(--builder-v2-accent-strong);
-}
-
-.builder-v2-suggestions-chevron {
-  width: 12px;
-  height: 12px;
-  color: var(--builder-v2-text-dim);
-  transition: transform var(--builder-v2-transition-fast);
-}
-
-.builder-v2-suggestions-chevron--expanded {
-  transform: rotate(180deg);
-}
-
-/* Suggestions List */
-.builder-v2-suggestions-list {
-  padding: 4px 8px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Individual Suggestion Item */
-.builder-v2-suggestion-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  transition: 
-    background var(--builder-v2-transition-fast),
-    border-color var(--builder-v2-transition-fast);
-  cursor: default;
-}
-
-.builder-v2-suggestion-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-.builder-v2-suggestion-icon {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background: var(--builder-v2-accent-soft);
-  color: var(--builder-v2-accent);
-  font-size: 12px;
-}
-
-.builder-v2-suggestion-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.builder-v2-suggestion-type {
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--builder-v2-text-dim);
-}
-
-.builder-v2-suggestion-description {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--builder-v2-text-muted);
-}
-
-.builder-v2-suggestion-apply {
-  flex-shrink: 0;
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: 6px;
-  border: none;
-  background: var(--builder-v2-accent-soft);
-  color: var(--builder-v2-accent-strong);
-  cursor: pointer;
-  transition: 
-    background var(--builder-v2-transition-fast),
-    transform var(--builder-v2-transition-fast);
-  align-self: flex-start;
-  margin-top: 2px;
-}
-
-.builder-v2-suggestion-apply:hover {
-  background: rgba(139, 92, 246, 0.25);
-  transform: translateY(-1px);
-}
-
-.builder-v2-suggestion-apply:active {
-  transform: translateY(0);
-}
-
-.builder-v2-suggestion-apply:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Node Highlight Animation */
-@keyframes builder-v2-highlight-pulse {
-  0% {
-    box-shadow: 
-      0 0 0 0 rgba(139, 92, 246, 0.4),
-      0 0 20px rgba(139, 92, 246, 0.15);
-  }
-  50% {
-    box-shadow: 
-      0 0 0 3px rgba(139, 92, 246, 0.2),
-      0 0 30px rgba(139, 92, 246, 0.25);
-  }
-  100% {
-    box-shadow: 
-      0 0 0 0 rgba(139, 92, 246, 0),
-      0 0 0 rgba(139, 92, 246, 0);
-  }
-}
-
-[data-highlighted="true"] {
-  animation: builder-v2-highlight-pulse 600ms ease-out forwards;
-  /* Subtle outline during animation */
-  outline: 2px solid rgba(139, 92, 246, 0.3);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* Empty State */
-.builder-v2-suggestions-empty {
-  padding: 12px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--builder-v2-text-dim);
-}
-
-/* ============================================================================
-   PHASE 27: LAYOUT PERSONALITY SELECTOR
-   Clean segmented control for personality selection
-   ============================================================================ */
-
-.builder-v2-personality-selector {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.builder-v2-personality-option {
-  flex: 1;
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--builder-v2-text-muted);
-  background: transparent;
-  border: none;
-  border-radius: 7px;
-  cursor: pointer;
-  transition:
-    color var(--builder-v2-transition),
-    background var(--builder-v2-transition),
-    box-shadow var(--builder-v2-transition);
-}
-
-.builder-v2-personality-option:hover {
-  color: var(--builder-v2-text);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.builder-v2-personality-option--active {
-  color: var(--builder-v2-text);
-  background: rgba(139, 92, 246, 0.15);
-  box-shadow:
-    0 0 0 1px rgba(139, 92, 246, 0.2),
-    0 2px 8px -2px rgba(139, 92, 246, 0.2);
-}
-
-.builder-v2-personality-option--active:hover {
-  background: rgba(139, 92, 246, 0.2);
-}
-
-/* Field container for personality (within inspector) */
-.builder-v2-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.builder-v2-field-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--builder-v2-text-muted);
-  letter-spacing: 0.02em;
-}
-
-/* ============================================================================
-   PHASE 33: GUIDED MODES & PROGRESSIVE DISCLOSURE
-   Framer/Perspective-style authoring modes with CSS-driven behavior.
-   Uses [data-editor-mode] attribute for all mode-aware styling.
-   ============================================================================ */
-
-/* Guided Mode Switcher - 3-pill toggle */
-.builder-v2-guided-mode-switcher {
-  display: inline-flex;
-  padding: 2px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  gap: 1px;
-}
-
-.builder-v2-guided-mode-pill {
-  appearance: none;
-  border: none;
-  border-radius: 999px;
-  padding: 4px 12px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--builder-v2-text-dim);
-  background: transparent;
-  cursor: pointer;
-  transition:
-    color 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    background 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.builder-v2-guided-mode-pill:hover:not(:disabled) {
-  color: var(--builder-v2-text-muted);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.builder-v2-guided-mode-pill--active {
-  color: var(--builder-v2-text);
-  background: rgba(139, 92, 246, 0.15);
-  box-shadow:
-    0 0 8px rgba(139, 92, 246, 0.2),
-    inset 0 0 0 1px rgba(139, 92, 246, 0.25);
-}
-
-.builder-v2-guided-mode-pill--active:hover:not(:disabled) {
-  background: rgba(139, 92, 246, 0.2);
-}
-
-.builder-v2-guided-mode-pill:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* ---------------------------------------------------------------------------
-   MODE-AWARE UI: BUILD MODE
-   Structure-focused: tree visible, spacing guides, structure suggestions
-   --------------------------------------------------------------------------- */
-
-[data-editor-mode="build"] .builder-v2-panel--left {
-  opacity: 1;
+.builder-v2-structure-chip--danger {
+  color: #dc2626;
 }
 
-[data-editor-mode="build"] .builder-v2-structure-tree {
-  opacity: 1;
+.builder-v2-structure-chip--danger:hover {
+  background: #fef2f2;
 }
 
-/* Inspector sections in Build mode: Content + Structure emphasized */
-[data-editor-mode="build"] .builder-v2-inspector-section[data-section="layout"],
-[data-editor-mode="build"] .builder-v2-inspector-section[data-section="style"] {
-  opacity: 0.6;
-  transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-editor-mode="build"] .builder-v2-inspector-section[data-section="layout"]:hover,
-[data-editor-mode="build"] .builder-v2-inspector-section[data-section="style"]:hover {
-  opacity: 1;
-}
-
-/* ---------------------------------------------------------------------------
-   MODE-AWARE UI: REFINE MODE
-   Layout/style-focused: tree faded, composition guides, strong selection framing
-   --------------------------------------------------------------------------- */
-
-[data-editor-mode="refine"] .builder-v2-panel--left {
-  opacity: 0.85;
-  transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-editor-mode="refine"] .builder-v2-panel--left:hover {
-  opacity: 1;
-}
-
-[data-editor-mode="refine"] .builder-v2-structure-tree {
-  opacity: 0.7;
-  transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-editor-mode="refine"] .builder-v2-structure-tree:hover {
-  opacity: 1;
-}
-
-/* Inspector sections in Refine mode: Layout + Style emphasized */
-[data-editor-mode="refine"] .builder-v2-inspector-section[data-section="content"] {
-  opacity: 0.6;
-  transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-editor-mode="refine"] .builder-v2-inspector-section[data-section="content"]:hover {
-  opacity: 1;
-}
-
-/* Stronger selection framing in Refine mode */
-[data-editor-mode="refine"] .builder-v2-canvas-node--selected {
-  box-shadow:
-    0 0 0 2px rgba(139, 92, 246, 0.4),
-    0 0 20px rgba(139, 92, 246, 0.15);
-}
-
-/* ---------------------------------------------------------------------------
-   MODE-AWARE UI: CONVERT MODE  
-   CTA-focused: tree minimized, action zones emphasized, conversion suggestions
-   --------------------------------------------------------------------------- */
-
-[data-editor-mode="convert"] .builder-v2-panel--left {
-  opacity: 0.7;
-  transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-editor-mode="convert"] .builder-v2-panel--left:hover {
-  opacity: 1;
-}
-
-[data-editor-mode="convert"] .builder-v2-structure-tree {
-  opacity: 0.5;
-  max-height: 200px;
-  overflow: hidden;
-  transition:
-    opacity 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    max-height 220ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-editor-mode="convert"] .builder-v2-structure-tree:hover {
-  opacity: 0.9;
-  max-height: none;
-}
-
-/* Inspector sections in Convert mode: CTA fields prioritized */
-[data-editor-mode="convert"] .builder-v2-inspector-section[data-section="content"],
-[data-editor-mode="convert"] .builder-v2-inspector-section[data-section="layout"],
-[data-editor-mode="convert"] .builder-v2-inspector-section[data-section="style"] {
-  opacity: 0.5;
-  transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-editor-mode="convert"] .builder-v2-inspector-section[data-section="content"]:hover,
-[data-editor-mode="convert"] .builder-v2-inspector-section[data-section="layout"]:hover,
-[data-editor-mode="convert"] .builder-v2-inspector-section[data-section="style"]:hover {
-  opacity: 1;
-}
-
-/* Emphasize action zones (buttons, CTAs) in Convert mode */
-[data-editor-mode="convert"] [data-node-type="button"],
-[data-editor-mode="convert"] [data-node-type="cta"] {
-  outline: 2px solid rgba(139, 92, 246, 0.2);
-  outline-offset: 4px;
-  border-radius: 4px;
-  transition:
-    outline-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    outline-offset 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ============================================================================
-   PHASE 35: EDITOR EXPRESSIVE TOKENS — MICRO-EXPRESSION LAYER
-   Richer interaction feedback for editor workspace. CSS-only, no JS listeners.
-   Feel, not animation. Editor context allows slightly more expressiveness.
-   ============================================================================ */
-
-/* Reduced motion: collapse all editor expression timing */
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --editor-expr-hover-lift: 0px;
-    --editor-expr-press-depth: 0px;
-    --editor-expr-transition-hover: 0ms;
-    --editor-expr-transition-focus: 0ms;
-    --editor-expr-transition-press: 0ms;
-  }
-}
-
-/* -----------------------------------------------------------------------------
-   EDITOR PANEL CONTROLS — Workspace Surface Response
-   ----------------------------------------------------------------------------- */
-
-/* Panel buttons and interactive controls */
-.builder-v2-panel button,
-.builder-v2-panel [role="button"],
-.builder-v2-panel .builder-v2-mode-toggle button {
-  transition:
-    transform var(--editor-expr-transition-hover),
-    box-shadow var(--editor-expr-transition-hover),
-    background var(--editor-expr-transition-hover),
-    border-color var(--editor-expr-transition-hover),
-    color var(--editor-expr-transition-hover);
-}
-
-/* Panel button hover: workspace acknowledgment */
-.builder-v2-panel button:hover,
-.builder-v2-panel [role="button"]:hover {
-  transform: translateY(calc(-0.5 * var(--editor-expr-hover-lift)));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Panel button focus: calm clarity */
-.builder-v2-panel button:focus-visible,
-.builder-v2-panel [role="button"]:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 var(--editor-expr-focus-ring-spread) rgba(139, 92, 246, var(--editor-expr-focus-ring-opacity)),
-    0 0 var(--editor-expr-focus-ring-blur) calc(var(--editor-expr-focus-ring-spread) + 2px) rgba(139, 92, 246, calc(var(--editor-expr-focus-ring-opacity) * 0.5));
-}
-
-/* Panel button press: grounded */
-.builder-v2-panel button:active,
-.builder-v2-panel [role="button"]:active {
-  transform: translateY(calc(0.5 * var(--editor-expr-press-depth)));
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  transition:
-    transform var(--editor-expr-transition-press),
-    box-shadow var(--editor-expr-transition-press);
-}
-
-/* -----------------------------------------------------------------------------
-   EDITOR INPUT FIELDS — Workspace Form Clarity
-   ----------------------------------------------------------------------------- */
-
-/* Inspector inputs and form controls */
-.builder-v2-inspector input,
-.builder-v2-inspector textarea,
-.builder-v2-inspector select,
-.builder-v2-panel-scroll input,
-.builder-v2-panel-scroll textarea,
-.builder-v2-panel-scroll select {
-  transition:
-    background var(--editor-expr-transition-hover),
-    border-color var(--editor-expr-transition-hover),
-    box-shadow var(--editor-expr-transition-focus);
-}
-
-/* Inspector input hover: surface acknowledgment */
-.builder-v2-inspector input:hover,
-.builder-v2-inspector textarea:hover,
-.builder-v2-inspector select:hover {
-  background: rgba(255, 255, 255, calc(0.03 + var(--editor-expr-hover-surface-brighten)));
-  border-color: rgba(255, 255, 255, calc(0.06 + var(--editor-expr-hover-border-reveal)));
-}
-
-/* Inspector input focus: clarity emphasis */
-.builder-v2-inspector input:focus,
-.builder-v2-inspector textarea:focus,
-.builder-v2-inspector select:focus {
-  outline: none;
-  background: rgba(255, 255, 255, calc(0.04 + var(--editor-expr-focus-bg-clarity)));
-  border-color: rgba(139, 92, 246, 0.35);
-  box-shadow:
-    0 0 0 var(--editor-expr-focus-ring-spread) rgba(139, 92, 246, var(--editor-expr-focus-ring-opacity)),
-    0 0 var(--editor-expr-focus-ring-blur) calc(var(--editor-expr-focus-ring-spread) + 4px) rgba(139, 92, 246, calc(var(--editor-expr-focus-ring-opacity) * 0.4)),
-    inset 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-/* -----------------------------------------------------------------------------
-   STRUCTURE TREE — Workspace Navigation Feedback
-   ----------------------------------------------------------------------------- */
-
-/* Tree item hover: workspace guidance */
-.builder-v2-structure-tree-item {
-  transition:
-    background var(--editor-expr-transition-hover),
-    border-color var(--editor-expr-transition-hover),
-    box-shadow var(--editor-expr-transition-hover);
-}
-
-.builder-v2-structure-tree-item:hover {
-  background: rgba(139, 92, 246, calc(0.04 + var(--editor-expr-hover-surface-brighten)));
-  border-color: rgba(139, 92, 246, calc(0.08 + var(--editor-expr-hover-border-reveal)));
-}
-
-/* Tree item selected: workspace emphasis */
-.builder-v2-structure-tree-item--selected {
-  box-shadow:
-    0 0 0 1px rgba(139, 92, 246, 0.2),
-    0 0 var(--editor-expr-focus-ring-blur) var(--editor-expr-focus-ring-spread) rgba(139, 92, 246, calc(var(--editor-expr-focus-ring-opacity) * 0.6));
-}
-
-/* Tree item keyboard focus */
-.builder-v2-structure-tree-item:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 var(--editor-expr-focus-ring-spread) rgba(139, 92, 246, var(--editor-expr-focus-ring-opacity)),
-    0 0 var(--editor-expr-focus-ring-blur) calc(var(--editor-expr-focus-ring-spread) + 2px) rgba(139, 92, 246, calc(var(--editor-expr-focus-ring-opacity) * 0.4));
-}
-
-/* -----------------------------------------------------------------------------
-   INSPECTOR SECTIONS — Workspace Accordion Feedback
-   ----------------------------------------------------------------------------- */
-
-/* Inspector section headers */
-.builder-v2-inspector-section-header {
-  transition:
-    background var(--editor-expr-transition-hover),
-    color var(--editor-expr-transition-hover);
-}
-
-.builder-v2-inspector-section-header:hover {
-  background: rgba(255, 255, 255, calc(0.02 + var(--editor-expr-hover-surface-brighten)));
-}
-
-/* Inspector section toggle focus */
-.builder-v2-inspector-section-header:focus-visible {
-  outline: none;
-  background: rgba(139, 92, 246, 0.06);
-  box-shadow:
-    inset 0 0 0 1px rgba(139, 92, 246, var(--editor-expr-focus-ring-opacity));
-}
-
-/* -----------------------------------------------------------------------------
-   MODE TOGGLE — Workspace Mode Switching
-   ----------------------------------------------------------------------------- */
-
-/* Mode toggle enhanced expression */
-.builder-v2-mode-toggle button[aria-pressed="true"] {
-  box-shadow:
-    0 0 var(--editor-expr-focus-ring-blur) rgba(139, 92, 246, var(--editor-expr-focus-ring-opacity)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.builder-v2-mode-toggle button:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 var(--editor-expr-focus-ring-spread) rgba(139, 92, 246, calc(var(--editor-expr-focus-ring-opacity) * 1.2)),
-    0 0 var(--editor-expr-focus-ring-blur) calc(var(--editor-expr-focus-ring-spread) + 4px) rgba(139, 92, 246, calc(var(--editor-expr-focus-ring-opacity) * 0.5));
-}
-
-/* -----------------------------------------------------------------------------
-   BADGE & INDICATOR EXPRESSION
-   ----------------------------------------------------------------------------- */
-
-/* Mode badge hover feedback */
-.builder-v2-mode-badge {
-  transition:
-    background var(--editor-expr-transition-hover),
-    border-color var(--editor-expr-transition-hover),
-    color var(--editor-expr-transition-hover),
-    transform var(--editor-expr-transition-hover);
-}
-
-.builder-v2-mode-badge:hover {
-  transform: translateY(-0.5px);
-}
-
-/* -----------------------------------------------------------------------------
-   CANVAS AREA — EDITOR-ENHANCED WORKSPACE FEEDBACK
-   Richer expression for the main editing canvas in editor context.
-   ----------------------------------------------------------------------------- */
-
-/* Editor shell enhanced expression tokens */
-.builder-v2-shell {
-  --expr-hover-lift: var(--editor-expr-hover-lift);
-  --expr-hover-shadow-grow: var(--editor-expr-hover-shadow-grow);
-  --expr-hover-surface-brighten: var(--editor-expr-hover-surface-brighten);
-  --expr-hover-border-reveal: var(--editor-expr-hover-border-reveal);
-  --expr-focus-ring-opacity: var(--editor-expr-focus-ring-opacity);
-  --expr-focus-ring-spread: var(--editor-expr-focus-ring-spread);
-  --expr-focus-ring-blur: var(--editor-expr-focus-ring-blur);
-  --expr-focus-bg-clarity: var(--editor-expr-focus-bg-clarity);
-  --expr-press-depth: var(--editor-expr-press-depth);
-  --expr-press-shadow-collapse: var(--editor-expr-press-shadow-collapse);
-  --expr-transition-hover: var(--editor-expr-transition-hover);
-  --expr-transition-focus: var(--editor-expr-transition-focus);
-  --expr-transition-press: var(--editor-expr-transition-press);
-}
-
-[data-editor-mode="convert"] [data-node-type="button"]:hover,
-[data-editor-mode="convert"] [data-node-type="cta"]:hover {
-  outline-color: rgba(139, 92, 246, 0.4);
-  outline-offset: 6px;
-}
-
-/* Calmer canvas background progression: Build → Convert */
-[data-editor-mode="build"] .builder-v2-panel--center::before {
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 45%, rgba(139, 92, 246, 0.02) 0%, transparent 70%),
-    linear-gradient(90deg, rgba(3, 4, 8, 0.15) 0%, transparent 12%, transparent 88%, rgba(3, 4, 8, 0.15) 100%);
-}
-
-[data-editor-mode="refine"] .builder-v2-panel--center::before {
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 45%, rgba(139, 92, 246, 0.025) 0%, transparent 70%),
-    linear-gradient(90deg, rgba(3, 4, 8, 0.12) 0%, transparent 15%, transparent 85%, rgba(3, 4, 8, 0.12) 100%);
-}
-
-[data-editor-mode="convert"] .builder-v2-panel--center::before {
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 45%, rgba(139, 92, 246, 0.03) 0%, transparent 70%),
-    linear-gradient(90deg, rgba(3, 4, 8, 0.1) 0%, transparent 18%, transparent 82%, rgba(3, 4, 8, 0.1) 100%);
+.builder-v2-structure-children {
+  display: flex;
+  flex-direction: column;
 }

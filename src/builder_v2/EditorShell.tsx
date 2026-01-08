@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import './EditorLayout.css';
 import { CanvasEditor } from './canvas/CanvasEditor';
-import { GuidedModeSwitcher } from './components/GuidedModeSwitcher';
-import { editorModes } from './editorMode';
 import { Inspector } from './inspector/Inspector';
 import { EditorProvider, useEditorStore } from './state/editorStore';
 import { StructureTree } from './structure/StructureTree';
+
+type LeftPanelTab = 'pages' | 'layers';
 
 export function EditorShell() {
   return (
@@ -20,11 +20,7 @@ function EditorShellContent() {
   const {
     pages,
     activePageId,
-    mode,
-    guidedMode,
     editorState,
-    setMode,
-    setGuidedMode,
     setActivePage,
     selectNode,
     undo,
@@ -33,187 +29,104 @@ function EditorShellContent() {
     canRedo,
     highlightedNodeIds,
   } = useEditorStore();
+
+  const [leftTab, setLeftTab] = useState<LeftPanelTab>('pages');
   const activePage = pages.find((page) => page.id === activePageId) ?? null;
 
+  // Keyboard shortcuts for undo/redo
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const isModifierPressed = event.metaKey || event.ctrlKey;
       const isZKey = event.key.toLowerCase() === 'z';
 
-      if (!isModifierPressed || !isZKey) {
-        return;
-      }
+      if (!isModifierPressed || !isZKey) return;
 
       if (event.shiftKey) {
         event.preventDefault();
-        if (canRedo) {
-          redo();
-        }
+        if (canRedo) redo();
         return;
       }
 
       event.preventDefault();
-
-      if (canUndo) {
-        undo();
-      }
+      if (canUndo) undo();
     };
 
     window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canRedo, canUndo, redo, undo]);
 
-  const isPreview = mode === 'preview';
-
   return (
-    <div
-      className={`builder-v2-shell${isPreview ? ' builder-v2-shell--preview' : ''}`}
-      data-mode={mode}
-      data-editor-mode={guidedMode}
-    >
-      <section className="builder-v2-panel builder-v2-panel--left">
-        <header className="builder-v2-panel-header">
-          <span>Structure</span>
-          {isPreview && <span className="builder-v2-mode-badge">Preview locked</span>}
-        </header>
-        <div className="builder-v2-panel-scroll">
-          <div className="builder-v2-mode-toggle">
-            {editorModes.map((nextMode) => (
-              <button
-                key={nextMode}
-                type="button"
-                aria-pressed={mode === nextMode}
-                onClick={() => setMode(nextMode)}
-              >
-                {nextMode}
-              </button>
-            ))}
-          </div>
-          {isPreview && (
-            <div className="builder-v2-preview-hint">
-              Preview mode is read-only. Switch back to Canvas to continue editing.
+    <div className="builder-shell">
+      {/* Left Panel - Pages/Layers */}
+      <aside className="builder-panel builder-panel--left">
+        <div className="builder-panel-tabs">
+          <button
+            type="button"
+            className={`builder-tab${leftTab === 'pages' ? ' builder-tab--active' : ''}`}
+            onClick={() => setLeftTab('pages')}
+          >
+            Pages
+          </button>
+          <button
+            type="button"
+            className={`builder-tab${leftTab === 'layers' ? ' builder-tab--active' : ''}`}
+            onClick={() => setLeftTab('layers')}
+          >
+            Layers
+          </button>
+        </div>
+
+        <div className="builder-panel-content">
+          {leftTab === 'pages' && (
+            <div className="builder-pages-list">
+              {pages.map((page) => {
+                const isActive = page.id === activePageId;
+                return (
+                  <button
+                    key={page.id}
+                    type="button"
+                    className={`builder-page-item${isActive ? ' builder-page-item--active' : ''}`}
+                    onClick={() => setActivePage(page.id)}
+                  >
+                    <span className="builder-page-icon">📄</span>
+                    <span className="builder-page-name">{page.name}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
-          <div
-            className={`builder-v2-placeholder${
-              mode === 'structure' ? '' : ' builder-v2-hidden'
-            }`}
-          >
-            {pages.length === 0 ? (
-              <p>No pages available.</p>
-            ) : (
-              <div>
-                {pages.map((page) => {
-                  const isActive = page.id === activePageId;
 
-                  return (
-                    <button
-                      key={page.id}
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => setActivePage(page.id)}
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '10px 12px',
-                        marginBottom: '8px',
-                        borderRadius: '10px',
-                        background: isActive
-                          ? 'rgba(99, 102, 241, 0.2)'
-                          : 'rgba(255, 255, 255, 0.04)',
-                        border: isActive
-                          ? '1px solid rgba(99, 102, 241, 0.7)'
-                          : '1px solid rgba(255, 255, 255, 0.12)',
-                        color: '#f5f7fa',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{page.name}</div>
-                      <div style={{ fontSize: 12, opacity: 0.8 }}>Type: {page.type}</div>
-                    </button>
-                  );
-                })}
-                <div style={{ marginTop: 12 }}>
-                  {activePage ? (
-                    <StructureTree />
-                  ) : (
-                    <p className="builder-v2-placeholder">No active page.</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          <div
-            className={`builder-v2-placeholder${
-              mode === 'structure' ? ' builder-v2-hidden' : ''
-            }`}
-          >
-            <p>Structure list is hidden in {mode} mode.</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="builder-v2-panel builder-v2-panel--center">
-        <header className="builder-v2-panel-header">
-          <span>{mode === 'preview' ? 'Preview' : 'Canvas'}</span>
-          {/* Phase 33: Guided Mode Switcher */}
-          {!isPreview && (
-            <GuidedModeSwitcher
-              activeMode={guidedMode}
-              onModeChange={setGuidedMode}
-            />
+          {leftTab === 'layers' && activePage && (
+            <StructureTree />
           )}
-          {isPreview && <span className="builder-v2-mode-badge">Live Preview</span>}
-        </header>
-        <div className="builder-v2-panel-scroll">
-          <div
-            className={mode === 'canvas' ? '' : 'builder-v2-hidden'}
-          >
-            {activePage ? (
-              <CanvasEditor
-                page={activePage}
-                editorState={editorState}
-                mode={mode}
-                onSelectNode={(nodeId) => selectNode(nodeId)}
-                highlightedNodeIds={highlightedNodeIds}
-              />
-            ) : (
-              <div className="builder-v2-placeholder">No active page.</div>
-            )}
-          </div>
-          <div
-            className={`builder-v2-placeholder${
-              mode === 'preview' ? '' : ' builder-v2-hidden'
-            }`}
-          >
-            <p>Preview mode renders the published snapshot and disables editing.</p>
-          </div>
-          <div
-            className={`builder-v2-placeholder${
-              mode === 'structure' ? '' : ' builder-v2-hidden'
-            }`}
-          >
-            <p>Canvas is hidden in structure mode.</p>
-          </div>
-        </div>
-      </section>
 
-      <section className="builder-v2-panel builder-v2-panel--right">
-        <header className="builder-v2-panel-header">
-          <span>Inspector</span>
-          {isPreview && <span className="builder-v2-mode-badge">Locked</span>}
-        </header>
-        <div className="builder-v2-panel-scroll">
-          {activePage ? (
-            <Inspector />
-          ) : (
-            <p className="builder-v2-inspector-empty">No active page.</p>
+          {leftTab === 'layers' && !activePage && (
+            <p className="builder-empty-state">No page selected</p>
           )}
         </div>
-      </section>
+      </aside>
+
+      {/* Center - Canvas */}
+      <main className="builder-canvas-area">
+        {activePage ? (
+          <CanvasEditor
+            page={activePage}
+            editorState={editorState}
+            mode="canvas"
+            onSelectNode={(nodeId) => selectNode(nodeId)}
+            highlightedNodeIds={highlightedNodeIds}
+          />
+        ) : (
+          <div className="builder-empty-state">
+            Select a page to start editing
+          </div>
+        )}
+      </main>
+
+      {/* Right Panel - Inspector */}
+      <aside className="builder-panel builder-panel--right">
+        <Inspector />
+      </aside>
     </div>
   );
 }
