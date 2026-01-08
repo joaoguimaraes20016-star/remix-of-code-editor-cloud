@@ -375,26 +375,26 @@ function InspectorSection({
   );
 }
 
-// Multi-choice options editor
+// Multi-choice options editor with image support for perspective-style cards
 function OptionsEditor({ 
   options, 
   onChange 
 }: { 
-  options: Array<{ id: string; label: string; emoji?: string }>; 
-  onChange: (options: Array<{ id: string; label: string; emoji?: string }>) => void;
+  options: Array<{ id: string; label: string; emoji?: string; image?: string }>; 
+  onChange: (options: Array<{ id: string; label: string; emoji?: string; image?: string }>) => void;
 }) {
-  const handleOptionChange = (index: number, field: 'label' | 'emoji', value: string) => {
+  const handleOptionChange = (index: number, field: 'label' | 'emoji' | 'image', value: string) => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], [field]: value };
     onChange(newOptions);
   };
 
   const addOption = () => {
-    onChange([...options, { id: `opt${Date.now()}`, label: 'New Option', emoji: '✨' }]);
+    onChange([...options, { id: `opt${Date.now()}`, label: 'New Option', emoji: '✨', image: '' }]);
   };
 
   const removeOption = (index: number) => {
-    if (options.length > 2) {
+    if (options.length > 1) {
       onChange(options.filter((_, i) => i !== index));
     }
   };
@@ -402,30 +402,39 @@ function OptionsEditor({
   return (
     <div className="ei-options-editor">
       {options.map((option, index) => (
-        <div key={option.id} className="ei-option-row">
-          <GripVertical size={14} className="ei-option-grip" />
+        <div key={option.id} className="ei-option-row ei-option-row--card">
+          <div className="ei-option-row-main">
+            <GripVertical size={14} className="ei-option-grip" />
+            <input
+              type="text"
+              value={option.emoji || ''}
+              onChange={(e) => handleOptionChange(index, 'emoji', e.target.value)}
+              className="ei-option-emoji"
+              placeholder="✨"
+            />
+            <input
+              type="text"
+              value={option.label}
+              onChange={(e) => handleOptionChange(index, 'label', e.target.value)}
+              className="ei-option-label"
+              placeholder="Option label"
+            />
+            <button
+              type="button"
+              className="ei-option-delete"
+              onClick={() => removeOption(index)}
+              disabled={options.length <= 1}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
           <input
             type="text"
-            value={option.emoji || ''}
-            onChange={(e) => handleOptionChange(index, 'emoji', e.target.value)}
-            className="ei-option-emoji"
-            placeholder="✨"
+            value={option.image || ''}
+            onChange={(e) => handleOptionChange(index, 'image', e.target.value)}
+            className="ei-option-image-url"
+            placeholder="Image URL (optional for card style)"
           />
-          <input
-            type="text"
-            value={option.label}
-            onChange={(e) => handleOptionChange(index, 'label', e.target.value)}
-            className="ei-option-label"
-            placeholder="Option label"
-          />
-          <button
-            type="button"
-            className="ei-option-delete"
-            onClick={() => removeOption(index)}
-            disabled={options.length <= 2}
-          >
-            <Trash2 size={14} />
-          </button>
         </div>
       ))}
       <button type="button" className="ei-add-option" onClick={addOption}>
@@ -446,6 +455,8 @@ export function EnhancedInspector() {
     selectedNodeId,
     updateNodeProps,
     updatePageProps,
+    deleteNode,
+    deletePage,
   } = useEditorStore();
 
   const [activeTab, setActiveTab] = useState<InspectorTab>('content');
@@ -535,19 +546,38 @@ export function EnhancedInspector() {
     });
   };
 
+  // Format display name to be user-friendly (no underscores)
+  const displayName = definition.displayName.replace(/_/g, ' ');
+
+  const handleDeleteNode = () => {
+    if (selectedNode && selectedNodeId) {
+      deleteNode(selectedNodeId);
+    }
+  };
+
   return (
     <div className="ei-inspector">
       <header className="ei-header">
         <div className="ei-header-row">
-          <h3 className="ei-title">{definition.displayName}</h3>
-          <button
-            type="button"
-            className="ei-reset-btn"
-            onClick={handleResetToDefaults}
-            title="Reset to defaults"
-          >
-            <RotateCcw size={14} />
-          </button>
+          <h3 className="ei-title">{displayName}</h3>
+          <div className="ei-header-actions">
+            <button
+              type="button"
+              className="ei-reset-btn"
+              onClick={handleResetToDefaults}
+              title="Reset to defaults"
+            >
+              <RotateCcw size={14} />
+            </button>
+            <button
+              type="button"
+              className="ei-delete-btn"
+              onClick={handleDeleteNode}
+              title="Delete element"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
       </header>
 

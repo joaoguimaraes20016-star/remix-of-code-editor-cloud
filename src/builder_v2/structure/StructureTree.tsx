@@ -5,7 +5,33 @@ import { ComponentRegistry, fallbackComponent } from '../registry/componentRegis
 import { findNodeById, useEditorStore } from '../state/editorStore';
 import type { CanvasNode } from '../types';
 
-const addableTypes = ['text', 'button', 'hero', 'container'];
+const addableTypes = ['heading', 'paragraph', 'cta_button', 'image_block', 'spacer', 'section'];
+
+// Convert technical type names to user-friendly labels
+function formatTypeLabel(type: string): string {
+  const labelMap: Record<string, string> = {
+    'welcome_step': 'Welcome',
+    'text_question_step': 'Text Question',
+    'multi_choice_step': 'Multi Choice',
+    'email_capture_step': 'Email Capture',
+    'phone_capture_step': 'Phone Capture',
+    'opt_in_step': 'Opt-In Form',
+    'video_step': 'Video',
+    'embed_step': 'Calendar',
+    'thank_you_step': 'Thank You',
+    'cta_button': 'Button',
+    'image_block': 'Image',
+    'video_embed': 'Video',
+    'option_grid': 'Options',
+    'info_card': 'Info Card',
+    'calendar_embed': 'Calendar',
+    'consent_checkbox': 'Consent',
+    'email_input': 'Email Input',
+    'phone_input': 'Phone Input',
+    'text_input': 'Text Input',
+  };
+  return labelMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
 
 type DragTarget = { parentId: string; insertIndex: number; indicatorY: number; indicatorLeft: number; indicatorWidth: number };
 
@@ -120,7 +146,7 @@ function StructureNode({
       >
         <div className="builder-v2-structure-row-content">
           <span className="builder-v2-structure-row-label">{label}</span>
-          <span className="builder-v2-structure-row-type">{node.type}</span>
+          <span className="builder-v2-structure-row-type">{formatTypeLabel(node.type)}</span>
         </div>
 
         {!isReadOnly && (
@@ -129,55 +155,51 @@ function StructureNode({
               <button
                 type="button"
                 className="builder-v2-structure-chip"
-                disabled={isFirstSibling || depth === 0}
+                disabled={isFirstSibling}
                 onClick={(event) => {
                   event.stopPropagation();
                   moveNodeUp(node.id);
                 }}
               >
-                Move up
+                ↑
               </button>
               <button
                 type="button"
                 className="builder-v2-structure-chip"
-                disabled={isLastSibling || depth === 0}
+                disabled={isLastSibling}
                 onClick={(event) => {
                   event.stopPropagation();
                   moveNodeDown(node.id);
                 }}
               >
-                Move down
+                ↓
               </button>
             </div>
             {canHaveChildren && (
               <div className="builder-v2-structure-row-controls-group">
-                {addableTypes.map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    className="builder-v2-structure-chip"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      addNode(node.id, type);
-                    }}
-                  >
-                    Add {type}
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  className="builder-v2-structure-chip builder-v2-structure-chip--add"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    addNode(node.id, 'heading');
+                  }}
+                >
+                  + Add
+                </button>
               </div>
             )}
-            {depth > 0 && (
-              <button
-                type="button"
-                className="builder-v2-structure-chip builder-v2-structure-chip--danger"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  deleteNode(node.id);
-                }}
-              >
-                Delete
-              </button>
-            )}
+            {/* Allow deleting any element - removed depth > 0 constraint */}
+            <button
+              type="button"
+              className="builder-v2-structure-chip builder-v2-structure-chip--danger"
+              onClick={(event) => {
+                event.stopPropagation();
+                deleteNode(node.id);
+              }}
+            >
+              ×
+            </button>
           </div>
         )}
       </div>
