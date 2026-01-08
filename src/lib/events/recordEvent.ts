@@ -48,12 +48,12 @@ export async function recordEvent(event: FunnelEvent): Promise<RecordEventResult
       if (import.meta.env.DEV && import.meta.env.VITE_ALLOW_EVENT_FALLBACK === "true") {
         // Dev-only fallback: allow direct table writes while keeping the Edge Function as the
         // source of truth for dedupe + RLS behavior in production.
-        const { data, error } = await supabase.from("events").insert(event).select().limit(1).single();
+        const { data, error } = await supabase.from("events").insert(event as any).select().limit(1).single();
         if (error) {
           return { success: false, error };
         }
 
-        return { success: true, event: data as FunnelEvent };
+        return { success: true, event: data as unknown as FunnelEvent };
       }
 
       console.error("record-funnel-event failed and direct fallback is disabled");

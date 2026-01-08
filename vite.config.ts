@@ -7,7 +7,7 @@ const devServerLogger = () => ({
   name: "dev-server-logger",
   configureServer(server: any) {
     server.httpServer?.once("listening", () => {
-      const origin = typeof window !== "undefined" ? window.location.origin : "unknown";
+      const origin = "dev-server";
       const urls = (server as any).resolvedUrls;
 
       console.info("[Dev][Vite] Dev server is running.");

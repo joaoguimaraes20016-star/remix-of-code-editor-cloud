@@ -1,10 +1,12 @@
 import * as React from "react";
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+
 import SalesDashboard from "./pages/SalesDashboard";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -20,14 +22,13 @@ import FunnelList from "./pages/FunnelList";
 import FunnelEditor from "./pages/FunnelEditor";
 import PublicFunnel from "./pages/PublicFunnel";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+
 // Dev-only funnel test route (dynamically imported so it is not included in production builds)
 let DevFunnelTest: React.LazyExoticComponent<any> | null = null;
 if (import.meta.env.DEV) {
-  // dynamic import is removed in production builds by the bundler
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
   DevFunnelTest = React.lazy(() => import("./pages/__dev/FunnelTest"));
 }
+
 import { TeamLayout } from "./layouts/TeamLayout";
 import { TeamHubOverview } from "./pages/TeamHubOverview";
 import { TeamChatPage } from "./pages/TeamChat";
@@ -56,10 +57,18 @@ const App = () => (
             <Route path="/onboard/:token" element={<OnboardingForm />} />
             <Route path="/f/:slug" element={<PublicFunnel />} />
             <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+
             {import.meta.env.DEV && DevFunnelTest && (
-              <Route path="/__dev/funnel-test" element={<React.Suspense fallback={<div>Loading...</div>}><DevFunnelTest /></React.Suspense>} />
+              <Route
+                path="/__dev/funnel-test"
+                element={
+                  <React.Suspense fallback={<div>Loading...</div>}>
+                    <DevFunnelTest />
+                  </React.Suspense>
+                }
+              />
             )}
-            
+
             {/* Auth routes */}
             <Route path="/" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
@@ -67,7 +76,7 @@ const App = () => (
             <Route path="/auth/confirm" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/client-assets" element={<ClientAssets />} />
-            
+
             {/* Team routes with sidebar layout */}
             <Route path="/team/:teamId" element={<TeamLayout />}>
               <Route index element={<TeamHubOverview />} />
@@ -83,13 +92,13 @@ const App = () => (
               {/* Legacy redirect */}
               <Route path="integrations" element={<Navigate to="../apps" replace />} />
             </Route>
-            
+
             {/* Legacy routes - redirect to new structure */}
             <Route path="/team/:teamId/sales" element={<TeamLayout />}>
               <Route index element={<SalesDashboard />} />
             </Route>
             <Route path="/team/:teamId/assets" element={<Navigate to=".." replace />} />
-            
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

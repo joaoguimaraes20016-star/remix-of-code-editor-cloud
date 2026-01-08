@@ -8,17 +8,23 @@ export type FunnelEventType =
   | "lead_captured"
   | "info_collected"
   | "appointment_scheduled"
-  | "funnel_completed";
+  | "funnel_completed"
+  | string; // Allow custom event types
 
 export interface FunnelEvent {
   id?: string;
-  team_id: string;
+  team_id?: string;
   funnel_id: string;
+  step_id?: string;
+  session_id?: string;
+  lead_id?: string;
+  element_id?: string;
   event_type: FunnelEventType;
   dedupe_key?: string;
   payload?: Record<string, any>;
   client_request_id?: string | null;
   created_at?: string;
+  occurred_at?: string;
 }
 
 export interface RecordEventResult {

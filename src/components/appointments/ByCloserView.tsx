@@ -19,6 +19,10 @@ import { BulkAssignCloser } from "./BulkAssignCloser";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getActionPipelineMappings } from "@/lib/actionPipelineMappings";
+import { DndContext, DragOverlay, useSensors, useSensor, PointerSensor, DragStartEvent, DragEndEvent } from "@dnd-kit/core";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { DealCard } from "./DealCard";
+import { DroppableStageColumn } from "./DroppableStageColumn";
 // ByCloserView must NOT create its own DnDContext — it renders the canonical DealPipeline (single brain)
 
 interface ByCloserViewProps {
