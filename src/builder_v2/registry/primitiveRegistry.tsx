@@ -67,7 +67,19 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
     type: 'heading',
     displayName: 'Heading',
     defaultProps: { text: 'Heading', level: 'h1' },
-    render: (props) => <Heading text={props.text as string} level={props.level as 'h1' | 'h2' | 'h3'} />,
+    render: (props) => (
+      <Heading 
+        text={props.text as string} 
+        level={props.level as 'h1' | 'h2' | 'h3'}
+        color={props.color as string}
+        textAlign={props.textAlign as 'left' | 'center' | 'right' | 'justify'}
+        fontSize={props.fontSize as string}
+        fontWeight={props.fontWeight as string}
+        backgroundColor={props.backgroundColor as string}
+        borderRadius={props.borderRadius as number}
+        shadow={props.shadow as string}
+      />
+    ),
     inspectorSchema: [
       { label: 'Text', propKey: 'text', inputType: 'text' },
       { label: 'Level', propKey: 'level', inputType: 'text' },
@@ -80,7 +92,18 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
     type: 'paragraph',
     displayName: 'Paragraph',
     defaultProps: { text: 'Paragraph text' },
-    render: (props) => <Paragraph text={props.text as string} />,
+    render: (props) => (
+      <Paragraph 
+        text={props.text as string}
+        color={props.color as string}
+        textAlign={props.textAlign as 'left' | 'center' | 'right' | 'justify'}
+        fontSize={props.fontSize as string}
+        fontWeight={props.fontWeight as string}
+        backgroundColor={props.backgroundColor as string}
+        borderRadius={props.borderRadius as number}
+        shadow={props.shadow as string}
+      />
+    ),
     inspectorSchema: [
       { label: 'Text', propKey: 'text', inputType: 'textarea' },
     ],
@@ -236,11 +259,14 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
   image: {
     type: 'image',
     displayName: 'Image',
-    defaultProps: { src: '', alt: 'Image' },
+    defaultProps: { src: '', alt: 'Image', maxWidth: '320px', borderRadius: 12 },
     render: (props) => (
       <ImageBlock 
         src={props.src as string}
         alt={props.alt as string}
+        maxWidth={props.maxWidth as string}
+        borderRadius={props.borderRadius as number}
+        shadow={props.shadow as string}
       />
     ),
     inspectorSchema: [
