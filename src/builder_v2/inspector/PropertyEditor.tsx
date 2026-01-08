@@ -1,6 +1,7 @@
 /**
  * PropertyEditor - Rich property controls for canvas elements
  * Context-aware inspector that shows different controls based on selection
+ * Framer-style comprehensive editing with layout, style, and typography controls
  */
 
 import { useState, useRef, type ReactNode } from 'react';
@@ -19,17 +20,31 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   Trash2,
   ChevronUp,
   ChevronDown,
   Upload,
   Link,
-  Check,
   Loader2,
+  ChevronRight,
+  Palette,
+  Layout,
+  Type as TypeIcon,
+  Settings2,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import type { CanvasNode, Page } from '../types';
 import { normalizeVideoUrl, isValidVideoUrl } from '../assets/mediaUtils';
+import { ColorControl } from './controls/ColorControl';
+import { AlignmentControl } from './controls/AlignmentControl';
+import { ShadowControl } from './controls/ShadowControl';
+import { FontSizeControl, FontWeightControl } from './controls/FontControl';
+import { cn } from '@/lib/utils';
 
 interface PropertyEditorProps {
   selectedNode: CanvasNode | null;
@@ -54,33 +69,173 @@ function PropertyField({ label, children }: PropertyFieldProps) {
   );
 }
 
-// Element-specific property editors
-function HeadingProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
+interface PropertySectionProps {
+  title: string;
+  icon?: ReactNode;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}
+
+function PropertySection({ title, icon, defaultOpen = true, children }: PropertySectionProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  
   return (
-    <div className="space-y-4">
-      <PropertyField label="Text">
-        <Textarea
-          value={(node.props.text as string) || ''}
-          onChange={(e) => onUpdate({ text: e.target.value })}
-          className="min-h-[80px] resize-none"
-          placeholder="Enter heading text"
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 px-1 hover:bg-slate-50 rounded transition-colors">
+        <div className="flex items-center gap-2">
+          {icon && <span className="text-slate-400">{icon}</span>}
+          <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">{title}</span>
+        </div>
+        <ChevronRight className={cn('h-4 w-4 text-slate-400 transition-transform', open && 'rotate-90')} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-3 pb-3">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+// ============================================================================
+// STYLE CONTROLS - Common styling controls for elements
+// ============================================================================
+
+function StyleControls({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
+  return (
+    <PropertySection title="Style" icon={<Palette size={14} />} defaultOpen={false}>
+      <PropertyField label="Text Color">
+        <ColorControl
+          value={(node.props.color as string) || '#ffffff'}
+          onChange={(color) => onUpdate({ color })}
         />
       </PropertyField>
-      <PropertyField label="Level">
+      <PropertyField label="Background">
+        <ColorControl
+          value={(node.props.backgroundColor as string) || 'transparent'}
+          onChange={(backgroundColor) => onUpdate({ backgroundColor })}
+        />
+      </PropertyField>
+      <PropertyField label="Border Radius">
+        <Slider
+          value={[(node.props.borderRadius as number) || 0]}
+          onValueChange={([value]) => onUpdate({ borderRadius: value })}
+          min={0}
+          max={32}
+          step={2}
+        />
+      </PropertyField>
+      <PropertyField label="Shadow">
+        <ShadowControl
+          value={(node.props.shadow as 'none' | 'sm' | 'md' | 'lg' | 'xl') || 'none'}
+          onChange={(shadow) => onUpdate({ shadow })}
+        />
+      </PropertyField>
+    </PropertySection>
+  );
+}
+
+function TypographyControls({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
+  return (
+    <PropertySection title="Typography" icon={<TypeIcon size={14} />} defaultOpen={false}>
+      <PropertyField label="Alignment">
+        <AlignmentControl
+          value={(node.props.textAlign as 'left' | 'center' | 'right' | 'justify') || 'center'}
+          onChange={(textAlign) => onUpdate({ textAlign })}
+        />
+      </PropertyField>
+      <div className="grid grid-cols-2 gap-2">
+        <PropertyField label="Size">
+          <FontSizeControl
+            value={(node.props.fontSize as string) || 'base'}
+            onChange={(fontSize) => onUpdate({ fontSize })}
+          />
+        </PropertyField>
+        <PropertyField label="Weight">
+          <FontWeightControl
+            value={(node.props.fontWeight as string) || 'normal'}
+            onChange={(fontWeight) => onUpdate({ fontWeight })}
+          />
+        </PropertyField>
+      </div>
+    </PropertySection>
+  );
+}
+
+function LayoutControls({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
+  return (
+    <PropertySection title="Layout" icon={<Layout size={14} />} defaultOpen={false}>
+      <PropertyField label="Max Width">
         <Select
-          value={(node.props.level as string) || 'h1'}
-          onValueChange={(value) => onUpdate({ level: value })}
+          value={(node.props.maxWidth as string) || 'auto'}
+          onValueChange={(value) => onUpdate({ maxWidth: value })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="h1">Heading 1 (Large)</SelectItem>
-            <SelectItem value="h2">Heading 2 (Medium)</SelectItem>
-            <SelectItem value="h3">Heading 3 (Small)</SelectItem>
+            <SelectItem value="auto">Auto</SelectItem>
+            <SelectItem value="280px">Small (280px)</SelectItem>
+            <SelectItem value="320px">Medium (320px)</SelectItem>
+            <SelectItem value="400px">Large (400px)</SelectItem>
+            <SelectItem value="100%">Full Width</SelectItem>
           </SelectContent>
         </Select>
       </PropertyField>
+      <PropertyField label={`Padding: ${(node.props.padding as number) || 0}px`}>
+        <Slider
+          value={[(node.props.padding as number) || 0]}
+          onValueChange={([value]) => onUpdate({ padding: value })}
+          min={0}
+          max={64}
+          step={4}
+        />
+      </PropertyField>
+      <PropertyField label={`Gap: ${(node.props.gap as number) || 16}px`}>
+        <Slider
+          value={[(node.props.gap as number) || 16]}
+          onValueChange={([value]) => onUpdate({ gap: value })}
+          min={0}
+          max={64}
+          step={4}
+        />
+      </PropertyField>
+    </PropertySection>
+  );
+}
+
+// ============================================================================
+// ELEMENT-SPECIFIC PROPERTY EDITORS
+// ============================================================================
+
+function HeadingProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
+  return (
+    <div className="space-y-4">
+      <PropertySection title="Content" icon={<Settings2 size={14} />}>
+        <PropertyField label="Text">
+          <Textarea
+            value={(node.props.text as string) || ''}
+            onChange={(e) => onUpdate({ text: e.target.value })}
+            className="min-h-[80px] resize-none"
+            placeholder="Enter heading text"
+          />
+        </PropertyField>
+        <PropertyField label="Level">
+          <Select
+            value={(node.props.level as string) || 'h1'}
+            onValueChange={(value) => onUpdate({ level: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="h1">Heading 1 (Large)</SelectItem>
+              <SelectItem value="h2">Heading 2 (Medium)</SelectItem>
+              <SelectItem value="h3">Heading 3 (Small)</SelectItem>
+            </SelectContent>
+          </Select>
+        </PropertyField>
+      </PropertySection>
+      <TypographyControls node={node} onUpdate={onUpdate} />
+      <StyleControls node={node} onUpdate={onUpdate} />
     </div>
   );
 }
@@ -88,14 +243,18 @@ function HeadingProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (pr
 function ParagraphProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
   return (
     <div className="space-y-4">
-      <PropertyField label="Text">
-        <Textarea
-          value={(node.props.text as string) || ''}
-          onChange={(e) => onUpdate({ text: e.target.value })}
-          className="min-h-[120px] resize-none"
-          placeholder="Enter paragraph text"
-        />
-      </PropertyField>
+      <PropertySection title="Content" icon={<Settings2 size={14} />}>
+        <PropertyField label="Text">
+          <Textarea
+            value={(node.props.text as string) || ''}
+            onChange={(e) => onUpdate({ text: e.target.value })}
+            className="min-h-[120px] resize-none"
+            placeholder="Enter paragraph text"
+          />
+        </PropertyField>
+      </PropertySection>
+      <TypographyControls node={node} onUpdate={onUpdate} />
+      <StyleControls node={node} onUpdate={onUpdate} />
     </div>
   );
 }
@@ -103,88 +262,114 @@ function ParagraphProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (
 function ButtonProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
   return (
     <div className="space-y-4">
-      <PropertyField label="Button Text">
-        <Input
-          value={(node.props.label as string) || ''}
-          onChange={(e) => onUpdate({ label: e.target.value })}
-          placeholder="Button label"
-        />
-      </PropertyField>
-      <PropertyField label="Style">
-        <Select
-          value={(node.props.variant as string) || 'primary'}
-          onValueChange={(value) => onUpdate({ variant: value })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="primary">Primary (Filled)</SelectItem>
-            <SelectItem value="secondary">Secondary (Subtle)</SelectItem>
-            <SelectItem value="outline">Outline (Border)</SelectItem>
-          </SelectContent>
-        </Select>
-      </PropertyField>
-      <PropertyField label="Action">
-        <Select
-          value={(node.props.action as string) || 'next'}
-          onValueChange={(value) => onUpdate({ action: value })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="next">Go to Next Page</SelectItem>
-            <SelectItem value="submit">Submit Form</SelectItem>
-            <SelectItem value="url">Open URL</SelectItem>
-          </SelectContent>
-        </Select>
-      </PropertyField>
-      {node.props.action === 'url' && (
-        <PropertyField label="URL">
+      <PropertySection title="Content" icon={<Settings2 size={14} />}>
+        <PropertyField label="Button Text">
           <Input
-            value={(node.props.url as string) || ''}
-            onChange={(e) => onUpdate({ url: e.target.value })}
-            placeholder="https://..."
+            value={(node.props.label as string) || ''}
+            onChange={(e) => onUpdate({ label: e.target.value })}
+            placeholder="Button label"
           />
         </PropertyField>
-      )}
+        <PropertyField label="Style">
+          <Select
+            value={(node.props.variant as string) || 'primary'}
+            onValueChange={(value) => onUpdate({ variant: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="primary">Primary (Filled)</SelectItem>
+              <SelectItem value="secondary">Secondary (Subtle)</SelectItem>
+              <SelectItem value="outline">Outline (Border)</SelectItem>
+            </SelectContent>
+          </Select>
+        </PropertyField>
+        <PropertyField label="Size">
+          <Select
+            value={(node.props.size as string) || 'default'}
+            onValueChange={(value) => onUpdate({ size: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sm">Small</SelectItem>
+              <SelectItem value="default">Default</SelectItem>
+              <SelectItem value="lg">Large</SelectItem>
+            </SelectContent>
+          </Select>
+        </PropertyField>
+        <PropertyField label="Full Width">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={(node.props.fullWidth as boolean) ?? true}
+              onCheckedChange={(checked) => onUpdate({ fullWidth: checked })}
+            />
+            <span className="text-sm text-slate-600">Stretch to container</span>
+          </div>
+        </PropertyField>
+      </PropertySection>
+      <PropertySection title="Action" icon={<Settings2 size={14} />}>
+        <PropertyField label="On Click">
+          <Select
+            value={(node.props.action as string) || 'next'}
+            onValueChange={(value) => onUpdate({ action: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="next">Go to Next Page</SelectItem>
+              <SelectItem value="submit">Submit Form</SelectItem>
+              <SelectItem value="url">Open URL</SelectItem>
+            </SelectContent>
+          </Select>
+        </PropertyField>
+        {node.props.action === 'url' && (
+          <PropertyField label="URL">
+            <Input
+              value={(node.props.url as string) || ''}
+              onChange={(e) => onUpdate({ url: e.target.value })}
+              placeholder="https://..."
+            />
+          </PropertyField>
+        )}
+      </PropertySection>
+      <StyleControls node={node} onUpdate={onUpdate} />
     </div>
   );
 }
 
-function InputProperties({ node, onUpdate, inputType }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void; inputType: string }) {
-  const typeLabels: Record<string, string> = {
-    text_input: 'Text',
-    email_input: 'Email',
-    phone_input: 'Phone',
-  };
-
+function InputProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
   return (
     <div className="space-y-4">
-      <PropertyField label="Placeholder">
-        <Input
-          value={(node.props.placeholder as string) || ''}
-          onChange={(e) => onUpdate({ placeholder: e.target.value })}
-          placeholder="Enter placeholder text"
-        />
-      </PropertyField>
-      <PropertyField label="Field Name">
-        <Input
-          value={(node.props.fieldName as string) || ''}
-          onChange={(e) => onUpdate({ fieldName: e.target.value })}
-          placeholder="e.g., email, name, phone"
-        />
-      </PropertyField>
-      <PropertyField label="Required">
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={(node.props.required as boolean) || false}
-            onCheckedChange={(checked) => onUpdate({ required: checked })}
+      <PropertySection title="Content" icon={<Settings2 size={14} />}>
+        <PropertyField label="Placeholder">
+          <Input
+            value={(node.props.placeholder as string) || ''}
+            onChange={(e) => onUpdate({ placeholder: e.target.value })}
+            placeholder="Enter placeholder text"
           />
-          <span className="text-sm text-slate-600">This field is required</span>
-        </div>
-      </PropertyField>
+        </PropertyField>
+        <PropertyField label="Field Name">
+          <Input
+            value={(node.props.fieldName as string) || ''}
+            onChange={(e) => onUpdate({ fieldName: e.target.value })}
+            placeholder="e.g., email, name, phone"
+          />
+        </PropertyField>
+        <PropertyField label="Required">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={(node.props.required as boolean) || false}
+              onCheckedChange={(checked) => onUpdate({ required: checked })}
+            />
+            <span className="text-sm text-slate-600">This field is required</span>
+          </div>
+        </PropertyField>
+      </PropertySection>
+      <StyleControls node={node} onUpdate={onUpdate} />
     </div>
   );
 }
@@ -194,15 +379,17 @@ function SpacerProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (pro
 
   return (
     <div className="space-y-4">
-      <PropertyField label={`Height: ${height}px`}>
-        <Slider
-          value={[height]}
-          onValueChange={([value]) => onUpdate({ height: value })}
-          min={8}
-          max={120}
-          step={4}
-        />
-      </PropertyField>
+      <PropertySection title="Size" icon={<Layout size={14} />}>
+        <PropertyField label={`Height: ${height}px`}>
+          <Slider
+            value={[height]}
+            onValueChange={([value]) => onUpdate({ height: value })}
+            min={8}
+            max={120}
+            step={4}
+          />
+        </PropertyField>
+      </PropertySection>
     </div>
   );
 }
@@ -223,22 +410,41 @@ function VideoProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
 
   return (
     <div className="space-y-4">
-      <PropertyField label="Video URL">
-        <div className="space-y-2">
-          <Input
-            value={urlInput}
-            onChange={(e) => handleUrlChange(e.target.value)}
-            placeholder="Paste YouTube, Vimeo, or Loom URL"
-            className={!isValid ? 'border-destructive' : ''}
-          />
-          {!isValid && urlInput && (
-            <p className="text-xs text-destructive">Please enter a valid video URL</p>
-          )}
-          <p className="text-[10px] text-slate-400">
-            Supports YouTube, Vimeo, Loom, and Wistia
-          </p>
-        </div>
-      </PropertyField>
+      <PropertySection title="Video" icon={<Settings2 size={14} />}>
+        <PropertyField label="Video URL">
+          <div className="space-y-2">
+            <Input
+              value={urlInput}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              placeholder="Paste YouTube, Vimeo, or Loom URL"
+              className={!isValid ? 'border-destructive' : ''}
+            />
+            {!isValid && urlInput && (
+              <p className="text-xs text-destructive">Please enter a valid video URL</p>
+            )}
+            <p className="text-[10px] text-slate-400">
+              Supports YouTube, Vimeo, Loom, and Wistia
+            </p>
+          </div>
+        </PropertyField>
+        <PropertyField label="Aspect Ratio">
+          <Select
+            value={(node.props.aspectRatio as string) || '16:9'}
+            onValueChange={(value) => onUpdate({ aspectRatio: value })}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="16:9">16:9 (Standard)</SelectItem>
+              <SelectItem value="4:3">4:3</SelectItem>
+              <SelectItem value="1:1">1:1 (Square)</SelectItem>
+              <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
+            </SelectContent>
+          </Select>
+        </PropertyField>
+      </PropertySection>
+      <StyleControls node={node} onUpdate={onUpdate} />
     </div>
   );
 }
@@ -246,13 +452,24 @@ function VideoProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
 function CalendarProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
   return (
     <div className="space-y-4">
-      <PropertyField label="Calendar URL">
-        <Input
-          value={(node.props.url as string) || ''}
-          onChange={(e) => onUpdate({ url: e.target.value })}
-          placeholder="Calendly or Cal.com URL"
-        />
-      </PropertyField>
+      <PropertySection title="Calendar" icon={<Settings2 size={14} />}>
+        <PropertyField label="Calendar URL">
+          <Input
+            value={(node.props.url as string) || ''}
+            onChange={(e) => onUpdate({ url: e.target.value })}
+            placeholder="Calendly or Cal.com URL"
+          />
+        </PropertyField>
+        <PropertyField label={`Height: ${(node.props.height as number) || 500}px`}>
+          <Slider
+            value={[(node.props.height as number) || 500]}
+            onValueChange={([value]) => onUpdate({ height: value })}
+            min={300}
+            max={800}
+            step={50}
+          />
+        </PropertyField>
+      </PropertySection>
     </div>
   );
 }
@@ -277,7 +494,7 @@ function OptionGridProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: 
 
   return (
     <div className="space-y-4">
-      <PropertyField label="Options">
+      <PropertySection title="Options" icon={<Settings2 size={14} />}>
         <div className="space-y-2">
           {options.map((option, index) => (
             <div key={option.id} className="flex items-center gap-2">
@@ -307,16 +524,34 @@ function OptionGridProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: 
             Add Option
           </Button>
         </div>
-      </PropertyField>
-      <PropertyField label="Auto-advance">
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={(node.props.autoAdvance as boolean) || false}
-            onCheckedChange={(checked) => onUpdate({ autoAdvance: checked })}
-          />
-          <span className="text-sm text-slate-600">Go to next page on selection</span>
-        </div>
-      </PropertyField>
+      </PropertySection>
+      <PropertySection title="Behavior" icon={<Settings2 size={14} />}>
+        <PropertyField label="Auto-advance">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={(node.props.autoAdvance as boolean) || false}
+              onCheckedChange={(checked) => onUpdate({ autoAdvance: checked })}
+            />
+            <span className="text-sm text-slate-600">Go to next page on selection</span>
+          </div>
+        </PropertyField>
+        <PropertyField label="Layout">
+          <Select
+            value={(node.props.layout as string) || 'stack'}
+            onValueChange={(value) => onUpdate({ layout: value })}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="stack">Stacked</SelectItem>
+              <SelectItem value="grid-2">2 Columns</SelectItem>
+              <SelectItem value="grid-3">3 Columns</SelectItem>
+            </SelectContent>
+          </Select>
+        </PropertyField>
+      </PropertySection>
+      <StyleControls node={node} onUpdate={onUpdate} />
     </div>
   );
 }
@@ -324,25 +559,29 @@ function OptionGridProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: 
 function SectionProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
   return (
     <div className="space-y-4">
-      <PropertyField label="Section Type">
-        <Select
-          value={(node.props.variant as string) || 'content'}
-          onValueChange={(value) => onUpdate({ variant: value })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="hero">Hero (Centered, prominent)</SelectItem>
-            <SelectItem value="content">Content (Standard)</SelectItem>
-            <SelectItem value="form">Form (Compact inputs)</SelectItem>
-            <SelectItem value="cta">CTA (Button focused)</SelectItem>
-            <SelectItem value="media">Media (Full width)</SelectItem>
-            <SelectItem value="options">Options (Choice grid)</SelectItem>
-            <SelectItem value="embed">Embed (Calendar/Video)</SelectItem>
-          </SelectContent>
-        </Select>
-      </PropertyField>
+      <PropertySection title="Section" icon={<Settings2 size={14} />}>
+        <PropertyField label="Section Type">
+          <Select
+            value={(node.props.variant as string) || 'content'}
+            onValueChange={(value) => onUpdate({ variant: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hero">Hero (Centered, prominent)</SelectItem>
+              <SelectItem value="content">Content (Standard)</SelectItem>
+              <SelectItem value="form">Form (Compact inputs)</SelectItem>
+              <SelectItem value="cta">CTA (Button focused)</SelectItem>
+              <SelectItem value="media">Media (Full width)</SelectItem>
+              <SelectItem value="options">Options (Choice grid)</SelectItem>
+              <SelectItem value="embed">Embed (Calendar/Video)</SelectItem>
+            </SelectContent>
+          </Select>
+        </PropertyField>
+      </PropertySection>
+      <LayoutControls node={node} onUpdate={onUpdate} />
+      <StyleControls node={node} onUpdate={onUpdate} />
     </div>
   );
 }
@@ -355,13 +594,11 @@ function ImageProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({ title: 'Invalid file', description: 'Please select an image file', variant: 'destructive' });
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: 'File too large', description: 'Maximum file size is 5MB', variant: 'destructive' });
       return;
@@ -369,7 +606,6 @@ function ImageProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
 
     setIsUploading(true);
     try {
-      // For now, use a data URL (Phase D will add Supabase upload)
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
@@ -390,66 +626,133 @@ function ImageProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
 
   return (
     <div className="space-y-4">
-      <PropertyField label="Image">
-        <div className="space-y-2">
-          {/* Preview */}
-          {node.props.src && (
-            <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 border">
-              <img 
-                src={node.props.src as string} 
-                alt={node.props.alt as string || 'Preview'} 
-                className="w-full h-full object-cover"
-              />
+      <PropertySection title="Image" icon={<Settings2 size={14} />}>
+        <PropertyField label="Image">
+          <div className="space-y-2">
+            {node.props.src && (
+              <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 border">
+                <img 
+                  src={node.props.src as string} 
+                  alt={node.props.alt as string || 'Preview'} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <Loader2 size={12} className="mr-1.5 animate-spin" />
+                ) : (
+                  <Upload size={12} className="mr-1.5" />
+                )}
+                {isUploading ? 'Uploading...' : 'Upload'}
+              </Button>
             </div>
-          )}
-          
-          {/* Upload buttons */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              {isUploading ? (
-                <Loader2 size={12} className="mr-1.5 animate-spin" />
-              ) : (
-                <Upload size={12} className="mr-1.5" />
-              )}
-              {isUploading ? 'Uploading...' : 'Upload'}
-            </Button>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            <div className="flex items-center gap-1 text-[10px] text-slate-400">
+              <Link size={10} />
+              <span>Or paste URL:</span>
+            </div>
+            <Input
+              value={(node.props.src as string) || ''}
+              onChange={(e) => onUpdate({ src: e.target.value })}
+              placeholder="https://..."
+              className="text-xs"
+            />
           </div>
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          
-          {/* URL input */}
-          <div className="flex items-center gap-1 text-[10px] text-slate-400">
-            <Link size={10} />
-            <span>Or paste URL:</span>
-          </div>
+        </PropertyField>
+        <PropertyField label="Alt Text">
           <Input
-            value={(node.props.src as string) || ''}
-            onChange={(e) => onUpdate({ src: e.target.value })}
-            placeholder="https://..."
+            value={(node.props.alt as string) || ''}
+            onChange={(e) => onUpdate({ alt: e.target.value })}
+            placeholder="Describe this image"
             className="text-xs"
           />
-        </div>
-      </PropertyField>
-      <PropertyField label="Alt Text">
-        <Input
-          value={(node.props.alt as string) || ''}
-          onChange={(e) => onUpdate({ alt: e.target.value })}
-          placeholder="Describe this image"
-          className="text-xs"
-        />
-      </PropertyField>
+        </PropertyField>
+      </PropertySection>
+      <PropertySection title="Size" icon={<Layout size={14} />}>
+        <PropertyField label="Max Width">
+          <Select
+            value={(node.props.maxWidth as string) || '320px'}
+            onValueChange={(value) => onUpdate({ maxWidth: value })}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="200px">Small (200px)</SelectItem>
+              <SelectItem value="280px">Medium (280px)</SelectItem>
+              <SelectItem value="320px">Large (320px)</SelectItem>
+              <SelectItem value="100%">Full Width</SelectItem>
+            </SelectContent>
+          </Select>
+        </PropertyField>
+        <PropertyField label="Border Radius">
+          <Slider
+            value={[(node.props.borderRadius as number) || 12]}
+            onValueChange={([value]) => onUpdate({ borderRadius: value })}
+            min={0}
+            max={32}
+            step={2}
+          />
+        </PropertyField>
+      </PropertySection>
+      <StyleControls node={node} onUpdate={onUpdate} />
+    </div>
+  );
+}
+
+function ConsentProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
+  return (
+    <div className="space-y-4">
+      <PropertySection title="Consent" icon={<Settings2 size={14} />}>
+        <PropertyField label="Label Text">
+          <Textarea
+            value={(node.props.label as string) || ''}
+            onChange={(e) => onUpdate({ label: e.target.value })}
+            className="min-h-[60px] resize-none"
+            placeholder="I agree to receive communications..."
+          />
+        </PropertyField>
+        <PropertyField label="Link Text">
+          <Input
+            value={(node.props.linkText as string) || ''}
+            onChange={(e) => onUpdate({ linkText: e.target.value })}
+            placeholder="Privacy Policy"
+          />
+        </PropertyField>
+        <PropertyField label="Link URL">
+          <Input
+            value={(node.props.linkUrl as string) || ''}
+            onChange={(e) => onUpdate({ linkUrl: e.target.value })}
+            placeholder="/privacy"
+          />
+        </PropertyField>
+        <PropertyField label="Required">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={(node.props.required as boolean) || false}
+              onCheckedChange={(checked) => onUpdate({ required: checked })}
+            />
+            <span className="text-sm text-slate-600">User must agree</span>
+          </div>
+        </PropertyField>
+      </PropertySection>
     </div>
   );
 }
@@ -465,7 +768,7 @@ function getPropertyEditor(node: CanvasNode, onUpdate: (props: Record<string, un
     case 'text_input':
     case 'email_input':
     case 'phone_input':
-      return <InputProperties node={node} onUpdate={onUpdate} inputType={node.type} />;
+      return <InputProperties node={node} onUpdate={onUpdate} />;
     case 'spacer':
       return <SpacerProperties node={node} onUpdate={onUpdate} />;
     case 'video_embed':
@@ -476,8 +779,11 @@ function getPropertyEditor(node: CanvasNode, onUpdate: (props: Record<string, un
       return <OptionGridProperties node={node} onUpdate={onUpdate} />;
     case 'section':
       return <SectionProperties node={node} onUpdate={onUpdate} />;
+    case 'image':
     case 'image_block':
       return <ImageProperties node={node} onUpdate={onUpdate} />;
+    case 'consent_checkbox':
+      return <ConsentProperties node={node} onUpdate={onUpdate} />;
     default:
       return (
         <div className="text-sm text-slate-500 text-center py-4">
@@ -502,9 +808,11 @@ function getElementDisplayName(type: string): string {
     video_embed: 'Video',
     calendar_embed: 'Calendar',
     option_grid: 'Multiple Choice',
+    image: 'Image',
     image_block: 'Image',
     icon: 'Icon',
     info_card: 'Info Card',
+    consent_checkbox: 'Consent',
   };
   return names[type] || type;
 }
