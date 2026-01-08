@@ -20,10 +20,10 @@ export function EditorShell({
   className,
   overlays,
 }: EditorShellProps) {
-  const style: CSSProperties = {
-    ...(leftWidth ? { ['--editor-left-width' as const]: leftWidth } : null),
-    ...(rightWidth ? { ['--editor-right-width' as const]: rightWidth } : null),
-  };
+  const style = {
+    ...(leftWidth ? { '--editor-left-width': leftWidth } : null),
+    ...(rightWidth ? { '--editor-right-width': rightWidth } : null),
+  } as React.CSSProperties;
 
   return (
     <div className={cn('editor-shell', className)} style={style}>

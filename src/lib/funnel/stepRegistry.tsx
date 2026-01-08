@@ -14,7 +14,11 @@ type StepContent = Record<string, any>;
 
 export interface StepRenderCommonProps {
   content: StepContent;
-  settings: Record<string, any>;
+  settings: {
+    primary_color?: string;
+    button_text?: string;
+    [key: string]: any;
+  };
   onNext: (value?: any) => void;
   isActive: boolean;
   currentStep?: number;
@@ -56,7 +60,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
     renderPublic: ({ commonProps, debugBadge }) => (
       <>
         {debugBadge}
-        <WelcomeStep {...commonProps} />
+        <WelcomeStep {...(commonProps as any)} />
       </>
     ),
   },
@@ -67,7 +71,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
     renderPublic: ({ commonProps, debugBadge }) => (
       <>
         {debugBadge}
-        <TextQuestionStep {...commonProps} />
+        <TextQuestionStep {...(commonProps as any)} />
       </>
     ),
   },
@@ -78,7 +82,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
     renderPublic: ({ commonProps, debugBadge }) => (
       <>
         {debugBadge}
-        <MultiChoiceStep {...commonProps} />
+        <MultiChoiceStep {...(commonProps as any)} />
       </>
     ),
   },
@@ -89,7 +93,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
     renderPublic: ({ commonProps, debugBadge }) => (
       <>
         {debugBadge}
-        <EmailCaptureStep {...commonProps} />
+        <EmailCaptureStep {...(commonProps as any)} />
       </>
     ),
   },
@@ -100,7 +104,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
     renderPublic: ({ commonProps, debugBadge }) => (
       <>
         {debugBadge}
-        <PhoneCaptureStep {...commonProps} />
+        <PhoneCaptureStep {...(commonProps as any)} />
       </>
     ),
   },
@@ -112,7 +116,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
       <>
         {debugBadge}
         <OptInStep
-          {...commonProps}
+          {...(commonProps as any)}
           termsUrl={consent?.termsUrl || ""}
           showConsentCheckbox={consent?.showConsentCheckbox || false}
           consentChecked={consent?.consentChecked || false}
@@ -129,7 +133,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
     renderPublic: ({ commonProps, debugBadge }) => (
       <>
         {debugBadge}
-        <VideoStep {...commonProps} />
+        <VideoStep {...(commonProps as any)} />
       </>
     ),
   },
@@ -140,7 +144,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
     renderPublic: ({ commonProps, debugBadge, embed }) => (
       <>
         {debugBadge}
-        <EmbedStep {...commonProps} teamCalendlyUrl={embed?.teamCalendlyUrl || null} />
+        <EmbedStep {...(commonProps as any)} teamCalendlyUrl={embed?.teamCalendlyUrl || null} />
       </>
     ),
   },
@@ -151,7 +155,7 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
     renderPublic: ({ commonProps, debugBadge }) => (
       <>
         {debugBadge}
-        <ThankYouStep {...commonProps} />
+        <ThankYouStep {...(commonProps as any)} />
       </>
     ),
   },
