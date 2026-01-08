@@ -20,6 +20,7 @@ import {
   extractDocument,
   loadFromStorage,
   shouldPersistAfterAction,
+  type EditorDocument,
 } from './persistence';
 import {
   analyzeLayout,
@@ -1089,11 +1090,37 @@ function historyReducer(state: HistoryState, action: EditorAction): HistoryState
   };
 }
 
-export function EditorProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(historyReducer, initialHistoryState);
+type EditorProviderProps = {
+  children: ReactNode;
+  /** Optional initial document to hydrate from (e.g., from database) */
+  initialDocument?: EditorDocument | null;
+};
+
+export function EditorProvider({ children, initialDocument }: EditorProviderProps) {
+  // If we have an initial document, create initial state from it
+  const computedInitialState = useMemo((): HistoryState => {
+    if (initialDocument && initialDocument.pages && initialDocument.pages.length > 0) {
+      return {
+        past: [],
+        present: {
+          pages: initialDocument.pages as Page[],
+          activePageId: initialDocument.activePageId || initialDocument.pages[0]?.id || 'page-1',
+          selectedNodeId: null,
+          mode: 'structure',
+          guidedMode: DEFAULT_GUIDED_MODE,
+          layoutSuggestions: [],
+          highlightedNodeIds: [],
+        },
+        future: [],
+      };
+    }
+    return initialHistoryState;
+  }, [initialDocument]);
+
+  const [state, dispatch] = useReducer(historyReducer, computedInitialState);
   
   // Track if we've hydrated to avoid double-hydration
-  const hasHydratedRef = useRef(false);
+  const hasHydratedRef = useRef(!!initialDocument);
   
   // Create debounced save function (stable reference)
   const debouncedSaveRef = useRef(createDebouncedSave(750));
@@ -1101,7 +1128,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   // Track last dispatched action for persistence decisions
   const lastActionRef = useRef<string | null>(null);
 
-  // Hydration on mount - attempt to load persisted document
+  // Hydration on mount - only if no initial document was provided
   useEffect(() => {
     if (hasHydratedRef.current) {
       return;
