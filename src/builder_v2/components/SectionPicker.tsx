@@ -43,7 +43,7 @@ const sectionCategories = [
     name: 'Hero', 
     icon: Sparkles,
     color: 'bg-gradient-to-br from-blue-500 to-indigo-600',
-    templates: ['hero-simple', 'hero-button']
+    templates: ['hero-simple', 'hero-button', 'hero-card-image']
   },
   { 
     id: 'product', 
