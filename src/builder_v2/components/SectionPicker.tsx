@@ -1,6 +1,6 @@
 /**
- * SectionPicker - Perspective-style collapsible section picker
- * Left panel for adding sections and elements to the canvas
+ * SectionPicker - Perspective-style clean section picker
+ * Tabs at top, simple grid of items - minimal, focused, fast
  */
 
 import { useState } from 'react';
@@ -9,33 +9,22 @@ import {
   AlignLeft,
   MousePointerClick,
   Play,
-  ClipboardList,
-  ShieldCheck,
-  CheckCircle,
-  Layout,
   Image,
   Mail,
   Phone,
-  List,
   Calendar,
-  ChevronDown,
-  ChevronRight,
-  Plus,
   Minus,
-  Divide,
   Square,
+  LayoutGrid,
+  FormInput,
+  Sparkles,
+  Video,
+  ListChecks,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 import {
   allSectionTemplates,
-  sectionTemplatesByCategory,
-  categoryLabels,
   type SectionTemplate,
 } from '../templates/sectionTemplates';
 import type { CanvasNode } from '../types';
@@ -44,126 +33,72 @@ interface SectionPickerProps {
   onAddSection: (node: CanvasNode) => void;
 }
 
-const iconMap: Record<string, React.ReactNode> = {
-  type: <Type size={16} />,
-  'align-left': <AlignLeft size={16} />,
-  'mouse-pointer-click': <MousePointerClick size={16} />,
-  'square-mouse-pointer': <Square size={16} />,
-  play: <Play size={16} />,
-  'clipboard-list': <ClipboardList size={16} />,
-  'shield-check': <ShieldCheck size={16} />,
-  'check-circle': <CheckCircle size={16} />,
-  layout: <Layout size={16} />,
-  image: <Image size={16} />,
-  mail: <Mail size={16} />,
-  phone: <Phone size={16} />,
-  list: <List size={16} />,
-  calendar: <Calendar size={16} />,
-  text: <Type size={16} />,
-};
+type TabType = 'blocks' | 'sections';
 
-const categoryIconMap: Record<string, React.ReactNode> = {
-  hero: <Layout size={18} />,
-  content: <Type size={18} />,
-  cta: <MousePointerClick size={18} />,
-  media: <Play size={18} />,
-  form: <ClipboardList size={18} />,
-  social_proof: <ShieldCheck size={18} />,
-  features: <CheckCircle size={18} />,
-};
-
-// Basic element blocks
+// Simplified basic blocks - the essentials
 const basicBlocks = [
-  { id: 'heading', name: 'Heading', icon: 'type', type: 'heading', props: { text: 'Heading', level: 'h2' } },
-  { id: 'paragraph', name: 'Text', icon: 'align-left', type: 'paragraph', props: { text: 'Add your text here.' } },
-  { id: 'button', name: 'Button', icon: 'mouse-pointer-click', type: 'cta_button', props: { label: 'Button', variant: 'primary', action: 'next' } },
-  { id: 'image', name: 'Image', icon: 'image', type: 'image_block', props: { src: '', alt: 'Image' } },
-  { id: 'spacer', name: 'Spacer', icon: 'minus', type: 'spacer', props: { height: 24 } },
-  { id: 'divider', name: 'Divider', icon: 'minus', type: 'divider', props: {} },
+  { id: 'heading', name: 'Heading', icon: Type, type: 'heading', props: { text: 'Heading', level: 'h2' } },
+  { id: 'text', name: 'Text', icon: AlignLeft, type: 'paragraph', props: { text: 'Add your text here.' } },
+  { id: 'button', name: 'Button', icon: MousePointerClick, type: 'cta_button', props: { label: 'Continue', variant: 'primary', action: 'next' } },
+  { id: 'image', name: 'Image', icon: Image, type: 'image_block', props: { src: '', alt: 'Image' } },
+  { id: 'video', name: 'Video', icon: Video, type: 'video_embed', props: { url: '' } },
+  { id: 'spacer', name: 'Spacer', icon: Minus, type: 'spacer', props: { height: 24 } },
+  { id: 'email', name: 'Email', icon: Mail, type: 'email_input', props: { placeholder: 'Email address', fieldName: 'email' } },
+  { id: 'phone', name: 'Phone', icon: Phone, type: 'phone_input', props: { placeholder: 'Phone number', fieldName: 'phone' } },
+  { id: 'options', name: 'Options', icon: ListChecks, type: 'option_grid', props: { options: [{ id: 'a', label: 'Option A', emoji: '✨' }, { id: 'b', label: 'Option B', emoji: '🚀' }], autoAdvance: true } },
+  { id: 'calendar', name: 'Calendar', icon: Calendar, type: 'calendar_embed', props: { url: '' } },
+];
+
+// Section templates with simple icons
+const sectionItems = [
+  { id: 'hero', name: 'Hero', icon: Sparkles, template: 'hero-button' },
+  { id: 'content', name: 'Content', icon: AlignLeft, template: 'content-heading-text' },
+  { id: 'cta', name: 'CTA', icon: MousePointerClick, template: 'cta-text' },
+  { id: 'video-section', name: 'Video', icon: Video, template: 'media-video' },
+  { id: 'image-section', name: 'Image', icon: Image, template: 'media-image' },
+  { id: 'form', name: 'Form', icon: FormInput, template: 'form-full' },
+  { id: 'choices', name: 'Choices', icon: LayoutGrid, template: 'form-multi-choice' },
+  { id: 'booking', name: 'Booking', icon: Calendar, template: 'form-calendar' },
 ];
 
 interface BlockItemProps {
   name: string;
-  icon: string;
+  icon: typeof Type;
   onClick: () => void;
 }
 
-function BlockItem({ name, icon, onClick }: BlockItemProps) {
+function BlockItem({ name, icon: Icon, onClick }: BlockItemProps) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 w-full px-3 py-2.5 text-left rounded-lg hover:bg-slate-100 transition-colors group"
+      className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all group"
     >
-      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-white group-hover:text-slate-900 transition-colors">
-        {icon === 'minus' ? <Minus size={16} /> : iconMap[icon] || <Square size={16} />}
+      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white text-slate-500 group-hover:text-slate-700 shadow-sm transition-colors">
+        <Icon size={18} />
       </div>
-      <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{name}</span>
+      <span className="text-[11px] font-medium text-slate-600 group-hover:text-slate-900">{name}</span>
     </button>
   );
 }
 
-interface SectionItemProps {
-  template: SectionTemplate;
-  onClick: () => void;
-}
-
-function SectionItem({ template, onClick }: SectionItemProps) {
+function SectionItem({ name, icon: Icon, onClick }: BlockItemProps) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 w-full px-3 py-2.5 text-left rounded-lg hover:bg-slate-100 transition-colors group"
+      className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/50 hover:from-primary/5 hover:to-primary/10 border border-slate-200/50 hover:border-primary/20 transition-all group"
     >
-      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-white group-hover:text-slate-900 transition-colors">
-        {iconMap[template.icon] || <Square size={16} />}
+      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white text-slate-500 group-hover:text-primary shadow-sm transition-colors">
+        <Icon size={18} />
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{template.name}</div>
-        <div className="text-xs text-slate-500 truncate">{template.description}</div>
-      </div>
+      <span className="text-[11px] font-medium text-slate-600 group-hover:text-slate-900">{name}</span>
     </button>
-  );
-}
-
-interface CategorySectionProps {
-  category: string;
-  templates: SectionTemplate[];
-  onAddSection: (node: CanvasNode) => void;
-  defaultOpen?: boolean;
-}
-
-function CategorySection({ category, templates, onAddSection, defaultOpen = false }: CategorySectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-slate-50 rounded-lg transition-colors">
-        <div className="text-slate-500">
-          {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </div>
-        <div className="text-slate-600">
-          {categoryIconMap[category]}
-        </div>
-        <span className="text-sm font-semibold text-slate-700">{categoryLabels[category] || category}</span>
-        <span className="ml-auto text-xs text-slate-400">{templates.length}</span>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="pl-4 space-y-0.5">
-        {templates.map((template) => (
-          <SectionItem
-            key={template.id}
-            template={template}
-            onClick={() => onAddSection(template.createNode())}
-          />
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
   );
 }
 
 export function SectionPicker({ onAddSection }: SectionPickerProps) {
-  const [basicOpen, setBasicOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>('blocks');
 
-  const handleAddBasicBlock = (block: typeof basicBlocks[0]) => {
-    // For basic blocks, wrap in a section
+  const handleAddBlock = (block: typeof basicBlocks[0]) => {
     const sectionNode: CanvasNode = {
       id: `section-${Date.now()}`,
       type: 'section',
@@ -180,51 +115,80 @@ export function SectionPicker({ onAddSection }: SectionPickerProps) {
     onAddSection(sectionNode);
   };
 
+  const handleAddSection = (templateId: string) => {
+    const template = allSectionTemplates.find(t => t.id === templateId);
+    if (template) {
+      onAddSection(template.createNode());
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-white">
-      <div className="px-4 py-3 border-b border-slate-200">
-        <h2 className="text-sm font-semibold text-slate-900">Add Section</h2>
-        <p className="text-xs text-slate-500 mt-0.5">Drag or click to add</p>
+      {/* Tabs */}
+      <div className="px-3 pt-3 pb-2">
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+          <button
+            onClick={() => setActiveTab('blocks')}
+            className={cn(
+              "flex-1 py-1.5 px-3 text-xs font-medium rounded-md transition-all",
+              activeTab === 'blocks'
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            Blocks
+          </button>
+          <button
+            onClick={() => setActiveTab('sections')}
+            className={cn(
+              "flex-1 py-1.5 px-3 text-xs font-medium rounded-md transition-all",
+              activeTab === 'sections'
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            Sections
+          </button>
+        </div>
       </div>
 
+      {/* Content */}
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
-          {/* Basic Blocks */}
-          <Collapsible open={basicOpen} onOpenChange={setBasicOpen}>
-            <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-slate-50 rounded-lg transition-colors">
-              <div className="text-slate-500">
-                {basicOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </div>
-              <div className="text-slate-600">
-                <Plus size={18} />
-              </div>
-              <span className="text-sm font-semibold text-slate-700">Basic Blocks</span>
-              <span className="ml-auto text-xs text-slate-400">{basicBlocks.length}</span>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pl-4 space-y-0.5">
+        <div className="p-3">
+          {activeTab === 'blocks' && (
+            <div className="grid grid-cols-3 gap-2">
               {basicBlocks.map((block) => (
                 <BlockItem
                   key={block.id}
                   name={block.name}
                   icon={block.icon}
-                  onClick={() => handleAddBasicBlock(block)}
+                  onClick={() => handleAddBlock(block)}
                 />
               ))}
-            </CollapsibleContent>
-          </Collapsible>
+            </div>
+          )}
 
-          {/* Section categories */}
-          {Object.entries(sectionTemplatesByCategory).map(([category, templates]) => (
-            <CategorySection
-              key={category}
-              category={category}
-              templates={templates}
-              onAddSection={onAddSection}
-              defaultOpen={category === 'hero'}
-            />
-          ))}
+          {activeTab === 'sections' && (
+            <div className="grid grid-cols-2 gap-2">
+              {sectionItems.map((item) => (
+                <SectionItem
+                  key={item.id}
+                  name={item.name}
+                  icon={item.icon}
+                  onClick={() => handleAddSection(item.template)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </ScrollArea>
+
+      {/* Hint */}
+      <div className="px-3 py-2 border-t border-slate-100">
+        <p className="text-[10px] text-slate-400 text-center">
+          Click to add • Drag to reorder
+        </p>
+      </div>
     </div>
   );
 }

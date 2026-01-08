@@ -3,7 +3,7 @@
  * Context-aware inspector that shows different controls based on selection
  */
 
-import type { ReactNode } from 'react';
+import { useState, useRef, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,19 +17,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import {
-  Type,
-  Palette,
-  Layout,
-  Settings,
   Trash2,
   ChevronUp,
   ChevronDown,
+  Upload,
+  Link,
+  Check,
+  Loader2,
 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import type { CanvasNode, Page } from '../types';
+import { normalizeVideoUrl, isValidVideoUrl } from '../assets/mediaUtils';
 
 interface PropertyEditorProps {
   selectedNode: CanvasNode | null;
@@ -208,14 +208,36 @@ function SpacerProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (pro
 }
 
 function VideoProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
+  const [urlInput, setUrlInput] = useState((node.props.url as string) || '');
+  const [isValid, setIsValid] = useState(true);
+
+  const handleUrlChange = (value: string) => {
+    setUrlInput(value);
+    const normalized = normalizeVideoUrl(value);
+    const valid = !value || isValidVideoUrl(value);
+    setIsValid(valid);
+    if (valid) {
+      onUpdate({ url: normalized });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <PropertyField label="Video URL">
-        <Input
-          value={(node.props.url as string) || ''}
-          onChange={(e) => onUpdate({ url: e.target.value })}
-          placeholder="YouTube, Vimeo, or Loom URL"
-        />
+        <div className="space-y-2">
+          <Input
+            value={urlInput}
+            onChange={(e) => handleUrlChange(e.target.value)}
+            placeholder="Paste YouTube, Vimeo, or Loom URL"
+            className={!isValid ? 'border-destructive' : ''}
+          />
+          {!isValid && urlInput && (
+            <p className="text-xs text-destructive">Please enter a valid video URL</p>
+          )}
+          <p className="text-[10px] text-slate-400">
+            Supports YouTube, Vimeo, Loom, and Wistia
+          </p>
+        </div>
       </PropertyField>
     </div>
   );
@@ -326,20 +348,106 @@ function SectionProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (pr
 }
 
 function ImageProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (props: Record<string, unknown>) => void }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please select an image file', variant: 'destructive' });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Maximum file size is 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // For now, use a data URL (Phase D will add Supabase upload)
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        onUpdate({ src: dataUrl });
+        setIsUploading(false);
+        toast({ title: 'Image added' });
+      };
+      reader.onerror = () => {
+        setIsUploading(false);
+        toast({ title: 'Upload failed', variant: 'destructive' });
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setIsUploading(false);
+      toast({ title: 'Upload failed', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <PropertyField label="Image URL">
-        <Input
-          value={(node.props.src as string) || ''}
-          onChange={(e) => onUpdate({ src: e.target.value })}
-          placeholder="https://..."
-        />
+      <PropertyField label="Image">
+        <div className="space-y-2">
+          {/* Preview */}
+          {node.props.src && (
+            <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 border">
+              <img 
+                src={node.props.src as string} 
+                alt={node.props.alt as string || 'Preview'} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          
+          {/* Upload buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <Loader2 size={12} className="mr-1.5 animate-spin" />
+              ) : (
+                <Upload size={12} className="mr-1.5" />
+              )}
+              {isUploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </div>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          
+          {/* URL input */}
+          <div className="flex items-center gap-1 text-[10px] text-slate-400">
+            <Link size={10} />
+            <span>Or paste URL:</span>
+          </div>
+          <Input
+            value={(node.props.src as string) || ''}
+            onChange={(e) => onUpdate({ src: e.target.value })}
+            placeholder="https://..."
+            className="text-xs"
+          />
+        </div>
       </PropertyField>
       <PropertyField label="Alt Text">
         <Input
           value={(node.props.alt as string) || ''}
           onChange={(e) => onUpdate({ alt: e.target.value })}
-          placeholder="Image description"
+          placeholder="Describe this image"
+          className="text-xs"
         />
       </PropertyField>
     </div>
