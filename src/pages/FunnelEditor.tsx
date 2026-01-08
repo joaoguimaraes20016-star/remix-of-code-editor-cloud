@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useTeamRole } from '@/hooks/useTeamRole';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 type BuilderFunnelRow = {
   id: string;
@@ -70,8 +71,14 @@ function BuilderEmptyState({
         pages: [
           {
             id: 'page-1',
-            title: 'Home',
-            nodes: [],
+            name: 'Home',
+            type: 'landing',
+            canvasRoot: {
+              id: 'root-1',
+              type: 'container',
+              props: {},
+              children: [],
+            },
           },
         ],
         activePageId: 'page-1',
@@ -79,7 +86,7 @@ function BuilderEmptyState({
 
       const { error } = await supabase
         .from('funnels')
-        .update({ builder_document: initialDoc as unknown as Record<string, unknown> })
+        .update({ builder_document: initialDoc as unknown as Json })
         .eq('id', funnelId);
 
       if (error) throw error;
@@ -152,7 +159,7 @@ function BuilderCommandBar({
       const doc = extractDocument(pages, activePageId);
       const { error } = await supabase
         .from('funnels')
-        .update({ builder_document: doc as unknown as Record<string, unknown>, updated_at: new Date().toISOString() })
+        .update({ builder_document: doc as unknown as Json, updated_at: new Date().toISOString() })
         .eq('id', funnelId);
 
       if (error) {
@@ -184,8 +191,8 @@ function BuilderCommandBar({
       const { error } = await supabase
         .from('funnels')
         .update({
-          builder_document: doc as unknown as Record<string, unknown>,
-          published_document_snapshot: snapshot as unknown as Record<string, unknown>,
+          builder_document: doc as unknown as Json,
+          published_document_snapshot: snapshot as unknown as Json,
           status: 'published',
           updated_at: new Date().toISOString(),
         })
@@ -234,7 +241,7 @@ function BuilderCommandBar({
 
 export default function FunnelEditor() {
   const { teamId, funnelId } = useParams<{ teamId: string; funnelId: string }>();
-  const { isLoading: isRoleLoading } = useTeamRole(teamId);
+  const { loading: isRoleLoading } = useTeamRole(teamId);
 
   const [editorKey, setEditorKey] = useState<string | null>(null);
   const [legacyPayload, setLegacyPayload] = useState<LegacySnapshotPayload | null>(null);

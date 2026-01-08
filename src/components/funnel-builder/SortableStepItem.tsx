@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GripVertical, Trash2, Play, MessageSquare, List, Mail, Phone, Video, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { FunnelStep } from '@/pages/FunnelEditor';
+import type { FunnelStep } from '@/lib/funnel/editorTypes';
 
 interface SortableStepItemProps {
   step: FunnelStep;

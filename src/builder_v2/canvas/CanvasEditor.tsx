@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 
 import type { EditorState, Page } from '../types';
 import type { EditorMode } from '../editorMode';
-import type { Funnel, FunnelSettings, FunnelStep } from '@/pages/FunnelEditor';
+import type { Funnel, FunnelSettings, FunnelStep } from '@/lib/funnel/editorTypes';
 import type { EditorSelection } from '@/components/funnel-builder/editorSelection';
 
 import './canvas.css';
