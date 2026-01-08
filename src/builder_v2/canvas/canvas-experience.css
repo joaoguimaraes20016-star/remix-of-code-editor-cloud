@@ -226,6 +226,15 @@
   position: relative;
 }
 
+/* Perspective-style image card grid (like the Golden Era Mastery inspiration) */
+.step-options--perspective {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+}
+
 .step-options::before {
   content: 'Options';
   position: absolute;
@@ -259,13 +268,65 @@
   transition: 
     background 150ms ease,
     border-color 150ms ease,
-    transform 150ms ease;
+    transform 150ms ease,
+    box-shadow 200ms ease;
 }
 
 .step-option:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateX(2px);
+}
+
+/* Perspective-style card option (with image) */
+.step-option--card {
+  flex-direction: column;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  overflow: hidden;
+  transform: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.step-option--card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  background: transparent;
+  border: none;
+}
+
+.step-option-image {
+  width: 100%;
+  height: 100px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.step-option-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+}
+
+.step-option-content--card {
+  background: #f59e0b;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.step-option-emoji {
+  font-size: 18px;
+}
+
+.step-option-label {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* ============================================================================

@@ -249,6 +249,14 @@
   width: 100%;
 }
 
+/* Perspective-style image card grid */
+.builder-option-grid--perspective {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
 .builder-option-item {
   display: flex;
   align-items: center;
@@ -267,6 +275,48 @@
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(99, 102, 241, 0.4);
   transform: translateX(4px);
+}
+
+/* Perspective-style card option (with image) */
+.builder-option-item--card {
+  flex-direction: column;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  overflow: hidden;
+  transform: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.builder-option-item--card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  background: transparent;
+  border: none;
+}
+
+.builder-option-image {
+  width: 100%;
+  height: 120px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.builder-option-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+}
+
+.builder-option-content--card {
+  background: #f59e0b;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .builder-option-emoji {

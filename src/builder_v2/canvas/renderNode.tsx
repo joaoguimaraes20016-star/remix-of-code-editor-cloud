@@ -26,7 +26,7 @@ export interface RenderOptions {
   onDeleteNode?: (nodeId: string) => void;
 }
 
-// Map node types to human-readable labels
+// Map node types to user-friendly labels (no underscores, clean names)
 const nodeTypeLabels: Record<string, string> = {
   heading: 'Heading',
   paragraph: 'Text',
@@ -43,6 +43,19 @@ const nodeTypeLabels: Record<string, string> = {
   section: 'Section',
   frame: 'Frame',
   consent_checkbox: 'Consent',
+  welcome_step: 'Welcome',
+  text_question_step: 'Question',
+  multi_choice_step: 'Multi Choice',
+  email_capture_step: 'Email',
+  phone_capture_step: 'Phone',
+  opt_in_step: 'Opt-In',
+  video_step: 'Video',
+  embed_step: 'Calendar',
+  thank_you_step: 'Thank You',
+  container: 'Container',
+  hero: 'Hero',
+  button: 'Button',
+  text: 'Text',
 };
 
 function getNodeTypeLabel(type: string): string {
@@ -85,8 +98,8 @@ export function renderNode(
   // Check if this node is highlighted (for suggestion feedback)
   const isHighlighted = highlightedNodeIds.includes(node.id);
   
-  // Don't show hover toolbar on frame/section containers, only on leaf elements
-  const showHoverToolbar = !readonly && !canHaveChildren && depth > 0;
+  // Show hover toolbar on ALL elements for full editing capability
+  const showHoverToolbar = !readonly;
   
   const typeLabel = getNodeTypeLabel(node.type);
 
