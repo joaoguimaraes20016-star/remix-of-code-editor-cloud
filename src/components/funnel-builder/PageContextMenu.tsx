@@ -28,7 +28,7 @@ import {
   FileUp,
   FileDown
 } from 'lucide-react';
-import { FunnelStep } from '@/pages/FunnelEditor';
+import type { FunnelStep } from '@/lib/funnel/editorTypes';
 
 interface PageContextMenuProps {
   step: FunnelStep;

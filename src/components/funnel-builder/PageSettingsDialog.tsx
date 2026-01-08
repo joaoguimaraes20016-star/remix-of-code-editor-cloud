@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FunnelStep } from '@/pages/FunnelEditor';
+import type { FunnelStep } from '@/lib/funnel/editorTypes';
 import { PartyPopper, Link, Code, SkipForward, Timer, Eye } from 'lucide-react';
 
 interface PageSettings {

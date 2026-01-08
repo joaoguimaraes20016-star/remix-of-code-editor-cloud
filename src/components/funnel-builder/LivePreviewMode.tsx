@@ -10,9 +10,8 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { FunnelStep, FunnelSettings } from '@/pages/FunnelEditor';
+import type { FunnelStep, FunnelSettings, StepDesign } from '@/lib/funnel/editorTypes';
 import { DynamicElementRenderer } from '@/components/funnel-public/DynamicElementRenderer';
-import { StepDesign } from '@/pages/FunnelEditor';
 import { getDefaultElementOrder } from '@/lib/funnel/stepRegistry';
 
 interface LivePreviewModeProps {

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { GripVertical, Trash2, Play, MessageSquare, List, Mail, Phone, Video, CheckCircle, Plus, Copy, UserCheck, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
-import { FunnelStep } from '@/pages/FunnelEditor';
+import type { FunnelStep } from '@/lib/funnel/editorTypes';
 import type { EditorSelection } from './editorSelection';
 import { getSelectionStepId } from './editorSelection';
 import { PageContextMenu } from './PageContextMenu';
