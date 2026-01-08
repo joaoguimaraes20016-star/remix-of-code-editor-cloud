@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react';
 
 import type { CanvasNode, EditorState } from '../types';
-
 import { ComponentRegistry, fallbackComponent } from '../registry/componentRegistry';
+import { getNodeLabel } from '../utils/nodeLabels';
 
 /**
  * Options for rendering the canvas tree.
@@ -24,42 +24,6 @@ export interface RenderOptions {
    * Callback when a node is deleted
    */
   onDeleteNode?: (nodeId: string) => void;
-}
-
-// Map node types to user-friendly labels (no underscores, clean names)
-const nodeTypeLabels: Record<string, string> = {
-  heading: 'Heading',
-  paragraph: 'Text',
-  cta_button: 'Button',
-  image_block: 'Image',
-  video_embed: 'Video',
-  email_input: 'Email',
-  phone_input: 'Phone',
-  text_input: 'Text Input',
-  option_grid: 'Options',
-  info_card: 'Info Card',
-  calendar_embed: 'Calendar',
-  spacer: 'Spacer',
-  section: 'Section',
-  frame: 'Frame',
-  consent_checkbox: 'Consent',
-  welcome_step: 'Welcome',
-  text_question_step: 'Question',
-  multi_choice_step: 'Multi Choice',
-  email_capture_step: 'Email',
-  phone_capture_step: 'Phone',
-  opt_in_step: 'Opt-In',
-  video_step: 'Video',
-  embed_step: 'Calendar',
-  thank_you_step: 'Thank You',
-  container: 'Container',
-  hero: 'Hero',
-  button: 'Button',
-  text: 'Text',
-};
-
-function getNodeTypeLabel(type: string): string {
-  return nodeTypeLabels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
 /**
@@ -101,7 +65,7 @@ export function renderNode(
   // Show hover toolbar on ALL elements for full editing capability
   const showHoverToolbar = !readonly;
   
-  const typeLabel = getNodeTypeLabel(node.type);
+  const typeLabel = getNodeLabel(node.type);
 
   return (
     <div

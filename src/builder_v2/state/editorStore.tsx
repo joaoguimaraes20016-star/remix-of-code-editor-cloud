@@ -533,20 +533,16 @@ export function moveNodeToParent(
   return nextRoot;
 }
 
-// Initial page uses a V2 step component directly
+// Initial page starts with a blank frame - user adds sections from picker
 const initialPage: Page = {
   id: 'page-1',
-  name: 'Welcome',
+  name: 'Page 1',
   type: 'landing',
   canvasRoot: {
-    id: 'welcome-step-1',
-    type: 'welcome_step',
-    props: {
-      headline: 'Welcome! Let\'s get started.',
-      subtext: 'We\'re excited to have you here.',
-      buttonText: 'Continue',
-    },
-    children: [],
+    id: 'frame-1',
+    type: 'frame',
+    props: {},
+    children: [], // Empty - user adds sections from SectionPicker
   },
 };
 

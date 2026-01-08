@@ -469,16 +469,15 @@
 .builder-content-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
-  padding: 32px 24px;
-  gap: 16px;
+  gap: 0;
   text-align: center;
   overflow: hidden; /* allows HeaderBar to clip to rounded corners */
 }
 
 .builder-content-card--shadow {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
 /* Content card typography overrides for light bg */
@@ -487,5 +486,15 @@
 }
 
 .builder-content-card .builder-paragraph {
-  color: #666666;
+  color: #555555;
+}
+
+/* Nested sections in content cards should center content */
+.builder-content-card .builder-section {
+  align-items: center;
+}
+
+/* Buttons inside content cards should auto-width */
+.builder-content-card .builder-cta-button {
+  align-self: center;
 }
