@@ -1285,3 +1285,46 @@
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
+
+/* ============================================================================
+   EMPTY PAGE STATE
+   Clean, inviting empty state when page has no content
+   ============================================================================ */
+
+.builder-v2-empty-page-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 48px;
+  gap: 16px;
+}
+
+.builder-v2-empty-page-add-btn {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.builder-v2-empty-page-add-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: rgba(99, 102, 241, 0.9);
+  transform: scale(1.05);
+}
+
+.builder-v2-empty-page-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.01em;
+}

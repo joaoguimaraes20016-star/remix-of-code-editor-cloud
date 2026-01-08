@@ -93,23 +93,23 @@ export const heroWithButton: SectionTemplate = {
 export const heroCardWithImage: SectionTemplate = {
   id: 'hero-card-image',
   name: 'Hero Card + Image',
-  description: 'Card hero with top bar and image (Framer-style)',
+  description: 'Clean card hero (Framer-style)',
   category: 'hero',
   icon: 'layout',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'hero-card', gap: 18 },
+    props: { variant: 'hero-card' },
     children: [
       {
-        id: genId('shell'),
+        id: genId('card'),
         type: 'content_card',
-        props: { backgroundColor: '#ffffff', borderRadius: 24, shadow: true, padding: 0 },
+        props: { backgroundColor: '#ffffff', borderRadius: 20, shadow: true, padding: 0 },
         children: [
           {
             id: genId('header'),
             type: 'header_bar',
-            props: { backgroundColor: '#111827', logoUrl: '', logoAlt: 'Logo' },
+            props: { backgroundColor: '#111827' },
             children: [],
           },
           {
@@ -120,39 +120,30 @@ export const heroCardWithImage: SectionTemplate = {
               {
                 id: genId('heading'),
                 type: 'heading',
-                props: { text: 'More Success with Less Effort', level: 'h1', textAlign: 'center' },
+                props: { text: 'More Success with Less Effort', level: 'h1' },
                 children: [],
               },
               {
                 id: genId('paragraph'),
                 type: 'paragraph',
-                props: {
-                  text: 'With our tailored solutions, reach your goals faster. Let our experienced team support you and experience the difference.',
-                  textAlign: 'center',
-                },
+                props: { text: 'With our tailored solutions, reach your goals faster.' },
                 children: [],
               },
               {
                 id: genId('spacer'),
                 type: 'spacer',
-                props: { height: 10 },
+                props: { height: 12 },
                 children: [],
               },
               {
                 id: genId('button'),
                 type: 'cta_button',
-                props: { label: 'Learn more now', variant: 'primary', action: 'next', fullWidth: false },
+                props: { label: 'Learn more', variant: 'primary', fullWidth: false },
                 children: [],
               },
             ],
           },
         ],
-      },
-      {
-        id: genId('image'),
-        type: 'image',
-        props: { src: '', alt: 'Hero image', maxWidth: '520px', borderRadius: 20, shadow: 'lg' },
-        children: [],
       },
     ],
   }),

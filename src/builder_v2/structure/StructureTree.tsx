@@ -3,35 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ComponentRegistry, fallbackComponent } from '../registry/componentRegistry';
 import { findNodeById, useEditorStore } from '../state/editorStore';
+import { getNodeLabel } from '../utils/nodeLabels';
 import type { CanvasNode } from '../types';
 
 const addableTypes = ['heading', 'paragraph', 'cta_button', 'image_block', 'spacer', 'section'];
-
-// Convert technical type names to user-friendly labels
-function formatTypeLabel(type: string): string {
-  const labelMap: Record<string, string> = {
-    'welcome_step': 'Welcome',
-    'text_question_step': 'Text Question',
-    'multi_choice_step': 'Multi Choice',
-    'email_capture_step': 'Email Capture',
-    'phone_capture_step': 'Phone Capture',
-    'opt_in_step': 'Opt-In Form',
-    'video_step': 'Video',
-    'embed_step': 'Calendar',
-    'thank_you_step': 'Thank You',
-    'cta_button': 'Button',
-    'image_block': 'Image',
-    'video_embed': 'Video',
-    'option_grid': 'Options',
-    'info_card': 'Info Card',
-    'calendar_embed': 'Calendar',
-    'consent_checkbox': 'Consent',
-    'email_input': 'Email Input',
-    'phone_input': 'Phone Input',
-    'text_input': 'Text Input',
-  };
-  return labelMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
 
 type DragTarget = { parentId: string; insertIndex: number; indicatorY: number; indicatorLeft: number; indicatorWidth: number };
 
@@ -146,7 +121,7 @@ function StructureNode({
       >
         <div className="builder-v2-structure-row-content">
           <span className="builder-v2-structure-row-label">{label}</span>
-          <span className="builder-v2-structure-row-type">{formatTypeLabel(node.type)}</span>
+          <span className="builder-v2-structure-row-type">{getNodeLabel(node.type)}</span>
         </div>
 
         {!isReadOnly && (
