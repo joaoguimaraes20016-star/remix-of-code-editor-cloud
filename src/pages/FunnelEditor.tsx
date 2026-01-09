@@ -269,7 +269,7 @@ function EditorContent({
   const previewUrl = `${window.location.origin}/f/${funnel.slug}`;
 
   return (
-    <div className="flex h-screen flex-col bg-slate-100">
+    <div className="flex h-screen flex-col bg-[#f8fafc]">
       {/* Header */}
       <EditorHeader
         funnelName={funnel.name}
@@ -336,9 +336,10 @@ function EditorContent({
           </aside>
         )}
         
-        {/* Canvas area */}
+        {/* Canvas area - dark Perspective-style background */}
         <main 
-          className="relative flex-1 overflow-hidden flex items-center justify-center p-8" 
+          className="relative flex-1 overflow-hidden flex items-center justify-center p-8"
+          style={{ background: '#1e1e24' }}
           onClick={handleCanvasClick}
         >
           <DeviceFrame device={device} slug={funnel.slug}>
