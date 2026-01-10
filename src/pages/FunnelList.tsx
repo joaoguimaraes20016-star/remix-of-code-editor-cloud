@@ -432,7 +432,7 @@ export default function FunnelList() {
         exact: true,
       });
       toast({ title: 'Funnel duplicated' });
-      navigate(`/team/${teamId}/funnels/${newFunnel.id}`);
+      navigate(`/team/${teamId}/funnels/${newFunnel.id}/edit`);
     },
     onError: (error: Error) => {
       toast({ title: 'Failed to duplicate', description: error.message, variant: 'destructive' });
@@ -719,7 +719,7 @@ export default function FunnelList() {
                       "group bg-card border rounded-xl overflow-hidden transition-all",
                       isAdmin ? "hover:shadow-lg cursor-pointer" : ""
                     )}
-                    onClick={() => isAdmin && navigate(`/team/${teamId}/funnels/${funnel.id}`)}
+                    onClick={() => isAdmin && navigate(`/team/${teamId}/funnels/${funnel.id}/edit`)}
                   >
                     {/* Thumbnail */}
                     <div 
@@ -788,7 +788,7 @@ export default function FunnelList() {
                             <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/team/${teamId}/funnels/${funnel.id}`);
+                                navigate(`/team/${teamId}/funnels/${funnel.id}/edit`);
                               }}>
                                 <Edit className="h-4 w-4 mr-2" /> Edit Funnel
                               </DropdownMenuItem>
@@ -879,7 +879,7 @@ export default function FunnelList() {
                           "hover:bg-muted/50",
                           isAdmin ? "cursor-pointer" : ""
                         )}
-                        onClick={() => isAdmin && navigate(`/team/${teamId}/funnels/${funnel.id}`)}
+                        onClick={() => isAdmin && navigate(`/team/${teamId}/funnels/${funnel.id}/edit`)}
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -954,7 +954,7 @@ export default function FunnelList() {
                               <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(`/team/${teamId}/funnels/${funnel.id}`);
+                                  navigate(`/team/${teamId}/funnels/${funnel.id}/edit`);
                                 }}>
                                   <Edit className="h-4 w-4 mr-2" /> Edit Funnel
                                 </DropdownMenuItem>
@@ -1434,7 +1434,7 @@ export default function FunnelList() {
         teamId={teamId!}
         onSuccess={(funnelId) => {
           setShowCreateDialog(false);
-          navigate(`/team/${teamId}/funnels/${funnelId}`);
+          navigate(`/team/${teamId}/funnels/${funnelId}/edit`);
         }}
       />
 
