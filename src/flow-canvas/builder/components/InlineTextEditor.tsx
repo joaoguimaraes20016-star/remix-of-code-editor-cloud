@@ -355,9 +355,11 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       inlineStyles.WebkitBackgroundClip = 'text';
       inlineStyles.WebkitTextFillColor = 'transparent';
       (inlineStyles as Record<string, string>).backgroundClip = 'text';
-    } else if (styles.textColor && styles.textFillType !== 'gradient') {
-      // Text color (only if not gradient)
-      inlineStyles.color = styles.textColor;
+    } else if (styles.textFillType !== 'gradient') {
+      // Text color (only if not gradient) - apply even if undefined to ensure color shows
+      if (styles.textColor) {
+        inlineStyles.color = styles.textColor;
+      }
     }
     
     // Text shadow
