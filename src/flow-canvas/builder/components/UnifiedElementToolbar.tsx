@@ -128,10 +128,15 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const isTextElement = ['heading', 'text'].includes(elementType);
   const isButton = elementType === 'button';
   const isInput = ['input', 'select'].includes(elementType);
+  const isFormElement = ['checkbox', 'radio'].includes(elementType);
+  const isMediaElement = ['image', 'video'].includes(elementType);
+  const isLayoutElement = ['divider', 'spacer'].includes(elementType);
+  
   const showTypography = isTextElement;
   const showAlignment = ['heading', 'text', 'button', 'input', 'select', 'checkbox', 'radio'].includes(elementType);
   const showTextColor = isTextElement;
-  const showBackgroundColor = isButton || isInput;
+  // Show background color for ALL elements except pure layout elements
+  const showBackgroundColor = !isLayoutElement;
   const showTextShadow = isTextElement;
 
   if (hidden) return null;
