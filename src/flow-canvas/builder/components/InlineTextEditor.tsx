@@ -161,6 +161,13 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     const activeElement = document.activeElement as HTMLElement | null;
     if (activeElement?.closest('[data-radix-popper-content-wrapper]')) return;
     
+    // Additional check: if relatedTarget is null (clicking non-focusable elements like sliders),
+    // check if any Radix popover is currently open in the DOM
+    if (!relatedTarget) {
+      const openPopover = document.querySelector('[data-radix-popper-content-wrapper]');
+      if (openPopover) return;
+    }
+    
     setIsEditing(false);
     setShowToolbar(false);
     
@@ -199,9 +206,23 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
   // Apply style changes - ONLY emit the properties that were explicitly changed
   const handleStyleChange = useCallback((newStyles: Partial<TextStyles>) => {
-    // Deep clone gradients to prevent shared references
-    const clonedStyles: Partial<TextStyles> = { ...newStyles };
+    // Deep clone gradients to prevent shared references - use explicit property copying
+    const clonedStyles: Partial<TextStyles> = {};
     
+    // Copy all scalar properties
+    if (newStyles.fontSize !== undefined) clonedStyles.fontSize = newStyles.fontSize;
+    if (newStyles.fontWeight !== undefined) clonedStyles.fontWeight = newStyles.fontWeight;
+    if (newStyles.fontStyle !== undefined) clonedStyles.fontStyle = newStyles.fontStyle;
+    if (newStyles.textDecoration !== undefined) clonedStyles.textDecoration = newStyles.textDecoration;
+    if (newStyles.textAlign !== undefined) clonedStyles.textAlign = newStyles.textAlign;
+    if (newStyles.fontFamily !== undefined) clonedStyles.fontFamily = newStyles.fontFamily;
+    if (newStyles.textColor !== undefined) clonedStyles.textColor = newStyles.textColor;
+    if (newStyles.textFillType !== undefined) clonedStyles.textFillType = newStyles.textFillType;
+    if (newStyles.textShadow !== undefined) clonedStyles.textShadow = newStyles.textShadow;
+    if (newStyles.highlightColor !== undefined) clonedStyles.highlightColor = newStyles.highlightColor;
+    if (newStyles.highlightUseGradient !== undefined) clonedStyles.highlightUseGradient = newStyles.highlightUseGradient;
+    
+    // Deep clone gradient objects to prevent shared references
     if (newStyles.textGradient) {
       clonedStyles.textGradient = cloneGradient(newStyles.textGradient);
     }
@@ -210,6 +231,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     }
     
     // Handle case where fillType is gradient but no gradient exists
+    // This prevents the "white flash" when switching to gradient mode
     if (clonedStyles.textFillType === 'gradient' && !clonedStyles.textGradient && !styles.textGradient) {
       clonedStyles.textGradient = cloneGradient(defaultGradient);
     }

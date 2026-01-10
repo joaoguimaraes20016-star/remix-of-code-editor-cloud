@@ -17,3 +17,5 @@ export type { ButtonAction, ButtonActionType } from './ButtonActionModal';
 export { VideoEmbedModal, getEmbedUrl, detectPlatform } from './VideoEmbedModal';
 export type { VideoSettings } from './VideoEmbedModal';
 export { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
+export { ShadowEditor, shadowLayersToCSS, shadowPresets } from './ShadowEditor';
+export type { ShadowLayer } from './ShadowEditor';
