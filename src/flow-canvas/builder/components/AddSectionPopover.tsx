@@ -1,5 +1,32 @@
 import React, { useState } from 'react';
-import { Plus, Search, Type, Image, Video, MessageSquare, ListChecks, Calendar, Upload, ChevronDown, Sparkles, LayoutGrid, MousePointer } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  Type, 
+  Image, 
+  Video, 
+  MessageSquare, 
+  ListChecks, 
+  Calendar, 
+  Upload, 
+  ChevronDown, 
+  Sparkles, 
+  LayoutGrid, 
+  MousePointer,
+  Menu,
+  Link2,
+  Users,
+  Star,
+  Grid3X3,
+  CreditCard,
+  HelpCircle,
+  Mail,
+  Building2,
+  Award,
+  Quote,
+  Grip,
+  MapPin
+} from 'lucide-react';
 import { Block, BlockType } from '../../types/infostack';
 import { generateId } from '../utils/helpers';
 import {
@@ -23,18 +50,189 @@ interface BlockTemplate {
   label: string;
   icon: React.ReactNode;
   description: string;
-  category: 'basic' | 'interactive';
+  category: 'layout' | 'content' | 'interactive';
   template: () => Block;
 }
 
 const blockTemplates: BlockTemplate[] = [
-  // Basic Blocks
+  // ============ LAYOUT SECTIONS ============
+  {
+    type: 'custom',
+    label: 'Navigation',
+    icon: <Menu size={18} />,
+    description: 'Header with logo & links',
+    category: 'layout',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Navigation',
+      elements: [
+        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Logo', width: '120px', height: '40px', isLogo: true, placeholder: 'Add your logo' } },
+        { id: generateId(), type: 'button', content: 'Home', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#' } },
+        { id: generateId(), type: 'button', content: 'Features', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#features' } },
+        { id: generateId(), type: 'button', content: 'Pricing', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#pricing' } },
+        { id: generateId(), type: 'button', content: 'Contact', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#contact' } },
+        { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'sm' } },
+      ],
+      props: { layout: 'navbar', sticky: true, transparent: false },
+      styles: { padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+    }),
+  },
+  {
+    type: 'hero',
+    label: 'Hero',
+    icon: <LayoutGrid size={18} />,
+    description: 'Hero section with CTA',
+    category: 'layout',
+    template: () => ({
+      id: generateId(),
+      type: 'hero',
+      label: 'Hero Section',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Welcome to our platform', props: { level: 1 } },
+        { id: generateId(), type: 'text', content: 'Build beautiful landing pages in minutes. No coding required.', props: {} },
+        { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg' } },
+      ],
+      props: { backgroundImage: '', overlay: true },
+    }),
+  },
+  {
+    type: 'feature',
+    label: 'Features Grid',
+    icon: <Grid3X3 size={18} />,
+    description: '3-column features layout',
+    category: 'layout',
+    template: () => ({
+      id: generateId(),
+      type: 'feature',
+      label: 'Features',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Why Choose Us', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Everything you need to succeed', props: { variant: 'caption' } },
+        { id: generateId(), type: 'icon', content: '⚡', props: { title: 'Fast & Reliable', description: 'Lightning-fast performance with 99.9% uptime' } },
+        { id: generateId(), type: 'icon', content: '🔒', props: { title: 'Secure', description: 'Bank-level security for your peace of mind' } },
+        { id: generateId(), type: 'icon', content: '💎', props: { title: 'Premium Quality', description: 'Exceptional craftsmanship in every detail' } },
+      ],
+      props: { columns: 3, layout: 'grid' },
+    }),
+  },
+  {
+    type: 'pricing',
+    label: 'Pricing',
+    icon: <CreditCard size={18} />,
+    description: 'Pricing table with plans',
+    category: 'layout',
+    template: () => ({
+      id: generateId(),
+      type: 'pricing',
+      label: 'Pricing',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Simple Pricing', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Choose the plan that works for you', props: { variant: 'caption' } },
+        { id: generateId(), type: 'text', content: 'Starter|$29/mo|Perfect for getting started|5 Projects,10GB Storage,Email Support', props: { variant: 'pricing-card' } },
+        { id: generateId(), type: 'text', content: 'Pro|$79/mo|Most popular choice|Unlimited Projects,100GB Storage,Priority Support,Advanced Analytics', props: { variant: 'pricing-card', featured: true } },
+        { id: generateId(), type: 'text', content: 'Enterprise|$199/mo|For large teams|Everything in Pro,Dedicated Account Manager,Custom Integrations,SLA', props: { variant: 'pricing-card' } },
+      ],
+      props: { columns: 3, highlightPlan: 1 },
+    }),
+  },
+  {
+    type: 'faq',
+    label: 'FAQ',
+    icon: <HelpCircle size={18} />,
+    description: 'Frequently asked questions',
+    category: 'layout',
+    template: () => ({
+      id: generateId(),
+      type: 'faq',
+      label: 'FAQ Section',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Frequently Asked Questions', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'How do I get started?|Simply sign up for a free account and follow our onboarding guide.', props: { variant: 'faq-item' } },
+        { id: generateId(), type: 'text', content: 'Can I cancel anytime?|Yes, you can cancel your subscription at any time with no questions asked.', props: { variant: 'faq-item' } },
+        { id: generateId(), type: 'text', content: 'Do you offer refunds?|We offer a 30-day money-back guarantee on all plans.', props: { variant: 'faq-item' } },
+      ],
+      props: { accordion: true },
+    }),
+  },
+  {
+    type: 'logo-bar',
+    label: 'Logo Bar',
+    icon: <Building2 size={18} />,
+    description: 'Trusted by companies',
+    category: 'layout',
+    template: () => ({
+      id: generateId(),
+      type: 'logo-bar',
+      label: 'Logo Bar',
+      elements: [
+        { id: generateId(), type: 'text', content: 'Trusted by leading companies', props: { variant: 'caption' } },
+        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 1', width: '100px', placeholder: 'Logo 1' } },
+        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 2', width: '100px', placeholder: 'Logo 2' } },
+        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 3', width: '100px', placeholder: 'Logo 3' } },
+        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 4', width: '100px', placeholder: 'Logo 4' } },
+        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 5', width: '100px', placeholder: 'Logo 5' } },
+      ],
+      props: { grayscale: true, scrolling: false },
+      styles: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px' },
+    }),
+  },
+  {
+    type: 'footer',
+    label: 'Footer',
+    icon: <Grip size={18} />,
+    description: 'Page footer with links',
+    category: 'layout',
+    template: () => ({
+      id: generateId(),
+      type: 'footer',
+      label: 'Footer',
+      elements: [
+        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Logo', width: '120px', isLogo: true, placeholder: 'Your Logo' } },
+        { id: generateId(), type: 'text', content: 'Product', props: { variant: 'footer-heading' } },
+        { id: generateId(), type: 'button', content: 'Features', props: { variant: 'link', size: 'sm', href: '#features' } },
+        { id: generateId(), type: 'button', content: 'Pricing', props: { variant: 'link', size: 'sm', href: '#pricing' } },
+        { id: generateId(), type: 'button', content: 'FAQ', props: { variant: 'link', size: 'sm', href: '#faq' } },
+        { id: generateId(), type: 'text', content: 'Company', props: { variant: 'footer-heading' } },
+        { id: generateId(), type: 'button', content: 'About', props: { variant: 'link', size: 'sm', href: '/about' } },
+        { id: generateId(), type: 'button', content: 'Blog', props: { variant: 'link', size: 'sm', href: '/blog' } },
+        { id: generateId(), type: 'button', content: 'Careers', props: { variant: 'link', size: 'sm', href: '/careers' } },
+        { id: generateId(), type: 'text', content: 'Contact', props: { variant: 'footer-heading' } },
+        { id: generateId(), type: 'button', content: 'Support', props: { variant: 'link', size: 'sm', href: '/support' } },
+        { id: generateId(), type: 'button', content: 'Contact Us', props: { variant: 'link', size: 'sm', href: '/contact' } },
+        { id: generateId(), type: 'text', content: '© 2024 Your Company. All rights reserved.', props: { variant: 'copyright' } },
+      ],
+      props: { layout: 'footer', columns: 4 },
+      styles: { padding: '48px 24px', backgroundColor: 'hsl(var(--builder-surface))' },
+    }),
+  },
+  {
+    type: 'about',
+    label: 'About Section',
+    icon: <Users size={18} />,
+    description: 'About us with image',
+    category: 'layout',
+    template: () => ({
+      id: generateId(),
+      type: 'about',
+      label: 'About Us',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'About Us', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: "We're on a mission to help businesses grow faster with innovative solutions. Our team of experts brings years of experience and passion to everything we do.", props: {} },
+        { id: generateId(), type: 'image', content: '', props: { src: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop', alt: 'Team photo' } },
+        { id: generateId(), type: 'button', content: 'Learn More', props: { variant: 'secondary' } },
+      ],
+      props: { layout: 'split', imagePosition: 'right' },
+    }),
+  },
+
+  // ============ CONTENT BLOCKS ============
   {
     type: 'text-block',
     label: 'Text',
     icon: <Type size={18} />,
-    description: 'Paragraph or heading text',
-    category: 'basic',
+    description: 'Paragraph or heading',
+    category: 'content',
     template: () => ({
       id: generateId(),
       type: 'text-block',
@@ -51,7 +249,7 @@ const blockTemplates: BlockTemplate[] = [
     label: 'Image',
     icon: <Image size={18} />,
     description: 'Add an image',
-    category: 'basic',
+    category: 'content',
     template: () => ({
       id: generateId(),
       type: 'media',
@@ -67,7 +265,7 @@ const blockTemplates: BlockTemplate[] = [
     label: 'Video',
     icon: <Video size={18} />,
     description: 'Embed a video',
-    category: 'basic',
+    category: 'content',
     template: () => ({
       id: generateId(),
       type: 'media',
@@ -83,7 +281,7 @@ const blockTemplates: BlockTemplate[] = [
     label: 'Button',
     icon: <MousePointer size={18} />,
     description: 'Call-to-action button',
-    category: 'basic',
+    category: 'content',
     template: () => ({
       id: generateId(),
       type: 'cta',
@@ -98,8 +296,8 @@ const blockTemplates: BlockTemplate[] = [
     type: 'custom',
     label: 'Divider',
     icon: <div className="w-4 h-0.5 bg-current" />,
-    description: 'Horizontal line separator',
-    category: 'basic',
+    description: 'Horizontal separator',
+    category: 'content',
     template: () => ({
       id: generateId(),
       type: 'custom',
@@ -112,10 +310,10 @@ const blockTemplates: BlockTemplate[] = [
   },
   {
     type: 'testimonial',
-    label: 'Reviews',
-    icon: <MessageSquare size={18} />,
-    description: 'Customer testimonials',
-    category: 'basic',
+    label: 'Testimonial',
+    icon: <Quote size={18} />,
+    description: 'Customer review',
+    category: 'content',
     template: () => ({
       id: generateId(),
       type: 'testimonial',
@@ -128,25 +326,27 @@ const blockTemplates: BlockTemplate[] = [
     }),
   },
   {
-    type: 'hero',
-    label: 'Hero',
-    icon: <LayoutGrid size={18} />,
-    description: 'Hero section with image',
-    category: 'basic',
+    type: 'trust',
+    label: 'Trust Badges',
+    icon: <Award size={18} />,
+    description: 'Social proof badges',
+    category: 'content',
     template: () => ({
       id: generateId(),
-      type: 'hero',
-      label: 'Hero Section',
+      type: 'trust',
+      label: 'Trust Badges',
       elements: [
-        { id: generateId(), type: 'heading', content: 'Welcome to our platform', props: { level: 1 } },
-        { id: generateId(), type: 'text', content: 'Build beautiful landing pages in minutes. No coding required.', props: {} },
-        { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg' } },
+        { id: generateId(), type: 'text', content: '⭐ 4.9/5 Rating', props: { variant: 'badge' } },
+        { id: generateId(), type: 'text', content: '🏆 #1 Rated', props: { variant: 'badge' } },
+        { id: generateId(), type: 'text', content: '✓ 10,000+ Users', props: { variant: 'badge' } },
+        { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'badge' } },
       ],
-      props: { backgroundImage: '', overlay: true },
+      props: { layout: 'horizontal' },
+      styles: { display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' },
     }),
   },
-  
-  // Interactive Blocks
+
+  // ============ INTERACTIVE BLOCKS ============
   {
     type: 'form-field',
     label: 'Multiple Choice',
@@ -191,7 +391,7 @@ const blockTemplates: BlockTemplate[] = [
     type: 'form-field',
     label: 'Quiz Question',
     icon: <Sparkles size={18} />,
-    description: 'Quiz with correct answer',
+    description: 'Quiz with answer',
     category: 'interactive',
     template: () => ({
       id: generateId(),
@@ -221,6 +421,29 @@ const blockTemplates: BlockTemplate[] = [
         { id: generateId(), type: 'text', content: 'Enter your email', props: { variant: 'label' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
         { id: generateId(), type: 'button', content: 'Submit', props: { variant: 'primary' } },
+      ],
+      props: { trackingId: '' },
+    }),
+  },
+  {
+    type: 'form-field',
+    label: 'Contact Form',
+    icon: <Mail size={18} />,
+    description: 'Full contact form',
+    category: 'interactive',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Contact Form',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Get in Touch', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Name', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true } },
+        { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
+        { id: generateId(), type: 'text', content: 'Message', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'textarea', placeholder: 'Your message...', required: true } },
+        { id: generateId(), type: 'button', content: 'Send Message', props: { variant: 'primary', size: 'lg' } },
       ],
       props: { trackingId: '' },
     }),
@@ -283,7 +506,7 @@ const blockTemplates: BlockTemplate[] = [
     type: 'booking',
     label: 'Appointment',
     icon: <Calendar size={18} />,
-    description: 'Schedule appointments',
+    description: 'Schedule booking',
     category: 'interactive',
     template: () => ({
       id: generateId(),
@@ -309,12 +532,12 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'basic' | 'interactive'>('basic');
+  const [activeTab, setActiveTab] = useState<'layout' | 'content' | 'interactive'>('layout');
 
   const filteredTemplates = blockTemplates.filter(template => {
     const matchesSearch = template.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           template.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = template.category === activeTab;
+    const matchesCategory = searchQuery.length > 0 ? true : template.category === activeTab;
     return matchesSearch && matchesCategory;
   });
 
@@ -358,7 +581,7 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
         )}
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] shadow-2xl"
+        className="w-96 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] shadow-2xl"
         side={position === 'above' ? 'top' : 'bottom'}
         align="center"
         sideOffset={8}
@@ -370,61 +593,65 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search blocks..."
+              placeholder="Search sections..."
               className="pl-9 h-8 text-sm bg-[hsl(var(--builder-surface-hover))] border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text))] placeholder:text-[hsl(var(--builder-text-dim))]"
             />
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'basic' | 'interactive')} className="w-full">
-          <TabsList className="w-full h-auto p-1 bg-[hsl(var(--builder-surface-hover))] rounded-none border-b border-[hsl(var(--builder-border-subtle))]">
-            <TabsTrigger 
-              value="basic" 
-              className="flex-1 text-xs py-2 data-[state=active]:bg-[hsl(var(--builder-accent))] data-[state=active]:text-white"
-            >
-              Basic Blocks
-            </TabsTrigger>
-            <TabsTrigger 
-              value="interactive" 
-              className="flex-1 text-xs py-2 data-[state=active]:bg-[hsl(var(--builder-accent))] data-[state=active]:text-white"
-            >
-              Interactive Blocks
-            </TabsTrigger>
-          </TabsList>
+        {/* Tabs - Only show when not searching */}
+        {searchQuery.length === 0 && (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'layout' | 'content' | 'interactive')} className="w-full">
+            <TabsList className="w-full h-auto p-1 bg-[hsl(var(--builder-surface-hover))] rounded-none border-b border-[hsl(var(--builder-border-subtle))]">
+              <TabsTrigger 
+                value="layout" 
+                className="flex-1 text-xs py-2 data-[state=active]:bg-[hsl(var(--builder-accent))] data-[state=active]:text-white rounded-md"
+              >
+                Layout
+              </TabsTrigger>
+              <TabsTrigger 
+                value="content" 
+                className="flex-1 text-xs py-2 data-[state=active]:bg-[hsl(var(--builder-accent))] data-[state=active]:text-white rounded-md"
+              >
+                Content
+              </TabsTrigger>
+              <TabsTrigger 
+                value="interactive" 
+                className="flex-1 text-xs py-2 data-[state=active]:bg-[hsl(var(--builder-accent))] data-[state=active]:text-white rounded-md"
+              >
+                Forms
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
 
-          <TabsContent value={activeTab} className="mt-0">
-            <div className="max-h-[300px] overflow-y-auto builder-scroll">
-              {filteredTemplates.length === 0 ? (
-                <div className="p-6 text-center text-[hsl(var(--builder-text-muted))] text-sm">
-                  No blocks found
-                </div>
-              ) : (
-                <div className="p-2 grid grid-cols-2 gap-1">
-                  {filteredTemplates.map((template) => (
-                    <button
-                      key={`${template.type}-${template.label}`}
-                      onClick={() => handleAddBlock(template)}
-                      className="flex flex-col items-center gap-2 p-3 rounded-lg bg-[hsl(var(--builder-surface))] hover:bg-[hsl(var(--builder-surface-hover))] border border-transparent hover:border-[hsl(var(--builder-border))] transition-colors text-center group"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-accent))] group-hover:bg-[hsl(var(--builder-accent)/0.1)] transition-colors">
-                        {template.icon}
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-[hsl(var(--builder-text))]">
-                          {template.label}
-                        </div>
-                        <div className="text-[10px] text-[hsl(var(--builder-text-dim))] mt-0.5">
-                          {template.description}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+        {/* Block Grid */}
+        <div className="max-h-[320px] overflow-y-auto builder-scroll">
+          {filteredTemplates.length === 0 ? (
+            <div className="p-6 text-center text-[hsl(var(--builder-text-muted))] text-sm">
+              No sections found
             </div>
-          </TabsContent>
-        </Tabs>
+          ) : (
+            <div className="p-2 grid grid-cols-3 gap-1.5">
+              {filteredTemplates.map((template) => (
+                <button
+                  key={`${template.type}-${template.label}`}
+                  onClick={() => handleAddBlock(template)}
+                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-lg bg-[hsl(var(--builder-surface))] hover:bg-[hsl(var(--builder-surface-hover))] border border-transparent hover:border-[hsl(var(--builder-accent)/0.3)] transition-all text-center group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-accent))] group-hover:bg-[hsl(var(--builder-accent)/0.1)] transition-colors">
+                    {template.icon}
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-medium text-[hsl(var(--builder-text))] leading-tight">
+                      {template.label}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Generate with AI */}
         <div className="p-2 border-t border-[hsl(var(--builder-border-subtle))]">
