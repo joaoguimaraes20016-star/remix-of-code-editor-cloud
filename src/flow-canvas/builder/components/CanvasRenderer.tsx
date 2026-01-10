@@ -26,6 +26,7 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -1536,15 +1537,22 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             ) : (
               <div 
                 className={cn(
-                  "aspect-video rounded-xl flex flex-col items-center justify-center border-2 border-dashed transition-colors",
+                  "rounded-xl flex flex-col items-center justify-center border-2 border-dashed transition-colors cursor-pointer",
+                  element.props?.isLogo ? "aspect-[3/1]" : "aspect-video",
                   isDarkTheme ? "bg-gray-800 border-gray-600 hover:border-gray-500" : "bg-gray-100 border-gray-300 hover:border-gray-400"
                 )}
-                style={{ width: element.styles?.width || '100%' }}
+                style={{ 
+                  width: element.styles?.width || (element.props?.isLogo ? '120px' : '100%'),
+                  height: element.styles?.height || 'auto',
+                }}
                 onClick={(e) => { e.stopPropagation(); onSelect(); }}
               >
-                <Image className={cn("w-10 h-10 mb-2", isDarkTheme ? "text-gray-600" : "text-gray-300")} />
-                <span className={cn("text-xs", isDarkTheme ? "text-gray-500" : "text-gray-400")}>
-                  Drop image here
+                <Image className={cn(
+                  element.props?.isLogo ? "w-6 h-6 mb-1" : "w-10 h-10 mb-2", 
+                  isDarkTheme ? "text-gray-600" : "text-gray-300"
+                )} />
+                <span className={cn("text-xs text-center", isDarkTheme ? "text-gray-500" : "text-gray-400")}>
+                  {(element.props?.placeholder as string) || (element.props?.isLogo ? 'Drop logo' : 'Drop image')}
                 </span>
               </div>
             )}
@@ -1923,9 +1931,26 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
       >
         <SortableContext
           items={block.elements.map(el => el.id)}
-          strategy={verticalListSortingStrategy}
+          strategy={isNavbar || block.props?.direction === 'row' ? horizontalListSortingStrategy : verticalListSortingStrategy}
         >
-          <div className="space-y-4 pl-4">
+          <div 
+            className={cn(
+              isNavbar || block.props?.direction === 'row' 
+                ? 'flex flex-row items-center w-full' 
+                : 'space-y-4',
+              !isNavbar && !isFooter && 'pl-4'
+            )}
+            style={{
+              ...(isNavbar ? { 
+                justifyContent: 'space-between', 
+                width: '100%',
+                gap: block.props?.gap as string || '16px',
+              } : undefined),
+              ...(block.props?.direction === 'row' && !isNavbar ? {
+                gap: block.props?.gap as string || '16px',
+              } : undefined),
+            }}
+          >
             {block.elements.map((element, elementIndex) => {
               const elementPath = [...blockPath, 'element', element.id];
               const isElementSelected = selection.type === 'element' && selection.id === element.id;
@@ -2564,20 +2589,22 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               )}>
                 <button
                   onClick={() => {
-                    // Add a Framer-style navigation header
+                    // Add a Framer-style navigation header with proper row layout
                     const ts = Date.now();
                     const navBlock: Block = {
                       id: `nav-${ts}`,
                       type: 'custom',
                       label: 'Navigation',
                       elements: [
-                        { id: `logo-${ts}`, type: 'text', content: 'Brand®', props: { variant: 'logo', fontWeight: 'bold', fontSize: '18px' } },
+                        // Logo - can be text or image (drag to upload)
+                        { id: `logo-${ts}`, type: 'image', content: '', props: { isLogo: true, placeholder: 'Logo', alt: 'Logo' }, styles: { width: '120px', height: '40px' } },
+                        // Nav links group - these will display inline
                         { id: `link1-${ts}`, type: 'button', content: 'Features', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#features' } },
                         { id: `link2-${ts}`, type: 'button', content: 'Pricing', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#pricing' } },
                         { id: `link3-${ts}`, type: 'button', content: 'Contact', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#contact' } },
                       ],
-                      props: { layout: 'navbar', sticky: true, transparent: false },
-                      styles: { padding: '20px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'transparent' },
+                      props: { layout: 'navbar', direction: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '12px', sticky: true },
+                      styles: { padding: '16px 48px' },
                     };
                     if (firstStackId) {
                       onAddBlock?.(navBlock, { stackId: firstStackId, index: 0 });
