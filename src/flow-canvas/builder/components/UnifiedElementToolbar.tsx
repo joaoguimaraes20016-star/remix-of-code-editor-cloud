@@ -1,4 +1,4 @@
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   AlignLeft,
@@ -122,11 +122,22 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   onDelete,
   hidden = false,
 }, ref) => {
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const mergedRef = (node: HTMLDivElement | null) => {
+    toolbarRef.current = node;
+    if (typeof ref === 'function') ref(node);
+    else if (ref && 'current' in ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+  };
+
   const [fontOpen, setFontOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
   // Unified color tab: 'background' | 'text' | 'gradient'
   const [colorTab, setColorTab] = useState<'background' | 'text' | 'gradient'>('text');
+
+  // Keep toolbar within the device frame when elements are near edges
+  const [xOffset, setXOffset] = useState(0);
+  const [placement, setPlacement] = useState<'top' | 'bottom'>('top');
 
   // Determine what controls to show based on element type
   const isTextElement = ['heading', 'text'].includes(elementType);
@@ -145,7 +156,54 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
 
   if (hidden) return null;
 
-  // Handlers
+  useLayoutEffect(() => {
+    const el = toolbarRef.current;
+    if (!el) return;
+
+    // Find the closest device frame; this is the clipping boundary.
+    const frame = el.closest('.device-frame') as HTMLElement | null;
+    if (!frame) return;
+
+    const compute = () => {
+      // reset to measure natural position
+      setXOffset(0);
+      setPlacement('top');
+
+      // allow layout to settle
+      requestAnimationFrame(() => {
+        const frameRect = frame.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
+        const padding = 12;
+
+        let nextPlacement: 'top' | 'bottom' = 'top';
+        // If toolbar would clip above, flip below.
+        if (rect.top < frameRect.top + padding) nextPlacement = 'bottom';
+
+        // Horizontal clamping via translate offset.
+        let dx = 0;
+        if (rect.left < frameRect.left + padding) dx = (frameRect.left + padding) - rect.left;
+        if (rect.right > frameRect.right - padding) dx = (frameRect.right - padding) - rect.right;
+
+        setPlacement(nextPlacement);
+        setXOffset(dx);
+      });
+    };
+
+    compute();
+
+    // Recompute when viewport changes / panels resize.
+    const onResize = () => compute();
+    window.addEventListener('resize', onResize);
+
+    // Observe frame resizes (panel drag etc.)
+    const ro = new ResizeObserver(() => compute());
+    ro.observe(frame);
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      ro.disconnect();
+    };
+  }, [elementId, elementType, fontOpen, colorOpen, shadowOpen]);
   const handleFontFamilyChange = (fontFamily: string) => {
     onStyleChange?.({ fontFamily });
     setFontOpen(false);

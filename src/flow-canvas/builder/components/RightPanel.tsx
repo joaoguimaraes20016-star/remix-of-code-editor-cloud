@@ -1812,11 +1812,37 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
   };
 
   const handleStyleUpdate = useCallback((key: string, value: string) => {
-    onUpdate({ 
-      styles: { 
-        ...block.styles, 
-        [key]: value 
-      } 
+    const normalizeLength = (v: string) => {
+      const trimmed = v.trim();
+      if (!trimmed) return trimmed;
+      // If user entered a pure number, treat it as px for convenience.
+      if (/^-?\d+(\.\d+)?$/.test(trimmed)) return `${trimmed}px`;
+      return trimmed;
+    };
+
+    const lengthKeys = new Set([
+      'padding',
+      'paddingTop',
+      'paddingRight',
+      'paddingBottom',
+      'paddingLeft',
+      'margin',
+      'gap',
+      'borderRadius',
+      'borderWidth',
+      'backdropBlur',
+      'height',
+      'width',
+      'maxWidth',
+      'minHeight',
+      'minWidth',
+    ]);
+
+    onUpdate({
+      styles: {
+        ...block.styles,
+        [key]: lengthKeys.has(key) ? normalizeLength(value) : value,
+      },
     });
   }, [block.styles, onUpdate]);
 

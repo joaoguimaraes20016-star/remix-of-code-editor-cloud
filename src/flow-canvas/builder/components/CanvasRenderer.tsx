@@ -2207,17 +2207,20 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
       ref={!hasGradientBorder ? setNodeRef : undefined}
       style={{
         ...style,
-        display: 'flex',
-        // Use user-defined layout props, with sensible defaults for navbar/footer
-        flexDirection: (block.props?.direction as 'row' | 'column') || (isNavbar || isFooter ? 'row' : 'column'),
-        justifyContent: justifyMap[block.props?.justifyContent as string] || block.props?.justifyContent as string || (isNavbar ? 'space-between' : 'flex-start'),
-        alignItems: alignMap[block.props?.alignItems as string] || block.props?.alignItems as string || (isNavbar ? 'center' : 'stretch'),
-        flexWrap: block.props?.wrap ? 'wrap' : (isFooter ? 'wrap' : 'nowrap'),
-        gap: block.props?.gap as string || block.styles?.gap || (isFooter ? '48px' : isNavbar ? '16px' : undefined),
+        // Outer wrapper is responsible for background/padding/border/shadow/transform.
+        // Flex layout for child elements is handled by the inner container so inspector controls reliably affect layout.
+        display: 'block',
       }}
       className={cn(
         'builder-selectable rounded-xl transition-all group/block relative',
-        !block.styles?.padding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
+        // Only apply default padding if the user hasn't set ANY padding styles
+        !(
+          block.styles?.padding ||
+          block.styles?.paddingTop ||
+          block.styles?.paddingRight ||
+          block.styles?.paddingBottom ||
+          block.styles?.paddingLeft
+        ) && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
         isSelected && 'builder-selected',
         isMultiSelected && !isSelected && 'ring-2 ring-builder-accent/50 ring-offset-1 ring-offset-builder-bg',
         block.type === 'hero' && 'text-center py-12',
@@ -2264,11 +2267,11 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           <div 
             className={cn(
               'flex w-full',
-              (isNavbar || isFooter ? 'flex-row' : ((block.props?.direction as string) === 'row' ? 'flex-row' : 'flex-col')),
+              (block.props?.direction as string) === 'row' || isNavbar || isFooter ? 'flex-row' : 'flex-col',
               !isNavbar && !isFooter && 'pl-4'
             )}
             style={{
-              flexDirection: ((block.props?.direction as 'row' | 'column') || (isNavbar || isFooter ? 'row' : 'column')),
+              flexDirection: (block.props?.direction as 'row' | 'column') || (isNavbar || isFooter ? 'row' : 'column'),
               justifyContent:
                 justifyMap[block.props?.justifyContent as string] ||
                 (block.props?.justifyContent as string) ||
@@ -2279,7 +2282,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
                 (isNavbar ? 'center' : 'stretch'),
               flexWrap: block.props?.wrap ? 'wrap' : (isFooter ? 'wrap' : 'nowrap'),
               width: '100%',
-              gap: (block.props?.gap as string) || (isFooter ? '48px' : '16px'),
+              gap: (block.styles?.gap as string) || (block.props?.gap as string) || (isFooter ? '48px' : '16px'),
             }}
           >
             {block.elements.map((element, elementIndex) => {
