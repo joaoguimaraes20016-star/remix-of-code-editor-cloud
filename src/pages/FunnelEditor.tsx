@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -32,13 +32,16 @@ type FunnelRow = {
   updated_at: string;
 };
 
+// Save status type
+type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+
 // Loading state
 function LoadingState({ message }: { message: string }) {
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-slate-50">
+    <div className="flex h-screen w-full items-center justify-center bg-[hsl(var(--builder-bg))]">
       <div className="flex flex-col items-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-3 border-primary border-t-transparent" />
-        <p className="text-sm font-medium text-slate-500">{message}</p>
+        <div className="h-10 w-10 animate-spin rounded-full border-3 border-[hsl(var(--builder-accent))] border-t-transparent" />
+        <p className="text-sm font-medium text-[hsl(var(--builder-text-muted))]">{message}</p>
       </div>
     </div>
   );
@@ -47,12 +50,12 @@ function LoadingState({ message }: { message: string }) {
 // Error state
 function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
-    <div className="flex h-screen items-center justify-center bg-slate-50">
+    <div className="flex h-screen items-center justify-center bg-[hsl(var(--builder-bg))]">
       <div className="text-center">
-        <h2 className="text-lg font-semibold text-slate-800">{message}</h2>
+        <h2 className="text-lg font-semibold text-[hsl(var(--builder-text))]">{message}</h2>
         <button 
           onClick={onBack}
-          className="mt-4 text-sm text-primary hover:underline"
+          className="mt-4 text-sm text-[hsl(var(--builder-accent))] hover:underline"
         >
           Go back
         </button>
@@ -65,6 +68,12 @@ export default function FunnelEditor() {
   const { teamId, funnelId } = useParams<{ teamId: string; funnelId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  // Auto-save state
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const currentPageRef = useRef<FlowCanvasPage | null>(null);
 
   // Fetch funnel data from Supabase
   const { data: funnel, isLoading, error } = useQuery({
@@ -97,7 +106,7 @@ export default function FunnelEditor() {
     return converted;
   }, [funnel]);
 
-  // Save mutation
+  // Save mutation (silent - no toast on auto-save)
   const saveMutation = useMutation({
     mutationFn: async (page: FlowCanvasPage) => {
       const document = flowCanvasToEditorDocument(page);
@@ -111,10 +120,13 @@ export default function FunnelEditor() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['funnel-editor', funnelId] });
-      toast({ title: 'Saved!' });
+      setSaveStatus('saved');
+      setLastSavedAt(new Date());
+      // Reset to idle after 2 seconds
+      setTimeout(() => setSaveStatus('idle'), 2000);
     },
     onError: () => {
+      setSaveStatus('error');
       toast({ title: 'Error saving', variant: 'destructive' });
     },
   });
@@ -145,11 +157,25 @@ export default function FunnelEditor() {
     },
   });
 
-  // Handle page changes from the editor
+  // Handle page changes from the editor with auto-save
   const handlePageChange = useCallback((updatedPage: FlowCanvasPage) => {
-    // Auto-save with debounce could be added here
-    // For now, just update local state
-  }, []);
+    // Store current page for publish
+    currentPageRef.current = updatedPage;
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Mark as pending
+    setSaveStatus('pending');
+    
+    // Debounced auto-save after 2 seconds
+    saveTimeoutRef.current = setTimeout(() => {
+      setSaveStatus('saving');
+      saveMutation.mutate(updatedPage);
+    }, 2000);
+  }, [saveMutation]);
 
   // Handle selection changes
   const handleSelect = useCallback((selection: SelectionState) => {
@@ -158,7 +184,13 @@ export default function FunnelEditor() {
 
   // Handle publish
   const handlePublish = useCallback((page: FlowCanvasPage) => {
+    // Clear any pending auto-save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
     // Save first, then publish
+    setSaveStatus('saving');
     saveMutation.mutate(page, {
       onSuccess: () => {
         publishMutation.mutate(page);
@@ -192,6 +224,8 @@ export default function FunnelEditor() {
       onChange={handlePageChange}
       onSelect={handleSelect}
       onPublish={handlePublish}
+      saveStatus={saveStatus}
+      lastSavedAt={lastSavedAt}
     />
   );
 }

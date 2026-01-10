@@ -43,6 +43,9 @@ import { toast } from 'sonner';
 
 export type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
+// Save status type
+type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+
 interface TopToolbarProps {
   pageName: string;
   pageSlug: string;
@@ -76,6 +79,9 @@ interface TopToolbarProps {
   // Canvas theme toggle
   canvasTheme?: 'light' | 'dark';
   onCanvasThemeToggle?: () => void;
+  // Save status
+  saveStatus?: SaveStatus;
+  lastSavedAt?: Date | null;
 }
 
 const deviceWidths: Record<DeviceMode, number> = {
@@ -160,11 +166,31 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   selectionType = null,
   canvasTheme = 'light',
   onCanvasThemeToggle,
+  saveStatus = 'idle',
+  lastSavedAt = null,
 }) => {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
   const [internalDesignMode, setInternalDesignMode] = useState<'select' | 'pan'>('select');
   const designMode = externalDesignMode ?? internalDesignMode;
+
+  // Save status indicator helpers
+  const getSaveStatusDisplay = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return { text: 'Saving...', color: 'text-builder-accent' };
+      case 'saved':
+        return { text: 'Saved', color: 'text-[hsl(142,71%,45%)]' };
+      case 'error':
+        return { text: 'Error', color: 'text-[hsl(0,84%,60%)]' };
+      case 'pending':
+        return { text: 'Unsaved', color: 'text-builder-text-muted' };
+      default:
+        return { text: '', color: '' };
+    }
+  };
+  
+  const statusDisplay = getSaveStatusDisplay();
 
   const handleBack = () => {
     if (teamId) {
@@ -483,6 +509,13 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           </ToolbarButton>
 
           <div className="toolbar-divider mx-1" />
+
+          {/* Save Status Indicator */}
+          {statusDisplay.text && (
+            <span className={cn('text-xs font-medium', statusDisplay.color)}>
+              {statusDisplay.text}
+            </span>
+          )}
 
           <button 
             onClick={onOpenShare}

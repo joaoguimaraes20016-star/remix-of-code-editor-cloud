@@ -34,12 +34,19 @@ interface MultiSelection {
   ids: Set<string>;
 }
 
+// Save status type
+type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+
 interface EditorShellProps {
   initialState: Page;
   onChange: (updatedState: Page) => void;
   onSelect: (selection: SelectionState) => void;
   onPublish?: (page: Page) => void;
   readOnly?: boolean;
+  /** Save status for auto-save indicator */
+  saveStatus?: SaveStatus;
+  /** Last saved timestamp */
+  lastSavedAt?: Date | null;
 }
 
 export const EditorShell: React.FC<EditorShellProps> = ({
@@ -48,6 +55,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   onSelect,
   onPublish,
   readOnly = false,
+  saveStatus = 'idle',
+  lastSavedAt = null,
 }) => {
   // Use history hook for undo/redo
   const { page, setPage, undo, redo, canUndo, canRedo } = useHistory(initialState);
@@ -909,6 +918,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         onRenameProject={handleRenameProject}
         onExportProject={handleExportProject}
         canvasTheme={page.settings?.theme || 'light'}
+        saveStatus={saveStatus}
+        lastSavedAt={lastSavedAt}
         onCanvasThemeToggle={() => {
           const newTheme = page.settings?.theme === 'dark' ? 'light' : 'dark';
           handlePageUpdate({
