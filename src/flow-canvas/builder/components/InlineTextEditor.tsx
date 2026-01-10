@@ -102,7 +102,9 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   }, [
     initialStyles?.textFillType, 
     initialStyles?.textColor, 
-    initialStyles?.textGradient,
+    // Use JSON.stringify for gradient to ensure deep change detection
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    JSON.stringify(initialStyles?.textGradient),
     initialStyles?.fontSize,
     initialStyles?.fontWeight,
     initialStyles?.fontFamily,
@@ -112,7 +114,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     initialStyles?.textAlign,
     initialStyles?.highlightColor,
     initialStyles?.highlightUseGradient,
-    initialStyles?.highlightGradient,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    JSON.stringify(initialStyles?.highlightGradient),
   ]);
 
   // Notify parent when editing state changes
