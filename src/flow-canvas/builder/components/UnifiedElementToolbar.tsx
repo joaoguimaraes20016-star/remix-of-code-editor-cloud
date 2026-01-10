@@ -137,6 +137,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
 
   // Keep toolbar within the device frame when elements are near edges
   const [xOffset, setXOffset] = useState(0);
+  const [yOffset, setYOffset] = useState(0);
   const [placement, setPlacement] = useState<'top' | 'bottom'>('top');
 
   // Determine what controls to show based on element type
@@ -167,7 +168,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     const compute = () => {
       // reset to measure natural position
       setXOffset(0);
-      setPlacement('top');
+      setYOffset(0);
 
       // allow layout to settle
       requestAnimationFrame(() => {
@@ -175,17 +176,24 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         const rect = el.getBoundingClientRect();
         const padding = 12;
 
-        let nextPlacement: 'top' | 'bottom' = 'top';
-        // If toolbar would clip above, flip below.
+        // Flip above/below if needed.
+        let nextPlacement: 'top' | 'bottom' = placement;
         if (rect.top < frameRect.top + padding) nextPlacement = 'bottom';
+        if (rect.bottom > frameRect.bottom - padding) nextPlacement = 'top';
 
         // Horizontal clamping via translate offset.
         let dx = 0;
         if (rect.left < frameRect.left + padding) dx = (frameRect.left + padding) - rect.left;
         if (rect.right > frameRect.right - padding) dx = (frameRect.right - padding) - rect.right;
 
+        // Vertical clamping via translate offset (in addition to placement flipping).
+        let dy = 0;
+        if (rect.top < frameRect.top + padding) dy = (frameRect.top + padding) - rect.top;
+        if (rect.bottom > frameRect.bottom - padding) dy = (frameRect.bottom - padding) - rect.bottom;
+
         setPlacement(nextPlacement);
         setXOffset(dx);
+        setYOffset(dy);
       });
     };
 
@@ -203,7 +211,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
       window.removeEventListener('resize', onResize);
       ro.disconnect();
     };
-  }, [elementId, elementType, fontOpen, colorOpen, shadowOpen]);
+  }, [elementId, elementType, fontOpen, colorOpen, shadowOpen, placement]);
   const handleFontFamilyChange = (fontFamily: string) => {
     onStyleChange?.({ fontFamily });
     setFontOpen(false);
@@ -320,18 +328,25 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   return (
     <TooltipProvider delayDuration={200}>
       {/* Invisible hover bridge */}
-      <div 
-        className="absolute left-0 right-0 z-20 -top-12 h-14"
+      <div
+        className={cn(
+          'absolute left-0 right-0 z-20 h-14',
+          placement === 'top' ? '-top-12' : 'top-full'
+        )}
         style={{ pointerEvents: 'auto' }}
       />
       <div
-        ref={ref}
+        ref={mergedRef}
         className={cn(
-          'absolute left-1/2 -translate-x-1/2 z-30 -top-11',
+          'absolute left-1/2 z-30',
+          placement === 'top' ? '-top-11' : 'top-full mt-2',
           'flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-xl border',
           'opacity-0 group-hover/element:opacity-100 transition-all duration-150',
           'bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]'
         )}
+        style={{
+          transform: `translateX(-50%) translateX(${xOffset}px) translateY(${yOffset}px)`,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Element Type Label */}
