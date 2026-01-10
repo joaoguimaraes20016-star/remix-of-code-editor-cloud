@@ -220,17 +220,10 @@
     }
   }
 
-  /* Element type badge for selected items - positioned at bottom-left to avoid toolbar overlap */
+  /* Element type badge - DEPRECATED: now integrated into UnifiedElementToolbar */
+  /* Keeping for backwards compatibility but hidden */
   .element-type-badge {
-    @apply absolute bottom-1 left-1 px-2 py-0.5 text-[10px] font-medium 
-           bg-[hsl(var(--builder-accent))] text-white rounded-full whitespace-nowrap
-           opacity-0 transition-opacity duration-200 pointer-events-none z-20;
-  }
-
-  .builder-selectable:hover > .element-type-badge,
-  .builder-selected > .element-type-badge,
-  .builder-selected .element-type-badge {
-    @apply opacity-100;
+    @apply hidden;
   }
 
   /* Block type badge - shows on hover with distinct styling */
