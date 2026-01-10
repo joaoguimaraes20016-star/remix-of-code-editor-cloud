@@ -275,6 +275,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   // State for hover/active interactions
   const [currentInteractionState, setCurrentInteractionState] = useState<'base' | 'hover' | 'active'>('base');
   
+  // State for tracking inline text editing - hides ElementActionBar when true
+  const [isInlineEditing, setIsInlineEditing] = useState(false);
+  
   // Animation replay ref for forcing reflow
   const elementRef = React.useRef<HTMLDivElement>(null);
   
@@ -729,6 +732,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               elementType="heading"
               placeholder="Add heading..."
               disabled={readOnly}
+              onEditingChange={setIsInlineEditing}
               initialStyles={{
                 fontSize: element.props?.fontSize as TextStyles['fontSize'],
                 fontWeight: element.props?.fontWeight as TextStyles['fontWeight'],
@@ -759,7 +763,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             <span className="element-type-badge">Heading {level}</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing */}
+            {/* Hover Action Bar for quick editing - hidden during inline text editing */}
             {!readOnly && (
               <ElementActionBar
                 elementId={element.id}
@@ -771,6 +775,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
                 isDarkTheme={isDarkTheme}
+                hidden={isInlineEditing}
               />
             )}
             <div 
@@ -830,6 +835,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               elementType="text"
               placeholder="Add text..."
               disabled={readOnly}
+              onEditingChange={setIsInlineEditing}
               initialStyles={{
                 fontSize: element.props?.fontSize as TextStyles['fontSize'],
                 fontWeight: element.props?.fontWeight as TextStyles['fontWeight'],
@@ -860,7 +866,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             <span className="element-type-badge">Text</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing */}
+            {/* Hover Action Bar for quick editing - hidden during inline text editing */}
             {!readOnly && (
               <ElementActionBar
                 elementId={element.id}
@@ -872,6 +878,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
                 isDarkTheme={isDarkTheme}
+                hidden={isInlineEditing}
               />
             )}
             <div 
