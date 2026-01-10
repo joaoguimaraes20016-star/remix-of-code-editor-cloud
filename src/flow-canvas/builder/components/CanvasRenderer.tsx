@@ -830,6 +830,11 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         );
 
       case 'text':
+        const textVariant = element.props?.variant as string;
+        const isLogo = textVariant === 'logo';
+        const isFooterLogo = textVariant === 'footer-logo';
+        const isFooterHeading = textVariant === 'footer-heading';
+        
         const hasTextTypography = element.props?.fontSize || element.props?.fontWeight;
         
         // Link wrapper props for text
@@ -837,17 +842,37 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const textLinkNewTab = element.props?.linkNewTab as boolean;
         const textLinkUnderline = element.props?.linkUnderline as string || 'hover';
         
+        // Determine variant-specific styles
+        const variantStyles: React.CSSProperties = {};
+        let variantClasses = '';
+        
+        if (isLogo) {
+          variantStyles.fontWeight = 'bold';
+          variantStyles.fontSize = element.props?.fontSize as string || '18px';
+          variantClasses = isDarkTheme ? 'text-white' : 'text-gray-900';
+        } else if (isFooterLogo) {
+          variantStyles.fontSize = element.props?.fontSize as string || '24px';
+          variantStyles.color = element.props?.color as string || '#999';
+          variantStyles.letterSpacing = '0.1em';
+        } else if (isFooterHeading) {
+          variantStyles.fontWeight = element.props?.fontWeight as string || '600';
+          variantStyles.fontSize = element.props?.fontSize as string || '14px';
+          variantClasses = isDarkTheme ? 'text-white' : 'text-gray-900';
+        }
+        
         // Layout-only styles for wrapper - NO typography (handled by InlineTextEditor)
         const textWrapperStyles: React.CSSProperties = {
           textAlign: typographyStyles.textAlign,
+          ...variantStyles,
         };
         
         const textContent = (
           <div 
             className={cn(
-              !hasTextTypography && "text-base leading-relaxed", 
-              "px-3 py-2", 
-              !(element.props?.textColor || element.props?.textFillType === 'gradient') && (isDarkTheme ? 'text-gray-300' : 'text-gray-600'),
+              !hasTextTypography && !isLogo && !isFooterLogo && !isFooterHeading && "text-base leading-relaxed", 
+              isLogo ? "px-0 py-0" : isFooterLogo ? "px-0 py-0" : isFooterHeading ? "px-0 py-1" : "px-3 py-2", 
+              !(element.props?.textColor || element.props?.textFillType === 'gradient') && !variantClasses && (isDarkTheme ? 'text-gray-300' : 'text-gray-600'),
+              variantClasses,
               textLinkUrl && textLinkUnderline === 'always' && 'underline',
               textLinkUrl && textLinkUnderline === 'hover' && 'hover:underline',
               textLinkUrl && 'cursor-pointer'
@@ -859,7 +884,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               value={element.content || ''}
               onChange={handleContentChange}
               elementType="text"
-              placeholder="Add text..."
+              placeholder={isLogo ? "Brand®" : isFooterHeading ? "Section" : "Add text..."}
               disabled={readOnly}
               onEditingChange={setIsInlineEditing}
               initialStyles={{
@@ -889,7 +914,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             {...hoverHandlers}
           >
             {/* Element type badge */}
-            <span className="element-type-badge">Text</span>
+            <span className="element-type-badge">{isLogo ? 'Logo' : isFooterLogo ? 'Footer Logo' : isFooterHeading ? 'Footer Heading' : 'Text'}</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
             {/* Hover Action Bar for quick editing - hidden during inline text editing */}
@@ -933,17 +958,22 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         );
 
       case 'button':
+        const buttonVariant = element.props?.variant as string;
+        const isNavPill = buttonVariant === 'nav-pill';
+        const isFooterLink = buttonVariant === 'footer-link';
+        const isGhostButton = buttonVariant === 'ghost' || buttonVariant === 'link';
+        
         const hoverBg = element.props?.hoverBg as string;
         const hoverScale = element.props?.hoverScale as string;
         const transitionDuration = element.props?.transitionDuration as string || '200';
-        const buttonSize = element.props?.buttonSize as string || 'md';
+        const buttonSize = element.props?.buttonSize as string || (isNavPill || isFooterLink ? 'sm' : 'md');
         const buttonSizeClasses: Record<string, string> = {
           sm: 'px-4 py-2 text-sm',
           md: 'px-6 py-3 text-base',
           lg: 'px-8 py-4 text-lg',
           xl: 'px-10 py-5 text-xl'
         };
-        const buttonFontWeight = element.props?.fontWeight as string || 'semibold';
+        const buttonFontWeight = element.props?.fontWeight as string || (isNavPill ? 'medium' : isFooterLink ? 'normal' : 'semibold');
         const buttonWeightClass: Record<string, string> = {
           normal: 'font-normal',
           medium: 'font-medium',
@@ -956,9 +986,19 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         // Handle empty string properly - trim and check for truthy value
         const isGradient = element.props?.fillType === 'gradient';
         const elementBg = element.styles?.backgroundColor?.trim();
-        const buttonBg = isGradient 
-          ? undefined 
-          : (elementBg && elementBg !== '' ? elementBg : primaryColor);
+        
+        // Special styling for nav-pill and footer-link variants
+        let buttonBg: string | undefined;
+        if (isNavPill) {
+          buttonBg = isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+        } else if (isFooterLink || isGhostButton) {
+          buttonBg = 'transparent';
+        } else if (isGradient) {
+          buttonBg = undefined;
+        } else {
+          buttonBg = elementBg && elementBg !== '' ? elementBg : primaryColor;
+        }
+        
         // Compute gradient CSS from props.gradient object (not from styles.background)
         const buttonGradientValue = element.props?.gradient as GradientValue | undefined;
         const buttonGradient = isGradient && buttonGradientValue
@@ -972,7 +1012,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           ...layoutStyles,
           // Use flexbox for reliable alignment
           display: 'flex',
-          width: '100%',
+          width: isNavPill || isFooterLink ? 'auto' : '100%',
           justifyContent: buttonAlignment === 'center' ? 'center' : 
                           buttonAlignment === 'right' ? 'flex-end' : 'flex-start',
         };
@@ -980,30 +1020,40 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         // Custom button styles - ensure visible background
         const effectiveBg = buttonBg || '#8B5CF6'; // Guarantee a visible color
         const buttonShadowStyle = getButtonShadowStyle();
-        const defaultShadow = isDarkTheme ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.2)';
+        const defaultShadow = (isNavPill || isFooterLink || isGhostButton) 
+          ? 'none' 
+          : (isDarkTheme ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.2)');
+        
+        // Text color based on variant
+        const buttonTextColor = isNavPill 
+          ? (isDarkTheme ? '#ffffff' : '#1f2937')
+          : isFooterLink 
+            ? (isDarkTheme ? '#9ca3af' : '#6b7280')
+            : (element.props?.textColor as string || '#ffffff');
+        
         const customButtonStyle: React.CSSProperties = {
           backgroundColor: buttonGradient ? undefined : effectiveBg,
           background: buttonGradient,
-          color: element.props?.textColor as string || '#ffffff',
+          color: buttonTextColor,
           boxShadow: buttonShadowStyle.boxShadow || defaultShadow,
-          borderWidth: element.styles?.borderWidth,
-          borderColor: element.styles?.borderColor,
-          borderStyle: element.styles?.borderWidth ? 'solid' : undefined,
-          borderRadius: element.styles?.borderRadius || '12px',
+          borderWidth: isNavPill ? '1px' : element.styles?.borderWidth,
+          borderColor: isNavPill ? (isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)') : element.styles?.borderColor,
+          borderStyle: isNavPill ? 'solid' : (element.styles?.borderWidth ? 'solid' : undefined),
+          borderRadius: isNavPill ? '9999px' : (element.styles?.borderRadius || '12px'),
           transition: `transform ${transitionDuration}ms ease, box-shadow ${transitionDuration}ms ease`,
           // Apply custom dimensions
           width: element.styles?.width || undefined,
           height: element.styles?.height || undefined,
-          padding: element.styles?.padding || undefined,
+          padding: isNavPill ? '8px 16px' : (isFooterLink ? '4px 0' : element.styles?.padding),
         };
         
-        // Only apply size class if no custom padding
-        const useSizeClass = !element.styles?.padding;
+        // Only apply size class if no custom padding and not a special variant
+        const useSizeClass = !element.styles?.padding && !isNavPill && !isFooterLink;
         
         return (
           <div ref={setNodeRef} style={wrapperStyle} className={cn(baseClasses, 'relative')}>
             {/* Element type badge */}
-            <span className="element-type-badge">Button</span>
+            <span className="element-type-badge">{isNavPill ? 'Nav Link' : isFooterLink ? 'Footer Link' : 'Button'}</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
             {/* Hover Action Bar for quick editing */}
@@ -1033,7 +1083,11 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             <style>{(() => {
               const css: string[] = [];
               const cls = `btn-${element.id}`;
-              if (hoverBg && !isGradient) {
+              if (isNavPill) {
+                css.push(`.${cls}:hover { background-color: ${isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)'}; }`);
+              } else if (isFooterLink) {
+                css.push(`.${cls}:hover { color: ${isDarkTheme ? '#ffffff' : '#1f2937'}; }`);
+              } else if (hoverBg && !isGradient) {
                 css.push(`.${cls}:hover { background-color: ${hoverBg}; }`);
               }
               if (hoverScale && hoverScale !== 'none') {
@@ -1046,7 +1100,10 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 `btn-${element.id}`,
                 useSizeClass && buttonSizeClasses[buttonSize],
                 buttonWeightClass[buttonFontWeight],
-                "rounded-xl inline-flex items-center justify-center gap-2 shadow-lg",
+                isNavPill && 'rounded-full',
+                isFooterLink && 'text-left',
+                !isNavPill && !isFooterLink && "rounded-xl shadow-lg",
+                "inline-flex items-center justify-center gap-2",
                 shadowClass
               )}
               style={{
@@ -1806,21 +1863,25 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   const hasGradientBorder = block.props?.gradientBorder === true;
   const borderGradient = block.props?.borderGradient as { type: 'linear' | 'radial'; angle: number; stops: Array<{ color: string; position: number }> } | undefined;
 
+  // Determine if this is a special layout block
+  const isNavbar = block.props?.layout === 'navbar';
+  const isFooter = block.type === 'footer' || block.props?.layout === 'footer' || block.props?.layout === 'footer-framer';
+
   const blockInnerContent = (
     <div
       ref={!hasGradientBorder ? setNodeRef : undefined}
       style={{
         ...style,
         display: 'flex',
-        flexDirection: (block.props?.direction as 'row' | 'column') || 'column',
-        justifyContent: block.props?.justifyContent as string || 'flex-start',
-        alignItems: block.props?.alignItems as string || 'stretch',
-        flexWrap: block.props?.wrap ? 'wrap' : 'nowrap',
-        gap: block.props?.gap as string || block.styles?.gap || undefined,
+        flexDirection: isNavbar ? 'row' : isFooter ? 'row' : (block.props?.direction as 'row' | 'column') || 'column',
+        justifyContent: isNavbar ? 'space-between' : block.props?.justifyContent as string || 'flex-start',
+        alignItems: isNavbar ? 'center' : block.props?.alignItems as string || 'stretch',
+        flexWrap: isFooter ? 'wrap' : block.props?.wrap ? 'wrap' : 'nowrap',
+        gap: block.props?.gap as string || block.styles?.gap || (isFooter ? '48px' : undefined),
       }}
       className={cn(
         'builder-selectable rounded-xl transition-all group relative',
-        !block.styles?.padding && 'p-6',
+        !block.styles?.padding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
         isSelected && 'builder-selected',
         isMultiSelected && !isSelected && 'ring-2 ring-builder-accent/50 ring-offset-1 ring-offset-builder-bg',
         block.type === 'hero' && 'text-center py-12',
@@ -2503,20 +2564,20 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               )}>
                 <button
                   onClick={() => {
-                    // Add a navigation/header block to the first stack
+                    // Add a Framer-style navigation header
+                    const ts = Date.now();
                     const navBlock: Block = {
-                      id: `nav-${Date.now()}`,
+                      id: `nav-${ts}`,
                       type: 'custom',
                       label: 'Navigation',
                       elements: [
-                        { id: `logo-${Date.now()}`, type: 'image', content: '', props: { src: '', alt: 'Logo', width: '120px', height: '40px', isLogo: true, placeholder: 'Add your logo' } },
-                        { id: `link1-${Date.now()}`, type: 'button', content: 'Home', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#' } },
-                        { id: `link2-${Date.now()}`, type: 'button', content: 'Features', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#features' } },
-                        { id: `link3-${Date.now()}`, type: 'button', content: 'Pricing', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#pricing' } },
-                        { id: `cta-${Date.now()}`, type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'sm' } },
+                        { id: `logo-${ts}`, type: 'text', content: 'Brand®', props: { variant: 'logo', fontWeight: 'bold', fontSize: '18px' } },
+                        { id: `link1-${ts}`, type: 'button', content: 'Features', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#features' } },
+                        { id: `link2-${ts}`, type: 'button', content: 'Pricing', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#pricing' } },
+                        { id: `link3-${ts}`, type: 'button', content: 'Contact', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#contact' } },
                       ],
                       props: { layout: 'navbar', sticky: true, transparent: false },
-                      styles: { padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+                      styles: { padding: '20px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'transparent' },
                     };
                     if (firstStackId) {
                       onAddBlock?.(navBlock, { stackId: firstStackId, index: 0 });
@@ -2574,23 +2635,33 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               )}>
                 <button
                   onClick={() => {
-                    // Add a footer block to the first stack
+                    // Add a Framer-style footer with logo and multi-column links
+                    const ts = Date.now();
                     const footerBlock: Block = {
-                      id: `footer-${Date.now()}`,
+                      id: `footer-${ts}`,
                       type: 'footer',
                       label: 'Footer',
                       elements: [
-                        { id: `logo-${Date.now()}`, type: 'image', content: '', props: { src: '', alt: 'Logo', width: '120px', isLogo: true, placeholder: 'Your Logo' } },
-                        { id: `text1-${Date.now()}`, type: 'text', content: 'Product', props: { variant: 'footer-heading' } },
-                        { id: `link1-${Date.now()}`, type: 'button', content: 'Features', props: { variant: 'link', size: 'sm', href: '#features' } },
-                        { id: `link2-${Date.now()}`, type: 'button', content: 'Pricing', props: { variant: 'link', size: 'sm', href: '#pricing' } },
-                        { id: `text2-${Date.now()}`, type: 'text', content: 'Company', props: { variant: 'footer-heading' } },
-                        { id: `link3-${Date.now()}`, type: 'button', content: 'About', props: { variant: 'link', size: 'sm', href: '/about' } },
-                        { id: `link4-${Date.now()}`, type: 'button', content: 'Contact', props: { variant: 'link', size: 'sm', href: '/contact' } },
-                        { id: `copy-${Date.now()}`, type: 'text', content: '© 2024 Your Company. All rights reserved.', props: { variant: 'copyright' } },
+                        // Logo column
+                        { id: `logo-${ts}`, type: 'text', content: '■○▲', props: { variant: 'footer-logo', fontSize: '24px', color: '#999' } },
+                        // Product column
+                        { id: `prod-head-${ts}`, type: 'text', content: 'Product', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
+                        { id: `prod-1-${ts}`, type: 'button', content: 'Features', props: { variant: 'footer-link', size: 'sm', href: '#features' } },
+                        { id: `prod-2-${ts}`, type: 'button', content: 'Pricing', props: { variant: 'footer-link', size: 'sm', href: '#pricing' } },
+                        { id: `prod-3-${ts}`, type: 'button', content: 'Support', props: { variant: 'footer-link', size: 'sm', href: '#support' } },
+                        // Company column
+                        { id: `comp-head-${ts}`, type: 'text', content: 'Company', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
+                        { id: `comp-1-${ts}`, type: 'button', content: 'About', props: { variant: 'footer-link', size: 'sm', href: '/about' } },
+                        { id: `comp-2-${ts}`, type: 'button', content: 'Careers', props: { variant: 'footer-link', size: 'sm', href: '/careers' } },
+                        { id: `comp-3-${ts}`, type: 'button', content: 'Press', props: { variant: 'footer-link', size: 'sm', href: '/press' } },
+                        // Resources column
+                        { id: `res-head-${ts}`, type: 'text', content: 'Resources', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
+                        { id: `res-1-${ts}`, type: 'button', content: 'Blog', props: { variant: 'footer-link', size: 'sm', href: '/blog' } },
+                        { id: `res-2-${ts}`, type: 'button', content: 'Newsletter', props: { variant: 'footer-link', size: 'sm', href: '/newsletter' } },
+                        { id: `res-3-${ts}`, type: 'button', content: 'Contact', props: { variant: 'footer-link', size: 'sm', href: '/contact' } },
                       ],
-                      props: { layout: 'footer', columns: 3 },
-                      styles: { padding: '48px 24px' },
+                      props: { layout: 'footer-framer', columns: 4 },
+                      styles: { padding: '64px 48px', backgroundColor: '#f5f5f5' },
                     };
                     if (firstStackId) {
                       onAddBlock?.(footerBlock, { stackId: firstStackId, index: step.frames[0].stacks[0].blocks.length });
