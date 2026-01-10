@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   Play, 
@@ -12,6 +13,7 @@ import {
   BarChart3,
   Users,
   ChevronDown,
+  ChevronLeft,
   Plus,
   Type,
   Layers,
@@ -159,8 +161,18 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   canvasTheme = 'light',
   onCanvasThemeToggle,
 }) => {
+  const navigate = useNavigate();
+  const { teamId } = useParams<{ teamId: string }>();
   const [internalDesignMode, setInternalDesignMode] = useState<'select' | 'pan'>('select');
   const designMode = externalDesignMode ?? internalDesignMode;
+
+  const handleBack = () => {
+    if (teamId) {
+      navigate(`/team/${teamId}/funnels`);
+    } else {
+      navigate(-1);
+    }
+  };
 
   const handleRename = () => {
     const newName = window.prompt('Enter new project name:', pageName);
@@ -212,8 +224,19 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   return (
     <TooltipProvider delayDuration={300}>
       <header className="h-14 bg-builder-surface border-b border-builder-border flex items-center justify-between px-4 shrink-0">
-        {/* Left: Logo & Page Info */}
+        {/* Left: Back Button & Logo */}
         <div className="flex items-center gap-4">
+          {/* Back Button */}
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-1.5 text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+
+          <div className="w-px h-6 bg-[hsl(var(--builder-border))]" />
+
           {/* Logo with Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

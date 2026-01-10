@@ -17,8 +17,8 @@ import {
 } from '@/lib/funnel/dataConverter';
 import type { EditorDocument } from '@/builder_v2/state/persistence';
 
-// Builder-specific styles (scoped)
-import '@/styles/flow-canvas-builder.css';
+// Flow-canvas builder styles (full builder theme)
+import '@/flow-canvas/index.css';
 
 // Types
 type FunnelRow = {

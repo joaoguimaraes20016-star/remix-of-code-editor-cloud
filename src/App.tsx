@@ -59,6 +59,9 @@ const App = () => (
             {/* 🔓 TEMP DEV ROUTE — must stay outside auth */}
             <Route path="/builder-v2" element={<EditorShell />} />
             <Route path="/flow-canvas" element={<FlowCanvasIndex />} />
+            
+            {/* Funnel Editor - Full screen, no team layout */}
+            <Route path="/team/:teamId/funnels/:funnelId/edit" element={<FunnelEditor />} />
 
             {/* Public routes - no auth required */}
             <Route path="/onboard/:token" element={<OnboardingForm />} />
@@ -90,7 +93,6 @@ const App = () => (
               <Route index element={<TeamHubOverview />} />
               <Route path="crm" element={<SalesDashboard />} />
               <Route path="funnels" element={<FunnelList />} />
-              <Route path="funnels/:funnelId" element={<FunnelEditor />} />
               <Route path="schedule" element={<Schedule />} />
               <Route path="chat" element={<TeamChatPage />} />
               <Route path="apps" element={<AppsPortal />} />
