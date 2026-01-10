@@ -48,9 +48,12 @@ export const presetGradients: GradientValue[] = [
   { type: 'radial', angle: 0, stops: [{ color: '#1e3a8a', position: 0 }, { color: '#0f172a', position: 100 }] },
 ];
 
+// CRITICAL: This function is PURE - never mutate the input gradient!
+// Previously this was sorting gradient.stops in-place which caused glitchy behavior
 export const gradientToCSS = (gradient: GradientValue): string => {
-  const stopsStr = gradient.stops
-    .sort((a, b) => a.position - b.position)
+  // Create a sorted copy - NEVER mutate the original stops array
+  const sortedStops = [...gradient.stops].sort((a, b) => a.position - b.position);
+  const stopsStr = sortedStops
     .map(s => `${s.color} ${s.position}%`)
     .join(', ');
   
@@ -68,6 +71,13 @@ export const defaultGradient: GradientValue = {
     { color: '#EC4899', position: 100 },
   ],
 };
+
+// Helper to deep clone a gradient to prevent shared references
+export const cloneGradient = (gradient: GradientValue): GradientValue => ({
+  type: gradient.type,
+  angle: gradient.angle,
+  stops: gradient.stops.map(s => ({ ...s })),
+});
 
 // Reusable Gradient Editor component (no popover wrapper)
 interface GradientEditorProps {
@@ -90,33 +100,43 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({
     }
   }, [value]);
 
+  // Always deep clone before updating to prevent shared references
   const updateGradient = (updates: Partial<GradientValue>) => {
-    const newGradient = { ...gradient, ...updates };
+    const newGradient: GradientValue = {
+      type: updates.type ?? gradient.type,
+      angle: updates.angle ?? gradient.angle,
+      // Deep clone stops to prevent mutation issues
+      stops: (updates.stops ?? gradient.stops).map(s => ({ ...s })),
+    };
     setGradient(newGradient);
-    onChange(newGradient);
+    onChange(cloneGradient(newGradient)); // Clone again for parent
   };
 
   const updateStop = (index: number, updates: Partial<GradientStop>) => {
-    const newStops = [...gradient.stops];
-    newStops[index] = { ...newStops[index], ...updates };
+    // Deep clone all stops
+    const newStops = gradient.stops.map((s, i) => 
+      i === index ? { ...s, ...updates } : { ...s }
+    );
     updateGradient({ stops: newStops });
   };
 
   const addStop = () => {
     if (gradient.stops.length >= 5) return;
-    const newStops = [...gradient.stops, { color: '#FFFFFF', position: 50 }];
+    const newStops = [...gradient.stops.map(s => ({ ...s })), { color: '#FFFFFF', position: 50 }];
     updateGradient({ stops: newStops });
   };
 
   const removeStop = (index: number) => {
     if (gradient.stops.length <= 2) return;
-    const newStops = gradient.stops.filter((_, i) => i !== index);
+    const newStops = gradient.stops.filter((_, i) => i !== index).map(s => ({ ...s }));
     updateGradient({ stops: newStops });
   };
 
   const applyPreset = (preset: GradientValue) => {
-    setGradient(preset);
-    onChange(preset);
+    // Deep clone preset to prevent mutation
+    const cloned = cloneGradient(preset);
+    setGradient(cloned);
+    onChange(cloneGradient(cloned)); // Another clone for parent
   };
 
   return (

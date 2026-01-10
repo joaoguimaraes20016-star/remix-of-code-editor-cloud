@@ -18,9 +18,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { gradientToCSS, GradientEditor, defaultGradient } from './modals';
+import { gradientToCSS, GradientEditor, defaultGradient, cloneGradient } from './modals';
 import type { GradientValue } from './modals';
 import { cn } from '@/lib/utils';
+
+// Color presets - dark theme friendly
+const colorPresets = [
+  '#FFFFFF', '#F9FAFB', '#E5E7EB', '#9CA3AF', '#6B7280', '#374151',
+  '#111827', '#000000', '#EF4444', '#F97316', '#F59E0B', '#FCD34D',
+  '#10B981', '#14B8A6', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6',
+  '#A855F7', '#D946EF', '#EC4899', '#F472B6',
+];
 
 interface RichTextToolbarProps {
   styles: TextStyles;
@@ -66,14 +74,6 @@ const textShadowPresets = [
   { label: '3D', value: 'depth' },
 ];
 
-// Color presets - dark theme friendly
-const colorPresets = [
-  '#FFFFFF', '#F9FAFB', '#E5E7EB', '#9CA3AF', '#6B7280', '#374151',
-  '#111827', '#000000', '#EF4444', '#F97316', '#F59E0B', '#FCD34D',
-  '#10B981', '#14B8A6', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6',
-  '#A855F7', '#D946EF', '#EC4899', '#F472B6',
-];
-
 export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
   styles,
   onChange,
@@ -111,11 +111,38 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
   };
 
   const handleColorChange = (color: string) => {
-    onChange({ textColor: color, textFillType: 'solid' });
+    // Ensure we have a solid color to fall back to
+    onChange({ 
+      textColor: color, 
+      textFillType: 'solid' 
+    });
   };
 
   const handleGradientChange = (gradient: GradientValue) => {
-    onChange({ textGradient: gradient, textFillType: 'gradient' });
+    // Always clone to prevent shared references
+    onChange({ 
+      textGradient: cloneGradient(gradient), 
+      textFillType: 'gradient' 
+    });
+  };
+  
+  // Handle fill type toggle - ensure both values are set atomically
+  const handleFillTypeChange = (fillType: 'solid' | 'gradient') => {
+    if (fillType === 'gradient') {
+      // Ensure gradient exists when switching to gradient mode
+      const gradient = styles.textGradient || defaultGradient;
+      onChange({ 
+        textFillType: 'gradient', 
+        textGradient: cloneGradient(gradient) 
+      });
+    } else {
+      // Ensure color exists when switching to solid mode
+      const color = styles.textColor || '#FFFFFF';
+      onChange({ 
+        textFillType: 'solid', 
+        textColor: color 
+      });
+    }
   };
 
   const handleShadowChange = (shadow: string) => {
@@ -294,10 +321,10 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
           sideOffset={4}
         >
           <div className="space-y-3">
-            {/* Fill Type Toggle */}
+            {/* Fill Type Toggle - uses atomic handler to set both type and value */}
             <div className="flex rounded-lg overflow-hidden border border-[hsl(var(--builder-border))]">
               <button
-                onClick={() => onChange({ textFillType: 'solid' })}
+                onClick={() => handleFillTypeChange('solid')}
                 className={cn(
                   "flex-1 py-1.5 text-xs font-medium transition-colors",
                   !isGradientFill 
@@ -308,7 +335,7 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
                 Solid
               </button>
               <button
-                onClick={() => onChange({ textFillType: 'gradient' })}
+                onClick={() => handleFillTypeChange('gradient')}
                 className={cn(
                   "flex-1 py-1.5 text-xs font-medium transition-colors",
                   isGradientFill 

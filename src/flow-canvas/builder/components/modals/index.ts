@@ -10,7 +10,7 @@ export { AnalyticsPanel } from './AnalyticsPanel';
 export { TextStylesModal } from './TextStylesModal';
 export type { TextPreset } from './TextStylesModal';
 export { ColorPickerPopover } from './ColorPickerPopover';
-export { GradientPickerPopover, GradientEditor, gradientToCSS, presetGradients, defaultGradient } from './GradientPickerPopover';
+export { GradientPickerPopover, GradientEditor, gradientToCSS, presetGradients, defaultGradient, cloneGradient } from './GradientPickerPopover';
 export type { GradientValue, GradientStop } from './GradientPickerPopover';
 export { ButtonActionModal } from './ButtonActionModal';
 export type { ButtonAction, ButtonActionType } from './ButtonActionModal';
