@@ -2121,6 +2121,9 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
     ? { backdropFilter: `blur(${backdropBlur})`, WebkitBackdropFilter: `blur(${backdropBlur})` }
     : {};
 
+  // Keep a consistent default radius while still allowing the inspector to override it.
+  const effectiveBorderRadius = (block.styles?.borderRadius as string) || '12px';
+
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -2136,7 +2139,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
     // Margin
     margin: block.styles?.margin,
     gap: block.styles?.gap,
-    borderRadius: block.styles?.borderRadius,
+    borderRadius: effectiveBorderRadius,
     // Border styles
     borderWidth: block.styles?.borderWidth,
     borderColor: block.styles?.borderColor,
@@ -2212,7 +2215,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         display: 'block',
       }}
       className={cn(
-        'builder-selectable rounded-xl transition-all group/block relative',
+        'builder-selectable transition-all group/block relative',
         // Only apply default padding if the user hasn't set ANY padding styles
         !(
           block.styles?.padding ||
@@ -2267,8 +2270,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           <div 
             className={cn(
               'flex w-full',
-              (block.props?.direction as string) === 'row' || isNavbar || isFooter ? 'flex-row' : 'flex-col',
-              !isNavbar && !isFooter && 'pl-4'
+              (block.props?.direction as string) === 'row' || isNavbar || isFooter ? 'flex-row' : 'flex-col'
             )}
             style={{
               flexDirection: (block.props?.direction as 'row' | 'column') || (isNavbar || isFooter ? 'row' : 'column'),
@@ -2347,9 +2349,10 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   const blockContent = hasGradientBorder && borderGradient ? (
     <div
       ref={setNodeRef}
-      className="rounded-xl p-[2px]"
+      className="p-[2px]"
       style={{
         background: gradientToCSS(borderGradient),
+        borderRadius: effectiveBorderRadius,
         transform: CSS.Transform.toString(transform),
         transition,
       }}
