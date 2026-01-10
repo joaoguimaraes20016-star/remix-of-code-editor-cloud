@@ -1087,6 +1087,21 @@ const ElementInspector: React.FC<{
                   <span className="text-xs text-builder-text w-10">{element.styles?.borderRadius || '0px'}</span>
                 </div>
               </div>
+              
+              {/* Logo-specific max-width control */}
+              {element.props?.isLogo && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Max Width</span>
+                  <div className="flex items-center gap-2">
+                    <Slider 
+                      value={[parseInt(element.styles?.maxWidth as string || '180')]}
+                      onValueChange={(v) => handleStyleChange('maxWidth', `${v[0]}px`)}
+                      min={60} max={300} step={10} className="w-20"
+                    />
+                    <span className="text-xs text-builder-text w-12">{element.styles?.maxWidth || '180px'}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </CollapsibleSection>
         </>

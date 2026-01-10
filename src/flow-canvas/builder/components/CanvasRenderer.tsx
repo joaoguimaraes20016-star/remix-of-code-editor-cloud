@@ -413,13 +413,71 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
     }
   }, [replayAnimationKey, selectionId, element.id]);
 
+  // Generate unique class name for this element's state styles
+  const stateStyleClass = hasStateStyles ? `element-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
+  
+  // Generate CSS for hover/active/disabled states
+  const generateStateStylesCSS = useCallback((): string => {
+    if (!element.stateStyles) return '';
+    
+    const css: string[] = [];
+    const cls = stateStyleClass;
+    const transitionDuration = element.stateStyles.base?.transitionDuration || '200ms';
+    
+    // Hover state
+    if (element.stateStyles.hover && Object.keys(element.stateStyles.hover).length > 0) {
+      const hover = element.stateStyles.hover;
+      const hoverStyles: string[] = [];
+      if (hover.backgroundColor) hoverStyles.push(`background-color: ${hover.backgroundColor}`);
+      if (hover.textColor) hoverStyles.push(`color: ${hover.textColor}`);
+      if (hover.borderColor) hoverStyles.push(`border-color: ${hover.borderColor}`);
+      if (hover.opacity) hoverStyles.push(`opacity: ${hover.opacity}`);
+      if (hover.scale) hoverStyles.push(`transform: scale(${hover.scale})`);
+      if (hoverStyles.length > 0) {
+        css.push(`.${cls}:hover { ${hoverStyles.join('; ')}; transition: all ${transitionDuration} ease; }`);
+      }
+    }
+    
+    // Active state
+    if (element.stateStyles.active && Object.keys(element.stateStyles.active).length > 0) {
+      const active = element.stateStyles.active;
+      const activeStyles: string[] = [];
+      if (active.backgroundColor) activeStyles.push(`background-color: ${active.backgroundColor}`);
+      if (active.textColor) activeStyles.push(`color: ${active.textColor}`);
+      if (active.borderColor) activeStyles.push(`border-color: ${active.borderColor}`);
+      if (active.opacity) activeStyles.push(`opacity: ${active.opacity}`);
+      if (active.scale) activeStyles.push(`transform: scale(${active.scale})`);
+      if (activeStyles.length > 0) {
+        css.push(`.${cls}:active { ${activeStyles.join('; ')}; transition: all ${transitionDuration} ease; }`);
+      }
+    }
+    
+    // Disabled state
+    if (element.stateStyles.disabled && Object.keys(element.stateStyles.disabled).length > 0) {
+      const disabled = element.stateStyles.disabled;
+      const disabledStyles: string[] = [];
+      if (disabled.backgroundColor) disabledStyles.push(`background-color: ${disabled.backgroundColor}`);
+      if (disabled.textColor) disabledStyles.push(`color: ${disabled.textColor}`);
+      if (disabled.opacity) disabledStyles.push(`opacity: ${disabled.opacity}`);
+      if (disabledStyles.length > 0) {
+        css.push(`.${cls}[disabled], .${cls}.disabled { ${disabledStyles.join('; ')}; cursor: not-allowed; }`);
+      }
+    }
+    
+    return css.join('\n');
+  }, [element.stateStyles, stateStyleClass]);
+
   const baseClasses = cn(
     'builder-selectable rounded-lg transition-all group/element relative',
+    stateStyleClass,
     isSelected && 'builder-selected',
     isMultiSelected && !isSelected && 'ring-2 ring-builder-accent/50 ring-offset-1 ring-offset-builder-bg',
     isDragging && 'opacity-50 z-50',
     animationKey >= 0 && effectClass // Include key to force re-render
   );
+  
+  // Inject state styles CSS
+  const stateStylesCSS = generateStateStylesCSS();
   
   // Helper to render visual indicator badges
   const renderIndicatorBadges = () => {
@@ -785,7 +843,10 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             style={{ ...style, ...layoutStyles }} 
             className={cn(baseClasses, 'relative', shadowClass)}
             {...hoverHandlers}
+            {...stateHandlers}
           >
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">Heading {level}</span>
             {/* Visual indicator badges */}
@@ -913,7 +974,10 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             style={{ ...style, ...layoutStyles }} 
             className={cn(baseClasses, 'relative', shadowClass)}
             {...hoverHandlers}
+            {...stateHandlers}
           >
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">{isLogo ? 'Logo' : isFooterLogo ? 'Footer Logo' : isFooterHeading ? 'Footer Heading' : 'Text'}</span>
             {/* Visual indicator badges */}
@@ -1052,7 +1116,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const useSizeClass = !element.styles?.padding && !isNavPill && !isFooterLink;
         
         return (
-          <div ref={setNodeRef} style={wrapperStyle} className={cn(baseClasses, 'relative')}>
+          <div ref={setNodeRef} style={wrapperStyle} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">{isNavPill ? 'Nav Link' : isFooterLink ? 'Footer Link' : 'Button'}</span>
             {/* Visual indicator badges */}
@@ -1180,7 +1246,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')}>
+          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">Input</span>
             {/* Visual indicator badges */}
@@ -1267,7 +1335,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')}>
+          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             {!isPreviewMode && <span className="element-type-badge">Checkbox</span>}
             {/* Visual indicator badges */}
@@ -1346,7 +1416,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')}>
+          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             {!isPreviewMode && <span className="element-type-badge">Radio</span>}
             {/* Visual indicator badges */}
@@ -1414,7 +1486,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
 
       case 'select':
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')}>
+          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">Select</span>
             {/* Visual indicator badges */}
@@ -1457,11 +1531,14 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
 
       case 'image':
         const imgSrc = element.props?.src as string;
+        const isLogoImage = element.props?.isLogo === true;
+        // For logos, default to auto width to preserve aspect ratio; for regular images, default to 100%
+        const defaultImageWidth = isLogoImage ? 'auto' : '100%';
         const imageStyles: React.CSSProperties = {
-          width: element.styles?.width || '100%',
+          width: element.styles?.width || defaultImageWidth,
           height: element.styles?.height || 'auto',
-          maxWidth: element.styles?.maxWidth || 'none',
-          borderRadius: element.styles?.borderRadius || '12px',
+          maxWidth: element.styles?.maxWidth || (isLogoImage ? '180px' : 'none'),
+          borderRadius: element.styles?.borderRadius || '0px',
           objectFit: (element.props?.objectFit as React.CSSProperties['objectFit']) || 'cover',
         };
         const imageWrapperStyles: React.CSSProperties = {
@@ -1502,7 +1579,10 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             className={cn(baseClasses, 'relative')}
             onDragOver={handleImageDragOver}
             onDrop={handleImageDrop}
+            {...stateHandlers}
           >
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">Image</span>
             {/* Visual indicator badges */}
@@ -1533,26 +1613,28 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 alt={(element.props?.alt as string) || ''} 
                 style={imageStyles}
                 onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                {...hoverHandlers}
               />
             ) : (
               <div 
                 className={cn(
                   "rounded-xl flex flex-col items-center justify-center border-2 border-dashed transition-colors cursor-pointer",
-                  element.props?.isLogo ? "aspect-[3/1]" : "aspect-video",
+                  isLogoImage ? "aspect-[3/1]" : "aspect-video",
                   isDarkTheme ? "bg-gray-800 border-gray-600 hover:border-gray-500" : "bg-gray-100 border-gray-300 hover:border-gray-400"
                 )}
                 style={{ 
-                  width: element.styles?.width || (element.props?.isLogo ? '120px' : '100%'),
+                  width: element.styles?.width || (isLogoImage ? '120px' : '100%'),
                   height: element.styles?.height || 'auto',
+                  maxWidth: element.styles?.maxWidth || (isLogoImage ? '180px' : 'none'),
                 }}
                 onClick={(e) => { e.stopPropagation(); onSelect(); }}
               >
                 <Image className={cn(
-                  element.props?.isLogo ? "w-6 h-6 mb-1" : "w-10 h-10 mb-2", 
+                  isLogoImage ? "w-6 h-6 mb-1" : "w-10 h-10 mb-2", 
                   isDarkTheme ? "text-gray-600" : "text-gray-300"
                 )} />
                 <span className={cn("text-xs text-center", isDarkTheme ? "text-gray-500" : "text-gray-400")}>
-                  {(element.props?.placeholder as string) || (element.props?.isLogo ? 'Drop logo' : 'Drop image')}
+                  {(element.props?.placeholder as string) || (isLogoImage ? 'Drop logo' : 'Drop image')}
                 </span>
               </div>
             )}
@@ -1578,7 +1660,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         return (
-          <div ref={setNodeRef} style={videoWrapperStyles} className={cn(baseClasses, 'relative')}>
+          <div ref={setNodeRef} style={videoWrapperStyles} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">Video</span>
             <div 
@@ -1618,7 +1702,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
 
       case 'divider':
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')}>
+          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">Divider</span>
             <div 
@@ -1639,7 +1725,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
 
       case 'spacer':
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')}>
+          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Element type badge */}
             <span className="element-type-badge">Spacer</span>
             <div 
@@ -1660,7 +1748,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
 
       default:
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'relative')}>
+          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
             <div 
               {...attributes}
               {...listeners}
