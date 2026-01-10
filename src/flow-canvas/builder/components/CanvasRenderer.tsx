@@ -2432,11 +2432,10 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
       <div 
         ref={scrollContainerRef}
         className={cn(
-          "flex-1 bg-canvas-bg canvas-grid overflow-y-auto overflow-x-hidden builder-scroll relative h-full",
+          "flex-1 bg-canvas-bg canvas-grid overflow-y-auto overflow-x-hidden builder-scroll relative min-h-0",
           designMode === 'pan' && !isPanning && "cursor-grab",
           isPanning && "cursor-grabbing select-none"
         )}
-        style={{ maxHeight: '100%' }}
         onMouseDown={handlePanMouseDown}
         onMouseMove={handlePanMouseMove}
         onMouseUp={handlePanMouseUp}
