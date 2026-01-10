@@ -2127,23 +2127,27 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    // Apply block styles
+    // Apply block styles - all CSS values should be applied inline to guarantee they take effect
     backgroundColor: block.styles?.backgroundColor,
     background: block.styles?.background,
-    // Padding - individual values override shorthand
-    padding: block.styles?.padding,
-    paddingTop: block.styles?.paddingTop,
-    paddingRight: block.styles?.paddingRight,
-    paddingBottom: block.styles?.paddingBottom,
-    paddingLeft: block.styles?.paddingLeft,
+    // Padding - individual values override shorthand; filter undefined to avoid overriding with 'undefined' string
+    ...(block.styles?.padding ? { padding: block.styles.padding } : {}),
+    ...(block.styles?.paddingTop ? { paddingTop: block.styles.paddingTop } : {}),
+    ...(block.styles?.paddingRight ? { paddingRight: block.styles.paddingRight } : {}),
+    ...(block.styles?.paddingBottom ? { paddingBottom: block.styles.paddingBottom } : {}),
+    ...(block.styles?.paddingLeft ? { paddingLeft: block.styles.paddingLeft } : {}),
     // Margin
-    margin: block.styles?.margin,
-    gap: block.styles?.gap,
+    ...(block.styles?.margin ? { margin: block.styles.margin } : {}),
+    // Gap - applied to the inner flex container, but also set here for CSS compatibility
+    ...(block.styles?.gap ? { gap: block.styles.gap } : {}),
+    // Border radius - always apply (uses default if not set)
     borderRadius: effectiveBorderRadius,
-    // Border styles
-    borderWidth: block.styles?.borderWidth,
-    borderColor: block.styles?.borderColor,
-    borderStyle: block.styles?.borderWidth ? 'solid' : undefined,
+    // Border styles - only apply if borderWidth is set
+    ...(block.styles?.borderWidth ? { 
+      borderWidth: block.styles.borderWidth, 
+      borderStyle: 'solid',
+      borderColor: block.styles?.borderColor || 'transparent'
+    } : {}),
     // Apply block shadow
     ...blockShadowStyle,
     // Apply backdrop blur
@@ -2189,6 +2193,15 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   const isNavbar = block.props?.layout === 'navbar';
   const isFooter = block.type === 'footer' || block.props?.layout === 'footer' || block.props?.layout === 'footer-framer';
 
+  // Check if user has set any custom padding (not empty, not undefined)
+  const hasCustomPadding = !!(
+    (block.styles?.padding && block.styles.padding !== '0' && block.styles.padding !== '0px') ||
+    (block.styles?.paddingTop && block.styles.paddingTop !== '0' && block.styles.paddingTop !== '0px') ||
+    (block.styles?.paddingRight && block.styles.paddingRight !== '0' && block.styles.paddingRight !== '0px') ||
+    (block.styles?.paddingBottom && block.styles.paddingBottom !== '0' && block.styles.paddingBottom !== '0px') ||
+    (block.styles?.paddingLeft && block.styles.paddingLeft !== '0' && block.styles.paddingLeft !== '0px')
+  );
+
   // Map shorthand values to CSS values
   const justifyMap: Record<string, string> = {
     'start': 'flex-start',
@@ -2216,17 +2229,11 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
       }}
       className={cn(
         'builder-selectable transition-all group/block relative',
-        // Only apply default padding if the user hasn't set ANY padding styles
-        !(
-          block.styles?.padding ||
-          block.styles?.paddingTop ||
-          block.styles?.paddingRight ||
-          block.styles?.paddingBottom ||
-          block.styles?.paddingLeft
-        ) && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
+        // Only apply default padding if the user hasn't set ANY padding styles (check for truthy non-empty values)
+        !hasCustomPadding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
         isSelected && 'builder-selected',
         isMultiSelected && !isSelected && 'ring-2 ring-builder-accent/50 ring-offset-1 ring-offset-builder-bg',
-        block.type === 'hero' && 'text-center py-12',
+        block.type === 'hero' && !hasCustomPadding && 'text-center py-12',
         block.type === 'cta' && 'justify-center',
         isDragging && 'opacity-50 z-50',
         blockShadowClass
