@@ -693,22 +693,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                     </div>
                   )}
 
-                  {/* Text Gradient Tab */}
+                  {/* Text Gradient Tab - GradientEditor has its own preview, no need for extra one */}
                   {colorTab === 'gradient' && showTextColor && (
                     <div className="space-y-2">
-                      {/* Preview */}
-                      <div 
-                        className="w-full h-10 rounded border border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface-hover))] flex items-center justify-center text-lg font-bold"
-                        style={{ 
-                          background: styles.textGradient ? gradientToCSS(styles.textGradient) : 'linear-gradient(135deg, #8B5CF6, #EC4899)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          backgroundClip: 'text'
-                        }}
-                      >
-                        Aa
-                      </div>
-                      
                       <GradientEditor
                         value={styles.textGradient || defaultGradient}
                         onChange={(gradient) => {
