@@ -2263,20 +2263,23 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         >
           <div 
             className={cn(
-              isNavbar || block.props?.direction === 'row' 
-                ? 'flex flex-row items-center w-full' 
-                : 'space-y-4',
+              'flex w-full',
+              (isNavbar || isFooter ? 'flex-row' : ((block.props?.direction as string) === 'row' ? 'flex-row' : 'flex-col')),
               !isNavbar && !isFooter && 'pl-4'
             )}
             style={{
-              ...(isNavbar ? { 
-                justifyContent: 'space-between', 
-                width: '100%',
-                gap: block.props?.gap as string || '16px',
-              } : undefined),
-              ...(block.props?.direction === 'row' && !isNavbar ? {
-                gap: block.props?.gap as string || '16px',
-              } : undefined),
+              flexDirection: ((block.props?.direction as 'row' | 'column') || (isNavbar || isFooter ? 'row' : 'column')),
+              justifyContent:
+                justifyMap[block.props?.justifyContent as string] ||
+                (block.props?.justifyContent as string) ||
+                (isNavbar ? 'space-between' : 'flex-start'),
+              alignItems:
+                alignMap[block.props?.alignItems as string] ||
+                (block.props?.alignItems as string) ||
+                (isNavbar ? 'center' : 'stretch'),
+              flexWrap: block.props?.wrap ? 'wrap' : (isFooter ? 'wrap' : 'nowrap'),
+              width: '100%',
+              gap: (block.props?.gap as string) || (isFooter ? '48px' : '16px'),
             }}
           >
             {block.elements.map((element, elementIndex) => {

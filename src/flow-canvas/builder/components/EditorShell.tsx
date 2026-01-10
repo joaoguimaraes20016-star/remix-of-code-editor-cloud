@@ -893,7 +893,14 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   ]);
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden ${editorTheme === 'dark' ? 'dark bg-builder-bg' : 'bg-slate-100'}`}>
+    <div
+      className={
+        `h-screen flex flex-col overflow-hidden ` +
+        (editorTheme === 'dark'
+          ? 'dark bg-builder-bg'
+          : 'editor-light bg-background')
+      }
+    >
       {/* Top Toolbar */}
       <TopToolbar
         pageName={page.name}
