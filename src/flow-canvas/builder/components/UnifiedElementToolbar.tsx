@@ -330,15 +330,15 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
       {/* Invisible hover bridge */}
       <div
         className={cn(
-          'absolute left-0 right-0 z-20 h-14',
-          placement === 'top' ? '-top-12' : 'top-full'
+          'absolute left-0 right-0 h-14',
+          placement === 'top' ? '-top-12 z-[8990]' : 'top-full z-[8990]'
         )}
         style={{ pointerEvents: 'auto' }}
       />
       <div
         ref={mergedRef}
         className={cn(
-          'absolute left-1/2 z-30',
+          'absolute left-1/2 z-[9000]',
           placement === 'top' ? '-top-11' : 'top-full mt-2',
           'flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-xl border',
           'opacity-0 group-hover/element:opacity-100 transition-all duration-150',
