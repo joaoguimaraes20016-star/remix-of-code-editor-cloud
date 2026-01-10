@@ -122,7 +122,8 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const [fontOpen, setFontOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
-  const [bgColorOpen, setBgColorOpen] = useState(false);
+  // Unified color tab: 'background' | 'text' | 'gradient'
+  const [colorTab, setColorTab] = useState<'background' | 'text' | 'gradient'>('text');
 
   // Determine what controls to show based on element type
   const isTextElement = ['heading', 'text'].includes(elementType);
@@ -386,8 +387,8 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           </>
         )}
 
-        {/* Text Color for text elements */}
-        {showTextColor && (
+        {/* Unified Color Picker - combines Text Color and Background Fill */}
+        {(showTextColor || showBackgroundColor) && (
           <>
             <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
             
@@ -395,7 +396,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
               <PopoverTrigger asChild>
                 <button 
                   className="p-1 rounded bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] transition-colors"
-                  title="Text Color"
+                  title="Colors"
                 >
                   <div className="relative">
                     <Palette size={12} />
@@ -411,40 +412,157 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                 </button>
               </PopoverTrigger>
               <PopoverContent 
-                className="w-56 p-2 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
+                className="w-64 p-2 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
                 sideOffset={4}
               >
-                <div className="space-y-2">
-                  {/* Fill Type Toggle */}
+                <div className="space-y-3">
+                  {/* Tab Navigation */}
                   <div className="flex rounded overflow-hidden border border-[hsl(var(--builder-border))]">
-                    <button
-                      onClick={() => handleTextFillTypeChange('solid')}
-                      className={cn(
-                        "flex-1 py-1 text-[10px] font-medium transition-colors",
-                        !isTextGradient 
-                          ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                          : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
-                      )}
-                    >
-                      Solid
-                    </button>
-                    <button
-                      onClick={() => handleTextFillTypeChange('gradient')}
-                      className={cn(
-                        "flex-1 py-1 text-[10px] font-medium transition-colors",
-                        isTextGradient 
-                          ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                          : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
-                      )}
-                    >
-                      Gradient
-                    </button>
+                    {showBackgroundColor && (
+                      <button
+                        onClick={() => setColorTab('background')}
+                        className={cn(
+                          "flex-1 py-1.5 text-[10px] font-medium transition-colors",
+                          colorTab === 'background' 
+                            ? 'bg-[hsl(var(--builder-accent))] text-white' 
+                            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))]'
+                        )}
+                      >
+                        Background
+                      </button>
+                    )}
+                    {showTextColor && (
+                      <button
+                        onClick={() => setColorTab('text')}
+                        className={cn(
+                          "flex-1 py-1.5 text-[10px] font-medium transition-colors",
+                          colorTab === 'text' 
+                            ? 'bg-[hsl(var(--builder-accent))] text-white' 
+                            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))]'
+                        )}
+                      >
+                        Text Color
+                      </button>
+                    )}
+                    {showTextColor && (
+                      <button
+                        onClick={() => setColorTab('gradient')}
+                        className={cn(
+                          "flex-1 py-1.5 text-[10px] font-medium transition-colors",
+                          colorTab === 'gradient' 
+                            ? 'bg-[hsl(var(--builder-accent))] text-white' 
+                            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))]'
+                        )}
+                      >
+                        Gradient
+                      </button>
+                    )}
                   </div>
 
-                  {!isTextGradient && (
+                  {/* Background Fill Tab */}
+                  {colorTab === 'background' && showBackgroundColor && (
                     <div className="space-y-2">
+                      {/* Preview */}
+                      <div 
+                        className="w-full h-10 rounded border border-[hsl(var(--builder-border))] flex items-center justify-center text-xs font-medium"
+                        style={{ 
+                          background: isBgGradient && styles.gradient 
+                            ? gradientToCSS(styles.gradient) 
+                            : (styles.backgroundColor || 'transparent'),
+                          color: isBgGradient || styles.backgroundColor ? '#fff' : 'hsl(var(--builder-text-muted))'
+                        }}
+                      >
+                        {isBgGradient ? 'Gradient' : (styles.backgroundColor || 'No Fill')}
+                      </div>
+                      
+                      {/* Solid/Gradient Toggle */}
+                      <div className="flex rounded overflow-hidden border border-[hsl(var(--builder-border))]">
+                        <button
+                          onClick={() => handleBackgroundFillTypeChange('solid')}
+                          className={cn(
+                            "flex-1 py-1 text-[10px] font-medium transition-colors",
+                            !isBgGradient 
+                              ? 'bg-[hsl(var(--builder-accent))] text-white' 
+                              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
+                          )}
+                        >
+                          Solid
+                        </button>
+                        <button
+                          onClick={() => handleBackgroundFillTypeChange('gradient')}
+                          className={cn(
+                            "flex-1 py-1 text-[10px] font-medium transition-colors",
+                            isBgGradient 
+                              ? 'bg-[hsl(var(--builder-accent))] text-white' 
+                              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
+                          )}
+                        >
+                          Gradient
+                        </button>
+                      </div>
+
+                      {!isBgGradient ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Fill Color</span>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="color"
+                                value={styles.backgroundColor || '#8B5CF6'}
+                                onChange={(e) => handleBackgroundColorChange(e.target.value)}
+                                className="w-5 h-5 rounded cursor-pointer border-0 p-0"
+                              />
+                              {'EyeDropper' in window && (
+                                <button
+                                  onClick={() => handleEyedropper(handleBackgroundColorChange)}
+                                  className="p-1 rounded bg-[hsl(var(--builder-surface-active))] hover:bg-[hsl(var(--builder-accent)/0.2)] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] transition-colors"
+                                  title="Pick color"
+                                >
+                                  <Pipette size={12} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-8 gap-0.5">
+                            {colorPresets.map((color) => (
+                              <button
+                                key={color}
+                                onClick={() => handleBackgroundColorChange(color)}
+                                className={cn(
+                                  "w-5 h-5 rounded border transition-all",
+                                  styles.backgroundColor === color 
+                                    ? 'ring-1 ring-[hsl(var(--builder-accent))] ring-offset-1' 
+                                    : 'border-[hsl(var(--builder-border))] hover:scale-110'
+                                )}
+                                style={{ backgroundColor: color }}
+                                title={color}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <GradientEditor
+                          value={styles.gradient || defaultGradient}
+                          onChange={handleBackgroundGradientChange}
+                          compact
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Text Color (Solid) Tab */}
+                  {colorTab === 'text' && showTextColor && (
+                    <div className="space-y-2">
+                      {/* Preview */}
+                      <div 
+                        className="w-full h-10 rounded border border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface-hover))] flex items-center justify-center text-lg font-bold"
+                        style={{ color: styles.textColor || '#FFFFFF' }}
+                      >
+                        Aa
+                      </div>
+                      
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Color</span>
+                        <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Text Color</span>
                         <div className="flex items-center gap-1">
                           <input
                             type="color"
@@ -482,160 +600,31 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                     </div>
                   )}
 
-                  {isTextGradient && (
-                    <GradientEditor
-                      value={styles.textGradient || defaultGradient}
-                      onChange={handleTextGradientChange}
-                      compact
-                    />
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </>
-        )}
-
-        {/* Text Shadow */}
-        {showTextShadow && (
-          <Popover open={shadowOpen} onOpenChange={setShadowOpen}>
-            <PopoverTrigger asChild>
-              <button 
-                className={cn(
-                  "p-1 rounded transition-colors",
-                  styles.textShadow && styles.textShadow !== 'none'
-                    ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                    : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                )}
-                title="Text Shadow"
-              >
-                <Sparkles size={12} />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-28 p-1 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
-              sideOffset={4}
-            >
-              <div className="flex flex-col">
-                {textShadowPresets.map((preset) => (
-                  <button
-                    key={preset.value}
-                    onClick={() => handleTextShadowChange(preset.value)}
-                    className={cn(
-                      "px-2 py-1 text-[10px] text-left rounded transition-colors",
-                      styles.textShadow === preset.value 
-                        ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                        : 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-hover))]'
-                    )}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
-
-        {/* Background Color for buttons/inputs */}
-        {showBackgroundColor && (
-          <>
-            <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
-            
-            <Popover open={bgColorOpen} onOpenChange={setBgColorOpen}>
-              <PopoverTrigger asChild>
-                <button 
-                  className="p-1 rounded bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] transition-colors"
-                  title="Background Color"
-                >
-                  <div className="relative">
-                    <div 
-                      className="w-3.5 h-3.5 rounded border border-[hsl(var(--builder-border))]"
-                      style={{ 
-                        background: isBgGradient && styles.gradient 
-                          ? gradientToCSS(styles.gradient) 
-                          : (styles.backgroundColor || '#8B5CF6')
-                      }}
-                    />
-                  </div>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-56 p-2 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
-                sideOffset={4}
-              >
-                <div className="space-y-2">
-                  {/* Fill Type Toggle */}
-                  <div className="flex rounded overflow-hidden border border-[hsl(var(--builder-border))]">
-                    <button
-                      onClick={() => handleBackgroundFillTypeChange('solid')}
-                      className={cn(
-                        "flex-1 py-1 text-[10px] font-medium transition-colors",
-                        !isBgGradient 
-                          ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                          : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
-                      )}
-                    >
-                      Solid
-                    </button>
-                    <button
-                      onClick={() => handleBackgroundFillTypeChange('gradient')}
-                      className={cn(
-                        "flex-1 py-1 text-[10px] font-medium transition-colors",
-                        isBgGradient 
-                          ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                          : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
-                      )}
-                    >
-                      Gradient
-                    </button>
-                  </div>
-
-                  {!isBgGradient && (
+                  {/* Text Gradient Tab */}
+                  {colorTab === 'gradient' && showTextColor && (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Color</span>
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="color"
-                            value={styles.backgroundColor || '#8B5CF6'}
-                            onChange={(e) => handleBackgroundColorChange(e.target.value)}
-                            className="w-5 h-5 rounded cursor-pointer border-0 p-0"
-                          />
-                          {'EyeDropper' in window && (
-                            <button
-                              onClick={() => handleEyedropper(handleBackgroundColorChange)}
-                              className="p-1 rounded bg-[hsl(var(--builder-surface-active))] hover:bg-[hsl(var(--builder-accent)/0.2)] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] transition-colors"
-                              title="Pick color"
-                            >
-                              <Pipette size={12} />
-                            </button>
-                          )}
-                        </div>
+                      {/* Preview */}
+                      <div 
+                        className="w-full h-10 rounded border border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface-hover))] flex items-center justify-center text-lg font-bold"
+                        style={{ 
+                          background: styles.textGradient ? gradientToCSS(styles.textGradient) : 'linear-gradient(135deg, #8B5CF6, #EC4899)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text'
+                        }}
+                      >
+                        Aa
                       </div>
-                      <div className="grid grid-cols-8 gap-0.5">
-                        {colorPresets.map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => handleBackgroundColorChange(color)}
-                            className={cn(
-                              "w-5 h-5 rounded border transition-all",
-                              styles.backgroundColor === color 
-                                ? 'ring-1 ring-[hsl(var(--builder-accent))] ring-offset-1' 
-                                : 'border-[hsl(var(--builder-border))] hover:scale-110'
-                            )}
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                        ))}
-                      </div>
+                      
+                      <GradientEditor
+                        value={styles.textGradient || defaultGradient}
+                        onChange={(gradient) => {
+                          handleTextGradientChange(gradient);
+                          onStyleChange?.({ textFillType: 'gradient' });
+                        }}
+                        compact
+                      />
                     </div>
-                  )}
-
-                  {isBgGradient && (
-                    <GradientEditor
-                      value={styles.gradient || defaultGradient}
-                      onChange={handleBackgroundGradientChange}
-                      compact
-                    />
                   )}
                 </div>
               </PopoverContent>
