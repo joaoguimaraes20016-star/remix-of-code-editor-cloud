@@ -30,6 +30,7 @@ interface InlineTextEditorProps {
   placeholder?: string;
   disabled?: boolean;
   initialStyles?: Partial<TextStyles>;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
 export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
@@ -40,6 +41,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   placeholder = 'Click to edit...',
   disabled = false,
   initialStyles,
+  onEditingChange,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
@@ -54,19 +56,69 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Update styles when initialStyles changes
+  // Deep compare for gradient objects
+  const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    if (a.type !== b.type || a.angle !== b.angle) return false;
+    if (a.stops.length !== b.stops.length) return false;
+    for (let i = 0; i < a.stops.length; i++) {
+      if (a.stops[i].color !== b.stops[i].color || a.stops[i].position !== b.stops[i].position) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Update styles when initialStyles changes - with proper deep comparison for gradients
   useEffect(() => {
     if (initialStyles) {
-      setStyles(prev => ({ ...prev, ...initialStyles }));
-      // Mark initial styles as modified so they persist
-      const keys = Object.keys(initialStyles) as (keyof TextStyles)[];
-      setModifiedProps(prev => {
-        const next = new Set(prev);
-        keys.forEach(k => next.add(k));
-        return next;
-      });
+      const needsUpdate = 
+        initialStyles.textFillType !== styles.textFillType ||
+        initialStyles.textColor !== styles.textColor ||
+        !gradientEquals(initialStyles.textGradient, styles.textGradient) ||
+        initialStyles.fontSize !== styles.fontSize ||
+        initialStyles.fontWeight !== styles.fontWeight ||
+        initialStyles.fontFamily !== styles.fontFamily ||
+        initialStyles.textShadow !== styles.textShadow ||
+        initialStyles.fontStyle !== styles.fontStyle ||
+        initialStyles.textDecoration !== styles.textDecoration ||
+        initialStyles.textAlign !== styles.textAlign ||
+        initialStyles.highlightColor !== styles.highlightColor ||
+        initialStyles.highlightUseGradient !== styles.highlightUseGradient ||
+        !gradientEquals(initialStyles.highlightGradient, styles.highlightGradient);
+      
+      if (needsUpdate) {
+        setStyles(prev => ({ ...prev, ...initialStyles }));
+        // Mark initial styles as modified so they persist
+        const keys = Object.keys(initialStyles) as (keyof TextStyles)[];
+        setModifiedProps(prev => {
+          const next = new Set(prev);
+          keys.forEach(k => next.add(k));
+          return next;
+        });
+      }
     }
-  }, [initialStyles]);
+  }, [
+    initialStyles?.textFillType, 
+    initialStyles?.textColor, 
+    initialStyles?.textGradient,
+    initialStyles?.fontSize,
+    initialStyles?.fontWeight,
+    initialStyles?.fontFamily,
+    initialStyles?.textShadow,
+    initialStyles?.fontStyle,
+    initialStyles?.textDecoration,
+    initialStyles?.textAlign,
+    initialStyles?.highlightColor,
+    initialStyles?.highlightUseGradient,
+    initialStyles?.highlightGradient,
+  ]);
+
+  // Notify parent when editing state changes
+  useEffect(() => {
+    onEditingChange?.(isEditing);
+  }, [isEditing, onEditingChange]);
 
   // Handle double click to start editing
   const handleDoubleClick = useCallback(() => {
@@ -131,8 +183,16 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
   // Apply style changes - ONLY emit the properties that were explicitly changed
   const handleStyleChange = useCallback((newStyles: Partial<TextStyles>) => {
-    // Update local state
-    const updatedStyles = { ...styles, ...newStyles };
+    // Update local state with new gradient object reference if needed
+    const updatedStyles = { ...styles };
+    
+    // Handle textGradient specially - create new object reference
+    if (newStyles.textGradient) {
+      updatedStyles.textGradient = { ...newStyles.textGradient };
+    }
+    
+    // Merge all other styles
+    Object.assign(updatedStyles, newStyles);
     setStyles(updatedStyles);
     
     // Track which properties are now modified
@@ -143,10 +203,9 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       return next;
     });
     
-    // Only emit the changed property, not the full state
+    // Emit ONLY the properties that were just changed
     if (contentRef.current) {
       const currentValue = contentRef.current.innerText || value;
-      // Emit ONLY the properties that were just changed
       onChange(currentValue, newStyles);
     }
   }, [styles, value, onChange]);

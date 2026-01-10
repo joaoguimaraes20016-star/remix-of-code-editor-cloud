@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import {
   AlignLeft,
@@ -28,9 +28,10 @@ interface ElementActionBarProps {
   onDelete?: () => void;
   position?: 'top' | 'bottom';
   isDarkTheme?: boolean;
+  hidden?: boolean;
 }
 
-export const ElementActionBar: React.FC<ElementActionBarProps> = ({
+export const ElementActionBar = forwardRef<HTMLDivElement, ElementActionBarProps>(({
   elementId,
   elementType,
   currentAlign = 'left',
@@ -41,11 +42,15 @@ export const ElementActionBar: React.FC<ElementActionBarProps> = ({
   onDelete,
   position = 'top',
   isDarkTheme = false,
-}) => {
+  hidden = false,
+}, ref) => {
   // Show alignment for buttons, text elements, and form inputs
   const showAlignment = ['button', 'text', 'heading', 'input', 'select', 'checkbox', 'radio'].includes(elementType);
   // Show color picker for buttons (background) or text (text color)
   const showColorPicker = onColorChange;
+
+  // If hidden (e.g., during inline editing), don't render
+  if (hidden) return null;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -58,6 +63,7 @@ export const ElementActionBar: React.FC<ElementActionBarProps> = ({
         style={{ pointerEvents: 'auto' }}
       />
       <div
+        ref={ref}
         className={cn(
           'absolute left-1/2 -translate-x-1/2 z-30',
           'flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-xl border',
@@ -218,4 +224,6 @@ export const ElementActionBar: React.FC<ElementActionBarProps> = ({
       </div>
     </TooltipProvider>
   );
-};
+});
+
+ElementActionBar.displayName = 'ElementActionBar';

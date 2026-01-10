@@ -1346,6 +1346,19 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
 
   return (
     <div className="space-y-0">
+      {/* Step Header - Blue accent for Steps/Pages */}
+      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-blue-500/15 to-transparent">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <Layers className="w-4 h-4 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-builder-text">{step.name || 'Step'}</p>
+            <p className="text-xs text-blue-400/80">Page/Step Settings</p>
+          </div>
+        </div>
+      </div>
+
       <CollapsibleSection title="Step Settings" icon={<Layers className="w-4 h-4" />} defaultOpen>
         <div className="space-y-4 pt-3">
           <FieldGroup label="Step Name">
@@ -1941,16 +1954,16 @@ const FrameInspector: React.FC<{
 
   return (
     <div className="space-y-0">
-      {/* Frame Header */}
-      <div className="px-4 py-3 border-b border-builder-border">
+      {/* Frame Header - Purple accent for Sections */}
+      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-purple-500/15 to-transparent">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-builder-accent/10 flex items-center justify-center">
-              <Layout className="w-4 h-4 text-builder-accent" />
+            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <Layout className="w-4 h-4 text-purple-400" />
             </div>
             <div>
               <p className="text-sm font-medium text-builder-text">{frame.label || 'Section'}</p>
-              <p className="text-xs text-builder-text-muted">Section Settings</p>
+              <p className="text-xs text-purple-400/80">Section Background & Layout</p>
             </div>
           </div>
           {/* Delete button */}
