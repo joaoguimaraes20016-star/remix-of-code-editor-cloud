@@ -1,7 +1,7 @@
 import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
 import { Step, Frame, Stack, Block, Element, SelectionState, Page, VisibilitySettings, AnimationSettings, ElementStateStyles, DeviceModeType, PageBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
-import { Type, Image, Video, Minus, ArrowRight, ArrowUpRight, ChevronRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Download, Smartphone, MousePointer2, Layout } from 'lucide-react';
+import { Type, Image, Video, Minus, ArrowRight, ArrowUpRight, ChevronRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Download, Smartphone, MousePointer2, Layout, Menu } from 'lucide-react';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
 import { ElementActionBar } from './ElementActionBar';
@@ -2258,21 +2258,20 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
       )}
       style={frameStyles.style}
     >
-      {/* Frame selection handle - easier to click */}
+      {/* Frame selection handle - always visible with strong styling */}
       {!readOnly && (
         <div 
-          className="absolute top-0 left-0 right-0 h-6 cursor-pointer opacity-0 group-hover/frame:opacity-100 hover:bg-builder-accent/10 transition-all z-20 flex items-center justify-center"
+          className="absolute -top-1 left-1/2 -translate-x-1/2 cursor-pointer z-20 opacity-0 group-hover/frame:opacity-100 transition-all duration-200"
           onClick={(e) => {
             e.stopPropagation();
             onSelect({ type: 'frame', id: frame.id, path: framePath });
           }}
-          title="Click to select section"
         >
-          {/* Section label always visible on hover */}
-          <div className="px-3 py-1 text-[10px] font-semibold bg-builder-accent text-white rounded-full shadow-lg flex items-center gap-1.5">
-            <Layout className="w-3 h-3" />
-            {frame.label || 'Section'}
-            <span className="text-white/70">· Click to edit</span>
+          {/* Section label - high contrast pill */}
+          <div className="px-3 py-1.5 text-[11px] font-semibold bg-gray-900 text-white rounded-full shadow-xl border border-gray-700 flex items-center gap-1.5 hover:bg-gray-800 transition-colors">
+            <Layout className="w-3 h-3 text-purple-400" />
+            <span>{frame.label || 'Section'}</span>
+            <span className="text-gray-400 text-[10px]">· Click to edit</span>
           </div>
         </div>
       )}
@@ -2496,6 +2495,46 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ) : null;
             })()}
             
+            {/* Header area - clickable button to add header if none exists */}
+            {!step.frames.some(f => f.stacks.some(s => s.blocks.some(b => b.type === 'custom' && b.props?.layout === 'navbar'))) && !readOnly && (
+              <div className={cn(
+                "p-4 border-b",
+                isDarkTheme ? "border-gray-800" : "border-gray-200"
+              )}>
+                <button
+                  onClick={() => {
+                    // Add a navigation/header block to the first stack
+                    const navBlock: Block = {
+                      id: `nav-${Date.now()}`,
+                      type: 'custom',
+                      label: 'Navigation',
+                      elements: [
+                        { id: `logo-${Date.now()}`, type: 'image', content: '', props: { src: '', alt: 'Logo', width: '120px', height: '40px', isLogo: true, placeholder: 'Add your logo' } },
+                        { id: `link1-${Date.now()}`, type: 'button', content: 'Home', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#' } },
+                        { id: `link2-${Date.now()}`, type: 'button', content: 'Features', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#features' } },
+                        { id: `link3-${Date.now()}`, type: 'button', content: 'Pricing', props: { variant: 'ghost', size: 'sm', navLink: true, href: '#pricing' } },
+                        { id: `cta-${Date.now()}`, type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'sm' } },
+                      ],
+                      props: { layout: 'navbar', sticky: true, transparent: false },
+                      styles: { padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+                    };
+                    if (firstStackId) {
+                      onAddBlock?.(navBlock, { stackId: firstStackId, index: 0 });
+                    }
+                  }}
+                  className={cn(
+                    "w-full py-3 px-6 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all",
+                    isDarkTheme 
+                      ? "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-purple-500 hover:bg-purple-500/10 hover:text-white" 
+                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700"
+                  )}
+                >
+                  <Menu className="w-4 h-4" />
+                  <span className="text-sm font-medium">Add Navigation Header</span>
+                </button>
+              </div>
+            )}
+
             {/* Frames */}
             <div className="min-h-[600px] relative z-10">
               {step.frames.map((frame) => (
@@ -2527,18 +2566,46 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ))}
             </div>
 
-            {/* Footer area - now optional, shown if no footer block exists */}
-            {!step.frames.some(f => f.stacks.some(s => s.blocks.some(b => b.type === 'footer'))) && (
+            {/* Footer area - clickable button to add footer if none exists */}
+            {!step.frames.some(f => f.stacks.some(s => s.blocks.some(b => b.type === 'footer'))) && !readOnly && (
               <div className={cn(
-                "p-6 flex justify-center border-t",
-                isDarkTheme ? "border-gray-800" : "border-gray-100"
+                "p-6 border-t",
+                isDarkTheme ? "border-gray-800" : "border-gray-200"
               )}>
-                <div className={cn(
-                  "flex items-center gap-2 text-xs",
-                  isDarkTheme ? "text-gray-500" : "text-gray-400"
-                )}>
-                  <span>Add a Footer Links block to customize</span>
-                </div>
+                <button
+                  onClick={() => {
+                    // Add a footer block to the first stack
+                    const footerBlock: Block = {
+                      id: `footer-${Date.now()}`,
+                      type: 'footer',
+                      label: 'Footer',
+                      elements: [
+                        { id: `logo-${Date.now()}`, type: 'image', content: '', props: { src: '', alt: 'Logo', width: '120px', isLogo: true, placeholder: 'Your Logo' } },
+                        { id: `text1-${Date.now()}`, type: 'text', content: 'Product', props: { variant: 'footer-heading' } },
+                        { id: `link1-${Date.now()}`, type: 'button', content: 'Features', props: { variant: 'link', size: 'sm', href: '#features' } },
+                        { id: `link2-${Date.now()}`, type: 'button', content: 'Pricing', props: { variant: 'link', size: 'sm', href: '#pricing' } },
+                        { id: `text2-${Date.now()}`, type: 'text', content: 'Company', props: { variant: 'footer-heading' } },
+                        { id: `link3-${Date.now()}`, type: 'button', content: 'About', props: { variant: 'link', size: 'sm', href: '/about' } },
+                        { id: `link4-${Date.now()}`, type: 'button', content: 'Contact', props: { variant: 'link', size: 'sm', href: '/contact' } },
+                        { id: `copy-${Date.now()}`, type: 'text', content: '© 2024 Your Company. All rights reserved.', props: { variant: 'copyright' } },
+                      ],
+                      props: { layout: 'footer', columns: 3 },
+                      styles: { padding: '48px 24px' },
+                    };
+                    if (firstStackId) {
+                      onAddBlock?.(footerBlock, { stackId: firstStackId, index: step.frames[0].stacks[0].blocks.length });
+                    }
+                  }}
+                  className={cn(
+                    "w-full py-4 px-6 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all",
+                    isDarkTheme 
+                      ? "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-purple-500 hover:bg-purple-500/10 hover:text-white" 
+                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700"
+                  )}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-medium">Add Footer Section</span>
+                </button>
               </div>
             )}
           </div>

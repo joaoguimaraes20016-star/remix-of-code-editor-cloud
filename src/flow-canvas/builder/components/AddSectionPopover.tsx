@@ -566,16 +566,16 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
           <button
             className={`
               group flex items-center justify-center w-full py-3.5 
-              bg-gradient-to-r from-[hsl(var(--builder-accent)/0.15)] via-[hsl(var(--builder-accent-secondary)/0.1)] to-[hsl(var(--builder-accent)/0.15)]
-              border-2 border-dashed border-[hsl(var(--builder-accent)/0.4)] rounded-xl
-              text-[hsl(var(--builder-accent))] 
-              hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.2)]
-              hover:shadow-lg hover:shadow-[hsl(var(--builder-accent)/0.15)]
+              bg-gray-900/90 backdrop-blur-sm
+              border-2 border-dashed border-purple-500/60 rounded-xl
+              text-white 
+              hover:border-purple-400 hover:bg-gray-800
+              hover:shadow-lg hover:shadow-purple-500/20
               transition-all duration-200 gap-2
               ${className}
             `}
           >
-            <Plus size={18} className="group-hover:scale-110 transition-transform" />
+            <Plus size={18} className="text-purple-400 group-hover:scale-110 transition-transform" />
             <span className="text-sm font-semibold">Add Section</span>
           </button>
         )}
