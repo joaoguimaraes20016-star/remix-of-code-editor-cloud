@@ -239,7 +239,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 
   const isAddFrameDisabled = previewMode;
   const addFrameDisabledReason = previewMode 
-    ? "Exit preview mode to add frames" 
+    ? "Exit preview mode to add sections" 
     : undefined;
 
   const isAIGenerateDisabled = previewMode;
@@ -316,7 +316,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
               onClick={onAddFrame}
               disabled={isAddFrameDisabled}
               disabledReason={addFrameDisabledReason}
-              tooltip="Add Frame (F)"
+              tooltip="Add Section (F)"
             >
               <Layers className="w-4 h-4" />
             </ToolbarButton>
@@ -346,10 +346,10 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
               <Grid3X3 className="w-4 h-4" />
             </ToolbarButton>
 
-            {/* Canvas Theme Toggle */}
+            {/* Canvas Theme Toggle - changes the funnel page theme, not editor UI */}
             <ToolbarButton
               onClick={onCanvasThemeToggle}
-              tooltip={canvasTheme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+              tooltip={canvasTheme === 'light' ? 'Page Theme: Light → Dark' : 'Page Theme: Dark → Light'}
             >
               {canvasTheme === 'light' ? (
                 <Moon className="w-4 h-4" />

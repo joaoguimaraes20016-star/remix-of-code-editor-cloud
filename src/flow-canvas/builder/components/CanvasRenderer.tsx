@@ -2908,24 +2908,22 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ) : null;
             })()}
             
-            {/* Header area - clickable button to add header if none exists */}
+            {/* Header area - optional navigation header placeholder */}
             {!step.frames.some(f => f.stacks.some(s => s.blocks.some(b => b.type === 'custom' && b.props?.layout === 'navbar'))) && !readOnly && (
               <div className={cn(
-                "p-4 border-b",
-                isDarkTheme ? "border-gray-800" : "border-gray-200"
+                "px-4 py-2 border-b",
+                isDarkTheme ? "border-gray-800/50" : "border-gray-200/50"
               )}>
                 <button
                   onClick={() => {
-                    // Add a Framer-style navigation header with proper row layout
+                    // Add a navigation header with logo and links
                     const ts = Date.now();
                     const navBlock: Block = {
                       id: `nav-${ts}`,
                       type: 'custom',
                       label: 'Navigation',
                       elements: [
-                        // Logo - can be text or image (drag to upload)
                         { id: `logo-${ts}`, type: 'image', content: '', props: { isLogo: true, placeholder: 'Logo', alt: 'Logo' }, styles: { width: '120px', height: '40px' } },
-                        // Nav links group - these will display inline
                         { id: `link1-${ts}`, type: 'button', content: 'Features', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#features' } },
                         { id: `link2-${ts}`, type: 'button', content: 'Pricing', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#pricing' } },
                         { id: `link3-${ts}`, type: 'button', content: 'Contact', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#contact' } },
@@ -2938,14 +2936,15 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     }
                   }}
                   className={cn(
-                    "w-full py-3 px-6 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all",
+                    "w-full py-2 px-4 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all text-xs",
                     isDarkTheme 
-                      ? "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-purple-500 hover:bg-purple-500/10 hover:text-white" 
-                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700"
+                      ? "border-gray-700/60 bg-gray-800/30 text-gray-500 hover:border-purple-500/50 hover:bg-purple-500/10 hover:text-gray-300" 
+                      : "border-gray-200 bg-gray-50/50 text-gray-400 hover:border-purple-500/50 hover:bg-purple-50 hover:text-gray-600"
                   )}
                 >
-                  <Menu className="w-4 h-4" />
-                  <span className="text-sm font-medium">Add Navigation Header</span>
+                  <Menu className="w-3 h-3" />
+                  <span className="font-medium">+ Navigation</span>
+                  <span className="text-[10px] opacity-60">(optional)</span>
                 </button>
               </div>
             )}
@@ -2981,11 +2980,11 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ))}
             </div>
 
-            {/* Footer area - clickable button to add footer if none exists */}
+            {/* Footer area - optional footer placeholder */}
             {!step.frames.some(f => f.stacks.some(s => s.blocks.some(b => b.type === 'footer'))) && !readOnly && (
               <div className={cn(
-                "p-6 border-t",
-                isDarkTheme ? "border-gray-800" : "border-gray-200"
+                "px-4 py-2 border-t",
+                isDarkTheme ? "border-gray-800/50" : "border-gray-200/50"
               )}>
                 <button
                   onClick={() => {
@@ -3022,14 +3021,15 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     }
                   }}
                   className={cn(
-                    "w-full py-4 px-6 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all",
+                    "w-full py-2 px-4 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all text-xs",
                     isDarkTheme 
-                      ? "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-purple-500 hover:bg-purple-500/10 hover:text-white" 
-                      : "border-gray-300 bg-gray-50 text-gray-600 hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700"
+                      ? "border-gray-700/60 bg-gray-800/30 text-gray-500 hover:border-purple-500/50 hover:bg-purple-500/10 hover:text-gray-300" 
+                      : "border-gray-200 bg-gray-50/50 text-gray-400 hover:border-purple-500/50 hover:bg-purple-50 hover:text-gray-600"
                   )}
                 >
-                  <Plus className="w-4 h-4" />
-                  <span className="text-sm font-medium">Add Footer Section</span>
+                  <Plus className="w-3 h-3" />
+                  <span className="font-medium">+ Footer</span>
+                  <span className="text-[10px] opacity-60">(optional)</span>
                 </button>
               </div>
             )}
