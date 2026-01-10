@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Sparkles,
   Pipette,
+  X,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -87,12 +88,14 @@ export interface UnifiedToolbarStyles {
   textAlign?: 'left' | 'center' | 'right';
   // Colors
   textColor?: string;
+  textOpacity?: number;
   textFillType?: 'solid' | 'gradient';
   textGradient?: GradientValue;
   textShadow?: string;
   // Background (for buttons/inputs)
   backgroundColor?: string;
-  fillType?: 'solid' | 'gradient';
+  backgroundOpacity?: number;
+  fillType?: 'solid' | 'gradient' | 'none';
   gradient?: GradientValue;
 }
 
@@ -169,6 +172,10 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     onStyleChange?.({ textColor: color, textFillType: 'solid' });
   };
 
+  const handleTextOpacityChange = (opacity: number) => {
+    onStyleChange?.({ textOpacity: opacity });
+  };
+
   const handleTextGradientChange = (gradient: GradientValue) => {
     onStyleChange?.({ textGradient: cloneGradient(gradient), textFillType: 'gradient' });
   };
@@ -192,18 +199,28 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     onStyleChange?.({ backgroundColor: color, fillType: 'solid' });
   };
 
+  const handleBackgroundOpacityChange = (opacity: number) => {
+    onStyleChange?.({ backgroundOpacity: opacity });
+  };
+
   const handleBackgroundGradientChange = (gradient: GradientValue) => {
     onStyleChange?.({ gradient: cloneGradient(gradient), fillType: 'gradient' });
   };
 
-  const handleBackgroundFillTypeChange = (fillType: 'solid' | 'gradient') => {
-    if (fillType === 'gradient') {
+  const handleBackgroundFillTypeChange = (fillType: 'solid' | 'gradient' | 'none') => {
+    if (fillType === 'none') {
+      onStyleChange?.({ fillType: 'none', backgroundColor: undefined, gradient: undefined });
+    } else if (fillType === 'gradient') {
       const gradient = styles.gradient || defaultGradient;
       onStyleChange?.({ fillType: 'gradient', gradient: cloneGradient(gradient) });
     } else {
       const color = styles.backgroundColor || '#8B5CF6';
       onStyleChange?.({ fillType: 'solid', backgroundColor: color });
     }
+  };
+
+  const handleClearBackground = () => {
+    onStyleChange?.({ fillType: 'none', backgroundColor: undefined, gradient: undefined, backgroundOpacity: undefined });
   };
 
   const handleEyedropper = async (callback: (color: string) => void) => {
@@ -221,6 +238,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const currentFont = displayFonts.find(f => f.value === styles.fontFamily)?.label || 'Inherit';
   const isTextGradient = styles.textFillType === 'gradient';
   const isBgGradient = styles.fillType === 'gradient';
+  const isBgNone = styles.fillType === 'none' || (!styles.backgroundColor && !styles.gradient && styles.fillType !== 'solid' && styles.fillType !== 'gradient');
 
   // Generate readable element label
   const getElementLabel = () => {
@@ -464,24 +482,38 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                     <div className="space-y-2">
                       {/* Preview */}
                       <div 
-                        className="w-full h-10 rounded border border-[hsl(var(--builder-border))] flex items-center justify-center text-xs font-medium"
+                        className="w-full h-10 rounded border border-[hsl(var(--builder-border))] flex items-center justify-center text-xs font-medium relative overflow-hidden"
                         style={{ 
-                          background: isBgGradient && styles.gradient 
-                            ? gradientToCSS(styles.gradient) 
-                            : (styles.backgroundColor || 'transparent'),
-                          color: isBgGradient || styles.backgroundColor ? '#fff' : 'hsl(var(--builder-text-muted))'
+                          background: isBgNone 
+                            ? 'repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 50% / 12px 12px'
+                            : isBgGradient && styles.gradient 
+                              ? gradientToCSS(styles.gradient) 
+                              : (styles.backgroundColor || 'transparent'),
+                          opacity: isBgNone ? 1 : (styles.backgroundOpacity ?? 100) / 100,
+                          color: isBgNone ? 'hsl(var(--builder-text-muted))' : (isBgGradient || styles.backgroundColor ? '#fff' : 'hsl(var(--builder-text-muted))')
                         }}
                       >
-                        {isBgGradient ? 'Gradient' : (styles.backgroundColor || 'No Fill')}
+                        {isBgNone ? 'No Fill' : isBgGradient ? 'Gradient' : (styles.backgroundColor || 'No Fill')}
                       </div>
                       
-                      {/* Solid/Gradient Toggle */}
+                      {/* None/Solid/Gradient Toggle */}
                       <div className="flex rounded overflow-hidden border border-[hsl(var(--builder-border))]">
+                        <button
+                          onClick={() => handleClearBackground()}
+                          className={cn(
+                            "flex-1 py-1 text-[10px] font-medium transition-colors",
+                            isBgNone 
+                              ? 'bg-[hsl(var(--builder-accent))] text-white' 
+                              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
+                          )}
+                        >
+                          None
+                        </button>
                         <button
                           onClick={() => handleBackgroundFillTypeChange('solid')}
                           className={cn(
                             "flex-1 py-1 text-[10px] font-medium transition-colors",
-                            !isBgGradient 
+                            !isBgNone && !isBgGradient 
                               ? 'bg-[hsl(var(--builder-accent))] text-white' 
                               : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
                           )}
@@ -501,7 +533,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                         </button>
                       </div>
 
-                      {!isBgGradient ? (
+                      {!isBgNone && !isBgGradient && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Fill Color</span>
@@ -521,6 +553,13 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                                   <Pipette size={12} />
                                 </button>
                               )}
+                              <button
+                                onClick={handleClearBackground}
+                                className="p-1 rounded bg-[hsl(var(--builder-surface-active))] hover:bg-red-500/20 text-[hsl(var(--builder-text-muted))] hover:text-red-400 transition-colors"
+                                title="Clear fill"
+                              >
+                                <X size={12} />
+                              </button>
                             </div>
                           </div>
                           <div className="grid grid-cols-8 gap-0.5">
@@ -539,13 +578,48 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                               />
                             ))}
                           </div>
+                          
+                          {/* Opacity Slider */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Opacity</span>
+                              <span className="text-[10px] text-[hsl(var(--builder-text))]">{styles.backgroundOpacity ?? 100}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={styles.backgroundOpacity ?? 100}
+                              onChange={(e) => handleBackgroundOpacityChange(parseInt(e.target.value))}
+                              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[hsl(var(--builder-surface-active))] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[hsl(var(--builder-accent))] [&::-webkit-slider-thumb]:cursor-pointer"
+                            />
+                          </div>
                         </div>
-                      ) : (
-                        <GradientEditor
-                          value={styles.gradient || defaultGradient}
-                          onChange={handleBackgroundGradientChange}
-                          compact
-                        />
+                      )}
+
+                      {!isBgNone && isBgGradient && (
+                        <>
+                          <GradientEditor
+                            value={styles.gradient || defaultGradient}
+                            onChange={handleBackgroundGradientChange}
+                            compact
+                          />
+                          {/* Opacity Slider for Gradient */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Opacity</span>
+                              <span className="text-[10px] text-[hsl(var(--builder-text))]">{styles.backgroundOpacity ?? 100}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={styles.backgroundOpacity ?? 100}
+                              onChange={(e) => handleBackgroundOpacityChange(parseInt(e.target.value))}
+                              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[hsl(var(--builder-surface-active))] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[hsl(var(--builder-accent))] [&::-webkit-slider-thumb]:cursor-pointer"
+                            />
+                          </div>
+                        </>
                       )}
                     </div>
                   )}
@@ -556,7 +630,10 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                       {/* Preview */}
                       <div 
                         className="w-full h-10 rounded border border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface-hover))] flex items-center justify-center text-lg font-bold"
-                        style={{ color: styles.textColor || '#FFFFFF' }}
+                        style={{ 
+                          color: styles.textColor || '#FFFFFF',
+                          opacity: (styles.textOpacity ?? 100) / 100
+                        }}
                       >
                         Aa
                       </div>
@@ -596,6 +673,22 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                             title={color}
                           />
                         ))}
+                      </div>
+                      
+                      {/* Text Opacity Slider */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Opacity</span>
+                          <span className="text-[10px] text-[hsl(var(--builder-text))]">{styles.textOpacity ?? 100}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={styles.textOpacity ?? 100}
+                          onChange={(e) => handleTextOpacityChange(parseInt(e.target.value))}
+                          className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[hsl(var(--builder-surface-active))] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[hsl(var(--builder-accent))] [&::-webkit-slider-thumb]:cursor-pointer"
+                        />
                       </div>
                     </div>
                   )}
