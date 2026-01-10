@@ -1765,8 +1765,18 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           <div ref={setNodeRef} style={videoWrapperStyles} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">Video</span>
+            {/* Visual indicator badges */}
+            {renderIndicatorBadges()}
+            {/* Unified Toolbar */}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="video"
+                elementLabel="Video"
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
             <div 
               {...attributes}
               {...listeners}
@@ -1803,12 +1813,31 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         );
 
       case 'divider':
+        const dividerColor = element.styles?.borderColor || (isDarkTheme ? '#374151' : '#e5e7eb');
+        const dividerHeight = element.styles?.height || '1px';
+        
         return (
           <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">Divider</span>
+            {/* Visual indicator badges */}
+            {renderIndicatorBadges()}
+            {/* Unified Toolbar */}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="divider"
+                elementLabel="Divider"
+                styles={{ backgroundColor: dividerColor }}
+                onStyleChange={(newStyles) => {
+                  if (newStyles.backgroundColor) {
+                    onUpdate?.({ styles: { ...element.styles, borderColor: newStyles.backgroundColor } });
+                  }
+                }}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
             <div 
               {...attributes}
               {...listeners}
@@ -1819,19 +1848,37 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             >
               <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
             </div>
-            <div className="w-full py-6" onClick={(e) => { e.stopPropagation(); onSelect(); }}>
-              <div className={cn("w-full h-px", isDarkTheme ? "bg-gray-700" : "bg-gray-200")} />
+            <div className="w-full py-4" onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+              <div 
+                className="w-full" 
+                style={{ 
+                  backgroundColor: dividerColor,
+                  height: dividerHeight,
+                }}
+              />
             </div>
           </div>
         );
 
       case 'spacer':
+        const spacerHeight = element.styles?.height || '48px';
+        
         return (
           <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">Spacer</span>
+            {/* Visual indicator badges */}
+            {renderIndicatorBadges()}
+            {/* Unified Toolbar */}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="spacer"
+                elementLabel="Spacer"
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
             <div 
               {...attributes}
               {...listeners}
@@ -1842,8 +1889,69 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             >
               <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
             </div>
-            <div className="w-full h-12 flex items-center justify-center" onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+            <div 
+              className="w-full flex items-center justify-center border-2 border-dashed rounded-lg transition-colors"
+              style={{ 
+                height: spacerHeight,
+                borderColor: isDarkTheme ? '#374151' : '#e5e7eb',
+              }}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
               <Minus className={cn("w-4 h-4", isDarkTheme ? "text-gray-600" : "text-gray-300")} />
+            </div>
+          </div>
+        );
+
+      case 'icon':
+        const iconName = element.content || 'star';
+        const iconSize = element.styles?.fontSize || '24px';
+        const iconColor = element.props?.color as string || (isDarkTheme ? '#9ca3af' : '#6b7280');
+        
+        return (
+          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {/* Inject state styles CSS */}
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {/* Visual indicator badges */}
+            {renderIndicatorBadges()}
+            {/* Unified Toolbar */}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="icon"
+                elementLabel="Icon"
+                styles={{ textColor: iconColor }}
+                onStyleChange={(newStyles) => {
+                  if (newStyles.textColor) {
+                    onUpdate?.({ props: { ...element.props, color: newStyles.textColor } });
+                  }
+                }}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              {...attributes}
+              {...listeners}
+              className={cn(
+                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
+                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
+              )}
+            >
+              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
+            </div>
+            <div 
+              className="p-2 flex items-center justify-center"
+              style={{ color: iconColor, fontSize: iconSize }}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {/* Render icon based on name - using Lucide icons */}
+              {iconName === 'star' && <Sparkles style={{ width: iconSize, height: iconSize }} />}
+              {iconName === 'check' && <Check style={{ width: iconSize, height: iconSize }} />}
+              {iconName === 'arrow-right' && <ArrowRight style={{ width: iconSize, height: iconSize }} />}
+              {iconName === 'play' && <Play style={{ width: iconSize, height: iconSize }} />}
+              {!['star', 'check', 'arrow-right', 'play'].includes(iconName) && (
+                <Sparkles style={{ width: iconSize, height: iconSize }} />
+              )}
             </div>
           </div>
         );

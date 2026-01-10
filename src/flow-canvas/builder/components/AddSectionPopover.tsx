@@ -296,6 +296,22 @@ const blockTemplates: BlockTemplate[] = [
   },
   {
     type: 'custom',
+    label: 'Spacer',
+    icon: <div className="w-4 h-4 border-t-2 border-b-2 border-current flex items-center justify-center" />,
+    description: 'Vertical spacing',
+    category: 'content',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Spacer',
+      elements: [
+        { id: generateId(), type: 'spacer', content: '', props: {}, styles: { height: '48px' } },
+      ],
+      props: {},
+    }),
+  },
+  {
+    type: 'custom',
     label: 'Divider',
     icon: <div className="w-4 h-0.5 bg-current" />,
     description: 'Horizontal separator',
@@ -306,6 +322,22 @@ const blockTemplates: BlockTemplate[] = [
       label: 'Divider',
       elements: [
         { id: generateId(), type: 'divider', content: '', props: {} },
+      ],
+      props: {},
+    }),
+  },
+  {
+    type: 'custom',
+    label: 'Icon',
+    icon: <Star size={18} />,
+    description: 'Decorative icon',
+    category: 'content',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Icon',
+      elements: [
+        { id: generateId(), type: 'icon', content: 'star', props: { color: '#8B5CF6' }, styles: { fontSize: '32px' } },
       ],
       props: {},
     }),

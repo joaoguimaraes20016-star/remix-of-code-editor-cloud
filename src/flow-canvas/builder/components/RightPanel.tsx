@@ -1305,16 +1305,27 @@ const ElementInspector: React.FC<{
           <div className="pt-3 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Color</span>
-              <ColorPickerPopover color={element.styles?.backgroundColor as string || '#e5e7eb'} onChange={(color) => handleStyleChange('backgroundColor', color)}>
+              <ColorPickerPopover color={element.styles?.borderColor as string || '#e5e7eb'} onChange={(color) => handleStyleChange('borderColor', color)}>
                 <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.styles?.backgroundColor as string || '#e5e7eb' }} />
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.styles?.borderColor as string || '#e5e7eb' }} />
                   <span className="text-xs text-builder-text-muted">Edit</span>
                 </button>
               </ColorPickerPopover>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Height</span>
-              <Input className="builder-input w-20 text-xs text-center" value={element.styles?.height || '1px'} onChange={(e) => handleStyleChange('height', e.target.value)} placeholder="1px" />
+              <span className="text-xs text-builder-text-muted">Thickness</span>
+              <Select 
+                value={element.styles?.height || '1px'}
+                onValueChange={(value) => handleStyleChange('height', value)}
+              >
+                <SelectTrigger className="builder-input w-20"><SelectValue placeholder="1px" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1px">1px</SelectItem>
+                  <SelectItem value="2px">2px</SelectItem>
+                  <SelectItem value="3px">3px</SelectItem>
+                  <SelectItem value="4px">4px</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CollapsibleSection>
@@ -1326,10 +1337,73 @@ const ElementInspector: React.FC<{
           <div className="pt-3 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Height</span>
-              <Input className="builder-input w-24 text-xs text-center" value={element.styles?.height || '24px'} onChange={(e) => handleStyleChange('height', e.target.value)} placeholder="24px" />
+              <Select 
+                value={element.styles?.height || '48px'}
+                onValueChange={(value) => handleStyleChange('height', value)}
+              >
+                <SelectTrigger className="builder-input w-24"><SelectValue placeholder="48px" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="16px">Small (16px)</SelectItem>
+                  <SelectItem value="24px">Medium (24px)</SelectItem>
+                  <SelectItem value="32px">32px</SelectItem>
+                  <SelectItem value="48px">Large (48px)</SelectItem>
+                  <SelectItem value="64px">64px</SelectItem>
+                  <SelectItem value="96px">XL (96px)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CollapsibleSection>
+      )}
+
+      {/* ========== ICON SECTION ========== */}
+      {element.type === 'icon' && (
+        <>
+          <CollapsibleSection title="Icon" icon={<Sparkles className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Icon</span>
+                <Select 
+                  value={element.content || 'star'}
+                  onValueChange={(value) => onUpdate({ content: value })}
+                >
+                  <SelectTrigger className="builder-input w-28"><SelectValue placeholder="Star" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="star">Star</SelectItem>
+                    <SelectItem value="check">Check</SelectItem>
+                    <SelectItem value="arrow-right">Arrow Right</SelectItem>
+                    <SelectItem value="play">Play</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Size</span>
+                <Select 
+                  value={element.styles?.fontSize || '24px'}
+                  onValueChange={(value) => handleStyleChange('fontSize', value)}
+                >
+                  <SelectTrigger className="builder-input w-20"><SelectValue placeholder="24px" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="16px">16px</SelectItem>
+                    <SelectItem value="20px">20px</SelectItem>
+                    <SelectItem value="24px">24px</SelectItem>
+                    <SelectItem value="32px">32px</SelectItem>
+                    <SelectItem value="48px">48px</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Color</span>
+                <ColorPickerPopover color={element.props?.color as string || '#6b7280'} onChange={(color) => handlePropsChange('color', color)}>
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.color as string || '#6b7280' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            </div>
+          </CollapsibleSection>
+        </>
       )}
 
       {/* ========== ADVANCED SECTION (Animation + Visibility) ========== */}
