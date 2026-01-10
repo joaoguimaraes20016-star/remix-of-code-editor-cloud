@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RichTextToolbar } from './RichTextToolbar';
-import { gradientToCSS } from './modals';
+import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
 
@@ -145,8 +145,21 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
   // Handle blur to stop editing - only emit content, not styles (styles are emitted on change)
   const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Don't blur if clicking on toolbar
-    if (e.relatedTarget?.closest('.rich-text-toolbar')) return;
+    // Check if clicking on toolbar (including portaled popovers)
+    const relatedTarget = e.relatedTarget as HTMLElement | null;
+    
+    // Don't blur if clicking on the toolbar itself
+    if (relatedTarget?.closest('.rich-text-toolbar')) return;
+    
+    // Don't blur if clicking on Radix portaled content (popovers, selects, etc.)
+    // These are rendered to document.body but have data attributes we can check
+    if (relatedTarget?.closest('[data-radix-popper-content-wrapper]')) return;
+    if (relatedTarget?.closest('[data-radix-select-content]')) return;
+    if (relatedTarget?.closest('[data-radix-popover-content]')) return;
+    
+    // Also check if the active element is inside a popover (for color inputs, etc.)
+    const activeElement = document.activeElement as HTMLElement | null;
+    if (activeElement?.closest('[data-radix-popper-content-wrapper]')) return;
     
     setIsEditing(false);
     setShowToolbar(false);
@@ -186,30 +199,36 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
   // Apply style changes - ONLY emit the properties that were explicitly changed
   const handleStyleChange = useCallback((newStyles: Partial<TextStyles>) => {
-    // Update local state with new gradient object reference if needed
-    const updatedStyles = { ...styles };
+    // Deep clone gradients to prevent shared references
+    const clonedStyles: Partial<TextStyles> = { ...newStyles };
     
-    // Handle textGradient specially - create new object reference
     if (newStyles.textGradient) {
-      updatedStyles.textGradient = { ...newStyles.textGradient };
+      clonedStyles.textGradient = cloneGradient(newStyles.textGradient);
+    }
+    if (newStyles.highlightGradient) {
+      clonedStyles.highlightGradient = cloneGradient(newStyles.highlightGradient);
     }
     
-    // Merge all other styles
-    Object.assign(updatedStyles, newStyles);
-    setStyles(updatedStyles);
+    // Handle case where fillType is gradient but no gradient exists
+    if (clonedStyles.textFillType === 'gradient' && !clonedStyles.textGradient && !styles.textGradient) {
+      clonedStyles.textGradient = cloneGradient(defaultGradient);
+    }
+    
+    // Update local state
+    setStyles(prev => ({ ...prev, ...clonedStyles }));
     
     // Track which properties are now modified
-    const changedKeys = Object.keys(newStyles) as (keyof TextStyles)[];
+    const changedKeys = Object.keys(clonedStyles) as (keyof TextStyles)[];
     setModifiedProps(prev => {
       const next = new Set(prev);
       changedKeys.forEach(k => next.add(k));
       return next;
     });
     
-    // Emit ONLY the properties that were just changed
+    // Emit ONLY the properties that were just changed (already cloned)
     if (contentRef.current) {
       const currentValue = contentRef.current.innerText || value;
-      onChange(currentValue, newStyles);
+      onChange(currentValue, clonedStyles);
     }
   }, [styles, value, onChange]);
 
@@ -258,7 +277,17 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   const getGradientStyles = (): React.CSSProperties => {
     if (styles.textFillType === 'gradient' && styles.textGradient) {
       return {
-        background: gradientToCSS(styles.textGradient),
+        // Use backgroundImage instead of background to avoid CSS shorthand conflicts
+        backgroundImage: gradientToCSS(styles.textGradient),
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+      } as React.CSSProperties;
+    }
+    // Fallback: if fillType is gradient but no gradient exists, use default
+    if (styles.textFillType === 'gradient') {
+      return {
+        backgroundImage: gradientToCSS(defaultGradient),
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
@@ -303,7 +332,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     const highlightStyles: React.CSSProperties = {};
     
     if (styles.highlightUseGradient && styles.highlightGradient) {
-      highlightStyles.background = gradientToCSS(styles.highlightGradient);
+      // Use backgroundImage to avoid CSS shorthand conflicts
+      highlightStyles.backgroundImage = gradientToCSS(styles.highlightGradient);
       highlightStyles.WebkitBackgroundClip = 'text';
       highlightStyles.WebkitTextFillColor = 'transparent';
       (highlightStyles as Record<string, string>).backgroundClip = 'text';
