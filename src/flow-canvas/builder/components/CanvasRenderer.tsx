@@ -2208,14 +2208,15 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
       style={{
         ...style,
         display: 'flex',
-        flexDirection: isNavbar ? 'row' : isFooter ? 'row' : (block.props?.direction as 'row' | 'column') || 'column',
-        justifyContent: isNavbar ? 'space-between' : justifyMap[block.props?.justifyContent as string] || block.props?.justifyContent as string || 'flex-start',
-        alignItems: isNavbar ? 'center' : alignMap[block.props?.alignItems as string] || block.props?.alignItems as string || 'stretch',
-        flexWrap: isFooter ? 'wrap' : block.props?.wrap ? 'wrap' : 'nowrap',
-        gap: block.props?.gap as string || block.styles?.gap || (isFooter ? '48px' : undefined),
+        // Use user-defined layout props, with sensible defaults for navbar/footer
+        flexDirection: (block.props?.direction as 'row' | 'column') || (isNavbar || isFooter ? 'row' : 'column'),
+        justifyContent: justifyMap[block.props?.justifyContent as string] || block.props?.justifyContent as string || (isNavbar ? 'space-between' : 'flex-start'),
+        alignItems: alignMap[block.props?.alignItems as string] || block.props?.alignItems as string || (isNavbar ? 'center' : 'stretch'),
+        flexWrap: block.props?.wrap ? 'wrap' : (isFooter ? 'wrap' : 'nowrap'),
+        gap: block.props?.gap as string || block.styles?.gap || (isFooter ? '48px' : isNavbar ? '16px' : undefined),
       }}
       className={cn(
-        'builder-selectable rounded-xl transition-all group relative',
+        'builder-selectable rounded-xl transition-all group/block relative',
         !block.styles?.padding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
         isSelected && 'builder-selected',
         isMultiSelected && !isSelected && 'ring-2 ring-builder-accent/50 ring-offset-1 ring-offset-builder-bg',
