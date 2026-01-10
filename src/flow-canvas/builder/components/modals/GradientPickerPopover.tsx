@@ -91,14 +91,26 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({
   onChange,
   compact = false,
 }) => {
-  const [gradient, setGradient] = useState<GradientValue>(value || defaultGradient);
+  const [gradient, setGradient] = useState<GradientValue>(() => cloneGradient(value || defaultGradient));
 
-  // Sync with external value when it changes
+  // Sync with external value when it changes - use deep comparison
   useEffect(() => {
     if (value) {
-      setGradient(value);
+      // Deep compare to prevent unnecessary updates that could cause glitches
+      const isSame = 
+        gradient.type === value.type && 
+        gradient.angle === value.angle &&
+        gradient.stops.length === value.stops.length &&
+        gradient.stops.every((s, i) => 
+          s.color === value.stops[i]?.color && 
+          s.position === value.stops[i]?.position
+        );
+      
+      if (!isSame) {
+        setGradient(cloneGradient(value));
+      }
     }
-  }, [value]);
+  }, [value, gradient]);
 
   // Always deep clone before updating to prevent shared references
   const updateGradient = (updates: Partial<GradientValue>) => {

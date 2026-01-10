@@ -646,20 +646,153 @@ const ElementInspector: React.FC<{
       {/* ========== TEXT/HEADING SECTIONS ========== */}
       {(element.type === 'text' || element.type === 'heading') && (
         <>
+          {/* Text Fill - Color or Gradient */}
+          <CollapsibleSection title="Text Fill" icon={<Palette className="w-4 h-4" />} defaultOpen>
+            <div className="space-y-3 pt-3">
+              {/* Fill Type Toggle */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Fill Type</span>
+                <div className="flex rounded-lg overflow-hidden border border-builder-border">
+                  <button
+                    onClick={() => {
+                      handlePropsChange('textFillType', 'solid');
+                      // Ensure color exists
+                      if (!element.props?.textColor) {
+                        handlePropsChange('textColor', '#FFFFFF');
+                      }
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium transition-colors",
+                      element.props?.textFillType !== 'gradient'
+                        ? 'bg-builder-accent text-white' 
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                    )}
+                  >
+                    Solid
+                  </button>
+                  <button
+                    onClick={() => {
+                      handlePropsChange('textFillType', 'gradient');
+                      // Ensure gradient exists
+                      if (!element.props?.textGradient) {
+                        handlePropsChange('textGradient', {
+                          type: 'linear',
+                          angle: 135,
+                          stops: [
+                            { color: '#8B5CF6', position: 0 },
+                            { color: '#D946EF', position: 100 },
+                          ],
+                        });
+                      }
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium transition-colors",
+                      element.props?.textFillType === 'gradient'
+                        ? 'bg-builder-accent text-white' 
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                    )}
+                  >
+                    Gradient
+                  </button>
+                </div>
+              </div>
+              
+              {/* Solid Color Picker */}
+              {element.props?.textFillType !== 'gradient' && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Color</span>
+                  <ColorPickerPopover 
+                    color={element.props?.textColor as string || '#FFFFFF'} 
+                    onChange={(color) => handlePropsChange('textColor', color)}
+                  >
+                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                      <div 
+                        className="w-6 h-6 rounded-md border border-builder-border" 
+                        style={{ backgroundColor: element.props?.textColor as string || '#FFFFFF' }} 
+                      />
+                      <span className="text-xs text-builder-text-muted">Edit</span>
+                    </button>
+                  </ColorPickerPopover>
+                </div>
+              )}
+              
+              {/* Gradient Picker */}
+              {element.props?.textFillType === 'gradient' && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Gradient</span>
+                  <GradientPickerPopover
+                    value={element.props?.textGradient as GradientValue | undefined}
+                    onChange={(gradient) => handlePropsChange('textGradient', gradient)}
+                  >
+                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                      <div 
+                        className="w-12 h-6 rounded-md border border-builder-border" 
+                        style={{ 
+                          background: element.props?.textGradient 
+                            ? gradientToCSS(element.props.textGradient as GradientValue) 
+                            : 'linear-gradient(135deg, #8B5CF6, #D946EF)' 
+                        }} 
+                      />
+                      <span className="text-xs text-builder-text-muted">Edit</span>
+                    </button>
+                  </GradientPickerPopover>
+                </div>
+              )}
+              
+              {/* Quick Color Presets (for solid) */}
+              {element.props?.textFillType !== 'gradient' && (
+                <div className="flex gap-1 flex-wrap">
+                  {textColorPresets.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => handlePropsChange('textColor', color)}
+                      className={cn(
+                        'w-5 h-5 rounded border transition-all',
+                        element.props?.textColor === color
+                          ? 'ring-2 ring-builder-accent ring-offset-1'
+                          : 'border-builder-border hover:scale-110'
+                      )}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+          
           {/* Typography */}
           <CollapsibleSection title="Typography" icon={<Type className="w-4 h-4" />} defaultOpen>
             <div className="space-y-3 pt-3">
               {/* Guidance message - point to floating toolbar */}
-              <div className="p-3 bg-builder-accent/10 rounded-lg border border-builder-accent/20">
-                <p className="text-xs text-builder-text flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-builder-accent flex-shrink-0" />
-                  <span><strong>Double-click</strong> text on canvas to format with colors, gradients & fonts</span>
+              <div className="p-2.5 bg-builder-accent/10 rounded-lg border border-builder-accent/20">
+                <p className="text-[11px] text-builder-text flex items-center gap-2">
+                  <Sparkles className="w-3 h-3 text-builder-accent flex-shrink-0" />
+                  <span><strong>Tip:</strong> Double-click text for rich formatting toolbar</span>
                 </p>
               </div>
               
-              {/* Font Family - Quick Override */}
+              {/* Font Size */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Font Override</span>
+                <span className="text-xs text-builder-text-muted">Size</span>
+                <Select value={element.props?.fontSize as string || 'md'} onValueChange={(value) => handlePropsChange('fontSize', value)}>
+                  <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Medium" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sm">Small</SelectItem>
+                    <SelectItem value="md">Medium</SelectItem>
+                    <SelectItem value="lg">Large</SelectItem>
+                    <SelectItem value="xl">X-Large</SelectItem>
+                    <SelectItem value="2xl">2X-Large</SelectItem>
+                    <SelectItem value="3xl">3X-Large</SelectItem>
+                    <SelectItem value="4xl">4X-Large</SelectItem>
+                    <SelectItem value="5xl">5X-Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Font Family */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Font</span>
                 <Select value={element.props?.fontFamily as string || 'inherit'} onValueChange={(value) => handlePropsChange('fontFamily', value)}>
                   <SelectTrigger className="builder-input w-28"><SelectValue placeholder="Inherit" /></SelectTrigger>
                   <SelectContent>
@@ -668,13 +801,30 @@ const ElementInspector: React.FC<{
                     <SelectItem value="DM Sans">DM Sans</SelectItem>
                     <SelectItem value="Oswald">Oswald</SelectItem>
                     <SelectItem value="Anton">Anton</SelectItem>
+                    <SelectItem value="Bebas Neue">Bebas Neue</SelectItem>
                     <SelectItem value="Space Grotesk">Space Grotesk</SelectItem>
                     <SelectItem value="Playfair Display">Playfair</SelectItem>
+                    <SelectItem value="Montserrat">Montserrat</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
-              {/* Text Alignment - Quick Access */}
+              {/* Font Weight */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Weight</span>
+                <Select value={element.props?.fontWeight as string || 'normal'} onValueChange={(value) => handlePropsChange('fontWeight', value)}>
+                  <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Normal" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="semibold">Semibold</SelectItem>
+                    <SelectItem value="bold">Bold</SelectItem>
+                    <SelectItem value="black">Black</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Text Alignment */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Align</span>
                 <div className="flex border border-builder-border rounded-lg overflow-hidden">
@@ -697,6 +847,23 @@ const ElementInspector: React.FC<{
                     </button>
                   ))}
                 </div>
+              </div>
+              
+              {/* Text Shadow */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Shadow</span>
+                <Select value={element.props?.textShadow as string || 'none'} onValueChange={(value) => handlePropsChange('textShadow', value)}>
+                  <SelectTrigger className="builder-input w-24"><SelectValue placeholder="None" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="subtle">Subtle</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="strong">Strong</SelectItem>
+                    <SelectItem value="glow">Glow</SelectItem>
+                    <SelectItem value="neon">Neon</SelectItem>
+                    <SelectItem value="depth">3D Depth</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CollapsibleSection>

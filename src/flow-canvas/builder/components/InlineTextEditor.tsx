@@ -49,8 +49,19 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   // Track which properties have been explicitly modified by the user
   const [modifiedProps, setModifiedProps] = useState<Set<keyof TextStyles>>(new Set());
   
-  // Current styles state - only store what's been set
-  const [styles, setStyles] = useState<Partial<TextStyles>>(() => initialStyles || {});
+  // Current styles state - initialize with cloned values to prevent shared references
+  const [styles, setStyles] = useState<Partial<TextStyles>>(() => {
+    if (!initialStyles) return {};
+    // Deep clone gradient objects on initial state
+    const cloned: Partial<TextStyles> = { ...initialStyles };
+    if (initialStyles.textGradient) {
+      cloned.textGradient = cloneGradient(initialStyles.textGradient);
+    }
+    if (initialStyles.highlightGradient) {
+      cloned.highlightGradient = cloneGradient(initialStyles.highlightGradient);
+    }
+    return cloned;
+  });
   
   const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
   const contentRef = useRef<HTMLDivElement>(null);
@@ -89,7 +100,16 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         !gradientEquals(initialStyles.highlightGradient, styles.highlightGradient);
       
       if (needsUpdate) {
-        setStyles(prev => ({ ...prev, ...initialStyles }));
+        // Deep clone the initialStyles to prevent shared references
+        const clonedStyles: Partial<TextStyles> = { ...initialStyles };
+        if (initialStyles.textGradient) {
+          clonedStyles.textGradient = cloneGradient(initialStyles.textGradient);
+        }
+        if (initialStyles.highlightGradient) {
+          clonedStyles.highlightGradient = cloneGradient(initialStyles.highlightGradient);
+        }
+        
+        setStyles(prev => ({ ...prev, ...clonedStyles }));
         // Mark initial styles as modified so they persist
         const keys = Object.keys(initialStyles) as (keyof TextStyles)[];
         setModifiedProps(prev => {
@@ -422,11 +442,26 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       });
     }
     
-    // No highlights - wrap in span with gradient/color styles for proper clipping
-    // This ensures background-clip: text works on the text content, not the parent div
-    if (styles.textFillType === 'gradient' && styles.textGradient) {
+    // No highlights - check if gradient should be applied
+    if (styles.textFillType === 'gradient') {
+      // Use existing gradient or fallback to default
+      const gradientValue = styles.textGradient || defaultGradient;
       return (
-        <span style={getGradientStyles()}>
+        <span style={{
+          backgroundImage: gradientToCSS(gradientValue),
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        } as React.CSSProperties}>
+          {value}
+        </span>
+      );
+    }
+    
+    // Solid color - apply via inline style if set
+    if (styles.textColor) {
+      return (
+        <span style={{ color: styles.textColor }}>
           {value}
         </span>
       );
