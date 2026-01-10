@@ -649,9 +649,17 @@ const ElementInspector: React.FC<{
           {/* Typography */}
           <CollapsibleSection title="Typography" icon={<Type className="w-4 h-4" />} defaultOpen>
             <div className="space-y-3 pt-3">
-              {/* Font Family */}
+              {/* Guidance message - point to floating toolbar */}
+              <div className="p-3 bg-builder-accent/10 rounded-lg border border-builder-accent/20">
+                <p className="text-xs text-builder-text flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-builder-accent flex-shrink-0" />
+                  <span><strong>Double-click</strong> text on canvas to format with colors, gradients & fonts</span>
+                </p>
+              </div>
+              
+              {/* Font Family - Quick Override */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Font</span>
+                <span className="text-xs text-builder-text-muted">Font Override</span>
                 <Select value={element.props?.fontFamily as string || 'inherit'} onValueChange={(value) => handlePropsChange('fontFamily', value)}>
                   <SelectTrigger className="builder-input w-28"><SelectValue placeholder="Inherit" /></SelectTrigger>
                   <SelectContent>
@@ -666,101 +674,7 @@ const ElementInspector: React.FC<{
                 </Select>
               </div>
               
-              {/* Font Size */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Size</span>
-                <div className="flex gap-1 flex-wrap">
-                  {['sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl'].map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => handleResponsiveStyleChange('fontSize', size)}
-                      className={cn(
-                        'px-1.5 py-1 text-[10px] rounded transition-colors',
-                        (element.props?.fontSize || element.responsive?.[currentDeviceMode]?.fontSize) === size 
-                          ? 'bg-builder-accent text-white' 
-                          : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
-                      )}
-                    >
-                      {size.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Font Weight */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Weight</span>
-                <Select value={element.props?.fontWeight as string || 'normal'} onValueChange={(value) => handlePropsChange('fontWeight', value)}>
-                  <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Normal" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Regular</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="semibold">Semibold</SelectItem>
-                    <SelectItem value="bold">Bold</SelectItem>
-                    <SelectItem value="black">Black</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Fill Type */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Fill</span>
-                <TogglePill 
-                  value={element.props?.textFillType !== 'gradient'} 
-                  onToggle={() => handlePropsChange('textFillType', element.props?.textFillType === 'gradient' ? 'solid' : 'gradient')} 
-                  labels={['Solid', 'Gradient']} 
-                />
-              </div>
-              
-              {/* Solid Color */}
-              {element.props?.textFillType !== 'gradient' && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Color</span>
-                  <ColorPickerPopover color={element.props?.textColor as string || '#1f2937'} onChange={(color) => handlePropsChange('textColor', color)}>
-                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                      <div className="w-5 h-5 rounded border border-builder-border" style={{ backgroundColor: element.props?.textColor as string || '#1f2937' }} />
-                      <span className="text-xs text-builder-text-muted">Edit</span>
-                    </button>
-                  </ColorPickerPopover>
-                </div>
-              )}
-              
-              {/* Text Gradient */}
-              {element.props?.textFillType === 'gradient' && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-builder-text-muted">Gradient</span>
-                    <GradientPickerPopover
-                      value={element.props?.textGradient as GradientValue | undefined}
-                      onChange={(gradient) => handlePropsChange('textGradient', gradient)}
-                    >
-                      <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                        <div className="w-12 h-5 rounded border border-builder-border" style={{ background: element.props?.textGradient ? gradientToCSS(element.props.textGradient as GradientValue) : 'linear-gradient(135deg, #8B5CF6, #D946EF)' }} />
-                        <span className="text-xs text-builder-text-muted">Edit</span>
-                      </button>
-                    </GradientPickerPopover>
-                  </div>
-                  {/* Gradient Presets */}
-                  <div className="flex gap-1.5 flex-wrap">
-                    {[
-                      { name: 'Fire', gradient: { type: 'linear' as const, angle: 135, stops: [{ color: '#ef4444', position: 0 }, { color: '#fbbf24', position: 100 }] } },
-                      { name: 'Gold', gradient: { type: 'linear' as const, angle: 135, stops: [{ color: '#fbbf24', position: 0 }, { color: '#d97706', position: 100 }] } },
-                      { name: 'Purple', gradient: { type: 'linear' as const, angle: 135, stops: [{ color: '#8b5cf6', position: 0 }, { color: '#d946ef', position: 100 }] } },
-                      { name: 'Ocean', gradient: { type: 'linear' as const, angle: 135, stops: [{ color: '#06b6d4', position: 0 }, { color: '#8b5cf6', position: 100 }] } },
-                    ].map((preset) => (
-                      <button
-                        key={preset.name}
-                        onClick={() => handlePropsChange('textGradient', preset.gradient)}
-                        className="w-7 h-5 rounded border border-builder-border hover:ring-1 hover:ring-builder-accent transition-all"
-                        style={{ background: gradientToCSS(preset.gradient) }}
-                        title={preset.name}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-              
-              {/* Text Alignment */}
+              {/* Text Alignment - Quick Access */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Align</span>
                 <div className="flex border border-builder-border rounded-lg overflow-hidden">

@@ -128,7 +128,7 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({
           compact ? "h-10 text-lg" : "h-16 text-2xl"
         )}
         style={{ 
-          background: gradientToCSS(gradient),
+          backgroundImage: gradientToCSS(gradient),
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
