@@ -764,6 +764,25 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
       if (element.styles?.borderColor) styles.borderColor = element.styles.borderColor;
       if (element.styles?.borderWidth && !element.styles?.borderStyle) styles.borderStyle = 'solid';
       
+      // Background styles - support solid, gradient, and none
+      const fillType = element.props?.fillType as string;
+      if (fillType === 'none') {
+        // No background
+        styles.backgroundColor = 'transparent';
+      } else if (fillType === 'gradient' && element.props?.gradient) {
+        // Gradient background
+        styles.background = gradientToCSS(element.props.gradient as GradientValue);
+      } else if (element.styles?.backgroundColor) {
+        // Solid background color
+        styles.backgroundColor = element.styles.backgroundColor;
+      }
+      
+      // Apply background opacity if set
+      const bgOpacity = element.props?.backgroundOpacity as number | undefined;
+      if (bgOpacity !== undefined && bgOpacity < 100) {
+        styles.opacity = bgOpacity / 100;
+      }
+      
       return styles;
     };
     
@@ -863,15 +882,17 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                   textDecoration: element.props?.textDecoration as UnifiedToolbarStyles['textDecoration'],
                   textAlign: element.props?.textAlign as 'left' | 'center' | 'right',
                   textColor: element.props?.textColor as string,
+                  textOpacity: element.props?.textOpacity as number,
                   textFillType: element.props?.textFillType as 'solid' | 'gradient',
                   textGradient: element.props?.textGradient as GradientValue,
                   textShadow: element.props?.textShadow as string,
                   backgroundColor: element.styles?.backgroundColor as string,
-                  fillType: element.props?.fillType as 'solid' | 'gradient',
+                  backgroundOpacity: element.props?.backgroundOpacity as number,
+                  fillType: element.props?.fillType as 'solid' | 'gradient' | 'none',
                   gradient: element.props?.gradient as GradientValue,
                 }}
                 onStyleChange={(newStyles) => {
-                  const propUpdates: Record<string, string | boolean | object | undefined> = {};
+                  const propUpdates: Record<string, string | boolean | object | number | undefined> = {};
                   const styleUpdates: Record<string, string | undefined> = {};
                   
                   // Typography and text styling go to props
@@ -884,11 +905,13 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                   if (newStyles.textFillType !== undefined) propUpdates.textFillType = newStyles.textFillType;
                   if (newStyles.textGradient !== undefined) propUpdates.textGradient = newStyles.textGradient;
                   if (newStyles.textShadow !== undefined) propUpdates.textShadow = newStyles.textShadow;
+                  if (newStyles.textOpacity !== undefined) propUpdates.textOpacity = newStyles.textOpacity;
                   
                   // Background styling
                   if (newStyles.backgroundColor !== undefined) styleUpdates.backgroundColor = newStyles.backgroundColor;
                   if (newStyles.fillType !== undefined) propUpdates.fillType = newStyles.fillType;
                   if (newStyles.gradient !== undefined) propUpdates.gradient = newStyles.gradient;
+                  if (newStyles.backgroundOpacity !== undefined) propUpdates.backgroundOpacity = newStyles.backgroundOpacity;
                   
                   const updates: Partial<Element> = {};
                   if (Object.keys(propUpdates).length > 0) updates.props = { ...element.props, ...propUpdates };
@@ -1029,15 +1052,17 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                   textDecoration: element.props?.textDecoration as UnifiedToolbarStyles['textDecoration'],
                   textAlign: element.props?.textAlign as 'left' | 'center' | 'right',
                   textColor: element.props?.textColor as string,
+                  textOpacity: element.props?.textOpacity as number,
                   textFillType: element.props?.textFillType as 'solid' | 'gradient',
                   textGradient: element.props?.textGradient as GradientValue,
                   textShadow: element.props?.textShadow as string,
                   backgroundColor: element.styles?.backgroundColor as string,
-                  fillType: element.props?.fillType as 'solid' | 'gradient',
+                  backgroundOpacity: element.props?.backgroundOpacity as number,
+                  fillType: element.props?.fillType as 'solid' | 'gradient' | 'none',
                   gradient: element.props?.gradient as GradientValue,
                 }}
                 onStyleChange={(newStyles) => {
-                  const propUpdates: Record<string, string | boolean | object | undefined> = {};
+                  const propUpdates: Record<string, string | boolean | object | number | undefined> = {};
                   const styleUpdates: Record<string, string | undefined> = {};
                   
                   // Typography and text styling go to props
@@ -1050,11 +1075,13 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                   if (newStyles.textFillType !== undefined) propUpdates.textFillType = newStyles.textFillType;
                   if (newStyles.textGradient !== undefined) propUpdates.textGradient = newStyles.textGradient;
                   if (newStyles.textShadow !== undefined) propUpdates.textShadow = newStyles.textShadow;
+                  if (newStyles.textOpacity !== undefined) propUpdates.textOpacity = newStyles.textOpacity;
                   
                   // Background styling
                   if (newStyles.backgroundColor !== undefined) styleUpdates.backgroundColor = newStyles.backgroundColor;
                   if (newStyles.fillType !== undefined) propUpdates.fillType = newStyles.fillType;
                   if (newStyles.gradient !== undefined) propUpdates.gradient = newStyles.gradient;
+                  if (newStyles.backgroundOpacity !== undefined) propUpdates.backgroundOpacity = newStyles.backgroundOpacity;
                   
                   const updates: Partial<Element> = {};
                   if (Object.keys(propUpdates).length > 0) updates.props = { ...element.props, ...propUpdates };
