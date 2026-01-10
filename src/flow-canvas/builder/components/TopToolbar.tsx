@@ -346,10 +346,10 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
               <Grid3X3 className="w-4 h-4" />
             </ToolbarButton>
 
-            {/* Canvas Theme Toggle - changes the funnel page theme, not editor UI */}
+            {/* Editor Theme Toggle - changes the editor panels between dark and light */}
             <ToolbarButton
               onClick={onCanvasThemeToggle}
-              tooltip={canvasTheme === 'light' ? 'Page Theme: Light → Dark' : 'Page Theme: Dark → Light'}
+              tooltip={canvasTheme === 'light' ? 'Editor: Light → Dark' : 'Editor: Dark → Light'}
             >
               {canvasTheme === 'light' ? (
                 <Moon className="w-4 h-4" />

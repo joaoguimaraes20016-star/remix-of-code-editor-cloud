@@ -226,7 +226,7 @@
     @apply hidden;
   }
 
-  /* Block type badge - shows on hover with distinct styling */
+  /* Block type badge - shows on block hover with distinct styling */
   .block-type-badge {
     @apply absolute -top-8 left-4 px-3 py-1 text-[11px] font-semibold 
            bg-[hsl(var(--builder-accent-secondary))] text-white rounded-lg whitespace-nowrap
@@ -234,7 +234,8 @@
            shadow-lg;
   }
 
-  .builder-selectable:hover > .block-type-badge,
+  /* Show block badge on direct block hover (using group/block), not child element hover */
+  .group\/block:hover > .block-type-badge,
   .builder-selected > .block-type-badge {
     @apply opacity-100;
   }

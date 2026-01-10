@@ -72,7 +72,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
           absolute top-1/2 -translate-y-1/2 ${positionClasses}
           flex flex-col gap-0.5 p-1 rounded-lg
           bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))]
-          shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150
+          shadow-lg opacity-0 group-hover/block:opacity-100 transition-opacity duration-150
           z-20
         `}
       >

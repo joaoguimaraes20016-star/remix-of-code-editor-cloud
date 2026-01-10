@@ -79,6 +79,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [isBlockPaletteOpen, setIsBlockPaletteOpen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [replayAnimationKey, setReplayAnimationKey] = useState(0);
+  
+  // Editor UI theme state - controls panels/toolbar appearance (dark by default)
+  const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark');
 
   // Handler to replay animation on an element
   const handleReplayAnimation = useCallback((elementId: string) => {
@@ -890,7 +893,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   ]);
 
   return (
-    <div className="h-screen flex flex-col bg-builder-bg overflow-hidden dark">
+    <div className={`h-screen flex flex-col overflow-hidden ${editorTheme === 'dark' ? 'dark bg-builder-bg' : 'bg-slate-100'}`}>
       {/* Top Toolbar */}
       <TopToolbar
         pageName={page.name}
@@ -917,15 +920,11 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
         onRenameProject={handleRenameProject}
         onExportProject={handleExportProject}
-        canvasTheme={page.settings?.theme || 'light'}
+        canvasTheme={editorTheme}
         saveStatus={saveStatus}
         lastSavedAt={lastSavedAt}
         onCanvasThemeToggle={() => {
-          const newTheme = page.settings?.theme === 'dark' ? 'light' : 'dark';
-          handlePageUpdate({
-            ...page,
-            settings: { ...page.settings, theme: newTheme }
-          }, `Switch to ${newTheme} mode`);
+          setEditorTheme(prev => prev === 'dark' ? 'light' : 'dark');
         }}
       />
 
