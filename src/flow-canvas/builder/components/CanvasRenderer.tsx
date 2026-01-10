@@ -2019,9 +2019,20 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
     // Apply block styles
     backgroundColor: block.styles?.backgroundColor,
     background: block.styles?.background,
+    // Padding - individual values override shorthand
     padding: block.styles?.padding,
+    paddingTop: block.styles?.paddingTop,
+    paddingRight: block.styles?.paddingRight,
+    paddingBottom: block.styles?.paddingBottom,
+    paddingLeft: block.styles?.paddingLeft,
+    // Margin
+    margin: block.styles?.margin,
     gap: block.styles?.gap,
     borderRadius: block.styles?.borderRadius,
+    // Border styles
+    borderWidth: block.styles?.borderWidth,
+    borderColor: block.styles?.borderColor,
+    borderStyle: block.styles?.borderWidth ? 'solid' : undefined,
     // Apply block shadow
     ...blockShadowStyle,
     // Apply backdrop blur
