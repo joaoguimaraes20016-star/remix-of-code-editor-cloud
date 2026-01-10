@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Type, Image, Video, Minus, ArrowRight, ArrowUpRight, ChevronRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Download, Smartphone, MousePointer2, Layout, Menu } from 'lucide-react';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
-import { ElementActionBar } from './ElementActionBar';
+import { UnifiedElementToolbar, UnifiedToolbarStyles } from './UnifiedElementToolbar';
 import { AddSectionPopover } from './AddSectionPopover';
 import { InlineTextEditor, TextStyles } from './InlineTextEditor';
 import { evaluateVisibility } from '../hooks/useScrollAnimation';
@@ -847,22 +847,30 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           >
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">Heading {level}</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing - hidden during inline text editing */}
+            {/* Unified Toolbar - hidden during inline text editing */}
             {!readOnly && (
-              <ElementActionBar
+              <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="heading"
-                currentAlign={element.props?.textAlign as 'left' | 'center' | 'right' | undefined}
-                currentColor={element.props?.textColor as string || typographyStyles.color as string}
+                elementLabel={`Heading ${level}`}
+                styles={{
+                  fontFamily: element.props?.fontFamily as string,
+                  fontSize: element.props?.fontSize as string,
+                  fontWeight: element.props?.fontWeight as UnifiedToolbarStyles['fontWeight'],
+                  fontStyle: element.props?.fontStyle as UnifiedToolbarStyles['fontStyle'],
+                  textDecoration: element.props?.textDecoration as UnifiedToolbarStyles['textDecoration'],
+                  textAlign: element.props?.textAlign as 'left' | 'center' | 'right',
+                  textColor: element.props?.textColor as string,
+                  textFillType: element.props?.textFillType as 'solid' | 'gradient',
+                  textGradient: element.props?.textGradient as GradientValue,
+                  textShadow: element.props?.textShadow as string,
+                }}
+                onStyleChange={(newStyles) => onUpdate?.({ props: { ...element.props, ...newStyles } })}
                 onAlignChange={(align) => onUpdate?.({ props: { ...element.props, textAlign: align } })}
-                onColorChange={(color) => onUpdate?.({ props: { ...element.props, textColor: color, textFillType: 'solid' } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                isDarkTheme={isDarkTheme}
                 hidden={isInlineEditing}
               />
             )}
@@ -978,22 +986,30 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           >
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">{isLogo ? 'Logo' : isFooterLogo ? 'Footer Logo' : isFooterHeading ? 'Footer Heading' : 'Text'}</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing - hidden during inline text editing */}
+            {/* Unified Toolbar - hidden during inline text editing */}
             {!readOnly && (
-              <ElementActionBar
+              <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="text"
-                currentAlign={element.props?.textAlign as 'left' | 'center' | 'right' | undefined}
-                currentColor={element.props?.textColor as string || typographyStyles.color as string}
+                elementLabel={isLogo ? 'Logo' : isFooterLogo ? 'Footer Logo' : isFooterHeading ? 'Footer Heading' : 'Text'}
+                styles={{
+                  fontFamily: element.props?.fontFamily as string,
+                  fontSize: element.props?.fontSize as string,
+                  fontWeight: element.props?.fontWeight as UnifiedToolbarStyles['fontWeight'],
+                  fontStyle: element.props?.fontStyle as UnifiedToolbarStyles['fontStyle'],
+                  textDecoration: element.props?.textDecoration as UnifiedToolbarStyles['textDecoration'],
+                  textAlign: element.props?.textAlign as 'left' | 'center' | 'right',
+                  textColor: element.props?.textColor as string,
+                  textFillType: element.props?.textFillType as 'solid' | 'gradient',
+                  textGradient: element.props?.textGradient as GradientValue,
+                  textShadow: element.props?.textShadow as string,
+                }}
+                onStyleChange={(newStyles) => onUpdate?.({ props: { ...element.props, ...newStyles } })}
                 onAlignChange={(align) => onUpdate?.({ props: { ...element.props, textAlign: align } })}
-                onColorChange={(color) => onUpdate?.({ props: { ...element.props, textColor: color, textFillType: 'solid' } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                isDarkTheme={isDarkTheme}
                 hidden={isInlineEditing}
               />
             )}
@@ -1119,22 +1135,36 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           <div ref={setNodeRef} style={wrapperStyle} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">{isNavPill ? 'Nav Link' : isFooterLink ? 'Footer Link' : 'Button'}</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing */}
+            {/* Unified Toolbar */}
             {!readOnly && (
-              <ElementActionBar
+              <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="button"
-                currentAlign={buttonAlignment}
-                currentColor={effectiveBg}
+                elementLabel={isNavPill ? 'Nav Link' : isFooterLink ? 'Footer Link' : 'Button'}
+                styles={{
+                  textAlign: buttonAlignment,
+                  backgroundColor: effectiveBg,
+                  fillType: element.props?.fillType as 'solid' | 'gradient',
+                  gradient: element.props?.gradient as GradientValue,
+                }}
+                onStyleChange={(newStyles) => {
+                  const updates: Partial<Element> = {};
+                  if (newStyles.backgroundColor) {
+                    updates.styles = { ...element.styles, backgroundColor: newStyles.backgroundColor };
+                  }
+                  if (newStyles.fillType) {
+                    updates.props = { ...element.props, fillType: newStyles.fillType };
+                  }
+                  if (newStyles.gradient) {
+                    updates.props = { ...element.props, ...updates.props, gradient: newStyles.gradient };
+                  }
+                  if (Object.keys(updates).length > 0) onUpdate?.(updates);
+                }}
                 onAlignChange={(align) => onUpdate?.({ styles: { ...element.styles, textAlign: align } })}
-                onColorChange={(color) => onUpdate?.({ styles: { ...element.styles, backgroundColor: color } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                isDarkTheme={isDarkTheme}
               />
             )}
             <div 
@@ -1249,25 +1279,28 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">Input</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing */}
+            {/* Unified Toolbar */}
             {!readOnly && (
-              <ElementActionBar
+              <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="input"
-                currentAlign={inputAlign}
-                currentColor={inputBg as string}
+                styles={{
+                  textAlign: inputAlign as 'left' | 'center' | 'right',
+                  backgroundColor: inputBg as string,
+                }}
+                onStyleChange={(newStyles) => {
+                  if (newStyles.backgroundColor) {
+                    onUpdate?.({ styles: { ...element.styles, backgroundColor: newStyles.backgroundColor } });
+                  }
+                }}
                 onAlignChange={(align) => {
                   const margin = align === 'center' ? '0 auto' : align === 'right' ? '0 0 0 auto' : '';
                   onUpdate?.({ styles: { ...element.styles, margin, display: 'block' } });
                 }}
-                onColorChange={(color) => onUpdate?.({ styles: { ...element.styles, backgroundColor: color } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                isDarkTheme={isDarkTheme}
               />
             )}
             <div 
@@ -1338,18 +1371,15 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            {!isPreviewMode && <span className="element-type-badge">Checkbox</span>}
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing */}
+            {/* Unified Toolbar */}
             {!readOnly && (
-              <ElementActionBar
+              <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="checkbox"
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                isDarkTheme={isDarkTheme}
               />
             )}
             {!readOnly && (
@@ -1419,18 +1449,15 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            {!isPreviewMode && <span className="element-type-badge">Radio</span>}
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing */}
+            {/* Unified Toolbar */}
             {!readOnly && (
-              <ElementActionBar
+              <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="radio"
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                isDarkTheme={isDarkTheme}
               />
             )}
             {!readOnly && (
@@ -1489,18 +1516,15 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">Select</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing */}
+            {/* Unified Toolbar */}
             {!readOnly && (
-              <ElementActionBar
+              <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="select"
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                isDarkTheme={isDarkTheme}
               />
             )}
             <div 
@@ -1583,18 +1607,15 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           >
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Element type badge */}
-            <span className="element-type-badge">Image</span>
             {/* Visual indicator badges */}
             {renderIndicatorBadges()}
-            {/* Hover Action Bar for quick editing */}
+            {/* Unified Toolbar */}
             {!readOnly && (
-              <ElementActionBar
+              <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="image"
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                isDarkTheme={isDarkTheme}
               />
             )}
             <div 
