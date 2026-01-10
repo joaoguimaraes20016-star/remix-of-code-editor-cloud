@@ -537,14 +537,53 @@ const ElementInspector: React.FC<{
           {/* Button Appearance */}
           <CollapsibleSection title="Appearance" icon={<Palette className="w-4 h-4" />} defaultOpen>
             <div className="pt-3 space-y-3">
-              {/* Fill Type */}
+              {/* Fill Type Toggle - ATOMIC UPDATES */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Fill</span>
-                <TogglePill 
-                  value={element.props?.fillType !== 'gradient'} 
-                  onToggle={() => handlePropsChange('fillType', element.props?.fillType === 'gradient' ? 'solid' : 'gradient')} 
-                  labels={['Solid', 'Gradient']} 
-                />
+                <div className="flex rounded-lg overflow-hidden border border-builder-border">
+                  <button
+                    onClick={() => {
+                      // Atomic update: set fillType and ensure backgroundColor exists
+                      const bg = element.styles?.backgroundColor || '#8B5CF6';
+                      handleMultiPropsChange({ fillType: 'solid' });
+                      handleStyleChange('backgroundColor', bg);
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium transition-colors",
+                      element.props?.fillType !== 'gradient'
+                        ? 'bg-builder-accent text-white' 
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                    )}
+                  >
+                    Solid
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Atomic update: set fillType and ensure gradient exists
+                      const existingGradient = element.props?.gradient as GradientValue | undefined;
+                      const gradient = existingGradient || {
+                        type: 'linear' as const,
+                        angle: 135,
+                        stops: [
+                          { color: '#8B5CF6', position: 0 },
+                          { color: '#D946EF', position: 100 },
+                        ],
+                      };
+                      handleMultiPropsChange({ 
+                        fillType: 'gradient',
+                        gradient: cloneGradient(gradient),
+                      });
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium transition-colors",
+                      element.props?.fillType === 'gradient'
+                        ? 'bg-builder-accent text-white' 
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                    )}
+                  >
+                    Gradient
+                  </button>
+                </div>
               </div>
               
               {/* Solid Color */}
@@ -567,12 +606,19 @@ const ElementInspector: React.FC<{
                   <GradientPickerPopover
                     value={element.props?.gradient as GradientValue | undefined}
                     onChange={(gradient) => {
-                      handlePropsChange('gradient', gradient);
-                      handleStyleChange('background', gradientToCSS(gradient));
+                      // Clone gradient and store it - CanvasRenderer will convert to CSS
+                      handlePropsChange('gradient', cloneGradient(gradient));
                     }}
                   >
                     <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                      <div className="w-12 h-6 rounded-md border border-builder-border" style={{ background: element.styles?.background as string || 'linear-gradient(135deg, #8B5CF6, #D946EF)' }} />
+                      <div 
+                        className="w-12 h-6 rounded-md border border-builder-border" 
+                        style={{ 
+                          background: element.props?.gradient 
+                            ? gradientToCSS(element.props.gradient as GradientValue) 
+                            : 'linear-gradient(135deg, #8B5CF6, #D946EF)' 
+                        }} 
+                      />
                       <span className="text-xs text-builder-text-muted">Edit</span>
                     </button>
                   </GradientPickerPopover>

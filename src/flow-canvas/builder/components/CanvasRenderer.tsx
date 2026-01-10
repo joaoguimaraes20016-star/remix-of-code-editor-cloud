@@ -959,9 +959,11 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const buttonBg = isGradient 
           ? undefined 
           : (elementBg && elementBg !== '' ? elementBg : primaryColor);
-        const buttonGradient = isGradient 
-          ? (element.styles?.background as string || 'linear-gradient(135deg, #8B5CF6, #D946EF)')
-          : undefined;
+        // Compute gradient CSS from props.gradient object (not from styles.background)
+        const buttonGradientValue = element.props?.gradient as GradientValue | undefined;
+        const buttonGradient = isGradient && buttonGradientValue
+          ? gradientToCSS(buttonGradientValue)
+          : (isGradient ? 'linear-gradient(135deg, #8B5CF6, #D946EF)' : undefined);
         
         // Determine wrapper styles for alignment using textAlign
         const buttonAlignment = element.styles?.textAlign as 'left' | 'center' | 'right' | undefined;
