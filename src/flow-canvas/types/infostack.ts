@@ -83,6 +83,17 @@ export interface AnimationSettings {
 // State-based styling for Framer-like control
 export type ElementState = 'base' | 'hover' | 'active' | 'disabled' | 'focus';
 
+// Transition easing presets
+export type TransitionEasing = 
+  | 'ease' 
+  | 'ease-in' 
+  | 'ease-out' 
+  | 'ease-in-out' 
+  | 'linear'
+  | 'spring'      // cubic-bezier(0.175, 0.885, 0.32, 1.275)
+  | 'bounce'      // cubic-bezier(0.68, -0.55, 0.265, 1.55)
+  | 'smooth';     // cubic-bezier(0.4, 0, 0.2, 1)
+
 export interface ElementStateStyles {
   backgroundColor?: string;
   textColor?: string;
@@ -92,6 +103,10 @@ export interface ElementStateStyles {
   transform?: string;
   shadow?: string;
   scale?: string;
+  // Transition settings for smooth state changes
+  transitionDuration?: string;    // e.g., '300ms', '0.3s'
+  transitionEasing?: TransitionEasing;
+  transitionDelay?: string;       // e.g., '0ms', '100ms'
 }
 
 export interface ElementStyles {
@@ -178,6 +193,27 @@ export interface Stack {
 
 export type FrameBackgroundType = 'transparent' | 'white' | 'dark' | 'glass' | 'custom' | 'gradient' | 'image';
 
+// Glassmorphism settings
+export interface GlassmorphismSettings {
+  backdropBlur?: number;         // 0-30 px
+  glassTint?: string;            // color with alpha
+  glassTintOpacity?: number;     // 0-100
+}
+
+// Custom shadow settings for Figma-like control
+export interface ShadowLayer {
+  x: number;
+  y: number;
+  blur: number;
+  spread: number;
+  color: string;
+  inset?: boolean;
+}
+
+export interface CustomShadowSettings {
+  layers: ShadowLayer[];
+}
+
 export interface Frame {
   id: string;
   label: string;
@@ -193,6 +229,10 @@ export interface Frame {
     stops: Array<{ color: string; position: number }>;
   };
   backgroundImage?: string;
+  // Glassmorphism
+  glass?: GlassmorphismSettings;
+  // Custom shadows
+  customShadow?: CustomShadowSettings;
 }
 
 export interface Step {

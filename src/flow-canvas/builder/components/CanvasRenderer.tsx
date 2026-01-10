@@ -281,6 +281,30 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   // Animation replay ref for forcing reflow
   const elementRef = React.useRef<HTMLDivElement>(null);
   
+  // Easing presets map
+  const easingMap: Record<string, string> = {
+    'ease': 'ease',
+    'ease-in': 'ease-in',
+    'ease-out': 'ease-out',
+    'ease-in-out': 'ease-in-out',
+    'linear': 'linear',
+    'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+    'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+    'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+  };
+  
+  // Build transition CSS from element's base state styles
+  const buildTransitionCSS = useCallback((): string => {
+    const baseStyles = element.stateStyles?.base;
+    const duration = baseStyles?.transitionDuration || '200ms';
+    const easing = easingMap[baseStyles?.transitionEasing || 'ease'] || 'ease';
+    const delay = baseStyles?.transitionDelay || '0ms';
+    
+    // Build transition for all commonly animated properties
+    const properties = ['transform', 'opacity', 'background-color', 'color', 'border-color', 'box-shadow'];
+    return properties.map(prop => `${prop} ${duration} ${easing} ${delay}`).join(', ');
+  }, [element.stateStyles?.base?.transitionDuration, element.stateStyles?.base?.transitionEasing, element.stateStyles?.base?.transitionDelay]);
+  
   // Style resolver: merges base → stateStyles → responsive overrides
   const resolveElementStyles = useCallback((): React.CSSProperties => {
     const base: React.CSSProperties = {};
@@ -335,9 +359,11 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   }
 
   const resolvedStyles = resolveElementStyles();
+  const transitionCSS = buildTransitionCSS();
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 200ms ease, opacity 200ms ease',
+    // Use custom transition if element has state styles, otherwise use default
+    transition: element.stateStyles ? transitionCSS : (transition || 'transform 200ms ease, opacity 200ms ease'),
     ...resolvedStyles,
   };
   
