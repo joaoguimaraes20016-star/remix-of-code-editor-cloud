@@ -103,6 +103,7 @@ import {
   ColorPickerPopover,
   GradientPickerPopover,
   gradientToCSS,
+  cloneGradient,
   ButtonActionModal,
   VideoEmbedModal,
   ImagePickerModal
@@ -345,6 +346,11 @@ const ElementInspector: React.FC<{
 
   const handlePropsChange = (key: string, value: unknown) => {
     onUpdate({ props: { ...element.props, [key]: value } });
+  };
+
+  // Atomic update of multiple props at once to prevent race conditions
+  const handleMultiPropsChange = (updates: Record<string, unknown>) => {
+    onUpdate({ props: { ...element.props, ...updates } });
   };
 
   const handleResponsiveStyleChange = (key: string, value: string) => {
@@ -649,17 +655,18 @@ const ElementInspector: React.FC<{
           {/* Text Fill - Color or Gradient */}
           <CollapsibleSection title="Text Fill" icon={<Palette className="w-4 h-4" />} defaultOpen>
             <div className="space-y-3 pt-3">
-              {/* Fill Type Toggle */}
+              {/* Fill Type Toggle - ATOMIC UPDATES to prevent race conditions */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Fill Type</span>
                 <div className="flex rounded-lg overflow-hidden border border-builder-border">
                   <button
                     onClick={() => {
-                      handlePropsChange('textFillType', 'solid');
-                      // Ensure color exists
-                      if (!element.props?.textColor) {
-                        handlePropsChange('textColor', '#FFFFFF');
-                      }
+                      // Atomic update: set both fillType and color together
+                      const color = element.props?.textColor || '#FFFFFF';
+                      handleMultiPropsChange({
+                        textFillType: 'solid',
+                        textColor: color,
+                      });
                     }}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium transition-colors",
@@ -672,18 +679,19 @@ const ElementInspector: React.FC<{
                   </button>
                   <button
                     onClick={() => {
-                      handlePropsChange('textFillType', 'gradient');
-                      // Ensure gradient exists
-                      if (!element.props?.textGradient) {
-                        handlePropsChange('textGradient', {
-                          type: 'linear',
-                          angle: 135,
-                          stops: [
-                            { color: '#8B5CF6', position: 0 },
-                            { color: '#D946EF', position: 100 },
-                          ],
-                        });
-                      }
+                      // Atomic update: set both fillType and gradient together
+                      const gradient = element.props?.textGradient || {
+                        type: 'linear',
+                        angle: 135,
+                        stops: [
+                          { color: '#8B5CF6', position: 0 },
+                          { color: '#D946EF', position: 100 },
+                        ],
+                      };
+                      handleMultiPropsChange({
+                        textFillType: 'gradient',
+                        textGradient: cloneGradient(gradient as GradientValue),
+                      });
                     }}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium transition-colors",
@@ -722,7 +730,7 @@ const ElementInspector: React.FC<{
                   <span className="text-xs text-builder-text-muted">Gradient</span>
                   <GradientPickerPopover
                     value={element.props?.textGradient as GradientValue | undefined}
-                    onChange={(gradient) => handlePropsChange('textGradient', gradient)}
+                    onChange={(gradient) => handlePropsChange('textGradient', cloneGradient(gradient))}
                   >
                     <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                       <div 
@@ -899,7 +907,7 @@ const ElementInspector: React.FC<{
                   <span className="text-xs text-builder-text-muted">Gradient</span>
                   <GradientPickerPopover
                     value={element.props?.highlightGradient as GradientValue | undefined}
-                    onChange={(gradient) => handlePropsChange('highlightGradient', gradient)}
+                    onChange={(gradient) => handlePropsChange('highlightGradient', cloneGradient(gradient))}
                   >
                     <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                       <div className="w-12 h-6 rounded-md border border-builder-border" style={{ background: element.props?.highlightGradient ? gradientToCSS(element.props.highlightGradient as GradientValue) : 'linear-gradient(135deg, #F59E0B, #EF4444)' }} />
@@ -1900,7 +1908,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
               <span className="text-xs text-builder-text-muted">Border Gradient</span>
               <GradientPickerPopover
                 value={block.props?.borderGradient as GradientValue | undefined}
-                onChange={(gradient) => onUpdate({ props: { ...block.props, borderGradient: gradient } })}
+                onChange={(gradient) => onUpdate({ props: { ...block.props, borderGradient: cloneGradient(gradient) } })}
               >
                 <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                   <div 
@@ -2020,7 +2028,7 @@ const FrameInspector: React.FC<{
       updates.backgroundImage = undefined;
     } else if (value.type === 'gradient') {
       updates.background = 'gradient';
-      updates.backgroundGradient = value.gradient;
+      updates.backgroundGradient = value.gradient ? cloneGradient(value.gradient) : undefined;
       updates.backgroundColor = undefined;
       updates.backgroundImage = undefined;
     } else if (value.type === 'image') {

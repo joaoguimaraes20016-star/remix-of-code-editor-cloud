@@ -8,7 +8,7 @@ import { ElementActionBar } from './ElementActionBar';
 import { AddSectionPopover } from './AddSectionPopover';
 import { InlineTextEditor, TextStyles } from './InlineTextEditor';
 import { evaluateVisibility } from '../hooks/useScrollAnimation';
-import { gradientToCSS, GradientValue } from './modals';
+import { gradientToCSS, cloneGradient, GradientValue } from './modals';
 import { BuilderContextMenu } from './ContextMenu';
 import {
   DndContext,
@@ -524,7 +524,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
       if (textStyles.fontFamily !== undefined) propsUpdate.fontFamily = textStyles.fontFamily;
       if (textStyles.textColor !== undefined) propsUpdate.textColor = textStyles.textColor;
       if (textStyles.textFillType !== undefined) propsUpdate.textFillType = textStyles.textFillType;
-      if (textStyles.textGradient !== undefined) propsUpdate.textGradient = textStyles.textGradient;
+      if (textStyles.textGradient !== undefined) propsUpdate.textGradient = cloneGradient(textStyles.textGradient);
       if (textStyles.textShadow !== undefined) propsUpdate.textShadow = textStyles.textShadow;
       
       onUpdate?.({ 

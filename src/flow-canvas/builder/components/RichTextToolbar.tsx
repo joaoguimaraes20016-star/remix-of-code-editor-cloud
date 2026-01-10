@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -74,12 +74,12 @@ const textShadowPresets = [
   { label: '3D', value: 'depth' },
 ];
 
-export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
+export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(({
   styles,
   onChange,
   position,
   onClose,
-}) => {
+}, ref) => {
   const [fontOpen, setFontOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
@@ -172,6 +172,7 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
 
   return (
     <div 
+      ref={ref}
       className="rich-text-toolbar fixed z-50 flex items-center gap-0.5 p-1.5 rounded-xl bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] shadow-2xl animate-in"
       style={{
         top: clampedTop,
@@ -482,4 +483,6 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
       </button>
     </div>
   );
-};
+});
+
+RichTextToolbar.displayName = 'RichTextToolbar';

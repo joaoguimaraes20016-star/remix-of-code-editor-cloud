@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Image as ImageIcon } from 'lucide-react';
-import { ColorPickerPopover, GradientPickerPopover, gradientToCSS } from './modals';
+import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, cloneGradient } from './modals';
 import type { GradientValue } from './modals';
 
 export type BackgroundType = 'solid' | 'gradient' | 'image';
@@ -99,7 +99,8 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
   };
 
   const handleGradientChange = (gradient: GradientValue) => {
-    onChange({ ...value, type: 'gradient', gradient });
+    // Clone to prevent shared references
+    onChange({ ...value, type: 'gradient', gradient: cloneGradient(gradient) });
   };
 
   const handleImageUrlChange = (imageUrl: string) => {
