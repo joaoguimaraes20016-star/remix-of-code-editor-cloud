@@ -125,6 +125,45 @@
     --input: 220 18% 14%;
     --ring: 275 70% 55%;
   }
+
+  /* Editor-only light theme (panels + canvas chrome). Does NOT affect the page content inside the device frame. */
+  .editor-light {
+    --background: 0 0% 100%;
+    --foreground: 220 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 20% 10%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 46%;
+
+    --border: 220 14% 90%;
+    --input: 220 14% 90%;
+
+    /* Builder UI tokens */
+    --builder-bg: 220 14% 96%;
+    --builder-surface: 0 0% 100%;
+    --builder-surface-hover: 220 14% 96%;
+    --builder-surface-active: 220 14% 92%;
+    --builder-border: 220 14% 86%;
+    --builder-border-subtle: 220 14% 90%;
+
+    --builder-text: 220 20% 10%;
+    --builder-text-secondary: 220 15% 25%;
+    --builder-text-muted: 220 10% 45%;
+    --builder-text-dim: 220 10% 60%;
+
+    /* Canvas chrome */
+    --canvas-bg: 220 14% 96%;
+    --canvas-grid: 220 14% 90%;
+    --canvas-frame-border: 220 14% 80%;
+  }
 }
 
 /* Safety: Ensure inspector panels receive pointer events above canvas */
