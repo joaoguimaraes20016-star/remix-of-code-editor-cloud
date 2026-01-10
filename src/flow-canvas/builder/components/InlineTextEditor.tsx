@@ -268,10 +268,9 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     });
     
     // Emit ONLY the properties that were just changed (already cloned)
-    if (contentRef.current) {
-      const currentValue = contentRef.current.innerText || value;
-      onChange(currentValue, clonedStyles);
-    }
+    // Always call onChange - use contentRef.innerText if available, otherwise use value prop
+    const currentValue = contentRef.current?.innerText ?? value;
+    onChange(currentValue, clonedStyles);
   }, [styles, value, onChange]);
 
   // Get CSS classes based on styles
@@ -338,8 +337,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     return {};
   };
 
-  // Get inline styles for extended properties - NEVER apply gradient here
-  // Gradients are always handled in renderContent() to ensure proper text clipping
+  // Get inline styles for extended properties
+  // When editing AND using gradient, apply gradient to the contenteditable div itself
   const getInlineStyles = (): React.CSSProperties => {
     const inlineStyles: React.CSSProperties = {};
     
@@ -348,8 +347,16 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       inlineStyles.fontFamily = styles.fontFamily;
     }
     
-    // Text color (only if not gradient)
-    if (styles.textColor && styles.textFillType !== 'gradient') {
+    // When editing with gradient, apply gradient styles to the container div
+    // This ensures the gradient is visible while the user is editing
+    if (isEditing && styles.textFillType === 'gradient') {
+      const gradientValue = styles.textGradient || defaultGradient;
+      inlineStyles.backgroundImage = gradientToCSS(gradientValue);
+      inlineStyles.WebkitBackgroundClip = 'text';
+      inlineStyles.WebkitTextFillColor = 'transparent';
+      (inlineStyles as Record<string, string>).backgroundClip = 'text';
+    } else if (styles.textColor && styles.textFillType !== 'gradient') {
+      // Text color (only if not gradient)
       inlineStyles.color = styles.textColor;
     }
     
@@ -414,7 +421,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       return !isEditing ? placeholder : '';
     }
     
-    // When editing, show raw text (including {{}} syntax)
+    // When editing, return raw text - gradient/color is applied to container via getInlineStyles
     if (isEditing) {
       return value;
     }
