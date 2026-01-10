@@ -2078,6 +2078,22 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   const isNavbar = block.props?.layout === 'navbar';
   const isFooter = block.type === 'footer' || block.props?.layout === 'footer' || block.props?.layout === 'footer-framer';
 
+  // Map shorthand values to CSS values
+  const justifyMap: Record<string, string> = {
+    'start': 'flex-start',
+    'center': 'center', 
+    'end': 'flex-end',
+    'between': 'space-between',
+    'around': 'space-around',
+  };
+  
+  const alignMap: Record<string, string> = {
+    'start': 'flex-start',
+    'center': 'center',
+    'end': 'flex-end', 
+    'stretch': 'stretch',
+  };
+
   const blockInnerContent = (
     <div
       ref={!hasGradientBorder ? setNodeRef : undefined}
@@ -2085,8 +2101,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         ...style,
         display: 'flex',
         flexDirection: isNavbar ? 'row' : isFooter ? 'row' : (block.props?.direction as 'row' | 'column') || 'column',
-        justifyContent: isNavbar ? 'space-between' : block.props?.justifyContent as string || 'flex-start',
-        alignItems: isNavbar ? 'center' : block.props?.alignItems as string || 'stretch',
+        justifyContent: isNavbar ? 'space-between' : justifyMap[block.props?.justifyContent as string] || block.props?.justifyContent as string || 'flex-start',
+        alignItems: isNavbar ? 'center' : alignMap[block.props?.alignItems as string] || block.props?.alignItems as string || 'stretch',
         flexWrap: isFooter ? 'wrap' : block.props?.wrap ? 'wrap' : 'nowrap',
         gap: block.props?.gap as string || block.styles?.gap || (isFooter ? '48px' : undefined),
       }}

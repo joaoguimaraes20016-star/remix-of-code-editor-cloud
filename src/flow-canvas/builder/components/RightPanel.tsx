@@ -1880,41 +1880,41 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
           {/* Padding (detailed) */}
           <div className="space-y-2">
             <span className="text-xs text-builder-text-muted">Padding (detailed)</span>
-            <div className="grid grid-cols-4 gap-2">
-              <div className="text-center">
+            <div className="grid grid-cols-4 gap-1">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] text-builder-text-muted">Top</span>
                 <Input 
-                  className="builder-input text-xs text-center h-7" 
+                  className="builder-input text-xs text-center h-8 w-full" 
                   value={block.styles?.paddingTop || ''}
                   onChange={(e) => handleStyleUpdate('paddingTop', e.target.value)}
-                  placeholder="T"
-                  title="Padding Top"
+                  placeholder="0"
                 />
               </div>
-              <div className="text-center">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] text-builder-text-muted">Right</span>
                 <Input 
-                  className="builder-input text-xs text-center h-7" 
+                  className="builder-input text-xs text-center h-8 w-full" 
                   value={block.styles?.paddingRight || ''}
                   onChange={(e) => handleStyleUpdate('paddingRight', e.target.value)}
-                  placeholder="R"
-                  title="Padding Right"
+                  placeholder="0"
                 />
               </div>
-              <div className="text-center">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] text-builder-text-muted">Bottom</span>
                 <Input 
-                  className="builder-input text-xs text-center h-7" 
+                  className="builder-input text-xs text-center h-8 w-full" 
                   value={block.styles?.paddingBottom || ''}
                   onChange={(e) => handleStyleUpdate('paddingBottom', e.target.value)}
-                  placeholder="B"
-                  title="Padding Bottom"
+                  placeholder="0"
                 />
               </div>
-              <div className="text-center">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] text-builder-text-muted">Left</span>
                 <Input 
-                  className="builder-input text-xs text-center h-7" 
+                  className="builder-input text-xs text-center h-8 w-full" 
                   value={block.styles?.paddingLeft || ''}
                   onChange={(e) => handleStyleUpdate('paddingLeft', e.target.value)}
-                  placeholder="L"
-                  title="Padding Left"
+                  placeholder="0"
                 />
               </div>
             </div>
