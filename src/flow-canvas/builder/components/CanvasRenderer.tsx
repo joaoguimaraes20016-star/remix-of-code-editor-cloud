@@ -866,8 +866,35 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                   textFillType: element.props?.textFillType as 'solid' | 'gradient',
                   textGradient: element.props?.textGradient as GradientValue,
                   textShadow: element.props?.textShadow as string,
+                  backgroundColor: element.styles?.backgroundColor as string,
+                  fillType: element.props?.fillType as 'solid' | 'gradient',
+                  gradient: element.props?.gradient as GradientValue,
                 }}
-                onStyleChange={(newStyles) => onUpdate?.({ props: { ...element.props, ...newStyles } })}
+                onStyleChange={(newStyles) => {
+                  const propUpdates: Record<string, string | boolean | object | undefined> = {};
+                  const styleUpdates: Record<string, string | undefined> = {};
+                  
+                  // Typography and text styling go to props
+                  if (newStyles.fontFamily !== undefined) propUpdates.fontFamily = newStyles.fontFamily;
+                  if (newStyles.fontSize !== undefined) propUpdates.fontSize = newStyles.fontSize;
+                  if (newStyles.fontWeight !== undefined) propUpdates.fontWeight = newStyles.fontWeight;
+                  if (newStyles.fontStyle !== undefined) propUpdates.fontStyle = newStyles.fontStyle;
+                  if (newStyles.textDecoration !== undefined) propUpdates.textDecoration = newStyles.textDecoration;
+                  if (newStyles.textColor !== undefined) propUpdates.textColor = newStyles.textColor;
+                  if (newStyles.textFillType !== undefined) propUpdates.textFillType = newStyles.textFillType;
+                  if (newStyles.textGradient !== undefined) propUpdates.textGradient = newStyles.textGradient;
+                  if (newStyles.textShadow !== undefined) propUpdates.textShadow = newStyles.textShadow;
+                  
+                  // Background styling
+                  if (newStyles.backgroundColor !== undefined) styleUpdates.backgroundColor = newStyles.backgroundColor;
+                  if (newStyles.fillType !== undefined) propUpdates.fillType = newStyles.fillType;
+                  if (newStyles.gradient !== undefined) propUpdates.gradient = newStyles.gradient;
+                  
+                  const updates: Partial<Element> = {};
+                  if (Object.keys(propUpdates).length > 0) updates.props = { ...element.props, ...propUpdates };
+                  if (Object.keys(styleUpdates).length > 0) updates.styles = { ...element.styles, ...styleUpdates } as Record<string, string>;
+                  if (Object.keys(updates).length > 0) onUpdate?.(updates);
+                }}
                 onAlignChange={(align) => onUpdate?.({ props: { ...element.props, textAlign: align } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
@@ -1005,8 +1032,35 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                   textFillType: element.props?.textFillType as 'solid' | 'gradient',
                   textGradient: element.props?.textGradient as GradientValue,
                   textShadow: element.props?.textShadow as string,
+                  backgroundColor: element.styles?.backgroundColor as string,
+                  fillType: element.props?.fillType as 'solid' | 'gradient',
+                  gradient: element.props?.gradient as GradientValue,
                 }}
-                onStyleChange={(newStyles) => onUpdate?.({ props: { ...element.props, ...newStyles } })}
+                onStyleChange={(newStyles) => {
+                  const propUpdates: Record<string, string | boolean | object | undefined> = {};
+                  const styleUpdates: Record<string, string | undefined> = {};
+                  
+                  // Typography and text styling go to props
+                  if (newStyles.fontFamily !== undefined) propUpdates.fontFamily = newStyles.fontFamily;
+                  if (newStyles.fontSize !== undefined) propUpdates.fontSize = newStyles.fontSize;
+                  if (newStyles.fontWeight !== undefined) propUpdates.fontWeight = newStyles.fontWeight;
+                  if (newStyles.fontStyle !== undefined) propUpdates.fontStyle = newStyles.fontStyle;
+                  if (newStyles.textDecoration !== undefined) propUpdates.textDecoration = newStyles.textDecoration;
+                  if (newStyles.textColor !== undefined) propUpdates.textColor = newStyles.textColor;
+                  if (newStyles.textFillType !== undefined) propUpdates.textFillType = newStyles.textFillType;
+                  if (newStyles.textGradient !== undefined) propUpdates.textGradient = newStyles.textGradient;
+                  if (newStyles.textShadow !== undefined) propUpdates.textShadow = newStyles.textShadow;
+                  
+                  // Background styling
+                  if (newStyles.backgroundColor !== undefined) styleUpdates.backgroundColor = newStyles.backgroundColor;
+                  if (newStyles.fillType !== undefined) propUpdates.fillType = newStyles.fillType;
+                  if (newStyles.gradient !== undefined) propUpdates.gradient = newStyles.gradient;
+                  
+                  const updates: Partial<Element> = {};
+                  if (Object.keys(propUpdates).length > 0) updates.props = { ...element.props, ...propUpdates };
+                  if (Object.keys(styleUpdates).length > 0) updates.styles = { ...element.styles, ...styleUpdates } as Record<string, string>;
+                  if (Object.keys(updates).length > 0) onUpdate?.(updates);
+                }}
                 onAlignChange={(align) => onUpdate?.({ props: { ...element.props, textAlign: align } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
