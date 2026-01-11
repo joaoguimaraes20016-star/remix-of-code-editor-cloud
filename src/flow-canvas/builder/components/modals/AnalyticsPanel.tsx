@@ -31,7 +31,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
           <DialogTitle className="text-builder-text flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-builder-accent" />
             Analytics
-            <span className="ml-2 px-2 py-0.5 text-[10px] font-medium bg-amber-500/20 text-amber-400 rounded-full">
+            <span className="ml-2 px-2 py-0.5 text-[10px] font-medium bg-builder-accent-secondary/15 text-builder-accent-secondary rounded-full">
               Demo
             </span>
           </DialogTitle>

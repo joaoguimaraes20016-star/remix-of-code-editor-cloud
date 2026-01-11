@@ -137,7 +137,7 @@ export const CollaboratorsModal: React.FC<CollaboratorsModalProps> = ({
                     <p className="text-sm text-builder-text font-medium">{invitedEmail}</p>
                     <p className="text-xs text-builder-text-muted">Editor</p>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-none flex items-center gap-1">
+                  <Badge variant="secondary" className="text-[10px] bg-builder-accent-secondary/12 text-builder-accent-secondary border-none flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     Pending
                   </Badge>
