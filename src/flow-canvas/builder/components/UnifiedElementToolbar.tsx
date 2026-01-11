@@ -300,33 +300,30 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const isBgGradient = styles.fillType === 'gradient';
   const isBgNone = styles.fillType === 'none' || (!styles.backgroundColor && !styles.gradient && styles.fillType !== 'solid' && styles.fillType !== 'gradient');
 
-  // Touch-friendly button classes (min 44px tap target on mobile, 36px on desktop)
+  // Compact button classes - same size for all views, optimized for touch
   const btnClass = cn(
     "flex items-center justify-center transition-all duration-150",
-    "min-w-[44px] min-h-[44px] p-2 rounded-lg", // Mobile
-    "sm:min-w-[36px] sm:min-h-[36px] sm:p-1.5 sm:rounded-md" // Desktop
+    "min-w-[32px] min-h-[32px] p-1.5 rounded-md",
+    "active:scale-95"
   );
-  const btnInactive = "text-white/60 hover:text-white hover:bg-white/10 active:bg-white/20 active:scale-95";
+  const btnInactive = "text-white/60 hover:text-white hover:bg-white/10 active:bg-white/20";
   const btnActive = "bg-[hsl(var(--builder-accent))] text-white shadow-sm";
 
   const toolbarContent = (
     <TooltipProvider delayDuration={500}>
       <motion.div
         ref={mergedRef}
-        initial={{ opacity: 0, scale: 0.95, y: position.placement === 'top' ? 4 : -4 }}
+        initial={{ opacity: 0, scale: 0.96, y: position.placement === 'top' ? 6 : -6 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.12, ease: 'easeOut' }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
         className={cn(
-          'flex items-center px-2 py-1.5 rounded-2xl',
-          'bg-[hsl(220,10%,10%)]/95 backdrop-blur-xl',
+          'flex items-center px-1.5 py-1 rounded-xl',
+          'bg-[hsl(220,10%,12%)]/98 backdrop-blur-xl',
           'border border-white/[0.08]',
-          'shadow-2xl shadow-black/60',
+          'shadow-xl shadow-black/40',
           'pointer-events-auto',
-          // Gap between items
-          'gap-1 sm:gap-0.5',
-          // Mobile: full width at bottom
-          isMobilePreview && 'w-full flex-wrap justify-center gap-1.5 py-2'
+          'gap-0.5'
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -623,35 +620,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     </TooltipProvider>
   );
 
-  // On mobile, render as floating bottom bar with better styling
-  if (isMobilePreview && portalContainer) {
-    return createPortal(
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 40, scale: 0.95 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 400 }}
-          className={cn(
-            "fixed bottom-4 left-4 right-4 pointer-events-auto",
-            "bg-[hsl(220,10%,10%)]/95 backdrop-blur-xl",
-            "border border-white/[0.08] rounded-2xl",
-            "shadow-2xl shadow-black/60",
-            "safe-area-bottom"
-          )}
-        >
-          <div className="p-3">
-            {toolbarContent}
-          </div>
-          {/* Drag handle indicator */}
-          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/20 rounded-full" />
-        </motion.div>
-      </AnimatePresence>,
-      portalContainer
-    );
-  }
-
-  // Desktop: use portal with calculated position
+  // Always use portal with calculated position (same for mobile & desktop - inline near element)
   if (portalContainer && targetRef?.current) {
     return createPortal(
       <AnimatePresence>
@@ -676,7 +645,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   return (
     <AnimatePresence>
       <div
-        className="absolute z-[60] -top-12 left-1/2 -translate-x-1/2"
+        className="absolute z-[60] -top-10 left-1/2 -translate-x-1/2"
         style={{ pointerEvents: 'auto' }}
       >
         {toolbarContent}
