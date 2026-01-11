@@ -2136,6 +2136,20 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   // Determine if this is a special layout block
   const isNavbar = block.props?.layout === 'navbar';
   const isFooter = block.type === 'footer' || block.props?.layout === 'footer' || block.props?.layout === 'footer-framer';
+  const isHeader = block.props?.layout === 'header';
+  const isContainer = block.props?.layout === 'container';
+  
+  // Check if any element inside this block is selected (for parent highlight)
+  const hasSelectedChild = block.elements.some(el => selection.id === el.id && selection.type === 'element');
+  
+  // Get container-specific badge class
+  const getBlockBadgeClass = () => {
+    if (isNavbar) return 'block-badge-navigation';
+    if (isHeader) return 'block-badge-header';
+    if (isFooter) return 'block-badge-footer';
+    if (isContainer) return 'block-badge-container';
+    return '';
+  };
 
   // Check if user has set any custom padding (not empty, not undefined)
   const hasCustomPadding = !!(
@@ -2177,6 +2191,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         !hasCustomPadding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
         isSelected && 'builder-block-selected',
         isMultiSelected && !isSelected && 'builder-multi-selected',
+        // Parent highlight when child element is selected
+        hasSelectedChild && !isSelected && 'builder-parent-of-selected',
         block.type === 'hero' && !hasCustomPadding && 'text-center py-12',
         block.type === 'cta' && 'justify-center',
         isDragging && 'opacity-50 z-50',
@@ -2187,8 +2203,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         onSelect({ type: 'block', id: block.id, path: blockPath }, e.shiftKey);
       }}
     >
-      {/* Block Type Badge - Shows on hover */}
-      <span className="block-type-badge">{blockTypeLabel}</span>
+      {/* Block Type Badge - Shows on hover with container-specific styling */}
+      <span className={cn('block-type-badge', getBlockBadgeClass())}>{blockTypeLabel}</span>
       
       {/* Block Action Bar - shows on selection with smooth animation */}
       {!readOnly && (
