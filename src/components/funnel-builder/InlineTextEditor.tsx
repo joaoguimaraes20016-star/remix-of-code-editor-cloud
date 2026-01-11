@@ -1,19 +1,37 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Bold, 
-  Italic, 
-  Underline, 
-  AlignLeft, 
-  AlignCenter, 
+import {
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
   AlignRight,
   Palette,
   Type,
   MoveVertical,
-  Space
+  Space,
+  GripVertical,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
+
+import {
+  applyStylesToSelection,
+  getStyledSpanAtSelection,
+  hasSelectionInElement,
+  mergeAdjacentStyledSpans,
+  sanitizeStyledHTML,
+  updateSpanStyle,
+} from '@/flow-canvas/builder/utils/selectionStyles';
+import {
+  GradientEditor,
+  cloneGradient,
+  defaultGradient,
+  gradientToCSS,
+  type GradientValue,
+} from '@/flow-canvas/builder/components/modals';
 
 interface InlineTextEditorProps {
   value: string;
