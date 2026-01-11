@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React from 'react';
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { 
@@ -62,76 +62,25 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
   onTrackingIdChange,
   dragHandleProps,
 }) => {
-  const barRef = useRef<HTMLDivElement>(null);
-  const [xOffset, setXOffset] = useState(0);
-  const [computedPosition, setComputedPosition] = useState<'left' | 'right'>(position);
-
-  // Dynamically clamp the bar inside the device frame
-  useLayoutEffect(() => {
-    const bar = barRef.current;
-    if (!bar) return;
-
-    // Find the device frame boundary
-    const frame = bar.closest('.device-frame') as HTMLElement | null;
-    if (!frame) return;
-
-    const compute = () => {
-      // Reset transform
-      setXOffset(0);
-      setComputedPosition(position);
-
-      requestAnimationFrame(() => {
-        const frameRect = frame.getBoundingClientRect();
-        const barRect = bar.getBoundingClientRect();
-        const padding = 12;
-
-        // If bar would clip left edge of frame, shift it inside
-        let dx = 0;
-        if (barRect.left < frameRect.left + padding) {
-          dx = (frameRect.left + padding) - barRect.left;
-        }
-        // If bar would clip right edge of frame, shift it inside
-        if (barRect.right > frameRect.right - padding) {
-          dx = (frameRect.right - padding) - barRect.right;
-        }
-
-        setXOffset(dx);
-      });
-    };
-
-    compute();
-
-    const onResize = () => compute();
-    window.addEventListener('resize', onResize);
-
-    const ro = new ResizeObserver(() => compute());
-    ro.observe(frame);
-
-    return () => {
-      window.removeEventListener('resize', onResize);
-      ro.disconnect();
-    };
-  }, [blockId, position]);
-
-  const positionClasses = computedPosition === 'left' 
-    ? 'right-full mr-2' 
-    : 'left-full ml-2';
+  // Simple stable positioning - place on the specified side without complex clamping
+  // This prevents jitter from layout effects and resize observers
+  const positionClasses = position === 'left' 
+    ? 'right-full mr-3' 
+    : 'left-full ml-3';
 
   return (
     <TooltipProvider delayDuration={300}>
       <div 
-        ref={barRef}
         className={cn(
           'absolute top-1/2 -translate-y-1/2',
           positionClasses,
           'flex flex-col gap-0.5 p-1 rounded-lg',
           'bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))]',
           'shadow-lg opacity-0 group-hover/block:opacity-100 transition-opacity duration-150',
-          'z-[9000]'
+          'z-[60]',
+          // Ensure the bar doesn't get cut off by overflow
+          'pointer-events-auto'
         )}
-        style={{
-          transform: `translateY(-50%) translateX(${xOffset}px)`,
-        }}
       >
         {/* Drag Handle - connected to @dnd-kit when dragHandleProps provided */}
         <Tooltip>

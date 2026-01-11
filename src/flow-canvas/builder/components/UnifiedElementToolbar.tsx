@@ -1,4 +1,4 @@
-import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
+import React, { forwardRef, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   AlignLeft,
@@ -135,11 +135,6 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   // Unified color tab: 'background' | 'text' | 'gradient'
   const [colorTab, setColorTab] = useState<'background' | 'text' | 'gradient'>('text');
 
-  // Keep toolbar within the device frame when elements are near edges
-  const [xOffset, setXOffset] = useState(0);
-  const [yOffset, setYOffset] = useState(0);
-  const [placement, setPlacement] = useState<'top' | 'bottom'>('top');
-
   // Determine what controls to show based on element type
   const isTextElement = ['heading', 'text'].includes(elementType);
   const isButton = elementType === 'button';
@@ -156,62 +151,6 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const showTextShadow = isTextElement;
 
   if (hidden) return null;
-
-  useLayoutEffect(() => {
-    const el = toolbarRef.current;
-    if (!el) return;
-
-    // Find the closest device frame; this is the clipping boundary.
-    const frame = el.closest('.device-frame') as HTMLElement | null;
-    if (!frame) return;
-
-    const compute = () => {
-      // reset to measure natural position
-      setXOffset(0);
-      setYOffset(0);
-
-      // allow layout to settle
-      requestAnimationFrame(() => {
-        const frameRect = frame.getBoundingClientRect();
-        const rect = el.getBoundingClientRect();
-        const padding = 12;
-
-        // Flip above/below if needed.
-        let nextPlacement: 'top' | 'bottom' = placement;
-        if (rect.top < frameRect.top + padding) nextPlacement = 'bottom';
-        if (rect.bottom > frameRect.bottom - padding) nextPlacement = 'top';
-
-        // Horizontal clamping via translate offset.
-        let dx = 0;
-        if (rect.left < frameRect.left + padding) dx = (frameRect.left + padding) - rect.left;
-        if (rect.right > frameRect.right - padding) dx = (frameRect.right - padding) - rect.right;
-
-        // Vertical clamping via translate offset (in addition to placement flipping).
-        let dy = 0;
-        if (rect.top < frameRect.top + padding) dy = (frameRect.top + padding) - rect.top;
-        if (rect.bottom > frameRect.bottom - padding) dy = (frameRect.bottom - padding) - rect.bottom;
-
-        setPlacement(nextPlacement);
-        setXOffset(dx);
-        setYOffset(dy);
-      });
-    };
-
-    compute();
-
-    // Recompute when viewport changes / panels resize.
-    const onResize = () => compute();
-    window.addEventListener('resize', onResize);
-
-    // Observe frame resizes (panel drag etc.)
-    const ro = new ResizeObserver(() => compute());
-    ro.observe(frame);
-
-    return () => {
-      window.removeEventListener('resize', onResize);
-      ro.disconnect();
-    };
-  }, [elementId, elementType, fontOpen, colorOpen, shadowOpen, placement]);
   const handleFontFamilyChange = (fontFamily: string) => {
     onStyleChange?.({ fontFamily });
     setFontOpen(false);
@@ -327,26 +266,20 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
 
   return (
     <TooltipProvider delayDuration={200}>
-      {/* Invisible hover bridge */}
+      {/* Invisible hover bridge - simple stable positioning */}
       <div
-        className={cn(
-          'absolute left-0 right-0 h-14',
-          placement === 'top' ? '-top-12 z-[8990]' : 'top-full z-[8990]'
-        )}
+        className="absolute left-0 right-0 h-10 -top-10 z-50"
         style={{ pointerEvents: 'auto' }}
       />
       <div
         ref={mergedRef}
         className={cn(
-          'absolute left-1/2 z-[9000]',
-          placement === 'top' ? '-top-11' : 'top-full mt-2',
+          'absolute left-1/2 -translate-x-1/2 -top-12 z-[60]',
           'flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-xl border',
-          'opacity-0 group-hover/element:opacity-100 transition-all duration-150',
-          'bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]'
+          'opacity-0 group-hover/element:opacity-100 transition-opacity duration-150',
+          'bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]',
+          'pointer-events-auto whitespace-nowrap'
         )}
-        style={{
-          transform: `translateX(-50%) translateX(${xOffset}px) translateY(${yOffset}px)`,
-        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Element Type Label */}
