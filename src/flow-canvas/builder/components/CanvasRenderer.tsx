@@ -2000,6 +2000,16 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
     isDragging,
   } = useSortable({ id: block.id });
 
+  // Block wrapper ref for positioning toolbars (and for gradient-border wrapper)
+  const blockWrapperRef = useRef<HTMLDivElement | null>(null);
+  const setCombinedBlockRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      blockWrapperRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef]
+  );
+
   // Helper to get block shadow classes
   const getBlockShadowClass = () => {
     const shadow = block.props?.shadow as string;
@@ -2154,7 +2164,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
 
   const blockInnerContent = (
     <div
-      ref={!hasGradientBorder ? setNodeRef : undefined}
+      ref={!hasGradientBorder ? setCombinedBlockRef : undefined}
       style={{
         ...style,
         // Outer wrapper is responsible for background/padding/border/shadow/transform.
@@ -2196,6 +2206,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           onAddAbove={() => onAddBlock?.('above')}
           onAddBelow={() => onAddBlock?.('below')}
           dragHandleProps={{ attributes, listeners }}
+          deviceMode={deviceMode}
+          targetRef={blockWrapperRef}
         />
       )}
 
@@ -2290,7 +2302,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   // Wrap in gradient border if enabled
   const blockContent = hasGradientBorder && borderGradient ? (
     <div
-      ref={setNodeRef}
+      ref={setCombinedBlockRef}
       className="p-[2px]"
       style={{
         background: gradientToCSS(borderGradient),
