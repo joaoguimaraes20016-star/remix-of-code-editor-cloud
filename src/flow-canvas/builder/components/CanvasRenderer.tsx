@@ -475,10 +475,10 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   }, [element.stateStyles, stateStyleClass]);
 
   const baseClasses = cn(
-    'builder-selectable rounded-lg transition-all group/element relative',
+    'builder-element-selectable builder-click-target rounded-lg group/element relative',
     stateStyleClass,
-    isSelected && 'builder-selected',
-    isMultiSelected && !isSelected && 'ring-2 ring-builder-accent/50 ring-offset-1 ring-offset-builder-bg',
+    isSelected && 'builder-element-selected',
+    isMultiSelected && !isSelected && 'builder-multi-selected',
     isDragging && 'opacity-50 z-50',
     animationKey >= 0 && effectClass // Include key to force re-render
   );
@@ -2172,11 +2172,11 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         display: 'block',
       }}
       className={cn(
-        'builder-selectable transition-all group/block relative',
+        'builder-block-selectable builder-click-target group/block relative',
         // Only apply default padding if the user hasn't set ANY padding styles (check for truthy non-empty values)
         !hasCustomPadding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
-        isSelected && 'builder-selected',
-        isMultiSelected && !isSelected && 'ring-2 ring-builder-accent/50 ring-offset-1 ring-offset-builder-bg',
+        isSelected && 'builder-block-selected',
+        isMultiSelected && !isSelected && 'builder-multi-selected',
         block.type === 'hero' && !hasCustomPadding && 'text-center py-12',
         block.type === 'cta' && 'justify-center',
         isDragging && 'opacity-50 z-50',
@@ -2441,8 +2441,8 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   return (
     <div
       className={cn(
-        'builder-selectable p-2 rounded-xl transition-all',
-        isSelected && 'builder-selected',
+        'builder-section-selectable group/section p-2 rounded-xl relative',
+        isSelected && 'builder-section-selected',
         stack.direction === 'horizontal' ? 'flex flex-row gap-4' : 'flex flex-col gap-3'
       )}
       onClick={(e) => {
@@ -2450,6 +2450,8 @@ const StackRenderer: React.FC<StackRendererProps> = ({
         onSelect({ type: 'stack', id: stack.id, path: stackPath });
       }}
     >
+      {/* Section Type Badge */}
+      <span className="section-type-badge">Section</span>
       {stack.blocks.length === 0 ? (
         <div className="w-full">
           <AddSectionPopover 

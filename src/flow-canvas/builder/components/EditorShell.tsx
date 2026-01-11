@@ -811,11 +811,31 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         setIsBlockPaletteOpen(true);
       }
       
-      // 'Escape' - Clear selection or close palette
+      // 'Escape' - Step up selection hierarchy or close palette
       if (e.key === 'Escape') {
         e.preventDefault();
         if (isBlockPaletteOpen) {
           setIsBlockPaletteOpen(false);
+        } else if (selection.type === 'element' && selection.path.length >= 2) {
+          // Step up from element to block
+          const blockIndex = selection.path.findIndex((p, i) => p === 'block' && selection.path[i + 1]);
+          if (blockIndex !== -1) {
+            const blockId = selection.path[blockIndex + 1];
+            const blockPath = selection.path.slice(0, blockIndex + 2);
+            handleSelect({ type: 'block', id: blockId, path: blockPath });
+          } else {
+            handleClearSelection();
+          }
+        } else if (selection.type === 'block' && selection.path.length >= 2) {
+          // Step up from block to stack/section
+          const stackIndex = selection.path.findIndex((p, i) => p === 'stack' && selection.path[i + 1]);
+          if (stackIndex !== -1) {
+            const stackId = selection.path[stackIndex + 1];
+            const stackPath = selection.path.slice(0, stackIndex + 2);
+            handleSelect({ type: 'stack', id: stackId, path: stackPath });
+          } else {
+            handleClearSelection();
+          }
         } else if (selection.id) {
           handleClearSelection();
         }

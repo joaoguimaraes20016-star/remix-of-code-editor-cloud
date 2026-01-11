@@ -164,6 +164,18 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const [colorOpen, setColorOpen] = useState(false);
   const [colorTab, setColorTab] = useState<'background' | 'text' | 'gradient'>('text');
   const [mobileExpanded, setMobileExpanded] = useState(false);
+  
+  // Micro-delay before showing toolbar to prevent flickering during quick selections
+  const [showDelayed, setShowDelayed] = useState(false);
+  
+  useEffect(() => {
+    if (isSelected) {
+      const timer = setTimeout(() => setShowDelayed(true), 40);
+      return () => clearTimeout(timer);
+    } else {
+      setShowDelayed(false);
+    }
+  }, [isSelected]);
 
   // Smart positioning like Framer - with generous breathing room
   useEffect(() => {
@@ -245,7 +257,8 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const showTextColor = isTextElement;
   const showBackgroundColor = !isLayoutElement;
 
-  if (hidden || !isSelected) return null;
+  // Don't render until micro-delay has passed (prevents flicker)
+  if (hidden || !isSelected || !showDelayed) return null;
   
   const handleFontFamilyChange = (fontFamily: string) => {
     onStyleChange?.({ fontFamily });
