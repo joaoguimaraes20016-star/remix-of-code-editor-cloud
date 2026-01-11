@@ -924,16 +924,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 hidden={isInlineEditing}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle is now integrated into UnifiedElementToolbar */}
             {headingLinkUrl ? (
               <a 
                 href={headingLinkUrl} 
@@ -1094,16 +1085,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 hidden={isInlineEditing}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle is now integrated into UnifiedElementToolbar */}
             {textLinkUrl ? (
               <a 
                 href={textLinkUrl} 
@@ -1248,16 +1230,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle is now integrated into UnifiedElementToolbar */}
             <style>{(() => {
               const css: string[] = [];
               const cls = `btn-${element.id}`;
@@ -1384,16 +1357,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle is now integrated into UnifiedElementToolbar */}
             <div onClick={(e) => { if (!isPreviewMode) { e.stopPropagation(); onSelect(); } }}>
               {/* Dynamic CSS for placeholder, focus, and hover states */}
               <style>{`
@@ -1463,18 +1427,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            {!readOnly && (
-              <div 
-                {...attributes}
-                {...listeners}
-                className={cn(
-                  "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                  isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-                )}
-              >
-                <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-              </div>
-            )}
+            {/* Element drag handle is now integrated into UnifiedElementToolbar */}
             <label 
               className={cn(
                 "flex items-center gap-3 px-4 py-3 border rounded-xl cursor-pointer transition-all",
@@ -1541,18 +1494,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            {!readOnly && (
-              <div 
-                {...attributes}
-                {...listeners}
-                className={cn(
-                  "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                  isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-                )}
-              >
-                <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-              </div>
-            )}
+            {/* Element drag handle is now integrated into UnifiedElementToolbar */}
             <label 
               className={cn(
                 "flex items-center gap-3 px-4 py-3 border rounded-xl cursor-pointer transition-all",
@@ -1608,16 +1550,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle is now integrated into UnifiedElementToolbar */}
             <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
               <select
                 className={cn(
@@ -1699,16 +1632,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle integrated into toolbar */}
             {imgSrc ? (
               <img 
                 src={imgSrc} 
@@ -1777,16 +1701,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle integrated into toolbar */}
             {videoUrl ? (
               <div style={videoContainerStyles} onClick={(e) => { e.stopPropagation(); onSelect(); }}>
                 <iframe
@@ -1838,16 +1753,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle integrated into toolbar */}
             <div className="w-full py-4" onClick={(e) => { e.stopPropagation(); onSelect(); }}>
               <div 
                 className="w-full" 
@@ -1879,16 +1785,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle integrated into toolbar */}
             <div 
               className="w-full flex items-center justify-center border-2 border-dashed rounded-lg transition-colors"
               style={{ 
@@ -1929,16 +1826,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 onDelete={onDelete}
               />
             )}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle integrated into toolbar */}
             <div 
               className="p-2 flex items-center justify-center"
               style={{ color: iconColor, fontSize: iconSize }}
@@ -1961,16 +1849,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           <div ref={setNodeRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            <div 
-              {...attributes}
-              {...listeners}
-              className={cn(
-                "absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover/element:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 rounded shadow-sm border",
-                isDarkTheme ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-gray-200"
-              )}
-            >
-              <GripVertical className={cn("w-3 h-3", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
-            </div>
+            {/* Element drag handle integrated into toolbar */}
             <div 
               className={cn(
                 "px-4 py-3 rounded-xl border",

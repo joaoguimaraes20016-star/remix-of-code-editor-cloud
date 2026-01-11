@@ -16,6 +16,7 @@ import {
   Sparkles,
   Pipette,
   X,
+  Move,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -30,6 +31,7 @@ import {
 } from '@/components/ui/popover';
 import { gradientToCSS, GradientEditor, defaultGradient, cloneGradient, ColorPickerPopover } from './modals';
 import type { GradientValue } from './modals';
+import { useSmartPlacement } from '../hooks/useSmartPlacement';
 
 // Color presets
 const colorPresets = [
@@ -123,8 +125,27 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   hidden = false,
 }, ref) => {
   const toolbarRef = useRef<HTMLDivElement | null>(null);
+  
+  // Smart placement with prefer-inside strategy
+  const {
+    ref: smartRef,
+    computedSide,
+    manualOffset,
+    isDragging,
+    dragHandleProps: positionDragProps,
+    resetPosition,
+  } = useSmartPlacement({
+    preferredSide: 'top',
+    strategy: 'prefer-inside',
+    edgePadding: 8,
+    draggable: true,
+    placementKey: `element-toolbar-${elementId}`,
+  });
+
+  // Merge refs
   const mergedRef = (node: HTMLDivElement | null) => {
     toolbarRef.current = node;
+    smartRef(node);
     if (typeof ref === 'function') ref(node);
     else if (ref && 'current' in ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
   };
@@ -264,24 +285,83 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     return labels[elementType] || elementType;
   };
 
+  // Position classes based on computed side
+  const getPositionClasses = () => {
+    switch (computedSide) {
+      case 'top':
+        return 'top-2 left-1/2';
+      case 'bottom':
+        return 'bottom-2 left-1/2';
+      case 'left':
+        return 'left-2 top-1/2';
+      case 'right':
+        return 'right-2 top-1/2';
+      default:
+        return 'top-2 left-1/2';
+    }
+  };
+
+  const getTransformClass = () => {
+    switch (computedSide) {
+      case 'top':
+      case 'bottom':
+        return '-translate-x-1/2';
+      case 'left':
+      case 'right':
+        return '-translate-y-1/2';
+      default:
+        return '-translate-x-1/2';
+    }
+  };
+
   return (
     <TooltipProvider delayDuration={200}>
-      {/* Invisible hover bridge - simple stable positioning */}
+      {/* Invisible hover bridge */}
       <div
-        className="absolute left-0 right-0 h-10 -top-10 z-50"
+        className={cn(
+          'absolute z-50',
+          computedSide === 'top' && 'left-0 right-0 h-8 top-0',
+          computedSide === 'bottom' && 'left-0 right-0 h-8 bottom-0',
+          computedSide === 'left' && 'top-0 bottom-0 w-8 left-0',
+          computedSide === 'right' && 'top-0 bottom-0 w-8 right-0'
+        )}
         style={{ pointerEvents: 'auto' }}
       />
       <div
         ref={mergedRef}
         className={cn(
-          'absolute left-1/2 -translate-x-1/2 -top-12 z-[60]',
+          'absolute z-[60]',
+          getPositionClasses(),
+          getTransformClass(),
           'flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-xl border',
           'opacity-0 group-hover/element:opacity-100 transition-opacity duration-150',
           'bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]',
-          'pointer-events-auto whitespace-nowrap'
+          'pointer-events-auto whitespace-nowrap',
+          isDragging && 'cursor-grabbing shadow-2xl'
         )}
+        style={{
+          transform: `${getTransformClass().includes('x') ? 'translateX(-50%)' : 'translateY(-50%)'} translate(${manualOffset.x}px, ${manualOffset.y}px)`,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Position drag handle */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              {...positionDragProps}
+              className="p-1 rounded bg-[hsl(var(--builder-accent)/0.1)] text-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.2)] transition-colors"
+              title="Drag to reposition toolbar"
+            >
+              <Move className="w-2.5 h-2.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p>Drag to reposition</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
+
         {/* Element Type Label */}
         <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--builder-accent))] bg-[hsl(var(--builder-accent)/0.1)] rounded">
           {getElementLabel()}
@@ -289,7 +369,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
 
         <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
 
-        {/* Drag Handle */}
+        {/* Element Drag Handle (for reordering) */}
         <div className="p-1 rounded cursor-grab active:cursor-grabbing bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]">
           <GripVertical className="w-3.5 h-3.5" />
         </div>

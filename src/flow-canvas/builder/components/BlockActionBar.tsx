@@ -8,7 +8,8 @@ import {
   Trash2, 
   Plus,
   GripVertical,
-  MoreHorizontal
+  MoreHorizontal,
+  Move
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,6 +25,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useSmartPlacement } from '../hooks/useSmartPlacement';
 
 interface BlockActionBarProps {
   blockId: string;
@@ -62,27 +64,73 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
   onTrackingIdChange,
   dragHandleProps,
 }) => {
-  // Simple stable positioning - place on the specified side without complex clamping
-  // This prevents jitter from layout effects and resize observers
-  const positionClasses = position === 'left' 
-    ? 'right-full mr-3' 
-    : 'left-full ml-3';
+  // Smart placement with prefer-inside strategy and manual drag support
+  const {
+    ref,
+    computedSide,
+    manualOffset,
+    isDragging,
+    dragHandleProps: positionDragProps,
+    resetPosition,
+  } = useSmartPlacement({
+    preferredSide: position,
+    strategy: 'prefer-inside',
+    edgePadding: 12,
+    draggable: true,
+    placementKey: `block-action-${blockId}`,
+  });
+
+  // Position classes based on computed side (inside the block)
+  const getPositionClasses = () => {
+    switch (computedSide) {
+      case 'left':
+        return 'left-2 top-1/2';
+      case 'right':
+        return 'right-2 top-1/2';
+      default:
+        return 'left-2 top-1/2';
+    }
+  };
+
+  const tooltipSide = computedSide === 'left' ? 'right' : 'left';
 
   return (
     <TooltipProvider delayDuration={300}>
       <div 
+        ref={ref}
         className={cn(
-          'absolute top-1/2 -translate-y-1/2',
-          positionClasses,
+          'absolute',
+          getPositionClasses(),
           'flex flex-col gap-0.5 p-1 rounded-lg',
           'bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))]',
           'shadow-lg opacity-0 group-hover/block:opacity-100 transition-opacity duration-150',
           'z-[60]',
-          // Ensure the bar doesn't get cut off by overflow
-          'pointer-events-auto'
+          'pointer-events-auto',
+          isDragging && 'cursor-grabbing shadow-2xl'
         )}
+        style={{
+          transform: `translateY(-50%) translate(${manualOffset.x}px, ${manualOffset.y}px)`,
+        }}
       >
-        {/* Drag Handle - connected to @dnd-kit when dragHandleProps provided */}
+        {/* Position drag handle - for manually repositioning the bar */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              {...positionDragProps}
+              className="p-1 rounded bg-[hsl(var(--builder-accent)/0.1)] text-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.2)] transition-colors"
+              title="Drag to reposition toolbar"
+            >
+              <Move size={10} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side={tooltipSide}>
+            <p>Drag to reposition</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <div className="w-full h-px bg-[hsl(var(--builder-border))]" />
+
+        {/* Block Drag Handle - connected to @dnd-kit for reordering blocks */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -93,7 +141,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <GripVertical size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side={position === 'left' ? 'left' : 'right'}>
+          <TooltipContent side={tooltipSide}>
             <p>Drag to reorder</p>
           </TooltipContent>
         </Tooltip>
@@ -117,7 +165,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <ChevronUp size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side={position === 'left' ? 'left' : 'right'}>
+          <TooltipContent side={tooltipSide}>
             <p>Move up</p>
           </TooltipContent>
         </Tooltip>
@@ -139,7 +187,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <ChevronDown size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side={position === 'left' ? 'left' : 'right'}>
+          <TooltipContent side={tooltipSide}>
             <p>Move down</p>
           </TooltipContent>
         </Tooltip>
@@ -156,7 +204,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <Copy size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side={position === 'left' ? 'left' : 'right'}>
+          <TooltipContent side={tooltipSide}>
             <p>Duplicate (Cmd+D)</p>
           </TooltipContent>
         </Tooltip>
@@ -171,7 +219,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <Trash2 size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side={position === 'left' ? 'left' : 'right'}>
+          <TooltipContent side={tooltipSide}>
             <p>Delete</p>
           </TooltipContent>
         </Tooltip>
@@ -186,7 +234,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
-            side={position === 'left' ? 'left' : 'right'}
+            side={tooltipSide}
             className="bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
           >
             <DropdownMenuItem 
@@ -219,6 +267,18 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <Trash2 size={14} className="mr-2" />
               Delete block
             </DropdownMenuItem>
+            {manualOffset.x !== 0 || manualOffset.y !== 0 ? (
+              <>
+                <DropdownMenuSeparator className="bg-[hsl(var(--builder-border))]" />
+                <DropdownMenuItem 
+                  onClick={resetPosition}
+                  className="text-[hsl(var(--builder-text-muted))] focus:bg-[hsl(var(--builder-surface-hover))]"
+                >
+                  <Move size={14} className="mr-2" />
+                  Reset toolbar position
+                </DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
