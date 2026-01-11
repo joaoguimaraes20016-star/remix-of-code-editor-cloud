@@ -411,8 +411,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     } else if (styles.highlightColor) {
       highlightStyles.color = styles.highlightColor;
     } else {
-      // Default highlight: gold/accent color
-      highlightStyles.color = '#F59E0B';
+      // Default highlight: use builder accent (pink/magenta) instead of gold
+      highlightStyles.color = 'hsl(var(--builder-accent-secondary))';
     }
     
     return highlightStyles;
