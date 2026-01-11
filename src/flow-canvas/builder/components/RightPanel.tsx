@@ -315,9 +315,23 @@ const ELEMENT_SECTIONS = {
 
 type ElementSectionType = keyof typeof ELEMENT_SECTIONS;
 
-// Size presets with actual px values for the slider
-const SIZE_PX_MAP: Record<string, number> = {
-  'xs': 12, 'sm': 14, 'md': 16, 'lg': 20, 'xl': 24, '2xl': 30, '3xl': 36, '4xl': 48, '5xl': 60, '6xl': 72
+// Helper to parse font size to number (handles 'px', preset names, or raw numbers)
+const parseFontSize = (value: unknown): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    // Handle 'px' suffix
+    if (value.endsWith('px')) return parseInt(value, 10) || 16;
+    // Handle preset names
+    const presets: Record<string, number> = {
+      'xs': 12, 'sm': 14, 'base': 16, 'md': 16, 'lg': 20, 'xl': 24, 
+      '2xl': 30, '3xl': 36, '4xl': 48, '5xl': 60, '6xl': 72
+    };
+    if (presets[value]) return presets[value];
+    // Try parsing as number
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return 16; // default
 };
 
 // Element Inspector - Contextual sections based on element type
@@ -935,25 +949,21 @@ const ElementInspector: React.FC<{
           {/* Typography - Simplified with sliders */}
           <CollapsibleSection title="Typography" icon={<Type className="w-4 h-4" />} defaultOpen>
             <div className="space-y-4 pt-3">
-              {/* Font Size - SLIDER for easy dragging */}
+              {/* Font Size - Direct pixel value slider (no preset mapping) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Size</span>
                   <span className="text-xs font-mono text-builder-text-dim">
-                    {SIZE_PX_MAP[element.props?.fontSize as string] || 16}px
+                    {parseFontSize(element.props?.fontSize)}px
                   </span>
                 </div>
                 <Slider 
-                  value={[SIZE_PX_MAP[element.props?.fontSize as string] || 16]}
+                  value={[parseFontSize(element.props?.fontSize)]}
                   onValueChange={(v) => {
-                    // Find closest size preset
-                    const sizes = Object.entries(SIZE_PX_MAP);
-                    const closest = sizes.reduce((prev, curr) => 
-                      Math.abs(curr[1] - v[0]) < Math.abs(prev[1] - v[0]) ? curr : prev
-                    );
-                    handlePropsChange('fontSize', closest[0]);
+                    // Store as direct pixel value string for consistency
+                    handlePropsChange('fontSize', `${v[0]}px`);
                   }}
-                  min={12} max={72} step={2}
+                  min={12} max={72} step={1}
                   className="w-full"
                 />
                 <div className="flex justify-between text-[9px] text-builder-text-dim">
