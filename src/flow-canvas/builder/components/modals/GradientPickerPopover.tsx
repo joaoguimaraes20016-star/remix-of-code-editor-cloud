@@ -86,11 +86,12 @@ interface GradientEditorProps {
   compact?: boolean; // For use in toolbar
 }
 
-export const GradientEditor: React.FC<GradientEditorProps> = ({
+// Use forwardRef to eliminate "Function components cannot be given refs" warning
+export const GradientEditor = React.forwardRef<HTMLDivElement, GradientEditorProps>(({
   value,
   onChange,
   compact = false,
-}) => {
+}, ref) => {
   // Use a ref to track value for comparison without triggering re-renders
   const prevValueRef = React.useRef<string>('');
   const [gradient, setGradient] = useState<GradientValue>(() => cloneGradient(value || defaultGradient));
@@ -154,7 +155,7 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({
   };
 
   return (
-    <div className="space-y-3">
+    <div ref={ref} className="space-y-3">
       {/* Preview - Show as text gradient, not box fill */}
       <div 
         className={cn(
@@ -265,7 +266,9 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({
       </div>
     </div>
   );
-};
+});
+
+GradientEditor.displayName = 'GradientEditor';
 
 export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
   children,

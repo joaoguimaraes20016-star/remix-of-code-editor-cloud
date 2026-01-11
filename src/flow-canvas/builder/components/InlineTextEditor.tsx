@@ -382,6 +382,15 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           updateSpanStyle(target, styleOptions);
           activeInlineSpanRef.current = target;
           scheduleInlineHtmlSave();
+          
+          // ALSO sync local styles so toolbar UI stays in sync (fillType, gradient, color)
+          const syncStyles: Partial<TextStyles> = {};
+          if (newStyles.textFillType !== undefined) syncStyles.textFillType = newStyles.textFillType;
+          if (newStyles.textGradient) syncStyles.textGradient = cloneGradient(newStyles.textGradient);
+          if (newStyles.textColor !== undefined) syncStyles.textColor = newStyles.textColor;
+          if (Object.keys(syncStyles).length > 0) {
+            setStyles(prev => ({ ...prev, ...syncStyles }));
+          }
           return;
         }
 
@@ -391,6 +400,15 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           if (span) {
             activeInlineSpanRef.current = span;
             scheduleInlineHtmlSave();
+            
+            // ALSO sync local styles so toolbar UI stays in sync
+            const syncStyles: Partial<TextStyles> = {};
+            if (newStyles.textFillType !== undefined) syncStyles.textFillType = newStyles.textFillType;
+            if (newStyles.textGradient) syncStyles.textGradient = cloneGradient(newStyles.textGradient);
+            if (newStyles.textColor !== undefined) syncStyles.textColor = newStyles.textColor;
+            if (Object.keys(syncStyles).length > 0) {
+              setStyles(prev => ({ ...prev, ...syncStyles }));
+            }
             return;
           }
         }
@@ -538,6 +556,11 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       inlineStyles.WebkitBackgroundClip = 'text';
       inlineStyles.WebkitTextFillColor = 'transparent';
       (inlineStyles as Record<string, string>).backgroundClip = 'text';
+      // CRITICAL: Set color to transparent to prevent white flash fallback
+      inlineStyles.color = 'transparent';
+    } else if (styles.textFillType === 'gradient' && !isEditing) {
+      // Even when not editing, if fillType is gradient, ensure no white fallback
+      inlineStyles.color = 'transparent';
     } else if (styles.textFillType !== 'gradient') {
       // Text color (only if not gradient) - apply even if undefined to ensure color shows
       if (styles.textColor) {
@@ -657,6 +680,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
+          color: 'transparent', // Prevent white fallback
         } as React.CSSProperties}>
           {value}
         </span>
