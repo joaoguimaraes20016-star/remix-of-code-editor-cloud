@@ -75,73 +75,143 @@ function buildStyleString(options: SelectionStyleOptions): string {
 
 /**
  * Apply inline styles to the currently selected text within a contentEditable element.
- * Uses execCommand for better browser compatibility and undo support.
- * Returns true if styling was applied to a selection, false if no selection exists.
+ * Returns the created/updated span when successful, otherwise null.
  */
-export function applyStylesToSelection(options: SelectionStyleOptions): boolean {
+export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpanElement | null {
   const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) {
-    return false;
-  }
-  
+  if (!sel || sel.rangeCount === 0) return null;
+
   const range = sel.getRangeAt(0);
-  const selectedText = range.toString();
-  
-  // Must have actual text selected
-  if (!selectedText || selectedText.length === 0) {
-    return false;
-  }
-  
+  if (range.collapsed) return null;
+
   const styleString = buildStyleString(options);
-  if (!styleString) {
-    return false;
-  }
-  
+  if (!styleString) return null;
+
+  // Create a span and wrap the selected contents (preserves nested nodes)
+  const span = document.createElement('span');
+  span.setAttribute('style', styleString);
+
   try {
-    // Method 1: Try using insertHTML (supports undo in most browsers)
-    const span = document.createElement('span');
-    span.setAttribute('style', styleString);
-    span.textContent = selectedText;
-    
-    // Delete the selected content and insert the styled span
-    range.deleteContents();
+    const fragment = range.extractContents();
+    span.appendChild(fragment);
     range.insertNode(span);
-    
-    // Normalize to merge adjacent text nodes
-    span.parentElement?.normalize();
-    
-    // Move cursor to end of the new span
+
+    // Keep the span selected so sliders (custom gradient edits) can keep targeting it
     const newRange = document.createRange();
     newRange.selectNodeContents(span);
-    newRange.collapse(false);
     sel.removeAllRanges();
     sel.addRange(newRange);
-    
-    return true;
+
+    span.parentElement?.normalize();
+    return span;
   } catch (e) {
-    console.warn('Primary selection styling failed, trying fallback:', e);
-    
-    // Fallback: Try surroundContents
-    try {
-      const span = document.createElement('span');
-      span.setAttribute('style', styleString);
-      
-      // Clone the range to avoid modifying the original
-      const clonedRange = range.cloneRange();
-      clonedRange.surroundContents(span);
-      
-      sel.removeAllRanges();
-      const newRange = document.createRange();
-      newRange.selectNodeContents(span);
-      newRange.collapse(false);
-      sel.addRange(newRange);
-      
-      return true;
-    } catch (e2) {
-      console.warn('Fallback selection styling also failed:', e2);
-      return false;
-    }
+    console.warn('Selection wrap failed:', e);
+    return null;
   }
+}
+
+type StyleMap = Record<string, string>;
+
+function parseStyleAttribute(style: string | null): StyleMap {
+  if (!style) return {};
+  const map: StyleMap = {};
+  style
+    .split(';')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .forEach((pair) => {
+      const idx = pair.indexOf(':');
+      if (idx === -1) return;
+      const key = pair.slice(0, idx).trim().toLowerCase();
+      const value = pair.slice(idx + 1).trim();
+      if (key && value) map[key] = value;
+    });
+  return map;
+}
+
+function serializeStyleAttribute(map: StyleMap): string {
+  return Object.entries(map)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('; ');
+}
+
+function buildStyleUpdates(options: SelectionStyleOptions): { set: StyleMap; unset: string[] } {
+  const set: StyleMap = {};
+  const unset: string[] = [];
+
+  const gradientProps = [
+    'background-image',
+    'background-clip',
+    '-webkit-background-clip',
+    '-webkit-text-fill-color',
+    'display',
+  ];
+
+  if (options.gradient) {
+    const gradientCSS = gradientToCSS(options.gradient);
+    set['background-image'] = gradientCSS;
+    set['-webkit-background-clip'] = 'text';
+    set['-webkit-text-fill-color'] = 'transparent';
+    set['background-clip'] = 'text';
+    set['display'] = 'inline';
+    unset.push('color');
+  } else if (options.color) {
+    set['color'] = options.color;
+    unset.push(...gradientProps);
+  }
+
+  if (options.fontWeight) set['font-weight'] = options.fontWeight;
+  if (options.fontStyle) set['font-style'] = options.fontStyle;
+  if (options.textDecoration) set['text-decoration'] = options.textDecoration;
+
+  return { set, unset };
+}
+
+/**
+ * Update an existing styled span by merging style props (used for smooth custom gradient edits).
+ */
+export function updateSpanStyle(span: HTMLSpanElement, options: SelectionStyleOptions): void {
+  const current = parseStyleAttribute(span.getAttribute('style'));
+  const { set, unset } = buildStyleUpdates(options);
+
+  unset.forEach((k) => {
+    delete current[k];
+  });
+
+  Object.entries(set).forEach(([k, v]) => {
+    current[k] = v;
+  });
+
+  const next = serializeStyleAttribute(current);
+  if (next) span.setAttribute('style', next);
+  else span.removeAttribute('style');
+}
+
+/**
+ * Find the nearest styled span at the current selection/caret within a root element.
+ */
+export function getStyledSpanAtSelection(root: HTMLElement): HTMLSpanElement | null {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+
+  const range = sel.getRangeAt(0);
+  let node: Node | null = range.startContainer;
+
+  // If we have an element, use it; otherwise walk from text node's parent
+  let el: HTMLElement | null =
+    node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+
+  while (el && el !== root) {
+    if (el.tagName === 'SPAN' && el.getAttribute('style')) {
+      return el as HTMLSpanElement;
+    }
+    el = el.parentElement;
+  }
+
+  // Check root itself (edge case)
+  if (root.tagName === 'SPAN' && root.getAttribute('style')) return root as HTMLSpanElement;
+
+  return null;
 }
 
 /**

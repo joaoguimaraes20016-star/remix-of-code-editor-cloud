@@ -3,7 +3,8 @@ import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
-import { applyStylesToSelection, hasSelectionInElement, sanitizeStyledHTML, htmlToPlainText, containsHTML, mergeAdjacentStyledSpans } from '../utils/selectionStyles';
+import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, updateSpanStyle } from '../utils/selectionStyles';
+import type { SelectionStyleOptions } from '../utils/selectionStyles';
 export interface TextStyles {
   fontSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
@@ -67,6 +68,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const activeInlineSpanRef = useRef<HTMLSpanElement | null>(null);
+  const inlineSaveTimerRef = useRef<number | null>(null);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -189,6 +192,13 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       if (openPopover) return;
     }
     
+    // Clear any pending inline-style save and active span target
+    if (inlineSaveTimerRef.current) {
+      window.clearTimeout(inlineSaveTimerRef.current);
+      inlineSaveTimerRef.current = null;
+    }
+    activeInlineSpanRef.current = null;
+
     setIsEditing(false);
     setShowToolbar(false);
     
@@ -291,22 +301,50 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     };
   }, [showToolbar, isEditing, updateToolbarPosition]);
 
+  // Debounced save for inline HTML updates (prevents re-render jitter while tweaking custom gradients)
+  const scheduleInlineHtmlSave = useCallback(() => {
+    const editorEl = contentRef.current;
+    if (!editorEl) return;
+
+    if (inlineSaveTimerRef.current) {
+      window.clearTimeout(inlineSaveTimerRef.current);
+    }
+
+    inlineSaveTimerRef.current = window.setTimeout(() => {
+      const el = contentRef.current;
+      if (!el) return;
+      mergeAdjacentStyledSpans(el);
+      const htmlContent = sanitizeStyledHTML(el.innerHTML);
+      onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
+    }, 150);
+  }, [onChange]);
+
   // Handle text selection for toolbar (mouse selection inside the editor)
   const handleSelect = useCallback(() => {
-    if (isEditing) updateToolbarPosition();
+    if (!isEditing) return;
+    updateToolbarPosition();
+
+    const editorEl = contentRef.current;
+    if (editorEl) {
+      activeInlineSpanRef.current = getStyledSpanAtSelection(editorEl);
+    }
   }, [isEditing, updateToolbarPosition]);
 
-  // Apply style changes - handle both selection-based and whole-block styling
+  // Apply style changes - selection-first for color/gradient/formatting, otherwise whole block
   const handleStyleChange = useCallback((newStyles: Partial<TextStyles>) => {
     const editorEl = contentRef.current;
-    
-    // Check if there's a text selection inside the editor
-    const hasSelection = editorEl && hasSelectionInElement(editorEl);
-    
-    // Build style options for selection-based styling
-    const buildSelectionOptions = (): Parameters<typeof applyStylesToSelection>[0] | null => {
-      const options: Record<string, unknown> = {};
-      
+
+    const shouldApplyInline =
+      newStyles.textColor !== undefined ||
+      newStyles.textGradient !== undefined ||
+      newStyles.textFillType !== undefined ||
+      newStyles.fontWeight !== undefined ||
+      newStyles.fontStyle !== undefined ||
+      newStyles.textDecoration !== undefined;
+
+    const buildSelectionOptions = (): SelectionStyleOptions | null => {
+      const options: SelectionStyleOptions = {};
+
       // Color/gradient
       if (newStyles.textFillType === 'gradient') {
         options.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
@@ -315,54 +353,53 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       } else if (newStyles.textFillType === 'solid' && (newStyles.textColor || styles.textColor)) {
         options.color = newStyles.textColor || styles.textColor;
       }
-      
-      // Font formatting
+
+      // Font formatting (applies inline when selection/target span exists)
       if (newStyles.fontWeight) {
-        const weightMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
+        const weightMap: Record<string, string> = {
+          normal: '400',
+          medium: '500',
+          semibold: '600',
+          bold: '700',
+          black: '900',
+        };
         options.fontWeight = weightMap[newStyles.fontWeight] || newStyles.fontWeight;
       }
-      if (newStyles.fontStyle) {
-        options.fontStyle = newStyles.fontStyle;
-      }
-      if (newStyles.textDecoration) {
-        options.textDecoration = newStyles.textDecoration;
-      }
-      
-      return Object.keys(options).length > 0 ? options as Parameters<typeof applyStylesToSelection>[0] : null;
+      if (newStyles.fontStyle) options.fontStyle = newStyles.fontStyle;
+      if (newStyles.textDecoration) options.textDecoration = newStyles.textDecoration;
+
+      return Object.keys(options).length > 0 ? options : null;
     };
-    
-    // Try to apply to selection first (for color, gradient, and formatting)
-    if (hasSelection) {
-      const shouldApplyToSelection = 
-        newStyles.textColor !== undefined ||
-        newStyles.textGradient !== undefined ||
-        newStyles.textFillType !== undefined ||
-        newStyles.fontWeight !== undefined ||
-        newStyles.fontStyle !== undefined ||
-        newStyles.textDecoration !== undefined;
-      
-      if (shouldApplyToSelection) {
-        const styleOptions = buildSelectionOptions();
-        
-        if (styleOptions) {
-          const applied = applyStylesToSelection(styleOptions);
-          
-          if (applied && editorEl) {
-            // Clean up and save HTML
-            mergeAdjacentStyledSpans(editorEl);
-            const htmlContent = sanitizeStyledHTML(editorEl.innerHTML);
-            onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
-            return; // Don't update block-level styles since we applied to selection
+
+    // Inline styling path: update existing span under caret OR wrap current selection once
+    if (shouldApplyInline && editorEl) {
+      const styleOptions = buildSelectionOptions();
+      if (styleOptions) {
+        const target = getStyledSpanAtSelection(editorEl) || activeInlineSpanRef.current;
+
+        // If we already have a target span (common during custom gradient tweaking), just update it
+        if (target) {
+          updateSpanStyle(target, styleOptions);
+          activeInlineSpanRef.current = target;
+          scheduleInlineHtmlSave();
+          return;
+        }
+
+        // Otherwise, if the user has a selection, wrap it once and remember the new span
+        if (hasSelectionInElement(editorEl)) {
+          const span = applyStylesToSelection(styleOptions);
+          if (span) {
+            activeInlineSpanRef.current = span;
+            scheduleInlineHtmlSave();
+            return;
           }
         }
       }
     }
-    
-    // No selection or style that should apply to whole block - apply block-level styles
-    // Deep clone gradients to prevent shared references
+
+    // Block-level styles (font size, align, shadow, etc.)
     const clonedStyles: Partial<TextStyles> = {};
-    
-    // Copy all scalar properties
+
     if (newStyles.fontSize !== undefined) clonedStyles.fontSize = newStyles.fontSize;
     if (newStyles.fontWeight !== undefined) clonedStyles.fontWeight = newStyles.fontWeight;
     if (newStyles.fontStyle !== undefined) clonedStyles.fontStyle = newStyles.fontStyle;
@@ -374,37 +411,30 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     if (newStyles.textShadow !== undefined) clonedStyles.textShadow = newStyles.textShadow;
     if (newStyles.highlightColor !== undefined) clonedStyles.highlightColor = newStyles.highlightColor;
     if (newStyles.highlightUseGradient !== undefined) clonedStyles.highlightUseGradient = newStyles.highlightUseGradient;
-    
-    // Deep clone gradient objects to prevent shared references
+
     if (newStyles.textGradient) {
       clonedStyles.textGradient = cloneGradient(newStyles.textGradient);
     }
     if (newStyles.highlightGradient) {
       clonedStyles.highlightGradient = cloneGradient(newStyles.highlightGradient);
     }
-    
-    // Handle case where fillType is gradient but no gradient exists
-    // This prevents the "white flash" when switching to gradient mode
+
     if (clonedStyles.textFillType === 'gradient' && !clonedStyles.textGradient && !styles.textGradient) {
       clonedStyles.textGradient = cloneGradient(defaultGradient);
     }
-    
-    // Update local state
+
     setStyles(prev => ({ ...prev, ...clonedStyles }));
-    
-    // Track which properties are now modified
+
     const changedKeys = Object.keys(clonedStyles) as (keyof TextStyles)[];
     setModifiedProps(prev => {
       const next = new Set(prev);
       changedKeys.forEach(k => next.add(k));
       return next;
     });
-    
-    // Emit ONLY the properties that were just changed (already cloned)
-    // Always call onChange - use contentRef.innerText if available, otherwise use value prop
+
     const currentValue = contentRef.current?.innerText ?? value;
     onChange(currentValue, clonedStyles);
-  }, [styles, value, onChange]);
+  }, [styles, value, onChange, scheduleInlineHtmlSave]);
 
   // Get CSS classes based on styles
   const getStyleClasses = () => {
@@ -648,6 +678,13 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   // Determine if we should use dangerouslySetInnerHTML
   const useHtmlRendering = isHtmlContent;
 
+  // When editing HTML content, don't let React re-apply innerHTML on every render (it resets selection)
+  useEffect(() => {
+    if (!isEditing || !useHtmlRendering) return;
+    const el = contentRef.current;
+    if (!el) return;
+    el.innerHTML = sanitizeStyledHTML(value || '');
+  }, [isEditing, useHtmlRendering]);
   return (
     <div ref={containerRef} className="relative">
       {/* Floating Rich Text Toolbar */}
@@ -694,7 +731,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
             ${!value && !isEditing ? 'text-gray-400' : ''}
             ${className}
           `}
-          dangerouslySetInnerHTML={{ __html: sanitizeStyledHTML(value || '') }}
+          {...(!isEditing ? { dangerouslySetInnerHTML: { __html: sanitizeStyledHTML(value || '') } } : {})}
         />
       ) : (
         <div
