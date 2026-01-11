@@ -106,31 +106,33 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
     const btnBase =
       'flex items-center justify-center transition-colors active:scale-95';
 
-    const circleBtn = cn(
+  // Touch-friendly sizing - minimum 44px for mobile
+  const circleBtn = cn(
+    btnBase,
+    'w-11 h-11 rounded-full',
+    'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl',
+    'border border-[hsl(275,70%,55%)/0.3]',
+    'shadow-lg shadow-black/30',
+    'text-[hsl(var(--builder-text))]'
+  );
+
+  const pill = cn(
+    'flex items-center gap-1 p-1.5 rounded-full',
+    'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl',
+    'border border-[hsl(275,70%,55%)/0.3]',
+    'shadow-lg shadow-black/30',
+    'pointer-events-auto'
+  );
+
+  // Touch-friendly 44px minimum touch targets
+  const iconBtn = (disabled?: boolean) =>
+    cn(
       btnBase,
-      'w-9 h-9 rounded-full',
-      'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl',
-      'border border-[hsl(var(--builder-border))]',
-      'shadow-lg shadow-black/30',
-      'text-[hsl(var(--builder-text))]'
+      'w-10 h-10 rounded-full',
+      disabled
+        ? 'text-[hsl(var(--builder-text-muted))]/40 cursor-not-allowed'
+        : 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.15]'
     );
-
-    const pill = cn(
-      'flex items-center gap-1 p-1 rounded-full',
-      'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl',
-      'border border-[hsl(var(--builder-border))]',
-      'shadow-lg shadow-black/30',
-      'pointer-events-auto'
-    );
-
-    const iconBtn = (disabled?: boolean) =>
-      cn(
-        btnBase,
-        'w-8 h-8 rounded-full',
-        disabled
-          ? 'text-[hsl(var(--builder-text-muted))]/40 cursor-not-allowed'
-          : 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-white/10'
-      );
 
     const node = (
       <div
@@ -298,7 +300,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                 <button
                   {...(dragHandleProps?.attributes || {})}
                   {...(dragHandleProps?.listeners || {})}
-                  className="p-2 rounded-lg bg-[hsl(var(--builder-accent))]/20 text-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent))]/30 cursor-grab active:cursor-grabbing transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
+                  className="p-2 rounded-lg bg-[hsl(275,70%,55%)]/20 text-[hsl(275,70%,55%)] hover:bg-[hsl(275,70%,55%)]/30 cursor-grab active:cursor-grabbing transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 >
                   <GripVertical size={16} />
                 </button>
@@ -317,9 +319,9 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                   onClick={onMoveUp}
                   disabled={!canMoveUp}
                   className={cn(
-                    'p-2 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center',
+                    'p-2 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center',
                     canMoveUp
-                      ? 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-white/10 active:scale-95'
+                      ? 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.1] active:scale-95'
                       : 'text-[hsl(var(--builder-text-muted))]/30 cursor-not-allowed'
                   )}
                 >
@@ -338,9 +340,9 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                   onClick={onMoveDown}
                   disabled={!canMoveDown}
                   className={cn(
-                    'p-2 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center',
+                    'p-2 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center',
                     canMoveDown
-                      ? 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-white/10 active:scale-95'
+                      ? 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.1] active:scale-95'
                       : 'text-[hsl(var(--builder-text-muted))]/30 cursor-not-allowed'
                   )}
                 >
@@ -359,7 +361,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <TooltipTrigger asChild>
                 <button
                   onClick={onDuplicate}
-                  className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-white/10 active:scale-95 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
+                  className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.1] active:scale-95 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 >
                   <Copy size={16} />
                 </button>
@@ -374,7 +376,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <TooltipTrigger asChild>
                 <button
                   onClick={onDelete}
-                  className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-red-400 hover:bg-red-500/20 active:scale-95 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
+                  className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-red-400 hover:bg-red-500/20 active:scale-95 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -389,7 +391,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
             {/* More Actions */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-white/10 active:scale-95 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center">
+                <button className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.1] active:scale-95 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center">
                   <MoreHorizontal size={16} />
                 </button>
               </DropdownMenuTrigger>

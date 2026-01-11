@@ -22,9 +22,9 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 const typeColors: Record<string, string> = {
-  section: 'text-cyan-400/70',
-  block: 'text-cyan-400/85',
-  element: 'text-cyan-400',
+  section: 'text-fuchsia-400/70',
+  block: 'text-purple-400/85',
+  element: 'text-fuchsia-400',
 };
 
 export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
@@ -46,7 +46,7 @@ export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
       className={cn(
         'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg',
         'bg-[hsl(220,8%,8%)] backdrop-blur-xl',
-        'border border-white/[0.06]',
+        'border border-[hsl(315,85%,58%)/0.15]',
         'shadow-xl shadow-black/50',
         className
       )}
@@ -77,9 +77,9 @@ export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
                 'flex items-center gap-1.5 px-1.5 py-0.5 rounded-md',
                 'text-[11px] font-medium',
                 'transition-all duration-150',
-                'hover:bg-white/[0.08]',
+                'hover:bg-[hsl(315,85%,58%)/0.1]',
                 typeColors[item.type],
-                index === items.length - 1 && 'text-white bg-white/[0.06]'
+                index === items.length - 1 && 'text-white bg-[hsl(275,70%,55%)/0.15]'
               )}
             >
               <span className="opacity-70">{typeIcons[item.type]}</span>

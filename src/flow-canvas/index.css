@@ -234,119 +234,124 @@
   }
 
   /* ============================================ */
-  /* SELECTION SYSTEM - Framer-style layered hierarchy */
+  /* SELECTION SYSTEM - Brand-aligned (Magenta/Purple) */
   /* ============================================ */
+  
+  /* Unified transition timing */
+  :root {
+    --builder-transition: 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+  }
   
   /* Base selectable state */
   .builder-selectable {
     @apply relative cursor-pointer;
-    transition: all 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: all var(--builder-transition);
   }
 
-  /* Hover states - layered by depth with different colors */
+  /* Hover states - layered by depth with brand colors */
   .builder-selectable:hover {
     @apply ring-1;
-    ring-color: hsl(190 85% 55% / 0.4);
-    background-color: hsl(190 85% 55% / 0.03);
+    ring-color: hsl(315 85% 58% / 0.4);
+    background-color: hsl(315 85% 58% / 0.03);
   }
   
-  /* Section hover - lighter cyan, dashed */
+  /* Section hover - lighter magenta, dashed */
   .builder-section-selectable:hover {
-    outline: 2px dashed hsl(190 95% 65% / 0.5);
+    outline: 2px dashed hsl(315 85% 65% / 0.5);
     outline-offset: 2px;
-    background-color: hsl(190 95% 65% / 0.02);
+    background-color: hsl(315 85% 65% / 0.02);
   }
   
-  /* Block hover - medium cyan */
+  /* Block hover - medium purple */
   .builder-block-selectable:hover {
     @apply ring-1;
-    ring-color: hsl(190 90% 55% / 0.5);
-    background-color: hsl(190 90% 55% / 0.04);
+    ring-color: hsl(275 70% 55% / 0.5);
+    background-color: hsl(275 70% 55% / 0.04);
   }
   
-  /* Element hover - strongest cyan with glow */
+  /* Element hover - bright magenta with glow */
   .builder-element-selectable:hover {
     @apply ring-2;
-    ring-color: hsl(190 95% 50% / 0.6);
-    background-color: hsl(190 95% 50% / 0.05);
+    ring-color: hsl(315 90% 60% / 0.6);
+    background-color: hsl(315 90% 60% / 0.05);
   }
 
   /* Selected states - layered hierarchy */
   .builder-selected {
     @apply ring-2;
-    ring-color: hsl(190 95% 55%);
+    ring-color: hsl(315 85% 58%);
     box-shadow: 
-      0 0 0 4px hsl(190 95% 55% / 0.15),
-      0 0 20px -4px hsl(190 95% 55% / 0.3);
+      0 0 0 4px hsl(315 85% 58% / 0.15),
+      0 0 20px -4px hsl(315 85% 58% / 0.3);
     animation: selection-appear 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
   
-  /* Section selected - dashed outline */
+  /* Section selected - dashed magenta outline */
   .builder-section-selected {
-    outline: 2px dashed hsl(190 95% 65%);
+    outline: 2px dashed hsl(315 85% 65%);
     outline-offset: 4px;
-    box-shadow: 0 0 0 8px hsl(190 95% 65% / 0.08);
+    box-shadow: 0 0 0 8px hsl(315 85% 65% / 0.08);
   }
   
-  /* Block selected - solid with subtle glow */
+  /* Block selected - solid purple with glow */
   .builder-block-selected {
     @apply ring-2;
-    ring-color: hsl(190 90% 55%);
+    ring-color: hsl(275 70% 55%);
     box-shadow: 
-      0 0 0 4px hsl(190 90% 55% / 0.12),
-      0 0 16px -2px hsl(190 90% 55% / 0.25);
+      0 0 0 4px hsl(275 70% 55% / 0.12),
+      0 0 16px -2px hsl(275 70% 55% / 0.25);
   }
   
-  /* Element selected - bright with strong glow */
+  /* Element selected - bright magenta with strong glow */
   .builder-element-selected {
     @apply ring-2;
-    ring-color: hsl(190 95% 50%);
+    ring-color: hsl(315 90% 60%);
     box-shadow: 
-      0 0 0 4px hsl(190 95% 50% / 0.18),
-      0 0 24px -4px hsl(190 95% 50% / 0.4);
+      0 0 0 4px hsl(315 90% 60% / 0.18),
+      0 0 24px -4px hsl(315 90% 60% / 0.4);
     animation: element-selection-pulse 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   }
   
   /* Parent highlight when child is selected */
   .builder-parent-of-selected {
-    outline: 1px dashed hsl(190 85% 60% / 0.3);
+    outline: 2px dashed hsl(275 70% 55% / 0.4);
     outline-offset: 6px;
   }
 
   @keyframes selection-appear {
     0% {
-      box-shadow: 0 0 0 0px hsl(190 95% 55% / 0.4);
+      box-shadow: 0 0 0 0px hsl(315 85% 58% / 0.4);
       transform: scale(0.98);
     }
     50% {
-      box-shadow: 0 0 0 6px hsl(190 95% 55% / 0.2);
+      box-shadow: 0 0 0 6px hsl(315 85% 58% / 0.2);
     }
     100% {
-      box-shadow: 0 0 0 4px hsl(190 95% 55% / 0.15);
+      box-shadow: 0 0 0 4px hsl(315 85% 58% / 0.15);
       transform: scale(1);
     }
   }
   
   @keyframes element-selection-pulse {
     0% {
-      box-shadow: 0 0 0 0px hsl(190 95% 50% / 0.5);
+      box-shadow: 0 0 0 0px hsl(315 90% 60% / 0.5);
     }
     40% {
-      box-shadow: 0 0 0 8px hsl(190 95% 50% / 0.15), 0 0 30px -4px hsl(190 95% 50% / 0.5);
+      box-shadow: 0 0 0 8px hsl(315 90% 60% / 0.15), 0 0 30px -4px hsl(315 90% 60% / 0.5);
     }
     100% {
-      box-shadow: 0 0 0 4px hsl(190 95% 50% / 0.18), 0 0 24px -4px hsl(190 95% 50% / 0.4);
+      box-shadow: 0 0 0 4px hsl(315 90% 60% / 0.18), 0 0 24px -4px hsl(315 90% 60% / 0.4);
     }
   }
   
-  /* Multi-selection indicator */
+  /* Multi-selection indicator - coral accent */
   .builder-multi-selected {
     @apply ring-2;
-    ring-color: hsl(280 85% 60%);
-    box-shadow: 0 0 0 4px hsl(280 85% 60% / 0.15);
+    ring-color: hsl(20 90% 58%);
+    box-shadow: 0 0 0 4px hsl(20 90% 58% / 0.15);
   }
   
-  /* Click target expansion for easier selection */
+  /* Click target expansion for easier selection - increased padding */
   .builder-click-target {
     position: relative;
   }
@@ -354,7 +359,7 @@
   .builder-click-target::before {
     content: '';
     position: absolute;
-    inset: -4px;
+    inset: -8px;
     z-index: -1;
   }
 
@@ -364,14 +369,14 @@
     @apply hidden;
   }
 
-  /* Block type badge - refined styling */
+  /* Block type badge - refined styling with brand colors */
   .block-type-badge {
     @apply absolute -top-8 left-3 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide
            text-white rounded-md whitespace-nowrap
            opacity-0 pointer-events-none z-40;
-    background: hsl(190 90% 35%);
-    box-shadow: 0 2px 8px -2px hsl(190 90% 35% / 0.5);
-    transition: all 0.15s cubic-bezier(0.32, 0.72, 0, 1);
+    background: hsl(275 70% 45%);
+    box-shadow: 0 2px 8px -2px hsl(275 70% 45% / 0.5);
+    transition: all var(--builder-transition);
     transform: translateY(4px);
   }
 
@@ -388,15 +393,32 @@
     transform: translateY(4px);
   }
   
-  /* Section type badge */
+  /* Container type-specific badge colors */
+  .block-badge-navigation {
+    background: linear-gradient(135deg, hsl(20 90% 55%), hsl(35 95% 55%)) !important;
+  }
+  
+  .block-badge-header {
+    background: hsl(315 85% 50%) !important;
+  }
+  
+  .block-badge-footer {
+    background: hsl(275 70% 50%) !important;
+  }
+  
+  .block-badge-container {
+    background: hsl(280 60% 50%) !important;
+  }
+  
+  /* Section type badge - brand aligned */
   .section-type-badge {
     @apply absolute -top-10 left-4 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider
-           text-cyan-300 rounded-lg whitespace-nowrap
+           text-white/90 rounded-lg whitespace-nowrap
            opacity-0 pointer-events-none z-40;
-    background: hsl(190 40% 15% / 0.95);
-    border: 1px solid hsl(190 50% 40% / 0.3);
+    background: hsl(275 40% 20% / 0.95);
+    border: 1px solid hsl(315 50% 50% / 0.3);
     backdrop-filter: blur(8px);
-    transition: all 0.15s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: all var(--builder-transition);
     transform: translateY(4px);
   }
   
@@ -404,6 +426,13 @@
   .builder-section-selected > .section-type-badge {
     @apply opacity-100;
     transform: translateY(0);
+  }
+  
+  /* Inline badge (inside block) - shows for special containers */
+  .block-badge-inline {
+    @apply absolute top-2 left-2 px-2 py-0.5 text-[9px] font-semibold uppercase
+           bg-black/40 backdrop-blur-sm text-white/80 rounded-md
+           opacity-0 group-hover/block:opacity-100 transition-opacity z-30;
   }
 
   /* Step intent badges */

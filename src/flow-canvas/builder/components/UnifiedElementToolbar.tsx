@@ -316,14 +316,14 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const isBgGradient = styles.fillType === 'gradient';
   const isBgNone = styles.fillType === 'none' || (!styles.backgroundColor && !styles.gradient && styles.fillType !== 'solid' && styles.fillType !== 'gradient');
 
-  // Compact button classes - same size for all views, optimized for touch
+  // Compact button classes - touch-friendly sizing with brand colors
   const btnClass = cn(
     "flex items-center justify-center transition-all duration-150",
-    "min-w-[32px] min-h-[32px] p-1.5 rounded-md",
+    "min-w-[36px] min-h-[36px] p-1.5 rounded-md",
     "active:scale-95"
   );
-  const btnInactive = "text-white/60 hover:text-white hover:bg-white/10 active:bg-white/20";
-  const btnActive = "bg-[hsl(var(--builder-accent))] text-white shadow-sm";
+  const btnInactive = "text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.15] active:bg-[hsl(315,85%,58%)/0.25]";
+  const btnActive = "bg-[hsl(275,70%,55%)] text-white shadow-sm";
 
   const toolbarContent = (
     <TooltipProvider delayDuration={500}>
@@ -339,7 +339,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         className={cn(
           'flex items-center px-1.5 py-1 rounded-xl',
           'bg-[hsl(220,8%,8%)] backdrop-blur-xl',
-          'border border-white/[0.06]',
+          'border border-[hsl(315,85%,58%)/0.15]',
           'shadow-2xl shadow-black/60',
           'pointer-events-auto',
           'gap-0.5'
@@ -656,11 +656,11 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           onClick={(e) => { e.stopPropagation(); setMobileExpanded(true); }}
           className={cn(
             "flex items-center justify-center",
-            "w-10 h-10 rounded-full",
+            "w-11 h-11 rounded-full",
             "bg-[hsl(220,8%,6%)] backdrop-blur-xl",
-            "border border-white/[0.08]",
+            "border border-[hsl(315,85%,58%)/0.15]",
             "shadow-2xl shadow-black/70",
-            "text-white/90 hover:text-white hover:bg-[hsl(220,8%,10%)]",
+            "text-white/90 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]",
             "pointer-events-auto",
             "transition-colors duration-150"
           )}
@@ -681,7 +681,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           className={cn(
             'flex items-center px-1.5 py-1 rounded-full',
             'bg-[hsl(220,8%,6%)] backdrop-blur-xl',
-            'border border-white/[0.08]',
+            'border border-[hsl(315,85%,58%)/0.15]',
             'shadow-2xl shadow-black/70',
             'pointer-events-auto',
             'gap-0.5'
@@ -691,7 +691,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           {/* Close button */}
           <button
             onClick={(e) => { e.stopPropagation(); setMobileExpanded(false); }}
-            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', btnInactive)}
+            className={cn(btnClass, 'w-9 h-9 min-w-[36px] min-h-[36px]', btnInactive)}
           >
             <X size={14} />
           </button>
