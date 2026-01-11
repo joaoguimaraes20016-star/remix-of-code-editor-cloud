@@ -1014,8 +1014,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                 onDuplicateStep={handleDuplicateStep}
                 onAddBlankStep={handleAddBlankStep}
                 onReorderSteps={handleReorderSteps}
-                onSelectBlock={(id) => { handleSelectBlock(id); setMobileLeftOpen(false); }}
-                onSelectElement={(id) => { handleSelectElement(id); setMobileLeftOpen(false); }}
+                onSelectBlock={(id, path) => { handleSelectBlock(id, path); setMobileLeftOpen(false); }}
+                onSelectElement={(id, path) => { handleSelectElement(id, path); setMobileLeftOpen(false); }}
                 onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
               />
             </SheetContent>
