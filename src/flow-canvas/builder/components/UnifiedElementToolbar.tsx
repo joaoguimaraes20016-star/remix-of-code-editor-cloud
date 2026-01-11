@@ -293,20 +293,13 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   // Framer-style button classes - clean, minimal, always visible
   const btnClass = cn(
     "flex items-center justify-center transition-all duration-100",
-    "min-w-[28px] min-h-[28px] p-1 rounded-md",
+    "min-w-[28px] min-h-[28px] p-1.5 rounded-md",
     "active:scale-95"
   );
-  const btnInactive = cn(
-    "text-[hsl(var(--builder-text))]/80",
-    "hover:text-[hsl(var(--builder-text))]",
-    "hover:bg-white/[0.08]"
-  );
-  // Use builder-accent-secondary (pink/magenta) for active states
-  const btnActive = cn(
-    "bg-[hsl(315,85%,58%)]",
-    "text-white",
-    "shadow-[0_0_12px_hsl(315,85%,58%,0.4)]"
-  );
+  // Inactive: white text at 85% opacity, subtle hover bg
+  const btnInactive = "text-white/90 hover:text-white hover:bg-white/10";
+  // Active: pink/magenta with glow
+  const btnActive = "bg-fuchsia-500 text-white shadow-[0_0_12px_rgba(217,70,239,0.5)]";
 
   const toolbarContent = (
     <TooltipProvider delayDuration={300}>
@@ -317,11 +310,11 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         exit={{ opacity: 0, scale: 0.95, y: 2 }}
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         className={cn(
-          'flex items-center px-1 py-0.5 rounded-lg',
-          'bg-[hsl(220,20%,8%)]/98 backdrop-blur-xl',
-          'border border-white/[0.08]',
+          'flex items-center px-1.5 py-1 rounded-lg',
+          'bg-zinc-900/[0.98] backdrop-blur-xl',
+          'border border-white/10',
           'shadow-2xl shadow-black/60',
-          'pointer-events-auto gap-0.5'
+          'pointer-events-auto gap-1'
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -330,19 +323,19 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           <TooltipTrigger asChild>
             <button
               type="button"
-              className={cn(btnClass, 'text-white/40 hover:text-white/70 cursor-grab active:cursor-grabbing')}
+              className={cn(btnClass, 'text-white/50 hover:text-white/80 cursor-grab active:cursor-grabbing')}
               onPointerDown={(e) => e.stopPropagation()}
               {...(dragHandleProps?.attributes || {})}
               {...(dragHandleProps?.listeners || {})}
               aria-label="Drag to reorder"
             >
-              <GripVertical size={13} />
+              <GripVertical size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs bg-black/90 border-white/10">Drag</TooltipContent>
+          <TooltipContent side="bottom" className="text-xs bg-zinc-900 border-white/10">Drag</TooltipContent>
         </Tooltip>
         
-        <div className="w-px h-4 bg-white/[0.08] mx-0.5" />
+        <div className="w-px h-4 bg-white/10 mx-0.5" />
 
         {/* Typography Controls - Compact */}
         {showTypography && (
@@ -351,25 +344,25 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             {/* Font Size Quick Select */}
             <Popover>
               <PopoverTrigger asChild>
-                <button className={cn(btnClass, btnInactive, 'px-2 gap-0.5 min-w-[40px]')}>
-                  <span className="text-[11px] font-semibold">{currentFontSize}</span>
-                  <ChevronDown size={9} className="opacity-60" />
+                <button className={cn(btnClass, btnInactive, 'px-2.5 gap-1 min-w-[44px]')}>
+                  <span className="text-xs font-semibold">{currentFontSize}</span>
+                  <ChevronDown size={10} className="opacity-60" />
                 </button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-auto p-1 bg-[hsl(220,20%,8%)]/98 backdrop-blur-xl border-white/[0.08]"
+                className="w-auto p-1.5 bg-zinc-900/98 backdrop-blur-xl border-white/10"
                 sideOffset={8}
               >
-                <div className="flex gap-0.5">
+                <div className="flex gap-1">
                   {fontSizes.map((size) => (
                     <button
                       key={size.value}
                       onClick={() => handleFontSizeChange(size.value)}
                       className={cn(
-                        "px-2 py-1 text-[11px] font-medium rounded transition-all",
+                        "px-2.5 py-1.5 text-xs font-medium rounded-md transition-all",
                         styles.fontSize === size.value 
-                          ? "bg-[hsl(315,85%,58%)] text-white shadow-[0_0_8px_hsl(315,85%,58%,0.3)]" 
-                          : "text-white/70 hover:text-white hover:bg-white/[0.08]"
+                          ? btnActive 
+                          : "text-white/80 hover:text-white hover:bg-white/10"
                       )}
                     >
                       {size.label}
@@ -383,20 +376,20 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             <Tooltip>
               <TooltipTrigger asChild>
                 <button onClick={toggleBold} className={cn(btnClass, styles.fontWeight === 'bold' ? btnActive : btnInactive)}>
-                  <Bold size={14} strokeWidth={2.5} />
+                  <Bold size={15} strokeWidth={2.5} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs bg-black/90 border-white/10">Bold</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs bg-zinc-900 border-white/10">Bold</TooltipContent>
             </Tooltip>
 
             {/* Italic */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button onClick={toggleItalic} className={cn(btnClass, styles.fontStyle === 'italic' ? btnActive : btnInactive)}>
-                  <Italic size={14} strokeWidth={2.5} />
+                  <Italic size={15} strokeWidth={2.5} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs bg-black/90 border-white/10">Italic</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs bg-zinc-900 border-white/10">Italic</TooltipContent>
             </Tooltip>
           </>
         )}
@@ -404,18 +397,18 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         {/* Alignment */}
         {showAlignment && (
           <>
-            <div className="w-px h-4 bg-white/[0.08] mx-0.5" />
-            <div className="flex">
+            <div className="w-px h-4 bg-white/10 mx-0.5" />
+            <div className="flex rounded-md overflow-hidden">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={(e) => { e.stopPropagation(); onAlignChange?.('left'); }}
-                    className={cn(btnClass, 'rounded-r-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
+                    className={cn(btnClass, 'rounded-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
                   >
-                    <AlignLeft size={13} />
+                    <AlignLeft size={14} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs bg-black/90 border-white/10">Left</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-zinc-900 border-white/10">Left</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -423,48 +416,48 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                     onClick={(e) => { e.stopPropagation(); onAlignChange?.('center'); }}
                     className={cn(btnClass, 'rounded-none', styles.textAlign === 'center' ? btnActive : btnInactive)}
                   >
-                    <AlignCenter size={13} />
+                    <AlignCenter size={14} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs bg-black/90 border-white/10">Center</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-zinc-900 border-white/10">Center</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={(e) => { e.stopPropagation(); onAlignChange?.('right'); }}
-                    className={cn(btnClass, 'rounded-l-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
+                    className={cn(btnClass, 'rounded-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
                   >
-                    <AlignRight size={13} />
+                    <AlignRight size={14} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs bg-black/90 border-white/10">Right</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-zinc-900 border-white/10">Right</TooltipContent>
               </Tooltip>
             </div>
           </>
         )}
 
-        <div className="w-px h-4 bg-white/[0.08] mx-0.5" />
+        <div className="w-px h-4 bg-white/10 mx-0.5" />
 
         {/* Actions */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }} className={cn(btnClass, btnInactive)}>
-              <Copy size={13} />
+              <Copy size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs bg-black/90 border-white/10">Duplicate</TooltipContent>
+          <TooltipContent side="bottom" className="text-xs bg-zinc-900 border-white/10">Duplicate</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-              className={cn(btnClass, 'text-white/60 hover:text-red-400 hover:bg-red-500/10')}
+              className={cn(btnClass, 'text-white/70 hover:text-red-400 hover:bg-red-500/15')}
             >
-              <Trash2 size={13} />
+              <Trash2 size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs bg-black/90 border-white/10">Delete</TooltipContent>
+          <TooltipContent side="bottom" className="text-xs bg-zinc-900 border-white/10">Delete</TooltipContent>
         </Tooltip>
       </motion.div>
     </TooltipProvider>
@@ -484,10 +477,10 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           className={cn(
             "flex items-center justify-center",
             "w-10 h-10 rounded-full",
-            "bg-[hsl(220,20%,8%)]/98 backdrop-blur-xl",
-            "border border-white/[0.08]",
+            "bg-zinc-900/98 backdrop-blur-xl",
+            "border border-white/10",
             "shadow-2xl shadow-black/60",
-            "text-white/80 hover:text-white hover:bg-white/[0.08]",
+            "text-white/80 hover:text-white hover:bg-white/10",
             "pointer-events-auto",
             "transition-all duration-150"
           )}
@@ -502,9 +495,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           exit={{ opacity: 0, scale: 0.85 }}
           transition={{ type: 'spring', stiffness: 450, damping: 28 }}
           className={cn(
-            'flex items-center px-1 py-0.5 rounded-full',
-            'bg-[hsl(220,20%,8%)]/98 backdrop-blur-xl',
-            'border border-white/[0.08]',
+            'flex items-center px-1.5 py-1 rounded-full',
+            'bg-zinc-900/98 backdrop-blur-xl',
+            'border border-white/10',
             'shadow-2xl shadow-black/60',
             'pointer-events-auto',
             'gap-0.5'
@@ -514,64 +507,64 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           {/* Close button */}
           <button
             onClick={(e) => { e.stopPropagation(); setMobileExpanded(false); }}
-            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px] text-white/60 hover:text-white hover:bg-white/[0.08]')}
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px] text-white/70 hover:text-white hover:bg-white/10')}
           >
-            <X size={13} />
+            <X size={14} />
           </button>
 
           {showTypography && (
             <>
               <button 
                 onClick={toggleBold} 
-                className={cn(btnClass, 'w-7 h-7 min-w-[28px] min-h-[28px]', styles.fontWeight === 'bold' ? btnActive : btnInactive)}
+                className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', styles.fontWeight === 'bold' ? btnActive : btnInactive)}
               >
-                <Bold size={13} />
+                <Bold size={14} />
               </button>
               <button 
                 onClick={toggleItalic} 
-                className={cn(btnClass, 'w-7 h-7 min-w-[28px] min-h-[28px]', styles.fontStyle === 'italic' ? btnActive : btnInactive)}
+                className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', styles.fontStyle === 'italic' ? btnActive : btnInactive)}
               >
-                <Italic size={13} />
+                <Italic size={14} />
               </button>
             </>
           )}
 
           {showAlignment && (
-            <div className="flex">
+            <div className="flex rounded-md overflow-hidden">
               <button
                 onClick={() => onAlignChange?.('left')}
-                className={cn(btnClass, 'w-6 h-7 min-w-[24px] rounded-r-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
+                className={cn(btnClass, 'w-7 h-8 min-w-[28px] rounded-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
               >
-                <AlignLeft size={11} />
+                <AlignLeft size={12} />
               </button>
               <button
                 onClick={() => onAlignChange?.('center')}
-                className={cn(btnClass, 'w-6 h-7 min-w-[24px] rounded-none', styles.textAlign === 'center' ? btnActive : btnInactive)}
+                className={cn(btnClass, 'w-7 h-8 min-w-[28px] rounded-none', styles.textAlign === 'center' ? btnActive : btnInactive)}
               >
-                <AlignCenter size={11} />
+                <AlignCenter size={12} />
               </button>
               <button
                 onClick={() => onAlignChange?.('right')}
-                className={cn(btnClass, 'w-6 h-7 min-w-[24px] rounded-l-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
+                className={cn(btnClass, 'w-7 h-8 min-w-[28px] rounded-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
               >
-                <AlignRight size={11} />
+                <AlignRight size={12} />
               </button>
             </div>
           )}
 
-          <div className="w-px h-4 bg-white/[0.08]" />
+          <div className="w-px h-5 bg-white/10" />
 
           <button 
             onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }} 
-            className={cn(btnClass, 'w-7 h-7 min-w-[28px] min-h-[28px]', btnInactive)}
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', btnInactive)}
           >
-            <Copy size={13} />
+            <Copy size={14} />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-            className={cn(btnClass, 'w-7 h-7 min-w-[28px] min-h-[28px] text-white/60 hover:text-red-400 hover:bg-red-500/10')}
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px] text-white/70 hover:text-red-400 hover:bg-red-500/15')}
           >
-            <Trash2 size={13} />
+            <Trash2 size={14} />
           </button>
         </motion.div>
       )}
