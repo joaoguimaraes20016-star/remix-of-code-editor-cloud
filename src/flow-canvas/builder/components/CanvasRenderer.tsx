@@ -884,6 +884,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 styles={{
                   fontFamily: element.props?.fontFamily as string,
                   fontSize: element.props?.fontSize as string,
@@ -1048,6 +1049,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 styles={{
                   fontFamily: element.props?.fontFamily as string,
                   fontSize: element.props?.fontSize as string,
@@ -1222,6 +1224,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 styles={{
                   textAlign: buttonAlignment,
                   backgroundColor: effectiveBg,
@@ -1359,6 +1362,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 styles={{
                   textAlign: inputAlign as 'left' | 'center' | 'right',
                   backgroundColor: inputBg as string,
