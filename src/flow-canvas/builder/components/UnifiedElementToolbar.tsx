@@ -361,7 +361,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                       onClick={() => handleFontSizeChange(size.value)}
                       className={cn(
                         "px-2.5 py-1.5 text-xs font-medium rounded transition-colors",
-                        styles.fontSize === size.value ? btnActive : 'text-white/60 hover:text-white hover:bg-white/10'
+                        styles.fontSize === size.value ? btnActive : btnInactive
                       )}
                     >
                       {size.label}
@@ -451,7 +451,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           <TooltipTrigger asChild>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-              className={cn(btnClass, 'text-white hover:text-red-400 hover:bg-red-500/15')}
+              className={cn(btnClass, btnInactive, 'hover:text-red-400 hover:bg-red-500/15')}
             >
               <Trash2 size={14} />
             </button>
@@ -480,10 +480,10 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           className={cn(
             "flex items-center justify-center",
             "w-11 h-11 rounded-full",
-            "bg-[hsl(220,8%,6%)] backdrop-blur-xl",
-            "border border-[hsl(315,85%,58%)/0.15]",
+            "bg-[hsl(var(--builder-surface))] backdrop-blur-xl",
+            "border border-[hsl(var(--builder-border))]",
             "shadow-2xl shadow-black/70",
-            "text-white/90 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]",
+            "text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-hover))]",
             "pointer-events-auto",
             "transition-colors duration-150"
           )}
@@ -503,8 +503,8 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           }}
           className={cn(
             'flex items-center px-1.5 py-1 rounded-full',
-            'bg-[hsl(220,8%,6%)] backdrop-blur-xl',
-            'border border-[hsl(315,85%,58%)/0.15]',
+            'bg-[hsl(var(--builder-surface))] backdrop-blur-xl',
+            'border border-[hsl(var(--builder-border))]',
             'shadow-2xl shadow-black/70',
             'pointer-events-auto',
             'gap-0.5'
