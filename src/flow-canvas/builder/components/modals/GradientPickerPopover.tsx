@@ -91,26 +91,22 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({
   onChange,
   compact = false,
 }) => {
+  // Use a ref to track value for comparison without triggering re-renders
+  const prevValueRef = React.useRef<string>('');
   const [gradient, setGradient] = useState<GradientValue>(() => cloneGradient(value || defaultGradient));
 
-  // Sync with external value when it changes - use deep comparison
+  // Sync with external value when it changes - use JSON comparison with ref
   useEffect(() => {
-    if (value) {
-      // Deep compare to prevent unnecessary updates that could cause glitches
-      const isSame = 
-        gradient.type === value.type && 
-        gradient.angle === value.angle &&
-        gradient.stops.length === value.stops.length &&
-        gradient.stops.every((s, i) => 
-          s.color === value.stops[i]?.color && 
-          s.position === value.stops[i]?.position
-        );
-      
-      if (!isSame) {
-        setGradient(cloneGradient(value));
-      }
+    if (!value) return;
+    
+    const valueStr = JSON.stringify(value);
+    
+    // Only sync if external value actually changed (not our own update)
+    if (valueStr !== prevValueRef.current) {
+      prevValueRef.current = valueStr;
+      setGradient(cloneGradient(value));
     }
-  }, [value, gradient]);
+  }, [value]);
 
   // Always deep clone before updating to prevent shared references
   const updateGradient = (updates: Partial<GradientValue>) => {
@@ -121,7 +117,12 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({
       stops: (updates.stops ?? gradient.stops).map(s => ({ ...s })),
     };
     setGradient(newGradient);
-    onChange(cloneGradient(newGradient)); // Clone again for parent
+    
+    // Update the ref so we don't re-sync our own changes
+    prevValueRef.current = JSON.stringify(newGradient);
+    
+    // Clone for parent to prevent shared references
+    onChange(cloneGradient(newGradient));
   };
 
   const updateStop = (index: number, updates: Partial<GradientStop>) => {
@@ -148,6 +149,7 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({
     // Deep clone preset to prevent mutation
     const cloned = cloneGradient(preset);
     setGradient(cloned);
+    prevValueRef.current = JSON.stringify(cloned);
     onChange(cloneGradient(cloned)); // Another clone for parent
   };
 

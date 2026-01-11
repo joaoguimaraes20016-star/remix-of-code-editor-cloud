@@ -100,16 +100,18 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styles.textColor]);
 
+  // Use ref for comparison to prevent sync loops
+  const prevGradientRef = useRef<string>(JSON.stringify(styles.textGradient || defaultGradient));
+  
   useEffect(() => {
     const next = styles.textGradient || defaultGradient;
-    const same =
-      localGradient.type === next.type &&
-      localGradient.angle === next.angle &&
-      localGradient.stops.length === next.stops.length &&
-      localGradient.stops.every((s, i) => s.color === next.stops[i]?.color && s.position === next.stops[i]?.position);
-
-    if (!same) setLocalGradient(cloneGradient(next));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const nextStr = JSON.stringify(next);
+    
+    // Only sync if the external value actually changed (not our own update)
+    if (nextStr !== prevGradientRef.current) {
+      prevGradientRef.current = nextStr;
+      setLocalGradient(cloneGradient(next));
+    }
   }, [styles.textGradient]);
   
   // Drag state for repositioning toolbar
@@ -209,9 +211,11 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   const handleGradientChange = (gradient: GradientValue) => {
     const cloned = cloneGradient(gradient);
     setLocalGradient(cloned);
+    // Update ref so we don't re-sync our own change
+    prevGradientRef.current = JSON.stringify(cloned);
     // Always clone to prevent shared references
     onChange({
-      textGradient: cloned,
+      textGradient: cloneGradient(cloned),
       textFillType: 'gradient',
     });
   };
@@ -223,9 +227,10 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
       const gradient = styles.textGradient || localGradient || defaultGradient;
       const cloned = cloneGradient(gradient);
       setLocalGradient(cloned);
+      prevGradientRef.current = JSON.stringify(cloned);
       onChange({
         textFillType: 'gradient',
-        textGradient: cloned,
+        textGradient: cloneGradient(cloned),
       });
       return;
     }
