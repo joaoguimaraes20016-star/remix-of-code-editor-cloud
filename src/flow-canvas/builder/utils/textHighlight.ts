@@ -20,10 +20,14 @@ export const parseHighlightedText = (content: string): HighlightSegment[] => {
     return [{ text: content || '', isHighlighted: false }];
   }
   
+  // Match {{content}} where content can include any character except }
   const regex = /\{\{([^}]+)\}\}/g;
   const segments: HighlightSegment[] = [];
   let lastIndex = 0;
   let match;
+
+  // Reset regex state for each parse
+  regex.lastIndex = 0;
 
   while ((match = regex.exec(content)) !== null) {
     // Add text before highlight
