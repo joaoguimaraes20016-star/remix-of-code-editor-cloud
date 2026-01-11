@@ -138,6 +138,8 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
   children: React.ReactNode;
   badge?: React.ReactNode;
+  sectionId?: string;
+  isHighlighted?: boolean;
 }
 
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
@@ -145,12 +147,32 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   icon,
   defaultOpen = false, 
   children,
-  badge
+  badge,
+  sectionId,
+  isHighlighted = false,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const sectionRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-open and scroll when highlighted
+  useEffect(() => {
+    if (isHighlighted && sectionRef.current) {
+      setIsOpen(true);
+      setTimeout(() => {
+        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+  }, [isHighlighted]);
 
   return (
-    <div className="inspector-section">
+    <div 
+      ref={sectionRef}
+      id={sectionId}
+      className={cn(
+        "inspector-section transition-all duration-200",
+        isHighlighted && "ring-1 ring-[hsl(315,85%,58%)] bg-[hsl(315,85%,58%)]/5"
+      )}
+    >
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="inspector-section-header w-full"
@@ -317,6 +339,8 @@ const ElementInspector: React.FC<{
   currentDeviceMode = 'desktop',
 }) => {
   const [activeState, setActiveState] = useState<'base' | 'hover' | 'active' | 'disabled'>('base');
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
   
   // Modal states
   const [isButtonActionOpen, setIsButtonActionOpen] = useState(false);
@@ -326,6 +350,24 @@ const ElementInspector: React.FC<{
   // Get which sections to show for this element type
   const elementType = element.type as ElementSectionType;
   const sectionsToShow = ELEMENT_SECTIONS[elementType] || ['advanced'];
+  
+  // Get the primary section for this element type (first one in the list)
+  const primarySection = sectionsToShow[0];
+
+  // Auto-scroll to the primary section when element changes
+  useEffect(() => {
+    if (primarySection && containerRef.current) {
+      // Highlight the primary section briefly
+      setHighlightedSection(primarySection);
+      
+      // Remove highlight after animation
+      const timer = setTimeout(() => {
+        setHighlightedSection(null);
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [element.id, primarySection]);
 
   const handleStyleChange = (key: string, value: string) => {
     if (activeState !== 'base') {
@@ -391,7 +433,7 @@ const ElementInspector: React.FC<{
   const showStates = (sectionsToShow as readonly string[]).includes('states');
 
   return (
-    <div className="space-y-0">
+    <div ref={containerRef} className="space-y-0">
       {/* Element Type Header with Quick Actions */}
       <div className="px-4 py-3 border-b border-builder-border">
         <div className="flex items-center justify-between">
@@ -515,7 +557,7 @@ const ElementInspector: React.FC<{
       {element.type === 'button' && (
         <>
           {/* Click Action */}
-          <CollapsibleSection title="Click Action" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen>
+          <CollapsibleSection title="Click Action" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen sectionId="action" isHighlighted={highlightedSection === 'action'}>
             <div className="pt-3 space-y-3">
               <div className="p-3 rounded-lg border border-builder-border bg-builder-surface-hover">
                 <div className="flex items-center justify-between mb-2">
@@ -535,7 +577,7 @@ const ElementInspector: React.FC<{
           </CollapsibleSection>
 
           {/* Button Appearance */}
-          <CollapsibleSection title="Appearance" icon={<Palette className="w-4 h-4" />} defaultOpen>
+          <CollapsibleSection title="Appearance" icon={<Palette className="w-4 h-4" />} defaultOpen sectionId="appearance" isHighlighted={highlightedSection === 'appearance'}>
             <div className="pt-3 space-y-3">
               {/* Fill Type Toggle - ATOMIC UPDATES */}
               <div className="flex items-center justify-between">
@@ -681,7 +723,7 @@ const ElementInspector: React.FC<{
           </CollapsibleSection>
 
           {/* Button Content */}
-          <CollapsibleSection title="Content" icon={<Type className="w-4 h-4" />}>
+          <CollapsibleSection title="Content" icon={<Type className="w-4 h-4" />} sectionId="content" isHighlighted={highlightedSection === 'content'}>
             <div className="pt-3">
               <Textarea
                 value={element.content || ''}
@@ -699,7 +741,7 @@ const ElementInspector: React.FC<{
       {(element.type === 'text' || element.type === 'heading') && (
         <>
           {/* Text Fill - Color or Gradient */}
-          <CollapsibleSection title="Text Fill" icon={<Palette className="w-4 h-4" />} defaultOpen>
+          <CollapsibleSection title="Text Fill" icon={<Palette className="w-4 h-4" />} defaultOpen sectionId="typography" isHighlighted={highlightedSection === 'typography'}>
             <div className="space-y-3 pt-3">
               {/* Fill Type Toggle - ATOMIC UPDATES to prevent race conditions */}
               <div className="flex items-center justify-between">
@@ -923,7 +965,7 @@ const ElementInspector: React.FC<{
           </CollapsibleSection>
 
           {/* Highlight Styles */}
-          <CollapsibleSection title="Highlight Style" icon={<Sparkles className="w-4 h-4" />}>
+          <CollapsibleSection title="Highlight Style" icon={<Sparkles className="w-4 h-4" />} sectionId="highlight" isHighlighted={highlightedSection === 'highlight'}>
             <div className="space-y-3 pt-3">
               <p className="text-[10px] text-builder-text-dim">Style text wrapped in {"{{double braces}}"}</p>
               
@@ -987,7 +1029,7 @@ const ElementInspector: React.FC<{
           </CollapsibleSection>
 
           {/* Content */}
-          <CollapsibleSection title="Content" icon={<Type className="w-4 h-4" />}>
+          <CollapsibleSection title="Content" icon={<Type className="w-4 h-4" />} sectionId="content" isHighlighted={highlightedSection === 'content'}>
             <div className="pt-3">
               <Textarea
                 value={element.content || ''}
@@ -1005,7 +1047,7 @@ const ElementInspector: React.FC<{
       {element.type === 'image' && (
         <>
           {/* Image Source */}
-          <CollapsibleSection title="Image Source" icon={<Image className="w-4 h-4" />} defaultOpen>
+          <CollapsibleSection title="Image Source" icon={<Image className="w-4 h-4" />} defaultOpen sectionId="source" isHighlighted={highlightedSection === 'source'}>
             <div className="pt-3 space-y-3">
               {element.props?.src ? (
                 <div className="relative rounded-lg overflow-hidden border border-builder-border">
@@ -1038,7 +1080,7 @@ const ElementInspector: React.FC<{
           </CollapsibleSection>
 
           {/* Size & Fit */}
-          <CollapsibleSection title="Size & Fit" icon={<BoxSelect className="w-4 h-4" />} defaultOpen>
+          <CollapsibleSection title="Size & Fit" icon={<BoxSelect className="w-4 h-4" />} defaultOpen sectionId="size" isHighlighted={highlightedSection === 'size'}>
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Width</span>
@@ -1110,7 +1152,7 @@ const ElementInspector: React.FC<{
       {/* ========== VIDEO SECTIONS ========== */}
       {element.type === 'video' && (
         <>
-          <CollapsibleSection title="Video Source" icon={<Video className="w-4 h-4" />} defaultOpen>
+          <CollapsibleSection title="Video Source" icon={<Video className="w-4 h-4" />} defaultOpen sectionId="source" isHighlighted={highlightedSection === 'source'}>
             <div className="pt-3 space-y-3">
               {videoSettings?.url ? (
                 <div className="p-3 rounded-lg border border-builder-border bg-builder-surface-hover">
@@ -1133,7 +1175,7 @@ const ElementInspector: React.FC<{
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Size & Alignment" icon={<BoxSelect className="w-4 h-4" />}>
+          <CollapsibleSection title="Size & Alignment" icon={<BoxSelect className="w-4 h-4" />} sectionId="size" isHighlighted={highlightedSection === 'size'}>
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Width</span>
@@ -1173,7 +1215,7 @@ const ElementInspector: React.FC<{
       {/* ========== INPUT/SELECT SECTIONS ========== */}
       {['input', 'select'].includes(element.type) && (
         <>
-          <CollapsibleSection title="Field Settings" icon={<Type className="w-4 h-4" />} defaultOpen>
+          <CollapsibleSection title="Field Settings" icon={<Type className="w-4 h-4" />} defaultOpen sectionId="field" isHighlighted={highlightedSection === 'field'}>
             <div className="space-y-3 pt-3">
               <FieldGroup label="Field Key" hint="Unique identifier for form data">
                 <Input
@@ -1219,7 +1261,7 @@ const ElementInspector: React.FC<{
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Appearance" icon={<Palette className="w-4 h-4" />}>
+          <CollapsibleSection title="Appearance" icon={<Palette className="w-4 h-4" />} sectionId="inputStyle" isHighlighted={highlightedSection === 'inputStyle'}>
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Background</span>
@@ -1255,7 +1297,7 @@ const ElementInspector: React.FC<{
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Focus State" icon={<MousePointer2 className="w-4 h-4" />}>
+          <CollapsibleSection title="Focus State" icon={<MousePointer2 className="w-4 h-4" />} sectionId="focusStates" isHighlighted={highlightedSection === 'focusStates'}>
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Focus Border</span>
@@ -1273,7 +1315,7 @@ const ElementInspector: React.FC<{
 
       {/* ========== CHECKBOX/RADIO SECTIONS ========== */}
       {['checkbox', 'radio'].includes(element.type) && (
-        <CollapsibleSection title="Field Settings" icon={<Type className="w-4 h-4" />} defaultOpen>
+        <CollapsibleSection title="Field Settings" icon={<Type className="w-4 h-4" />} defaultOpen sectionId="field" isHighlighted={highlightedSection === 'field'}>
           <div className="space-y-3 pt-3">
             <FieldGroup label="Field Key">
               <Input
@@ -1301,7 +1343,7 @@ const ElementInspector: React.FC<{
 
       {/* ========== DIVIDER SECTION ========== */}
       {element.type === 'divider' && (
-        <CollapsibleSection title="Divider Style" icon={<Rows className="w-4 h-4" />} defaultOpen>
+        <CollapsibleSection title="Divider Style" icon={<Rows className="w-4 h-4" />} defaultOpen sectionId="dividerStyle" isHighlighted={highlightedSection === 'dividerStyle'}>
           <div className="pt-3 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Color</span>
@@ -1333,7 +1375,7 @@ const ElementInspector: React.FC<{
 
       {/* ========== SPACER SECTION ========== */}
       {element.type === 'spacer' && (
-        <CollapsibleSection title="Spacer" icon={<Rows className="w-4 h-4" />} defaultOpen>
+        <CollapsibleSection title="Spacer" icon={<Rows className="w-4 h-4" />} defaultOpen sectionId="spacerStyle" isHighlighted={highlightedSection === 'spacerStyle'}>
           <div className="pt-3 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Height</span>
@@ -1407,7 +1449,7 @@ const ElementInspector: React.FC<{
       )}
 
       {/* ========== ADVANCED SECTION (Animation + Visibility) ========== */}
-      <CollapsibleSection title="Advanced" icon={<Settings2 className="w-4 h-4" />}>
+      <CollapsibleSection title="Advanced" icon={<Settings2 className="w-4 h-4" />} sectionId="advanced" isHighlighted={highlightedSection === 'advanced'}>
         <div className="pt-3 space-y-4">
           {/* Animation */}
           <div className="space-y-2">

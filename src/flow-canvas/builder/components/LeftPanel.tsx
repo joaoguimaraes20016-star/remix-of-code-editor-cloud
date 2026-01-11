@@ -343,7 +343,11 @@ interface LayerItemProps {
   onToggleVisibility?: () => void;
 }
 
-const LayerItem: React.FC<LayerItemProps> = ({
+interface LayerItemWrapperProps extends LayerItemProps {
+  forwardedRef?: React.Ref<HTMLDivElement>;
+}
+
+const LayerItem: React.FC<LayerItemWrapperProps> = ({
   label,
   icon,
   type,
@@ -356,19 +360,21 @@ const LayerItem: React.FC<LayerItemProps> = ({
   onToggleExpand,
   onClick,
   onToggleVisibility,
+  forwardedRef,
 }) => {
   const typeColors = {
-    frame: 'text-blue-400',
-    block: 'text-purple-400',
-    element: 'text-green-400',
+    frame: 'text-[hsl(315,85%,58%)]',
+    block: 'text-[hsl(315,70%,50%)]',
+    element: 'text-[hsl(315,60%,45%)]',
   };
 
   return (
     <div
+      ref={forwardedRef}
       className={cn(
         "group flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-all text-sm",
         isSelected 
-          ? "bg-builder-accent/15 text-builder-accent" 
+          ? "bg-[hsl(315,85%,58%)]/15 text-[hsl(315,85%,58%)] ring-1 ring-[hsl(315,85%,58%)]/30" 
           : "hover:bg-builder-surface-hover text-builder-text-secondary",
         !isVisible && "opacity-50"
       )}
@@ -392,7 +398,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
       <span className={cn("shrink-0", typeColors[type])}>{icon}</span>
       <span className="flex-1 truncate text-xs">{label}</span>
       {typeBadge && (
-        <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-medium rounded bg-builder-surface-active text-builder-text-dim uppercase tracking-wide">
+        <span className="shrink-0 px-1 py-0.5 text-[8px] font-medium rounded bg-[hsl(315,85%,58%)]/10 text-[hsl(315,60%,50%)] uppercase tracking-wide">
           {typeBadge}
         </span>
       )}
@@ -421,6 +427,7 @@ const EnhancedLayersTree: React.FC<{
   const [expandedFrames, setExpandedFrames] = useState<Set<string>>(new Set());
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+  const selectedRef = React.useRef<HTMLDivElement>(null);
   
   const toggleVisibility = (id: string) => {
     setHiddenLayers(prev => {
@@ -437,6 +444,39 @@ const EnhancedLayersTree: React.FC<{
   };
   
   const activeStep = steps.find(s => s.id === activeStepId);
+  
+  // Auto-expand to selected element and scroll into view
+  React.useEffect(() => {
+    if (!activeStep || !selection.id) return;
+    
+    // Find which block contains the selected element
+    for (const frame of activeStep.frames) {
+      for (const stack of frame.stacks) {
+        for (const block of stack.blocks) {
+          // If block is selected, just ensure frame is expanded
+          if (selection.type === 'block' && selection.id === block.id) {
+            setExpandedFrames(prev => new Set([...prev, frame.id]));
+            setTimeout(() => {
+              selectedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+            return;
+          }
+          // If element is selected, expand both frame and block
+          if (selection.type === 'element') {
+            const hasElement = block.elements.some(e => e.id === selection.id);
+            if (hasElement) {
+              setExpandedFrames(prev => new Set([...prev, frame.id]));
+              setExpandedBlocks(prev => new Set([...prev, block.id]));
+              setTimeout(() => {
+                selectedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }, 100);
+              return;
+            }
+          }
+        }
+      }
+    }
+  }, [selection.id, selection.type, activeStep]);
   
   if (!activeStep) {
     return (
@@ -525,6 +565,7 @@ const EnhancedLayersTree: React.FC<{
                         onToggleExpand={() => toggleBlock(block.id)}
                         onClick={() => onSelectBlock?.(block.id, blockPath)}
                         onToggleVisibility={() => toggleVisibility(block.id)}
+                        forwardedRef={isBlockSelected ? selectedRef : undefined}
                       />
                       
                       {/* Element Level */}
@@ -545,6 +586,7 @@ const EnhancedLayersTree: React.FC<{
                             depth={blockDepth + 1}
                             onClick={() => onSelectElement?.(element.id, elementPath)}
                             onToggleVisibility={() => toggleVisibility(element.id)}
+                            forwardedRef={isElementSelected ? selectedRef : undefined}
                           />
                         );
                       })}
