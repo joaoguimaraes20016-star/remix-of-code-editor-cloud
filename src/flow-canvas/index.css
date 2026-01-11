@@ -245,113 +245,73 @@
   /* Base selectable state */
   .builder-selectable {
     @apply relative cursor-pointer;
-    transition: all var(--builder-transition);
+    transition: all 0.15s ease;
   }
 
-  /* Hover states - layered by depth with brand colors */
+  /* Hover - unified pink */
   .builder-selectable:hover {
     @apply ring-1;
-    ring-color: hsl(315 85% 58% / 0.4);
-    background-color: hsl(315 85% 58% / 0.03);
+    ring-color: hsl(315 85% 58% / 0.35);
   }
   
-  /* Section hover - lighter magenta, dashed */
   .builder-section-selectable:hover {
-    outline: 2px dashed hsl(315 85% 65% / 0.5);
+    outline: 1px dashed hsl(315 85% 58% / 0.4);
     outline-offset: 2px;
-    background-color: hsl(315 85% 65% / 0.02);
   }
   
-  /* Block hover - medium purple */
   .builder-block-selectable:hover {
     @apply ring-1;
-    ring-color: hsl(275 70% 55% / 0.5);
-    background-color: hsl(275 70% 55% / 0.04);
+    ring-color: hsl(315 85% 58% / 0.4);
   }
   
-  /* Element hover - bright magenta with glow */
   .builder-element-selectable:hover {
-    @apply ring-2;
-    ring-color: hsl(315 90% 60% / 0.6);
-    background-color: hsl(315 90% 60% / 0.05);
+    @apply ring-1;
+    ring-color: hsl(315 85% 58% / 0.5);
   }
 
-  /* Selected states - layered hierarchy */
+  /* Selected - all pink, simple */
   .builder-selected {
     @apply ring-2;
     ring-color: hsl(315 85% 58%);
-    box-shadow: 
-      0 0 0 4px hsl(315 85% 58% / 0.15),
-      0 0 20px -4px hsl(315 85% 58% / 0.3);
-    animation: selection-appear 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 0 0 3px hsl(315 85% 58% / 0.12);
   }
   
-  /* Section selected - dashed magenta outline */
   .builder-section-selected {
-    outline: 2px dashed hsl(315 85% 65%);
-    outline-offset: 4px;
-    box-shadow: 0 0 0 8px hsl(315 85% 65% / 0.08);
+    outline: 2px dashed hsl(315 85% 58%);
+    outline-offset: 3px;
   }
   
-  /* Block selected - solid purple with glow */
   .builder-block-selected {
     @apply ring-2;
-    ring-color: hsl(275 70% 55%);
-    box-shadow: 
-      0 0 0 4px hsl(275 70% 55% / 0.12),
-      0 0 16px -2px hsl(275 70% 55% / 0.25);
+    ring-color: hsl(315 85% 58%);
+    box-shadow: 0 0 0 3px hsl(315 85% 58% / 0.1);
   }
   
-  /* Element selected - bright magenta with strong glow */
   .builder-element-selected {
     @apply ring-2;
-    ring-color: hsl(315 90% 60%);
-    box-shadow: 
-      0 0 0 4px hsl(315 90% 60% / 0.18),
-      0 0 24px -4px hsl(315 90% 60% / 0.4);
-    animation: element-selection-pulse 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    ring-color: hsl(315 85% 58%);
+    box-shadow: 0 0 0 3px hsl(315 85% 58% / 0.15);
   }
   
-  /* Parent highlight when child is selected */
+  /* Parent hint when child selected */
   .builder-parent-of-selected {
-    outline: 2px dashed hsl(275 70% 55% / 0.4);
-    outline-offset: 6px;
+    outline: 1px dashed hsl(315 85% 58% / 0.25);
+    outline-offset: 4px;
   }
 
   @keyframes selection-appear {
-    0% {
-      box-shadow: 0 0 0 0px hsl(315 85% 58% / 0.4);
-      transform: scale(0.98);
-    }
-    50% {
-      box-shadow: 0 0 0 6px hsl(315 85% 58% / 0.2);
-    }
-    100% {
-      box-shadow: 0 0 0 4px hsl(315 85% 58% / 0.15);
-      transform: scale(1);
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   
-  @keyframes element-selection-pulse {
-    0% {
-      box-shadow: 0 0 0 0px hsl(315 90% 60% / 0.5);
-    }
-    40% {
-      box-shadow: 0 0 0 8px hsl(315 90% 60% / 0.15), 0 0 30px -4px hsl(315 90% 60% / 0.5);
-    }
-    100% {
-      box-shadow: 0 0 0 4px hsl(315 90% 60% / 0.18), 0 0 24px -4px hsl(315 90% 60% / 0.4);
-    }
-  }
-  
-  /* Multi-selection indicator - coral accent */
+  /* Multi-selection - same pink */
   .builder-multi-selected {
     @apply ring-2;
-    ring-color: hsl(20 90% 58%);
-    box-shadow: 0 0 0 4px hsl(20 90% 58% / 0.15);
+    ring-color: hsl(315 85% 58%);
+    box-shadow: 0 0 0 3px hsl(315 85% 58% / 0.12);
   }
   
-  /* Click target expansion for easier selection - increased padding */
+  /* Click target */
   .builder-click-target {
     position: relative;
   }
@@ -359,80 +319,64 @@
   .builder-click-target::before {
     content: '';
     position: absolute;
-    inset: -8px;
+    inset: -6px;
     z-index: -1;
   }
 
-  /* Element type badge - DEPRECATED: now integrated into UnifiedElementToolbar */
-  /* Keeping for backwards compatibility but hidden */
+  /* Element type badge - DEPRECATED */
   .element-type-badge {
     @apply hidden;
   }
 
-  /* Block type badge - refined styling with brand colors */
+  /* Block type badge - minimal, pink-only */
   .block-type-badge {
-    @apply absolute -top-8 left-3 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide
-           text-white rounded-md whitespace-nowrap
+    @apply absolute -top-6 left-2 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide
+           text-white/90 rounded whitespace-nowrap
            opacity-0 pointer-events-none z-40;
-    background: hsl(275 70% 45%);
-    box-shadow: 0 2px 8px -2px hsl(275 70% 45% / 0.5);
-    transition: all var(--builder-transition);
-    transform: translateY(4px);
+    background: hsl(315 85% 55% / 0.9);
+    backdrop-filter: blur(4px);
+    transition: all 0.15s ease;
+    transform: translateY(2px);
   }
 
-  /* Show block badge on direct block hover */
+  /* Show on hover/select */
   .group\/block:hover > .block-type-badge,
   .builder-block-selected > .block-type-badge {
     @apply opacity-100;
     transform: translateY(0);
   }
   
-  /* Hide block badge when an element inside is selected */
+  /* Hide when child element selected */
   .builder-block-selected:has(.builder-element-selected) > .block-type-badge {
     @apply opacity-0;
-    transform: translateY(4px);
   }
   
-  /* Container type-specific badge colors */
-  .block-badge-navigation {
-    background: linear-gradient(135deg, hsl(20 90% 55%), hsl(35 95% 55%)) !important;
-  }
-  
-  .block-badge-header {
-    background: hsl(315 85% 50%) !important;
-  }
-  
-  .block-badge-footer {
-    background: hsl(275 70% 50%) !important;
-  }
-  
+  /* All container badges use same pink */
+  .block-badge-navigation,
+  .block-badge-header,
+  .block-badge-footer,
   .block-badge-container {
-    background: hsl(280 60% 50%) !important;
+    background: hsl(315 85% 55% / 0.9) !important;
   }
   
-  /* Section type badge - brand aligned */
+  /* Section badge - simplified */
   .section-type-badge {
-    @apply absolute -top-10 left-4 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider
-           text-white/90 rounded-lg whitespace-nowrap
+    @apply absolute -top-7 left-3 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide
+           text-white/80 rounded whitespace-nowrap
            opacity-0 pointer-events-none z-40;
-    background: hsl(275 40% 20% / 0.95);
-    border: 1px solid hsl(315 50% 50% / 0.3);
-    backdrop-filter: blur(8px);
-    transition: all var(--builder-transition);
-    transform: translateY(4px);
+    background: hsl(315 60% 40% / 0.85);
+    backdrop-filter: blur(4px);
+    transition: all 0.15s ease;
   }
   
   .group\/section:hover > .section-type-badge,
   .builder-section-selected > .section-type-badge {
     @apply opacity-100;
-    transform: translateY(0);
   }
   
-  /* Inline badge (inside block) - shows for special containers */
+  /* Inline badge */
   .block-badge-inline {
-    @apply absolute top-2 left-2 px-2 py-0.5 text-[9px] font-semibold uppercase
-           bg-black/40 backdrop-blur-sm text-white/80 rounded-md
-           opacity-0 group-hover/block:opacity-100 transition-opacity z-30;
+    @apply hidden;
   }
 
   /* Step intent badges */
