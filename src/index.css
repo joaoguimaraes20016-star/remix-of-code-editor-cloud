@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tech-focused design system - refined gold/yellow accent, clean dark base */
+/* InfoStack design system - magenta/pink accent, clean dark base */
 
 @layer base {
   :root {
@@ -15,8 +15,8 @@
     --popover: 220 15% 9%;
     --popover-foreground: 210 20% 96%;
 
-    --primary: 45 85% 55%;
-    --primary-foreground: 220 15% 6%;
+    --primary: 315 85% 58%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 14%;
     --secondary-foreground: 210 20% 96%;
@@ -24,15 +24,15 @@
     --muted: 220 12% 18%;
     --muted-foreground: 220 10% 55%;
 
-    --accent: 45 70% 50%;
-    --accent-foreground: 220 15% 6%;
+    --accent: 275 70% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 210 20% 96%;
 
     --border: 220 12% 16%;
     --input: 220 12% 16%;
-    --ring: 45 70% 50%;
+    --ring: 315 85% 58%;
 
     --radius: 0.75rem;
     
@@ -56,7 +56,7 @@
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.05));
     --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)));
-    --gradient-button: linear-gradient(135deg, hsl(45 85% 55%), hsl(40 80% 45%));
+    --gradient-button: linear-gradient(135deg, hsl(315 85% 58%), hsl(275 70% 55%));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)));
     --gradient-pending: linear-gradient(135deg, hsl(30 80% 50%), hsl(35 85% 45%));
     --gradient-confirmed: linear-gradient(135deg, hsl(142 60% 45%), hsl(155 65% 40%));
@@ -66,7 +66,7 @@
     --shadow-hover: 0 8px 30px hsl(var(--primary) / 0.1);
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     
-    --chart-1: 45 85% 55%;
+    --chart-1: 315 85% 58%;
     --chart-2: 217 80% 60%;
     --chart-3: 142 60% 45%;
     --chart-4: 280 70% 55%;
@@ -74,8 +74,8 @@
 
     --sidebar-background: 220 15% 7%;
     --sidebar-foreground: 210 20% 96%;
-    --sidebar-primary: 45 85% 55%;
-    --sidebar-primary-foreground: 220 15% 6%;
+    --sidebar-primary: 315 85% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 12% 14%;
     --sidebar-accent-foreground: 210 20% 96%;
     --sidebar-border: 220 12% 16%;
@@ -92,8 +92,8 @@
     --popover: 220 15% 9%;
     --popover-foreground: 210 20% 96%;
 
-    --primary: 45 85% 55%;
-    --primary-foreground: 220 15% 6%;
+    --primary: 315 85% 58%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 14%;
     --secondary-foreground: 210 20% 96%;
@@ -101,15 +101,15 @@
     --muted: 220 12% 18%;
     --muted-foreground: 220 10% 55%;
 
-    --accent: 45 70% 50%;
-    --accent-foreground: 220 15% 6%;
+    --accent: 275 70% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 210 20% 96%;
 
     --border: 220 12% 16%;
     --input: 220 12% 16%;
-    --ring: 45 70% 50%;
+    --ring: 315 85% 58%;
     
     --success: 142 60% 45%;
     --success-foreground: 210 20% 96%;
@@ -131,7 +131,7 @@
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.05));
     --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)));
-    --gradient-button: linear-gradient(135deg, hsl(45 85% 55%), hsl(40 80% 45%));
+    --gradient-button: linear-gradient(135deg, hsl(315 85% 58%), hsl(275 70% 55%));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)));
     --gradient-pending: linear-gradient(135deg, hsl(30 80% 50%), hsl(35 85% 45%));
     --gradient-confirmed: linear-gradient(135deg, hsl(142 60% 45%), hsl(155 65% 40%));
@@ -141,7 +141,7 @@
     --shadow-hover: 0 8px 30px hsl(var(--primary) / 0.1);
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     
-    --chart-1: 45 85% 55%;
+    --chart-1: 315 85% 58%;
     --chart-2: 217 80% 60%;
     --chart-3: 142 60% 45%;
     --chart-4: 280 70% 55%;
@@ -149,8 +149,8 @@
 
     --sidebar-background: 220 15% 7%;
     --sidebar-foreground: 210 20% 96%;
-    --sidebar-primary: 45 85% 55%;
-    --sidebar-primary-foreground: 220 15% 6%;
+    --sidebar-primary: 315 85% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 12% 14%;
     --sidebar-accent-foreground: 210 20% 96%;
     --sidebar-border: 220 12% 16%;

@@ -290,16 +290,16 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   };
   const currentFontSize = getCurrentFontSizeLabel();
 
-  // Framer-style button classes - clean, minimal, always visible
+  // Framer-style button classes - but fully theme-token driven (guarantees consistent colors)
   const btnClass = cn(
     "flex items-center justify-center transition-all duration-100",
     "min-w-[28px] min-h-[28px] p-1.5 rounded-md",
     "active:scale-95 cursor-pointer"
   );
-  // Inactive: pure white text, subtle hover - explicit colors for portal context
-  const btnInactive = "text-[#e4e4e7] hover:text-white hover:bg-[rgba(255,255,255,0.12)]";
-  // Active: pink/magenta with glow - explicit hex colors
-  const btnActive = "bg-[#d946ef] text-white shadow-[0_0_14px_rgba(217,70,239,0.6)]";
+  // Inactive: always visible on any background
+  const btnInactive = "text-builder-text-secondary hover:text-builder-text hover:bg-builder-surface-hover";
+  // Active: builder magenta/pink
+  const btnActive = "bg-builder-accent-secondary text-white shadow-[0_0_14px_hsl(var(--builder-accent-secondary)/0.45)]";
 
   const toolbarContent = (
     <TooltipProvider delayDuration={300}>
@@ -311,9 +311,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         className={cn(
           'flex items-center px-2 py-1 rounded-xl',
-          'bg-[#18181b] backdrop-blur-xl',
-          'border border-[rgba(255,255,255,0.12)]',
-          'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
+          'bg-builder-surface/95 backdrop-blur-xl',
+          'border border-builder-border-subtle/80',
+          'shadow-2xl shadow-black/60',
           'pointer-events-auto gap-1'
         )}
         onClick={(e) => e.stopPropagation()}
@@ -323,7 +323,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           <TooltipTrigger asChild>
             <button
               type="button"
-              className={cn(btnClass, 'text-[#a1a1aa] hover:text-white cursor-grab active:cursor-grabbing')}
+              className={cn(btnClass, 'text-builder-text-muted hover:text-builder-text cursor-grab active:cursor-grabbing')}
               onPointerDown={(e) => e.stopPropagation()}
               {...(dragHandleProps?.attributes || {})}
               {...(dragHandleProps?.listeners || {})}
@@ -332,10 +332,10 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
               <GripVertical size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs bg-[#18181b] border-[rgba(255,255,255,0.1)] text-white">Drag</TooltipContent>
+          <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Drag</TooltipContent>
         </Tooltip>
         
-        <div className="w-px h-4 bg-[rgba(255,255,255,0.12)] mx-0.5" />
+        <div className="w-px h-4 bg-builder-border-subtle/80 mx-0.5" />
 
         {/* Typography Controls - Compact */}
         {showTypography && (
@@ -350,7 +350,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                 </button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-auto p-1.5 bg-[#18181b] backdrop-blur-xl border-[rgba(255,255,255,0.12)]"
+                className="w-auto p-1.5 bg-builder-surface/98 backdrop-blur-xl border-builder-border"
                 sideOffset={8}
               >
                 <div className="flex gap-1">
@@ -360,9 +360,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                       onClick={() => handleFontSizeChange(size.value)}
                       className={cn(
                         "px-2.5 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer",
-                        styles.fontSize === size.value 
-                          ? btnActive 
-                          : "text-[#a1a1aa] hover:text-white hover:bg-[rgba(255,255,255,0.1)]"
+                        styles.fontSize === size.value
+                          ? btnActive
+                          : "text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover"
                       )}
                     >
                       {size.label}
@@ -379,7 +379,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                   <Bold size={15} strokeWidth={2.5} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs bg-[#18181b] border-[rgba(255,255,255,0.1)] text-white">Bold</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Bold</TooltipContent>
             </Tooltip>
 
             {/* Italic */}
@@ -389,7 +389,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                   <Italic size={15} strokeWidth={2.5} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs bg-[#18181b] border-[rgba(255,255,255,0.1)] text-white">Italic</TooltipContent>
+              <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Italic</TooltipContent>
             </Tooltip>
           </>
         )}
@@ -397,7 +397,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         {/* Alignment */}
         {showAlignment && (
           <>
-            <div className="w-px h-4 bg-[rgba(255,255,255,0.12)] mx-0.5" />
+            <div className="w-px h-4 bg-builder-border-subtle/80 mx-0.5" />
             <div className="flex rounded-md overflow-hidden">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -408,7 +408,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                     <AlignLeft size={14} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs bg-[#18181b] border-[rgba(255,255,255,0.1)] text-white">Left</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Left</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -419,7 +419,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                     <AlignCenter size={14} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs bg-[#18181b] border-[rgba(255,255,255,0.1)] text-white">Center</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Center</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -430,13 +430,13 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                     <AlignRight size={14} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs bg-[#18181b] border-[rgba(255,255,255,0.1)] text-white">Right</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Right</TooltipContent>
               </Tooltip>
             </div>
           </>
         )}
 
-        <div className="w-px h-4 bg-[rgba(255,255,255,0.12)] mx-0.5" />
+        <div className="w-px h-4 bg-builder-border-subtle/80 mx-0.5" />
 
         {/* Actions */}
         <Tooltip>
@@ -445,19 +445,19 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
               <Copy size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs bg-[#18181b] border-[rgba(255,255,255,0.1)] text-white">Duplicate</TooltipContent>
+          <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Duplicate</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-              className={cn(btnClass, 'text-[#a1a1aa] hover:text-[#f87171] hover:bg-[rgba(239,68,68,0.15)]')}
+              className={cn(btnClass, 'text-builder-text-muted hover:text-destructive hover:bg-destructive/15')}
             >
               <Trash2 size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs bg-[#18181b] border-[rgba(255,255,255,0.1)] text-white">Delete</TooltipContent>
+          <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Delete</TooltipContent>
         </Tooltip>
       </motion.div>
     </TooltipProvider>
@@ -477,10 +477,10 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           className={cn(
             "flex items-center justify-center",
             "w-10 h-10 rounded-full",
-            "bg-[#18181b] backdrop-blur-xl",
-            "border border-[rgba(255,255,255,0.12)]",
-            "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
-            "text-[#a1a1aa] hover:text-white hover:bg-[rgba(255,255,255,0.1)]",
+            "bg-builder-surface/95 backdrop-blur-xl",
+            "border border-builder-border-subtle/80",
+            "shadow-2xl shadow-black/60",
+            "text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover",
             "pointer-events-auto",
             "transition-all duration-150 cursor-pointer"
           )}
@@ -496,9 +496,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           transition={{ type: 'spring', stiffness: 450, damping: 28 }}
           className={cn(
             'flex items-center px-1.5 py-1 rounded-full',
-            'bg-[#18181b] backdrop-blur-xl',
-            'border border-[rgba(255,255,255,0.12)]',
-            'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
+            'bg-builder-surface/95 backdrop-blur-xl',
+            'border border-builder-border-subtle/80',
+            'shadow-2xl shadow-black/60',
             'pointer-events-auto',
             'gap-0.5'
           )}
@@ -507,21 +507,21 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           {/* Close button */}
           <button
             onClick={(e) => { e.stopPropagation(); setMobileExpanded(false); }}
-            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px] text-[#a1a1aa] hover:text-white hover:bg-[rgba(255,255,255,0.1)]')}
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', btnInactive)}
           >
             <X size={14} />
           </button>
 
           {showTypography && (
             <>
-              <button 
-                onClick={toggleBold} 
+              <button
+                onClick={toggleBold}
                 className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', (styles.fontWeight === 'bold' || styles.fontWeight === 'black') ? btnActive : btnInactive)}
               >
                 <Bold size={14} />
               </button>
-              <button 
-                onClick={toggleItalic} 
+              <button
+                onClick={toggleItalic}
                 className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', styles.fontStyle === 'italic' ? btnActive : btnInactive)}
               >
                 <Italic size={14} />
@@ -552,17 +552,17 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             </div>
           )}
 
-          <div className="w-px h-5 bg-[rgba(255,255,255,0.12)]" />
+          <div className="w-px h-5 bg-builder-border-subtle/80" />
 
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }} 
+          <button
+            onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }}
             className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', btnInactive)}
           >
             <Copy size={14} />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px] text-[#a1a1aa] hover:text-[#f87171] hover:bg-[rgba(239,68,68,0.15)]')}
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px] text-builder-text-muted hover:text-destructive hover:bg-destructive/15')}
           >
             <Trash2 size={14} />
           </button>
