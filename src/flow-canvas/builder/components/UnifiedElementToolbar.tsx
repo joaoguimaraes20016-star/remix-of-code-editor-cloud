@@ -316,15 +316,18 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     <TooltipProvider delayDuration={500}>
       <motion.div
         ref={mergedRef}
-        initial={{ opacity: 0, scale: 0.96, y: position.placement === 'top' ? 6 : -6 }}
+        initial={{ opacity: 0, scale: 0.92, y: position.placement === 'top' ? 8 : -8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+        exit={{ opacity: 0, scale: 0.92 }}
+        transition={{ 
+          duration: 0.2, 
+          ease: [0.32, 0.72, 0, 1], // Smooth spring-like curve
+        }}
         className={cn(
           'flex items-center px-1.5 py-1 rounded-xl',
-          'bg-[hsl(220,10%,12%)]/98 backdrop-blur-xl',
-          'border border-white/[0.08]',
-          'shadow-xl shadow-black/40',
+          'bg-[hsl(220,8%,8%)] backdrop-blur-xl',
+          'border border-white/[0.06]',
+          'shadow-2xl shadow-black/60',
           'pointer-events-auto',
           'gap-0.5'
         )}
@@ -629,35 +632,44 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
       {!mobileExpanded ? (
         <motion.button
           key="collapsed"
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.7 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.12 }}
+          exit={{ opacity: 0, scale: 0.7 }}
+          transition={{ 
+            type: 'spring',
+            stiffness: 400,
+            damping: 25,
+          }}
           onClick={(e) => { e.stopPropagation(); setMobileExpanded(true); }}
           className={cn(
             "flex items-center justify-center",
-            "w-9 h-9 rounded-full",
-            "bg-[hsl(220,10%,12%)]/98 backdrop-blur-xl",
-            "border border-white/10",
-            "shadow-lg shadow-black/30",
-            "text-white/80 hover:text-white",
-            "pointer-events-auto"
+            "w-10 h-10 rounded-full",
+            "bg-[hsl(220,8%,6%)] backdrop-blur-xl",
+            "border border-white/[0.08]",
+            "shadow-2xl shadow-black/70",
+            "text-white/90 hover:text-white hover:bg-[hsl(220,8%,10%)]",
+            "pointer-events-auto",
+            "transition-colors duration-150"
           )}
         >
-          <MoreHorizontal size={16} />
+          <MoreHorizontal size={18} strokeWidth={2.5} />
         </motion.button>
       ) : (
         <motion.div
           key="expanded"
-          initial={{ opacity: 0, scale: 0.9, width: 36 }}
-          animate={{ opacity: 1, scale: 1, width: 'auto' }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.85 }}
+          transition={{ 
+            type: 'spring',
+            stiffness: 400,
+            damping: 28,
+          }}
           className={cn(
-            'flex items-center px-1 py-0.5 rounded-full',
-            'bg-[hsl(220,10%,12%)]/98 backdrop-blur-xl',
-            'border border-white/10',
-            'shadow-lg shadow-black/30',
+            'flex items-center px-1.5 py-1 rounded-full',
+            'bg-[hsl(220,8%,6%)] backdrop-blur-xl',
+            'border border-white/[0.08]',
+            'shadow-2xl shadow-black/70',
             'pointer-events-auto',
             'gap-0.5'
           )}
