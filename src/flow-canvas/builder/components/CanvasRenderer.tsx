@@ -2580,20 +2580,20 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
       )}
       style={frameStyles.style}
     >
-      {/* Frame selection handle - always visible with strong styling */}
+      {/* Frame selection handle - positioned outside content flow with generous spacing */}
       {!readOnly && (
         <div 
-          className="absolute -top-1 left-1/2 -translate-x-1/2 cursor-pointer z-20 opacity-0 group-hover/frame:opacity-100 transition-all duration-200"
+          className="absolute -top-12 left-1/2 -translate-x-1/2 cursor-pointer z-30 opacity-0 group-hover/frame:opacity-100 transition-all duration-200"
           onClick={(e) => {
             e.stopPropagation();
             onSelect({ type: 'frame', id: frame.id, path: framePath });
           }}
         >
-          {/* Section label - high contrast pill */}
-          <div className="px-3 py-1.5 text-[11px] font-semibold bg-gray-900 text-white rounded-full shadow-xl border border-gray-700 flex items-center gap-1.5 hover:bg-gray-800 transition-colors">
-            <Layout className="w-3 h-3 text-purple-400" />
-            <span>{frame.label || 'Section'}</span>
-            <span className="text-gray-400 text-[10px]">· Click to edit</span>
+          {/* Section label - modern pill design with touch-friendly size */}
+          <div className="px-4 py-2 text-xs font-medium bg-[hsl(220,10%,10%)]/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl shadow-black/50 border border-white/[0.08] flex items-center gap-2 hover:bg-[hsl(220,10%,15%)] transition-colors min-h-[40px]">
+            <Layout className="w-4 h-4 text-[hsl(var(--builder-accent))]" />
+            <span className="font-semibold">{frame.label || 'Section'}</span>
+            <span className="text-white/40 text-[11px] hidden sm:inline">· Click to edit</span>
           </div>
         </div>
       )}

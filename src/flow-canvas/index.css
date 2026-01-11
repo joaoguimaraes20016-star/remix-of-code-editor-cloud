@@ -266,17 +266,27 @@
   }
 
   /* Block type badge - shows on block hover with distinct styling */
+  /* Positioned higher to avoid toolbar overlap */
   .block-type-badge {
-    @apply absolute -top-8 left-4 px-3 py-1 text-[11px] font-semibold 
-           bg-[hsl(var(--builder-accent-secondary))] text-white rounded-lg whitespace-nowrap
-           opacity-0 transition-opacity duration-200 pointer-events-none z-50
-           shadow-lg;
+    @apply absolute -top-9 left-4 px-3 py-1.5 text-[11px] font-semibold 
+           bg-[hsl(var(--builder-accent-secondary))] text-white rounded-xl whitespace-nowrap
+           opacity-0 transition-all duration-200 pointer-events-none z-40
+           shadow-lg shadow-black/30;
   }
 
   /* Show block badge on direct block hover (using group/block), not child element hover */
-  .group\/block:hover > .block-type-badge,
+  .group\/block:hover > .block-type-badge {
+    @apply opacity-100;
+  }
+  
+  /* Keep block badge visible when block is selected, but hide if element inside is selected */
   .builder-selected > .block-type-badge {
     @apply opacity-100;
+  }
+  
+  /* Hide block badge when an element toolbar is likely showing (element selected) */
+  .builder-selected:has(.builder-selected) > .block-type-badge {
+    @apply opacity-0;
   }
 
   /* Step intent badges */
