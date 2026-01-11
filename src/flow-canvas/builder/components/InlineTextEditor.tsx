@@ -3,7 +3,7 @@ import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
-
+import { applyStylesToSelection, hasSelectionInElement, sanitizeStyledHTML, htmlToPlainText } from '../utils/selectionStyles';
 export interface TextStyles {
   fontSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
@@ -193,9 +193,18 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     setShowToolbar(false);
     
     if (contentRef.current) {
-      const newValue = contentRef.current.innerText;
-      // Only emit content on blur - styles are emitted immediately on toolbar change
-      onChange(newValue);
+      // Check if content has inline styled spans - if so, preserve HTML
+      const hasInlineStyles = contentRef.current.querySelector('span[style]') !== null;
+      
+      if (hasInlineStyles) {
+        // Save sanitized HTML to preserve inline styling
+        const htmlContent = sanitizeStyledHTML(contentRef.current.innerHTML);
+        onChange(htmlContent);
+      } else {
+        // Plain text - just save the text content
+        const newValue = contentRef.current.innerText;
+        onChange(newValue);
+      }
     }
   }, [onChange]);
 
@@ -284,8 +293,77 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     if (isEditing) updateToolbarPosition();
   }, [isEditing, updateToolbarPosition]);
 
-  // Apply style changes - ONLY emit the properties that were explicitly changed
+  // Apply style changes - handle both selection-based and whole-block styling
   const handleStyleChange = useCallback((newStyles: Partial<TextStyles>) => {
+    const editorEl = contentRef.current;
+    
+    // Check if there's a text selection inside the editor
+    const hasSelection = editorEl && hasSelectionInElement(editorEl);
+    
+    // For color/gradient changes with a selection, apply inline styles to selected text only
+    if (hasSelection && (newStyles.textColor || newStyles.textGradient || newStyles.textFillType)) {
+      const styleOptions: { color?: string; gradient?: GradientValue } = {};
+      
+      if (newStyles.textFillType === 'gradient') {
+        styleOptions.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
+      } else if (newStyles.textColor) {
+        styleOptions.color = newStyles.textColor;
+      } else if (newStyles.textFillType === 'solid' && styles.textColor) {
+        styleOptions.color = styles.textColor;
+      }
+      
+      // Also apply font weight/style/decoration if being changed
+      if (newStyles.fontWeight) {
+        const weightMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
+        (styleOptions as Record<string, unknown>).fontWeight = weightMap[newStyles.fontWeight] || newStyles.fontWeight;
+      }
+      if (newStyles.fontStyle) {
+        (styleOptions as Record<string, unknown>).fontStyle = newStyles.fontStyle;
+      }
+      if (newStyles.textDecoration) {
+        (styleOptions as Record<string, unknown>).textDecoration = newStyles.textDecoration;
+      }
+      
+      const applied = applyStylesToSelection(styleOptions as Parameters<typeof applyStylesToSelection>[0]);
+      
+      if (applied) {
+        // Save the HTML content immediately after applying inline styles
+        if (editorEl) {
+          const htmlContent = sanitizeStyledHTML(editorEl.innerHTML);
+          // Get plain text for the value prop
+          const plainText = htmlToPlainText(htmlContent);
+          // Emit the HTML as content (stored in element.content)
+          onChange(htmlContent, { ...newStyles, _hasInlineStyles: true } as Partial<TextStyles>);
+        }
+        return; // Don't update block-level styles since we applied to selection
+      }
+    }
+    
+    // For bold/italic/underline with selection, apply inline
+    if (hasSelection && (newStyles.fontWeight || newStyles.fontStyle || newStyles.textDecoration)) {
+      const styleOptions: Record<string, unknown> = {};
+      
+      if (newStyles.fontWeight) {
+        const weightMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
+        styleOptions.fontWeight = weightMap[newStyles.fontWeight] || newStyles.fontWeight;
+      }
+      if (newStyles.fontStyle) {
+        styleOptions.fontStyle = newStyles.fontStyle;
+      }
+      if (newStyles.textDecoration) {
+        styleOptions.textDecoration = newStyles.textDecoration;
+      }
+      
+      const applied = applyStylesToSelection(styleOptions as Parameters<typeof applyStylesToSelection>[0]);
+      
+      if (applied && editorEl) {
+        const htmlContent = sanitizeStyledHTML(editorEl.innerHTML);
+        onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
+        return;
+      }
+    }
+    
+    // No selection or non-color/non-formatting style changes - apply to whole block
     // Deep clone gradients to prevent shared references - use explicit property copying
     const clonedStyles: Partial<TextStyles> = {};
     
@@ -494,21 +572,34 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     return {};
   };
 
-  // Check if content has highlight syntax
-  const contentHasHighlights = value && hasHighlightSyntax(value);
+  // Check if content has highlight syntax (only for plain text values)
+  const isHtmlContent = value && (value.includes('<span') || value.includes('</span>'));
+  const contentHasHighlights = value && !isHtmlContent && hasHighlightSyntax(value);
 
-  // Render content with highlight syntax support
+  // Render content with highlight syntax support and HTML preservation
   const renderContent = () => {
     if (!value) {
       return !isEditing ? placeholder : '';
     }
     
-    // When editing, return raw text - gradient/color is applied to container via getInlineStyles
+    // When editing, check if the value contains HTML (inline styled spans)
     if (isEditing) {
+      // If value is HTML, we need to render it using dangerouslySetInnerHTML
+      // The contentEditable will handle the HTML natively
+      if (isHtmlContent) {
+        // Return null here - we'll use dangerouslySetInnerHTML on the div instead
+        return null;
+      }
       return value;
     }
     
-    // When not editing, render highlights
+    // When not editing and content is HTML, render it directly
+    if (isHtmlContent) {
+      // Return null - will use dangerouslySetInnerHTML
+      return null;
+    }
+    
+    // When not editing, render highlights (for legacy {{text}} syntax)
     if (contentHasHighlights) {
       const segments = parseHighlightedText(value);
       const highlightStyles = getHighlightStyles();
@@ -558,6 +649,9 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     
     return value;
   };
+  
+  // Determine if we should use dangerouslySetInnerHTML
+  const useHtmlRendering = isHtmlContent;
 
   return (
     <div ref={containerRef} className="relative">
@@ -573,40 +667,76 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       )}
       
       {/* Editable Content */}
-      <div
-        ref={contentRef}
-        contentEditable={isEditing && !disabled}
-        suppressContentEditableWarning
-        onDoubleClick={handleDoubleClick}
-        onBlur={handleBlur}
-        onSelect={handleSelect}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            setIsEditing(false);
-            setShowToolbar(false);
-            contentRef.current?.blur();
-          }
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            setIsEditing(false);
-            setShowToolbar(false);
-            contentRef.current?.blur();
-          }
-        }}
-        style={getInlineStyles()}
-        className={`
-          outline-none transition-all duration-150
-          ${getStyleClasses()}
-          ${isEditing 
-            ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-white/5' 
-            : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
-          }
-          ${!value && !isEditing ? 'text-gray-400' : ''}
-          ${className}
-        `}
-      >
-        {renderContent()}
-      </div>
+      {useHtmlRendering ? (
+        <div
+          ref={contentRef}
+          contentEditable={isEditing && !disabled}
+          suppressContentEditableWarning
+          onDoubleClick={handleDoubleClick}
+          onBlur={handleBlur}
+          onSelect={handleSelect}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsEditing(false);
+              setShowToolbar(false);
+              contentRef.current?.blur();
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              setIsEditing(false);
+              setShowToolbar(false);
+              contentRef.current?.blur();
+            }
+          }}
+          style={getInlineStyles()}
+          className={`
+            outline-none transition-all duration-150
+            ${getStyleClasses()}
+            ${isEditing 
+              ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-white/5' 
+              : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
+            }
+            ${!value && !isEditing ? 'text-gray-400' : ''}
+            ${className}
+          `}
+          dangerouslySetInnerHTML={{ __html: sanitizeStyledHTML(value || '') }}
+        />
+      ) : (
+        <div
+          ref={contentRef}
+          contentEditable={isEditing && !disabled}
+          suppressContentEditableWarning
+          onDoubleClick={handleDoubleClick}
+          onBlur={handleBlur}
+          onSelect={handleSelect}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsEditing(false);
+              setShowToolbar(false);
+              contentRef.current?.blur();
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              setIsEditing(false);
+              setShowToolbar(false);
+              contentRef.current?.blur();
+            }
+          }}
+          style={getInlineStyles()}
+          className={`
+            outline-none transition-all duration-150
+            ${getStyleClasses()}
+            ${isEditing 
+              ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-white/5' 
+              : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
+            }
+            ${!value && !isEditing ? 'text-gray-400' : ''}
+            ${className}
+          `}
+        >
+          {renderContent()}
+        </div>
+      )}
     </div>
   );
 };
