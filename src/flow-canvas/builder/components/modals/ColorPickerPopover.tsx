@@ -96,11 +96,7 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
           sideOffset={5}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          {/* Header */}
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[hsl(220,18%,14%)]">
-            <Palette className="w-4 h-4 text-[hsl(275,70%,55%)]" />
-            <span className="text-sm font-medium text-white">Pick Color</span>
-          </div>
+          {/* Color Selection */}
 
           {/* Color Input */}
           <div className="flex items-center gap-2 mb-3">

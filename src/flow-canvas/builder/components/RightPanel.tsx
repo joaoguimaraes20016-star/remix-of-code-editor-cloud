@@ -529,27 +529,72 @@ const ElementInspector: React.FC<{
             </EffectsPickerPopover>
           </div>
           {element.animation?.effect && (
-            <div className="mt-2 flex items-center gap-2">
-              <Select 
-                value={element.animation?.trigger || 'scroll'}
-                onValueChange={(value) => onUpdate({ animation: { ...(element.animation || { effect: '', delay: 0, duration: 500, easing: 'ease-out', threshold: 0.1 }), trigger: value as any } as AnimationSettings })}
-              >
-                <SelectTrigger className="builder-input h-7 text-xs flex-1">
-                  <SelectValue placeholder="Trigger" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="load">On Page Load</SelectItem>
-                  <SelectItem value="scroll">When Scrolled Into View</SelectItem>
-                  <SelectItem value="hover">On Hover</SelectItem>
-                </SelectContent>
-              </Select>
-              <button
-                onClick={() => onUpdate({ animation: undefined })}
-                className="p-1.5 rounded-md hover:bg-destructive/10 text-builder-text-muted hover:text-destructive transition-colors"
-                title="Remove animation"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+            <div className="mt-3 space-y-3">
+              {/* Trigger selector */}
+              <div className="flex items-center gap-2">
+                <Select 
+                  value={element.animation?.trigger || 'scroll'}
+                  onValueChange={(value) => onUpdate({ animation: { ...(element.animation || { effect: '', delay: 0, duration: 500, easing: 'ease-out', threshold: 0.1 }), trigger: value as any } as AnimationSettings })}
+                >
+                  <SelectTrigger className="builder-input h-7 text-xs flex-1">
+                    <SelectValue placeholder="Trigger" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="load">On Page Load</SelectItem>
+                    <SelectItem value="scroll">When Scrolled Into View</SelectItem>
+                    <SelectItem value="hover">On Hover</SelectItem>
+                  </SelectContent>
+                </Select>
+                <button
+                  onClick={() => onUpdate({ animation: undefined })}
+                  className="p-1.5 rounded-md hover:bg-destructive/10 text-builder-text-muted hover:text-destructive transition-colors"
+                  title="Remove animation"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              
+              {/* Duration slider - uses direct value not preset */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Duration</span>
+                  <span className="text-xs font-mono text-builder-text-dim">{element.animation?.duration || 500}ms</span>
+                </div>
+                <Slider 
+                  value={[element.animation?.duration || 500]}
+                  onValueChange={(v) => onUpdate({ 
+                    animation: { 
+                      ...(element.animation || { effect: '', trigger: 'scroll', delay: 0, easing: 'ease-out', threshold: 0.1 }), 
+                      duration: v[0] 
+                    } as AnimationSettings 
+                  })}
+                  min={100}
+                  max={2000}
+                  step={50}
+                  className="w-full"
+                />
+              </div>
+              
+              {/* Delay slider */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Delay</span>
+                  <span className="text-xs font-mono text-builder-text-dim">{element.animation?.delay || 0}ms</span>
+                </div>
+                <Slider 
+                  value={[element.animation?.delay || 0]}
+                  onValueChange={(v) => onUpdate({ 
+                    animation: { 
+                      ...(element.animation || { effect: '', trigger: 'scroll', duration: 500, easing: 'ease-out', threshold: 0.1 }), 
+                      delay: v[0] 
+                    } as AnimationSettings 
+                  })}
+                  min={0}
+                  max={2000}
+                  step={50}
+                  className="w-full"
+                />
+              </div>
             </div>
           )}
         </div>
@@ -2073,7 +2118,29 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
             <span className="text-xs text-builder-text-muted">Gradient Border</span>
             <TogglePill 
               value={block.props?.gradientBorder === true} 
-              onToggle={() => onUpdate({ props: { ...block.props, gradientBorder: !block.props?.gradientBorder } })} 
+              onToggle={() => {
+                const isCurrentlyOn = block.props?.gradientBorder === true;
+                if (!isCurrentlyOn) {
+                  // When turning on, set a default gradient if none exists
+                  const defaultGradient = {
+                    type: 'linear' as const,
+                    angle: 135,
+                    stops: [
+                      { color: '#8B5CF6', position: 0 },
+                      { color: '#EC4899', position: 100 }
+                    ]
+                  };
+                  onUpdate({ 
+                    props: { 
+                      ...block.props, 
+                      gradientBorder: true,
+                      borderGradient: block.props?.borderGradient || defaultGradient
+                    } 
+                  });
+                } else {
+                  onUpdate({ props: { ...block.props, gradientBorder: false } });
+                }
+              }} 
               labels={['On', 'Off']} 
             />
           </div>
@@ -2140,14 +2207,14 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
             <span className="text-xs text-builder-text-muted">Backdrop Blur</span>
             <div className="flex items-center gap-2">
               <Slider 
-                value={[parseInt(block.styles?.backdropBlur as string || '0')]}
-                onValueChange={(v) => handleStyleUpdate('backdropBlur', `${v[0]}`)}
+                value={[parseInt((block.styles?.backdropBlur as string || '0').replace('px', ''))]}
+                onValueChange={(v) => handleStyleUpdate('backdropBlur', `${v[0]}px`)}
                 min={0}
                 max={24}
                 step={2}
                 className="w-16"
               />
-              <span className="text-xs text-builder-text w-10">{block.styles?.backdropBlur || '0'}px</span>
+              <span className="text-xs text-builder-text w-10">{parseInt((block.styles?.backdropBlur as string || '0').replace('px', ''))}px</span>
             </div>
           </div>
         </div>
@@ -2454,7 +2521,7 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
               </SelectContent>
             </Select>
           </FieldGroup>
-          <FieldGroup label="Primary Color">
+          <FieldGroup label="Accent Color" hint="Used for buttons, links, and highlights">
             <ColorPickerPopover
               color={primaryColor}
               onChange={(color) => handleSettingsUpdate('primary_color', color)}
