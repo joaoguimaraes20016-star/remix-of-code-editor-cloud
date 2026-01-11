@@ -375,15 +375,12 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     if (shouldApplyInline && editorEl) {
       const styleOptions = buildSelectionOptions();
       if (styleOptions) {
+        const sel = window.getSelection();
+        const hasSelection = hasSelectionInElement(editorEl);
         const target = getStyledSpanAtSelection(editorEl) || activeInlineSpanRef.current;
-
-        // If we already have a target span (common during custom gradient tweaking), just update it
-        if (target) {
-          updateSpanStyle(target, styleOptions);
-          activeInlineSpanRef.current = target;
-          scheduleInlineHtmlSave();
-          
-          // ALSO sync local styles so toolbar UI stays in sync (fillType, gradient, color)
+        
+        // Helper to sync toolbar state
+        const syncToolbarState = () => {
           const syncStyles: Partial<TextStyles> = {};
           if (newStyles.textFillType !== undefined) syncStyles.textFillType = newStyles.textFillType;
           if (newStyles.textGradient) syncStyles.textGradient = cloneGradient(newStyles.textGradient);
@@ -391,24 +388,54 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           if (Object.keys(syncStyles).length > 0) {
             setStyles(prev => ({ ...prev, ...syncStyles }));
           }
-          return;
-        }
-
-        // Otherwise, if the user has a selection, wrap it once and remember the new span
-        if (hasSelectionInElement(editorEl)) {
+        };
+        
+        // Determine if selection covers exactly the whole target span
+        const isWholeSpanSelected = (): boolean => {
+          if (!target || !sel || sel.rangeCount === 0) return false;
+          const range = sel.getRangeAt(0);
+          if (range.collapsed) return true; // Caret inside span = treat as whole-span edit
+          
+          try {
+            const spanRange = document.createRange();
+            spanRange.selectNodeContents(target);
+            // Compare: selection must start AND end at same positions as span contents
+            const startMatch = range.compareBoundaryPoints(Range.START_TO_START, spanRange) === 0;
+            const endMatch = range.compareBoundaryPoints(Range.END_TO_END, spanRange) === 0;
+            return startMatch && endMatch;
+          } catch {
+            return false;
+          }
+        };
+        
+        // CASE 1: User has a selection that is NOT the whole span -> wrap just the selected chars
+        if (hasSelection && target && !isWholeSpanSelected()) {
+          // Partial selection inside an existing span: wrap only selected portion
           const span = applyStylesToSelection(styleOptions);
           if (span) {
             activeInlineSpanRef.current = span;
             scheduleInlineHtmlSave();
-            
-            // ALSO sync local styles so toolbar UI stays in sync
-            const syncStyles: Partial<TextStyles> = {};
-            if (newStyles.textFillType !== undefined) syncStyles.textFillType = newStyles.textFillType;
-            if (newStyles.textGradient) syncStyles.textGradient = cloneGradient(newStyles.textGradient);
-            if (newStyles.textColor !== undefined) syncStyles.textColor = newStyles.textColor;
-            if (Object.keys(syncStyles).length > 0) {
-              setStyles(prev => ({ ...prev, ...syncStyles }));
-            }
+            syncToolbarState();
+            return;
+          }
+        }
+        
+        // CASE 2: Target exists and (caret inside OR whole span selected) -> update existing span
+        if (target && (!hasSelection || isWholeSpanSelected())) {
+          updateSpanStyle(target, styleOptions);
+          activeInlineSpanRef.current = target;
+          scheduleInlineHtmlSave();
+          syncToolbarState();
+          return;
+        }
+
+        // CASE 3: No target span, but user has a selection -> wrap it
+        if (hasSelection) {
+          const span = applyStylesToSelection(styleOptions);
+          if (span) {
+            activeInlineSpanRef.current = span;
+            scheduleInlineHtmlSave();
+            syncToolbarState();
             return;
           }
         }
@@ -641,9 +668,25 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       return value;
     }
     
-    // When not editing and content is HTML, render it directly
+    // When not editing and content is HTML, render with proper gradient support
     if (isHtmlContent) {
-      // Return null - will use dangerouslySetInnerHTML
+      // For HTML content with block-level gradient, wrap in gradient span
+      if (styles.textFillType === 'gradient') {
+        const gradientValue = styles.textGradient || defaultGradient;
+        return (
+          <span 
+            style={{
+              backgroundImage: gradientToCSS(gradientValue),
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              color: 'transparent',
+            } as React.CSSProperties}
+            dangerouslySetInnerHTML={{ __html: sanitizeStyledHTML(value) }}
+          />
+        );
+      }
+      // Return null - will use dangerouslySetInnerHTML on main div
       return null;
     }
     
@@ -701,14 +744,27 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   
   // Determine if we should use dangerouslySetInnerHTML
   const useHtmlRendering = isHtmlContent;
+  
+  // Track the last value we applied to innerHTML to avoid resetting selection during edits
+  const lastAppliedHtmlRef = useRef<string>('');
 
-  // When editing HTML content, don't let React re-apply innerHTML on every render (it resets selection)
+  // When editing HTML content, only set innerHTML on initial entry or external value change
+  // This prevents selection loss during slider drags / gradient tweaks
   useEffect(() => {
-    if (!isEditing || !useHtmlRendering) return;
+    if (!isEditing || !useHtmlRendering) {
+      lastAppliedHtmlRef.current = '';
+      return;
+    }
     const el = contentRef.current;
     if (!el) return;
-    el.innerHTML = sanitizeStyledHTML(value || '');
-  }, [isEditing, useHtmlRendering]);
+    
+    const sanitized = sanitizeStyledHTML(value || '');
+    // Only apply if this is a fresh edit session OR value changed externally
+    if (lastAppliedHtmlRef.current !== sanitized && el.innerHTML !== sanitized) {
+      el.innerHTML = sanitized;
+      lastAppliedHtmlRef.current = sanitized;
+    }
+  }, [isEditing, useHtmlRendering, value]);
   return (
     <div ref={containerRef} className="relative">
       {/* Floating Rich Text Toolbar */}
