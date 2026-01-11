@@ -3,7 +3,7 @@ import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
-import { applyStylesToSelection, hasSelectionInElement, sanitizeStyledHTML, htmlToPlainText } from '../utils/selectionStyles';
+import { applyStylesToSelection, hasSelectionInElement, sanitizeStyledHTML, htmlToPlainText, containsHTML, mergeAdjacentStyledSpans } from '../utils/selectionStyles';
 export interface TextStyles {
   fontSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
@@ -193,6 +193,9 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     setShowToolbar(false);
     
     if (contentRef.current) {
+      // Clean up adjacent spans with same styles
+      mergeAdjacentStyledSpans(contentRef.current);
+      
       // Check if content has inline styled spans - if so, preserve HTML
       const hasInlineStyles = contentRef.current.querySelector('span[style]') !== null;
       
@@ -300,71 +303,63 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     // Check if there's a text selection inside the editor
     const hasSelection = editorEl && hasSelectionInElement(editorEl);
     
-    // For color/gradient changes with a selection, apply inline styles to selected text only
-    if (hasSelection && (newStyles.textColor || newStyles.textGradient || newStyles.textFillType)) {
-      const styleOptions: { color?: string; gradient?: GradientValue } = {};
+    // Build style options for selection-based styling
+    const buildSelectionOptions = (): Parameters<typeof applyStylesToSelection>[0] | null => {
+      const options: Record<string, unknown> = {};
       
+      // Color/gradient
       if (newStyles.textFillType === 'gradient') {
-        styleOptions.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
+        options.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
       } else if (newStyles.textColor) {
-        styleOptions.color = newStyles.textColor;
-      } else if (newStyles.textFillType === 'solid' && styles.textColor) {
-        styleOptions.color = styles.textColor;
+        options.color = newStyles.textColor;
+      } else if (newStyles.textFillType === 'solid' && (newStyles.textColor || styles.textColor)) {
+        options.color = newStyles.textColor || styles.textColor;
       }
       
-      // Also apply font weight/style/decoration if being changed
+      // Font formatting
       if (newStyles.fontWeight) {
         const weightMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
-        (styleOptions as Record<string, unknown>).fontWeight = weightMap[newStyles.fontWeight] || newStyles.fontWeight;
+        options.fontWeight = weightMap[newStyles.fontWeight] || newStyles.fontWeight;
       }
       if (newStyles.fontStyle) {
-        (styleOptions as Record<string, unknown>).fontStyle = newStyles.fontStyle;
+        options.fontStyle = newStyles.fontStyle;
       }
       if (newStyles.textDecoration) {
-        (styleOptions as Record<string, unknown>).textDecoration = newStyles.textDecoration;
+        options.textDecoration = newStyles.textDecoration;
       }
       
-      const applied = applyStylesToSelection(styleOptions as Parameters<typeof applyStylesToSelection>[0]);
+      return Object.keys(options).length > 0 ? options as Parameters<typeof applyStylesToSelection>[0] : null;
+    };
+    
+    // Try to apply to selection first (for color, gradient, and formatting)
+    if (hasSelection) {
+      const shouldApplyToSelection = 
+        newStyles.textColor !== undefined ||
+        newStyles.textGradient !== undefined ||
+        newStyles.textFillType !== undefined ||
+        newStyles.fontWeight !== undefined ||
+        newStyles.fontStyle !== undefined ||
+        newStyles.textDecoration !== undefined;
       
-      if (applied) {
-        // Save the HTML content immediately after applying inline styles
-        if (editorEl) {
-          const htmlContent = sanitizeStyledHTML(editorEl.innerHTML);
-          // Get plain text for the value prop
-          const plainText = htmlToPlainText(htmlContent);
-          // Emit the HTML as content (stored in element.content)
-          onChange(htmlContent, { ...newStyles, _hasInlineStyles: true } as Partial<TextStyles>);
+      if (shouldApplyToSelection) {
+        const styleOptions = buildSelectionOptions();
+        
+        if (styleOptions) {
+          const applied = applyStylesToSelection(styleOptions);
+          
+          if (applied && editorEl) {
+            // Clean up and save HTML
+            mergeAdjacentStyledSpans(editorEl);
+            const htmlContent = sanitizeStyledHTML(editorEl.innerHTML);
+            onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
+            return; // Don't update block-level styles since we applied to selection
+          }
         }
-        return; // Don't update block-level styles since we applied to selection
       }
     }
     
-    // For bold/italic/underline with selection, apply inline
-    if (hasSelection && (newStyles.fontWeight || newStyles.fontStyle || newStyles.textDecoration)) {
-      const styleOptions: Record<string, unknown> = {};
-      
-      if (newStyles.fontWeight) {
-        const weightMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
-        styleOptions.fontWeight = weightMap[newStyles.fontWeight] || newStyles.fontWeight;
-      }
-      if (newStyles.fontStyle) {
-        styleOptions.fontStyle = newStyles.fontStyle;
-      }
-      if (newStyles.textDecoration) {
-        styleOptions.textDecoration = newStyles.textDecoration;
-      }
-      
-      const applied = applyStylesToSelection(styleOptions as Parameters<typeof applyStylesToSelection>[0]);
-      
-      if (applied && editorEl) {
-        const htmlContent = sanitizeStyledHTML(editorEl.innerHTML);
-        onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
-        return;
-      }
-    }
-    
-    // No selection or non-color/non-formatting style changes - apply to whole block
-    // Deep clone gradients to prevent shared references - use explicit property copying
+    // No selection or style that should apply to whole block - apply block-level styles
+    // Deep clone gradients to prevent shared references
     const clonedStyles: Partial<TextStyles> = {};
     
     // Copy all scalar properties
@@ -573,7 +568,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   };
 
   // Check if content has highlight syntax (only for plain text values)
-  const isHtmlContent = value && (value.includes('<span') || value.includes('</span>'));
+  const isHtmlContent = value && containsHTML(value);
   const contentHasHighlights = value && !isHtmlContent && hasHighlightSyntax(value);
 
   // Render content with highlight syntax support and HTML preservation

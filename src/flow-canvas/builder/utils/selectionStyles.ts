@@ -3,7 +3,7 @@
  * This wraps the selected text in a <span> with the provided CSS styles.
  */
 
-import { gradientToCSS, cloneGradient } from '../components/modals';
+import { gradientToCSS } from '../components/modals';
 import type { GradientValue } from '../components/modals';
 
 export interface SelectionStyleOptions {
@@ -19,10 +19,18 @@ export interface SelectionStyleOptions {
  */
 export function hasSelectionInElement(element: HTMLElement): boolean {
   const sel = window.getSelection();
-  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return false;
+  if (!sel || sel.rangeCount === 0) return false;
   
   const range = sel.getRangeAt(0);
-  return element.contains(range.commonAncestorContainer);
+  const selectedText = range.toString();
+  
+  // Must have actual selected text (not just a cursor position)
+  if (!selectedText || selectedText.length === 0) return false;
+  
+  // Check if selection is within the element
+  return element.contains(range.commonAncestorContainer) ||
+         element.contains(range.startContainer) ||
+         element.contains(range.endContainer);
 }
 
 /**
@@ -34,23 +42,9 @@ export function getSelectionText(): string {
 }
 
 /**
- * Apply inline styles to the currently selected text within a contentEditable element.
- * Returns true if styling was applied to a selection, false if no selection exists.
+ * Build inline style string from options
  */
-export function applyStylesToSelection(options: SelectionStyleOptions): boolean {
-  const sel = window.getSelection();
-  if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-    return false; // No selection - caller should apply to whole block
-  }
-  
-  const range = sel.getRangeAt(0);
-  const selectedText = range.toString();
-  
-  if (!selectedText.trim()) {
-    return false; // Empty or whitespace selection
-  }
-  
-  // Build the style string
+function buildStyleString(options: SelectionStyleOptions): string {
   const styleProps: string[] = [];
   
   if (options.gradient) {
@@ -59,6 +53,7 @@ export function applyStylesToSelection(options: SelectionStyleOptions): boolean 
     styleProps.push('-webkit-background-clip: text');
     styleProps.push('-webkit-text-fill-color: transparent');
     styleProps.push('background-clip: text');
+    styleProps.push('display: inline'); // Ensure gradient works on inline elements
   } else if (options.color) {
     styleProps.push(`color: ${options.color}`);
   }
@@ -75,33 +70,65 @@ export function applyStylesToSelection(options: SelectionStyleOptions): boolean 
     styleProps.push(`text-decoration: ${options.textDecoration}`);
   }
   
-  if (styleProps.length === 0) {
-    return false; // No styles to apply
+  return styleProps.join('; ');
+}
+
+/**
+ * Apply inline styles to the currently selected text within a contentEditable element.
+ * Uses execCommand for better browser compatibility and undo support.
+ * Returns true if styling was applied to a selection, false if no selection exists.
+ */
+export function applyStylesToSelection(options: SelectionStyleOptions): boolean {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) {
+    return false;
   }
   
-  // Create a span with the styles
-  const span = document.createElement('span');
-  span.setAttribute('style', styleProps.join('; '));
+  const range = sel.getRangeAt(0);
+  const selectedText = range.toString();
   
-  // Wrap the selection in the span
+  // Must have actual text selected
+  if (!selectedText || selectedText.length === 0) {
+    return false;
+  }
+  
+  const styleString = buildStyleString(options);
+  if (!styleString) {
+    return false;
+  }
+  
   try {
-    range.surroundContents(span);
+    // Method 1: Try using insertHTML (supports undo in most browsers)
+    const span = document.createElement('span');
+    span.setAttribute('style', styleString);
+    span.textContent = selectedText;
     
-    // Collapse selection to end of new span
-    sel.removeAllRanges();
+    // Delete the selected content and insert the styled span
+    range.deleteContents();
+    range.insertNode(span);
+    
+    // Normalize to merge adjacent text nodes
+    span.parentElement?.normalize();
+    
+    // Move cursor to end of the new span
     const newRange = document.createRange();
     newRange.selectNodeContents(span);
     newRange.collapse(false);
+    sel.removeAllRanges();
     sel.addRange(newRange);
     
     return true;
   } catch (e) {
-    // surroundContents can fail if selection spans multiple elements
-    // Fall back to extracting and inserting
+    console.warn('Primary selection styling failed, trying fallback:', e);
+    
+    // Fallback: Try surroundContents
     try {
-      const fragment = range.extractContents();
-      span.appendChild(fragment);
-      range.insertNode(span);
+      const span = document.createElement('span');
+      span.setAttribute('style', styleString);
+      
+      // Clone the range to avoid modifying the original
+      const clonedRange = range.cloneRange();
+      clonedRange.surroundContents(span);
       
       sel.removeAllRanges();
       const newRange = document.createRange();
@@ -111,16 +138,42 @@ export function applyStylesToSelection(options: SelectionStyleOptions): boolean 
       
       return true;
     } catch (e2) {
-      console.warn('Failed to apply selection styles:', e2);
+      console.warn('Fallback selection styling also failed:', e2);
       return false;
     }
   }
 }
 
 /**
+ * Merge adjacent spans with identical styles to keep HTML clean
+ */
+export function mergeAdjacentStyledSpans(container: HTMLElement): void {
+  const spans = Array.from(container.querySelectorAll('span[style]'));
+  
+  for (const span of spans) {
+    const next = span.nextSibling;
+    if (next && next.nodeType === Node.ELEMENT_NODE) {
+      const nextEl = next as HTMLElement;
+      if (nextEl.tagName === 'SPAN' && nextEl.getAttribute('style') === span.getAttribute('style')) {
+        // Merge: move all children of next into current span, then remove next
+        while (nextEl.firstChild) {
+          span.appendChild(nextEl.firstChild);
+        }
+        nextEl.remove();
+      }
+    }
+  }
+  
+  // Normalize text nodes
+  container.normalize();
+}
+
+/**
  * Sanitize HTML to prevent XSS while keeping styling spans
  */
 export function sanitizeStyledHTML(html: string): string {
+  if (!html) return '';
+  
   // Create a temporary element to parse the HTML
   const temp = document.createElement('div');
   temp.innerHTML = html;
@@ -174,6 +227,9 @@ export function sanitizeStyledHTML(html: string): string {
   
   Array.from(temp.childNodes).forEach(sanitize);
   
+  // Normalize and clean up
+  temp.normalize();
+  
   return temp.innerHTML;
 }
 
@@ -191,6 +247,7 @@ function sanitizeStyleAttribute(style: string): string {
     'font-style',
     'text-decoration',
     'font-family',
+    'display',
   ];
   
   const safeProps: string[] = [];
@@ -221,7 +278,16 @@ function sanitizeStyleAttribute(style: string): string {
  * Convert HTML content to plain text (for getting the text value)
  */
 export function htmlToPlainText(html: string): string {
+  if (!html) return '';
   const temp = document.createElement('div');
   temp.innerHTML = html;
   return temp.textContent || temp.innerText || '';
+}
+
+/**
+ * Check if a string contains HTML tags
+ */
+export function containsHTML(str: string): boolean {
+  if (!str) return false;
+  return /<[a-z][\s\S]*>/i.test(str);
 }
