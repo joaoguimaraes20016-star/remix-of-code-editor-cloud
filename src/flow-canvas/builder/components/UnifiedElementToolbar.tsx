@@ -290,18 +290,20 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   };
   const currentFontSize = getCurrentFontSizeLabel();
 
-  // Compact button classes - ALWAYS FULLY VISIBLE with clear contrast
+  // Compact button classes - ALWAYS readable (no hover-required visibility)
   const btnClass = cn(
     "flex items-center justify-center transition-colors duration-75",
     "min-w-[32px] min-h-[32px] p-1.5 rounded-md",
-    "active:scale-95 active:opacity-80"
+    "active:scale-95 active:opacity-90"
   );
-  // Use full white for inactive buttons - no opacity reduction
-  const btnInactive = "text-white hover:bg-white/15";
-  const btnActive = "bg-[hsl(315,85%,58%)] text-white shadow-sm";
+  const btnInactive = cn(
+    "text-[hsl(var(--builder-text))]",
+    "bg-[hsl(var(--builder-surface-hover))]/40 hover:bg-[hsl(var(--builder-surface-hover))]/70"
+  );
+  const btnActive = "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm";
 
   const toolbarContent = (
-    <TooltipProvider delayDuration={300}>
+    <TooltipProvider delayDuration={250}>
       <motion.div
         ref={mergedRef}
         initial={{ opacity: 0, scale: 0.96, y: 6 }}
@@ -310,9 +312,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         transition={{ type: 'spring', stiffness: 480, damping: 32 }}
         className={cn(
           'flex items-center px-1.5 py-1 rounded-xl',
-          'bg-[hsl(220,12%,8%)]/95 backdrop-blur-lg',
-          'border border-white/10',
-          'shadow-xl shadow-black/50',
+          'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-lg',
+          'border border-[hsl(var(--builder-border))]',
+          'shadow-xl shadow-black/40',
           'pointer-events-auto gap-1'
         )}
         onClick={(e) => e.stopPropagation()}
@@ -322,7 +324,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           <TooltipTrigger asChild>
             <button
               type="button"
-              className={cn(btnClass, 'text-white/70 hover:text-white hover:bg-white/10 cursor-grab active:cursor-grabbing')}
+              className={cn(btnClass, btnInactive, 'cursor-grab active:cursor-grabbing')}
               onPointerDown={(e) => e.stopPropagation()}
               {...(dragHandleProps?.attributes || {})}
               {...(dragHandleProps?.listeners || {})}
@@ -334,7 +336,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           <TooltipContent side="bottom" className="text-xs">Drag</TooltipContent>
         </Tooltip>
         
-        <div className="w-px h-5 bg-white/10" />
+        <div className="w-px h-5 bg-[hsl(var(--builder-border-subtle))]" />
 
         {/* Typography Controls - Compact */}
         {showTypography && (
@@ -348,7 +350,10 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
                   <ChevronDown size={10} className="opacity-70" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-1 bg-[hsl(220,12%,10%)] border-white/10" sideOffset={6}>
+              <PopoverContent
+                className="w-auto p-1 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
+                sideOffset={6}
+              >
                 <div className="flex gap-0.5">
                   {fontSizes.map((size) => (
                     <button
@@ -391,7 +396,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         {/* Alignment */}
         {showAlignment && (
           <>
-            <div className="w-px h-5 bg-white/15" />
+            <div className="w-px h-5 bg-[hsl(var(--builder-border-subtle))]" />
             <div className="flex">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -430,7 +435,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           </>
         )}
 
-        <div className="w-px h-5 bg-white/10" />
+        <div className="w-px h-5 bg-[hsl(var(--builder-border-subtle))]" />
 
         {/* Actions */}
         <Tooltip>

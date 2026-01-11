@@ -808,11 +808,10 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           4: 'text-xl font-medium',
         }[level] || 'text-xl font-medium';
         
-        // Only use default classes if no custom typography is set
-        // Check properly - 'normal' fontWeight should NOT count as custom
+        // Only use default classes if no custom font size is set.
+        // IMPORTANT: changing fontWeight alone should NOT remove the default heading size.
         const hasCustomFontSize = !!element.props?.fontSize;
-        const hasCustomFontWeight = element.props?.fontWeight && element.props.fontWeight !== 'normal';
-        const hasCustomTypography = hasCustomFontSize || hasCustomFontWeight;
+        const hasCustomTypography = hasCustomFontSize;
         
         // Link wrapper props
         const headingLinkUrl = element.props?.linkUrl as string;
@@ -957,7 +956,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const isFooterLogo = textVariant === 'footer-logo';
         const isFooterHeading = textVariant === 'footer-heading';
         
-        const hasTextTypography = element.props?.fontSize || element.props?.fontWeight;
+        const hasTextTypography = !!element.props?.fontSize;
         
         // Link wrapper props for text
         const textLinkUrl = element.props?.linkUrl as string;
