@@ -341,12 +341,22 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   // When editing AND using gradient, apply gradient to the contenteditable div itself
   const getInlineStyles = (): React.CSSProperties => {
     const inlineStyles: React.CSSProperties = {};
-    
+
     // Font family
     if (styles.fontFamily && styles.fontFamily !== 'inherit') {
       inlineStyles.fontFamily = styles.fontFamily;
     }
-    
+
+    // Font size
+    // - Presets (sm/md/lg/...) are applied via Tailwind classes in getStyleClasses()
+    // - Any custom value like "48px" / "2rem" must be applied inline
+    if (styles.fontSize) {
+      const presetSizes = new Set(['sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl']);
+      if (!presetSizes.has(styles.fontSize)) {
+        inlineStyles.fontSize = styles.fontSize;
+      }
+    }
+
     // When editing with gradient, apply gradient styles to the container div
     // This ensures the gradient is visible while the user is editing
     if (isEditing && styles.textFillType === 'gradient') {
@@ -361,7 +371,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         inlineStyles.color = styles.textColor;
       }
     }
-    
+
     // Text shadow
     if (styles.textShadow && styles.textShadow !== 'none') {
       const shadowMap: Record<string, string> = {
@@ -374,7 +384,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       };
       inlineStyles.textShadow = shadowMap[styles.textShadow];
     }
-    
+
     return inlineStyles;
   };
 
