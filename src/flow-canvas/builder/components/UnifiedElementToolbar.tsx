@@ -16,6 +16,7 @@ import {
   Sparkles,
   Pipette,
   X,
+  MoreHorizontal,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -136,7 +137,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
 
   const [fontOpen, setFontOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
-  const [shadowOpen, setShadowOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   // Unified color tab: 'background' | 'text' | 'gradient'
   const [colorTab, setColorTab] = useState<'background' | 'text' | 'gradient'>('text');
 
@@ -153,9 +154,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const showTextColor = isTextElement;
   // Show background color for ALL elements except pure layout elements
   const showBackgroundColor = !isLayoutElement;
-  const showTextShadow = isTextElement;
 
   if (hidden) return null;
+  
   const handleFontFamilyChange = (fontFamily: string) => {
     onStyleChange?.({ fontFamily });
     setFontOpen(false);
@@ -188,21 +189,6 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
 
   const handleTextGradientChange = (gradient: GradientValue) => {
     onStyleChange?.({ textGradient: cloneGradient(gradient), textFillType: 'gradient' });
-  };
-
-  const handleTextFillTypeChange = (fillType: 'solid' | 'gradient') => {
-    if (fillType === 'gradient') {
-      const gradient = styles.textGradient || defaultGradient;
-      onStyleChange?.({ textFillType: 'gradient', textGradient: cloneGradient(gradient) });
-    } else {
-      const color = styles.textColor || '#FFFFFF';
-      onStyleChange?.({ textFillType: 'solid', textColor: color });
-    }
-  };
-
-  const handleTextShadowChange = (shadow: string) => {
-    onStyleChange?.({ textShadow: shadow });
-    setShadowOpen(false);
   };
 
   const handleBackgroundColorChange = (color: string) => {
@@ -246,569 +232,406 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   };
 
   const currentFont = displayFonts.find(f => f.value === styles.fontFamily)?.label || 'Inherit';
+  const currentFontSize = fontSizes.find(f => f.value === styles.fontSize)?.label || 'M';
   const isTextGradient = styles.textFillType === 'gradient';
   const isBgGradient = styles.fillType === 'gradient';
   const isBgNone = styles.fillType === 'none' || (!styles.backgroundColor && !styles.gradient && styles.fillType !== 'solid' && styles.fillType !== 'gradient');
 
-  // Generate readable element label
-  const getElementLabel = () => {
-    if (elementLabel) return elementLabel;
-    const labels: Record<string, string> = {
-      heading: 'Heading',
-      text: 'Text',
-      button: 'Button',
-      input: 'Input',
-      checkbox: 'Checkbox',
-      radio: 'Radio',
-      select: 'Select',
-      image: 'Image',
-      video: 'Video',
-      divider: 'Divider',
-      spacer: 'Spacer',
-    };
-    return labels[elementType] || elementType;
-  };
+  // Compact button style
+  const btnClass = "p-1.5 rounded-md transition-colors";
+  const btnInactive = "text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-white/10";
+  const btnActive = "bg-[hsl(var(--builder-accent))] text-white";
 
   return (
     <AnimatePresence>
       {isSelected && (
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider delayDuration={300}>
           <motion.div
             ref={mergedRef}
-            initial={{ opacity: 0, scale: 0.9, y: -8 }}
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -8 }}
-            transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.12, ease: 'easeOut' }}
             className={cn(
-              'absolute z-[60] top-2 left-1/2',
-              'flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-xl border',
-              'bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]',
-              'pointer-events-auto whitespace-nowrap'
+              'absolute z-[60]',
+              // Position above element, centered
+              '-top-11 left-1/2 -translate-x-1/2',
+              // Compact pill style matching highlight
+              'flex items-center gap-0.5 px-1 py-0.5 rounded-lg',
+              'bg-[hsl(220,13%,12%)] border border-[hsl(var(--builder-border))]',
+              'shadow-lg shadow-black/40',
+              'pointer-events-auto'
             )}
-            style={{ transform: 'translateX(-50%)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Element Type Label */}
-            <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--builder-accent))] bg-[hsl(var(--builder-accent)/0.1)] rounded">
-              {getElementLabel()}
-            </div>
-
-            <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
-
-            {/* Element Drag Handle (for reordering) */}
-            <div className="p-1 rounded cursor-grab active:cursor-grabbing bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]">
-              <GripVertical className="w-3.5 h-3.5" />
-            </div>
-
-        {showTypography && (
-          <>
-            <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
-
-            {/* Font Family */}
-            <Popover open={fontOpen} onOpenChange={setFontOpen}>
-              <PopoverTrigger asChild>
-                <button className="flex items-center gap-1 px-2 py-1 rounded bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] transition-colors">
-                  <Type size={12} />
-                  <span className="text-[10px] font-medium truncate max-w-[50px]">{currentFont}</span>
-                  <ChevronDown size={10} className="text-[hsl(var(--builder-text-muted))]" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-40 p-1 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] max-h-[240px] overflow-y-auto"
-                sideOffset={4}
-              >
-                <div className="flex flex-col">
-                  {displayFonts.map((font) => (
-                    <button
-                      key={font.value}
-                      onClick={() => handleFontFamilyChange(font.value)}
-                      className={cn(
-                        "px-2 py-1.5 text-xs text-left rounded transition-colors flex items-center justify-between",
-                        styles.fontFamily === font.value 
-                          ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                          : 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-hover))]'
-                      )}
-                      style={{ fontFamily: font.value !== 'inherit' ? font.value : undefined }}
-                    >
-                      <span>{font.label}</span>
-                      {font.isDisplay && (
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-[hsl(var(--builder-accent-muted))] text-[hsl(var(--builder-text))]">Display</span>
-                      )}
-                    </button>
-                  ))}
+            {/* Drag Handle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={cn(btnClass, btnInactive, 'cursor-grab active:cursor-grabbing')}>
+                  <GripVertical size={14} />
                 </div>
-              </PopoverContent>
-            </Popover>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Drag to reorder</TooltipContent>
+            </Tooltip>
 
-            {/* Font Size */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="flex items-center gap-0.5 px-1.5 py-1 rounded bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] transition-colors">
-                  <span className="text-[10px] font-bold">{fontSizes.find(f => f.value === styles.fontSize)?.label || 'M'}</span>
-                  <ChevronDown size={10} className="text-[hsl(var(--builder-text-muted))]" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-auto p-1 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
-                sideOffset={4}
-              >
-                <div className="flex gap-0.5">
-                  {fontSizes.map((size) => (
-                    <button
-                      key={size.value}
-                      onClick={() => handleFontSizeChange(size.value)}
-                      className={cn(
-                        "px-2 py-1 text-[10px] font-medium rounded transition-colors",
-                        styles.fontSize === size.value 
-                          ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                          : 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-hover))]'
-                      )}
-                    >
-                      {size.label}
+            {/* Typography Controls - Compact */}
+            {showTypography && (
+              <>
+                <div className="w-px h-4 bg-white/10" />
+
+                {/* Font Family Dropdown */}
+                <Popover open={fontOpen} onOpenChange={setFontOpen}>
+                  <PopoverTrigger asChild>
+                    <button className={cn(btnClass, btnInactive, 'flex items-center gap-1')}>
+                      <Type size={14} />
+                      <span className="text-xs font-medium max-w-[50px] truncate">{currentFont}</span>
+                      <ChevronDown size={10} className="opacity-50" />
                     </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
-
-            {/* Bold */}
-            <button
-              onClick={toggleBold}
-              className={cn(
-                "p-1 rounded transition-colors",
-                styles.fontWeight === 'bold' 
-                  ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                  : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-              )}
-              title="Bold"
-            >
-              <Bold size={12} />
-            </button>
-
-            {/* Italic */}
-            <button
-              onClick={toggleItalic}
-              className={cn(
-                "p-1 rounded transition-colors",
-                styles.fontStyle === 'italic' 
-                  ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                  : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-              )}
-              title="Italic"
-            >
-              <Italic size={12} />
-            </button>
-
-            {/* Underline */}
-            <button
-              onClick={toggleUnderline}
-              className={cn(
-                "p-1 rounded transition-colors",
-                styles.textDecoration === 'underline' 
-                  ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                  : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-              )}
-              title="Underline"
-            >
-              <Underline size={12} />
-            </button>
-          </>
-        )}
-
-        {/* Unified Color Picker - combines Text Color and Background Fill */}
-        {(showTextColor || showBackgroundColor) && (
-          <>
-            <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
-            
-            <Popover open={colorOpen} onOpenChange={setColorOpen}>
-              <PopoverTrigger asChild>
-                <button 
-                  className="p-1 rounded bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] transition-colors"
-                  title="Colors"
-                >
-                  <div className="relative">
-                    <Palette size={12} />
-                    <div 
-                      className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full"
-                      style={{ 
-                        background: isTextGradient && styles.textGradient 
-                          ? gradientToCSS(styles.textGradient) 
-                          : (styles.textColor || '#FFFFFF')
-                      }}
-                    />
-                  </div>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-64 p-2 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
-                sideOffset={4}
-              >
-                <div className="space-y-3">
-                  {/* Tab Navigation */}
-                  <div className="flex rounded overflow-hidden border border-[hsl(var(--builder-border))]">
-                    {showBackgroundColor && (
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-40 p-1 bg-[hsl(220,13%,12%)] border-[hsl(var(--builder-border))] max-h-[240px] overflow-y-auto"
+                    sideOffset={8}
+                  >
+                    {displayFonts.map((font) => (
                       <button
-                        onClick={() => setColorTab('background')}
+                        key={font.value}
+                        onClick={() => handleFontFamilyChange(font.value)}
                         className={cn(
-                          "flex-1 py-1.5 text-[10px] font-medium transition-colors",
-                          colorTab === 'background' 
+                          "w-full px-2 py-1.5 text-xs text-left rounded transition-colors flex items-center justify-between",
+                          styles.fontFamily === font.value 
                             ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))]'
+                            : 'text-[hsl(var(--builder-text-muted))] hover:text-white hover:bg-white/10'
                         )}
+                        style={{ fontFamily: font.value !== 'inherit' ? font.value : undefined }}
                       >
-                        Background
-                      </button>
-                    )}
-                    {showTextColor && (
-                      <button
-                        onClick={() => setColorTab('text')}
-                        className={cn(
-                          "flex-1 py-1.5 text-[10px] font-medium transition-colors",
-                          colorTab === 'text' 
-                            ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))]'
+                        <span>{font.label}</span>
+                        {font.isDisplay && (
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-white/10">Display</span>
                         )}
-                      >
-                        Text Color
                       </button>
-                    )}
-                    {showTextColor && (
-                      <button
-                        onClick={() => setColorTab('gradient')}
-                        className={cn(
-                          "flex-1 py-1.5 text-[10px] font-medium transition-colors",
-                          colorTab === 'gradient' 
-                            ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))]'
-                        )}
-                      >
-                        Gradient
-                      </button>
-                    )}
-                  </div>
+                    ))}
+                  </PopoverContent>
+                </Popover>
 
-                  {/* Background Fill Tab */}
-                  {colorTab === 'background' && showBackgroundColor && (
-                    <div className="space-y-2">
-                      {/* Preview */}
+                {/* Font Size */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className={cn(btnClass, btnInactive, 'flex items-center gap-0.5 min-w-[28px] justify-center')}>
+                      <span className="text-xs font-bold">{currentFontSize}</span>
+                      <ChevronDown size={10} className="opacity-50" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-auto p-1 bg-[hsl(220,13%,12%)] border-[hsl(var(--builder-border))]"
+                    sideOffset={8}
+                  >
+                    <div className="flex gap-0.5">
+                      {fontSizes.map((size) => (
+                        <button
+                          key={size.value}
+                          onClick={() => handleFontSizeChange(size.value)}
+                          className={cn(
+                            "px-2 py-1 text-xs font-medium rounded transition-colors",
+                            styles.fontSize === size.value 
+                              ? btnActive
+                              : 'text-[hsl(var(--builder-text-muted))] hover:text-white hover:bg-white/10'
+                          )}
+                        >
+                          {size.label}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <div className="w-px h-4 bg-white/10" />
+
+                {/* Bold */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={toggleBold}
+                      className={cn(btnClass, styles.fontWeight === 'bold' ? btnActive : btnInactive)}
+                    >
+                      <Bold size={14} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">Bold (⌘B)</TooltipContent>
+                </Tooltip>
+
+                {/* Italic */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={toggleItalic}
+                      className={cn(btnClass, styles.fontStyle === 'italic' ? btnActive : btnInactive)}
+                    >
+                      <Italic size={14} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">Italic (⌘I)</TooltipContent>
+                </Tooltip>
+
+                {/* Color */}
+                <Popover open={colorOpen} onOpenChange={setColorOpen}>
+                  <PopoverTrigger asChild>
+                    <button className={cn(btnClass, btnInactive, 'relative')}>
+                      <Sparkles size={14} />
                       <div 
-                        className="w-full h-10 rounded border border-[hsl(var(--builder-border))] flex items-center justify-center text-xs font-medium relative overflow-hidden"
+                        className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-3 h-0.5 rounded-full"
                         style={{ 
-                          background: isBgNone 
-                            ? 'repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 50% / 12px 12px'
-                            : isBgGradient && styles.gradient 
-                              ? gradientToCSS(styles.gradient) 
-                              : (styles.backgroundColor || 'transparent'),
-                          opacity: isBgNone ? 1 : (styles.backgroundOpacity ?? 100) / 100,
-                          color: isBgNone ? 'hsl(var(--builder-text-muted))' : (isBgGradient || styles.backgroundColor ? '#fff' : 'hsl(var(--builder-text-muted))')
+                          background: isTextGradient && styles.textGradient 
+                            ? gradientToCSS(styles.textGradient) 
+                            : (styles.textColor || '#FFFFFF')
                         }}
-                      >
-                        {isBgNone ? 'No Fill' : isBgGradient ? 'Gradient' : (styles.backgroundColor || 'No Fill')}
-                      </div>
-                      
-                      {/* None/Solid/Gradient Toggle */}
-                      <div className="flex rounded overflow-hidden border border-[hsl(var(--builder-border))]">
-                        <button
-                          onClick={() => handleClearBackground()}
-                          className={cn(
-                            "flex-1 py-1 text-[10px] font-medium transition-colors",
-                            isBgNone 
-                              ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
-                          )}
-                        >
-                          None
-                        </button>
-                        <button
-                          onClick={() => handleBackgroundFillTypeChange('solid')}
-                          className={cn(
-                            "flex-1 py-1 text-[10px] font-medium transition-colors",
-                            !isBgNone && !isBgGradient 
-                              ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
-                          )}
-                        >
-                          Solid
-                        </button>
-                        <button
-                          onClick={() => handleBackgroundFillTypeChange('gradient')}
-                          className={cn(
-                            "flex-1 py-1 text-[10px] font-medium transition-colors",
-                            isBgGradient 
-                              ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))]'
-                          )}
-                        >
-                          Gradient
-                        </button>
+                      />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-56 p-2 bg-[hsl(220,13%,12%)] border-[hsl(var(--builder-border))]"
+                    sideOffset={8}
+                  >
+                    <div className="space-y-2">
+                      {/* Tab switcher */}
+                      <div className="flex rounded overflow-hidden border border-white/10">
+                        {showBackgroundColor && (
+                          <button
+                            onClick={() => setColorTab('background')}
+                            className={cn(
+                              "flex-1 py-1 text-[10px] font-medium transition-colors",
+                              colorTab === 'background' ? btnActive : 'text-[hsl(var(--builder-text-muted))] hover:text-white'
+                            )}
+                          >
+                            Fill
+                          </button>
+                        )}
+                        {showTextColor && (
+                          <button
+                            onClick={() => setColorTab('text')}
+                            className={cn(
+                              "flex-1 py-1 text-[10px] font-medium transition-colors",
+                              colorTab === 'text' ? btnActive : 'text-[hsl(var(--builder-text-muted))] hover:text-white'
+                            )}
+                          >
+                            Text
+                          </button>
+                        )}
+                        {showTextColor && (
+                          <button
+                            onClick={() => setColorTab('gradient')}
+                            className={cn(
+                              "flex-1 py-1 text-[10px] font-medium transition-colors",
+                              colorTab === 'gradient' ? btnActive : 'text-[hsl(var(--builder-text-muted))] hover:text-white'
+                            )}
+                          >
+                            Gradient
+                          </button>
+                        )}
                       </div>
 
-                      {!isBgNone && !isBgGradient && (
+                      {/* Text Color Tab */}
+                      {colorTab === 'text' && showTextColor && (
                         <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Fill Color</span>
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="color"
-                                value={styles.backgroundColor || '#8B5CF6'}
-                                onChange={(e) => handleBackgroundColorChange(e.target.value)}
-                                className="w-5 h-5 rounded cursor-pointer border-0 p-0"
-                              />
-                              {'EyeDropper' in window && (
-                                <button
-                                  onClick={() => handleEyedropper(handleBackgroundColorChange)}
-                                  className="p-1 rounded bg-[hsl(var(--builder-surface-active))] hover:bg-[hsl(var(--builder-accent)/0.2)] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] transition-colors"
-                                  title="Pick color"
-                                >
-                                  <Pipette size={12} />
-                                </button>
-                              )}
-                              <button
-                                onClick={handleClearBackground}
-                                className="p-1 rounded bg-[hsl(var(--builder-surface-active))] hover:bg-red-500/20 text-[hsl(var(--builder-text-muted))] hover:text-red-400 transition-colors"
-                                title="Clear fill"
-                              >
-                                <X size={12} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-8 gap-0.5">
+                          <div className="grid grid-cols-8 gap-1">
                             {colorPresets.map((color) => (
                               <button
                                 key={color}
-                                onClick={() => handleBackgroundColorChange(color)}
+                                onClick={() => handleTextColorChange(color)}
                                 className={cn(
                                   "w-5 h-5 rounded border transition-all",
-                                  styles.backgroundColor === color 
-                                    ? 'ring-1 ring-[hsl(var(--builder-accent))] ring-offset-1' 
-                                    : 'border-[hsl(var(--builder-border))] hover:scale-110'
+                                  styles.textColor === color 
+                                    ? 'ring-2 ring-[hsl(var(--builder-accent))] ring-offset-1 ring-offset-[hsl(220,13%,12%)]' 
+                                    : 'border-white/10 hover:scale-110'
                                 )}
                                 style={{ backgroundColor: color }}
-                                title={color}
                               />
                             ))}
                           </div>
-                          
-                          {/* Opacity Slider */}
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Opacity</span>
-                              <span className="text-[10px] text-[hsl(var(--builder-text))]">{styles.backgroundOpacity ?? 100}%</span>
-                            </div>
+                          <div className="flex items-center gap-2">
                             <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={styles.backgroundOpacity ?? 100}
-                              onChange={(e) => handleBackgroundOpacityChange(parseInt(e.target.value))}
-                              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[hsl(var(--builder-surface-active))] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[hsl(var(--builder-accent))] [&::-webkit-slider-thumb]:cursor-pointer"
+                              type="color"
+                              value={styles.textColor || '#FFFFFF'}
+                              onChange={(e) => handleTextColorChange(e.target.value)}
+                              className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent"
                             />
+                            <span className="text-xs text-[hsl(var(--builder-text-muted))]">Custom</span>
                           </div>
                         </div>
                       )}
 
-                      {!isBgNone && isBgGradient && (
-                        <>
-                          <GradientEditor
-                            value={styles.gradient || defaultGradient}
-                            onChange={handleBackgroundGradientChange}
-                            compact
-                          />
-                          {/* Opacity Slider for Gradient */}
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Opacity</span>
-                              <span className="text-[10px] text-[hsl(var(--builder-text))]">{styles.backgroundOpacity ?? 100}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={styles.backgroundOpacity ?? 100}
-                              onChange={(e) => handleBackgroundOpacityChange(parseInt(e.target.value))}
-                              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[hsl(var(--builder-surface-active))] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[hsl(var(--builder-accent))] [&::-webkit-slider-thumb]:cursor-pointer"
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Text Color (Solid) Tab */}
-                  {colorTab === 'text' && showTextColor && (
-                    <div className="space-y-2">
-                      {/* Preview */}
-                      <div 
-                        className="w-full h-10 rounded border border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface-hover))] flex items-center justify-center text-lg font-bold"
-                        style={{ 
-                          color: styles.textColor || '#FFFFFF',
-                          opacity: (styles.textOpacity ?? 100) / 100
-                        }}
-                      >
-                        Aa
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Text Color</span>
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="color"
-                            value={styles.textColor || '#FFFFFF'}
-                            onChange={(e) => handleTextColorChange(e.target.value)}
-                            className="w-5 h-5 rounded cursor-pointer border-0 p-0"
-                          />
-                          {'EyeDropper' in window && (
+                      {/* Background Tab */}
+                      {colorTab === 'background' && showBackgroundColor && (
+                        <div className="space-y-2">
+                          <div className="flex rounded overflow-hidden border border-white/10">
                             <button
-                              onClick={() => handleEyedropper(handleTextColorChange)}
-                              className="p-1 rounded bg-[hsl(var(--builder-surface-active))] hover:bg-[hsl(var(--builder-accent)/0.2)] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] transition-colors"
-                              title="Pick color"
-                            >
-                              <Pipette size={12} />
-                            </button>
+                              onClick={handleClearBackground}
+                              className={cn("flex-1 py-1 text-[10px] font-medium", isBgNone ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
+                            >None</button>
+                            <button
+                              onClick={() => handleBackgroundFillTypeChange('solid')}
+                              className={cn("flex-1 py-1 text-[10px] font-medium", !isBgNone && !isBgGradient ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
+                            >Solid</button>
+                            <button
+                              onClick={() => handleBackgroundFillTypeChange('gradient')}
+                              className={cn("flex-1 py-1 text-[10px] font-medium", isBgGradient ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
+                            >Gradient</button>
+                          </div>
+                          {!isBgNone && !isBgGradient && (
+                            <div className="grid grid-cols-8 gap-1">
+                              {colorPresets.map((color) => (
+                                <button
+                                  key={color}
+                                  onClick={() => handleBackgroundColorChange(color)}
+                                  className={cn(
+                                    "w-5 h-5 rounded border transition-all",
+                                    styles.backgroundColor === color 
+                                      ? 'ring-2 ring-[hsl(var(--builder-accent))] ring-offset-1 ring-offset-[hsl(220,13%,12%)]' 
+                                      : 'border-white/10 hover:scale-110'
+                                  )}
+                                  style={{ backgroundColor: color }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          {!isBgNone && isBgGradient && (
+                            <GradientEditor
+                              value={styles.gradient || defaultGradient}
+                              onChange={handleBackgroundGradientChange}
+                              compact
+                            />
                           )}
                         </div>
-                      </div>
-                      <div className="grid grid-cols-8 gap-0.5">
-                        {colorPresets.map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => handleTextColorChange(color)}
-                            className={cn(
-                              "w-5 h-5 rounded border transition-all",
-                              styles.textColor === color 
-                                ? 'ring-1 ring-[hsl(var(--builder-accent))] ring-offset-1' 
-                                : 'border-[hsl(var(--builder-border))] hover:scale-110'
-                            )}
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                        ))}
-                      </div>
-                      
-                      {/* Text Opacity Slider */}
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-[hsl(var(--builder-text-muted))]">Opacity</span>
-                          <span className="text-[10px] text-[hsl(var(--builder-text))]">{styles.textOpacity ?? 100}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={styles.textOpacity ?? 100}
-                          onChange={(e) => handleTextOpacityChange(parseInt(e.target.value))}
-                          className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[hsl(var(--builder-surface-active))] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[hsl(var(--builder-accent))] [&::-webkit-slider-thumb]:cursor-pointer"
+                      )}
+
+                      {/* Gradient Tab */}
+                      {colorTab === 'gradient' && showTextColor && (
+                        <GradientEditor
+                          value={styles.textGradient || defaultGradient}
+                          onChange={(gradient) => {
+                            handleTextGradientChange(gradient);
+                            onStyleChange?.({ textFillType: 'gradient' });
+                          }}
+                          compact
                         />
-                      </div>
+                      )}
                     </div>
-                  )}
+                  </PopoverContent>
+                </Popover>
+              </>
+            )}
 
-                  {/* Text Gradient Tab - GradientEditor has its own preview, no need for extra one */}
-                  {colorTab === 'gradient' && showTextColor && (
+            {/* Non-text elements: just show color picker */}
+            {!showTypography && showBackgroundColor && (
+              <>
+                <div className="w-px h-4 bg-white/10" />
+                <Popover open={colorOpen} onOpenChange={setColorOpen}>
+                  <PopoverTrigger asChild>
+                    <button className={cn(btnClass, btnInactive)}>
+                      <Palette size={14} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-56 p-2 bg-[hsl(220,13%,12%)] border-[hsl(var(--builder-border))]"
+                    sideOffset={8}
+                  >
                     <div className="space-y-2">
-                      <GradientEditor
-                        value={styles.textGradient || defaultGradient}
-                        onChange={(gradient) => {
-                          handleTextGradientChange(gradient);
-                          onStyleChange?.({ textFillType: 'gradient' });
-                        }}
-                        compact
-                      />
+                      <div className="flex rounded overflow-hidden border border-white/10">
+                        <button
+                          onClick={handleClearBackground}
+                          className={cn("flex-1 py-1 text-[10px] font-medium", isBgNone ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
+                        >None</button>
+                        <button
+                          onClick={() => handleBackgroundFillTypeChange('solid')}
+                          className={cn("flex-1 py-1 text-[10px] font-medium", !isBgNone && !isBgGradient ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
+                        >Solid</button>
+                        <button
+                          onClick={() => handleBackgroundFillTypeChange('gradient')}
+                          className={cn("flex-1 py-1 text-[10px] font-medium", isBgGradient ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
+                        >Gradient</button>
+                      </div>
+                      {!isBgNone && !isBgGradient && (
+                        <div className="grid grid-cols-8 gap-1">
+                          {colorPresets.map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => handleBackgroundColorChange(color)}
+                              className={cn(
+                                "w-5 h-5 rounded border transition-all",
+                                styles.backgroundColor === color 
+                                  ? 'ring-2 ring-[hsl(var(--builder-accent))] ring-offset-1 ring-offset-[hsl(220,13%,12%)]' 
+                                  : 'border-white/10 hover:scale-110'
+                              )}
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {!isBgNone && isBgGradient && (
+                        <GradientEditor
+                          value={styles.gradient || defaultGradient}
+                          onChange={handleBackgroundGradientChange}
+                          compact
+                        />
+                      )}
                     </div>
-                  )}
+                  </PopoverContent>
+                </Popover>
+              </>
+            )}
+
+            {/* Alignment */}
+            {showAlignment && (
+              <>
+                <div className="w-px h-4 bg-white/10" />
+                <div className="flex">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onAlignChange?.('left'); }}
+                    className={cn(btnClass, 'rounded-r-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
+                  >
+                    <AlignLeft size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onAlignChange?.('center'); }}
+                    className={cn(btnClass, 'rounded-none', styles.textAlign === 'center' ? btnActive : btnInactive)}
+                  >
+                    <AlignCenter size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onAlignChange?.('right'); }}
+                    className={cn(btnClass, 'rounded-l-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
+                  >
+                    <AlignRight size={14} />
+                  </button>
                 </div>
-              </PopoverContent>
-            </Popover>
-          </>
-        )}
+              </>
+            )}
 
-        {/* Alignment */}
-        {showAlignment && (
-          <>
-            <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
+            <div className="w-px h-4 bg-white/10" />
 
+            {/* Actions: Duplicate & Delete */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onAlignChange?.('left'); }}
-                  className={cn(
-                    'p-1 rounded transition-colors',
-                    styles.textAlign === 'left' || !styles.textAlign
-                      ? 'bg-[hsl(var(--builder-accent))] text-white'
-                      : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                  )}
+                  onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }}
+                  className={cn(btnClass, btnInactive)}
                 >
-                  <AlignLeft className="w-3 h-3" />
+                  <Copy size={14} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top"><p className="text-[10px]">Left</p></TooltipContent>
+              <TooltipContent side="top" className="text-xs">Duplicate</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onAlignChange?.('center'); }}
-                  className={cn(
-                    'p-1 rounded transition-colors',
-                    styles.textAlign === 'center'
-                      ? 'bg-[hsl(var(--builder-accent))] text-white'
-                      : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                  )}
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+                  className={cn(btnClass, 'text-[hsl(var(--builder-text-muted))] hover:text-red-400 hover:bg-red-500/20')}
                 >
-                  <AlignCenter className="w-3 h-3" />
+                  <Trash2 size={14} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top"><p className="text-[10px]">Center</p></TooltipContent>
+              <TooltipContent side="top" className="text-xs">Delete</TooltipContent>
             </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onAlignChange?.('right'); }}
-                  className={cn(
-                    'p-1 rounded transition-colors',
-                    styles.textAlign === 'right'
-                      ? 'bg-[hsl(var(--builder-accent))] text-white'
-                      : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                  )}
-                >
-                  <AlignRight className="w-3 h-3" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top"><p className="text-[10px]">Right</p></TooltipContent>
-            </Tooltip>
-          </>
-        )}
-
-        <div className="w-px h-4 mx-0.5 bg-[hsl(var(--builder-border))]" />
-
-        {/* Duplicate */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }}
-              className="p-1 rounded transition-colors bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]"
-            >
-              <Copy className="w-3 h-3" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top"><p className="text-[10px]">Duplicate</p></TooltipContent>
-        </Tooltip>
-
-        {/* Delete */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-              className="p-1 rounded transition-colors bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-red-400 hover:bg-red-500/15"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top"><p className="text-[10px]">Delete</p></TooltipContent>
-        </Tooltip>
           </motion.div>
         </TooltipProvider>
       )}
