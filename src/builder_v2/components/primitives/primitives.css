@@ -323,7 +323,7 @@
 }
 
 .builder-option-content--card {
-  background: #f59e0b;
+  background: hsl(var(--primary));
   color: #ffffff;
   font-weight: 600;
 }

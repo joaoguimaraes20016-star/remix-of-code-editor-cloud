@@ -2219,7 +2219,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
               </div>
             </div>
             {parseInt((block.styles?.backdropBlur as string || '0').replace('px', '')) > 0 && (
-              <p className="text-[10px] text-amber-500/80 flex items-center gap-1">
+              <p className="text-[10px] text-builder-text-muted flex items-center gap-1">
                 <Info className="w-3 h-3" />
                 Works best with semi-transparent background
               </p>

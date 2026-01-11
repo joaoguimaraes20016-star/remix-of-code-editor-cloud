@@ -127,7 +127,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <span className="text-sm font-semibold text-builder-text">AI Copilot</span>
-          <span className="px-1.5 py-0.5 text-[9px] font-medium bg-amber-500/20 text-amber-400 rounded-full">
+          <span className="px-1.5 py-0.5 text-[9px] font-medium bg-builder-accent-secondary/15 text-builder-accent-secondary rounded-full">
             Demo
           </span>
           {isProcessing && (

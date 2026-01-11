@@ -83,7 +83,7 @@ export function MultiChoiceStep({
                 hasImages && option.image && "step-option-content--card"
               )}
               style={hasImages && option.image ? {
-                backgroundColor: d.buttonColor || '#f59e0b',
+                backgroundColor: d.buttonColor || 'hsl(var(--primary))',
                 borderRadius: `0 0 ${d.borderRadius}px ${d.borderRadius}px`,
               } : undefined}
               >

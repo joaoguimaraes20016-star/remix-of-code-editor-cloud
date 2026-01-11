@@ -79,7 +79,7 @@ export const ThemeCustomizerModal: React.FC<ThemeCustomizerModalProps> = ({
                     : 'border-builder-border hover:border-builder-accent/50'
                 )}
               >
-                <Sun className="w-5 h-5 text-yellow-500" />
+                <Sun className="w-5 h-5 text-builder-accent-secondary" />
                 <span className="text-sm font-medium text-builder-text">Light</span>
               </button>
               <button
