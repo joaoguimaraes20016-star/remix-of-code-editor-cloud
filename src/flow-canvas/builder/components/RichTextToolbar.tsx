@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle, useLayoutEffect, useRef, useCallback } from 'react';
+import React, { useState, forwardRef, useImperativeHandle, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -84,6 +84,33 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   const [fontOpen, setFontOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
+
+  // Local UI state so the gradient/color editors work even when we apply styles inline (selection spans)
+  // (Inline styling doesn't always update the block-level `styles`, so we can't rely on props here.)
+  const [localColor, setLocalColor] = useState<string>(() => styles.textColor || '#FFFFFF');
+  const [localGradient, setLocalGradient] = useState<GradientValue>(() =>
+    cloneGradient(styles.textGradient || defaultGradient)
+  );
+
+  // Keep local state in sync when block-level styles change externally
+  useEffect(() => {
+    if (styles.textColor && styles.textColor !== localColor) {
+      setLocalColor(styles.textColor);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styles.textColor]);
+
+  useEffect(() => {
+    const next = styles.textGradient || defaultGradient;
+    const same =
+      localGradient.type === next.type &&
+      localGradient.angle === next.angle &&
+      localGradient.stops.length === next.stops.length &&
+      localGradient.stops.every((s, i) => s.color === next.stops[i]?.color && s.position === next.stops[i]?.position);
+
+    if (!same) setLocalGradient(cloneGradient(next));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styles.textGradient]);
   
   // Drag state for repositioning toolbar
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -171,18 +198,21 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   };
 
   const handleColorChange = (color: string) => {
+    setLocalColor(color);
     // Ensure we have a solid color to fall back to
-    onChange({ 
-      textColor: color, 
-      textFillType: 'solid' 
+    onChange({
+      textColor: color,
+      textFillType: 'solid',
     });
   };
 
   const handleGradientChange = (gradient: GradientValue) => {
+    const cloned = cloneGradient(gradient);
+    setLocalGradient(cloned);
     // Always clone to prevent shared references
-    onChange({ 
-      textGradient: cloneGradient(gradient), 
-      textFillType: 'gradient' 
+    onChange({
+      textGradient: cloned,
+      textFillType: 'gradient',
     });
   };
   
@@ -190,19 +220,23 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   const handleFillTypeChange = (fillType: 'solid' | 'gradient') => {
     if (fillType === 'gradient') {
       // Ensure gradient exists when switching to gradient mode
-      const gradient = styles.textGradient || defaultGradient;
-      onChange({ 
-        textFillType: 'gradient', 
-        textGradient: cloneGradient(gradient) 
+      const gradient = styles.textGradient || localGradient || defaultGradient;
+      const cloned = cloneGradient(gradient);
+      setLocalGradient(cloned);
+      onChange({
+        textFillType: 'gradient',
+        textGradient: cloned,
       });
-    } else {
-      // Ensure color exists when switching to solid mode
-      const color = styles.textColor || '#FFFFFF';
-      onChange({ 
-        textFillType: 'solid', 
-        textColor: color 
-      });
+      return;
     }
+
+    // Solid
+    const color = styles.textColor || localColor || '#FFFFFF';
+    setLocalColor(color);
+    onChange({
+      textFillType: 'solid',
+      textColor: color,
+    });
   };
 
   const handleShadowChange = (shadow: string) => {
@@ -393,9 +427,9 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
               <div 
                 className="absolute -bottom-0.5 left-0 right-0 h-1 rounded-full"
                 style={{ 
-                  background: isGradientFill && styles.textGradient 
-                    ? gradientToCSS(styles.textGradient) 
-                    : (styles.textColor || '#1f2937')
+                  background: isGradientFill
+                    ? gradientToCSS(localGradient)
+                    : localColor
                 }}
               />
             </div>
@@ -442,7 +476,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
                   <div className="flex items-center gap-1">
                     <input
                       type="color"
-                      value={styles.textColor || '#1f2937'}
+                      value={localColor}
                       onChange={(e) => handleColorChange(e.target.value)}
                       className="w-6 h-6 rounded cursor-pointer border-0 p-0"
                     />
@@ -464,8 +498,8 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
                       onClick={() => handleColorChange(color)}
                       className={cn(
                         "w-6 h-6 rounded border transition-all",
-                        styles.textColor === color 
-                          ? 'ring-2 ring-[hsl(var(--builder-accent))] ring-offset-1' 
+                        localColor === color
+                          ? 'ring-2 ring-[hsl(var(--builder-accent))] ring-offset-1'
                           : 'border-[hsl(var(--builder-border))] hover:scale-110'
                       )}
                       style={{ backgroundColor: color }}
@@ -477,13 +511,13 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
             )}
 
             {/* Gradient Section - Full Editor */}
-            {isGradientFill && (
-              <GradientEditor
-                value={styles.textGradient || defaultGradient}
-                onChange={handleGradientChange}
-                compact
-              />
-            )}
+              {isGradientFill && (
+                <GradientEditor
+                  value={localGradient}
+                  onChange={handleGradientChange}
+                  compact
+                />
+              )}
           </div>
         </PopoverContent>
       </Popover>
