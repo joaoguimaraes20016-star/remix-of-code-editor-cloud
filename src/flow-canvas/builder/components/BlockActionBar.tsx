@@ -99,169 +99,85 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
   // ---------------------------------------------------------------------------
   if (isMobilePreview) {
     const rect = targetRef?.current?.getBoundingClientRect();
+    const top = rect ? rect.top + 8 : 8;
+    const left = rect ? rect.left + 8 : 8;
 
-    const top = rect ? rect.top + 12 : 12;
-    const left = rect ? rect.left + 12 : 12;
+    const btnBase = 'flex items-center justify-center transition-colors';
 
-    const btnBase =
-      'flex items-center justify-center transition-colors active:scale-95';
-
-  // Touch-friendly sizing - minimum 44px for mobile
-  const circleBtn = cn(
-    btnBase,
-    'w-11 h-11 rounded-full',
-    'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl',
-    'border border-[hsl(275,70%,55%)/0.3]',
-    'shadow-lg shadow-black/30',
-    'text-[hsl(var(--builder-text))]'
-  );
-
-  const pill = cn(
-    'flex items-center gap-1 p-1.5 rounded-full',
-    'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl',
-    'border border-[hsl(275,70%,55%)/0.3]',
-    'shadow-lg shadow-black/30',
-    'pointer-events-auto'
-  );
-
-  // Touch-friendly 44px minimum touch targets
-  const iconBtn = (disabled?: boolean) =>
-    cn(
+    const circleBtn = cn(
       btnBase,
-      'w-10 h-10 rounded-full',
-      disabled
-        ? 'text-[hsl(var(--builder-text-muted))]/40 cursor-not-allowed'
-        : 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.15]'
+      'w-8 h-8 rounded-lg',
+      'bg-[hsl(var(--builder-surface))]/90 backdrop-blur-md',
+      'border border-[hsl(315,85%,58%)/0.2]',
+      'shadow-md text-white/70'
     );
+
+    const pill = cn(
+      'flex items-center gap-0.5 p-0.5 rounded-lg',
+      'bg-[hsl(var(--builder-surface))]/90 backdrop-blur-md',
+      'border border-[hsl(315,85%,58%)/0.2]',
+      'shadow-md pointer-events-auto'
+    );
+
+    const iconBtn = (disabled?: boolean) =>
+      cn(
+        btnBase,
+        'w-7 h-7 rounded-md',
+        disabled
+          ? 'text-white/20 cursor-not-allowed'
+          : 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
+      );
 
     const node = (
       <div
         className="pointer-events-none"
-        style={{
-          position: 'fixed',
-          top,
-          left,
-          zIndex: 9999,
-        }}
+        style={{ position: 'fixed', top, left, zIndex: 9999 }}
       >
         <AnimatePresence mode="wait">
           {!mobileExpanded ? (
             <motion.button
               key="collapsed"
-              initial={{ opacity: 0, scale: 0.85 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              transition={{ duration: 0.12 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setMobileExpanded(true);
-              }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.1 }}
+              onClick={(e) => { e.stopPropagation(); setMobileExpanded(true); }}
               className={cn(circleBtn, 'pointer-events-auto')}
             >
-              <MoreHorizontal size={16} />
+              <MoreHorizontal size={14} />
             </motion.button>
           ) : (
             <motion.div
               key="expanded"
-              initial={{ opacity: 0, scale: 0.92, y: 6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 6 }}
-              transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.12 }}
               className={pill}
               onClick={(e) => e.stopPropagation()}
             >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMobileExpanded(false);
-                }}
-                className={iconBtn()}
-              >
-                <X size={14} />
+              <button onClick={(e) => { e.stopPropagation(); setMobileExpanded(false); }} className={iconBtn()}>
+                <X size={12} />
               </button>
-
-              <div className="w-px h-5 bg-white/10 mx-0.5" />
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMoveUp();
-                }}
-                disabled={!canMoveUp}
-                className={iconBtn(!canMoveUp)}
-              >
-                <ChevronUp size={14} />
+              <div className="w-px h-4 bg-white/10" />
+              <button onClick={(e) => { e.stopPropagation(); onMoveUp(); }} disabled={!canMoveUp} className={iconBtn(!canMoveUp)}>
+                <ChevronUp size={12} />
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMoveDown();
-                }}
-                disabled={!canMoveDown}
-                className={iconBtn(!canMoveDown)}
-              >
-                <ChevronDown size={14} />
+              <button onClick={(e) => { e.stopPropagation(); onMoveDown(); }} disabled={!canMoveDown} className={iconBtn(!canMoveDown)}>
+                <ChevronDown size={12} />
               </button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className={iconBtn()}>
-                    <Plus size={14} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="start"
-                  className="bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl border-[hsl(var(--builder-border))]"
-                >
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddAbove();
-                    }}
-                    className="text-[hsl(var(--builder-text))] focus:bg-white/10"
-                  >
-                    Add above
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddBelow();
-                    }}
-                    className="text-[hsl(var(--builder-text))] focus:bg-white/10"
-                  >
-                    Add below
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate();
-                }}
-                className={iconBtn()}
-              >
-                <Copy size={14} />
+              <button onClick={(e) => { e.stopPropagation(); onDuplicate(); }} className={iconBtn()}>
+                <Copy size={12} />
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className={cn(iconBtn(), 'hover:text-red-400 hover:bg-red-500/20')}
-              >
-                <Trash2 size={14} />
+              <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className={cn(iconBtn(), 'hover:text-red-400')}>
+                <Trash2 size={12} />
               </button>
-
-              {/* Drag handle (kept but compact) */}
               <button
                 {...(dragHandleProps?.attributes || {})}
                 {...(dragHandleProps?.listeners || {})}
-                className={cn(iconBtn(), 'cursor-grab active:cursor-grabbing')}
-                title="Drag"
+                className={cn(iconBtn(), 'cursor-grab')}
               >
-                <GripVertical size={14} />
+                <GripVertical size={12} />
               </button>
             </motion.div>
           )}
@@ -273,44 +189,40 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
   }
 
   // ---------------------------------------------------------------------------
-  // Desktop/tablet: existing vertical action bar
+  // Desktop/tablet: ultra-compact vertical action bar
   // ---------------------------------------------------------------------------
   return (
     <AnimatePresence>
       {isSelected && (
-        <TooltipProvider delayDuration={500}>
+        <TooltipProvider delayDuration={400}>
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, x: position === 'left' ? -8 : 8 }}
+            initial={{ opacity: 0, scale: 0.9, x: position === 'left' ? -4 : 4 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.9, x: position === 'left' ? -8 : 8 }}
-            transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+            exit={{ opacity: 0, scale: 0.9, x: position === 'left' ? -4 : 4 }}
+            transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
             className={cn(
               'absolute',
-              position === 'left' ? 'left-3 top-1/2' : 'right-3 top-1/2',
-              'flex flex-col gap-1 p-1.5 rounded-xl',
-              'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl',
-              'border border-[hsl(var(--builder-border))]',
-              'shadow-2xl shadow-black/50 z-[60] pointer-events-auto'
+              position === 'left' ? 'left-1.5 top-1/2' : 'right-1.5 top-1/2',
+              'flex flex-col gap-0.5 p-1 rounded-lg',
+              'bg-[hsl(var(--builder-surface))]/90 backdrop-blur-md',
+              'border border-[hsl(315,85%,58%)/0.2]',
+              'shadow-lg shadow-black/30 z-[60] pointer-events-auto'
             )}
             style={{ transform: 'translateY(-50%)' }}
           >
-            {/* Block Drag Handle */}
+            {/* Drag Handle */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   {...(dragHandleProps?.attributes || {})}
                   {...(dragHandleProps?.listeners || {})}
-                  className="p-2 rounded-lg bg-[hsl(275,70%,55%)]/20 text-[hsl(275,70%,55%)] hover:bg-[hsl(275,70%,55%)]/30 cursor-grab active:cursor-grabbing transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                  className="p-1 rounded-md bg-[hsl(315,85%,58%)]/15 text-[hsl(315,85%,58%)] hover:bg-[hsl(315,85%,58%)]/25 cursor-grab active:cursor-grabbing transition-colors flex items-center justify-center"
                 >
-                  <GripVertical size={16} />
+                  <GripVertical size={12} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side={tooltipSide}>
-                <p>Drag to reorder</p>
-              </TooltipContent>
+              <TooltipContent side={tooltipSide} className="text-xs">Drag</TooltipContent>
             </Tooltip>
-
-            <div className="w-full h-px bg-white/10" />
 
             {/* Move Up */}
             <Tooltip>
@@ -319,18 +231,16 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                   onClick={onMoveUp}
                   disabled={!canMoveUp}
                   className={cn(
-                    'p-2 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center',
+                    'p-1 rounded-md transition-colors flex items-center justify-center',
                     canMoveUp
-                      ? 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.1] active:scale-95'
-                      : 'text-[hsl(var(--builder-text-muted))]/30 cursor-not-allowed'
+                      ? 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
+                      : 'text-white/20 cursor-not-allowed'
                   )}
                 >
-                  <ChevronUp size={16} />
+                  <ChevronUp size={12} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side={tooltipSide}>
-                <p>Move up</p>
-              </TooltipContent>
+              <TooltipContent side={tooltipSide} className="text-xs">Up</TooltipContent>
             </Tooltip>
 
             {/* Move Down */}
@@ -340,94 +250,58 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                   onClick={onMoveDown}
                   disabled={!canMoveDown}
                   className={cn(
-                    'p-2 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center',
+                    'p-1 rounded-md transition-colors flex items-center justify-center',
                     canMoveDown
-                      ? 'text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.1] active:scale-95'
-                      : 'text-[hsl(var(--builder-text-muted))]/30 cursor-not-allowed'
+                      ? 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
+                      : 'text-white/20 cursor-not-allowed'
                   )}
                 >
-                  <ChevronDown size={16} />
+                  <ChevronDown size={12} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side={tooltipSide}>
-                <p>Move down</p>
-              </TooltipContent>
+              <TooltipContent side={tooltipSide} className="text-xs">Down</TooltipContent>
             </Tooltip>
-
-            <div className="w-full h-px bg-white/10" />
-
-            {/* Duplicate */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onDuplicate}
-                  className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.1] active:scale-95 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
-                >
-                  <Copy size={16} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side={tooltipSide}>
-                <p>Duplicate</p>
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Delete */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onDelete}
-                  className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-red-400 hover:bg-red-500/20 active:scale-95 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side={tooltipSide}>
-                <p>Delete</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <div className="w-full h-px bg-white/10" />
 
             {/* More Actions */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-lg text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(275,70%,55%)/0.1] active:scale-95 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center">
-                  <MoreHorizontal size={16} />
+                <button className="p-1 rounded-md text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1] transition-colors flex items-center justify-center">
+                  <MoreHorizontal size={12} />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 side={tooltipSide}
-                className="bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl border-[hsl(var(--builder-border))]"
+                className="bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl border-[hsl(315,85%,58%)/0.2] min-w-[140px]"
               >
                 <DropdownMenuItem
                   onClick={onAddAbove}
-                  className="text-[hsl(var(--builder-text))] focus:bg-white/10"
+                  className="text-white/80 text-xs focus:bg-[hsl(315,85%,58%)/0.1] focus:text-white"
                 >
-                  <Plus size={14} className="mr-2" />
-                  Add block above
+                  <Plus size={12} className="mr-2" />
+                  Add above
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={onAddBelow}
-                  className="text-[hsl(var(--builder-text))] focus:bg-white/10"
+                  className="text-white/80 text-xs focus:bg-[hsl(315,85%,58%)/0.1] focus:text-white"
                 >
-                  <Plus size={14} className="mr-2" />
-                  Add block below
+                  <Plus size={12} className="mr-2" />
+                  Add below
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem
                   onClick={onDuplicate}
-                  className="text-[hsl(var(--builder-text))] focus:bg-white/10"
+                  className="text-white/80 text-xs focus:bg-[hsl(315,85%,58%)/0.1] focus:text-white"
                 >
-                  <Copy size={14} className="mr-2" />
+                  <Copy size={12} className="mr-2" />
                   Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem
                   onClick={onDelete}
-                  className="text-red-400 focus:bg-red-500/20"
+                  className="text-red-400 text-xs focus:bg-red-500/15"
                 >
-                  <Trash2 size={14} className="mr-2" />
-                  Delete block
+                  <Trash2 size={12} className="mr-2" />
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
