@@ -290,43 +290,45 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   };
   const currentFontSize = getCurrentFontSizeLabel();
 
-  // Compact button classes - FULLY VISIBLE (not faded)
+  // Compact button classes - ALWAYS FULLY VISIBLE, no opacity tricks
   const btnClass = cn(
-    "flex items-center justify-center transition-all duration-100",
-    "min-w-[32px] min-h-[32px] p-1 rounded-md",
+    "flex items-center justify-center transition-colors duration-75",
+    "min-w-[32px] min-h-[32px] p-1.5 rounded-md",
     "active:scale-95"
   );
-  const btnInactive = "text-white hover:bg-[hsl(315,85%,58%)/0.2]";
-  const btnActive = "bg-[hsl(315,85%,58%)] text-white";
+  const btnInactive = "text-white/90 hover:text-white hover:bg-white/10";
+  const btnActive = "bg-[hsl(315,85%,58%)] text-white shadow-sm";
 
   const toolbarContent = (
-    <TooltipProvider delayDuration={400}>
+    <TooltipProvider delayDuration={300}>
       <motion.div
         ref={mergedRef}
-        initial={{ opacity: 0, scale: 0.95, y: 4 }}
+        initial={{ opacity: 0, scale: 0.96, y: 6 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ type: 'spring', stiffness: 520, damping: 38 }}
+        exit={{ opacity: 0, scale: 0.96, y: 4 }}
+        transition={{ type: 'spring', stiffness: 480, damping: 32 }}
         className={cn(
-          'flex items-center px-1 py-0.5 rounded-lg',
-          'bg-[hsl(220,10%,10%)] backdrop-blur-md',
-          'border border-[hsl(315,85%,58%)/0.2]',
-          'shadow-lg shadow-black/40',
-          'pointer-events-auto gap-0.5'
+          'flex items-center px-1.5 py-1 rounded-xl',
+          'bg-[hsl(220,12%,8%)]/95 backdrop-blur-lg',
+          'border border-white/10',
+          'shadow-xl shadow-black/50',
+          'pointer-events-auto gap-1'
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle */}
         <button
           type="button"
-          className={cn(btnClass, btnInactive, 'cursor-grab active:cursor-grabbing')}
+          className={cn(btnClass, 'text-white/60 hover:text-white hover:bg-white/10 cursor-grab active:cursor-grabbing')}
           onPointerDown={(e) => e.stopPropagation()}
           {...(dragHandleProps?.attributes || {})}
           {...(dragHandleProps?.listeners || {})}
-          aria-label="Drag"
+          aria-label="Drag to reorder"
         >
           <GripVertical size={14} />
         </button>
+        
+        <div className="w-px h-5 bg-white/10" />
 
         {/* Typography Controls - Compact */}
         {showTypography && (
@@ -335,9 +337,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             {/* Font Size Quick Select */}
             <Popover>
               <PopoverTrigger asChild>
-                <button className={cn(btnClass, btnInactive, 'px-2 gap-0.5')}>
-                  <span className="text-xs font-semibold">{currentFontSize}</span>
-                  <ChevronDown size={10} className="opacity-50" />
+                <button className={cn(btnClass, btnInactive, 'px-2.5 gap-1 min-w-[44px]')}>
+                  <span className="text-xs font-bold">{currentFontSize}</span>
+                  <ChevronDown size={10} className="opacity-70" />
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-1 bg-[hsl(220,12%,10%)] border-white/10" sideOffset={6}>
@@ -359,14 +361,24 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             </Popover>
 
             {/* Bold */}
-            <button onClick={toggleBold} className={cn(btnClass, styles.fontWeight === 'bold' ? btnActive : btnInactive)}>
-              <Bold size={14} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={toggleBold} className={cn(btnClass, styles.fontWeight === 'bold' ? btnActive : btnInactive)}>
+                  <Bold size={15} strokeWidth={2.5} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Bold</TooltipContent>
+            </Tooltip>
 
             {/* Italic */}
-            <button onClick={toggleItalic} className={cn(btnClass, styles.fontStyle === 'italic' ? btnActive : btnInactive)}>
-              <Italic size={14} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={toggleItalic} className={cn(btnClass, styles.fontStyle === 'italic' ? btnActive : btnInactive)}>
+                  <Italic size={15} strokeWidth={2.5} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Italic</TooltipContent>
+            </Tooltip>
           </>
         )}
 
