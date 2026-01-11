@@ -215,7 +215,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] min-w-[80px] transition-colors">
             <Type size={14} />
             <span className="text-xs font-medium truncate max-w-[60px]">{currentFont}</span>
-            <ChevronDown size={12} className="text-[hsl(var(--builder-text-muted))]" />
+            <ChevronDown size={12} className="text-[hsl(var(--builder-text-secondary))]" />
           </button>
         </PopoverTrigger>
         <PopoverContent 
@@ -252,7 +252,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         <PopoverTrigger asChild>
           <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] transition-colors">
             <span className="text-xs font-bold">{fontSizes.find(f => f.value === styles.fontSize)?.label || 'M'}</span>
-            <ChevronDown size={12} className="text-[hsl(var(--builder-text-muted))]" />
+            <ChevronDown size={12} className="text-[hsl(var(--builder-text-secondary))]" />
           </button>
         </PopoverTrigger>
         <PopoverContent 
@@ -287,7 +287,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           "p-1.5 rounded-lg transition-colors",
           styles.fontWeight === 'bold' 
             ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
+            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Bold (Cmd+B)"
       >
@@ -301,7 +301,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           "p-1.5 rounded-lg transition-colors",
           styles.fontStyle === 'italic' 
             ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
+            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Italic (Cmd+I)"
       >
@@ -315,7 +315,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           "p-1.5 rounded-lg transition-colors",
           styles.textDecoration === 'underline' 
             ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
+            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Underline (Cmd+U)"
       >
@@ -437,7 +437,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
               "p-1.5 rounded-lg transition-colors",
               styles.textShadow && styles.textShadow !== 'none'
                 ? 'bg-[hsl(var(--builder-accent))] text-white' 
-                : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
+                : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
             )}
             title="Text Shadow"
           >
@@ -476,7 +476,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           "p-1.5 rounded-lg transition-colors",
           styles.textAlign === 'left' 
             ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
+            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Align Left"
       >
@@ -489,7 +489,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           "p-1.5 rounded-lg transition-colors",
           styles.textAlign === 'center' 
             ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
+            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Align Center"
       >
@@ -502,7 +502,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           "p-1.5 rounded-lg transition-colors",
           styles.textAlign === 'right' 
             ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
+            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Align Right"
       >
