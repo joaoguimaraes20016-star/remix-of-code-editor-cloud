@@ -54,6 +54,7 @@ function buildStyleString(options: SelectionStyleOptions): string {
     styleProps.push('-webkit-text-fill-color: transparent');
     styleProps.push('background-clip: text');
     styleProps.push('display: inline'); // Ensure gradient works on inline elements
+    styleProps.push('color: transparent'); // Prevent white fallback in all browsers
   } else if (options.color) {
     styleProps.push(`color: ${options.color}`);
   }
@@ -154,7 +155,7 @@ function buildStyleUpdates(options: SelectionStyleOptions): { set: StyleMap; uns
     set['-webkit-text-fill-color'] = 'transparent';
     set['background-clip'] = 'text';
     set['display'] = 'inline';
-    unset.push('color');
+    set['color'] = 'transparent'; // Prevent white fallback
   } else if (options.color) {
     set['color'] = options.color;
     unset.push(...gradientProps);
@@ -318,6 +319,7 @@ function sanitizeStyleAttribute(style: string): string {
     'text-decoration',
     'font-family',
     'display',
+    // Note: 'color: transparent' is valid and used for gradient fallback prevention
   ];
   
   const safeProps: string[] = [];
