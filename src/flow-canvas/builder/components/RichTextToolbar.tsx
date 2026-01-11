@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle, useLayoutEffect, useRef } from 'react';
+import React, { useState, forwardRef, useImperativeHandle, useLayoutEffect, useRef, useCallback } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -10,7 +10,8 @@ import {
   Palette,
   Sparkles,
   ChevronDown,
-  Pipette
+  Pipette,
+  GripVertical
 } from 'lucide-react';
 import { TextStyles } from './InlineTextEditor';
 import { 
@@ -83,6 +84,11 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   const [fontOpen, setFontOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
+  
+  // Drag state for repositioning toolbar
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
 
   const internalRef = useRef<HTMLDivElement | null>(null);
   useImperativeHandle(ref, () => internalRef.current as HTMLDivElement);
@@ -100,6 +106,43 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  
+  // Drag handlers
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      offsetX: dragOffset.x,
+      offsetY: dragOffset.y,
+    };
+  }, [dragOffset]);
+  
+  useLayoutEffect(() => {
+    if (!isDragging) return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      setDragOffset({
+        x: dragStartRef.current.offsetX + dx,
+        y: dragStartRef.current.offsetY + dy,
+      });
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const handleFontSizeChange = (size: TextStyles['fontSize']) => {
     onChange({ fontSize: size });
@@ -186,12 +229,12 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
 
   const clampedLeft = Math.max(
     halfWidth + viewportPadding,
-    Math.min(position.left, window.innerWidth - halfWidth - viewportPadding)
+    Math.min(position.left + dragOffset.x, window.innerWidth - halfWidth - viewportPadding)
   );
 
   const clampedTop = Math.max(
     viewportPadding,
-    Math.min(position.top, window.innerHeight - measured.height - viewportPadding)
+    Math.min(position.top + dragOffset.y, window.innerHeight - measured.height - viewportPadding)
   );
 
   const currentFont = displayFonts.find(f => f.value === styles.fontFamily)?.label || 'Inherit';
@@ -200,15 +243,29 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   return (
     <div 
       ref={internalRef}
-      className="rich-text-toolbar fixed z-50 flex items-center gap-0.5 p-1.5 rounded-xl bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] shadow-2xl animate-in"
+      className={cn(
+        "rich-text-toolbar fixed z-50 flex items-center gap-0.5 p-1.5 rounded-xl bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] shadow-2xl",
+        !isDragging && "animate-in"
+      )}
       style={{
         top: clampedTop,
         left: clampedLeft,
         transform: 'translateX(-50%)',
+        cursor: isDragging ? 'grabbing' : undefined,
       }}
       onClick={(e) => e.stopPropagation()}
       tabIndex={-1}
     >
+      {/* Drag Handle */}
+      <button
+        onMouseDown={handleDragStart}
+        className="p-1 rounded-lg cursor-grab active:cursor-grabbing text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-hover))] transition-colors"
+        title="Drag to reposition"
+      >
+        <GripVertical size={14} />
+      </button>
+      
+      <div className="w-px h-5 bg-[hsl(var(--builder-border))] mx-0.5" />
       {/* Font Family Selector */}
       <Popover open={fontOpen} onOpenChange={setFontOpen}>
         <PopoverTrigger asChild>
@@ -347,6 +404,8 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         <PopoverContent 
           className="w-64 p-3 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
           sideOffset={4}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <div className="space-y-3">
             {/* Fill Type Toggle - uses atomic handler to set both type and value */}
