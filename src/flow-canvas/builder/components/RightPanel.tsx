@@ -298,21 +298,27 @@ const SiteInfo: React.FC<{ page: Page; onPublish?: () => void }> = ({ page, onPu
 };
 
 // Element Type Section Config - defines which sections show for each element type
+// SIMPLIFIED: Removed 'states' from text/heading - only buttons need hover states
 const ELEMENT_SECTIONS = {
-  button: ['action', 'appearance', 'states', 'advanced'],
-  text: ['typography', 'highlight', 'states', 'advanced'],
-  heading: ['typography', 'highlight', 'states', 'advanced'],
-  image: ['source', 'size', 'border', 'advanced'],
-  video: ['source', 'size', 'advanced'],
-  input: ['field', 'inputStyle', 'focusStates'],
-  select: ['field', 'inputStyle', 'focusStates'],
-  checkbox: ['field', 'checkboxStyle'],
-  radio: ['field', 'checkboxStyle'],
+  button: ['action', 'appearance', 'animation', 'advanced'],
+  text: ['typography', 'animation'],
+  heading: ['typography', 'animation'],
+  image: ['source', 'size', 'animation'],
+  video: ['source', 'size'],
+  input: ['field', 'inputStyle'],
+  select: ['field', 'inputStyle'],
+  checkbox: ['field'],
+  radio: ['field'],
   divider: ['dividerStyle'],
   spacer: ['spacerStyle'],
 } as const;
 
 type ElementSectionType = keyof typeof ELEMENT_SECTIONS;
+
+// Size presets with actual px values for the slider
+const SIZE_PX_MAP: Record<string, number> = {
+  'xs': 12, 'sm': 14, 'md': 16, 'lg': 20, 'xl': 24, '2xl': 30, '3xl': 36, '4xl': 48, '5xl': 60, '6xl': 72
+};
 
 // Element Inspector - Contextual sections based on element type
 const ElementInspector: React.FC<{ 
@@ -429,8 +435,9 @@ const ElementInspector: React.FC<{
   const buttonAction = element.props?.buttonAction as ButtonAction | null;
   const videoSettings = element.props?.videoSettings as VideoSettings | null;
 
-  // Check if states section should show
-  const showStates = (sectionsToShow as readonly string[]).includes('states');
+  // Check if states section should show - ONLY for buttons now
+  const showStates = element.type === 'button';
+  const showAnimation = (sectionsToShow as readonly string[]).includes('animation');
 
   return (
     <div ref={containerRef} className="space-y-0">
@@ -468,14 +475,87 @@ const ElementInspector: React.FC<{
         </div>
       </div>
 
-      {/* State Tabs - only for elements that support states */}
+      {/* ========== QUICK ANIMATION (Easy to find!) ========== */}
+      {showAnimation && (
+        <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(315,85%,58%)]/5 to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-[hsl(315,85%,58%)]" />
+              <span className="text-xs font-medium text-builder-text">Animation</span>
+            </div>
+            <EffectsPickerPopover 
+              onSelectEffect={(effect) => {
+                onUpdate({ 
+                  animation: { 
+                    ...(element.animation || {}), 
+                    effect,
+                    trigger: element.animation?.trigger || 'scroll',
+                    delay: element.animation?.delay || 0,
+                    duration: element.animation?.duration || 500,
+                    easing: element.animation?.easing || 'ease-out',
+                    threshold: element.animation?.threshold || 0.1
+                  } as AnimationSettings
+                });
+              }} 
+              currentEffect={element.animation?.effect}
+            >
+              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[hsl(315,85%,58%)]/10 text-[hsl(315,85%,58%)] text-xs font-medium hover:bg-[hsl(315,85%,58%)]/20 transition-colors border border-[hsl(315,85%,58%)]/20">
+                {element.animation?.effect ? (
+                  <>
+                    <Sparkles className="w-3 h-3" />
+                    <span className="capitalize">{element.animation.effect.replace('-', ' ')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3 h-3" />
+                    <span>Add Effect</span>
+                  </>
+                )}
+              </button>
+            </EffectsPickerPopover>
+          </div>
+          {element.animation?.effect && (
+            <div className="mt-2 flex items-center gap-2">
+              <Select 
+                value={element.animation?.trigger || 'scroll'}
+                onValueChange={(value) => onUpdate({ animation: { ...(element.animation || { effect: '', delay: 0, duration: 500, easing: 'ease-out', threshold: 0.1 }), trigger: value as any } as AnimationSettings })}
+              >
+                <SelectTrigger className="builder-input h-7 text-xs flex-1">
+                  <SelectValue placeholder="Trigger" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="load">On Page Load</SelectItem>
+                  <SelectItem value="scroll">When Scrolled Into View</SelectItem>
+                  <SelectItem value="hover">On Hover</SelectItem>
+                </SelectContent>
+              </Select>
+              <button
+                onClick={() => onUpdate({ animation: undefined })}
+                className="p-1.5 rounded-md hover:bg-destructive/10 text-builder-text-muted hover:text-destructive transition-colors"
+                title="Remove animation"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* State Tabs - ONLY for buttons */}
       {showStates && (
         <div className="px-4 py-2 border-b border-builder-border">
+          <p className="text-[10px] text-builder-text-dim mb-2">Style button for different interaction states:</p>
           <div className="flex gap-1">
-            {(['base', 'hover', 'active', 'disabled'] as const).map((state) => {
+            {(['base', 'hover', 'active'] as const).map((state) => {
               const hasStylesForState = state !== 'base' && 
                 element.stateStyles?.[state] && 
                 Object.keys(element.stateStyles[state] || {}).length > 0;
+              
+              const stateLabels = {
+                base: 'Default',
+                hover: 'Mouse Over', 
+                active: 'Clicked'
+              };
               
               return (
                 <button
@@ -486,7 +566,7 @@ const ElementInspector: React.FC<{
                     activeState === state ? 'state-tab-active' : 'state-tab-inactive'
                   )}
                 >
-                  {state.charAt(0).toUpperCase() + state.slice(1)}
+                  {stateLabels[state]}
                   {hasStylesForState && (
                     <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
                   )}
@@ -494,11 +574,6 @@ const ElementInspector: React.FC<{
               );
             })}
           </div>
-          {activeState !== 'base' && (
-            <p className="text-[9px] text-builder-text-dim mt-1">
-              Editing {activeState} state styles
-            </p>
-          )}
         </div>
       )}
 
@@ -857,33 +932,34 @@ const ElementInspector: React.FC<{
             </div>
           </CollapsibleSection>
           
-          {/* Typography */}
+          {/* Typography - Simplified with sliders */}
           <CollapsibleSection title="Typography" icon={<Type className="w-4 h-4" />} defaultOpen>
-            <div className="space-y-3 pt-3">
-              {/* Guidance message - point to floating toolbar */}
-              <div className="p-2.5 bg-builder-accent/10 rounded-lg border border-builder-accent/20">
-                <p className="text-[11px] text-builder-text flex items-center gap-2">
-                  <Sparkles className="w-3 h-3 text-builder-accent flex-shrink-0" />
-                  <span><strong>Tip:</strong> Double-click text for rich formatting toolbar</span>
-                </p>
-              </div>
-              
-              {/* Font Size */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Size</span>
-                <Select value={element.props?.fontSize as string || 'md'} onValueChange={(value) => handlePropsChange('fontSize', value)}>
-                  <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Medium" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sm">Small</SelectItem>
-                    <SelectItem value="md">Medium</SelectItem>
-                    <SelectItem value="lg">Large</SelectItem>
-                    <SelectItem value="xl">X-Large</SelectItem>
-                    <SelectItem value="2xl">2X-Large</SelectItem>
-                    <SelectItem value="3xl">3X-Large</SelectItem>
-                    <SelectItem value="4xl">4X-Large</SelectItem>
-                    <SelectItem value="5xl">5X-Large</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4 pt-3">
+              {/* Font Size - SLIDER for easy dragging */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Size</span>
+                  <span className="text-xs font-mono text-builder-text-dim">
+                    {SIZE_PX_MAP[element.props?.fontSize as string] || 16}px
+                  </span>
+                </div>
+                <Slider 
+                  value={[SIZE_PX_MAP[element.props?.fontSize as string] || 16]}
+                  onValueChange={(v) => {
+                    // Find closest size preset
+                    const sizes = Object.entries(SIZE_PX_MAP);
+                    const closest = sizes.reduce((prev, curr) => 
+                      Math.abs(curr[1] - v[0]) < Math.abs(prev[1] - v[0]) ? curr : prev
+                    );
+                    handlePropsChange('fontSize', closest[0]);
+                  }}
+                  min={12} max={72} step={2}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[9px] text-builder-text-dim">
+                  <span>12px</span>
+                  <span>72px</span>
+                </div>
               </div>
               
               {/* Font Family */}
@@ -905,19 +981,31 @@ const ElementInspector: React.FC<{
                 </Select>
               </div>
               
-              {/* Font Weight */}
-              <div className="flex items-center justify-between">
+              {/* Font Weight - Visual buttons instead of dropdown */}
+              <div className="space-y-1.5">
                 <span className="text-xs text-builder-text-muted">Weight</span>
-                <Select value={element.props?.fontWeight as string || 'normal'} onValueChange={(value) => handlePropsChange('fontWeight', value)}>
-                  <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Normal" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="semibold">Semibold</SelectItem>
-                    <SelectItem value="bold">Bold</SelectItem>
-                    <SelectItem value="black">Black</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-1">
+                  {[
+                    { value: 'normal', label: 'Aa' },
+                    { value: 'medium', label: 'Aa' },
+                    { value: 'semibold', label: 'Aa' },
+                    { value: 'bold', label: 'Aa' },
+                  ].map((w, i) => (
+                    <button
+                      key={w.value}
+                      onClick={() => handlePropsChange('fontWeight', w.value)}
+                      className={cn(
+                        'flex-1 py-1.5 rounded text-xs transition-colors',
+                        element.props?.fontWeight === w.value 
+                          ? 'bg-[hsl(315,85%,58%)] text-white' 
+                          : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface-active'
+                      )}
+                      style={{ fontWeight: [400, 500, 600, 700][i] }}
+                    >
+                      {w.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               
               {/* Text Alignment */}
@@ -964,71 +1052,7 @@ const ElementInspector: React.FC<{
             </div>
           </CollapsibleSection>
 
-          {/* Highlight Styles */}
-          <CollapsibleSection title="Highlight Style" icon={<Sparkles className="w-4 h-4" />} sectionId="highlight" isHighlighted={highlightedSection === 'highlight'}>
-            <div className="space-y-3 pt-3">
-              <p className="text-[10px] text-builder-text-dim">Style text wrapped in {"{{double braces}}"}</p>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Fill</span>
-                <TogglePill 
-                  value={element.props?.highlightUseGradient === true} 
-                  onToggle={() => handlePropsChange('highlightUseGradient', !element.props?.highlightUseGradient)} 
-                  labels={['Gradient', 'Solid']} 
-                />
-              </div>
-              
-              {!element.props?.highlightUseGradient && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Color</span>
-                  <ColorPickerPopover color={element.props?.highlightColor as string || '#F59E0B'} onChange={(color) => handlePropsChange('highlightColor', color)}>
-                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                      <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.highlightColor as string || '#F59E0B' }} />
-                      <span className="text-xs text-builder-text-muted">Edit</span>
-                    </button>
-                  </ColorPickerPopover>
-                </div>
-              )}
-              
-              {element.props?.highlightUseGradient && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Gradient</span>
-                  <GradientPickerPopover
-                    value={element.props?.highlightGradient as GradientValue | undefined}
-                    onChange={(gradient) => handlePropsChange('highlightGradient', cloneGradient(gradient))}
-                  >
-                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                      <div className="w-12 h-6 rounded-md border border-builder-border" style={{ background: element.props?.highlightGradient ? gradientToCSS(element.props.highlightGradient as GradientValue) : 'linear-gradient(135deg, #F59E0B, #EF4444)' }} />
-                      <span className="text-xs text-builder-text-muted">Edit</span>
-                    </button>
-                  </GradientPickerPopover>
-                </div>
-              )}
-              
-              {/* Quick Presets */}
-              <div className="flex gap-1 flex-wrap">
-                {highlightPresets.map((preset) => (
-                  <button
-                    key={preset.color}
-                    onClick={() => {
-                      handlePropsChange('highlightColor', preset.color);
-                      handlePropsChange('highlightUseGradient', false);
-                    }}
-                    className={cn(
-                      'w-5 h-5 rounded border transition-all',
-                      element.props?.highlightColor === preset.color && !element.props?.highlightUseGradient
-                        ? 'ring-2 ring-builder-accent ring-offset-1'
-                        : 'border-builder-border hover:scale-110'
-                    )}
-                    style={{ backgroundColor: preset.color }}
-                    title={preset.label}
-                  />
-                ))}
-              </div>
-            </div>
-          </CollapsibleSection>
-
-          {/* Content */}
+          {/* Text Content */}
           <CollapsibleSection title="Content" icon={<Type className="w-4 h-4" />} sectionId="content" isHighlighted={highlightedSection === 'content'}>
             <div className="pt-3">
               <Textarea
@@ -1448,76 +1472,13 @@ const ElementInspector: React.FC<{
         </>
       )}
 
-      {/* ========== ADVANCED SECTION (Animation + Visibility) ========== */}
-      <CollapsibleSection title="Advanced" icon={<Settings2 className="w-4 h-4" />} sectionId="advanced" isHighlighted={highlightedSection === 'advanced'}>
-        <div className="pt-3 space-y-4">
-          {/* Animation */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Zap className="w-3 h-3 text-builder-text-muted" />
-              <span className="text-xs font-medium text-builder-text">Animation</span>
-            </div>
+      {/* ========== SIMPLIFIED ADVANCED SECTION (Visibility only - animation is at top) ========== */}
+      {element.type === 'button' && (
+        <CollapsibleSection title="More Options" icon={<Settings2 className="w-4 h-4" />}>
+          <div className="pt-3 space-y-2">
+            {/* Visibility/Show-Hide */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Effect</span>
-              <EffectsPickerPopover 
-                onSelectEffect={(effect) => {
-                  onUpdate({ 
-                    animation: { 
-                      ...(element.animation || {}), 
-                      effect,
-                      trigger: element.animation?.trigger || 'load',
-                      delay: element.animation?.delay || 0,
-                      duration: element.animation?.duration || 500,
-                      easing: element.animation?.easing || 'ease-out',
-                      threshold: element.animation?.threshold || 0.1
-                    } as AnimationSettings
-                  });
-                }} 
-                currentEffect={element.animation?.effect}
-              >
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-builder-accent/10 text-builder-accent text-xs font-medium hover:bg-builder-accent/20 transition-colors">
-                  {element.animation?.effect ? (
-                    <span className="capitalize">{element.animation.effect.replace('-', ' ')}</span>
-                  ) : (
-                    <><Plus className="w-3.5 h-3.5" /> Add</>
-                  )}
-                </button>
-              </EffectsPickerPopover>
-            </div>
-            {element.animation?.effect && (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Trigger</span>
-                  <Select 
-                    value={element.animation?.trigger || 'load'}
-                    onValueChange={(value) => onUpdate({ animation: { ...(element.animation || { effect: '', delay: 0, duration: 500, easing: 'ease-out', threshold: 0.1 }), trigger: value as any } as AnimationSettings })}
-                  >
-                    <SelectTrigger className="builder-input w-28"><SelectValue placeholder="On Load" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="load">On Load</SelectItem>
-                      <SelectItem value="scroll">In View</SelectItem>
-                      <SelectItem value="hover">On Hover</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => onReplayAnimation?.()} className="w-full border-builder-border text-builder-text hover:bg-builder-surface-hover">
-                  <Play className="w-3.5 h-3.5 mr-2" /> Replay
-                </Button>
-                <button onClick={() => onUpdate({ animation: undefined })} className="w-full py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-md transition-colors">
-                  Remove Animation
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Visibility/Show-Hide */}
-          <div className="space-y-2 pt-2 border-t border-builder-border">
-            <div className="flex items-center gap-2">
-              <Eye className="w-3 h-3 text-builder-text-muted" />
-              <span className="text-xs font-medium text-builder-text">Visibility</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Show/Hide</span>
+              <span className="text-xs text-builder-text-muted">Visibility</span>
               <TogglePill 
                 value={element.styles?.display !== 'none'} 
                 onToggle={() => onUpdate({ styles: { ...element.styles, display: element.styles?.display === 'none' ? 'block' : 'none' } })}
@@ -1525,8 +1486,8 @@ const ElementInspector: React.FC<{
               />
             </div>
           </div>
-        </div>
-      </CollapsibleSection>
+        </CollapsibleSection>
+      )}
 
       {/* Modals */}
       <ButtonActionModal
