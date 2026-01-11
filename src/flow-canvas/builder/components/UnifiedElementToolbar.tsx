@@ -730,31 +730,15 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     </AnimatePresence>
   );
 
-  // Use mobile compact toolbar for mobile preview mode
-  if (isMobilePreview && portalContainer && targetRef?.current) {
-    return createPortal(
-      <div
-        className="pointer-events-none"
-        style={{
-          position: 'fixed',
-          top: position.top,
-          left: position.left,
-          transform: 'translateX(-50%)',
-          zIndex: 9999,
-        }}
-      >
-        {mobileCompactToolbar}
-      </div>,
-      portalContainer
-    );
-  }
-
-  // Desktop: use portal with calculated position
-  if (portalContainer && targetRef?.current) {
-    return createPortal(
-      <AnimatePresence>
+  // If we have portal container and valid position, use portal
+  if (portalContainer) {
+    // If we have targetRef with valid position, use calculated position
+    const hasValidPosition = targetRef?.current && (position.top > 0 || position.left > 0);
+    
+    if (hasValidPosition) {
+      return createPortal(
         <div
-          className="pointer-events-auto"
+          className="pointer-events-none"
           style={{
             position: 'fixed',
             top: position.top,
@@ -763,23 +747,23 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             zIndex: 9999,
           }}
         >
-          {toolbarContent}
-        </div>
-      </AnimatePresence>,
-      portalContainer
-    );
+          <div className="pointer-events-auto">
+            {isMobilePreview ? mobileCompactToolbar : toolbarContent}
+          </div>
+        </div>,
+        portalContainer
+      );
+    }
   }
 
-  // Fallback: render inline (legacy behavior)
+  // Fallback: render inline relative to parent (always works)
   return (
-    <AnimatePresence>
-      <div
-        className="absolute z-[60] -top-10 left-1/2 -translate-x-1/2"
-        style={{ pointerEvents: 'auto' }}
-      >
-        {isMobilePreview ? mobileCompactToolbar : toolbarContent}
-      </div>
-    </AnimatePresence>
+    <div
+      className="absolute z-[60] -top-12 left-1/2 -translate-x-1/2"
+      style={{ pointerEvents: 'auto' }}
+    >
+      {isMobilePreview ? mobileCompactToolbar : toolbarContent}
+    </div>
   );
 });
 
