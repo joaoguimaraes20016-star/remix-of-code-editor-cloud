@@ -66,6 +66,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
   const contentRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -204,7 +205,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     if (!editorEl) return;
 
     const viewportPadding = 12;
-    const toolbarHeight = 44; // approximate; RichTextToolbar clamps too
+    const toolbarHeight = toolbarRef.current?.offsetHeight ?? 44;
     const gap = 10;
 
     const sel = window.getSelection();
@@ -563,6 +564,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       {/* Floating Rich Text Toolbar */}
       {showToolbar && (
         <RichTextToolbar
+          ref={toolbarRef}
           styles={styles}
           onChange={handleStyleChange}
           position={toolbarPosition}
