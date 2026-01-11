@@ -874,6 +874,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="heading"
                 elementLabel={`Heading ${level}`}
+                isSelected={isSelected}
                 styles={{
                   fontFamily: element.props?.fontFamily as string,
                   fontSize: element.props?.fontSize as string,
@@ -1035,6 +1036,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="text"
                 elementLabel={isLogo ? 'Logo' : isFooterLogo ? 'Footer Logo' : isFooterHeading ? 'Footer Heading' : 'Text'}
+                isSelected={isSelected}
                 styles={{
                   fontFamily: element.props?.fontFamily as string,
                   fontSize: element.props?.fontSize as string,
@@ -1206,6 +1208,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="button"
                 elementLabel={isNavPill ? 'Nav Link' : isFooterLink ? 'Footer Link' : 'Button'}
+                isSelected={isSelected}
                 styles={{
                   textAlign: buttonAlignment,
                   backgroundColor: effectiveBg,
@@ -1340,6 +1343,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="input"
+                isSelected={isSelected}
                 styles={{
                   textAlign: inputAlign as 'left' | 'center' | 'right',
                   backgroundColor: inputBg as string,
@@ -1423,6 +1427,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="checkbox"
+                isSelected={isSelected}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1490,6 +1495,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="radio"
+                isSelected={isSelected}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1546,6 +1552,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="select"
+                isSelected={isSelected}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1628,6 +1635,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="image"
+                isSelected={isSelected}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1697,6 +1705,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="video"
                 elementLabel="Video"
+                isSelected={isSelected}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1743,6 +1752,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="divider"
                 elementLabel="Divider"
+                isSelected={isSelected}
                 styles={{ backgroundColor: dividerColor }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.backgroundColor) {
@@ -1781,6 +1791,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="spacer"
                 elementLabel="Spacer"
+                isSelected={isSelected}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1816,6 +1827,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="icon"
                 elementLabel="Icon"
+                isSelected={isSelected}
                 styles={{ textColor: iconColor }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.textColor) {
@@ -2125,12 +2137,13 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
       {/* Block Type Badge - Shows on hover */}
       <span className="block-type-badge">{blockTypeLabel}</span>
       
-      {/* Block Action Bar - with integrated drag handle */}
+      {/* Block Action Bar - shows on selection with smooth animation */}
       {!readOnly && (
         <BlockActionBar
           blockId={block.id}
           blockLabel={block.label}
           position="left"
+          isSelected={isSelected}
           canMoveUp={blockIndex > 0}
           canMoveDown={blockIndex < totalBlocks - 1}
           onMoveUp={() => onMoveBlock?.('up')}
