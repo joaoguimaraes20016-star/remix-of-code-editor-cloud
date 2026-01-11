@@ -1,4 +1,4 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState, forwardRef, useImperativeHandle, useLayoutEffect, useRef } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -84,6 +84,23 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   const [colorOpen, setColorOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
 
+  const internalRef = useRef<HTMLDivElement | null>(null);
+  useImperativeHandle(ref, () => internalRef.current as HTMLDivElement);
+
+  const [measured, setMeasured] = useState({ width: 360, height: 44 });
+
+  useLayoutEffect(() => {
+    const el = internalRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+
+    const update = () => setMeasured({ width: el.offsetWidth || 360, height: el.offsetHeight || 44 });
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const handleFontSizeChange = (size: TextStyles['fontSize']) => {
     onChange({ fontSize: size });
   };
@@ -163,16 +180,26 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
     }
   };
 
-  // Clamp position to viewport bounds
-  const clampedTop = Math.max(48, Math.min(position.top, window.innerHeight - 60));
-  const clampedLeft = Math.max(200, Math.min(position.left, window.innerWidth - 200));
+  // Clamp position to viewport bounds using measured toolbar size (prevents "jumping")
+  const viewportPadding = 12;
+  const halfWidth = measured.width / 2;
+
+  const clampedLeft = Math.max(
+    halfWidth + viewportPadding,
+    Math.min(position.left, window.innerWidth - halfWidth - viewportPadding)
+  );
+
+  const clampedTop = Math.max(
+    viewportPadding,
+    Math.min(position.top, window.innerHeight - measured.height - viewportPadding)
+  );
 
   const currentFont = displayFonts.find(f => f.value === styles.fontFamily)?.label || 'Inherit';
   const isGradientFill = styles.textFillType === 'gradient';
 
   return (
     <div 
-      ref={ref}
+      ref={internalRef}
       className="rich-text-toolbar fixed z-50 flex items-center gap-0.5 p-1.5 rounded-xl bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] shadow-2xl animate-in"
       style={{
         top: clampedTop,

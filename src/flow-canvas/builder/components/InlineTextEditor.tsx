@@ -198,30 +198,89 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     }
   }, [onChange]);
 
-  // Update toolbar position based on selection
+  // Update toolbar position based on current selection (snaps to highlighted text)
   const updateToolbarPosition = useCallback(() => {
-    if (!containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
+    const editorEl = contentRef.current;
+    if (!editorEl) return;
+
+    const viewportPadding = 12;
+    const toolbarHeight = 44; // approximate; RichTextToolbar clamps too
+    const gap = 10;
+
+    const sel = window.getSelection();
+    const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+
+    // Only react to selections inside this editor.
+    const selectionInside =
+      !!range &&
+      (editorEl.contains(range.commonAncestorContainer) ||
+        // commonAncestorContainer can be a text node; contains() can be false in some cases
+        editorEl.contains(sel?.anchorNode ?? null) ||
+        editorEl.contains(sel?.focusNode ?? null));
+
+    let rect: DOMRect | null = null;
+
+    if (range && selectionInside) {
+      // Prefer client rects (more stable for multi-line selections)
+      const clientRects = Array.from(range.getClientRects?.() ?? []);
+      rect =
+        clientRects.find((r) => r.width > 0 && r.height > 0) ??
+        clientRects[0] ??
+        range.getBoundingClientRect();
+
+      // Some browsers return 0-sized rect for collapsed caret; fall back to container.
+      if (!rect || (rect.width === 0 && rect.height === 0)) {
+        rect = null;
+      }
+    }
+
+    // Fallback: position above the whole element (when nothing selected)
+    if (!rect && containerRef.current) {
+      rect = containerRef.current.getBoundingClientRect();
+    }
+
+    if (!rect) return;
+
+    const left = rect.left + rect.width / 2;
+
+    // Try above selection; if there's not enough space, place below.
+    const aboveTop = rect.top - toolbarHeight - gap;
+    const belowTop = rect.bottom + gap;
+    const top = aboveTop < viewportPadding ? belowTop : aboveTop;
+
     setToolbarPosition({
-      top: rect.top - 48, // Above the element
-      left: rect.left + rect.width / 2,
+      top: Math.max(viewportPadding, top),
+      left,
     });
   }, []);
 
   useEffect(() => {
-    if (showToolbar) {
-      updateToolbarPosition();
-      window.addEventListener('resize', updateToolbarPosition);
-      return () => window.removeEventListener('resize', updateToolbarPosition);
-    }
-  }, [showToolbar, updateToolbarPosition]);
+    if (!showToolbar || !isEditing) return;
 
-  // Handle text selection for toolbar
+    let rafId = 0;
+    const schedule = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updateToolbarPosition);
+    };
+
+    // Initial snap
+    schedule();
+
+    document.addEventListener('selectionchange', schedule);
+    window.addEventListener('scroll', schedule, true);
+    window.addEventListener('resize', schedule);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      document.removeEventListener('selectionchange', schedule);
+      window.removeEventListener('scroll', schedule, true);
+      window.removeEventListener('resize', schedule);
+    };
+  }, [showToolbar, isEditing, updateToolbarPosition]);
+
+  // Handle text selection for toolbar (mouse selection inside the editor)
   const handleSelect = useCallback(() => {
-    if (isEditing) {
-      updateToolbarPosition();
-    }
+    if (isEditing) updateToolbarPosition();
   }, [isEditing, updateToolbarPosition]);
 
   // Apply style changes - ONLY emit the properties that were explicitly changed
