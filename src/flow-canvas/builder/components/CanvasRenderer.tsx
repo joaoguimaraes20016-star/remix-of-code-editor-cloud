@@ -2315,19 +2315,146 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
     </div>
   );
 
-  // Wrap in gradient border if enabled
+  // Wrap in gradient border if enabled - use proper border technique
   const blockContent = hasGradientBorder && borderGradient ? (
     <div
       ref={setCombinedBlockRef}
-      className="p-[2px]"
+      className="relative"
       style={{
+        padding: '2px',
         background: gradientToCSS(borderGradient),
         borderRadius: effectiveBorderRadius,
         transform: CSS.Transform.toString(transform),
         transition,
       }}
     >
-      {blockInnerContent}
+      <div
+        style={{
+          ...style,
+          transform: undefined, // Remove transform from inner - already on outer
+          transition: undefined,
+          borderRadius: `calc(${effectiveBorderRadius} - 2px)`,
+        }}
+        className={cn(
+          'builder-block-selectable builder-click-target group/block relative',
+          !hasCustomPadding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
+          isSelected && 'builder-block-selected',
+          isMultiSelected && !isSelected && 'builder-multi-selected',
+          hasSelectedChild && !isSelected && 'builder-parent-of-selected',
+          block.type === 'hero' && !hasCustomPadding && 'text-center py-12',
+          block.type === 'cta' && 'justify-center',
+          isDragging && 'opacity-50 z-50',
+          blockShadowClass
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect({ type: 'block', id: block.id, path: blockPath }, e.shiftKey);
+        }}
+      >
+        <span className={cn('block-type-badge', getBlockBadgeClass())}>{blockTypeLabel}</span>
+        
+        {!readOnly && (
+          <BlockActionBar
+            blockId={block.id}
+            blockLabel={block.label}
+            position="left"
+            isSelected={isSelected}
+            canMoveUp={blockIndex > 0}
+            canMoveDown={blockIndex < totalBlocks - 1}
+            onMoveUp={() => onMoveBlock?.('up')}
+            onMoveDown={() => onMoveBlock?.('down')}
+            onDuplicate={() => onDuplicateBlock?.()}
+            onDelete={() => onDeleteBlock?.()}
+            onAddAbove={() => onAddBlock?.('above')}
+            onAddBelow={() => onAddBlock?.('below')}
+            dragHandleProps={{ attributes, listeners }}
+            deviceMode={deviceMode}
+            targetRef={blockWrapperRef}
+          />
+        )}
+
+        <DndContext
+          sensors={elementSensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleElementDragStart}
+          onDragEnd={handleElementDragEnd}
+        >
+          <SortableContext
+            items={block.elements.map(el => el.id)}
+            strategy={isNavbar || block.props?.direction === 'row' ? horizontalListSortingStrategy : verticalListSortingStrategy}
+          >
+            <div 
+              className={cn(
+                'flex w-full',
+                (block.props?.direction as string) === 'row' || isNavbar || isFooter ? 'flex-row' : 'flex-col'
+              )}
+              style={{
+                flexDirection: (block.props?.direction as 'row' | 'column') || (isNavbar || isFooter ? 'row' : 'column'),
+                justifyContent:
+                  justifyMap[block.props?.justifyContent as string] ||
+                  (block.props?.justifyContent as string) ||
+                  (isNavbar ? 'space-between' : 'flex-start'),
+                alignItems:
+                  alignMap[block.props?.alignItems as string] ||
+                  (block.props?.alignItems as string) ||
+                  (isNavbar ? 'center' : 'stretch'),
+                flexWrap: block.props?.wrap ? 'wrap' : (isFooter ? 'wrap' : 'nowrap'),
+                width: '100%',
+                gap: (block.styles?.gap as string) || (block.props?.gap as string) || (isFooter ? '48px' : '16px'),
+              }}
+            >
+              {block.elements.map((element, elementIndex) => {
+                const elementPath = [...blockPath, 'element', element.id];
+                const isElementSelected = selection.type === 'element' && selection.id === element.id;
+                const isElementMultiSelected = multiSelectedIds?.has(element.id) ?? false;
+                
+                return (
+                  <BuilderContextMenu
+                    key={element.id}
+                    type="element"
+                    onCopy={() => {
+                      onSelect({ type: 'element', id: element.id, path: elementPath });
+                      onCopy?.();
+                    }}
+                    onPaste={() => onPaste?.()}
+                    onDuplicate={() => onDuplicateElement?.(element.id)}
+                    onDelete={() => onDeleteElement?.(element.id)}
+                    onMoveUp={() => {}}
+                    onMoveDown={() => {}}
+                    canMoveUp={elementIndex > 0}
+                    canMoveDown={elementIndex < block.elements.length - 1}
+                    canPaste={canPaste}
+                    disabled={readOnly}
+                  >
+                    <SortableElementRenderer
+                      element={element}
+                      isSelected={isElementSelected}
+                      isMultiSelected={isElementMultiSelected}
+                      onSelect={(e) => onSelect({ type: 'element', id: element.id, path: elementPath }, e?.shiftKey)}
+                      onUpdate={(updates) => onUpdateElement?.(element.id, updates)}
+                      onDuplicate={() => onDuplicateElement?.(element.id)}
+                      onDelete={() => onDeleteElement?.(element.id)}
+                      onCopy={onCopy}
+                      onPaste={onPaste}
+                      canPaste={canPaste}
+                      readOnly={readOnly}
+                      replayAnimationKey={replayAnimationKey}
+                      selectionId={selection.id}
+                      deviceMode={deviceMode}
+                      onNextStep={onNextStep}
+                      onGoToStep={onGoToStep}
+                      onFormSubmit={onFormSubmit}
+                    />
+                  </BuilderContextMenu>
+                );
+              })}
+            </div>
+          </SortableContext>
+          <DragOverlay>
+            {activeElement ? <ElementDragOverlay element={activeElement} /> : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
     </div>
   ) : blockInnerContent;
 

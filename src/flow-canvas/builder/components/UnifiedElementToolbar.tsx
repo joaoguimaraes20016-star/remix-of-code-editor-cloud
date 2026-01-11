@@ -27,14 +27,15 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 
-// Font sizes
+// Font sizes - use pixel values for consistency with the right panel slider
 const fontSizes = [
-  { label: 'S', value: 'sm' },
-  { label: 'M', value: 'md' },
-  { label: 'L', value: 'lg' },
-  { label: 'XL', value: 'xl' },
-  { label: '2XL', value: '2xl' },
-  { label: '3XL', value: '3xl' },
+  { label: 'S', value: '14px' },
+  { label: 'M', value: '16px' },
+  { label: 'L', value: '20px' },
+  { label: 'XL', value: '24px' },
+  { label: '2XL', value: '30px' },
+  { label: '3XL', value: '36px' },
+  { label: '4XL', value: '48px' },
 ];
 
 export interface UnifiedToolbarStyles {
@@ -249,15 +250,37 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     onStyleChange?.({ fontStyle: styles.fontStyle === 'italic' ? 'normal' : 'italic' });
   };
 
-  const currentFontSize = fontSizes.find(f => f.value === styles.fontSize)?.label || 'M';
+  // Parse current font size - handle both preset names and pixel values
+  const getCurrentFontSizeLabel = () => {
+    const fs = styles.fontSize;
+    if (!fs) return 'M';
+    // Check direct pixel match first
+    const directMatch = fontSizes.find(f => f.value === fs);
+    if (directMatch) return directMatch.label;
+    // Parse numeric pixel value to find closest match
+    const numericValue = parseInt(fs.replace('px', ''), 10);
+    if (!isNaN(numericValue)) {
+      // Find closest preset
+      const closest = fontSizes.reduce((prev, curr) => {
+        const prevVal = parseInt(prev.value.replace('px', ''), 10);
+        const currVal = parseInt(curr.value.replace('px', ''), 10);
+        return Math.abs(currVal - numericValue) < Math.abs(prevVal - numericValue) ? curr : prev;
+      });
+      return closest.label;
+    }
+    // Handle legacy preset names
+    const presetMap: Record<string, string> = { 'sm': 'S', 'md': 'M', 'lg': 'L', 'xl': 'XL', '2xl': '2XL', '3xl': '3XL', '4xl': '4XL' };
+    return presetMap[fs] || 'M';
+  };
+  const currentFontSize = getCurrentFontSizeLabel();
 
-  // Compact button classes - visible by default
+  // Compact button classes - FULLY VISIBLE (not faded)
   const btnClass = cn(
     "flex items-center justify-center transition-all duration-100",
     "min-w-[32px] min-h-[32px] p-1 rounded-md",
     "active:scale-95"
   );
-  const btnInactive = "text-white/80 hover:text-white hover:bg-[hsl(315,85%,58%)/0.15]";
+  const btnInactive = "text-white hover:bg-[hsl(315,85%,58%)/0.2]";
   const btnActive = "bg-[hsl(315,85%,58%)] text-white";
 
   const toolbarContent = (
