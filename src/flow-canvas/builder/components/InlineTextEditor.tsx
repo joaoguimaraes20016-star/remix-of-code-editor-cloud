@@ -347,14 +347,24 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       inlineStyles.fontFamily = styles.fontFamily;
     }
 
-    // Font size
-    // - Presets (sm/md/lg/...) are applied via Tailwind classes in getStyleClasses()
-    // - Any custom value like "48px" / "2rem" must be applied inline
+    // Font size - apply as inline style for pixel values (Tailwind classes handle presets)
     if (styles.fontSize) {
       const presetSizes = new Set(['sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl']);
       if (!presetSizes.has(styles.fontSize)) {
         inlineStyles.fontSize = styles.fontSize;
       }
+    }
+
+    // Font weight - ALWAYS apply as inline style for reliability
+    // (Tailwind classes are backup but inline takes precedence)
+    if (styles.fontWeight) {
+      const weightMap: Record<string, number> = { light: 300, normal: 400, medium: 500, semibold: 600, bold: 700, black: 900 };
+      inlineStyles.fontWeight = weightMap[styles.fontWeight] || 400;
+    }
+
+    // Font style (italic)
+    if (styles.fontStyle === 'italic') {
+      inlineStyles.fontStyle = 'italic';
     }
 
     // When editing with gradient, apply gradient styles to the container div
