@@ -158,7 +158,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const [colorOpen, setColorOpen] = useState(false);
   const [colorTab, setColorTab] = useState<'background' | 'text' | 'gradient'>('text');
 
-  // Calculate position when selected
+  // Smart positioning like Framer - with generous breathing room
   useEffect(() => {
     if (!isSelected || !targetRef?.current) return;
     
@@ -166,40 +166,67 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
       const rect = targetRef.current?.getBoundingClientRect();
       if (!rect) return;
       
-      const toolbarHeight = 44;
-      const offset = 8;
-      const padding = 12;
+      const toolbarHeight = 48; // Slightly taller for breathing room
+      const topOffset = 16; // More generous offset from element (like Framer)
+      const bottomOffset = 12;
+      const viewportPadding = 16;
+      const minTopSpace = 80; // Ensure room for section labels + block badges above
       
-      let top = rect.top - toolbarHeight - offset;
+      let top: number;
       let placement: 'top' | 'bottom' = 'top';
       
-      // If would go above viewport, place below
-      if (top < padding) {
-        top = rect.bottom + offset;
+      // Check if there's enough room above (accounting for section labels, badges, etc.)
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      
+      if (spaceAbove >= minTopSpace) {
+        // Place above with generous spacing
+        top = rect.top - toolbarHeight - topOffset;
+        placement = 'top';
+      } else if (spaceBelow >= toolbarHeight + bottomOffset + viewportPadding) {
+        // Place below if not enough room above
+        top = rect.bottom + bottomOffset;
         placement = 'bottom';
+      } else {
+        // Last resort: place at minimum safe distance from top
+        top = Math.max(viewportPadding, rect.top - toolbarHeight - topOffset);
+        placement = 'top';
       }
       
-      // Center horizontally, clamped to viewport
-      let left = rect.left + rect.width / 2;
-      const toolbarWidth = toolbarRef.current?.offsetWidth || 280;
-      const halfWidth = toolbarWidth / 2;
+      // Ensure never goes above viewport
+      top = Math.max(viewportPadding, top);
       
-      if (left - halfWidth < padding) {
-        left = halfWidth + padding;
-      } else if (left + halfWidth > window.innerWidth - padding) {
-        left = window.innerWidth - halfWidth - padding;
+      // Center horizontally with smart edge clamping
+      const toolbarWidth = toolbarRef.current?.offsetWidth || 320;
+      const halfWidth = toolbarWidth / 2;
+      let left = rect.left + rect.width / 2;
+      
+      // Clamp to viewport edges with padding
+      if (left - halfWidth < viewportPadding) {
+        left = halfWidth + viewportPadding;
+      } else if (left + halfWidth > window.innerWidth - viewportPadding) {
+        left = window.innerWidth - halfWidth - viewportPadding;
       }
       
       setPosition({ top, left, placement });
     };
     
     updatePosition();
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
+    
+    // Use requestAnimationFrame for smoother updates
+    let rafId: number;
+    const throttledUpdate = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updatePosition);
+    };
+    
+    window.addEventListener('scroll', throttledUpdate, true);
+    window.addEventListener('resize', throttledUpdate);
     
     return () => {
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', throttledUpdate, true);
+      window.removeEventListener('resize', throttledUpdate);
     };
   }, [isSelected, targetRef]);
 
@@ -269,10 +296,14 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const isBgGradient = styles.fillType === 'gradient';
   const isBgNone = styles.fillType === 'none' || (!styles.backgroundColor && !styles.gradient && styles.fillType !== 'solid' && styles.fillType !== 'gradient');
 
-  // Touch-friendly button classes (min 44px tap target)
-  const btnClass = "min-w-[44px] min-h-[44px] sm:min-w-[32px] sm:min-h-[32px] p-2 sm:p-1.5 rounded-lg sm:rounded-md transition-colors flex items-center justify-center";
-  const btnInactive = "text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-white/10 active:bg-white/20";
-  const btnActive = "bg-[hsl(var(--builder-accent))] text-white";
+  // Touch-friendly button classes (min 44px tap target on mobile, 36px on desktop)
+  const btnClass = cn(
+    "flex items-center justify-center transition-all duration-150",
+    "min-w-[44px] min-h-[44px] p-2 rounded-lg", // Mobile
+    "sm:min-w-[36px] sm:min-h-[36px] sm:p-1.5 sm:rounded-md" // Desktop
+  );
+  const btnInactive = "text-white/60 hover:text-white hover:bg-white/10 active:bg-white/20 active:scale-95";
+  const btnActive = "bg-[hsl(var(--builder-accent))] text-white shadow-sm";
 
   const toolbarContent = (
     <TooltipProvider delayDuration={500}>
@@ -283,12 +314,15 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.12, ease: 'easeOut' }}
         className={cn(
-          'flex items-center gap-0.5 px-1.5 py-1 rounded-xl',
-          'bg-[hsl(220,13%,12%)] border border-white/10',
-          'shadow-xl shadow-black/50',
+          'flex items-center px-2 py-1.5 rounded-2xl',
+          'bg-[hsl(220,10%,10%)]/95 backdrop-blur-xl',
+          'border border-white/[0.08]',
+          'shadow-2xl shadow-black/60',
           'pointer-events-auto',
+          // Gap between items
+          'gap-1 sm:gap-0.5',
           // Mobile: full width at bottom
-          isMobile && 'w-full flex-wrap justify-center gap-1'
+          isMobile && 'w-full flex-wrap justify-center gap-1.5 py-2'
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -585,17 +619,28 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     </TooltipProvider>
   );
 
-  // On mobile, render at bottom of screen
+  // On mobile, render as floating bottom bar with better styling
   if (isMobile && portalContainer) {
     return createPortal(
       <AnimatePresence>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="fixed bottom-0 left-0 right-0 p-2 pointer-events-auto safe-area-bottom bg-[hsl(220,13%,8%)] border-t border-white/10"
+          initial={{ opacity: 0, y: 40, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 40, scale: 0.95 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+          className={cn(
+            "fixed bottom-4 left-4 right-4 pointer-events-auto",
+            "bg-[hsl(220,10%,10%)]/95 backdrop-blur-xl",
+            "border border-white/[0.08] rounded-2xl",
+            "shadow-2xl shadow-black/60",
+            "safe-area-bottom"
+          )}
         >
-          {toolbarContent}
+          <div className="p-3">
+            {toolbarContent}
+          </div>
+          {/* Drag handle indicator */}
+          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/20 rounded-full" />
         </motion.div>
       </AnimatePresence>,
       portalContainer

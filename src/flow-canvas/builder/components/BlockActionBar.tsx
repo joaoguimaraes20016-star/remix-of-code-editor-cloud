@@ -70,7 +70,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
   return (
     <AnimatePresence>
       {isSelected && (
-        <TooltipProvider delayDuration={300}>
+        <TooltipProvider delayDuration={500}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9, x: position === 'left' ? -8 : 8 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -78,10 +78,11 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
             transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
             className={cn(
               'absolute',
-              position === 'left' ? 'left-2 top-1/2' : 'right-2 top-1/2',
-              'flex flex-col gap-0.5 p-1 rounded-lg',
-              'bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))]',
-              'shadow-lg z-[60] pointer-events-auto'
+              position === 'left' ? 'left-3 top-1/2' : 'right-3 top-1/2',
+              'flex flex-col gap-1 p-1.5 rounded-xl',
+              'bg-[hsl(220,10%,10%)]/95 backdrop-blur-xl',
+              'border border-white/[0.08]',
+              'shadow-2xl shadow-black/50 z-[60] pointer-events-auto'
             )}
             style={{ transform: 'translateY(-50%)' }}
           >
@@ -91,9 +92,9 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                 <button
                   {...(dragHandleProps?.attributes || {})}
                   {...(dragHandleProps?.listeners || {})}
-                  className="p-1.5 rounded bg-[hsl(var(--builder-accent)/0.1)] text-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.2)] cursor-grab active:cursor-grabbing transition-colors"
+                  className="p-2 rounded-lg bg-[hsl(var(--builder-accent))]/20 text-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent))]/30 cursor-grab active:cursor-grabbing transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
                 >
-                  <GripVertical size={14} />
+                  <GripVertical size={16} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side={tooltipSide}>
@@ -101,7 +102,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            <div className="w-full h-px bg-[hsl(var(--builder-border))]" />
+            <div className="w-full h-px bg-white/10" />
 
             {/* Move Up */}
             <Tooltip>
@@ -110,13 +111,13 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                   onClick={onMoveUp}
                   disabled={!canMoveUp}
                   className={cn(
-                    'p-1.5 rounded transition-colors',
+                    'p-2 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center',
                     canMoveUp 
-                      ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]' 
-                      : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-dim))] cursor-not-allowed opacity-50'
+                      ? 'text-white/60 hover:text-white hover:bg-white/10 active:scale-95' 
+                      : 'text-white/20 cursor-not-allowed'
                   )}
                 >
-                  <ChevronUp size={14} />
+                  <ChevronUp size={16} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side={tooltipSide}>
@@ -131,13 +132,13 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                   onClick={onMoveDown}
                   disabled={!canMoveDown}
                   className={cn(
-                    'p-1.5 rounded transition-colors',
+                    'p-2 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center',
                     canMoveDown 
-                      ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]' 
-                      : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-dim))] cursor-not-allowed opacity-50'
+                      ? 'text-white/60 hover:text-white hover:bg-white/10 active:scale-95' 
+                      : 'text-white/20 cursor-not-allowed'
                   )}
                 >
-                  <ChevronDown size={14} />
+                  <ChevronDown size={16} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side={tooltipSide}>
@@ -145,20 +146,20 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            <div className="w-full h-px bg-[hsl(var(--builder-border))]" />
+            <div className="w-full h-px bg-white/10" />
 
             {/* Duplicate */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={onDuplicate}
-                  className="p-1.5 rounded bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))] transition-colors"
+                  className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 active:scale-95 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
                 >
-                  <Copy size={14} />
+                  <Copy size={16} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side={tooltipSide}>
-                <p>Duplicate (Cmd+D)</p>
+                <p>Duplicate</p>
               </TooltipContent>
             </Tooltip>
 
@@ -167,9 +168,9 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <TooltipTrigger asChild>
                 <button
                   onClick={onDelete}
-                  className="p-1.5 rounded bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-error))] hover:bg-[hsl(var(--builder-error)/0.15)] transition-colors"
+                  className="p-2 rounded-lg text-white/60 hover:text-red-400 hover:bg-red-500/20 active:scale-95 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side={tooltipSide}>
@@ -177,45 +178,45 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            <div className="w-full h-px bg-[hsl(var(--builder-border))]" />
+            <div className="w-full h-px bg-white/10" />
 
             {/* More Actions */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1.5 rounded bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))] transition-colors">
-                  <MoreHorizontal size={14} />
+                <button className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 active:scale-95 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center">
+                  <MoreHorizontal size={16} />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 side={tooltipSide}
-                className="bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
+                className="bg-[hsl(220,10%,10%)]/95 backdrop-blur-xl border-white/[0.08]"
               >
                 <DropdownMenuItem 
                   onClick={onAddAbove}
-                  className="text-[hsl(var(--builder-text))] focus:bg-[hsl(var(--builder-surface-hover))]"
+                  className="text-white focus:bg-white/10"
                 >
                   <Plus size={14} className="mr-2" />
                   Add block above
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={onAddBelow}
-                  className="text-[hsl(var(--builder-text))] focus:bg-[hsl(var(--builder-surface-hover))]"
+                  className="text-white focus:bg-white/10"
                 >
                   <Plus size={14} className="mr-2" />
                   Add block below
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-[hsl(var(--builder-border))]" />
+                <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem 
                   onClick={onDuplicate}
-                  className="text-[hsl(var(--builder-text))] focus:bg-[hsl(var(--builder-surface-hover))]"
+                  className="text-white focus:bg-white/10"
                 >
                   <Copy size={14} className="mr-2" />
                   Duplicate
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-[hsl(var(--builder-border))]" />
+                <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem 
                   onClick={onDelete}
-                  className="text-[hsl(var(--builder-error))] focus:bg-[hsl(var(--builder-error)/0.1)]"
+                  className="text-red-400 focus:bg-red-500/20"
                 >
                   <Trash2 size={14} className="mr-2" />
                   Delete block
