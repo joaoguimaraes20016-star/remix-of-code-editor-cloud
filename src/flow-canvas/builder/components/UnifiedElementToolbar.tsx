@@ -225,6 +225,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     };
   }, [isSelected, targetRef]);
 
+  // Remember last non-bold weight so toggling bold doesn't nuke presets like 'semibold'
+  const lastNonBoldWeightRef = useRef<UnifiedToolbarStyles['fontWeight']>('normal');
+
   // Element type checks - simplified
   const isTextElement = ['heading', 'text'].includes(elementType);
   const isImageElement = ['image'].includes(elementType);
@@ -246,9 +249,6 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const handleFontSizeChange = (fontSize: string) => {
     onStyleChange?.({ fontSize });
   };
-
-  // Remember last non-bold weight so toggling bold doesn't nuke presets like 'semibold'
-  const lastNonBoldWeightRef = useRef<UnifiedToolbarStyles['fontWeight']>('normal');
 
   const toggleBold = () => {
     const current = styles.fontWeight || 'normal';
