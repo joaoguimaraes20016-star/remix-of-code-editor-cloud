@@ -71,6 +71,11 @@ interface UnifiedElementToolbarProps {
   targetRef?: React.RefObject<HTMLElement>;
   /** Device mode from builder - controls mobile layout */
   deviceMode?: 'desktop' | 'tablet' | 'mobile';
+  /** dnd-kit drag handle props (attributes + listeners) */
+  dragHandleProps?: {
+    attributes?: Record<string, any>;
+    listeners?: Record<string, any>;
+  };
 }
 
 // Hook to get portal container
@@ -117,6 +122,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   hidden = false,
   targetRef,
   deviceMode = 'desktop',
+  dragHandleProps,
 }, ref) => {
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const [position, setPosition] = useState({ top: 0, left: 0, placement: 'top' as 'top' | 'bottom' });
@@ -241,9 +247,19 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     onStyleChange?.({ fontSize });
   };
 
+  // Remember last non-bold weight so toggling bold doesn't nuke presets like 'semibold'
+  const lastNonBoldWeightRef = useRef<UnifiedToolbarStyles['fontWeight']>('normal');
+
   const toggleBold = () => {
-    const newWeight = styles.fontWeight === 'bold' ? 'normal' : 'bold';
-    onStyleChange?.({ fontWeight: newWeight });
+    const current = styles.fontWeight || 'normal';
+    const isBoldLike = current === 'bold' || current === 'black';
+
+    if (!isBoldLike) {
+      lastNonBoldWeightRef.current = current;
+      onStyleChange?.({ fontWeight: 'bold' });
+    } else {
+      onStyleChange?.({ fontWeight: lastNonBoldWeightRef.current || 'normal' });
+    }
   };
 
   const toggleItalic = () => {
@@ -290,7 +306,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         initial={{ opacity: 0, scale: 0.95, y: 4 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.12 }}
+        transition={{ type: 'spring', stiffness: 520, damping: 38 }}
         className={cn(
           'flex items-center px-1 py-0.5 rounded-lg',
           'bg-[hsl(220,10%,10%)] backdrop-blur-md',
@@ -301,9 +317,16 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle */}
-        <div className={cn(btnClass, btnInactive, 'cursor-grab active:cursor-grabbing')}>
+        <button
+          type="button"
+          className={cn(btnClass, btnInactive, 'cursor-grab active:cursor-grabbing')}
+          onPointerDown={(e) => e.stopPropagation()}
+          {...(dragHandleProps?.attributes || {})}
+          {...(dragHandleProps?.listeners || {})}
+          aria-label="Drag"
+        >
           <GripVertical size={14} />
-        </div>
+        </button>
 
         {/* Typography Controls - Compact */}
         {showTypography && (

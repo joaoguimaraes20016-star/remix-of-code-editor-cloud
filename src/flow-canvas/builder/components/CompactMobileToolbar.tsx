@@ -169,7 +169,14 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
       {/* Main actions row */}
       <div className="flex items-center gap-1 p-2">
         {/* Drag handle */}
-        <button className={cn(btnClass, btnInactive, 'cursor-grab')}>
+        <button
+          type="button"
+          className={cn(btnClass, btnInactive, 'cursor-grab')}
+          onPointerDown={(e) => e.stopPropagation()}
+          {...((styles as any)?.dragHandleProps?.attributes || {})}
+          {...((styles as any)?.dragHandleProps?.listeners || {})}
+          aria-label="Drag"
+        >
           <GripVertical size={16} />
         </button>
 
@@ -177,8 +184,17 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
         {showTypography && (
           <>
             <button
-              onClick={() => onStyleChange?.({ fontWeight: styles.fontWeight === 'bold' ? 'normal' : 'bold' })}
-              className={cn(btnClass, styles.fontWeight === 'bold' ? btnActive : btnInactive)}
+              onClick={() => {
+                const current = styles.fontWeight || 'normal';
+                const isBoldLike = current === 'bold' || current === 'black';
+                const prev = ((styles as any).__lastNonBoldWeight as string) || 'normal';
+                if (!isBoldLike) {
+                  onStyleChange?.({ fontWeight: 'bold', __lastNonBoldWeight: current } as any);
+                } else {
+                  onStyleChange?.({ fontWeight: prev } as any);
+                }
+              }}
+              className={cn(btnClass, (styles.fontWeight === 'bold' || styles.fontWeight === 'black') ? btnActive : btnInactive)}
             >
               <Bold size={16} />
             </button>
