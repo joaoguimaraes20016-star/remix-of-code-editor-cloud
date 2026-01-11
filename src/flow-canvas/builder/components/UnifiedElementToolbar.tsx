@@ -251,13 +251,13 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
 
   const currentFontSize = fontSizes.find(f => f.value === styles.fontSize)?.label || 'M';
 
-  // Compact button classes - more visible by default
+  // Compact button classes - visible by default
   const btnClass = cn(
     "flex items-center justify-center transition-all duration-100",
     "min-w-[32px] min-h-[32px] p-1 rounded-md",
     "active:scale-95"
   );
-  const btnInactive = "text-white/90 hover:text-white hover:bg-[hsl(315,85%,58%)/0.15]";
+  const btnInactive = "text-white/80 hover:text-white hover:bg-[hsl(315,85%,58%)/0.15]";
   const btnActive = "bg-[hsl(315,85%,58%)] text-white";
 
   const toolbarContent = (
@@ -269,19 +269,22 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.12 }}
         className={cn(
-          'flex items-center px-1.5 py-1 rounded-lg',
-          'bg-[hsl(220,10%,10%)]/98 backdrop-blur-md',
+          'flex items-center px-1 py-0.5 rounded-lg',
+          'bg-[hsl(220,10%,10%)] backdrop-blur-md',
           'border border-[hsl(315,85%,58%)/0.2]',
-          'shadow-lg shadow-black/50',
+          'shadow-lg shadow-black/40',
           'pointer-events-auto gap-0.5'
         )}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag Handle */}
+        <div className={cn(btnClass, btnInactive, 'cursor-grab active:cursor-grabbing')}>
+          <GripVertical size={14} />
+        </div>
 
         {/* Typography Controls - Compact */}
         {showTypography && (
           <>
-            <div className="w-px h-5 bg-white/10" />
 
             {/* Font Size Quick Select */}
             <Popover>
