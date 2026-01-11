@@ -317,13 +317,27 @@
   }
 
   /* Device frame styles - background comes from inline styles */
+  /* IMPORTANT: overflow-visible allows toolbars to render outside frame bounds */
   .device-frame {
-    @apply relative rounded-2xl overflow-hidden;
+    @apply relative rounded-2xl;
+    /* Allow toolbar overflow - toolbars now use portals but this helps with transitions */
+    overflow: visible;
+    /* Clip only the inner content, not positioned elements */
     /* Don't set background here - let inline styles control it */
     box-shadow: 
       0 0 0 1px hsl(var(--canvas-frame-border)),
       0 25px 50px -12px rgba(0, 0, 0, 0.5),
       0 0 80px -20px hsl(var(--builder-accent) / 0.15);
+  }
+  
+  /* Inner content wrapper clips overflow but allows positioned toolbars */
+  .device-frame > .device-frame-content {
+    @apply overflow-hidden rounded-2xl;
+  }
+  
+  /* Safe area padding for mobile bottom toolbars */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
   /* Dark theme for canvas preview content */

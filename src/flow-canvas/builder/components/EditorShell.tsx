@@ -27,6 +27,9 @@ import {
 } from './modals';
 import type { TextPreset } from './modals';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { PanelLeftClose, PanelRightClose, Menu, X } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 // Multi-selection state type
 interface MultiSelection {
@@ -36,6 +39,20 @@ interface MultiSelection {
 
 // Save status type
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+
+// Hook to detect mobile viewport
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  
+  return isMobile;
+}
 
 interface EditorShellProps {
   initialState: Page;
@@ -58,6 +75,13 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   saveStatus = 'idle',
   lastSavedAt = null,
 }) => {
+  const isMobile = useIsMobile();
+  
+  // Panel visibility state
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [mobileLeftOpen, setMobileLeftOpen] = useState(false);
+  const [mobileRightOpen, setMobileRightOpen] = useState(false);
   // Use history hook for undo/redo
   const { page, setPage, undo, redo, canUndo, canRedo } = useHistory(initialState);
   
@@ -936,10 +960,28 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Left Panel */}
-        {!previewMode && (
-          <div className="w-60 shrink-0 h-full overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0 relative">
+        {/* Mobile panel toggles */}
+        {isMobile && !previewMode && (
+          <div className="absolute top-2 left-2 z-50 flex gap-2">
+            <button
+              onClick={() => setMobileLeftOpen(true)}
+              className="p-2 rounded-lg bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text-muted))]"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+        )}
+        
+        {/* Left Panel - Desktop */}
+        {!previewMode && !isMobile && leftPanelOpen && (
+          <div className="w-60 shrink-0 h-full overflow-hidden relative">
+            <button
+              onClick={() => setLeftPanelOpen(false)}
+              className="absolute top-2 right-2 z-10 p-1 rounded hover:bg-white/10 text-[hsl(var(--builder-text-muted))]"
+            >
+              <PanelLeftClose size={14} />
+            </button>
             <LeftPanel
               steps={page.steps}
               activeStepId={activeStepId}
@@ -956,6 +998,28 @@ export const EditorShell: React.FC<EditorShellProps> = ({
               onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
             />
           </div>
+        )}
+        
+        {/* Left Panel - Mobile Sheet */}
+        {isMobile && !previewMode && (
+          <Sheet open={mobileLeftOpen} onOpenChange={setMobileLeftOpen}>
+            <SheetContent side="left" className="w-72 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]">
+              <LeftPanel
+                steps={page.steps}
+                activeStepId={activeStepId}
+                selection={selection}
+                onStepSelect={(id) => { handleStepSelect(id); setMobileLeftOpen(false); }}
+                onAddStep={handleAddStep}
+                onDeleteStep={handleDeleteStep}
+                onDuplicateStep={handleDuplicateStep}
+                onAddBlankStep={handleAddBlankStep}
+                onReorderSteps={handleReorderSteps}
+                onSelectBlock={(id) => { handleSelectBlock(id); setMobileLeftOpen(false); }}
+                onSelectElement={(id) => { handleSelectElement(id); setMobileLeftOpen(false); }}
+                onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
+              />
+            </SheetContent>
+          </Sheet>
         )}
 
         {/* Canvas */}
