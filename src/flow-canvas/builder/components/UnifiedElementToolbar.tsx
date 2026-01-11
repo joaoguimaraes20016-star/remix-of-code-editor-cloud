@@ -9,10 +9,7 @@ import {
   GripVertical,
   Bold,
   Italic,
-  Type,
-  Palette,
   ChevronDown,
-  Sparkles,
   MoreHorizontal,
   X,
 } from 'lucide-react';
@@ -27,18 +24,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { gradientToCSS, GradientEditor, defaultGradient, cloneGradient } from './modals';
-import type { GradientValue } from './modals';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
-
-// Color presets
-const colorPresets = [
-  '#FFFFFF', '#F9FAFB', '#E5E7EB', '#9CA3AF', '#6B7280', '#374151',
-  '#111827', '#000000', '#EF4444', '#F97316', '#F59E0B', '#FCD34D',
-  '#10B981', '#14B8A6', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6',
-  '#A855F7', '#D946EF', '#EC4899', '#F472B6',
-];
 
 // Font sizes
 const fontSizes = [
@@ -48,24 +35,6 @@ const fontSizes = [
   { label: 'XL', value: 'xl' },
   { label: '2XL', value: '2xl' },
   { label: '3XL', value: '3xl' },
-  { label: '4XL', value: '4xl' },
-  { label: '5XL', value: '5xl' },
-];
-
-// Display fonts
-const displayFonts = [
-  { label: 'Inherit', value: 'inherit' },
-  { label: 'Oswald', value: 'Oswald', isDisplay: true },
-  { label: 'Anton', value: 'Anton', isDisplay: true },
-  { label: 'Bebas Neue', value: 'Bebas Neue', isDisplay: true },
-  { label: 'Archivo Black', value: 'Archivo Black', isDisplay: true },
-  { label: 'Space Grotesk', value: 'Space Grotesk', isDisplay: true },
-  { label: 'Syne', value: 'Syne', isDisplay: true },
-  { label: 'Inter', value: 'Inter' },
-  { label: 'DM Sans', value: 'DM Sans' },
-  { label: 'Poppins', value: 'Poppins' },
-  { label: 'Montserrat', value: 'Montserrat' },
-  { label: 'Playfair', value: 'Playfair Display' },
 ];
 
 export interface UnifiedToolbarStyles {
@@ -78,12 +47,12 @@ export interface UnifiedToolbarStyles {
   textColor?: string;
   textOpacity?: number;
   textFillType?: 'solid' | 'gradient';
-  textGradient?: GradientValue;
+  textGradient?: { type: string; angle?: number; stops: Array<{ color: string; position: number }> };
   textShadow?: string;
   backgroundColor?: string;
   backgroundOpacity?: number;
   fillType?: 'solid' | 'gradient' | 'none';
-  gradient?: GradientValue;
+  gradient?: { type: string; angle?: number; stops: Array<{ color: string; position: number }> };
 }
 
 interface UnifiedElementToolbarProps {
@@ -249,13 +218,15 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     };
   }, [isSelected, targetRef]);
 
-  // Element type checks
+  // Element type checks - simplified
   const isTextElement = ['heading', 'text'].includes(elementType);
+  const isImageElement = ['image'].includes(elementType);
   const isLayoutElement = ['divider', 'spacer'].includes(elementType);
   const showTypography = isTextElement;
-  const showAlignment = ['heading', 'text', 'button', 'input', 'select', 'checkbox', 'radio'].includes(elementType);
+  const showAlignment = ['heading', 'text', 'button'].includes(elementType);
   const showTextColor = isTextElement;
-  const showBackgroundColor = !isLayoutElement;
+  // Only show color for buttons - images/logos don't need color picker
+  const showBackgroundColor = ['button'].includes(elementType);
 
   // Don't render until micro-delay has passed (prevents flicker)
   if (hidden || !isSelected || !showDelayed) return null;
@@ -278,140 +249,61 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     onStyleChange?.({ fontStyle: styles.fontStyle === 'italic' ? 'normal' : 'italic' });
   };
 
-  const handleTextColorChange = (color: string) => {
-    onStyleChange?.({ textColor: color, textFillType: 'solid' });
-  };
-
-  const handleTextGradientChange = (gradient: GradientValue) => {
-    onStyleChange?.({ textGradient: cloneGradient(gradient), textFillType: 'gradient' });
-  };
-
-  const handleBackgroundColorChange = (color: string) => {
-    onStyleChange?.({ backgroundColor: color, fillType: 'solid' });
-  };
-
-  const handleBackgroundGradientChange = (gradient: GradientValue) => {
-    onStyleChange?.({ gradient: cloneGradient(gradient), fillType: 'gradient' });
-  };
-
-  const handleBackgroundFillTypeChange = (fillType: 'solid' | 'gradient' | 'none') => {
-    if (fillType === 'none') {
-      onStyleChange?.({ fillType: 'none', backgroundColor: undefined, gradient: undefined });
-    } else if (fillType === 'gradient') {
-      const gradient = styles.gradient || defaultGradient;
-      onStyleChange?.({ fillType: 'gradient', gradient: cloneGradient(gradient) });
-    } else {
-      const color = styles.backgroundColor || '#8B5CF6';
-      onStyleChange?.({ fillType: 'solid', backgroundColor: color });
-    }
-  };
-
-  const handleClearBackground = () => {
-    onStyleChange?.({ fillType: 'none', backgroundColor: undefined, gradient: undefined, backgroundOpacity: undefined });
-  };
-
-  const currentFont = displayFonts.find(f => f.value === styles.fontFamily)?.label || 'Inherit';
   const currentFontSize = fontSizes.find(f => f.value === styles.fontSize)?.label || 'M';
-  const isTextGradient = styles.textFillType === 'gradient';
-  const isBgGradient = styles.fillType === 'gradient';
-  const isBgNone = styles.fillType === 'none' || (!styles.backgroundColor && !styles.gradient && styles.fillType !== 'solid' && styles.fillType !== 'gradient');
 
-  // Compact button classes - touch-friendly sizing with brand colors
+  // Compact button classes
   const btnClass = cn(
-    "flex items-center justify-center transition-all duration-150",
-    "min-w-[36px] min-h-[36px] p-1.5 rounded-md",
+    "flex items-center justify-center transition-all duration-100",
+    "min-w-[32px] min-h-[32px] p-1 rounded-md",
     "active:scale-95"
   );
-  const btnInactive = "text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.15] active:bg-[hsl(315,85%,58%)/0.25]";
-  const btnActive = "bg-[hsl(275,70%,55%)] text-white shadow-sm";
+  const btnInactive = "text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.12]";
+  const btnActive = "bg-[hsl(315,85%,58%)] text-white";
 
   const toolbarContent = (
-    <TooltipProvider delayDuration={500}>
+    <TooltipProvider delayDuration={400}>
       <motion.div
         ref={mergedRef}
-        initial={{ opacity: 0, scale: 0.92, y: position.placement === 'top' ? 8 : -8 }}
+        initial={{ opacity: 0, scale: 0.95, y: 4 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92 }}
-        transition={{ 
-          duration: 0.2, 
-          ease: [0.32, 0.72, 0, 1], // Smooth spring-like curve
-        }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.12 }}
         className={cn(
-          'flex items-center px-1.5 py-1 rounded-xl',
-          'bg-[hsl(220,8%,8%)] backdrop-blur-xl',
+          'flex items-center px-1 py-0.5 rounded-lg',
+          'bg-[hsl(220,10%,10%)]/95 backdrop-blur-md',
           'border border-[hsl(315,85%,58%)/0.15]',
-          'shadow-2xl shadow-black/60',
-          'pointer-events-auto',
-          'gap-0.5'
+          'shadow-lg shadow-black/40',
+          'pointer-events-auto gap-0.5'
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className={cn(btnClass, btnInactive, 'cursor-grab active:cursor-grabbing')}>
-              <GripVertical size={16} />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Drag to reorder</TooltipContent>
-        </Tooltip>
+        <div className={cn(btnClass, btnInactive, 'cursor-grab active:cursor-grabbing')}>
+          <GripVertical size={14} />
+        </div>
 
-        {/* Typography Controls */}
+        {/* Typography Controls - Compact */}
         {showTypography && (
           <>
-            <div className="w-px h-6 bg-white/10 hidden sm:block" />
+            <div className="w-px h-5 bg-white/10" />
 
-            {/* Font Family */}
-            <Popover open={fontOpen} onOpenChange={setFontOpen}>
-              <PopoverTrigger asChild>
-                <button className={cn(btnClass, btnInactive, 'gap-1 px-2')}>
-                  <Type size={16} />
-                  <span className="text-xs font-medium max-w-[60px] truncate hidden sm:inline">{currentFont}</span>
-                  <ChevronDown size={12} className="opacity-50" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-44 p-1 bg-[hsl(220,13%,12%)] border-white/10 max-h-[280px] overflow-y-auto"
-                sideOffset={8}
-              >
-                {displayFonts.map((font) => (
-                  <button
-                    key={font.value}
-                    onClick={() => handleFontFamilyChange(font.value)}
-                    className={cn(
-                      "w-full px-3 py-2 text-sm text-left rounded-lg transition-colors flex items-center justify-between",
-                      styles.fontFamily === font.value 
-                        ? btnActive
-                        : 'text-[hsl(var(--builder-text-muted))] hover:text-white hover:bg-white/10'
-                    )}
-                    style={{ fontFamily: font.value !== 'inherit' ? font.value : undefined }}
-                  >
-                    <span>{font.label}</span>
-                    {font.isDisplay && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10">Display</span>
-                    )}
-                  </button>
-                ))}
-              </PopoverContent>
-            </Popover>
-
-            {/* Font Size */}
+            {/* Font Size Quick Select */}
             <Popover>
               <PopoverTrigger asChild>
-                <button className={cn(btnClass, btnInactive, 'gap-0.5 px-2')}>
-                  <span className="text-sm font-bold">{currentFontSize}</span>
-                  <ChevronDown size={12} className="opacity-50" />
+                <button className={cn(btnClass, btnInactive, 'px-2 gap-0.5')}>
+                  <span className="text-xs font-semibold">{currentFontSize}</span>
+                  <ChevronDown size={10} className="opacity-50" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-1 bg-[hsl(220,13%,12%)] border-white/10" sideOffset={8}>
+              <PopoverContent className="w-auto p-1 bg-[hsl(220,12%,10%)] border-white/10" sideOffset={6}>
                 <div className="flex gap-0.5">
                   {fontSizes.map((size) => (
                     <button
                       key={size.value}
                       onClick={() => handleFontSizeChange(size.value)}
                       className={cn(
-                        "px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-                        styles.fontSize === size.value ? btnActive : 'text-[hsl(var(--builder-text-muted))] hover:text-white hover:bg-white/10'
+                        "px-2.5 py-1.5 text-xs font-medium rounded transition-colors",
+                        styles.fontSize === size.value ? btnActive : 'text-white/60 hover:text-white hover:bg-white/10'
                       )}
                     >
                       {size.label}
@@ -421,220 +313,58 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
               </PopoverContent>
             </Popover>
 
-            <div className="w-px h-6 bg-white/10 hidden sm:block" />
-
             {/* Bold */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={toggleBold} className={cn(btnClass, styles.fontWeight === 'bold' ? btnActive : btnInactive)}>
-                  <Bold size={16} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">Bold</TooltipContent>
-            </Tooltip>
+            <button onClick={toggleBold} className={cn(btnClass, styles.fontWeight === 'bold' ? btnActive : btnInactive)}>
+              <Bold size={14} />
+            </button>
 
             {/* Italic */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={toggleItalic} className={cn(btnClass, styles.fontStyle === 'italic' ? btnActive : btnInactive)}>
-                  <Italic size={16} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">Italic</TooltipContent>
-            </Tooltip>
-
-            {/* Color */}
-            <Popover open={colorOpen} onOpenChange={setColorOpen}>
-              <PopoverTrigger asChild>
-                <button className={cn(btnClass, btnInactive, 'relative')}>
-                  <Sparkles size={16} />
-                  <div 
-                    className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full"
-                    style={{ 
-                      background: isTextGradient && styles.textGradient 
-                        ? gradientToCSS(styles.textGradient) 
-                        : (styles.textColor || '#FFFFFF')
-                    }}
-                  />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-3 bg-[hsl(220,13%,12%)] border-white/10" sideOffset={8}>
-                <div className="space-y-3">
-                  {/* Tabs */}
-                  <div className="flex rounded-lg overflow-hidden border border-white/10">
-                    {showBackgroundColor && (
-                      <button
-                        onClick={() => setColorTab('background')}
-                        className={cn("flex-1 py-2 text-xs font-medium", colorTab === 'background' ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
-                      >Fill</button>
-                    )}
-                    {showTextColor && (
-                      <button
-                        onClick={() => setColorTab('text')}
-                        className={cn("flex-1 py-2 text-xs font-medium", colorTab === 'text' ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
-                      >Text</button>
-                    )}
-                    {showTextColor && (
-                      <button
-                        onClick={() => setColorTab('gradient')}
-                        className={cn("flex-1 py-2 text-xs font-medium", colorTab === 'gradient' ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}
-                      >Gradient</button>
-                    )}
-                  </div>
-
-                  {/* Text Color */}
-                  {colorTab === 'text' && showTextColor && (
-                    <div className="grid grid-cols-8 gap-1.5">
-                      {colorPresets.map((color) => (
-                        <button
-                          key={color}
-                          onClick={() => handleTextColorChange(color)}
-                          className={cn(
-                            "w-6 h-6 rounded-lg border transition-all",
-                            styles.textColor === color 
-                              ? 'ring-2 ring-[hsl(var(--builder-accent))] ring-offset-2 ring-offset-[hsl(220,13%,12%)]' 
-                              : 'border-white/10 hover:scale-110'
-                          )}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Background */}
-                  {colorTab === 'background' && showBackgroundColor && (
-                    <div className="space-y-2">
-                      <div className="flex rounded-lg overflow-hidden border border-white/10">
-                        <button onClick={handleClearBackground} className={cn("flex-1 py-1.5 text-xs", isBgNone ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}>None</button>
-                        <button onClick={() => handleBackgroundFillTypeChange('solid')} className={cn("flex-1 py-1.5 text-xs", !isBgNone && !isBgGradient ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}>Solid</button>
-                        <button onClick={() => handleBackgroundFillTypeChange('gradient')} className={cn("flex-1 py-1.5 text-xs", isBgGradient ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}>Gradient</button>
-                      </div>
-                      {!isBgNone && !isBgGradient && (
-                        <div className="grid grid-cols-8 gap-1.5">
-                          {colorPresets.map((color) => (
-                            <button
-                              key={color}
-                              onClick={() => handleBackgroundColorChange(color)}
-                              className={cn(
-                                "w-6 h-6 rounded-lg border transition-all",
-                                styles.backgroundColor === color 
-                                  ? 'ring-2 ring-[hsl(var(--builder-accent))] ring-offset-2 ring-offset-[hsl(220,13%,12%)]' 
-                                  : 'border-white/10 hover:scale-110'
-                              )}
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      {isBgGradient && (
-                        <GradientEditor value={styles.gradient || defaultGradient} onChange={handleBackgroundGradientChange} compact />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Gradient */}
-                  {colorTab === 'gradient' && showTextColor && (
-                    <GradientEditor
-                      value={styles.textGradient || defaultGradient}
-                      onChange={(gradient) => {
-                        handleTextGradientChange(gradient);
-                        onStyleChange?.({ textFillType: 'gradient' });
-                      }}
-                      compact
-                    />
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </>
-        )}
-
-        {/* Non-text elements color */}
-        {!showTypography && showBackgroundColor && (
-          <>
-            <div className="w-px h-6 bg-white/10" />
-            <Popover open={colorOpen} onOpenChange={setColorOpen}>
-              <PopoverTrigger asChild>
-                <button className={cn(btnClass, btnInactive)}>
-                  <Palette size={16} />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-3 bg-[hsl(220,13%,12%)] border-white/10" sideOffset={8}>
-                <div className="space-y-2">
-                  <div className="flex rounded-lg overflow-hidden border border-white/10">
-                    <button onClick={handleClearBackground} className={cn("flex-1 py-1.5 text-xs", isBgNone ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}>None</button>
-                    <button onClick={() => handleBackgroundFillTypeChange('solid')} className={cn("flex-1 py-1.5 text-xs", !isBgNone && !isBgGradient ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}>Solid</button>
-                    <button onClick={() => handleBackgroundFillTypeChange('gradient')} className={cn("flex-1 py-1.5 text-xs", isBgGradient ? btnActive : 'text-[hsl(var(--builder-text-muted))]')}>Gradient</button>
-                  </div>
-                  {!isBgNone && !isBgGradient && (
-                    <div className="grid grid-cols-8 gap-1.5">
-                      {colorPresets.map((color) => (
-                        <button
-                          key={color}
-                          onClick={() => handleBackgroundColorChange(color)}
-                          className={cn("w-6 h-6 rounded-lg border transition-all", styles.backgroundColor === color ? 'ring-2 ring-[hsl(var(--builder-accent))]' : 'border-white/10 hover:scale-110')}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  {isBgGradient && <GradientEditor value={styles.gradient || defaultGradient} onChange={handleBackgroundGradientChange} compact />}
-                </div>
-              </PopoverContent>
-            </Popover>
+            <button onClick={toggleItalic} className={cn(btnClass, styles.fontStyle === 'italic' ? btnActive : btnInactive)}>
+              <Italic size={14} />
+            </button>
           </>
         )}
 
         {/* Alignment */}
         {showAlignment && (
           <>
-            <div className="w-px h-6 bg-white/10 hidden sm:block" />
+            <div className="w-px h-5 bg-white/10" />
             <div className="flex">
               <button
                 onClick={(e) => { e.stopPropagation(); onAlignChange?.('left'); }}
                 className={cn(btnClass, 'rounded-r-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
               >
-                <AlignLeft size={16} />
+                <AlignLeft size={14} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onAlignChange?.('center'); }}
                 className={cn(btnClass, 'rounded-none', styles.textAlign === 'center' ? btnActive : btnInactive)}
               >
-                <AlignCenter size={16} />
+                <AlignCenter size={14} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onAlignChange?.('right'); }}
                 className={cn(btnClass, 'rounded-l-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
               >
-                <AlignRight size={16} />
+                <AlignRight size={14} />
               </button>
             </div>
           </>
         )}
 
-        <div className="w-px h-6 bg-white/10" />
+        <div className="w-px h-5 bg-white/10" />
 
         {/* Actions */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }} className={cn(btnClass, btnInactive)}>
-              <Copy size={16} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Duplicate</TooltipContent>
-        </Tooltip>
+        <button onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }} className={cn(btnClass, btnInactive)}>
+          <Copy size={14} />
+        </button>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-              className={cn(btnClass, 'text-[hsl(var(--builder-text-muted))] hover:text-red-400 hover:bg-red-500/20')}
-            >
-              <Trash2 size={16} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Delete</TooltipContent>
-        </Tooltip>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+          className={cn(btnClass, 'text-white/60 hover:text-red-400 hover:bg-red-500/15')}
+        >
+          <Trash2 size={14} />
+        </button>
       </motion.div>
     </TooltipProvider>
   );
