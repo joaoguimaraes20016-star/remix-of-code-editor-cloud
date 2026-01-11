@@ -97,6 +97,8 @@ interface UnifiedElementToolbarProps {
   hidden?: boolean;
   /** Target element ref for portal positioning */
   targetRef?: React.RefObject<HTMLElement>;
+  /** Device mode from builder - controls mobile layout */
+  deviceMode?: 'desktop' | 'tablet' | 'mobile';
 }
 
 // Hook to get portal container
@@ -142,11 +144,13 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   onDelete,
   hidden = false,
   targetRef,
+  deviceMode = 'desktop',
 }, ref) => {
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const [position, setPosition] = useState({ top: 0, left: 0, placement: 'top' as 'top' | 'bottom' });
   const portalContainer = usePortalContainer();
-  const isMobile = useIsMobile();
+  // Use deviceMode prop instead of window width - this respects the builder's device preview
+  const isMobilePreview = deviceMode === 'mobile';
   
   const mergedRef = (node: HTMLDivElement | null) => {
     toolbarRef.current = node;
@@ -322,7 +326,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
           // Gap between items
           'gap-1 sm:gap-0.5',
           // Mobile: full width at bottom
-          isMobile && 'w-full flex-wrap justify-center gap-1.5 py-2'
+          isMobilePreview && 'w-full flex-wrap justify-center gap-1.5 py-2'
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -620,7 +624,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   );
 
   // On mobile, render as floating bottom bar with better styling
-  if (isMobile && portalContainer) {
+  if (isMobilePreview && portalContainer) {
     return createPortal(
       <AnimatePresence>
         <motion.div

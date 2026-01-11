@@ -282,6 +282,13 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   // Animation replay ref for forcing reflow
   const elementRef = React.useRef<HTMLDivElement>(null);
   
+  // Wrapper ref for toolbar positioning - combines with dnd-kit's setNodeRef
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const combinedRef = React.useCallback((node: HTMLDivElement | null) => {
+    wrapperRef.current = node;
+    setNodeRef(node);
+  }, [setNodeRef]);
+  
   // Easing presets map
   const easingMap: Record<string, string> = {
     'ease': 'ease',
@@ -858,7 +865,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         
         return (
           <div 
-            ref={setNodeRef} 
+            ref={combinedRef} 
             style={{ ...style, ...layoutStyles }} 
             className={cn(baseClasses, 'relative', shadowClass)}
             {...hoverHandlers}
@@ -875,6 +882,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementType="heading"
                 elementLabel={`Heading ${level}`}
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 styles={{
                   fontFamily: element.props?.fontFamily as string,
                   fontSize: element.props?.fontSize as string,
@@ -1020,7 +1029,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         
         return (
           <div 
-            ref={setNodeRef} 
+            ref={combinedRef} 
             style={{ ...style, ...layoutStyles }} 
             className={cn(baseClasses, 'relative', shadowClass)}
             {...hoverHandlers}
@@ -1037,6 +1046,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementType="text"
                 elementLabel={isLogo ? 'Logo' : isFooterLogo ? 'Footer Logo' : isFooterHeading ? 'Footer Heading' : 'Text'}
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 styles={{
                   fontFamily: element.props?.fontFamily as string,
                   fontSize: element.props?.fontSize as string,
@@ -1197,7 +1208,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const useSizeClass = !element.styles?.padding && !isNavPill && !isFooterLink;
         
         return (
-          <div ref={setNodeRef} style={wrapperStyle} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={wrapperStyle} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1209,6 +1220,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementType="button"
                 elementLabel={isNavPill ? 'Nav Link' : isFooterLink ? 'Footer Link' : 'Button'}
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 styles={{
                   textAlign: buttonAlignment,
                   backgroundColor: effectiveBg,
@@ -1333,7 +1346,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1344,6 +1357,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="input"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 styles={{
                   textAlign: inputAlign as 'left' | 'center' | 'right',
                   backgroundColor: inputBg as string,
@@ -1417,7 +1432,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1428,6 +1443,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="checkbox"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1485,7 +1502,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1496,6 +1513,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="radio"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1542,7 +1561,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
 
       case 'select':
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1553,6 +1572,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="select"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1619,7 +1640,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         
         return (
           <div 
-            ref={setNodeRef} 
+            ref={combinedRef} 
             style={imageWrapperStyles} 
             className={cn(baseClasses, 'relative')}
             onDragOver={handleImageDragOver}
@@ -1636,6 +1657,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementId={element.id}
                 elementType="image"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1694,7 +1717,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         return (
-          <div ref={setNodeRef} style={videoWrapperStyles} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={videoWrapperStyles} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1706,6 +1729,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementType="video"
                 elementLabel="Video"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1741,7 +1766,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const dividerHeight = element.styles?.height || '1px';
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1753,6 +1778,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementType="divider"
                 elementLabel="Divider"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 styles={{ backgroundColor: dividerColor }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.backgroundColor) {
@@ -1780,7 +1807,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const spacerHeight = element.styles?.height || '48px';
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1792,6 +1819,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementType="spacer"
                 elementLabel="Spacer"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1816,7 +1845,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const iconColor = element.props?.color as string || (isDarkTheme ? '#9ca3af' : '#6b7280');
         
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1828,6 +1857,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementType="icon"
                 elementLabel="Icon"
                 isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
                 styles={{ textColor: iconColor }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.textColor) {
@@ -1858,9 +1889,21 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
 
       default:
         return (
-          <div ref={setNodeRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {/* Unified Toolbar */}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType={element.type}
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
             {/* Element drag handle integrated into toolbar */}
             <div 
               className={cn(
