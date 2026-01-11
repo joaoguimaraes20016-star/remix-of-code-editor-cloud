@@ -13,6 +13,8 @@ import {
   Palette,
   ChevronDown,
   Sparkles,
+  MoreHorizontal,
+  X,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -161,6 +163,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   const [fontOpen, setFontOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [colorTab, setColorTab] = useState<'background' | 'text' | 'gradient'>('text');
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   // Smart positioning like Framer - with generous breathing room
   useEffect(() => {
@@ -620,7 +623,133 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     </TooltipProvider>
   );
 
-  // Always use portal with calculated position (same for mobile & desktop - inline near element)
+  // Mobile compact 3-dot menu
+  const mobileCompactToolbar = (
+    <AnimatePresence mode="wait">
+      {!mobileExpanded ? (
+        <motion.button
+          key="collapsed"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.12 }}
+          onClick={(e) => { e.stopPropagation(); setMobileExpanded(true); }}
+          className={cn(
+            "flex items-center justify-center",
+            "w-9 h-9 rounded-full",
+            "bg-[hsl(220,10%,12%)]/98 backdrop-blur-xl",
+            "border border-white/10",
+            "shadow-lg shadow-black/30",
+            "text-white/80 hover:text-white",
+            "pointer-events-auto"
+          )}
+        >
+          <MoreHorizontal size={16} />
+        </motion.button>
+      ) : (
+        <motion.div
+          key="expanded"
+          initial={{ opacity: 0, scale: 0.9, width: 36 }}
+          animate={{ opacity: 1, scale: 1, width: 'auto' }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+          className={cn(
+            'flex items-center px-1 py-0.5 rounded-full',
+            'bg-[hsl(220,10%,12%)]/98 backdrop-blur-xl',
+            'border border-white/10',
+            'shadow-lg shadow-black/30',
+            'pointer-events-auto',
+            'gap-0.5'
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setMobileExpanded(false); }}
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', btnInactive)}
+          >
+            <X size={14} />
+          </button>
+
+          {showTypography && (
+            <>
+              <button 
+                onClick={toggleBold} 
+                className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', styles.fontWeight === 'bold' ? btnActive : btnInactive)}
+              >
+                <Bold size={14} />
+              </button>
+              <button 
+                onClick={toggleItalic} 
+                className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', styles.fontStyle === 'italic' ? btnActive : btnInactive)}
+              >
+                <Italic size={14} />
+              </button>
+            </>
+          )}
+
+          {showAlignment && (
+            <div className="flex">
+              <button
+                onClick={() => onAlignChange?.('left')}
+                className={cn(btnClass, 'w-7 h-8 min-w-[28px] rounded-r-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
+              >
+                <AlignLeft size={12} />
+              </button>
+              <button
+                onClick={() => onAlignChange?.('center')}
+                className={cn(btnClass, 'w-7 h-8 min-w-[28px] rounded-none', styles.textAlign === 'center' ? btnActive : btnInactive)}
+              >
+                <AlignCenter size={12} />
+              </button>
+              <button
+                onClick={() => onAlignChange?.('right')}
+                className={cn(btnClass, 'w-7 h-8 min-w-[28px] rounded-l-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
+              >
+                <AlignRight size={12} />
+              </button>
+            </div>
+          )}
+
+          <div className="w-px h-5 bg-white/10" />
+
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }} 
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', btnInactive)}
+          >
+            <Copy size={14} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px] text-white/60 hover:text-red-400 hover:bg-red-500/20')}
+          >
+            <Trash2 size={14} />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  // Use mobile compact toolbar for mobile preview mode
+  if (isMobilePreview && portalContainer && targetRef?.current) {
+    return createPortal(
+      <div
+        className="pointer-events-none"
+        style={{
+          position: 'fixed',
+          top: position.top,
+          left: position.left,
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+        }}
+      >
+        {mobileCompactToolbar}
+      </div>,
+      portalContainer
+    );
+  }
+
+  // Desktop: use portal with calculated position
   if (portalContainer && targetRef?.current) {
     return createPortal(
       <AnimatePresence>
@@ -648,7 +777,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         className="absolute z-[60] -top-10 left-1/2 -translate-x-1/2"
         style={{ pointerEvents: 'auto' }}
       >
-        {toolbarContent}
+        {isMobilePreview ? mobileCompactToolbar : toolbarContent}
       </div>
     </AnimatePresence>
   );
