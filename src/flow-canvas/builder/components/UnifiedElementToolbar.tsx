@@ -290,13 +290,14 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   };
   const currentFontSize = getCurrentFontSizeLabel();
 
-  // Compact button classes - ALWAYS FULLY VISIBLE, no opacity tricks
+  // Compact button classes - ALWAYS FULLY VISIBLE with clear contrast
   const btnClass = cn(
     "flex items-center justify-center transition-colors duration-75",
     "min-w-[32px] min-h-[32px] p-1.5 rounded-md",
-    "active:scale-95"
+    "active:scale-95 active:opacity-80"
   );
-  const btnInactive = "text-white/90 hover:text-white hover:bg-white/10";
+  // Use full white for inactive buttons - no opacity reduction
+  const btnInactive = "text-white hover:bg-white/15";
   const btnActive = "bg-[hsl(315,85%,58%)] text-white shadow-sm";
 
   const toolbarContent = (
@@ -317,16 +318,21 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle */}
-        <button
-          type="button"
-          className={cn(btnClass, 'text-white/60 hover:text-white hover:bg-white/10 cursor-grab active:cursor-grabbing')}
-          onPointerDown={(e) => e.stopPropagation()}
-          {...(dragHandleProps?.attributes || {})}
-          {...(dragHandleProps?.listeners || {})}
-          aria-label="Drag to reorder"
-        >
-          <GripVertical size={14} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={cn(btnClass, 'text-white/70 hover:text-white hover:bg-white/10 cursor-grab active:cursor-grabbing')}
+              onPointerDown={(e) => e.stopPropagation()}
+              {...(dragHandleProps?.attributes || {})}
+              {...(dragHandleProps?.listeners || {})}
+              aria-label="Drag to reorder"
+            >
+              <GripVertical size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Drag</TooltipContent>
+        </Tooltip>
         
         <div className="w-px h-5 bg-white/10" />
 
@@ -385,26 +391,41 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         {/* Alignment */}
         {showAlignment && (
           <>
-            <div className="w-px h-5 bg-white/10" />
+            <div className="w-px h-5 bg-white/15" />
             <div className="flex">
-              <button
-                onClick={(e) => { e.stopPropagation(); onAlignChange?.('left'); }}
-                className={cn(btnClass, 'rounded-r-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
-              >
-                <AlignLeft size={14} />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onAlignChange?.('center'); }}
-                className={cn(btnClass, 'rounded-none', styles.textAlign === 'center' ? btnActive : btnInactive)}
-              >
-                <AlignCenter size={14} />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onAlignChange?.('right'); }}
-                className={cn(btnClass, 'rounded-l-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
-              >
-                <AlignRight size={14} />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onAlignChange?.('left'); }}
+                    className={cn(btnClass, 'rounded-r-none', (styles.textAlign === 'left' || !styles.textAlign) ? btnActive : btnInactive)}
+                  >
+                    <AlignLeft size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Align Left</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onAlignChange?.('center'); }}
+                    className={cn(btnClass, 'rounded-none border-x border-white/5', styles.textAlign === 'center' ? btnActive : btnInactive)}
+                  >
+                    <AlignCenter size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Align Center</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onAlignChange?.('right'); }}
+                    className={cn(btnClass, 'rounded-l-none', styles.textAlign === 'right' ? btnActive : btnInactive)}
+                  >
+                    <AlignRight size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Align Right</TooltipContent>
+              </Tooltip>
             </div>
           </>
         )}
@@ -412,16 +433,26 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         <div className="w-px h-5 bg-white/10" />
 
         {/* Actions */}
-        <button onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }} className={cn(btnClass, btnInactive)}>
-          <Copy size={14} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }} className={cn(btnClass, btnInactive)}>
+              <Copy size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Duplicate</TooltipContent>
+        </Tooltip>
 
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-          className={cn(btnClass, 'text-white/60 hover:text-red-400 hover:bg-red-500/15')}
-        >
-          <Trash2 size={14} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+              className={cn(btnClass, 'text-white hover:text-red-400 hover:bg-red-500/15')}
+            >
+              <Trash2 size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Delete</TooltipContent>
+        </Tooltip>
       </motion.div>
     </TooltipProvider>
   );
