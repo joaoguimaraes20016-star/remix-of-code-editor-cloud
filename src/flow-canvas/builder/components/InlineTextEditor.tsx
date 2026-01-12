@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
@@ -352,10 +353,17 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
             editorEl.contains(sel?.focusNode ?? null));
 
         if (selectionInside && range) {
-          lastSelectionRangeRef.current = range.cloneRange();
-        }
+          // Only snapshot *real* selections; don't overwrite with collapsed selection after clicking the toolbar.
+          if (!range.collapsed && range.toString().length > 0) {
+            lastSelectionRangeRef.current = range.cloneRange();
+          }
 
-        activeInlineSpanRef.current = getStyledSpanAtSelection(editorEl);
+          // Only update active span when the selection/caret is inside the editor.
+          const span = getStyledSpanAtSelection(editorEl);
+          if (span) {
+            activeInlineSpanRef.current = span;
+          }
+        }
       });
     };
 
@@ -411,14 +419,31 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         editorEl.contains(sel?.focusNode ?? null));
 
     if (selectionInside && range) {
-      lastSelectionRangeRef.current = range.cloneRange();
+      // Only snapshot non-collapsed selections so we can restore them after toolbar/right-panel clicks.
+      if (!range.collapsed && range.toString().length > 0) {
+        lastSelectionRangeRef.current = range.cloneRange();
+      }
       console.log('[InlineEdit] Selection captured', { 
         collapsed: range.collapsed, 
         text: range.toString().substring(0, 20) 
       });
+
+      const span = getStyledSpanAtSelection(editorEl);
+      if (span) {
+        activeInlineSpanRef.current = span;
+        // Keep toolbar UI synced to the selected span's fill
+        const fill = getSpanFillStyles(span);
+        if (fill.textFillType) {
+          setStyles(prev => ({
+            ...prev,
+            textFillType: fill.textFillType,
+            textColor: fill.textColor ?? prev.textColor,
+            textGradient: fill.textGradient ? cloneGradient(fill.textGradient) : prev.textGradient,
+          }));
+        }
+      }
     }
 
-    activeInlineSpanRef.current = getStyledSpanAtSelection(editorEl);
     console.log('[InlineEdit] handleSelect finished', { 
       hasRange: !!lastSelectionRangeRef.current, 
       hasActiveSpan: !!activeInlineSpanRef.current 
@@ -581,6 +606,13 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           } catch (e) {
             console.log('[InlineEdit] CASE 4: Range became invalid', e);
           }
+        }
+
+        // We are actively editing: never fall back to block-level fill/formatting when there's no selection.
+        // This prevents the whole text block turning white/gradient when the user intended selection-only edits.
+        if (isEditing) {
+          toast.info('Select text to apply styling');
+          return false;
         }
       }
     }

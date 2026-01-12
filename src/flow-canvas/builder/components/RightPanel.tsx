@@ -364,8 +364,29 @@ const ElementInspector: React.FC<{
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
   
   // When a text element is being edited, route Right Panel fill changes to the selection
-  const { applyInlineStyle, hasActiveEditor } = useInlineEdit();
-  // Modal states
+  const { applyInlineStyle, hasActiveEditor, getInlineSelectionStyles } = useInlineEdit();
+
+  // Force re-render while selection changes so the inspector reflects the *actual selected span* styles
+  const [selectionTick, setSelectionTick] = useState(0);
+
+  useEffect(() => {
+    if (element.type !== 'text' && element.type !== 'heading') return;
+    if (!hasActiveEditor(element.id)) return;
+
+    const onSel = () => setSelectionTick((t) => t + 1);
+    document.addEventListener('selectionchange', onSel);
+    return () => document.removeEventListener('selectionchange', onSel);
+  }, [element.id, element.type, hasActiveEditor]);
+
+  const inlineSelectionStyles = useMemo(
+    () => getInlineSelectionStyles(element.id),
+    [getInlineSelectionStyles, element.id, selectionTick]
+  );
+
+  const effectiveTextFillType = inlineSelectionStyles?.textFillType ?? (element.props?.textFillType as any);
+  const effectiveTextColor = inlineSelectionStyles?.textColor ?? (element.props?.textColor as string | undefined);
+  const effectiveTextGradient = inlineSelectionStyles?.textGradient ?? (element.props?.textGradient as GradientValue | undefined);
+
   const [isButtonActionOpen, setIsButtonActionOpen] = useState(false);
   const [isVideoEmbedOpen, setIsVideoEmbedOpen] = useState(false);
   const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
@@ -887,7 +908,7 @@ const ElementInspector: React.FC<{
                   <button
                     onClick={() => {
                       // Atomic update: set both fillType and color together
-                      const color = element.props?.textColor || '#FFFFFF';
+                      const color = effectiveTextColor || '#FFFFFF';
                       const handled = applyInlineStyle(element.id, {
                         textFillType: 'solid',
                         textColor: color,
@@ -907,7 +928,7 @@ const ElementInspector: React.FC<{
                     }}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium transition-colors",
-                      element.props?.textFillType !== 'gradient'
+                      effectiveTextFillType !== 'gradient'
                         ? 'bg-builder-accent text-white' 
                         : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
                     )}
@@ -917,14 +938,17 @@ const ElementInspector: React.FC<{
                   <button
                     onClick={() => {
                       // Atomic update: set both fillType and gradient together
-                      const gradient = element.props?.textGradient || {
-                        type: 'linear',
-                        angle: 135,
-                        stops: [
-                          { color: '#8B5CF6', position: 0 },
-                          { color: '#D946EF', position: 100 },
-                        ],
-                      };
+                      const gradient =
+                        effectiveTextGradient ||
+                        ({
+                          type: 'linear',
+                          angle: 135,
+                          stops: [
+                            { color: '#8B5CF6', position: 0 },
+                            { color: '#D946EF', position: 100 },
+                          ],
+                        } as GradientValue);
+
                       const cloned = cloneGradient(gradient as GradientValue);
 
                       const handled = applyInlineStyle(element.id, {
@@ -946,7 +970,7 @@ const ElementInspector: React.FC<{
                     }}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium transition-colors",
-                      element.props?.textFillType === 'gradient'
+                      effectiveTextFillType === 'gradient'
                         ? 'bg-builder-accent text-white' 
                         : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
                     )}
@@ -957,11 +981,11 @@ const ElementInspector: React.FC<{
               </div>
               
               {/* Solid Color Picker */}
-              {element.props?.textFillType !== 'gradient' && (
+              {effectiveTextFillType !== 'gradient' && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Color</span>
                   <ColorPickerPopover 
-                    color={element.props?.textColor as string || '#FFFFFF'} 
+                    color={effectiveTextColor || '#FFFFFF'} 
                     onChange={(color) => {
                       const handled = applyInlineStyle(element.id, {
                         textFillType: 'solid',
@@ -980,7 +1004,7 @@ const ElementInspector: React.FC<{
                     <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                       <div 
                         className="w-6 h-6 rounded-md border border-builder-border" 
-                        style={{ backgroundColor: element.props?.textColor as string || '#FFFFFF' }} 
+                        style={{ backgroundColor: effectiveTextColor || '#FFFFFF' }} 
                       />
                       <span className="text-xs text-builder-text-muted">Edit</span>
                     </button>
@@ -989,11 +1013,11 @@ const ElementInspector: React.FC<{
               )}
               
               {/* Gradient Picker */}
-              {element.props?.textFillType === 'gradient' && (
+              {effectiveTextFillType === 'gradient' && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Gradient</span>
                   <GradientPickerPopover
-                    value={element.props?.textGradient as GradientValue | undefined}
+                    value={effectiveTextGradient}
                     onChange={(gradient) => {
                       const cloned = cloneGradient(gradient);
                       const handled = applyInlineStyle(element.id, {
@@ -1014,8 +1038,8 @@ const ElementInspector: React.FC<{
                       <div 
                         className="w-12 h-6 rounded-md border border-builder-border" 
                         style={{ 
-                          background: element.props?.textGradient 
-                            ? gradientToCSS(element.props.textGradient as GradientValue) 
+                          background: effectiveTextGradient 
+                            ? gradientToCSS(effectiveTextGradient) 
                             : 'linear-gradient(135deg, #8B5CF6, #D946EF)' 
                         }} 
                       />
@@ -1026,7 +1050,7 @@ const ElementInspector: React.FC<{
               )}
               
               {/* Quick Color Presets (for solid) */}
-              {element.props?.textFillType !== 'gradient' && (
+              {effectiveTextFillType !== 'gradient' && (
                 <div className="flex gap-1 flex-wrap">
                     {textColorPresets.map((color) => (
                       <button
@@ -1047,7 +1071,7 @@ const ElementInspector: React.FC<{
                         }}
                       className={cn(
                         'w-5 h-5 rounded border transition-all',
-                        element.props?.textColor === color
+                        effectiveTextColor === color
                           ? 'ring-2 ring-builder-accent ring-offset-1'
                           : 'border-builder-border hover:scale-110'
                       )}
