@@ -270,11 +270,11 @@ export const GradientEditor = React.forwardRef<HTMLDivElement, GradientEditorPro
 
 GradientEditor.displayName = 'GradientEditor';
 
-export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
+export const GradientPickerPopover = React.forwardRef<HTMLDivElement, GradientPickerPopoverProps>(({
   children,
   value,
   onChange,
-}) => {
+}, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLSpanElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -307,7 +307,11 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <span ref={triggerRef} className="contents">{children}</span>
+        <span ref={(el) => {
+          triggerRef.current = el;
+          if (typeof ref === 'function') ref(el as any);
+          else if (ref) ref.current = el as any;
+        }} className="contents">{children}</span>
       </PopoverTrigger>
       <PopoverContent 
         ref={contentRef}
@@ -338,4 +342,6 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
       </PopoverContent>
     </Popover>
   );
-};
+});
+
+GradientPickerPopover.displayName = 'GradientPickerPopover';

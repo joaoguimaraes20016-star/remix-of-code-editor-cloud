@@ -601,14 +601,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
       if (newStyles.textFillType === 'gradient') {
         opts.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
-      } else if (newStyles.textColor !== undefined) {
-        // Explicit solid color change
-        opts.color = newStyles.textColor;
-      } else if (newStyles.textFillType === 'solid') {
+        // Explicitly clear solid color to prevent conflicts
+        opts.color = undefined;
+      } else if (newStyles.textColor !== undefined || newStyles.textFillType === 'solid') {
+        // Explicit solid color change OR switching to solid mode
         // Do NOT default to white (causes "whole block turns white" bugs).
-        // Use existing style, then computed color from the editor, then fall back to currentColor.
+        // Use the new color, then existing style, then computed color, then fallback to currentColor.
         const computed = editorEl ? window.getComputedStyle(editorEl).color : '';
-        opts.color = styles.textColor || computed || 'currentColor';
+        opts.color = newStyles.textColor || styles.textColor || computed || 'currentColor';
+        // Explicitly clear gradient to ensure clean transition from gradient to solid
+        opts.gradient = undefined;
       }
 
       if (newStyles.fontWeight) {
@@ -645,10 +647,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // If live selection is collapsed/empty, try restoring saved selection
       if (!liveHasSelection && lastSelectionRangeRef.current) {
         try {
-          if (editorEl.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
+          // More robust check - verify the range endpoints are still valid
+          const savedRange = lastSelectionRangeRef.current;
+          const startContainer = savedRange.startContainer;
+          const endContainer = savedRange.endContainer;
+          
+          // Check if EITHER endpoint is still in the editor (more lenient)
+          const startValid = editorEl.contains(startContainer) || startContainer === editorEl;
+          const endValid = editorEl.contains(endContainer) || endContainer === editorEl;
+          
+          if (startValid && endValid) {
             sel?.removeAllRanges();
-            sel?.addRange(lastSelectionRangeRef.current.cloneRange());
-            liveRange = lastSelectionRangeRef.current.cloneRange();
+            sel?.addRange(savedRange.cloneRange());
+            liveRange = savedRange.cloneRange();
           }
         } catch { /* ignore */ }
       }
