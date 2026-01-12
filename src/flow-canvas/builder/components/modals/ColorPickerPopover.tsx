@@ -69,10 +69,11 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
     }, [onChange]);
 
     // Manual outside-dismiss so slider drags / non-focusable controls never close this popover.
+    // IMPORTANT: We use 'pointerdown' (not capture) to let other handlers process first
     useEffect(() => {
       if (!isOpen) return;
 
-      const onPointerDownCapture = (ev: PointerEvent) => {
+      const onPointerDown = (ev: PointerEvent) => {
         const target = ev.target as HTMLElement | null;
         if (!target) return;
 
@@ -86,11 +87,13 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
           return;
         }
 
+        // Close the popover but don't prevent the click from reaching its target
         setIsOpen(false);
       };
 
-      document.addEventListener('pointerdown', onPointerDownCapture, true);
-      return () => document.removeEventListener('pointerdown', onPointerDownCapture, true);
+      // Use regular event listener (not capture) so clicks reach their targets first
+      document.addEventListener('pointerdown', onPointerDown);
+      return () => document.removeEventListener('pointerdown', onPointerDown);
     }, [isOpen]);
     // Sync input value with external color prop
     useEffect(() => {
