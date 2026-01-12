@@ -449,10 +449,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             // No styled span found - compute the actual text color from the DOM
             const computedColor = getComputedTextColorAtSelection(editorEl);
             if (computedColor) {
+              // Check if this is a "transparent" color (indicates gradient text with -webkit-text-fill-color: transparent)
+              const isTransparent = computedColor === 'transparent' || 
+                computedColor === 'rgba(0, 0, 0, 0)' || 
+                /rgba?\([^)]*,\s*0\s*\)/.test(computedColor);
+              
+              if (isTransparent) {
+                // Keep gradient state - this is likely gradient text
+                return;
+              }
+              
+              // Real solid color - update state to reflect solid fill
               setStyles((prev) => {
-                // Only update if we don't already have a color and we're in solid mode
-                if (prev.textFillType === 'gradient') return prev;
-                if (prev.textColor === computedColor) return prev;
+                if (prev.textFillType === 'solid' && prev.textColor === computedColor) return prev;
                 return {
                   ...prev,
                   textFillType: 'solid',
@@ -552,15 +561,22 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         // No styled span - compute the actual text color from the DOM
         const computedColor = getComputedTextColorAtSelection(editorEl);
         if (computedColor) {
-          setStyles((prev) => {
-            if (prev.textFillType === 'gradient') return prev;
-            if (prev.textColor === computedColor) return prev;
-            return {
-              ...prev,
-              textFillType: 'solid',
-              textColor: computedColor,
-            };
-          });
+          // Check if this is a "transparent" color (indicates gradient text)
+          const isTransparent = computedColor === 'transparent' || 
+            computedColor === 'rgba(0, 0, 0, 0)' || 
+            /rgba?\([^)]*,\s*0\s*\)/.test(computedColor);
+          
+          if (!isTransparent) {
+            // Real solid color - update state to reflect solid fill
+            setStyles((prev) => {
+              if (prev.textFillType === 'solid' && prev.textColor === computedColor) return prev;
+              return {
+                ...prev,
+                textFillType: 'solid',
+                textColor: computedColor,
+              };
+            });
+          }
         }
       }
     }
@@ -873,8 +889,32 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         (activeInlineSpanRef.current && root.contains(activeInlineSpanRef.current) ? activeInlineSpanRef.current : null) ||
         findSpanFromRange(lastSelectionRangeRef.current);
 
-      if (!span) return null;
-      return getSpanFillStyles(span) as Partial<TextStyles>;
+      if (span) {
+        const spanStyles = getSpanFillStyles(span) as Partial<TextStyles>;
+        // Ensure gradient has a value if type is gradient
+        if (spanStyles.textFillType === 'gradient' && !spanStyles.textGradient) {
+          spanStyles.textGradient = styles.textGradient ?? defaultGradient;
+        }
+        return spanStyles;
+      }
+      
+      // No styled span - compute from DOM
+      const computedColor = getComputedTextColorAtSelection(root);
+      if (computedColor) {
+        const isTransparent = computedColor === 'transparent' || 
+          computedColor === 'rgba(0, 0, 0, 0)' || 
+          /rgba?\([^)]*,\s*0\s*\)/.test(computedColor);
+        
+        if (isTransparent) {
+          // Likely gradient text
+          return { textFillType: 'gradient', textGradient: styles.textGradient ?? defaultGradient };
+        }
+        
+        // Solid color
+        return { textFillType: 'solid', textColor: computedColor };
+      }
+      
+      return null;
     };
 
     const bridge = { apply: applyFromInspector, getSelectionStyles };
