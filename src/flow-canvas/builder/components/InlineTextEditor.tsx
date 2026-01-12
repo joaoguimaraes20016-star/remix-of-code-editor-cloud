@@ -3,7 +3,7 @@ import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
-import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, updateSpanStyle } from '../utils/selectionStyles';
+import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, getSpanFillStyles, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, updateSpanStyle } from '../utils/selectionStyles';
 import type { SelectionStyleOptions } from '../utils/selectionStyles';
 import { useInlineEdit } from '../contexts/InlineEditContext';
 export interface TextStyles {
@@ -695,10 +695,22 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       return result;
     };
 
+    // Build EditorBridge with apply + getSelectionStyles
+    const getSelectionStyles = (): Partial<TextStyles> | null => {
+      const root = contentRef.current;
+      if (!root) return null;
+      const span = getStyledSpanAtSelection(root);
+      if (!span) return null;
+      const fill = getSpanFillStyles(span);
+      return fill as Partial<TextStyles>;
+    };
+
+    const bridge = { apply: applyFromInspector, getSelectionStyles };
+
     if (isEditing) {
       // Register immediately when editing starts
       registeredElementIdRef.current = elementId;
-      const unregister = registerEditor(elementId, applyFromInspector);
+      const unregister = registerEditor(elementId, bridge);
       console.log('[InlineEdit] Editor registered (editing)', elementId);
       
       return () => {
@@ -711,7 +723,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       };
     } else if (registeredElementIdRef.current === elementId) {
       // Re-register briefly if we just stopped editing (allows RightPanel clicks to work)
-      const unregister = registerEditor(elementId, applyFromInspector);
+      const unregister = registerEditor(elementId, bridge);
       console.log('[InlineEdit] Editor re-registered (post-blur)', elementId);
       
       unregisterTimerRef.current = window.setTimeout(() => {
