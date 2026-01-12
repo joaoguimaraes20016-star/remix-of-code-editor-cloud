@@ -523,6 +523,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
             {/* Fill Type Toggle - uses atomic handler to set both type and value */}
             <div className="flex rounded-lg overflow-hidden border border-[hsl(var(--builder-border))]">
               <button
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleFillTypeChange('solid')}
                 className={cn(
                   "flex-1 py-1.5 text-xs font-medium transition-colors",
@@ -534,6 +535,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
                 Solid
               </button>
               <button
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleFillTypeChange('gradient')}
                 className={cn(
                   "flex-1 py-1.5 text-xs font-medium transition-colors",
@@ -555,11 +557,13 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
                     <input
                       type="color"
                       value={localColor}
+                      onMouseDown={(e) => e.preventDefault()}
                       onChange={(e) => handleColorChange(e.target.value)}
                       className="w-6 h-6 rounded cursor-pointer border-0 p-0"
                     />
                     {'EyeDropper' in window && (
                       <button
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={handleEyedropper}
                         className="p-1.5 rounded bg-[hsl(var(--builder-surface-active))] hover:bg-[hsl(var(--builder-accent)/0.2)] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] transition-colors"
                         title="Pick color from screen"
@@ -573,6 +577,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
                   {colorPresets.map((color) => (
                     <button
                       key={color}
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleColorChange(color)}
                       className={cn(
                         "w-6 h-6 rounded border transition-all",
