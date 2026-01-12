@@ -125,6 +125,7 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
 
     // Keep HTML clean (merge adjacent spans + normalize text nodes)
     if (span.parentElement) {
+      unwrapNestedStyledSpans(span.parentElement);
       mergeAdjacentStyledSpans(span.parentElement);
     } else {
       span.parentElement?.normalize();
@@ -291,6 +292,39 @@ export function getStyledSpanAtSelection(root: HTMLElement): HTMLSpanElement | n
   if (root.tagName === 'SPAN' && root.getAttribute('style')) return root as HTMLSpanElement;
 
   return null;
+}
+
+/**
+ * Unwrap redundant nested styled spans.
+ *
+ * This fixes a common failure mode where repeated slider updates accidentally
+ * wrap the same text multiple times, leading to <span style><span style>... nesting.
+ * Nested spans confuse selection targeting (getStyledSpanAtSelection) and cause
+ * toolbar sliders to "drop" the selection.
+ *
+ * Rule: if a styled span contains exactly one child and that child is also a styled span,
+ * we remove the parent and keep the child (preserves the most recently-applied style).
+ */
+export function unwrapNestedStyledSpans(container: HTMLElement): void {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const spans = Array.from(container.querySelectorAll('span[style]'));
+
+    for (const outer of spans) {
+      if (outer.childNodes.length !== 1) continue;
+      const only = outer.firstElementChild;
+      if (!only) continue;
+      if (only.tagName !== 'SPAN' || !(only as HTMLElement).getAttribute('style')) continue;
+
+      // Replace outer with inner
+      outer.replaceWith(only);
+      changed = true;
+      break;
+    }
+  }
+
+  container.normalize();
 }
 
 /**

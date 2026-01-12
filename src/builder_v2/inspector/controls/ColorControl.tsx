@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { normalizeColorForColorInput } from '@/flow-canvas/builder/utils/color';
 
 interface ColorControlProps {
   value: string;
@@ -74,7 +75,7 @@ export function ColorControl({ value, onChange, label }: ColorControlProps) {
           <div className="flex gap-2 items-center">
             <Input
               type="color"
-              value={value && value !== 'transparent' ? value : '#ffffff'}
+              value={value !== 'transparent' ? normalizeColorForColorInput(value, '#ffffff') : '#ffffff'}
               onChange={(e) => onChange(e.target.value)}
               className="w-10 h-8 p-0.5 cursor-pointer"
             />
