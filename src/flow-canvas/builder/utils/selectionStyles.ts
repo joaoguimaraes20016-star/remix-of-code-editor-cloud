@@ -267,14 +267,39 @@ export function getSpanFillStyles(span: HTMLSpanElement): {
 }
 
 /**
- * Get a styled span at the current selection (for reading fill styles).
+ * Get the primary selection node (prefer focus node for better UX matching).
+ * When user drags a selection, focusNode is where the drag ended - matching what they see.
  */
-export function getStyledSpanAtSelection(root: HTMLElement): HTMLSpanElement | null {
+function getPrimarySelectionNode(root: HTMLElement): Node | null {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;
 
+  // Prefer focusNode (where the selection ends) for better UX
+  // Fall back to anchorNode or range.startContainer
+  const candidates = [sel.focusNode, sel.anchorNode];
+  
+  for (const node of candidates) {
+    if (node && root.contains(node)) {
+      return node;
+    }
+  }
+
+  // Final fallback to range
   const range = sel.getRangeAt(0);
-  let node: Node | null = range.startContainer;
+  if (root.contains(range.startContainer)) {
+    return range.startContainer;
+  }
+
+  return null;
+}
+
+/**
+ * Get a styled span at the current selection (for reading fill styles).
+ * Prefers focus node for accurate matching of what user selected.
+ */
+export function getStyledSpanAtSelection(root: HTMLElement): HTMLSpanElement | null {
+  const node = getPrimarySelectionNode(root);
+  if (!node) return null;
 
   // If we have an element, use it; otherwise walk from text node's parent
   let el: HTMLElement | null =
@@ -491,11 +516,9 @@ export function containsHTML(str: string): boolean {
  * Returns the actual rendered color (useful when no styled span exists).
  */
 export function getComputedTextColorAtSelection(root: HTMLElement): string | null {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return null;
-
-  const range = sel.getRangeAt(0);
-  let node: Node | null = range.startContainer;
+  // Use the same focus-node preference as getStyledSpanAtSelection
+  const node = getPrimarySelectionNode(root);
+  if (!node) return null;
 
   // Walk up to find an element node
   let el: HTMLElement | null =
