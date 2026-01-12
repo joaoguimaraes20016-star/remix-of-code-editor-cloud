@@ -3171,16 +3171,16 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
         
         {/* Form State Debug Panel - Only visible in preview mode with form data */}
         {isPreviewMode && Object.keys(formValues).length > 0 && (
-          <div className="fixed bottom-4 right-4 p-3 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl z-50 max-w-xs">
+          <div className="fixed bottom-4 right-4 p-3 bg-[hsl(var(--builder-surface))] backdrop-blur-sm border border-[hsl(var(--builder-border))] rounded-lg shadow-xl z-50 max-w-xs">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-medium text-white">Form State</span>
+              <span className="text-xs font-medium text-[hsl(var(--builder-text))]">Form State</span>
             </div>
             <div className="space-y-1">
               {Object.entries(formValues).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between gap-4 text-xs">
-                  <span className="text-gray-400 font-mono truncate max-w-[100px]">{key}:</span>
-                  <span className="text-white font-mono truncate max-w-[120px]">{value || '(empty)'}</span>
+                  <span className="text-[hsl(var(--builder-text-muted))] font-mono truncate max-w-[100px]">{key}:</span>
+                  <span className="text-[hsl(var(--builder-text))] font-mono truncate max-w-[120px]">{value || '(empty)'}</span>
                 </div>
               ))}
             </div>

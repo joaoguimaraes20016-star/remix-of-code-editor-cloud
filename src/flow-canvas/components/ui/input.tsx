@@ -13,7 +13,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
         className={cn(
           "flex h-10 w-full rounded-md border px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           isBuilderInput 
-            ? "bg-[hsl(220,20%,11%)] border-[hsl(220,18%,14%)] text-white placeholder:text-[hsl(220,10%,35%)]"
+            ? "bg-[hsl(var(--builder-surface-hover))] border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text))] placeholder:text-[hsl(var(--builder-text-muted))] focus-visible:ring-[hsl(var(--builder-accent)/0.5)] focus-visible:border-[hsl(var(--builder-accent)/0.5)]"
             : "bg-background border-input placeholder:text-muted-foreground",
           className,
         )}

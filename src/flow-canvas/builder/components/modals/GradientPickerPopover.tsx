@@ -311,7 +311,7 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
       </PopoverTrigger>
       <PopoverContent 
         ref={contentRef}
-        className="w-80 p-3 bg-[hsl(220,22%,7%)] border-[hsl(220,18%,14%)] text-white" 
+        className="w-80 p-3 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text))]" 
         align="end"
         sideOffset={5}
         onOpenAutoFocus={(e) => e.preventDefault()}
@@ -326,9 +326,9 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
         onPointerUp={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[hsl(220,18%,14%)]">
-          <Palette className="w-4 h-4 text-[hsl(275,70%,55%)]" />
-          <span className="text-sm font-medium text-white">Gradient Editor</span>
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[hsl(var(--builder-border))]">
+          <Palette className="w-4 h-4 text-[hsl(var(--builder-accent))]" />
+          <span className="text-sm font-medium text-[hsl(var(--builder-text))]">Gradient Editor</span>
         </div>
 
         <GradientEditor 
