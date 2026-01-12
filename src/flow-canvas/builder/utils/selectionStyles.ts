@@ -102,6 +102,18 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
 
   try {
     const fragment = range.extractContents();
+
+    // Prevent nested styled spans inside the newly-created wrapper span.
+    // Nested spans break getStyledSpanAtSelection() (it finds the inner span), which makes
+    // sliders/pickers feel "glitchy" because updates target the wrong node.
+    const nested = Array.from((fragment as unknown as ParentNode).querySelectorAll?.('span[style]') ?? []);
+    for (const el of nested) {
+      const parent = el.parentNode;
+      if (!parent) continue;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      parent.removeChild(el);
+    }
+
     span.appendChild(fragment);
     range.insertNode(span);
 
@@ -111,7 +123,13 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
     sel.removeAllRanges();
     sel.addRange(newRange);
 
-    span.parentElement?.normalize();
+    // Keep HTML clean (merge adjacent spans + normalize text nodes)
+    if (span.parentElement) {
+      mergeAdjacentStyledSpans(span.parentElement);
+    } else {
+      span.parentElement?.normalize();
+    }
+
     return span;
   } catch (e) {
     console.warn('Selection wrap failed:', e);
