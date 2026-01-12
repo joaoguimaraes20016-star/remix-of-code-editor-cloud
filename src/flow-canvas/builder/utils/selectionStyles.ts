@@ -91,6 +91,9 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
   // Create a span and wrap the selected contents (preserves nested nodes)
   const span = document.createElement('span');
   span.setAttribute('style', styleString);
+  
+  // Assign a stable ID for re-acquiring the span if DOM mutations invalidate references
+  span.dataset.inlineStyleId = crypto.randomUUID?.() ?? `span-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   // Persist gradient metadata so inspector/toolbar can reflect the *selected span's* gradient.
   // (We cannot reliably re-hydrate GradientValue from CSS background-image.)
@@ -123,13 +126,9 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
     sel.removeAllRanges();
     sel.addRange(newRange);
 
-    // Keep HTML clean (merge adjacent spans + normalize text nodes)
-    if (span.parentElement) {
-      unwrapNestedStyledSpans(span.parentElement);
-      mergeAdjacentStyledSpans(span.parentElement);
-    } else {
-      span.parentElement?.normalize();
-    }
+    // NOTE: We no longer call unwrapNestedStyledSpans/mergeAdjacentStyledSpans here.
+    // DOM cleanup during active editing invalidates span refs and breaks slider interactions.
+    // Cleanup is now deferred to blur/save time in InlineTextEditor.
 
     return span;
   } catch (e) {
@@ -377,16 +376,27 @@ export function sanitizeStyledHTML(html: string): string {
         return;
       }
       
-      // Only keep style attribute on spans
+      // Only keep style attribute and data-gradient on spans
       if (tagName === 'span') {
         const style = el.getAttribute('style');
-        // Clear all attributes except style
+        const dataGradient = el.getAttribute('data-gradient');
+        const dataInlineStyleId = el.getAttribute('data-inline-style-id');
+        
+        // Clear all attributes except allowed ones
         const attrs = Array.from(el.attributes);
         attrs.forEach(attr => {
-          if (attr.name !== 'style') {
+          if (attr.name !== 'style' && attr.name !== 'data-gradient' && attr.name !== 'data-inline-style-id') {
             el.removeAttribute(attr.name);
           }
         });
+        
+        // Restore data-gradient if it was present (sanitization may have removed it)
+        if (dataGradient) {
+          el.setAttribute('data-gradient', dataGradient);
+        }
+        if (dataInlineStyleId) {
+          el.setAttribute('data-inline-style-id', dataInlineStyleId);
+        }
         
         // Sanitize style attribute - only allow safe CSS properties
         if (style) {
