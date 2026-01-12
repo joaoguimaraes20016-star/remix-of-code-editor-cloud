@@ -476,8 +476,6 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
         >
           <div className="space-y-3">
             {/* Fill Type Toggle - uses atomic handler to set both type and value */}

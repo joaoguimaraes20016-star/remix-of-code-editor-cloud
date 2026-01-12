@@ -287,8 +287,6 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
         align="end"
         sideOffset={5}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
       >
         {/* Header */}
         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[hsl(220,18%,14%)]">
