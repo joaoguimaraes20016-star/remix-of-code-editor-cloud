@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Sparkles, 
   Zap, 
@@ -87,6 +87,36 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
   const [duration, setDuration] = useState(0.5);
   const [delay, setDelay] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Manual outside-dismiss logic to prevent slider drags from closing the popover
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      
+      // Check if click is inside content or trigger
+      if (contentRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target)) return;
+      
+      // Check if click is inside any Radix portal (nested popovers, selects, etc.)
+      const radixPortals = document.querySelectorAll(
+        '[data-radix-popper-content-wrapper], [data-radix-popover-content], [data-radix-select-content]'
+      );
+      for (const portal of radixPortals) {
+        if (portal.contains(target)) return;
+      }
+      
+      // Close the popover
+      setIsOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+  }, [isOpen]);
 
   // Emit updated settings when duration/delay changes (if an effect is selected)
   React.useEffect(() => {
@@ -142,10 +172,17 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild ref={triggerRef}>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 bg-builder-surface border-builder-border" align="end">
+      <PopoverContent 
+        ref={contentRef}
+        className="w-80 p-0 bg-builder-surface border-builder-border" 
+        align="end"
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center gap-2 px-3 py-2 border-b border-builder-border">
           <Sparkles className="w-4 h-4 text-builder-accent" />
           <span className="text-sm font-medium text-builder-text">Add Animation Effect</span>

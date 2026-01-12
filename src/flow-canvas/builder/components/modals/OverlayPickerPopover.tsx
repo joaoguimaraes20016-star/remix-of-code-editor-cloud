@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Layers, Droplet, Palette, CircleDot } from 'lucide-react';
 import {
   Popover,
@@ -65,14 +65,51 @@ export const OverlayPickerPopover: React.FC<OverlayPickerPopoverProps> = ({
   onSelectOverlay,
   currentOverlay,
 }) => {
-  const [opacity, setOpacity] = React.useState(50);
+  const [opacity, setOpacity] = useState(50);
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Manual outside-dismiss logic to prevent slider drags from closing the popover
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      
+      // Check if click is inside content or trigger
+      if (contentRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target)) return;
+      
+      // Check if click is inside any Radix portal (nested popovers, selects, etc.)
+      const radixPortals = document.querySelectorAll(
+        '[data-radix-popper-content-wrapper], [data-radix-popover-content], [data-radix-select-content]'
+      );
+      for (const portal of radixPortals) {
+        if (portal.contains(target)) return;
+      }
+      
+      // Close the popover
+      setIsOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+  }, [isOpen]);
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild ref={triggerRef}>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-2 bg-builder-surface border-builder-border">
+      <PopoverContent 
+        ref={contentRef}
+        className="w-72 p-2 bg-builder-surface border-builder-border"
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center gap-2 px-2 py-1.5 mb-2 border-b border-builder-border">
           <Layers className="w-4 h-4 text-builder-accent" />
           <span className="text-sm font-medium text-builder-text">Add Overlay</span>

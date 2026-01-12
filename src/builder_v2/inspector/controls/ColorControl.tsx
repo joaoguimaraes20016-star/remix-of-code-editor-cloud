@@ -2,7 +2,7 @@
  * ColorControl - Framer-style color picker with presets
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -30,10 +30,40 @@ const COLOR_PRESETS = [
 
 export function ColorControl({ value, onChange, label }: ColorControlProps) {
   const [isOpen, setIsOpen] = useState(false);
+  
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Manual outside-dismiss logic to allow proper closing when clicking outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      
+      // Check if click is inside content or trigger
+      if (contentRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target)) return;
+      
+      // Check if click is inside any Radix portal (nested popovers, selects, etc.)
+      const radixPortals = document.querySelectorAll(
+        '[data-radix-popper-content-wrapper], [data-radix-popover-content], [data-radix-select-content]'
+      );
+      for (const portal of radixPortals) {
+        if (portal.contains(target)) return;
+      }
+      
+      // Close the popover
+      setIsOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+  }, [isOpen]);
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild ref={triggerRef}>
         <Button
           variant="outline"
           className="w-full justify-start gap-2 h-9"
@@ -50,7 +80,15 @@ export function ColorControl({ value, onChange, label }: ColorControlProps) {
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3" align="start" onOpenAutoFocus={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+      <PopoverContent 
+        ref={contentRef}
+        className="w-64 p-3" 
+        align="start" 
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+      >
         <div className="space-y-3">
           <div className="grid grid-cols-7 gap-1.5">
             {COLOR_PRESETS.map((color) => (
