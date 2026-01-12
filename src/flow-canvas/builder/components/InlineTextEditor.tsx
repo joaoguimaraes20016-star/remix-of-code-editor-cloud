@@ -408,8 +408,6 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     const editorEl = contentRef.current;
     if (!editorEl) return;
 
-    // Persist the range so Right Panel edits apply to the exact intended letters,
-    // even after the user clicks into the inspector.
     const sel = window.getSelection();
     const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
     const selectionInside =
@@ -423,10 +421,6 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       if (!range.collapsed && range.toString().length > 0) {
         lastSelectionRangeRef.current = range.cloneRange();
       }
-      console.log('[InlineEdit] Selection captured', { 
-        collapsed: range.collapsed, 
-        text: range.toString().substring(0, 20) 
-      });
 
       const span = getStyledSpanAtSelection(editorEl);
       if (span) {
@@ -443,25 +437,12 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         }
       }
     }
-
-    console.log('[InlineEdit] handleSelect finished', { 
-      hasRange: !!lastSelectionRangeRef.current, 
-      hasActiveSpan: !!activeInlineSpanRef.current 
-    });
   }, [isEditing, updateToolbarPosition]);
 
   // Apply style changes - selection-first for color/gradient/formatting, otherwise whole block
   // Returns true if inline styling was applied (for context callback)
   const handleStyleChange = useCallback((newStyles: Partial<TextStyles>): boolean => {
     const editorEl = contentRef.current;
-
-    console.log('[InlineEdit] handleStyleChange called', {
-      hasEditorEl: !!editorEl,
-      isEditing,
-      hasLastSelection: !!lastSelectionRangeRef.current,
-      hasActiveSpan: !!activeInlineSpanRef.current,
-      newStyles
-    });
 
     const shouldApplyInline =
       newStyles.textColor !== undefined ||
@@ -471,153 +452,117 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       newStyles.fontStyle !== undefined ||
       newStyles.textDecoration !== undefined;
 
-    const buildSelectionOptions = (): SelectionStyleOptions | null => {
-      const options: SelectionStyleOptions = {};
+    // Build style options for inline span styling
+    const buildStyleOptions = (): SelectionStyleOptions | null => {
+      const opts: SelectionStyleOptions = {};
 
-      // Color/gradient
       if (newStyles.textFillType === 'gradient') {
-        options.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
+        opts.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
       } else if (newStyles.textColor) {
-        options.color = newStyles.textColor;
-      } else if (newStyles.textFillType === 'solid' && (newStyles.textColor || styles.textColor)) {
-        options.color = newStyles.textColor || styles.textColor;
+        opts.color = newStyles.textColor;
+      } else if (newStyles.textFillType === 'solid') {
+        opts.color = newStyles.textColor || styles.textColor || '#FFFFFF';
       }
 
-      // Font formatting (applies inline when selection/target span exists)
       if (newStyles.fontWeight) {
-        const weightMap: Record<string, string> = {
-          normal: '400',
-          medium: '500',
-          semibold: '600',
-          bold: '700',
-          black: '900',
-        };
-        options.fontWeight = weightMap[newStyles.fontWeight] || newStyles.fontWeight;
+        const wMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
+        opts.fontWeight = wMap[newStyles.fontWeight] || newStyles.fontWeight;
       }
-      if (newStyles.fontStyle) options.fontStyle = newStyles.fontStyle;
-      if (newStyles.textDecoration) options.textDecoration = newStyles.textDecoration;
+      if (newStyles.fontStyle) opts.fontStyle = newStyles.fontStyle;
+      if (newStyles.textDecoration) opts.textDecoration = newStyles.textDecoration;
 
-      return Object.keys(options).length > 0 ? options : null;
+      return Object.keys(opts).length > 0 ? opts : null;
     };
 
-    // Inline styling path: update existing span under caret OR wrap current selection once
-    // Note: We no longer require isEditing here since applyFromInspector may re-enter edit mode
-    if (shouldApplyInline && editorEl) {
-      const styleOptions = buildSelectionOptions();
-      if (styleOptions) {
-        const sel = window.getSelection();
-        const hasSelection = hasSelectionInElement(editorEl);
-        const target = getStyledSpanAtSelection(editorEl) || activeInlineSpanRef.current;
-        
-        console.log('[InlineEdit] Inline path', { hasSelection, hasTarget: !!target, styleOptions });
-        
-        // Helper to sync toolbar state
-        const syncToolbarState = () => {
-          const syncStyles: Partial<TextStyles> = {};
-          if (newStyles.textFillType !== undefined) syncStyles.textFillType = newStyles.textFillType;
-          if (newStyles.textGradient) syncStyles.textGradient = cloneGradient(newStyles.textGradient);
-          if (newStyles.textColor !== undefined) syncStyles.textColor = newStyles.textColor;
-          if (Object.keys(syncStyles).length > 0) {
-            setStyles(prev => ({ ...prev, ...syncStyles }));
+    // Helper: sync toolbar local state so pickers show updated value
+    const syncToolbarState = () => {
+      const sync: Partial<TextStyles> = {};
+      if (newStyles.textFillType !== undefined) sync.textFillType = newStyles.textFillType;
+      if (newStyles.textGradient) sync.textGradient = cloneGradient(newStyles.textGradient);
+      if (newStyles.textColor !== undefined) sync.textColor = newStyles.textColor;
+      if (Object.keys(sync).length) setStyles(prev => ({ ...prev, ...sync }));
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INLINE STYLING PATH
+    // ─────────────────────────────────────────────────────────────────────────
+    if (shouldApplyInline && editorEl && isEditing) {
+      const styleOpts = buildStyleOptions();
+      if (!styleOpts) return false;
+
+      // Get current DOM selection state
+      const sel = window.getSelection();
+      let liveRange: Range | null = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+      const liveHasSelection = liveRange && !liveRange.collapsed && editorEl.contains(liveRange.commonAncestorContainer);
+
+      // If live selection is collapsed/empty, try restoring saved selection
+      if (!liveHasSelection && lastSelectionRangeRef.current) {
+        try {
+          if (editorEl.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
+            sel?.removeAllRanges();
+            sel?.addRange(lastSelectionRangeRef.current.cloneRange());
+            liveRange = lastSelectionRangeRef.current.cloneRange();
           }
-        };
-        
-        // Determine if selection covers exactly the whole target span
-        const isWholeSpanSelected = (): boolean => {
-          if (!target || !sel || sel.rangeCount === 0) return false;
-          const range = sel.getRangeAt(0);
-          if (range.collapsed) return true; // Caret inside span = treat as whole-span edit
-          
+        } catch { /* ignore */ }
+      }
+
+      const hasSelection = liveRange && !liveRange.collapsed && liveRange.toString().length > 0;
+
+      // Find existing styled span at selection/caret (fresh lookup)
+      const targetSpan = getStyledSpanAtSelection(editorEl);
+
+      // CASE A: We have a real text selection → wrap it (or update if whole span selected)
+      if (hasSelection && liveRange) {
+        // Check if selection exactly matches an existing span's contents
+        if (targetSpan) {
           try {
             const spanRange = document.createRange();
-            spanRange.selectNodeContents(target);
-            // Compare: selection must start AND end at same positions as span contents
-            const startMatch = range.compareBoundaryPoints(Range.START_TO_START, spanRange) === 0;
-            const endMatch = range.compareBoundaryPoints(Range.END_TO_END, spanRange) === 0;
-            return startMatch && endMatch;
-          } catch {
-            return false;
-          }
-        };
-        
-        // CASE 1: User has a selection that is NOT the whole span -> wrap just the selected chars
-        if (hasSelection && target && !isWholeSpanSelected()) {
-          // Partial selection inside an existing span: wrap only selected portion
-          const span = applyStylesToSelection(styleOptions);
-          if (span) {
-            activeInlineSpanRef.current = span;
-            setSessionHasInlineStyles(true);
-            scheduleInlineHtmlSave();
-            syncToolbarState();
-            return true;
-          }
+            spanRange.selectNodeContents(targetSpan);
+            const isExact =
+              liveRange.compareBoundaryPoints(Range.START_TO_START, spanRange) === 0 &&
+              liveRange.compareBoundaryPoints(Range.END_TO_END, spanRange) === 0;
+            if (isExact) {
+              // Update existing span in place
+              updateSpanStyle(targetSpan, styleOpts);
+              activeInlineSpanRef.current = targetSpan;
+              setSessionHasInlineStyles(true);
+              scheduleInlineHtmlSave();
+              syncToolbarState();
+              return true;
+            }
+          } catch { /* fallthrough to wrap */ }
         }
-        
-        // CASE 2: Target exists and (caret inside OR whole span selected) -> update existing span
-        if (target && (!hasSelection || isWholeSpanSelected())) {
-          updateSpanStyle(target, styleOptions);
-          activeInlineSpanRef.current = target;
+
+        // Wrap the selection with new span
+        const span = applyStylesToSelection(styleOpts);
+        if (span) {
+          activeInlineSpanRef.current = span;
+          lastSelectionRangeRef.current = null; // Clear so next selection is fresh
           setSessionHasInlineStyles(true);
           scheduleInlineHtmlSave();
           syncToolbarState();
           return true;
         }
-
-        // CASE 3: No target span, but user has a selection -> wrap it
-        if (hasSelection) {
-          const span = applyStylesToSelection(styleOptions);
-          if (span) {
-            activeInlineSpanRef.current = span;
-            setSessionHasInlineStyles(true);
-            scheduleInlineHtmlSave();
-            syncToolbarState();
-            return true;
-          }
-        }
-        
-        // CASE 4: No selection and no target - check if we have a saved selection range
-        // This handles the case when the user clicks RightPanel and selection was lost
-        if (!hasSelection && !target && lastSelectionRangeRef.current) {
-          console.log('[InlineEdit] CASE 4: Attempting to restore saved selection');
-          // Try to re-apply the saved selection
-          try {
-            if (editorEl.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
-              sel?.removeAllRanges();
-              sel?.addRange(lastSelectionRangeRef.current.cloneRange());
-              console.log('[InlineEdit] CASE 4: Range re-applied');
-              
-              // Now try to apply again with restored selection
-              const restoredHasSelection = hasSelectionInElement(editorEl);
-              console.log('[InlineEdit] CASE 4: hasSelection after restore =', restoredHasSelection);
-              if (restoredHasSelection) {
-                const span = applyStylesToSelection(styleOptions);
-                if (span) {
-                  activeInlineSpanRef.current = span;
-                  setSessionHasInlineStyles(true);
-                  scheduleInlineHtmlSave();
-                  syncToolbarState();
-                  console.log('[InlineEdit] CASE 4: Styles applied successfully');
-                  return true;
-                }
-              }
-            } else {
-              console.log('[InlineEdit] CASE 4: Saved range no longer in editorEl');
-            }
-          } catch (e) {
-            console.log('[InlineEdit] CASE 4: Range became invalid', e);
-          }
-        }
-
-        // We are actively editing: never fall back to block-level fill/formatting when there's no selection.
-        // This prevents the whole text block turning white/gradient when the user intended selection-only edits.
-        if (isEditing) {
-          toast.info('Select text to apply styling');
-          return false;
-        }
       }
+
+      // CASE B: Caret inside existing span (no text selected) → update that span
+      if (targetSpan) {
+        updateSpanStyle(targetSpan, styleOpts);
+        activeInlineSpanRef.current = targetSpan;
+        setSessionHasInlineStyles(true);
+        scheduleInlineHtmlSave();
+        syncToolbarState();
+        return true;
+      }
+
+      // CASE C: No selection and no target span while editing → user must select text first
+      toast.info('Select text to apply styling');
+      return false;
     }
 
-    // Block-level styles (font size, align, shadow, etc.)
+    // ─────────────────────────────────────────────────────────────────────────
+    // BLOCK-LEVEL STYLES (font size, align, shadow, etc.)
+    // ─────────────────────────────────────────────────────────────────────────
     const clonedStyles: Partial<TextStyles> = {};
 
     if (newStyles.fontSize !== undefined) clonedStyles.fontSize = newStyles.fontSize;
@@ -678,24 +623,12 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     if (!elementId) return;
 
     // Wrapper that restores the user's last in-editor selection before applying styles.
-    // Uses refs to avoid stale closure issues.
     const applyFromInspector = (nextStyles: Partial<TextStyles>): boolean => {
       const el = contentRef.current;
-      if (!el) {
-        console.log('[InlineEdit] applyFromInspector: no element ref');
-        return false;
-      }
-
-      console.log('[InlineEdit] applyFromInspector called', { 
-        isEditing: isEditingRef.current, 
-        hasLastSelection: !!lastSelectionRangeRef.current,
-        hasActiveSpan: !!activeInlineSpanRef.current,
-        nextStyles 
-      });
+      if (!el) return false;
 
       // Re-enter editing mode if we were recently editing (within debounce window)
       if (!isEditingRef.current && registeredElementIdRef.current === elementId) {
-        console.log('[InlineEdit] Re-entering edit mode from inspector');
         setIsEditing(true);
         setShowToolbar(true);
       }
@@ -703,28 +636,18 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       // Ensure editor stays active while using the inspector
       el.focus();
 
+      // Restore saved selection
       const sel = window.getSelection();
       if (sel && lastSelectionRangeRef.current) {
         try {
-          // Validate range is still valid within the element
           if (el.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
             sel.removeAllRanges();
             sel.addRange(lastSelectionRangeRef.current.cloneRange());
-            console.log('[InlineEdit] Selection restored from lastSelectionRangeRef', {
-              text: lastSelectionRangeRef.current.toString().substring(0, 20),
-              collapsed: lastSelectionRangeRef.current.collapsed
-            });
           }
-        } catch (e) {
-          console.log('[InlineEdit] Range restoration failed:', e);
-        }
-      } else {
-        console.log('[InlineEdit] No saved selection to restore');
+        } catch { /* ignore */ }
       }
 
-      const result = handleStyleChange(nextStyles);
-      console.log('[InlineEdit] applyFromInspector returning', result);
-      return result;
+      return handleStyleChange(nextStyles);
     };
 
     // Build EditorBridge with apply + getSelectionStyles
@@ -740,29 +663,24 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     const bridge = { apply: applyFromInspector, getSelectionStyles };
 
     if (isEditing) {
-      // Register immediately when editing starts
       registeredElementIdRef.current = elementId;
       const unregister = registerEditor(elementId, bridge);
-      console.log('[InlineEdit] Editor registered (editing)', elementId);
       
       return () => {
         // Debounce unregistration to allow RightPanel clicks to still work
         unregisterTimerRef.current = window.setTimeout(() => {
-          console.log('[InlineEdit] Editor unregistered (debounce expired)', elementId);
           unregister();
           registeredElementIdRef.current = null;
-        }, 500); // Increased to 500ms for more reliable RightPanel interaction
+        }, 300);
       };
     } else if (registeredElementIdRef.current === elementId) {
       // Re-register briefly if we just stopped editing (allows RightPanel clicks to work)
       const unregister = registerEditor(elementId, bridge);
-      console.log('[InlineEdit] Editor re-registered (post-blur)', elementId);
       
       unregisterTimerRef.current = window.setTimeout(() => {
-        console.log('[InlineEdit] Editor unregistered (post-blur debounce)', elementId);
         unregister();
         registeredElementIdRef.current = null;
-      }, 500);
+      }, 300);
       
       return () => {
         if (unregisterTimerRef.current) {
