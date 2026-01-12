@@ -352,6 +352,9 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
               <PopoverContent
                 className="w-auto p-1.5 bg-builder-surface/98 backdrop-blur-xl border-builder-border"
                 sideOffset={8}
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerMove={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
               >
                 <div className="flex gap-1">
                   {fontSizes.map((size) => (
