@@ -476,15 +476,10 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
-          // CRITICAL: Prevent ALL automatic outside-click closing.
-          // The popover will only close when:
-          // 1. User clicks the trigger button again (toggles colorOpen state)
-          // 2. User presses Escape
-          // 3. The entire toolbar unmounts
-          // This eliminates all the race conditions with slider dragging.
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
-          onFocusOutside={(e) => e.preventDefault()}
+          // Stop propagation so canvas/global handlers don't receive inside-popover events
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
         >
           <div className="space-y-3">
             {/* Fill Type Toggle - uses atomic handler to set both type and value */}

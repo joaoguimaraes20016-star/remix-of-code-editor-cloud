@@ -138,7 +138,14 @@ export function InlineTextEditor({
   };
 
   const handleBlur = (e: React.FocusEvent) => {
+    // If focus moved to toolbar, don't blur
     if (toolbarRef.current?.contains(e.relatedTarget as Node)) return;
+    
+    // If focus moved to a popover (portaled), don't blur
+    const relatedTarget = e.relatedTarget as HTMLElement | null;
+    if (relatedTarget?.closest('[data-radix-popper-content-wrapper]')) return;
+    
+    // If there's an active picker open, don't blur
     if (activePicker) return;
     
     // Flush any pending debounced save immediately
@@ -155,15 +162,12 @@ export function InlineTextEditor({
       onHtmlChange?.(html);
     }
     
-    setTimeout(() => {
-      if (!toolbarRef.current?.contains(document.activeElement) && !activePicker) {
-        setIsEditing(false);
-        onEditingChange?.(false);
-        setHasTextSelection(false);
-        setToolbarPosition(null);
-        setActivePicker(null);
-      }
-    }, 100);
+    // Exit editing mode immediately - no delay for canvas clicks
+    setIsEditing(false);
+    onEditingChange?.(false);
+    setHasTextSelection(false);
+    setToolbarPosition(null);
+    setActivePicker(null);
   };
 
   const saveContent = useCallback(() => {
