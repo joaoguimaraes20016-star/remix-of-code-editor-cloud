@@ -88,8 +88,9 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
 
   // Local UI state so the gradient/color editors work even when we apply styles inline (selection spans)
   // (Inline styling doesn't always update the block-level `styles`, so we can't rely on props here.)
+  // IMPORTANT: Do NOT default to white when no color is provided - use the actual style value
   const [localColor, setLocalColor] = useState<string>(() =>
-    normalizeColorForColorInput(styles.textColor, '#FFFFFF')
+    normalizeColorForColorInput(styles.textColor, styles.textColor || '#000000')
   );
   const [localGradient, setLocalGradient] = useState<GradientValue>(() =>
     cloneGradient(styles.textGradient || defaultGradient)
@@ -97,8 +98,8 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
 
   // Keep local state in sync when block-level styles change externally
   useEffect(() => {
-    if (!styles.textColor) return;
-    const normalized = normalizeColorForColorInput(styles.textColor, localColor);
+    // Always sync when textColor changes, even if it's becoming undefined
+    const normalized = normalizeColorForColorInput(styles.textColor, styles.textColor || '#000000');
     setLocalColor((prev) => (prev === normalized ? prev : normalized));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styles.textColor]);
@@ -448,6 +449,8 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
         >
           <div className="space-y-3">
             {/* Fill Type Toggle - uses atomic handler to set both type and value */}
