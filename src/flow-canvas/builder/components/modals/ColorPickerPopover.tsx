@@ -95,8 +95,10 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
           align="end"
           sideOffset={5}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
+          // Stop propagation so canvas/global handlers don't receive inside-popover events
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
         >
           {/* Color Selection */}
 

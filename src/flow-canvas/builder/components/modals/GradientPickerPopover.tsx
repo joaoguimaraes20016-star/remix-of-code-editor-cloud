@@ -288,14 +288,10 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
         sideOffset={5}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
-        // CRITICAL: Prevent ALL automatic outside-click closing.
-        // The popover will only close when:
-        // 1. User clicks the trigger button again
-        // 2. User presses Escape
-        // 3. Parent component unmounts
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-        onFocusOutside={(e) => e.preventDefault()}
+        // Stop propagation so canvas/global handlers don't receive inside-popover events
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[hsl(220,18%,14%)]">
