@@ -1998,6 +1998,9 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   const isSelected = selection.type === 'block' && selection.id === block.id;
   const isMultiSelected = multiSelectedIds?.has(block.id) ?? false;
   const blockPath = [...path, 'block', block.id];
+  
+  // Access theme context for BlockActionBar
+  const { isDarkTheme } = useContext(ThemeContext);
 
   const {
     attributes,
@@ -2232,6 +2235,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           dragHandleProps={{ attributes, listeners }}
           deviceMode={deviceMode}
           targetRef={blockWrapperRef}
+          editorTheme={isDarkTheme ? 'dark' : 'light'}
         />
       )}
 
@@ -2378,6 +2382,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
             dragHandleProps={{ attributes, listeners }}
             deviceMode={deviceMode}
             targetRef={blockWrapperRef}
+            editorTheme={isDarkTheme ? 'dark' : 'light'}
           />
         )}
 
