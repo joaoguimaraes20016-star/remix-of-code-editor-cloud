@@ -762,13 +762,13 @@ const AssetsPanel: React.FC = () => {
                   )}
                   
                   {/* Hover Actions */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-[hsl(var(--builder-surface)/0.9)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
                       onClick={() => handleCopyUrl(asset.url)}
-                      className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                      className="p-2 rounded-lg bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-border))] transition-colors"
                       title="Copy URL"
                     >
-                      <Copy className="w-4 h-4 text-white" />
+                      <Copy className="w-4 h-4 text-[hsl(var(--builder-text))]" />
                     </button>
                     <button
                       onClick={() => handleDelete(asset.id)}

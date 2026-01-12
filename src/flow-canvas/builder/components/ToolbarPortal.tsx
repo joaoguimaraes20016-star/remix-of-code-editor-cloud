@@ -329,12 +329,12 @@ export const MobileToolbarSheet: React.FC<MobileToolbarSheetProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 pointer-events-auto bg-[hsl(220,13%,10%)] border-t border-white/10 rounded-t-2xl max-h-[70vh] overflow-y-auto"
+            className="fixed bottom-0 left-0 right-0 pointer-events-auto bg-[hsl(var(--builder-surface))] border-t border-[hsl(var(--builder-border))] rounded-t-2xl max-h-[70vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle */}
             <div className="flex justify-center py-2">
-              <div className="w-10 h-1 rounded-full bg-white/20" />
+              <div className="w-10 h-1 rounded-full bg-[hsl(var(--builder-text-muted)/0.3)]" />
             </div>
             <div className="px-4 pb-6 safe-area-bottom">
               {children}

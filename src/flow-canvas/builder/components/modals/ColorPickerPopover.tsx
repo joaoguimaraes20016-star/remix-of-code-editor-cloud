@@ -117,7 +117,7 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
         </PopoverTrigger>
         <PopoverContent 
           ref={contentRef}
-          className="w-64 p-3 bg-[hsl(220,22%,7%)] border-[hsl(220,18%,14%)] text-white" 
+          className="w-64 p-3 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text))]" 
           align="end"
           sideOffset={5}
           onOpenAutoFocus={(e) => e.preventDefault()}
