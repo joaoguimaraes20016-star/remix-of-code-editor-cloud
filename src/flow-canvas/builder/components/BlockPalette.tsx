@@ -902,7 +902,7 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({
               onOpenAIGenerate?.();
               onClose();
             }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-builder-accent to-intent-qualify text-white text-sm font-medium hover:brightness-110 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all"
           >
             <Sparkles className="w-4 h-4" />
             Generate with AI

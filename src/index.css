@@ -15,7 +15,7 @@
     --popover: 220 15% 9%;
     --popover-foreground: 210 20% 96%;
 
-    --primary: 315 85% 58%;
+    --primary: 217 80% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 14%;
@@ -24,7 +24,7 @@
     --muted: 220 12% 18%;
     --muted-foreground: 220 10% 55%;
 
-    --accent: 275 70% 55%;
+    --accent: 217 75% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
@@ -32,7 +32,7 @@
 
     --border: 220 12% 16%;
     --input: 220 12% 16%;
-    --ring: 315 85% 58%;
+    --ring: 217 80% 60%;
 
     --radius: 0.75rem;
     
@@ -56,7 +56,7 @@
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.05));
     --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)));
-    --gradient-button: linear-gradient(135deg, hsl(315 85% 58%), hsl(275 70% 55%));
+    --gradient-button: linear-gradient(135deg, hsl(220 15% 18%), hsl(220 15% 14%));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)));
     --gradient-pending: linear-gradient(135deg, hsl(30 80% 50%), hsl(35 85% 45%));
     --gradient-confirmed: linear-gradient(135deg, hsl(142 60% 45%), hsl(155 65% 40%));
@@ -92,7 +92,7 @@
     --popover: 220 15% 9%;
     --popover-foreground: 210 20% 96%;
 
-    --primary: 315 85% 58%;
+    --primary: 217 80% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 14%;
@@ -101,7 +101,7 @@
     --muted: 220 12% 18%;
     --muted-foreground: 220 10% 55%;
 
-    --accent: 275 70% 55%;
+    --accent: 217 75% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
@@ -109,7 +109,7 @@
 
     --border: 220 12% 16%;
     --input: 220 12% 16%;
-    --ring: 315 85% 58%;
+    --ring: 217 80% 60%;
     
     --success: 142 60% 45%;
     --success-foreground: 210 20% 96%;
@@ -131,7 +131,7 @@
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.05));
     --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)));
-    --gradient-button: linear-gradient(135deg, hsl(315 85% 58%), hsl(275 70% 55%));
+    --gradient-button: linear-gradient(135deg, hsl(220 15% 18%), hsl(220 15% 14%));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)));
     --gradient-pending: linear-gradient(135deg, hsl(30 80% 50%), hsl(35 85% 45%));
     --gradient-confirmed: linear-gradient(135deg, hsl(142 60% 45%), hsl(155 65% 40%));

@@ -108,7 +108,7 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
     "w-10 h-10 rounded-lg",
     "active:scale-95"
   );
-  const btnInactive = "text-white/70 hover:text-white hover:bg-white/10 active:bg-white/20";
+  const btnInactive = "text-[hsl(var(--builder-text-secondary))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-hover))] active:bg-[hsl(var(--builder-surface-hover))]";
   const btnActive = "bg-[hsl(var(--builder-accent))] text-white";
 
   // Position: centered below the element
@@ -129,10 +129,10 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
       className={cn(
         "flex items-center justify-center",
         "w-10 h-10 rounded-full",
-        "bg-[hsl(220,10%,12%)]/98 backdrop-blur-xl",
-        "border border-white/10",
+        "bg-[hsl(var(--builder-surface))]/98 backdrop-blur-xl",
+        "border border-[hsl(var(--builder-border))]",
         "shadow-lg shadow-black/40",
-        "text-white/80 hover:text-white",
+        "text-[hsl(var(--builder-text-secondary))] hover:text-[hsl(var(--builder-text))]",
         "pointer-events-auto"
       )}
     >
@@ -149,19 +149,19 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
       transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
       className={cn(
         "pointer-events-auto",
-        "bg-[hsl(220,10%,12%)]/98 backdrop-blur-xl",
-        "border border-white/10 rounded-2xl",
+        "bg-[hsl(var(--builder-surface))]/98 backdrop-blur-xl",
+        "border border-[hsl(var(--builder-border))] rounded-2xl",
         "shadow-xl shadow-black/40",
         "overflow-hidden"
       )}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header with close */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
-        <span className="text-xs font-medium text-white/60 uppercase tracking-wider">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[hsl(var(--builder-border))]">
+        <span className="text-xs font-medium text-[hsl(var(--builder-text-muted))] uppercase tracking-wider">
           {elementType}
         </span>
-        <button onClick={handleToggle} className="p-1 rounded hover:bg-white/10 text-white/60 hover:text-white">
+        <button onClick={handleToggle} className="p-1 rounded hover:bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))]">
           <X size={14} />
         </button>
       </div>
@@ -209,7 +209,7 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
 
         {/* Alignment */}
         {showAlignment && (
-          <div className="flex rounded-lg overflow-hidden border border-white/10">
+          <div className="flex rounded-lg overflow-hidden border border-[hsl(var(--builder-border))]">
             <button
               onClick={() => onAlignChange?.('left')}
               className={cn("p-2", styles.textAlign === 'left' || !styles.textAlign ? btnActive : btnInactive)}
@@ -231,7 +231,7 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
           </div>
         )}
 
-        <div className="w-px h-6 bg-white/10 mx-1" />
+        <div className="w-px h-6 bg-[hsl(var(--builder-border))] mx-1" />
 
         {/* Duplicate & Delete */}
         <button onClick={onDuplicate} className={cn(btnClass, btnInactive)}>

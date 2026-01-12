@@ -132,7 +132,7 @@ export const AIGenerateModal: React.FC<AIGenerateModalProps> = ({
           <Button
             onClick={handleGenerate}
             disabled={!prompt.trim() || isGenerating}
-            className="w-full bg-gradient-to-r from-builder-accent to-intent-qualify text-white hover:brightness-110"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {isGenerating ? (
               <>
