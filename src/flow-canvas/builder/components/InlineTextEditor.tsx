@@ -1082,6 +1082,31 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   const shouldUseDangerouslySetHtml =
     !isEditing && !!isHtmlContent && styles.textFillType !== 'gradient';
 
+  // Toolbar UI interactions can collapse the text selection.
+  // Restore the last non-collapsed in-editor selection before applying styles.
+  const handleToolbarStyleChange = useCallback(
+    (nextStyles: Partial<TextStyles>) => {
+      const el = contentRef.current;
+      if (!el) return;
+
+      el.focus();
+      const sel = window.getSelection();
+      if (sel && lastSelectionRangeRef.current) {
+        try {
+          if (el.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
+            sel.removeAllRanges();
+            sel.addRange(lastSelectionRangeRef.current.cloneRange());
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      handleStyleChange(nextStyles);
+    },
+    [handleStyleChange]
+  );
+
   return (
     <div ref={containerRef} className="relative">
       {/* Floating Rich Text Toolbar */}
@@ -1089,7 +1114,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         <RichTextToolbar
           ref={toolbarRef}
           styles={styles}
-          onChange={handleStyleChange}
+          onChange={handleToolbarStyleChange}
           position={toolbarPosition}
           onClose={() => setShowToolbar(false)}
         />
