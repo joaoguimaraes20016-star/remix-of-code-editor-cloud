@@ -75,6 +75,12 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   const activeInlineSpanRef = useRef<HTMLSpanElement | null>(null);
   const inlineSaveTimerRef = useRef<number | null>(null);
 
+  // Persist the last selection range so Right Panel edits can apply to the intended letters
+  const lastSelectionRangeRef = useRef<Range | null>(null);
+
+  // Track whether the last pointer-down happened inside the Right Panel (prevents edit-mode from closing)
+  const lastPointerDownInInspectorRef = useRef(false);
+
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
     if (!a && !b) return true;
@@ -153,9 +159,6 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
   // Get inline edit context for Right Panel integration
   const { registerEditor } = useInlineEdit();
-  
-  // Ref to track if we handled an inline style (for context callback)
-  const didHandleInlineRef = useRef(false);
 
   // Handle double click to start editing
   const handleDoubleClick = useCallback(() => {
@@ -181,22 +184,31 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   const handleBlur = useCallback((e: React.FocusEvent) => {
     // Check if clicking on toolbar (including portaled popovers)
     const relatedTarget = e.relatedTarget as HTMLElement | null;
-    
+
     // Don't blur if clicking on the toolbar itself
     if (relatedTarget?.closest('.rich-text-toolbar')) return;
-    
+
+    // Don't blur if interacting with the Right Panel while editing
+    if (relatedTarget?.closest('.builder-right-panel')) return;
+
     // Don't blur if clicking on Radix portaled content (popovers, selects, etc.)
     // These are rendered to document.body but have data attributes we can check
     if (relatedTarget?.closest('[data-radix-popper-content-wrapper]')) return;
     if (relatedTarget?.closest('[data-radix-select-content]')) return;
     if (relatedTarget?.closest('[data-radix-popover-content]')) return;
-    
-    // Also check if the active element is inside a popover (for color inputs, etc.)
+
+    // Also check if the active element is inside a popover or the Right Panel
     const activeElement = document.activeElement as HTMLElement | null;
     if (activeElement?.closest('[data-radix-popper-content-wrapper]')) return;
-    
-    // Additional check: if relatedTarget is null (clicking non-focusable elements like sliders),
-    // check if any Radix popover is currently open in the DOM
+    if (activeElement?.closest('.builder-right-panel')) return;
+
+    // If relatedTarget is null (clicking non-focusable elements like sliders),
+    // prevent closing when the click started inside the Right Panel.
+    if (!relatedTarget && lastPointerDownInInspectorRef.current) {
+      return;
+    }
+
+    // Additional check: if relatedTarget is null, check if any Radix popover is currently open in the DOM
     if (!relatedTarget) {
       const openPopover = document.querySelector('[data-radix-popper-content-wrapper]');
       if (openPopover) return;
@@ -230,6 +242,19 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       }
     }
   }, [onChange]);
+
+  // Track pointerdown target so the editor doesn't exit when adjusting Right Panel controls
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const handler = (ev: PointerEvent) => {
+      const target = ev.target as HTMLElement | null;
+      lastPointerDownInInspectorRef.current = !!target?.closest('.builder-right-panel');
+    };
+
+    document.addEventListener('pointerdown', handler, true);
+    return () => document.removeEventListener('pointerdown', handler, true);
+  }, [isEditing]);
 
   // Update toolbar position based on current selection (snaps to highlighted text)
   const updateToolbarPosition = useCallback(() => {
@@ -335,9 +360,23 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     updateToolbarPosition();
 
     const editorEl = contentRef.current;
-    if (editorEl) {
-      activeInlineSpanRef.current = getStyledSpanAtSelection(editorEl);
+    if (!editorEl) return;
+
+    // Persist the range so Right Panel edits apply to the exact intended letters,
+    // even after the user clicks into the inspector.
+    const sel = window.getSelection();
+    const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+    const selectionInside =
+      !!range &&
+      (editorEl.contains(range.commonAncestorContainer) ||
+        editorEl.contains(sel?.anchorNode ?? null) ||
+        editorEl.contains(sel?.focusNode ?? null));
+
+    if (selectionInside && range) {
+      lastSelectionRangeRef.current = range.cloneRange();
     }
+
+    activeInlineSpanRef.current = getStyledSpanAtSelection(editorEl);
   }, [isEditing, updateToolbarPosition]);
 
   // Apply style changes - selection-first for color/gradient/formatting, otherwise whole block
@@ -496,9 +535,25 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   // Register with inline edit context when editing (for Right Panel integration)
   useEffect(() => {
     if (!isEditing || !elementId) return;
-    
-    // Register this editor's handleStyleChange with the context
-    const unregister = registerEditor(elementId, handleStyleChange);
+
+    // Wrapper that restores the user's last in-editor selection before applying styles.
+    const applyFromInspector = (nextStyles: Partial<TextStyles>): boolean => {
+      const el = contentRef.current;
+      if (!el) return false;
+
+      // Ensure editor stays active while using the inspector
+      el.focus();
+
+      const sel = window.getSelection();
+      if (sel && lastSelectionRangeRef.current) {
+        sel.removeAllRanges();
+        sel.addRange(lastSelectionRangeRef.current.cloneRange());
+      }
+
+      return handleStyleChange(nextStyles);
+    };
+
+    const unregister = registerEditor(elementId, applyFromInspector);
     return unregister;
   }, [isEditing, elementId, registerEditor, handleStyleChange]);
 

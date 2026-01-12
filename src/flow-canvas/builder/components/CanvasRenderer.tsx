@@ -1290,6 +1290,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 elementType="button"
                 disabled={readOnly}
                 className="text-inherit"
+                elementId={element.id}
               />
               {element.props?.showIcon !== false && element.props?.iconPosition !== 'left' && renderButtonIcon()}
             </button>
@@ -1484,6 +1485,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                   placeholder="Option label..."
                   disabled={readOnly}
                   className={isDarkTheme ? "text-gray-300" : "text-gray-700"}
+                  elementId={element.id}
                 />
               )}
             </label>
@@ -1557,6 +1559,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                   placeholder="Option label..."
                   disabled={readOnly}
                   className={isDarkTheme ? "text-gray-300" : "text-gray-700"}
+                  elementId={element.id}
                 />
               )}
             </label>

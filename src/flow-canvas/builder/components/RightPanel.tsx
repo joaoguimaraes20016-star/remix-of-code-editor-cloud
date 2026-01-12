@@ -111,6 +111,7 @@ import {
 import { BackgroundEditor, BackgroundValue, backgroundValueToCSS } from './BackgroundEditor';
 import type { GradientValue, ButtonAction, VideoSettings } from './modals';
 import { toast } from 'sonner';
+import { useInlineEdit } from '../contexts/InlineEditContext';
 
 interface RightPanelProps {
   page: Page;
@@ -362,6 +363,8 @@ const ElementInspector: React.FC<{
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
   
+  // When a text element is being edited, route Right Panel fill changes to the selection
+  const { applyInlineStyle } = useInlineEdit();
   // Modal states
   const [isButtonActionOpen, setIsButtonActionOpen] = useState(false);
   const [isVideoEmbedOpen, setIsVideoEmbedOpen] = useState(false);
@@ -885,6 +888,12 @@ const ElementInspector: React.FC<{
                     onClick={() => {
                       // Atomic update: set both fillType and color together
                       const color = element.props?.textColor || '#FFFFFF';
+                      const handled = applyInlineStyle(element.id, {
+                        textFillType: 'solid',
+                        textColor: color,
+                      } as any);
+                      if (handled) return;
+
                       handleMultiPropsChange({
                         textFillType: 'solid',
                         textColor: color,
@@ -910,9 +919,17 @@ const ElementInspector: React.FC<{
                           { color: '#D946EF', position: 100 },
                         ],
                       };
+                      const cloned = cloneGradient(gradient as GradientValue);
+
+                      const handled = applyInlineStyle(element.id, {
+                        textFillType: 'gradient',
+                        textGradient: cloned,
+                      } as any);
+                      if (handled) return;
+
                       handleMultiPropsChange({
                         textFillType: 'gradient',
-                        textGradient: cloneGradient(gradient as GradientValue),
+                        textGradient: cloned,
                       });
                     }}
                     className={cn(
@@ -933,7 +950,14 @@ const ElementInspector: React.FC<{
                   <span className="text-xs text-builder-text-muted">Color</span>
                   <ColorPickerPopover 
                     color={element.props?.textColor as string || '#FFFFFF'} 
-                    onChange={(color) => handlePropsChange('textColor', color)}
+                    onChange={(color) => {
+                      const handled = applyInlineStyle(element.id, {
+                        textFillType: 'solid',
+                        textColor: color,
+                      } as any);
+                      if (handled) return;
+                      handlePropsChange('textColor', color);
+                    }}
                   >
                     <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                       <div 
@@ -952,7 +976,15 @@ const ElementInspector: React.FC<{
                   <span className="text-xs text-builder-text-muted">Gradient</span>
                   <GradientPickerPopover
                     value={element.props?.textGradient as GradientValue | undefined}
-                    onChange={(gradient) => handlePropsChange('textGradient', cloneGradient(gradient))}
+                    onChange={(gradient) => {
+                      const cloned = cloneGradient(gradient);
+                      const handled = applyInlineStyle(element.id, {
+                        textFillType: 'gradient',
+                        textGradient: cloned,
+                      } as any);
+                      if (handled) return;
+                      handlePropsChange('textGradient', cloned);
+                    }}
                   >
                     <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                       <div 
@@ -972,10 +1004,17 @@ const ElementInspector: React.FC<{
               {/* Quick Color Presets (for solid) */}
               {element.props?.textFillType !== 'gradient' && (
                 <div className="flex gap-1 flex-wrap">
-                  {textColorPresets.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => handlePropsChange('textColor', color)}
+                    textColorPresets.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => {
+                          const handled = applyInlineStyle(element.id, {
+                            textFillType: 'solid',
+                            textColor: color,
+                          } as any);
+                          if (handled) return;
+                          handlePropsChange('textColor', color);
+                        }}
                       className={cn(
                         'w-5 h-5 rounded border transition-all',
                         element.props?.textColor === color
@@ -2962,7 +3001,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   };
 
   return (
-    <div className="w-72 bg-builder-surface border-l border-builder-border flex flex-col h-full min-h-0">
+    <div className="builder-right-panel w-72 bg-builder-surface border-l border-builder-border flex flex-col h-full min-h-0">
       {/* Staging/Production Toggle */}
       <PublishToggle onPublish={onPublish} />
 
