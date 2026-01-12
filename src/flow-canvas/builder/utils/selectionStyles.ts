@@ -92,6 +92,14 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
   const span = document.createElement('span');
   span.setAttribute('style', styleString);
 
+  // Persist gradient metadata so inspector/toolbar can reflect the *selected span's* gradient.
+  // (We cannot reliably re-hydrate GradientValue from CSS background-image.)
+  if (options.gradient) {
+    span.dataset.gradient = JSON.stringify(options.gradient);
+  } else if (options.color) {
+    delete span.dataset.gradient;
+  }
+
   try {
     const fragment = range.extractContents();
     span.appendChild(fragment);
@@ -186,11 +194,61 @@ export function updateSpanStyle(span: HTMLSpanElement, options: SelectionStyleOp
   const next = serializeStyleAttribute(current);
   if (next) span.setAttribute('style', next);
   else span.removeAttribute('style');
+
+  // Keep gradient metadata in sync for inspector/toolbar.
+  if (options.gradient) {
+    span.dataset.gradient = JSON.stringify(options.gradient);
+  } else if (options.color) {
+    delete span.dataset.gradient;
+  }
 }
 
 /**
- * Find the nearest styled span at the current selection/caret within a root element.
+ * Read the fill style (solid/gradient) from a styled span.
+ *
+ * NOTE: gradients are stored as data-gradient JSON because CSS background-image is not reliably parseable.
  */
+export function getSpanFillStyles(span: HTMLSpanElement): {
+  textFillType?: 'solid' | 'gradient';
+  textColor?: string;
+  textGradient?: GradientValue;
+} {
+  // Determine gradient from dataset or style props
+  const gradientJson = span.dataset.gradient;
+  const hasGradientStyle =
+    !!span.style.getPropertyValue('background-image') ||
+    !!(span as any).style?.backgroundImage ||
+    span.getAttribute('style')?.includes('background-image') ||
+    false;
+
+  if (gradientJson || hasGradientStyle) {
+    let gradient: GradientValue | undefined;
+    if (gradientJson) {
+      try {
+        gradient = JSON.parse(gradientJson) as GradientValue;
+      } catch {
+        gradient = undefined;
+      }
+    }
+
+    return {
+      textFillType: 'gradient',
+      textGradient: gradient,
+    };
+  }
+
+  const color = span.style.color || span.getAttribute('style')?.match(/color:\s*([^;]+)/i)?.[1]?.trim();
+  if (color && color !== 'transparent') {
+    return {
+      textFillType: 'solid',
+      textColor: color,
+    };
+  }
+
+  return {};
+}
+
+/**
 export function getStyledSpanAtSelection(root: HTMLElement): HTMLSpanElement | null {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;
