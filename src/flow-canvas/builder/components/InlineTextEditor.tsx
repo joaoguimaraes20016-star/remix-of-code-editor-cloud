@@ -529,7 +529,28 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       const hasSelection = liveRange && !liveRange.collapsed && liveRange.toString().length > 0;
 
       // Find existing styled span at selection/caret (fresh lookup)
-      const targetSpan = getStyledSpanAtSelection(editorEl);
+      const findSpanFromRange = (range: Range | null): HTMLSpanElement | null => {
+        if (!range) return null;
+        let node: Node | null = range.startContainer;
+        let el: HTMLElement | null = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+        while (el && el !== editorEl) {
+          if (el.tagName === 'SPAN' && el.getAttribute('style')) return el as HTMLSpanElement;
+          el = el.parentElement;
+        }
+        return null;
+      };
+
+      let targetSpan = getStyledSpanAtSelection(editorEl);
+
+      // When the toolbar/inspector has focus, the selection may no longer be "in" the editor.
+      // Fall back to the last known styled span so sliders remain stable.
+      if (!targetSpan) {
+        const active = activeInlineSpanRef.current;
+        if (active && editorEl.contains(active)) targetSpan = active;
+      }
+      if (!targetSpan) {
+        targetSpan = findSpanFromRange(lastSelectionRangeRef.current);
+      }
 
       // CASE A: We have a real text selection → wrap it (or update if whole span selected)
       if (hasSelection && liveRange) {
@@ -669,8 +690,14 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         setShowToolbar(true);
       }
 
-      // Ensure editor stays active while using the inspector
-      el.focus();
+      // Keep editing active, but don't steal focus from inspector controls (sliders/inputs)
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isInteractingWithInspector =
+        !!activeEl?.closest('.builder-right-panel') || !!activeEl?.closest('[data-radix-popper-content-wrapper]');
+
+      if (!isInteractingWithInspector) {
+        el.focus();
+      }
 
       // Restore saved selection
       const sel = window.getSelection();
@@ -1043,7 +1070,15 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       const el = contentRef.current;
       if (!el) return;
 
-      el.focus();
+      // DO NOT steal focus from sliders/pickers inside the toolbar popovers.
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isInteractingWithToolbar =
+        !!activeEl?.closest('.rich-text-toolbar') || !!activeEl?.closest('[data-radix-popper-content-wrapper]');
+
+      if (!isInteractingWithToolbar) {
+        el.focus();
+      }
+
       const sel = window.getSelection();
       if (sel && lastSelectionRangeRef.current) {
         try {
