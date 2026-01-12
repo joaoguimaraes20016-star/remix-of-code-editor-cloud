@@ -2798,11 +2798,11 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
       )}
       style={{
         ...frameStyles.style,
-        // For full-width, extend past container margins
+        // For full-width, use viewport-relative positioning for true edge-to-edge
         ...(isFullWidth && {
-          marginLeft: '-2rem',
-          marginRight: '-2rem',
-          width: 'calc(100% + 4rem)',
+          width: '100vw',
+          marginLeft: 'calc(-50vw + 50%)',
+          marginRight: 'calc(-50vw + 50%)',
         })
       }}
     >
@@ -3025,8 +3025,13 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
             style={{ 
               fontFamily: fontFamily,
               '--primary-color': primaryColor,
-              // Use step.background if set, otherwise fall back to page background
-              ...getPageBackgroundStyles(step.background || pageSettings?.page_background, isDarkTheme),
+              // Use step.background only if it has meaningful content, otherwise fall back to page background
+              ...getPageBackgroundStyles(
+                (step.background && (step.background.type || step.background.color)) 
+                  ? step.background 
+                  : pageSettings?.page_background, 
+                isDarkTheme
+              ),
             } as React.CSSProperties}
             onClick={(e) => {
               // Click on empty device frame = select page / clear selection
@@ -3037,7 +3042,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
           >
             {/* Background Overlay (from step or page) */}
             {(() => {
-              const bgSource = step.background || pageSettings?.page_background;
+              const hasStepBackground = step.background && (step.background.type || step.background.color);
+              const bgSource = hasStepBackground ? step.background : pageSettings?.page_background;
               const overlayStyles = getOverlayStyles(bgSource);
               return overlayStyles ? (
                 <div 
