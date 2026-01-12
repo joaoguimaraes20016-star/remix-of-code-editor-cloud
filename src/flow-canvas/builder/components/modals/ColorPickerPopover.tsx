@@ -39,6 +39,34 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
     const [inputValue, setInputValue] = useState(color);
     const [isOpen, setIsOpen] = useState(false);
     const contentRef = useRef<HTMLDivElement | null>(null);
+    // Capture selection when popover opens so we can restore it before applying colors
+    const savedSelectionRef = useRef<Range | null>(null);
+
+    // Capture selection when popover opens
+    useEffect(() => {
+      if (isOpen) {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && !sel.getRangeAt(0).collapsed) {
+          savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+        }
+      } else {
+        savedSelectionRef.current = null;
+      }
+    }, [isOpen]);
+
+    // Helper to restore selection before applying color
+    const restoreSelectionAndApply = useCallback((newColor: string) => {
+      if (savedSelectionRef.current) {
+        try {
+          const sel = window.getSelection();
+          if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(savedSelectionRef.current.cloneRange());
+          }
+        } catch { /* ignore */ }
+      }
+      onChange(newColor);
+    }, [onChange]);
 
     // Manual outside-dismiss so slider drags / non-focusable controls never close this popover.
     useEffect(() => {
@@ -74,19 +102,19 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
       setInputValue(value);
       // Validate hex color
       if (/^#[0-9A-Fa-f]{6}$/.test(value) || /^#[0-9A-Fa-f]{3}$/.test(value)) {
-        onChange(value);
+        restoreSelectionAndApply(value);
       }
     };
 
     const handlePresetClick = (preset: string) => {
       setInputValue(preset);
-      onChange(preset);
+      restoreSelectionAndApply(preset);
     };
 
     const handleColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setInputValue(value);
-      onChange(value);
+      restoreSelectionAndApply(value);
     };
 
     // Eyedropper handler using browser EyeDropper API
@@ -102,7 +130,7 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
         const result = await eyeDropper.open();
         const pickedColor = result.sRGBHex;
         setInputValue(pickedColor);
-        onChange(pickedColor);
+        restoreSelectionAndApply(pickedColor);
         toast.success(`Color picked: ${pickedColor}`);
       } catch (e) {
         // User canceled the eyedropper
