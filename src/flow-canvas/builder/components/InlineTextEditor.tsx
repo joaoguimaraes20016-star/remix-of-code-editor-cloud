@@ -557,7 +557,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const span = applyStylesToSelection(styleOpts);
         if (span) {
           activeInlineSpanRef.current = span;
-          lastSelectionRangeRef.current = null; // Clear so next selection is fresh
+
+          // Persist the new selection (span contents) so toolbar/right-panel sliders keep working
+          try {
+            const r = document.createRange();
+            r.selectNodeContents(span);
+            lastSelectionRangeRef.current = r.cloneRange();
+          } catch {
+            // ignore
+          }
+
           setSessionHasInlineStyles(true);
           scheduleInlineHtmlSave();
           syncToolbarState();
@@ -576,6 +585,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // CASE C: No selection and no target span while editing → user must select text first
+      if (import.meta.env.DEV) {
+        console.debug('[InlineTextEditor] inline-style ignored (no selection)', {
+          elementId,
+          newStyles,
+          hasSavedSelection: !!lastSelectionRangeRef.current,
+        });
+      }
       toast.info('Select text to apply styling');
       return false;
     }
