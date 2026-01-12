@@ -2784,14 +2784,27 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
 
   const frameStyles = getFrameBackgroundStyles();
   
+  // Determine layout mode - 'contained' (centered box) or 'full-width' (edge-to-edge)
+  const isFullWidth = frame.layout === 'full-width';
+  
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden transition-all relative group/frame',
+        'overflow-hidden transition-all relative group/frame',
+        // Apply rounded corners only for contained layout
+        !isFullWidth && 'rounded-2xl',
         frameStyles.className,
         isSelected && 'ring-2 ring-builder-accent shadow-[0_0_0_4px_hsl(var(--builder-accent)/0.15)]'
       )}
-      style={frameStyles.style}
+      style={{
+        ...frameStyles.style,
+        // For full-width, extend past container margins
+        ...(isFullWidth && {
+          marginLeft: '-2rem',
+          marginRight: '-2rem',
+          width: 'calc(100% + 4rem)',
+        })
+      }}
     >
       {/* Frame selection handle - positioned outside content flow with generous spacing */}
       {!readOnly && (
@@ -2810,7 +2823,11 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
           </div>
         </div>
       )}
-      <div className="p-8">
+      {/* Apply padding based on layout - full-width gets horizontal padding to keep content readable */}
+      <div className={cn(
+        'py-8',
+        isFullWidth ? 'px-8 md:px-12 lg:px-16' : 'p-8'
+      )}>
         {frame.stacks.map((stack) => (
           <StackRenderer
             key={stack.id}

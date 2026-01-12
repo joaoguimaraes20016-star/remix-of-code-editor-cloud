@@ -193,6 +193,9 @@ export interface Stack {
 
 export type FrameBackgroundType = 'transparent' | 'white' | 'dark' | 'glass' | 'custom' | 'gradient' | 'image';
 
+// Frame layout width options
+export type FrameLayout = 'contained' | 'full-width';
+
 // Glassmorphism settings
 export interface GlassmorphismSettings {
   backdropBlur?: number;         // 0-30 px
@@ -220,6 +223,8 @@ export interface Frame {
   stacks: Stack[];
   props: Record<string, unknown>;
   styles?: Record<string, string>;
+  // Frame layout - contained (centered box) or full-width (edge-to-edge)
+  layout?: FrameLayout;
   // Frame-specific background settings
   background?: FrameBackgroundType;
   backgroundColor?: string;
