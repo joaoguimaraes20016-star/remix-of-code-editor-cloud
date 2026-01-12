@@ -288,29 +288,14 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
         sideOffset={5}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
-        onPointerDown={(e) => {
-          // Bubble-phase only so sliders still work, but canvas/global handlers won't.
-          e.stopPropagation();
-        }}
-        onPointerMove={(e) => {
-          e.stopPropagation();
-        }}
-        onPointerDownOutside={(e) => {
-          const target = e.target as HTMLElement;
-          const isSliderInteraction =
-            !!target.closest('[data-lovable-slider="true"]') ||
-            !!target.closest('[role="slider"]');
-
-          if (isSliderInteraction) e.preventDefault();
-        }}
-        onInteractOutside={(e) => {
-          const target = e.target as HTMLElement;
-          const isSliderInteraction =
-            !!target.closest('[data-lovable-slider="true"]') ||
-            !!target.closest('[role="slider"]');
-
-          if (isSliderInteraction) e.preventDefault();
-        }}
+        // CRITICAL: Prevent ALL automatic outside-click closing.
+        // The popover will only close when:
+        // 1. User clicks the trigger button again
+        // 2. User presses Escape
+        // 3. Parent component unmounts
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
       >
         {/* Header */}
         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[hsl(220,18%,14%)]">

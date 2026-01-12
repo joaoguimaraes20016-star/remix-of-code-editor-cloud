@@ -476,31 +476,15 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
-          onPointerDown={(e) => {
-            // Don't let pointer events inside the popover bubble to any global/canvas handlers.
-            // (Bubble phase only — does NOT break Radix Slider dragging.)
-            e.stopPropagation();
-          }}
-          onPointerMove={(e) => {
-            e.stopPropagation();
-          }}
-          onPointerDownOutside={(e) => {
-            // Prevent closing if the user is interacting with ANY part of a slider.
-            const target = e.target as HTMLElement;
-            const isSliderInteraction =
-              !!target.closest('[data-lovable-slider="true"]') ||
-              !!target.closest('[role="slider"]');
-
-            if (isSliderInteraction) e.preventDefault();
-          }}
-          onInteractOutside={(e) => {
-            const target = e.target as HTMLElement;
-            const isSliderInteraction =
-              !!target.closest('[data-lovable-slider="true"]') ||
-              !!target.closest('[role="slider"]');
-
-            if (isSliderInteraction) e.preventDefault();
-          }}
+          // CRITICAL: Prevent ALL automatic outside-click closing.
+          // The popover will only close when:
+          // 1. User clicks the trigger button again (toggles colorOpen state)
+          // 2. User presses Escape
+          // 3. The entire toolbar unmounts
+          // This eliminates all the race conditions with slider dragging.
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
         >
           <div className="space-y-3">
             {/* Fill Type Toggle - uses atomic handler to set both type and value */}
