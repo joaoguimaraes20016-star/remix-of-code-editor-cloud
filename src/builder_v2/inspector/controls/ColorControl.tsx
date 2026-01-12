@@ -35,6 +35,7 @@ export function ColorControl({ value, onChange, label }: ColorControlProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Manual outside-dismiss logic to allow proper closing when clicking outside
+  // IMPORTANT: We use 'pointerdown' (not capture) to let other handlers process first
   useEffect(() => {
     if (!isOpen) return;
 
@@ -53,12 +54,13 @@ export function ColorControl({ value, onChange, label }: ColorControlProps) {
         if (portal.contains(target)) return;
       }
       
-      // Close the popover
+      // Close the popover but don't prevent the click from reaching its target
       setIsOpen(false);
     };
 
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+    // Use regular event listener (not capture) so clicks reach their targets first
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [isOpen]);
 
   return (

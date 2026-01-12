@@ -280,10 +280,11 @@ export const GradientPickerPopover = React.forwardRef<HTMLDivElement, GradientPi
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   // Manual outside-dismiss so slider drags never close the panel.
+  // IMPORTANT: We use 'pointerdown' (not capture) to let other handlers process first
   useEffect(() => {
     if (!isOpen) return;
 
-    const onPointerDownCapture = (ev: PointerEvent) => {
+    const onPointerDown = (ev: PointerEvent) => {
       const target = ev.target as HTMLElement | null;
       if (!target) return;
 
@@ -298,11 +299,13 @@ export const GradientPickerPopover = React.forwardRef<HTMLDivElement, GradientPi
         return;
       }
 
+      // Close the popover but don't prevent the click from reaching its target
       setIsOpen(false);
     };
 
-    document.addEventListener('pointerdown', onPointerDownCapture, true);
-    return () => document.removeEventListener('pointerdown', onPointerDownCapture, true);
+    // Use regular event listener (not capture) so clicks reach their targets first
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [isOpen]);
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
