@@ -77,6 +77,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const containerRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const activeInlineSpanRef = useRef<HTMLSpanElement | null>(null);
+  const activeInlineSpanIdRef = useRef<string | null>(null); // Stable ID to re-acquire span after DOM mutations
   const inlineSaveTimerRef = useRef<number | null>(null);
 
   // Persist the last selection range so Right Panel edits can apply to the intended letters
@@ -416,6 +417,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           const span = getStyledSpanAtSelection(editorEl);
           if (span) {
             activeInlineSpanRef.current = span;
+            activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
 
             // Keep toolbar color/gradient UI synced to the selected span even if
             // selection changes via keyboard (handleSelect doesn't fire reliably).
@@ -474,6 +476,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   }, [showToolbar, isEditing, updateToolbarPosition]);
 
   // Debounced save for inline HTML updates (prevents re-render jitter while tweaking custom gradients)
+  // NOTE: We no longer run span cleanup (unwrap/merge) during active editing.
+  // DOM mutations during slider drags invalidate span refs and break interactions.
+  // Cleanup happens on blur/exit instead.
   const scheduleInlineHtmlSave = useCallback(() => {
     const editorEl = contentRef.current;
     if (!editorEl) return;
@@ -485,8 +490,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     inlineSaveTimerRef.current = window.setTimeout(() => {
       const el = contentRef.current;
       if (!el) return;
-      unwrapNestedStyledSpans(el);
-      mergeAdjacentStyledSpans(el);
+      // Skip cleanup here - just save current state to preserve span targeting
       const htmlContent = sanitizeStyledHTML(el.innerHTML);
       onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
     }, 150);
@@ -517,6 +521,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       const span = getStyledSpanAtSelection(editorEl);
       if (span) {
         activeInlineSpanRef.current = span;
+        activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
         // Keep toolbar UI synced to the selected span's fill (but avoid re-render loops)
         const fill = getSpanFillStyles(span);
         if (fill.textFillType) {
@@ -648,6 +653,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const active = activeInlineSpanRef.current;
         if (active && editorEl.contains(active)) targetSpan = active;
       }
+      
+      // If the ref is stale (DOM mutation removed it), try re-acquiring by stable ID
+      if (!targetSpan && activeInlineSpanIdRef.current) {
+        const found = editorEl.querySelector(`span[data-inline-style-id="${activeInlineSpanIdRef.current}"]`);
+        if (found) {
+          targetSpan = found as HTMLSpanElement;
+          activeInlineSpanRef.current = targetSpan; // Re-sync ref
+        }
+      }
+      
       if (!targetSpan) {
         targetSpan = findSpanFromRange(lastSelectionRangeRef.current);
       }
@@ -666,6 +681,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               // Update existing span in place
               updateSpanStyle(targetSpan, styleOpts);
               activeInlineSpanRef.current = targetSpan;
+              activeInlineSpanIdRef.current = targetSpan.dataset.inlineStyleId || null;
               setSessionHasInlineStyles(true);
               scheduleInlineHtmlSave();
               syncToolbarState();
@@ -678,6 +694,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const span = applyStylesToSelection(styleOpts);
         if (span) {
           activeInlineSpanRef.current = span;
+          activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
 
           // Persist the new selection (span contents) so toolbar/right-panel sliders keep working
           try {
@@ -699,6 +716,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (targetSpan) {
         updateSpanStyle(targetSpan, styleOpts);
         activeInlineSpanRef.current = targetSpan;
+        activeInlineSpanIdRef.current = targetSpan.dataset.inlineStyleId || null;
         setSessionHasInlineStyles(true);
         scheduleInlineHtmlSave();
         syncToolbarState();
