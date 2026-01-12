@@ -85,7 +85,23 @@ export function InlineTextEditor({
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isEditingRef = useRef(false);
   const lastSavedValueRef = useRef(value); // Track what we last saved to prevent revert
+  const lastPointerDownInToolbarOrPopoverRef = useRef(false);
 
+  // Track where the last pointerdown happened so interacting with portaled popovers
+  // (which blur the contentEditable with relatedTarget=null) doesn't end editing.
+  useEffect(() => {
+    const onPointerDownCapture = (ev: PointerEvent) => {
+      const target = ev.target as HTMLElement | null;
+      lastPointerDownInToolbarOrPopoverRef.current = !!(
+        target &&
+        (toolbarRef.current?.contains(target) ||
+          target.closest('[data-radix-popper-content-wrapper]'))
+      );
+    };
+
+    document.addEventListener('pointerdown', onPointerDownCapture, true);
+    return () => document.removeEventListener('pointerdown', onPointerDownCapture, true);
+  }, []);
   // Keep isEditingRef in sync
   useEffect(() => {
     isEditingRef.current = isEditing;
@@ -140,20 +156,24 @@ export function InlineTextEditor({
   const handleBlur = (e: React.FocusEvent) => {
     // If focus moved to toolbar, don't blur
     if (toolbarRef.current?.contains(e.relatedTarget as Node)) return;
-    
+
     // If focus moved to a popover (portaled), don't blur
     const relatedTarget = e.relatedTarget as HTMLElement | null;
     if (relatedTarget?.closest('[data-radix-popper-content-wrapper]')) return;
-    
+
+    // Common case: clicking/dragging inside a portaled popover causes contentEditable blur
+    // with relatedTarget=null. In that case, keep editing active.
+    if (!e.relatedTarget && lastPointerDownInToolbarOrPopoverRef.current) return;
+
     // If there's an active picker open, don't blur
     if (activePicker) return;
-    
+
     // Flush any pending debounced save immediately
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
-    
+
     // Save immediately on blur - SAVE HTML to preserve formatting
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
@@ -161,7 +181,7 @@ export function InlineTextEditor({
       onChange(html); // Save HTML with formatting
       onHtmlChange?.(html);
     }
-    
+
     // Exit editing mode immediately - no delay for canvas clicks
     setIsEditing(false);
     onEditingChange?.(false);
