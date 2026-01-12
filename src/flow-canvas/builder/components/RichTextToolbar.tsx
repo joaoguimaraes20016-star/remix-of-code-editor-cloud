@@ -407,7 +407,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           </button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-auto p-1 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
+          className="w-auto p-1 bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] shadow-xl"
           sideOffset={4}
         >
           <div className="flex gap-0.5">

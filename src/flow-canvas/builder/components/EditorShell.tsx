@@ -108,6 +108,24 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   // Editor UI theme state - controls panels/toolbar appearance (dark by default)
   const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark');
 
+  // Sync editor theme to document body for Radix portals (they render outside the React tree)
+  useEffect(() => {
+    document.body.classList.remove('dark', 'editor-light');
+    document.body.classList.add(editorTheme === 'dark' ? 'dark' : 'editor-light');
+    
+    // Also sync to toolbar portal root if it exists
+    const portalRoot = document.getElementById('toolbar-portal-root');
+    if (portalRoot) {
+      portalRoot.classList.remove('dark', 'editor-light');
+      portalRoot.classList.add(editorTheme === 'dark' ? 'dark' : 'editor-light');
+    }
+    
+    return () => {
+      // Cleanup on unmount
+      document.body.classList.remove('dark', 'editor-light');
+    };
+  }, [editorTheme]);
+
   // Handler to replay animation on an element
   const handleReplayAnimation = useCallback((elementId: string) => {
     setReplayAnimationKey(prev => prev + 1);
