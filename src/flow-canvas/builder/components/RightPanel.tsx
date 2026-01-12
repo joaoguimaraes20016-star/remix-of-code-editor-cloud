@@ -369,14 +369,22 @@ const ElementInspector: React.FC<{
   // Force re-render while selection changes so the inspector reflects the *actual selected span* styles
   const [selectionTick, setSelectionTick] = useState(0);
 
-  useEffect(() => {
-    if (element.type !== 'text' && element.type !== 'heading') return;
-    if (!hasActiveEditor(element.id)) return;
+   useEffect(() => {
+     if (element.type !== 'text' && element.type !== 'heading') return;
+     if (!hasActiveEditor(element.id)) return;
 
-    const onSel = () => setSelectionTick((t) => t + 1);
-    document.addEventListener('selectionchange', onSel);
-    return () => document.removeEventListener('selectionchange', onSel);
-  }, [element.id, element.type, hasActiveEditor]);
+     let raf = 0;
+     const onSel = () => {
+       cancelAnimationFrame(raf);
+       raf = requestAnimationFrame(() => setSelectionTick((t) => t + 1));
+     };
+
+     document.addEventListener('selectionchange', onSel);
+     return () => {
+       cancelAnimationFrame(raf);
+       document.removeEventListener('selectionchange', onSel);
+     };
+   }, [element.id, element.type, hasActiveEditor]);
 
   const inlineSelectionStyles = useMemo(
     () => getInlineSelectionStyles(element.id),
@@ -907,11 +915,12 @@ const ElementInspector: React.FC<{
                 <div className="flex rounded-lg overflow-hidden border border-builder-border">
                   <button
                     onClick={() => {
-                      // Atomic update: set both fillType and color together
-                      const color = effectiveTextColor || '#FFFFFF';
+                      // IMPORTANT: never default to white; let the editor compute a safe fallback.
+                      const color = effectiveTextColor;
+
                       const handled = applyInlineStyle(element.id, {
                         textFillType: 'solid',
-                        textColor: color,
+                        ...(color ? { textColor: color } : {}),
                       } as any);
                       if (handled) return;
 
@@ -923,7 +932,7 @@ const ElementInspector: React.FC<{
 
                       handleMultiPropsChange({
                         textFillType: 'solid',
-                        textColor: color,
+                        ...(color ? { textColor: color } : {}),
                       });
                     }}
                     className={cn(

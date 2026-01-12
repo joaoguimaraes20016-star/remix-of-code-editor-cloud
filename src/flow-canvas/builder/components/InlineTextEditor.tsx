@@ -425,15 +425,25 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       const span = getStyledSpanAtSelection(editorEl);
       if (span) {
         activeInlineSpanRef.current = span;
-        // Keep toolbar UI synced to the selected span's fill
+        // Keep toolbar UI synced to the selected span's fill (but avoid re-render loops)
         const fill = getSpanFillStyles(span);
         if (fill.textFillType) {
-          setStyles(prev => ({
-            ...prev,
-            textFillType: fill.textFillType,
-            textColor: fill.textColor ?? prev.textColor,
-            textGradient: fill.textGradient ? cloneGradient(fill.textGradient) : prev.textGradient,
-          }));
+          setStyles((prev) => {
+            const nextFillType = fill.textFillType ?? prev.textFillType;
+            const nextColor = fill.textColor ?? prev.textColor;
+            const nextGradient = fill.textGradient ? cloneGradient(fill.textGradient) : prev.textGradient;
+
+            const sameGradient = gradientEquals(prev.textGradient, nextGradient as any);
+            const unchanged = prev.textFillType === nextFillType && prev.textColor === nextColor && sameGradient;
+            if (unchanged) return prev;
+
+            return {
+              ...prev,
+              textFillType: nextFillType,
+              textColor: nextColor,
+              textGradient: nextGradient,
+            };
+          });
         }
       }
     }
@@ -458,10 +468,14 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
       if (newStyles.textFillType === 'gradient') {
         opts.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
-      } else if (newStyles.textColor) {
+      } else if (newStyles.textColor !== undefined) {
+        // Explicit solid color change
         opts.color = newStyles.textColor;
       } else if (newStyles.textFillType === 'solid') {
-        opts.color = newStyles.textColor || styles.textColor || '#FFFFFF';
+        // Do NOT default to white (causes "whole block turns white" bugs).
+        // Use existing style, then computed color from the editor, then fall back to currentColor.
+        const computed = editorEl ? window.getComputedStyle(editorEl).color : '';
+        opts.color = styles.textColor || computed || 'currentColor';
       }
 
       if (newStyles.fontWeight) {
