@@ -656,7 +656,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // Get current DOM selection state
       const sel = window.getSelection();
       let liveRange: Range | null = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-      let liveHasSelection = liveRange && !liveRange.collapsed && editorEl.contains(liveRange.commonAncestorContainer);
+
+      // IMPORTANT: commonAncestorContainer can be the editor element itself (contains() would be false).
+      // Use start/end containers to reliably detect in-editor selections.
+      let liveHasSelection =
+        !!liveRange &&
+        !liveRange.collapsed &&
+        liveRange.toString().length > 0 &&
+        (editorEl.contains(liveRange.startContainer) ||
+          editorEl.contains(liveRange.endContainer) ||
+          editorEl.contains(sel?.anchorNode ?? null) ||
+          editorEl.contains(sel?.focusNode ?? null));
 
       if (import.meta.env.DEV) {
         console.debug('[handleStyleChange] Initial state:', {
