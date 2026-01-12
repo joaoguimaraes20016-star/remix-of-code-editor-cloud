@@ -476,6 +476,30 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => {
+            // Only prevent closing if interacting with a slider element
+            const target = e.target as HTMLElement;
+            const isSliderInteraction = 
+              target.closest('[role="slider"]') ||
+              target.closest('[data-radix-slider-track]') ||
+              target.closest('[data-radix-slider-range]') ||
+              target.closest('[data-radix-slider-thumb]');
+            if (isSliderInteraction) {
+              e.preventDefault();
+            }
+          }}
+          onInteractOutside={(e) => {
+            // Same logic for interact outside
+            const target = e.target as HTMLElement;
+            const isSliderInteraction = 
+              target.closest('[role="slider"]') ||
+              target.closest('[data-radix-slider-track]') ||
+              target.closest('[data-radix-slider-range]') ||
+              target.closest('[data-radix-slider-thumb]');
+            if (isSliderInteraction) {
+              e.preventDefault();
+            }
+          }}
         >
           <div className="space-y-3">
             {/* Fill Type Toggle - uses atomic handler to set both type and value */}
