@@ -1805,8 +1805,8 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
         </div>
       </CollapsibleSection>
 
-      {/* Per-Step Background - now labeled as "Page Background" for clarity */}
-      <CollapsibleSection title="Page Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
+      {/* Per-Step Background - labeled as "Step Background" to distinguish from global Canvas Background */}
+      <CollapsibleSection title="Step Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
         <div className="space-y-4 pt-3">
           <div className="toggle-pill w-full">
             <button 
@@ -1879,7 +1879,7 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
           )}
 
           <p className="text-[10px] text-builder-text-dim">
-            Sets the full-page background color for this step/page. Use "Section Background" in the section inspector to style individual sections within the page.
+            Overrides the global Canvas Background for this step only. The "Card Background" in the section inspector styles the content card that sits on top.
           </p>
         </div>
       </CollapsibleSection>
@@ -2406,8 +2406,8 @@ const FrameInspector: React.FC<{
               <Layout className="w-4 h-4 text-builder-text-muted" />
             </div>
             <div>
-              <p className="text-sm font-medium text-builder-text">{frame.label || 'Section'}</p>
-              <p className="text-xs text-builder-text-muted">Section Background & Layout</p>
+              <p className="text-sm font-medium text-builder-text">{frame.label || 'Content Card'}</p>
+              <p className="text-xs text-builder-text-muted">Card that sits on top of canvas</p>
             </div>
           </div>
           {/* Delete button */}
@@ -2438,7 +2438,7 @@ const FrameInspector: React.FC<{
       </CollapsibleSection>
 
       {/* Background - using unified BackgroundEditor */}
-      <CollapsibleSection title="Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
+      <CollapsibleSection title="Card Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
         <div className="pt-3">
           <BackgroundEditor
             value={getBackgroundValue()}
@@ -2635,7 +2635,7 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
               </SelectContent>
             </Select>
           </FieldGroup>
-          <FieldGroup label="Accent Color" hint="Used for buttons, links, and highlights">
+          <FieldGroup label="Accent Color" hint="Default button color, focus rings, and link colors in the published funnel">
             <ColorPickerPopover
               color={primaryColor}
               onChange={(color) => handleSettingsUpdate('primary_color', color)}
@@ -2694,7 +2694,7 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Page Background" icon={<Image className="w-4 h-4" />}>
+      <CollapsibleSection title="Canvas Background" icon={<Image className="w-4 h-4" />}>
         <div className="space-y-3 pt-3">
           {/* Reset Button */}
           <div className="flex items-center justify-between">
@@ -3006,6 +3006,11 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
               </div>
             </div>
           )}
+          
+          {/* Explanatory hint */}
+          <p className="text-[10px] text-builder-text-dim pt-2 border-t border-builder-border mt-2">
+            This is the outermost background layer. Content cards sit on top of this canvas.
+          </p>
         </div>
       </CollapsibleSection>
 
