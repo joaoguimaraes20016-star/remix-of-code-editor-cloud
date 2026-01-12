@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Palette, Plus, Trash2, RotateCw } from 'lucide-react';
 import {
   Popover,
@@ -276,18 +276,50 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
   onChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLSpanElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
+  // Manual outside-dismiss so slider drags never close the panel.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onPointerDownCapture = (ev: PointerEvent) => {
+      const target = ev.target as HTMLElement | null;
+      if (!target) return;
+
+      if (contentRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target)) return;
+
+      if (
+        target.closest('[data-radix-popper-content-wrapper]') ||
+        target.closest('[data-radix-popover-content]') ||
+        target.closest('[data-radix-select-content]')
+      ) {
+        return;
+      }
+
+      setIsOpen(false);
+    };
+
+    document.addEventListener('pointerdown', onPointerDownCapture, true);
+    return () => document.removeEventListener('pointerdown', onPointerDownCapture, true);
+  }, [isOpen]);
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        {children}
+        <span ref={triggerRef} className="contents">{children}</span>
       </PopoverTrigger>
       <PopoverContent 
+        ref={contentRef}
         className="w-80 p-3 bg-[hsl(220,22%,7%)] border-[hsl(220,18%,14%)] text-white" 
         align="end"
         sideOffset={5}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
+        // We manage outside-dismiss ourselves (document pointerdown); prevent Radix auto-dismiss.
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
         // Stop propagation so canvas/global handlers don't receive inside-popover events
         onPointerDown={(e) => e.stopPropagation()}
         onPointerMove={(e) => e.stopPropagation()}
