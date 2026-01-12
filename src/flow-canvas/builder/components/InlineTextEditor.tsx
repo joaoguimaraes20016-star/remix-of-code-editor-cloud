@@ -229,12 +229,14 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       if (openPopover) return;
     }
     
-    // Clear any pending inline-style save and active span target
+    // Clear any pending inline-style save timer (we'll save now)
     if (inlineSaveTimerRef.current) {
       window.clearTimeout(inlineSaveTimerRef.current);
       inlineSaveTimerRef.current = null;
     }
-    activeInlineSpanRef.current = null;
+    
+    // DON'T clear activeInlineSpanRef or lastSelectionRangeRef here!
+    // They need to persist so RightPanel can still use them after blur
 
     setIsEditing(false);
     setShowToolbar(false);
@@ -399,6 +401,14 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   const handleStyleChange = useCallback((newStyles: Partial<TextStyles>): boolean => {
     const editorEl = contentRef.current;
 
+    console.log('[InlineEdit] handleStyleChange called', {
+      hasEditorEl: !!editorEl,
+      isEditing,
+      hasLastSelection: !!lastSelectionRangeRef.current,
+      hasActiveSpan: !!activeInlineSpanRef.current,
+      newStyles
+    });
+
     const shouldApplyInline =
       newStyles.textColor !== undefined ||
       newStyles.textGradient !== undefined ||
@@ -437,12 +447,15 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     };
 
     // Inline styling path: update existing span under caret OR wrap current selection once
-    if (shouldApplyInline && editorEl && isEditing) {
+    // Note: We no longer require isEditing here since applyFromInspector may re-enter edit mode
+    if (shouldApplyInline && editorEl) {
       const styleOptions = buildSelectionOptions();
       if (styleOptions) {
         const sel = window.getSelection();
         const hasSelection = hasSelectionInElement(editorEl);
         const target = getStyledSpanAtSelection(editorEl) || activeInlineSpanRef.current;
+        
+        console.log('[InlineEdit] Inline path', { hasSelection, hasTarget: !!target, styleOptions });
         
         // Helper to sync toolbar state
         const syncToolbarState = () => {
@@ -507,6 +520,33 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
             return true;
           }
         }
+        
+        // CASE 4: No selection and no target - check if we have a saved selection range
+        // This handles the case when the user clicks RightPanel and selection was lost
+        if (!hasSelection && !target && lastSelectionRangeRef.current) {
+          // Try to re-apply the saved selection
+          try {
+            if (editorEl.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
+              sel?.removeAllRanges();
+              sel?.addRange(lastSelectionRangeRef.current.cloneRange());
+              
+              // Now try to apply again with restored selection
+              const restoredHasSelection = hasSelectionInElement(editorEl);
+              if (restoredHasSelection) {
+                const span = applyStylesToSelection(styleOptions);
+                if (span) {
+                  activeInlineSpanRef.current = span;
+                  setSessionHasInlineStyles(true);
+                  scheduleInlineHtmlSave();
+                  syncToolbarState();
+                  return true;
+                }
+              }
+            }
+          } catch {
+            // Range became invalid
+          }
+        }
       }
     }
 
@@ -551,28 +591,99 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   }, [styles, value, onChange, scheduleInlineHtmlSave, isEditing]);
 
   // Register with inline edit context when editing (for Right Panel integration)
+  // Use refs to persist state across renders and avoid stale closures
+  const unregisterTimerRef = useRef<number | null>(null);
+  const registeredElementIdRef = useRef<string | null>(null);
+  const isEditingRef = useRef(isEditing);
+  
+  // Keep ref in sync with state
   useEffect(() => {
-    if (!isEditing || !elementId) return;
+    isEditingRef.current = isEditing;
+  }, [isEditing]);
+  
+  useEffect(() => {
+    // Clear any pending unregister when effect re-runs
+    if (unregisterTimerRef.current) {
+      window.clearTimeout(unregisterTimerRef.current);
+      unregisterTimerRef.current = null;
+    }
+    
+    if (!elementId) return;
 
     // Wrapper that restores the user's last in-editor selection before applying styles.
+    // Uses refs to avoid stale closure issues.
     const applyFromInspector = (nextStyles: Partial<TextStyles>): boolean => {
       const el = contentRef.current;
-      if (!el) return false;
+      if (!el) {
+        console.log('[InlineEdit] applyFromInspector: no element ref');
+        return false;
+      }
+
+      console.log('[InlineEdit] applyFromInspector called', { 
+        isEditing: isEditingRef.current, 
+        hasLastSelection: !!lastSelectionRangeRef.current,
+        hasActiveSpan: !!activeInlineSpanRef.current 
+      });
+
+      // Re-enter editing mode if we were recently editing (within debounce window)
+      if (!isEditingRef.current && registeredElementIdRef.current === elementId) {
+        console.log('[InlineEdit] Re-entering edit mode from inspector');
+        setIsEditing(true);
+        setShowToolbar(true);
+      }
 
       // Ensure editor stays active while using the inspector
       el.focus();
 
       const sel = window.getSelection();
       if (sel && lastSelectionRangeRef.current) {
-        sel.removeAllRanges();
-        sel.addRange(lastSelectionRangeRef.current.cloneRange());
+        try {
+          // Validate range is still valid within the element
+          if (el.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
+            sel.removeAllRanges();
+            sel.addRange(lastSelectionRangeRef.current.cloneRange());
+            console.log('[InlineEdit] Selection restored from lastSelectionRangeRef');
+          }
+        } catch (e) {
+          console.log('[InlineEdit] Range restoration failed:', e);
+        }
       }
 
       return handleStyleChange(nextStyles);
     };
 
-    const unregister = registerEditor(elementId, applyFromInspector);
-    return unregister;
+    if (isEditing) {
+      // Register immediately when editing starts
+      registeredElementIdRef.current = elementId;
+      const unregister = registerEditor(elementId, applyFromInspector);
+      console.log('[InlineEdit] Editor registered (editing)', elementId);
+      
+      return () => {
+        // Debounce unregistration to allow RightPanel clicks to still work
+        unregisterTimerRef.current = window.setTimeout(() => {
+          console.log('[InlineEdit] Editor unregistered (debounce expired)', elementId);
+          unregister();
+          registeredElementIdRef.current = null;
+        }, 500); // Increased to 500ms for more reliable RightPanel interaction
+      };
+    } else if (registeredElementIdRef.current === elementId) {
+      // Re-register briefly if we just stopped editing (allows RightPanel clicks to work)
+      const unregister = registerEditor(elementId, applyFromInspector);
+      console.log('[InlineEdit] Editor re-registered (post-blur)', elementId);
+      
+      unregisterTimerRef.current = window.setTimeout(() => {
+        console.log('[InlineEdit] Editor unregistered (post-blur debounce)', elementId);
+        unregister();
+        registeredElementIdRef.current = null;
+      }, 500);
+      
+      return () => {
+        if (unregisterTimerRef.current) {
+          window.clearTimeout(unregisterTimerRef.current);
+          unregisterTimerRef.current = null;
+        }
+      };
+    }
   }, [isEditing, elementId, registerEditor, handleStyleChange]);
 
   // Get CSS classes based on styles
