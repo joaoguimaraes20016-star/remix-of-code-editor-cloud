@@ -318,9 +318,23 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
     };
     
-    const handlePointerUp = () => {
+    const handlePointerUp = (ev: PointerEvent) => {
       isPointerDownRef.current = false;
       pointerDownContextRef.current = null;
+      
+      // Capture selection immediately after mouseup inside the editor
+      // This ensures we have the latest user selection before any popover interaction
+      const target = ev.target as HTMLElement | null;
+      const editorEl = contentRef.current;
+      if (editorEl && target && editorEl.contains(target)) {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          if (!range.collapsed && range.toString().length > 0) {
+            lastSelectionRangeRef.current = range.cloneRange();
+          }
+        }
+      }
     };
 
     document.addEventListener('pointerdown', handlePointerDown, true);
@@ -697,11 +711,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
       
       // Mark slider dragging to prevent selection overwrites during rapid updates
-      isSliderDraggingRef.current = true;
-      if (sliderDragTimeoutRef.current) window.clearTimeout(sliderDragTimeoutRef.current);
-      sliderDragTimeoutRef.current = window.setTimeout(() => {
-        isSliderDraggingRef.current = false;
-      }, 400);
+      // BUT: only for gradient changes (continuous slider drags), NOT for solid color clicks
+      // This ensures solid color changes don't freeze a stale selection
+      const isContinuousDrag = newStyles.textGradient !== undefined || newStyles.highlightGradient !== undefined;
+      if (isContinuousDrag) {
+        isSliderDraggingRef.current = true;
+        if (sliderDragTimeoutRef.current) window.clearTimeout(sliderDragTimeoutRef.current);
+        sliderDragTimeoutRef.current = window.setTimeout(() => {
+          isSliderDraggingRef.current = false;
+        }, 400);
+      }
       
       if (!targetSpan) {
         targetSpan = findSpanFromRange(lastSelectionRangeRef.current);

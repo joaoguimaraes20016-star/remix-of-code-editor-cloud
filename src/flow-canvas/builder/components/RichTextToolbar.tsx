@@ -480,6 +480,8 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         <PopoverTrigger asChild>
           <button 
             ref={colorTriggerRef}
+            // Prevent selection collapse when clicking to open the color popover
+            onMouseDown={(e) => e.preventDefault()}
             className="flex items-center gap-1 p-1.5 rounded-lg bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] transition-colors"
             title="Text Color"
           >
