@@ -50,7 +50,7 @@ export function ColorControl({ value, onChange, label }: ColorControlProps) {
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3" align="start">
+      <PopoverContent className="w-64 p-3" align="start" onOpenAutoFocus={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
         <div className="space-y-3">
           <div className="grid grid-cols-7 gap-1.5">
             {COLOR_PRESETS.map((color) => (
