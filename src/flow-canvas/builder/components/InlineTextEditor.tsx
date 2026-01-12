@@ -4,7 +4,7 @@ import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
-import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, getSpanFillStyles, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, updateSpanStyle } from '../utils/selectionStyles';
+import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, getSpanFillStyles, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, unwrapNestedStyledSpans, updateSpanStyle } from '../utils/selectionStyles';
 import type { SelectionStyleOptions } from '../utils/selectionStyles';
 import { useInlineEdit } from '../contexts/InlineEditContext';
 
@@ -186,6 +186,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // (prevents selection/cursor glitches when applying inline spans).
       if (containsHTML(value || '')) {
         el.innerHTML = sanitizeStyledHTML(value || '');
+        // Clean up legacy nested spans so selection targeting stays stable.
+        unwrapNestedStyledSpans(el);
+        mergeAdjacentStyledSpans(el);
       } else {
         el.innerText = value || '';
       }
@@ -231,7 +234,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
     // Additional check: if relatedTarget is null, check if any Radix popover is currently open in the DOM
     if (!relatedTarget) {
-      const openPopover = document.querySelector('[data-radix-popper-content-wrapper]');
+      const openPopover = document.querySelector(
+        '[data-radix-popper-content-wrapper], [data-radix-popover-content], [data-radix-select-content]'
+      );
       if (openPopover) return;
     }
     
@@ -275,7 +280,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       lastPointerDownInInspectorRef.current = !!target?.closest('.builder-right-panel');
 
       const toolbarHit =
-        !!target?.closest('.rich-text-toolbar') || !!target?.closest('[data-radix-popper-content-wrapper]');
+        !!target?.closest('.rich-text-toolbar') ||
+        !!target?.closest('[data-radix-popper-content-wrapper]') ||
+        !!target?.closest('[data-radix-popover-content]') ||
+        !!target?.closest('[data-radix-select-content]');
       lastPointerDownInToolbarRef.current = toolbarHit;
       if (toolbarHit) lastToolbarInteractionAtRef.current = Date.now();
     };
@@ -426,6 +434,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     inlineSaveTimerRef.current = window.setTimeout(() => {
       const el = contentRef.current;
       if (!el) return;
+      unwrapNestedStyledSpans(el);
       mergeAdjacentStyledSpans(el);
       const htmlContent = sanitizeStyledHTML(el.innerHTML);
       onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
@@ -719,7 +728,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // Keep editing active, but don't steal focus from inspector controls (sliders/inputs)
       const activeEl = document.activeElement as HTMLElement | null;
       const isInteractingWithInspector =
-        !!activeEl?.closest('.builder-right-panel') || !!activeEl?.closest('[data-radix-popper-content-wrapper]');
+        !!activeEl?.closest('.builder-right-panel') ||
+        !!activeEl?.closest('[data-radix-popper-content-wrapper]') ||
+        !!activeEl?.closest('[data-radix-popover-content]') ||
+        !!activeEl?.closest('[data-radix-select-content]');
 
       if (!isInteractingWithInspector) {
         el.focus();
@@ -1115,7 +1127,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // Some slider interactions don't focus an element, so we also rely on recent pointerdown.
       const activeEl = document.activeElement as HTMLElement | null;
       const isInteractingWithToolbar =
-        !!activeEl?.closest('.rich-text-toolbar') || !!activeEl?.closest('[data-radix-popper-content-wrapper]');
+        !!activeEl?.closest('.rich-text-toolbar') ||
+        !!activeEl?.closest('[data-radix-popper-content-wrapper]') ||
+        !!activeEl?.closest('[data-radix-popover-content]') ||
+        !!activeEl?.closest('[data-radix-select-content]');
       const recentlyPointeredToolbar = Date.now() - lastToolbarInteractionAtRef.current < 800;
 
       if (!isInteractingWithToolbar && !recentlyPointeredToolbar) {

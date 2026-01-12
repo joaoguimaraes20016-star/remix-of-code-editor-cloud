@@ -22,6 +22,7 @@ import {
 import { gradientToCSS, GradientEditor, defaultGradient, cloneGradient } from './modals';
 import type { GradientValue } from './modals';
 import { cn } from '@/lib/utils';
+import { normalizeColorForColorInput } from '../utils/color';
 
 // Color presets - dark theme friendly
 const colorPresets = [
@@ -87,16 +88,18 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
 
   // Local UI state so the gradient/color editors work even when we apply styles inline (selection spans)
   // (Inline styling doesn't always update the block-level `styles`, so we can't rely on props here.)
-  const [localColor, setLocalColor] = useState<string>(() => styles.textColor || '#FFFFFF');
+  const [localColor, setLocalColor] = useState<string>(() =>
+    normalizeColorForColorInput(styles.textColor, '#FFFFFF')
+  );
   const [localGradient, setLocalGradient] = useState<GradientValue>(() =>
     cloneGradient(styles.textGradient || defaultGradient)
   );
 
   // Keep local state in sync when block-level styles change externally
   useEffect(() => {
-    if (styles.textColor && styles.textColor !== localColor) {
-      setLocalColor(styles.textColor);
-    }
+    if (!styles.textColor) return;
+    const normalized = normalizeColorForColorInput(styles.textColor, localColor);
+    setLocalColor((prev) => (prev === normalized ? prev : normalized));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styles.textColor]);
 
@@ -236,7 +239,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
     }
 
     // Solid
-    const color = styles.textColor || localColor || '#FFFFFF';
+    const color = normalizeColorForColorInput(styles.textColor, localColor || '#FFFFFF');
     setLocalColor(color);
     onChange({
       textFillType: 'solid',
