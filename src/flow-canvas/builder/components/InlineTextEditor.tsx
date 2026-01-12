@@ -55,6 +55,15 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const [showToolbar, setShowToolbar] = useState(false);
   const [sessionHasInlineStyles, setSessionHasInlineStyles] = useState(false);
   
+  // Selection-level fill state (separate from block-level styles)
+  // This tracks the fill of the current selection/caret for toolbar display
+  // WITHOUT affecting the container's color (prevents "whole block turns color" bug)
+  const [selectionFill, setSelectionFill] = useState<{
+    textFillType?: 'solid' | 'gradient';
+    textColor?: string;
+    textGradient?: GradientValue;
+  }>({});
+  
   // Track which properties have been explicitly modified by the user
   const [modifiedProps, setModifiedProps] = useState<Set<keyof TextStyles>>(new Set());
   
@@ -266,6 +275,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
     setIsEditing(false);
     setShowToolbar(false);
+    // Clear selection fill on exit so next edit session starts fresh
+    setSelectionFill({});
     
     if (contentRef.current) {
       // Clean up adjacent spans with same styles
@@ -551,10 +562,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (span) {
         activeInlineSpanRef.current = span;
         activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
-        // Keep toolbar UI synced to the selected span's fill (but avoid re-render loops)
+    // Keep toolbar UI synced to the selected span's fill via selectionFill (NOT styles)
         const fill = getSpanFillStyles(span);
         if (fill.textFillType) {
-          setStyles((prev) => {
+          setSelectionFill((prev) => {
             const nextFillType = fill.textFillType ?? prev.textFillType;
             const nextColor = fill.textColor ?? prev.textColor;
             const nextGradient = fill.textGradient ? cloneGradient(fill.textGradient) : prev.textGradient;
@@ -564,7 +575,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             if (unchanged) return prev;
 
             return {
-              ...prev,
               textFillType: nextFillType,
               textColor: nextColor,
               textGradient: nextGradient,
@@ -581,11 +591,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             /rgba?\([^)]*,\s*0\s*\)/.test(computedColor);
           
           if (!isTransparent) {
-            // Real solid color - update state to reflect solid fill
-            setStyles((prev) => {
+            // Real solid color - update selectionFill (not block-level styles)
+            setSelectionFill((prev) => {
               if (prev.textFillType === 'solid' && prev.textColor === computedColor) return prev;
               return {
-                ...prev,
                 textFillType: 'solid',
                 textColor: computedColor,
               };
@@ -638,12 +647,14 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     };
 
     // Helper: sync toolbar local state so pickers show updated value
+    // IMPORTANT: During inline editing, update selectionFill (NOT styles) to avoid
+    // coloring the entire container block when applying a selection-only color.
     const syncToolbarState = () => {
-      const sync: Partial<TextStyles> = {};
+      const sync: Partial<{ textFillType: 'solid' | 'gradient'; textColor: string; textGradient: GradientValue }> = {};
       if (newStyles.textFillType !== undefined) sync.textFillType = newStyles.textFillType;
       if (newStyles.textGradient) sync.textGradient = cloneGradient(newStyles.textGradient);
       if (newStyles.textColor !== undefined) sync.textColor = newStyles.textColor;
-      if (Object.keys(sync).length) setStyles(prev => ({ ...prev, ...sync }));
+      if (Object.keys(sync).length) setSelectionFill(prev => ({ ...prev, ...sync }));
     };
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1409,13 +1420,23 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     [forwardedRef]
   );
 
+  // Merge block-level styles with selection fill for toolbar display
+  // Selection fill takes priority so the toolbar reflects the current selection's appearance
+  const toolbarStyles: Partial<TextStyles> = {
+    ...styles,
+    // Override fill properties with selection-level values when editing
+    ...(selectionFill.textFillType !== undefined && { textFillType: selectionFill.textFillType }),
+    ...(selectionFill.textColor !== undefined && { textColor: selectionFill.textColor }),
+    ...(selectionFill.textGradient !== undefined && { textGradient: selectionFill.textGradient }),
+  };
+
   return (
     <div ref={setContainerRefs} className="relative">
       {/* Floating Rich Text Toolbar */}
       {showToolbar && (
         <RichTextToolbar
           ref={toolbarRef}
-          styles={styles}
+          styles={toolbarStyles}
           onChange={handleToolbarStyleChange}
           position={toolbarPosition}
           onClose={() => setShowToolbar(false)}
