@@ -2423,7 +2423,7 @@ const FrameInspector: React.FC<{
         </div>
       </div>
 
-      {/* Section Name */}
+      {/* Section Name & Layout */}
       <CollapsibleSection title="General" icon={<Settings2 className="w-4 h-4" />} defaultOpen>
         <div className="space-y-3 pt-3">
           <FieldGroup label="Section Name" hint="Give this section a recognizable name">
@@ -2433,6 +2433,32 @@ const FrameInspector: React.FC<{
               placeholder="e.g., Hero, Features, CTA"
               className="builder-input"
             />
+          </FieldGroup>
+          
+          {/* Layout Width Toggle */}
+          <FieldGroup label="Section Width" hint="Control how wide this section stretches">
+            <div className="toggle-pill w-full">
+              <button 
+                type="button"
+                onClick={() => onUpdate({ layout: 'contained' })}
+                className={cn(
+                  'toggle-pill-option flex-1 text-center',
+                  (frame.layout || 'contained') === 'contained' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive'
+                )}
+              >
+                Contained
+              </button>
+              <button 
+                type="button"
+                onClick={() => onUpdate({ layout: 'full-width' })}
+                className={cn(
+                  'toggle-pill-option flex-1 text-center',
+                  frame.layout === 'full-width' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive'
+                )}
+              >
+                Full Width
+              </button>
+            </div>
           </FieldGroup>
         </div>
       </CollapsibleSection>
@@ -2508,7 +2534,18 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
   onUpdate,
   onPublish
 }) => {
-  // Debug state removed - controls confirmed working
+  // Local state for immediate UI feedback on background type change
+  const [localBgType, setLocalBgType] = useState<'solid' | 'gradient' | 'image'>(
+    page.settings.page_background?.type || 'solid'
+  );
+  
+  // Sync local state with external prop changes
+  useEffect(() => {
+    const externalType = page.settings.page_background?.type || 'solid';
+    if (externalType !== localBgType) {
+      setLocalBgType(externalType);
+    }
+  }, [page.settings.page_background?.type]);
   
   const handleMetaUpdate = useCallback((key: string, value: string) => {
     onUpdate({ 
@@ -2531,8 +2568,11 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
     });
   }, [page.settings, onUpdate]);
 
-  // Background type change handler
+  // Background type change handler - updates local state immediately for UI feedback
   const handleBackgroundTypeChange = useCallback((newType: 'solid' | 'gradient' | 'image') => {
+    // Update local state immediately for instant UI feedback
+    setLocalBgType(newType);
+    
     const updates: Record<string, unknown> = {
       settings: {
         ...page.settings,
@@ -2548,6 +2588,9 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
               angle: 135,
               stops: [{ color: '#667eea', position: 0 }, { color: '#764ba2', position: 100 }]
             }
+          }),
+          ...(newType === 'image' && {
+            image: page.settings.page_background?.image || ''
           }),
         },
       },
@@ -2573,7 +2616,8 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
   }, [handleBackgroundTypeChange]);
 
   const primaryColor = page.settings.primary_color || '#8B5CF6';
-  const currentBgType = page.settings.page_background?.type || 'solid';
+  // Use local state for immediate UI updates
+  const currentBgType = localBgType;
 
   return (
     <div className="space-y-0">
