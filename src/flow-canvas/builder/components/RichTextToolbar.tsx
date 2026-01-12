@@ -99,6 +99,38 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   // Track if user is actively dragging sliders to prevent external sync overriding local state
   const isDraggingRef = useRef(false);
   const dragDebounceRef = useRef<number | null>(null);
+
+  // Manual outside-dismiss for the color/gradient popover:
+  // - never closes during slider drags
+  // - always closes when clicking the canvas/outside
+  const colorTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const colorContentRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!colorOpen) return;
+
+    const onPointerDownCapture = (ev: PointerEvent) => {
+      const target = ev.target as HTMLElement | null;
+      if (!target) return;
+
+      if (colorContentRef.current?.contains(target)) return;
+      if (colorTriggerRef.current?.contains(target)) return;
+
+      // Allow interaction with nested Radix portals (Select, etc.) without closing.
+      if (
+        target.closest('[data-radix-popper-content-wrapper]') ||
+        target.closest('[data-radix-popover-content]') ||
+        target.closest('[data-radix-select-content]')
+      ) {
+        return;
+      }
+
+      setColorOpen(false);
+    };
+
+    document.addEventListener('pointerdown', onPointerDownCapture, true);
+    return () => document.removeEventListener('pointerdown', onPointerDownCapture, true);
+  }, [colorOpen]);
   
   // Use ref for comparison to prevent sync loops
   const prevGradientRef = useRef<string>(JSON.stringify(styles.textGradient || defaultGradient));
@@ -447,6 +479,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
       <Popover open={colorOpen} onOpenChange={setColorOpen}>
         <PopoverTrigger asChild>
           <button 
+            ref={colorTriggerRef}
             className="flex items-center gap-1 p-1.5 rounded-lg bg-[hsl(var(--builder-surface-hover))] hover:bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] transition-colors"
             title="Text Color"
           >
@@ -472,10 +505,15 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           </button>
         </PopoverTrigger>
         <PopoverContent 
+          ref={colorContentRef}
           className="w-64 p-3 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
+          // We manage outside-dismiss ourselves (document pointerdown); prevent Radix auto-dismiss.
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
           // Stop propagation so canvas/global handlers don't receive inside-popover events
           onPointerDown={(e) => e.stopPropagation()}
           onPointerMove={(e) => e.stopPropagation()}

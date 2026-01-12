@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, forwardRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef } from 'react';
 import { Palette, Pipette, Hash, Check } from 'lucide-react';
 import {
   Popover,
@@ -38,7 +38,32 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
   ({ children, color, onChange, showGradientOption = false, onGradientClick }, ref) => {
     const [inputValue, setInputValue] = useState(color);
     const [isOpen, setIsOpen] = useState(false);
+    const contentRef = useRef<HTMLDivElement | null>(null);
 
+    // Manual outside-dismiss so slider drags / non-focusable controls never close this popover.
+    useEffect(() => {
+      if (!isOpen) return;
+
+      const onPointerDownCapture = (ev: PointerEvent) => {
+        const target = ev.target as HTMLElement | null;
+        if (!target) return;
+
+        if (contentRef.current?.contains(target)) return;
+
+        if (
+          target.closest('[data-radix-popper-content-wrapper]') ||
+          target.closest('[data-radix-popover-content]') ||
+          target.closest('[data-radix-select-content]')
+        ) {
+          return;
+        }
+
+        setIsOpen(false);
+      };
+
+      document.addEventListener('pointerdown', onPointerDownCapture, true);
+      return () => document.removeEventListener('pointerdown', onPointerDownCapture, true);
+    }, [isOpen]);
     // Sync input value with external color prop
     useEffect(() => {
       setInputValue(color);
@@ -91,10 +116,15 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
           {children}
         </PopoverTrigger>
         <PopoverContent 
+          ref={contentRef}
           className="w-64 p-3 bg-[hsl(220,22%,7%)] border-[hsl(220,18%,14%)] text-white" 
           align="end"
           sideOffset={5}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          // We manage outside-dismiss ourselves (document pointerdown); prevent Radix auto-dismiss.
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
           // Stop propagation so canvas/global handlers don't receive inside-popover events
           onPointerDown={(e) => e.stopPropagation()}
           onPointerMove={(e) => e.stopPropagation()}
