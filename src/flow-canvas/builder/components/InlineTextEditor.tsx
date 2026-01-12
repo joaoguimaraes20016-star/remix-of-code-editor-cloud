@@ -86,6 +86,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   // (prevents edit-mode from closing when using sliders / popovers that don't move focus)
   const lastPointerDownInInspectorRef = useRef(false);
   const lastPointerDownInToolbarRef = useRef(false);
+  const lastToolbarInteractionAtRef = useRef<number>(0);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -272,8 +273,11 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const handler = (ev: PointerEvent) => {
       const target = ev.target as HTMLElement | null;
       lastPointerDownInInspectorRef.current = !!target?.closest('.builder-right-panel');
-      lastPointerDownInToolbarRef.current =
+
+      const toolbarHit =
         !!target?.closest('.rich-text-toolbar') || !!target?.closest('[data-radix-popper-content-wrapper]');
+      lastPointerDownInToolbarRef.current = toolbarHit;
+      if (toolbarHit) lastToolbarInteractionAtRef.current = Date.now();
     };
 
     document.addEventListener('pointerdown', handler, true);
@@ -368,6 +372,28 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           const span = getStyledSpanAtSelection(editorEl);
           if (span) {
             activeInlineSpanRef.current = span;
+
+            // Keep toolbar color/gradient UI synced to the selected span even if
+            // selection changes via keyboard (handleSelect doesn't fire reliably).
+            const fill = getSpanFillStyles(span);
+            if (fill.textFillType) {
+              setStyles((prev) => {
+                const nextFillType = fill.textFillType ?? prev.textFillType;
+                const nextColor = fill.textColor ?? prev.textColor;
+                const nextGradient = fill.textGradient ? cloneGradient(fill.textGradient) : prev.textGradient;
+
+                const sameGradient = gradientEquals(prev.textGradient, nextGradient as any);
+                const unchanged = prev.textFillType === nextFillType && prev.textColor === nextColor && sameGradient;
+                if (unchanged) return prev;
+
+                return {
+                  ...prev,
+                  textFillType: nextFillType,
+                  textColor: nextColor,
+                  textGradient: nextGradient,
+                };
+              });
+            }
           }
         }
       });
@@ -717,10 +743,25 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const getSelectionStyles = (): Partial<TextStyles> | null => {
       const root = contentRef.current;
       if (!root) return null;
-      const span = getStyledSpanAtSelection(root);
+
+      const findSpanFromRange = (range: Range | null): HTMLSpanElement | null => {
+        if (!range) return null;
+        let node: Node | null = range.startContainer;
+        let el: HTMLElement | null = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+        while (el && el !== root) {
+          if (el.tagName === 'SPAN' && el.getAttribute('style')) return el as HTMLSpanElement;
+          el = el.parentElement;
+        }
+        return null;
+      };
+
+      const span =
+        getStyledSpanAtSelection(root) ||
+        (activeInlineSpanRef.current && root.contains(activeInlineSpanRef.current) ? activeInlineSpanRef.current : null) ||
+        findSpanFromRange(lastSelectionRangeRef.current);
+
       if (!span) return null;
-      const fill = getSpanFillStyles(span);
-      return fill as Partial<TextStyles>;
+      return getSpanFillStyles(span) as Partial<TextStyles>;
     };
 
     const bridge = { apply: applyFromInspector, getSelectionStyles };
@@ -1071,11 +1112,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (!el) return;
 
       // DO NOT steal focus from sliders/pickers inside the toolbar popovers.
+      // Some slider interactions don't focus an element, so we also rely on recent pointerdown.
       const activeEl = document.activeElement as HTMLElement | null;
       const isInteractingWithToolbar =
         !!activeEl?.closest('.rich-text-toolbar') || !!activeEl?.closest('[data-radix-popper-content-wrapper]');
+      const recentlyPointeredToolbar = Date.now() - lastToolbarInteractionAtRef.current < 800;
 
-      if (!isInteractingWithToolbar) {
+      if (!isInteractingWithToolbar && !recentlyPointeredToolbar) {
         el.focus();
       }
 
