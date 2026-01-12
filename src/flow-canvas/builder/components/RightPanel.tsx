@@ -2395,15 +2395,15 @@ const FrameInspector: React.FC<{
   return (
     <div className="space-y-0">
       {/* Frame Header - Purple accent for Sections */}
-      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-purple-500/15 to-transparent">
+      <div className="px-4 py-3 border-b border-builder-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <Layout className="w-4 h-4 text-purple-400" />
+            <div className="w-8 h-8 rounded-lg bg-builder-surface-hover flex items-center justify-center">
+              <Layout className="w-4 h-4 text-builder-text-muted" />
             </div>
             <div>
               <p className="text-sm font-medium text-builder-text">{frame.label || 'Section'}</p>
-              <p className="text-xs text-purple-400/80">Section Background & Layout</p>
+              <p className="text-xs text-builder-text-muted">Section Background & Layout</p>
             </div>
           </div>
           {/* Delete button */}

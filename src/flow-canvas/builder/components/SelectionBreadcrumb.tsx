@@ -22,9 +22,9 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 const typeColors: Record<string, string> = {
-  section: 'text-fuchsia-400/70',
-  block: 'text-purple-400/85',
-  element: 'text-fuchsia-400',
+  section: 'text-[hsl(var(--builder-text-secondary))]',
+  block: 'text-[hsl(var(--builder-text-secondary))]',
+  element: 'text-[hsl(var(--builder-text))]',
 };
 
 export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
@@ -45,8 +45,8 @@ export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
       }}
       className={cn(
         'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg',
-        'bg-[hsl(220,8%,8%)] backdrop-blur-xl',
-        'border border-[hsl(315,85%,58%)/0.15]',
+        'bg-[hsl(var(--builder-surface))] backdrop-blur-xl',
+        'border border-[hsl(var(--builder-border))]',
         'shadow-xl shadow-black/50',
         className
       )}
@@ -59,7 +59,7 @@ export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.5 }}
-                className="text-white/20"
+                className="text-[hsl(var(--builder-text-muted))]"
               >
                 <ChevronRight size={10} />
               </motion.span>
@@ -77,9 +77,9 @@ export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
                 'flex items-center gap-1.5 px-1.5 py-0.5 rounded-md',
                 'text-[11px] font-medium',
                 'transition-all duration-150',
-                'hover:bg-[hsl(315,85%,58%)/0.1]',
+                'hover:bg-[hsl(var(--builder-surface-hover))]',
                 typeColors[item.type],
-                index === items.length - 1 && 'text-white bg-[hsl(275,70%,55%)/0.15]'
+                index === items.length - 1 && 'text-[hsl(var(--builder-text))] bg-[hsl(var(--builder-surface-hover))]'
               )}
             >
               <span className="opacity-70">{typeIcons[item.type]}</span>

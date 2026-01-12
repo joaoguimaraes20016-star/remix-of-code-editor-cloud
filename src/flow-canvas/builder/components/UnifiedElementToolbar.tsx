@@ -298,8 +298,8 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   );
   // Inactive: always visible on any background
   const btnInactive = "text-builder-text-secondary hover:text-builder-text hover:bg-builder-surface-hover";
-  // Active: builder magenta/pink
-  const btnActive = "bg-builder-accent-secondary text-white shadow-[0_0_14px_hsl(var(--builder-accent-secondary)/0.45)]";
+  // Active: subtle highlight instead of pink glow
+  const btnActive = "bg-builder-surface-hover text-builder-text ring-1 ring-builder-border";
 
   const toolbarContent = (
     <TooltipProvider delayDuration={300}>
@@ -308,7 +308,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         initial={{ opacity: 0, scale: 0.95, y: 4 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 2 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className={cn(
           'flex items-center px-2 py-1 rounded-xl',
           'bg-builder-surface/95 backdrop-blur-xl',
