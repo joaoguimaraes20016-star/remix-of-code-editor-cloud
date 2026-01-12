@@ -364,7 +364,7 @@ const ElementInspector: React.FC<{
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
   
   // When a text element is being edited, route Right Panel fill changes to the selection
-  const { applyInlineStyle } = useInlineEdit();
+  const { applyInlineStyle, hasActiveEditor } = useInlineEdit();
   // Modal states
   const [isButtonActionOpen, setIsButtonActionOpen] = useState(false);
   const [isVideoEmbedOpen, setIsVideoEmbedOpen] = useState(false);
@@ -894,6 +894,12 @@ const ElementInspector: React.FC<{
                       } as any);
                       if (handled) return;
 
+                      // If an inline editor is active, do NOT fall back to whole-block.
+                      if (hasActiveEditor(element.id)) {
+                        toast.info('Select text to apply fill');
+                        return;
+                      }
+
                       handleMultiPropsChange({
                         textFillType: 'solid',
                         textColor: color,
@@ -927,6 +933,12 @@ const ElementInspector: React.FC<{
                       } as any);
                       if (handled) return;
 
+                      // If an inline editor is active, do NOT fall back to whole-block.
+                      if (hasActiveEditor(element.id)) {
+                        toast.info('Select text to apply fill');
+                        return;
+                      }
+
                       handleMultiPropsChange({
                         textFillType: 'gradient',
                         textGradient: cloned,
@@ -956,6 +968,12 @@ const ElementInspector: React.FC<{
                         textColor: color,
                       } as any);
                       if (handled) return;
+
+                      if (hasActiveEditor(element.id)) {
+                        toast.info('Select text to apply fill');
+                        return;
+                      }
+
                       handlePropsChange('textColor', color);
                     }}
                   >
@@ -983,6 +1001,12 @@ const ElementInspector: React.FC<{
                         textGradient: cloned,
                       } as any);
                       if (handled) return;
+
+                      if (hasActiveEditor(element.id)) {
+                        toast.info('Select text to apply fill');
+                        return;
+                      }
+
                       handlePropsChange('textGradient', cloned);
                     }}
                   >
@@ -1004,7 +1028,7 @@ const ElementInspector: React.FC<{
               {/* Quick Color Presets (for solid) */}
               {element.props?.textFillType !== 'gradient' && (
                 <div className="flex gap-1 flex-wrap">
-                    {textColorPresets.map((color) => (
+                    {textColorPresets.map((color) => (
                       <button
                         key={color}
                         onClick={() => {
@@ -1013,6 +1037,12 @@ const ElementInspector: React.FC<{
                             textColor: color,
                           } as any);
                           if (handled) return;
+
+                          if (hasActiveEditor(element.id)) {
+                            toast.info('Select text to apply fill');
+                            return;
+                          }
+
                           handlePropsChange('textColor', color);
                         }}
                       className={cn(
