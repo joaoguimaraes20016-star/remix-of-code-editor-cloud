@@ -335,7 +335,28 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     let rafId = 0;
     const schedule = () => {
       cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(updateToolbarPosition);
+      rafId = requestAnimationFrame(() => {
+        // Keep toolbar position updated AND continuously snapshot selection.
+        // This is critical so RightPanel actions still have a valid lastSelectionRangeRef.
+        updateToolbarPosition();
+
+        const editorEl = contentRef.current;
+        if (!editorEl) return;
+
+        const sel = window.getSelection();
+        const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+        const selectionInside =
+          !!range &&
+          (editorEl.contains(range.commonAncestorContainer) ||
+            editorEl.contains(sel?.anchorNode ?? null) ||
+            editorEl.contains(sel?.focusNode ?? null));
+
+        if (selectionInside && range) {
+          lastSelectionRangeRef.current = range.cloneRange();
+        }
+
+        activeInlineSpanRef.current = getStyledSpanAtSelection(editorEl);
+      });
     };
 
     // Initial snap
@@ -391,9 +412,17 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
     if (selectionInside && range) {
       lastSelectionRangeRef.current = range.cloneRange();
+      console.log('[InlineEdit] Selection captured', { 
+        collapsed: range.collapsed, 
+        text: range.toString().substring(0, 20) 
+      });
     }
 
     activeInlineSpanRef.current = getStyledSpanAtSelection(editorEl);
+    console.log('[InlineEdit] handleSelect finished', { 
+      hasRange: !!lastSelectionRangeRef.current, 
+      hasActiveSpan: !!activeInlineSpanRef.current 
+    });
   }, [isEditing, updateToolbarPosition]);
 
   // Apply style changes - selection-first for color/gradient/formatting, otherwise whole block
@@ -524,14 +553,17 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         // CASE 4: No selection and no target - check if we have a saved selection range
         // This handles the case when the user clicks RightPanel and selection was lost
         if (!hasSelection && !target && lastSelectionRangeRef.current) {
+          console.log('[InlineEdit] CASE 4: Attempting to restore saved selection');
           // Try to re-apply the saved selection
           try {
             if (editorEl.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
               sel?.removeAllRanges();
               sel?.addRange(lastSelectionRangeRef.current.cloneRange());
+              console.log('[InlineEdit] CASE 4: Range re-applied');
               
               // Now try to apply again with restored selection
               const restoredHasSelection = hasSelectionInElement(editorEl);
+              console.log('[InlineEdit] CASE 4: hasSelection after restore =', restoredHasSelection);
               if (restoredHasSelection) {
                 const span = applyStylesToSelection(styleOptions);
                 if (span) {
@@ -539,12 +571,15 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
                   setSessionHasInlineStyles(true);
                   scheduleInlineHtmlSave();
                   syncToolbarState();
+                  console.log('[InlineEdit] CASE 4: Styles applied successfully');
                   return true;
                 }
               }
+            } else {
+              console.log('[InlineEdit] CASE 4: Saved range no longer in editorEl');
             }
-          } catch {
-            // Range became invalid
+          } catch (e) {
+            console.log('[InlineEdit] CASE 4: Range became invalid', e);
           }
         }
       }
@@ -622,7 +657,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       console.log('[InlineEdit] applyFromInspector called', { 
         isEditing: isEditingRef.current, 
         hasLastSelection: !!lastSelectionRangeRef.current,
-        hasActiveSpan: !!activeInlineSpanRef.current 
+        hasActiveSpan: !!activeInlineSpanRef.current,
+        nextStyles 
       });
 
       // Re-enter editing mode if we were recently editing (within debounce window)
@@ -642,14 +678,21 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           if (el.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
             sel.removeAllRanges();
             sel.addRange(lastSelectionRangeRef.current.cloneRange());
-            console.log('[InlineEdit] Selection restored from lastSelectionRangeRef');
+            console.log('[InlineEdit] Selection restored from lastSelectionRangeRef', {
+              text: lastSelectionRangeRef.current.toString().substring(0, 20),
+              collapsed: lastSelectionRangeRef.current.collapsed
+            });
           }
         } catch (e) {
           console.log('[InlineEdit] Range restoration failed:', e);
         }
+      } else {
+        console.log('[InlineEdit] No saved selection to restore');
       }
 
-      return handleStyleChange(nextStyles);
+      const result = handleStyleChange(nextStyles);
+      console.log('[InlineEdit] applyFromInspector returning', result);
+      return result;
     };
 
     if (isEditing) {
