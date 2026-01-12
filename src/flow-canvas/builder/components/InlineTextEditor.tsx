@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
 import { toast } from 'sonner';
 import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
@@ -7,6 +7,7 @@ import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight
 import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, getSpanFillStyles, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, updateSpanStyle } from '../utils/selectionStyles';
 import type { SelectionStyleOptions } from '../utils/selectionStyles';
 import { useInlineEdit } from '../contexts/InlineEditContext';
+
 export interface TextStyles {
   fontSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
@@ -38,7 +39,8 @@ interface InlineTextEditorProps {
   elementId?: string;
 }
 
-export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
+// Needs to accept refs because dnd-kit wrappers may clone children and attach a ref.
+export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps>(({
   value,
   onChange,
   elementType,
@@ -48,7 +50,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   initialStyles,
   onEditingChange,
   elementId,
-}) => {
+}, forwardedRef) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
   const [sessionHasInlineStyles, setSessionHasInlineStyles] = useState(false);
@@ -80,8 +82,10 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   // Persist the last selection range so Right Panel edits can apply to the intended letters
   const lastSelectionRangeRef = useRef<Range | null>(null);
 
-  // Track whether the last pointer-down happened inside the Right Panel (prevents edit-mode from closing)
+  // Track whether the last pointer-down happened inside the Right Panel or the floating toolbar
+  // (prevents edit-mode from closing when using sliders / popovers that don't move focus)
   const lastPointerDownInInspectorRef = useRef(false);
+  const lastPointerDownInToolbarRef = useRef(false);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -219,8 +223,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     if (activeElement?.closest('.builder-right-panel')) return;
 
     // If relatedTarget is null (clicking non-focusable elements like sliders),
-    // prevent closing when the click started inside the Right Panel.
-    if (!relatedTarget && lastPointerDownInInspectorRef.current) {
+    // prevent closing when the click started inside the Right Panel OR the toolbar.
+    if (!relatedTarget && (lastPointerDownInInspectorRef.current || lastPointerDownInToolbarRef.current)) {
       return;
     }
 
@@ -261,13 +265,15 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     }
   }, [onChange]);
 
-  // Track pointerdown target so the editor doesn't exit when adjusting Right Panel controls
+  // Track pointerdown target so the editor doesn't exit when adjusting Right Panel or Toolbar controls
   useEffect(() => {
     if (!isEditing) return;
 
     const handler = (ev: PointerEvent) => {
       const target = ev.target as HTMLElement | null;
       lastPointerDownInInspectorRef.current = !!target?.closest('.builder-right-panel');
+      lastPointerDownInToolbarRef.current =
+        !!target?.closest('.rich-text-toolbar') || !!target?.closest('[data-radix-popper-content-wrapper]');
     };
 
     document.addEventListener('pointerdown', handler, true);
@@ -1039,8 +1045,22 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     [handleStyleChange]
   );
 
+  const setContainerRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node;
+
+      if (!forwardedRef) return;
+      if (typeof forwardedRef === 'function') {
+        forwardedRef(node);
+      } else {
+        (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    },
+    [forwardedRef]
+  );
+
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={setContainerRefs} className="relative">
       {/* Floating Rich Text Toolbar */}
       {showToolbar && (
         <RichTextToolbar
@@ -1093,4 +1113,6 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       </div>
     </div>
   );
-};
+});
+
+InlineTextEditor.displayName = 'InlineTextEditor';
