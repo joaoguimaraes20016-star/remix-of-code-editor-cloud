@@ -1265,16 +1265,24 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (!el) return;
 
       // DO NOT steal focus from sliders/pickers inside the toolbar popovers.
-      // Some slider interactions don't focus an element, so we also rely on recent pointerdown.
+      // Use pointer-lock refs for reliable detection of slider drags (no 800ms timeout limit).
       const activeEl = document.activeElement as HTMLElement | null;
       const isInteractingWithToolbar =
         !!activeEl?.closest('.rich-text-toolbar') ||
         !!activeEl?.closest('[data-radix-popper-content-wrapper]') ||
         !!activeEl?.closest('[data-radix-popover-content]') ||
         !!activeEl?.closest('[data-radix-select-content]');
-      const recentlyPointeredToolbar = Date.now() - lastToolbarInteractionAtRef.current < 800;
+      
+      // Check if pointer is currently down on toolbar (slider drag in progress)
+      const isPointerDownOnToolbar = isPointerDownRef.current && pointerDownContextRef.current === 'toolbar';
+      
+      // Also check if any Radix popover is open in the DOM (gradient panel, color picker, etc.)
+      const hasOpenPopover = !!document.querySelector(
+        '[data-radix-popper-content-wrapper], [data-radix-popover-content], [data-radix-select-content]'
+      );
 
-      if (!isInteractingWithToolbar && !recentlyPointeredToolbar) {
+      // Only refocus editor if NOT interacting with toolbar and NOT in a drag
+      if (!isInteractingWithToolbar && !isPointerDownOnToolbar && !hasOpenPopover) {
         el.focus();
       }
 
