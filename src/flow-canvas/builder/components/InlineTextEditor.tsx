@@ -767,6 +767,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     // ─────────────────────────────────────────────────────────────────────────
     // BLOCK-LEVEL STYLES (font size, align, shadow, etc.)
     // ─────────────────────────────────────────────────────────────────────────
+    
+    // IMPORTANT: If we tried to apply inline (shouldApplyInline was true) but failed,
+    // DON'T fall back to block-level for color/fill properties - this prevents
+    // "whole block turns color" when inline styling fails due to lost selection.
+    const wasInlineAttempt = shouldApplyInline;
+    
     const clonedStyles: Partial<TextStyles> = {};
 
     if (newStyles.fontSize !== undefined) clonedStyles.fontSize = newStyles.fontSize;
@@ -775,21 +781,32 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     if (newStyles.textDecoration !== undefined) clonedStyles.textDecoration = newStyles.textDecoration;
     if (newStyles.textAlign !== undefined) clonedStyles.textAlign = newStyles.textAlign;
     if (newStyles.fontFamily !== undefined) clonedStyles.fontFamily = newStyles.fontFamily;
-    if (newStyles.textColor !== undefined) clonedStyles.textColor = newStyles.textColor;
-    if (newStyles.textFillType !== undefined) clonedStyles.textFillType = newStyles.textFillType;
+    
+    // Only apply color/fill at block level if this was NOT an inline attempt that failed
+    if (!wasInlineAttempt) {
+      if (newStyles.textColor !== undefined) clonedStyles.textColor = newStyles.textColor;
+      if (newStyles.textFillType !== undefined) clonedStyles.textFillType = newStyles.textFillType;
+      if (newStyles.textGradient) {
+        clonedStyles.textGradient = cloneGradient(newStyles.textGradient);
+      }
+    }
+    
     if (newStyles.textShadow !== undefined) clonedStyles.textShadow = newStyles.textShadow;
     if (newStyles.highlightColor !== undefined) clonedStyles.highlightColor = newStyles.highlightColor;
     if (newStyles.highlightUseGradient !== undefined) clonedStyles.highlightUseGradient = newStyles.highlightUseGradient;
 
-    if (newStyles.textGradient) {
-      clonedStyles.textGradient = cloneGradient(newStyles.textGradient);
-    }
     if (newStyles.highlightGradient) {
       clonedStyles.highlightGradient = cloneGradient(newStyles.highlightGradient);
     }
 
-    if (clonedStyles.textFillType === 'gradient' && !clonedStyles.textGradient && !styles.textGradient) {
+    // Only set up default gradient if we're actually applying gradient at block level
+    if (!wasInlineAttempt && clonedStyles.textFillType === 'gradient' && !clonedStyles.textGradient && !styles.textGradient) {
       clonedStyles.textGradient = cloneGradient(defaultGradient);
+    }
+    
+    // If nothing to apply at block level, just return
+    if (Object.keys(clonedStyles).length === 0) {
+      return false;
     }
 
     setStyles(prev => ({ ...prev, ...clonedStyles }));
