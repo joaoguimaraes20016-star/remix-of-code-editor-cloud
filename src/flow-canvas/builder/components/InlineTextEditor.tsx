@@ -4,7 +4,7 @@ import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
-import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, getSpanFillStyles, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, unwrapNestedStyledSpans, updateSpanStyle } from '../utils/selectionStyles';
+import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, getSpanFillStyles, getComputedTextColorAtSelection, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, unwrapNestedStyledSpans, updateSpanStyle } from '../utils/selectionStyles';
 import type { SelectionStyleOptions } from '../utils/selectionStyles';
 import { useInlineEdit } from '../contexts/InlineEditContext';
 
@@ -87,6 +87,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const lastPointerDownInInspectorRef = useRef(false);
   const lastPointerDownInToolbarRef = useRef(false);
   const lastToolbarInteractionAtRef = useRef<number>(0);
+  const lastInspectorInteractionAtRef = useRef<number>(0);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -277,7 +278,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
     const handler = (ev: PointerEvent) => {
       const target = ev.target as HTMLElement | null;
-      lastPointerDownInInspectorRef.current = !!target?.closest('.builder-right-panel');
+      const isInspector = !!target?.closest('.builder-right-panel');
+      lastPointerDownInInspectorRef.current = isInspector;
+      if (isInspector) lastInspectorInteractionAtRef.current = Date.now();
 
       const toolbarHit =
         !!target?.closest('.rich-text-toolbar') ||
@@ -402,6 +405,21 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
                 };
               });
             }
+          } else {
+            // No styled span found - compute the actual text color from the DOM
+            const computedColor = getComputedTextColorAtSelection(editorEl);
+            if (computedColor) {
+              setStyles((prev) => {
+                // Only update if we don't already have a color and we're in solid mode
+                if (prev.textFillType === 'gradient') return prev;
+                if (prev.textColor === computedColor) return prev;
+                return {
+                  ...prev,
+                  textFillType: 'solid',
+                  textColor: computedColor,
+                };
+              });
+            }
           }
         }
       });
@@ -483,6 +501,20 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               textFillType: nextFillType,
               textColor: nextColor,
               textGradient: nextGradient,
+            };
+          });
+        }
+      } else {
+        // No styled span - compute the actual text color from the DOM
+        const computedColor = getComputedTextColorAtSelection(editorEl);
+        if (computedColor) {
+          setStyles((prev) => {
+            if (prev.textFillType === 'gradient') return prev;
+            if (prev.textColor === computedColor) return prev;
+            return {
+              ...prev,
+              textFillType: 'solid',
+              textColor: computedColor,
             };
           });
         }
@@ -726,8 +758,11 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // Keep editing active, but don't steal focus from inspector controls (sliders/inputs)
+      // Check both current activeElement AND recent pointer interactions (for sliders that lose focus mid-drag)
       const activeEl = document.activeElement as HTMLElement | null;
+      const recentlyInteractedWithInspector = Date.now() - lastInspectorInteractionAtRef.current < 800;
       const isInteractingWithInspector =
+        recentlyInteractedWithInspector ||
         !!activeEl?.closest('.builder-right-panel') ||
         !!activeEl?.closest('[data-radix-popper-content-wrapper]') ||
         !!activeEl?.closest('[data-radix-popover-content]') ||

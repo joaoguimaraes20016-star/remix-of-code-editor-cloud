@@ -475,3 +475,32 @@ export function containsHTML(str: string): boolean {
   if (!str) return false;
   return /<[a-z][\s\S]*>/i.test(str);
 }
+
+/**
+ * Get the computed text color at the current selection.
+ * Returns the actual rendered color (useful when no styled span exists).
+ */
+export function getComputedTextColorAtSelection(root: HTMLElement): string | null {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+
+  const range = sel.getRangeAt(0);
+  let node: Node | null = range.startContainer;
+
+  // Walk up to find an element node
+  let el: HTMLElement | null =
+    node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+
+  // Ensure it's inside the root
+  if (!el || !root.contains(el)) {
+    el = root;
+  }
+
+  try {
+    const computed = window.getComputedStyle(el).color;
+    // Return the computed color (usually rgb/rgba format)
+    return computed || null;
+  } catch {
+    return null;
+  }
+}
