@@ -1004,7 +1004,7 @@ const ElementInspector: React.FC<{
               {/* Quick Color Presets (for solid) */}
               {element.props?.textFillType !== 'gradient' && (
                 <div className="flex gap-1 flex-wrap">
-                    textColorPresets.map((color) => (
+                    {textColorPresets.map((color) => (
                       <button
                         key={color}
                         onClick={() => {
