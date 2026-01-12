@@ -93,6 +93,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   // Pointer-lock refs: TRUE lock for pointer-down state (fixes long slider drags beyond 800ms timeout)
   const isPointerDownRef = useRef(false);
   const pointerDownContextRef = useRef<'toolbar' | 'inspector' | null>(null);
+  
+  // Slider interaction lock - prevents selection overwrites during rapid slider updates
+  const isSliderDraggingRef = useRef(false);
+  const sliderDragTimeoutRef = useRef<number | null>(null);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -409,7 +413,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
         if (selectionInside && range) {
           // Only snapshot *real* selections; don't overwrite with collapsed selection after clicking the toolbar.
-          if (!range.collapsed && range.toString().length > 0) {
+          // CRITICAL: Skip updating selection ref during slider drags to prevent stability issues
+          if (!range.collapsed && range.toString().length > 0 && !isSliderDraggingRef.current) {
             lastSelectionRangeRef.current = range.cloneRange();
           }
 
@@ -514,7 +519,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
     if (selectionInside && range) {
       // Only snapshot non-collapsed selections so we can restore them after toolbar/right-panel clicks.
-      if (!range.collapsed && range.toString().length > 0) {
+      // Skip during slider drags for stability
+      if (!range.collapsed && range.toString().length > 0 && !isSliderDraggingRef.current) {
         lastSelectionRangeRef.current = range.cloneRange();
       }
 
@@ -662,6 +668,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           activeInlineSpanRef.current = targetSpan; // Re-sync ref
         }
       }
+      
+      // Mark slider dragging to prevent selection overwrites during rapid updates
+      isSliderDraggingRef.current = true;
+      if (sliderDragTimeoutRef.current) window.clearTimeout(sliderDragTimeoutRef.current);
+      sliderDragTimeoutRef.current = window.setTimeout(() => {
+        isSliderDraggingRef.current = false;
+      }, 400);
       
       if (!targetSpan) {
         targetSpan = findSpanFromRange(lastSelectionRangeRef.current);
