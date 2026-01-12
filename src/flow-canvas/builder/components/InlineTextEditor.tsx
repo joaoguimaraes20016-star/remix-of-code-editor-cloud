@@ -825,7 +825,9 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
     // When editing with gradient, apply gradient styles to the container div
     // This ensures the gradient is visible while the user is editing
-    if (isEditing && styles.textFillType === 'gradient') {
+    // IMPORTANT: if the content is using inline spans (HTML), do NOT apply a block-level gradient
+    // to the entire contentEditable or it will visually override the selection-only gradient.
+    if (isEditing && styles.textFillType === 'gradient' && !sessionHasInlineStyles && !isHtmlContent) {
       const gradientValue = styles.textGradient || defaultGradient;
       inlineStyles.backgroundImage = gradientToCSS(gradientValue);
       inlineStyles.WebkitBackgroundClip = 'text';
@@ -833,11 +835,12 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       (inlineStyles as Record<string, string>).backgroundClip = 'text';
       // CRITICAL: Set color to transparent to prevent white flash fallback
       inlineStyles.color = 'transparent';
-    } else if (styles.textFillType === 'gradient' && !isEditing) {
+    } else if (styles.textFillType === 'gradient' && !isEditing && !isHtmlContent) {
       // Even when not editing, if fillType is gradient, ensure no white fallback
+      // (but never do this for HTML content with inline spans, or it can hide unstyled nodes)
       inlineStyles.color = 'transparent';
     } else if (styles.textFillType !== 'gradient') {
-      // Text color (only if not gradient) - apply even if undefined to ensure color shows
+      // Text color (only if not gradient)
       if (styles.textColor) {
         inlineStyles.color = styles.textColor;
       }
@@ -916,10 +919,14 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       return value;
     }
     
-    // When not editing and content is HTML, render with proper gradient support
+    // When not editing and content is HTML, render without forcing a block-level gradient.
+    // If the HTML contains inline styled spans, those should be the source of truth.
     if (isHtmlContent) {
-      // For HTML content with block-level gradient, wrap in gradient span
-      if (styles.textFillType === 'gradient') {
+      const hasInlineStyledSpans = /<span[^>]*style=/i.test(value || '');
+
+      // Legacy behavior: if the whole block is gradient and there are NO inline spans,
+      // we can wrap with a gradient span.
+      if (styles.textFillType === 'gradient' && !hasInlineStyledSpans) {
         const gradientValue = styles.textGradient || defaultGradient;
         return (
           <span 
@@ -934,7 +941,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           />
         );
       }
-      // Return null - will use dangerouslySetInnerHTML on main div
+
+      // Otherwise: let the inline spans render as-is
       return null;
     }
     
