@@ -5,6 +5,7 @@ import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
 import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, updateSpanStyle } from '../utils/selectionStyles';
 import type { SelectionStyleOptions } from '../utils/selectionStyles';
+import { useInlineEdit } from '../contexts/InlineEditContext';
 export interface TextStyles {
   fontSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
@@ -32,6 +33,8 @@ interface InlineTextEditorProps {
   disabled?: boolean;
   initialStyles?: Partial<TextStyles>;
   onEditingChange?: (isEditing: boolean) => void;
+  /** Unique element ID for inline edit context registration */
+  elementId?: string;
 }
 
 export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
@@ -43,6 +46,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   disabled = false,
   initialStyles,
   onEditingChange,
+  elementId,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
@@ -146,6 +150,12 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   useEffect(() => {
     onEditingChange?.(isEditing);
   }, [isEditing, onEditingChange]);
+
+  // Get inline edit context for Right Panel integration
+  const { registerEditor } = useInlineEdit();
+  
+  // Ref to track if we handled an inline style (for context callback)
+  const didHandleInlineRef = useRef(false);
 
   // Handle double click to start editing
   const handleDoubleClick = useCallback(() => {
@@ -331,7 +341,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   }, [isEditing, updateToolbarPosition]);
 
   // Apply style changes - selection-first for color/gradient/formatting, otherwise whole block
-  const handleStyleChange = useCallback((newStyles: Partial<TextStyles>) => {
+  // Returns true if inline styling was applied (for context callback)
+  const handleStyleChange = useCallback((newStyles: Partial<TextStyles>): boolean => {
     const editorEl = contentRef.current;
 
     const shouldApplyInline =
@@ -372,7 +383,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     };
 
     // Inline styling path: update existing span under caret OR wrap current selection once
-    if (shouldApplyInline && editorEl) {
+    if (shouldApplyInline && editorEl && isEditing) {
       const styleOptions = buildSelectionOptions();
       if (styleOptions) {
         const sel = window.getSelection();
@@ -416,7 +427,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
             activeInlineSpanRef.current = span;
             scheduleInlineHtmlSave();
             syncToolbarState();
-            return;
+            return true;
           }
         }
         
@@ -426,7 +437,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           activeInlineSpanRef.current = target;
           scheduleInlineHtmlSave();
           syncToolbarState();
-          return;
+          return true;
         }
 
         // CASE 3: No target span, but user has a selection -> wrap it
@@ -436,7 +447,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
             activeInlineSpanRef.current = span;
             scheduleInlineHtmlSave();
             syncToolbarState();
-            return;
+            return true;
           }
         }
       }
@@ -479,7 +490,17 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
     const currentValue = contentRef.current?.innerText ?? value;
     onChange(currentValue, clonedStyles);
-  }, [styles, value, onChange, scheduleInlineHtmlSave]);
+    return false;
+  }, [styles, value, onChange, scheduleInlineHtmlSave, isEditing]);
+
+  // Register with inline edit context when editing (for Right Panel integration)
+  useEffect(() => {
+    if (!isEditing || !elementId) return;
+    
+    // Register this editor's handleStyleChange with the context
+    const unregister = registerEditor(elementId, handleStyleChange);
+    return unregister;
+  }, [isEditing, elementId, registerEditor, handleStyleChange]);
 
   // Get CSS classes based on styles
   const getStyleClasses = () => {
