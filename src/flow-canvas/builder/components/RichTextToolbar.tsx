@@ -96,27 +96,38 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
     cloneGradient(styles.textGradient || defaultGradient)
   );
 
-  // Keep local state in sync when block-level styles change externally
-  useEffect(() => {
-    // Always sync when textColor changes, even if it's becoming undefined
-    const normalized = normalizeColorForColorInput(styles.textColor, styles.textColor || '#000000');
-    setLocalColor((prev) => (prev === normalized ? prev : normalized));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [styles.textColor]);
-
+  // Track if user is actively dragging sliders to prevent external sync overriding local state
+  const isDraggingRef = useRef(false);
+  const dragDebounceRef = useRef<number | null>(null);
+  
   // Use ref for comparison to prevent sync loops
   const prevGradientRef = useRef<string>(JSON.stringify(styles.textGradient || defaultGradient));
-  
+  const prevFillTypeRef = useRef<string | undefined>(styles.textFillType);
+
+  // Sync BOTH color and gradient when textFillType or values change externally
+  // This ensures clicking different text elements shows correct state
   useEffect(() => {
+    // Skip sync while user is actively dragging
+    if (isDraggingRef.current) return;
+    
+    const fillTypeChanged = styles.textFillType !== prevFillTypeRef.current;
+    prevFillTypeRef.current = styles.textFillType;
+    
+    // Sync color - always keep in sync for solid mode indicator
+    const normalized = normalizeColorForColorInput(styles.textColor, styles.textColor || '#000000');
+    setLocalColor((prev) => (prev === normalized ? prev : normalized));
+    
+    // Sync gradient
     const next = styles.textGradient || defaultGradient;
     const nextStr = JSON.stringify(next);
     
-    // Only sync if the external value actually changed (not our own update)
-    if (nextStr !== prevGradientRef.current) {
+    // Only sync if the external value actually changed OR fill type changed
+    if (nextStr !== prevGradientRef.current || fillTypeChanged) {
       prevGradientRef.current = nextStr;
       setLocalGradient(cloneGradient(next));
     }
-  }, [styles.textGradient]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styles.textColor, styles.textGradient, styles.textFillType]);
   
   // Drag state for repositioning toolbar
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -217,6 +228,14 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
     setLocalGradient(cloned);
     // Update ref so we don't re-sync our own change
     prevGradientRef.current = JSON.stringify(cloned);
+    
+    // Mark as dragging to prevent external sync from overriding during slider drag
+    isDraggingRef.current = true;
+    if (dragDebounceRef.current) window.clearTimeout(dragDebounceRef.current);
+    dragDebounceRef.current = window.setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 300);
+    
     // Always clone to prevent shared references
     onChange({
       textGradient: cloneGradient(cloned),
@@ -433,14 +452,22 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           >
             <div className="relative">
               <Palette size={14} />
+              {/* Color/gradient indicator bar - prominent, above icon bottom */}
               <div 
-                className="absolute -bottom-0.5 left-0 right-0 h-1 rounded-full"
+                className="absolute -bottom-0.5 left-0 right-0 h-1.5 rounded-full shadow-sm ring-1 ring-black/20"
                 style={{ 
                   background: isGradientFill
                     ? gradientToCSS(localGradient)
                     : localColor
                 }}
               />
+              {/* Extra glow for gradient mode */}
+              {isGradientFill && (
+                <div 
+                  className="absolute -bottom-1 left-0 right-0 h-2 rounded-full blur-sm opacity-50"
+                  style={{ background: gradientToCSS(localGradient) }}
+                />
+              )}
             </div>
           </button>
         </PopoverTrigger>
