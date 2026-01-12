@@ -914,6 +914,7 @@ const ElementInspector: React.FC<{
                 <span className="text-xs text-builder-text-muted">Fill Type</span>
                 <div className="flex rounded-lg overflow-hidden border border-builder-border">
                   <button
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       // IMPORTANT: never default to white; let the editor compute a safe fallback.
                       const color = effectiveTextColor;
@@ -1010,7 +1011,9 @@ const ElementInspector: React.FC<{
                       handlePropsChange('textColor', color);
                     }}
                   >
-                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                       <div 
                         className="w-6 h-6 rounded-md border border-builder-border" 
                         style={{ backgroundColor: effectiveTextColor || '#FFFFFF' }} 
@@ -1064,6 +1067,7 @@ const ElementInspector: React.FC<{
                     {textColorPresets.map((color) => (
                       <button
                         key={color}
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           const handled = applyInlineStyle(element.id, {
                             textFillType: 'solid',
