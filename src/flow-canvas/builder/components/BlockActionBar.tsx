@@ -52,6 +52,8 @@ interface BlockActionBarProps {
   deviceMode?: 'desktop' | 'tablet' | 'mobile';
   /** Target element ref for portal positioning */
   targetRef?: React.RefObject<HTMLElement>;
+  /** Editor theme - controls light/dark styling */
+  editorTheme?: 'dark' | 'light';
 }
 
 export const BlockActionBar: React.FC<BlockActionBarProps> = ({
@@ -72,9 +74,11 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
   dragHandleProps,
   deviceMode = 'desktop',
   targetRef,
+  editorTheme = 'dark',
 }) => {
   const tooltipSide = position === 'left' ? 'right' : 'left';
   const isMobilePreview = deviceMode === 'mobile';
+  const isLightMode = editorTheme === 'light';
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
   useEffect(() => {
@@ -109,7 +113,8 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
       'w-8 h-8 rounded-lg',
       'bg-[hsl(var(--builder-surface))]/90 backdrop-blur-md',
       'border border-[hsl(315,85%,58%)/0.2]',
-      'shadow-md text-white/70'
+      'shadow-md',
+      isLightMode ? 'text-gray-600' : 'text-white/70'
     );
 
     const pill = cn(
@@ -124,8 +129,10 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
         btnBase,
         'w-7 h-7 rounded-md',
         disabled
-          ? 'text-white/20 cursor-not-allowed'
-          : 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
+          ? isLightMode ? 'text-gray-300 cursor-not-allowed' : 'text-white/20 cursor-not-allowed'
+          : isLightMode 
+            ? 'text-gray-500 hover:text-gray-900 hover:bg-[hsl(315,85%,58%)/0.1]' 
+            : 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
       );
 
     const node = (
@@ -159,7 +166,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               <button onClick={(e) => { e.stopPropagation(); setMobileExpanded(false); }} className={iconBtn()}>
                 <X size={12} />
               </button>
-              <div className="w-px h-4 bg-white/10" />
+              <div className={cn("w-px h-4", isLightMode ? "bg-gray-300" : "bg-white/10")} />
               <button onClick={(e) => { e.stopPropagation(); onMoveUp(); }} disabled={!canMoveUp} className={iconBtn(!canMoveUp)}>
                 <ChevronUp size={12} />
               </button>
@@ -233,8 +240,10 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                   className={cn(
                     'p-1 rounded-md transition-colors flex items-center justify-center',
                     canMoveUp
-                      ? 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
-                      : 'text-white/20 cursor-not-allowed'
+                      ? isLightMode 
+                        ? 'text-gray-500 hover:text-gray-900 hover:bg-[hsl(315,85%,58%)/0.1]'
+                        : 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
+                      : isLightMode ? 'text-gray-300 cursor-not-allowed' : 'text-white/20 cursor-not-allowed'
                   )}
                 >
                   <ChevronUp size={12} />
@@ -252,8 +261,10 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
                   className={cn(
                     'p-1 rounded-md transition-colors flex items-center justify-center',
                     canMoveDown
-                      ? 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
-                      : 'text-white/20 cursor-not-allowed'
+                      ? isLightMode 
+                        ? 'text-gray-500 hover:text-gray-900 hover:bg-[hsl(315,85%,58%)/0.1]'
+                        : 'text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]'
+                      : isLightMode ? 'text-gray-300 cursor-not-allowed' : 'text-white/20 cursor-not-allowed'
                   )}
                 >
                   <ChevronDown size={12} />
@@ -265,7 +276,7 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
             {/* More Actions */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1 rounded-md text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1] transition-colors flex items-center justify-center">
+                <button className={cn("p-1 rounded-md transition-colors flex items-center justify-center", isLightMode ? "text-gray-500 hover:text-gray-900 hover:bg-[hsl(315,85%,58%)/0.1]" : "text-white/60 hover:text-white hover:bg-[hsl(315,85%,58%)/0.1]")}>
                   <MoreHorizontal size={12} />
                 </button>
               </DropdownMenuTrigger>
@@ -275,27 +286,27 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
               >
                 <DropdownMenuItem
                   onClick={onAddAbove}
-                  className="text-white/80 text-xs focus:bg-[hsl(315,85%,58%)/0.1] focus:text-white"
+                  className={cn("text-xs focus:bg-[hsl(315,85%,58%)/0.1]", isLightMode ? "text-gray-700 focus:text-gray-900" : "text-white/80 focus:text-white")}
                 >
                   <Plus size={12} className="mr-2" />
                   Add above
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={onAddBelow}
-                  className="text-white/80 text-xs focus:bg-[hsl(315,85%,58%)/0.1] focus:text-white"
+                  className={cn("text-xs focus:bg-[hsl(315,85%,58%)/0.1]", isLightMode ? "text-gray-700 focus:text-gray-900" : "text-white/80 focus:text-white")}
                 >
                   <Plus size={12} className="mr-2" />
                   Add below
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator className={isLightMode ? "bg-gray-200" : "bg-white/10"} />
                 <DropdownMenuItem
                   onClick={onDuplicate}
-                  className="text-white/80 text-xs focus:bg-[hsl(315,85%,58%)/0.1] focus:text-white"
+                  className={cn("text-xs focus:bg-[hsl(315,85%,58%)/0.1]", isLightMode ? "text-gray-700 focus:text-gray-900" : "text-white/80 focus:text-white")}
                 >
                   <Copy size={12} className="mr-2" />
                   Duplicate
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator className={isLightMode ? "bg-gray-200" : "bg-white/10"} />
                 <DropdownMenuItem
                   onClick={onDelete}
                   className="text-red-400 text-xs focus:bg-red-500/15"
