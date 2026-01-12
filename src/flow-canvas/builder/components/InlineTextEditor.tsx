@@ -88,6 +88,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const lastPointerDownInToolbarRef = useRef(false);
   const lastToolbarInteractionAtRef = useRef<number>(0);
   const lastInspectorInteractionAtRef = useRef<number>(0);
+  
+  // Pointer-lock refs: TRUE lock for pointer-down state (fixes long slider drags beyond 800ms timeout)
+  const isPointerDownRef = useRef(false);
+  const pointerDownContextRef = useRef<'toolbar' | 'inspector' | null>(null);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -232,6 +236,11 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     if (!relatedTarget && (lastPointerDownInInspectorRef.current || lastPointerDownInToolbarRef.current)) {
       return;
     }
+    
+    // If pointer is still down on toolbar/inspector, don't exit (slider drag in progress)
+    if (isPointerDownRef.current && (pointerDownContextRef.current === 'toolbar' || pointerDownContextRef.current === 'inspector')) {
+      return;
+    }
 
     // Additional check: if relatedTarget is null, check if any Radix popover is currently open in the DOM
     if (!relatedTarget) {
@@ -273,12 +282,15 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   }, [onChange]);
 
   // Track pointerdown target so the editor doesn't exit when adjusting Right Panel or Toolbar controls
+  // Also maintains TRUE pointer-lock state for arbitrarily long slider drags
   useEffect(() => {
     if (!isEditing) return;
 
-    const handler = (ev: PointerEvent) => {
+    const handlePointerDown = (ev: PointerEvent) => {
       const target = ev.target as HTMLElement | null;
-      const isInspector = !!target?.closest('.builder-right-panel');
+      const isInspector = !!target?.closest('.builder-right-panel') ||
+                          !!target?.closest('[data-radix-popper-content-wrapper]') ||
+                          !!target?.closest('[data-radix-popover-content]');
       lastPointerDownInInspectorRef.current = isInspector;
       if (isInspector) lastInspectorInteractionAtRef.current = Date.now();
 
@@ -289,10 +301,31 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         !!target?.closest('[data-radix-select-content]');
       lastPointerDownInToolbarRef.current = toolbarHit;
       if (toolbarHit) lastToolbarInteractionAtRef.current = Date.now();
+      
+      // Set pointer-lock state for long drags
+      isPointerDownRef.current = true;
+      if (toolbarHit) {
+        pointerDownContextRef.current = 'toolbar';
+      } else if (isInspector) {
+        pointerDownContextRef.current = 'inspector';
+      } else {
+        pointerDownContextRef.current = null;
+      }
+    };
+    
+    const handlePointerUp = () => {
+      isPointerDownRef.current = false;
+      pointerDownContextRef.current = null;
     };
 
-    document.addEventListener('pointerdown', handler, true);
-    return () => document.removeEventListener('pointerdown', handler, true);
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('pointerup', handlePointerUp, true);
+    document.addEventListener('pointercancel', handlePointerUp, true);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('pointerup', handlePointerUp, true);
+      document.removeEventListener('pointercancel', handlePointerUp, true);
+    };
   }, [isEditing]);
 
   // Update toolbar position based on current selection (snaps to highlighted text)
@@ -758,10 +791,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // Keep editing active, but don't steal focus from inspector controls (sliders/inputs)
-      // Check both current activeElement AND recent pointer interactions (for sliders that lose focus mid-drag)
+      // Use pointer-lock for long drags, plus time-based fallback and activeElement check
       const activeEl = document.activeElement as HTMLElement | null;
+      const pointerDownOnInspector = isPointerDownRef.current && pointerDownContextRef.current === 'inspector';
       const recentlyInteractedWithInspector = Date.now() - lastInspectorInteractionAtRef.current < 800;
       const isInteractingWithInspector =
+        pointerDownOnInspector ||
         recentlyInteractedWithInspector ||
         !!activeEl?.closest('.builder-right-panel') ||
         !!activeEl?.closest('[data-radix-popper-content-wrapper]') ||

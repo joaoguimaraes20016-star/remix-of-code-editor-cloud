@@ -95,6 +95,8 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
           align="end"
           sideOffset={5}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
         >
           {/* Color Selection */}
 
