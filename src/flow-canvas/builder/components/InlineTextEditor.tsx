@@ -656,7 +656,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // Get current DOM selection state
       const sel = window.getSelection();
       let liveRange: Range | null = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-      const liveHasSelection = liveRange && !liveRange.collapsed && editorEl.contains(liveRange.commonAncestorContainer);
+      let liveHasSelection = liveRange && !liveRange.collapsed && editorEl.contains(liveRange.commonAncestorContainer);
+
+      if (import.meta.env.DEV) {
+        console.debug('[handleStyleChange] Initial state:', {
+          liveHasSelection,
+          liveRangeText: liveRange?.toString()?.slice(0, 30),
+          savedRangeText: lastSelectionRangeRef.current?.toString()?.slice(0, 30),
+          isSliderDragging: isSliderDraggingRef.current,
+        });
+      }
 
       // If live selection is collapsed/empty, try restoring saved selection
       if (!liveHasSelection && lastSelectionRangeRef.current) {
@@ -674,8 +683,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             sel?.removeAllRanges();
             sel?.addRange(savedRange.cloneRange());
             liveRange = savedRange.cloneRange();
+            liveHasSelection = true;
+            
+            if (import.meta.env.DEV) {
+              console.debug('[handleStyleChange] Selection restored from saved:', savedRange.toString().slice(0, 30));
+            }
+          } else if (import.meta.env.DEV) {
+            console.debug('[handleStyleChange] Saved range endpoints invalid');
           }
-        } catch { /* ignore */ }
+        } catch (err) {
+          if (import.meta.env.DEV) {
+            console.debug('[handleStyleChange] Restoration failed:', err);
+          }
+        }
       }
 
       const hasSelection = liveRange && !liveRange.collapsed && liveRange.toString().length > 0;
@@ -1333,16 +1353,31 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         el.focus();
       }
 
+      // Attempt to restore selection from saved reference
       const sel = window.getSelection();
       if (sel && lastSelectionRangeRef.current) {
         try {
-          if (el.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
+          const savedRange = lastSelectionRangeRef.current;
+          const startValid = el.contains(savedRange.startContainer) || savedRange.startContainer === el;
+          const endValid = el.contains(savedRange.endContainer) || savedRange.endContainer === el;
+          
+          if (startValid && endValid) {
             sel.removeAllRanges();
-            sel.addRange(lastSelectionRangeRef.current.cloneRange());
+            sel.addRange(savedRange.cloneRange());
+            
+            if (import.meta.env.DEV) {
+              console.debug('[Toolbar] Selection restored:', savedRange.toString().slice(0, 30));
+            }
+          } else if (import.meta.env.DEV) {
+            console.debug('[Toolbar] Selection restore skipped - range endpoints not in editor');
           }
-        } catch {
-          // ignore
+        } catch (err) {
+          if (import.meta.env.DEV) {
+            console.debug('[Toolbar] Selection restore failed:', err);
+          }
         }
+      } else if (import.meta.env.DEV) {
+        console.debug('[Toolbar] No saved selection to restore');
       }
 
       handleStyleChange(nextStyles);
