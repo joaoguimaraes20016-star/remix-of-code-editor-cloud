@@ -476,17 +476,16 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
-          onPointerDownCapture={(e) => {
-            // Prevent the underlying canvas from receiving pointer events while adjusting sliders.
-            // (This is a major source of "popover disappears" when the canvas selection changes.)
+          onPointerDown={(e) => {
+            // Don't let pointer events inside the popover bubble to any global/canvas handlers.
+            // (Bubble phase only — does NOT break Radix Slider dragging.)
             e.stopPropagation();
           }}
-          onPointerMoveCapture={(e) => {
+          onPointerMove={(e) => {
             e.stopPropagation();
           }}
           onPointerDownOutside={(e) => {
-            // Prevent closing if the user is interacting with ANY part of a slider
-            // (thumb, track, range). We mark our Slider root with data-lovable-slider.
+            // Prevent closing if the user is interacting with ANY part of a slider.
             const target = e.target as HTMLElement;
             const isSliderInteraction =
               !!target.closest('[data-lovable-slider="true"]') ||

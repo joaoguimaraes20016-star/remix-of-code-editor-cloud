@@ -287,11 +287,12 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
         align="end"
         sideOffset={5}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onPointerDownCapture={(e) => {
-          // Prevent underlying canvas handlers from firing while dragging sliders inside the popover.
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          // Bubble-phase only so sliders still work, but canvas/global handlers won't.
           e.stopPropagation();
         }}
-        onPointerMoveCapture={(e) => {
+        onPointerMove={(e) => {
           e.stopPropagation();
         }}
         onPointerDownOutside={(e) => {
