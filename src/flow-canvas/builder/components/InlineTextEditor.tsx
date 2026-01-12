@@ -50,6 +50,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
+  const [sessionHasInlineStyles, setSessionHasInlineStyles] = useState(false);
   
   // Track which properties have been explicitly modified by the user
   const [modifiedProps, setModifiedProps] = useState<Set<keyof TextStyles>>(new Set());
@@ -163,22 +164,36 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   // Handle double click to start editing
   const handleDoubleClick = useCallback(() => {
     if (disabled) return;
+    if (isEditing) return;
+
     setIsEditing(true);
     setShowToolbar(true);
-    
+    setSessionHasInlineStyles(containsHTML(value || ''));
+
     // Focus the contenteditable
     setTimeout(() => {
-      if (contentRef.current) {
-        contentRef.current.focus();
-        // Select all text
-        const range = document.createRange();
-        range.selectNodeContents(contentRef.current);
-        const selection = window.getSelection();
-        selection?.removeAllRanges();
-        selection?.addRange(range);
+      const el = contentRef.current;
+      if (!el) return;
+
+      // Initialize DOM content for the edit session.
+      // While editing, we intentionally do NOT render children from React
+      // (prevents selection/cursor glitches when applying inline spans).
+      if (containsHTML(value || '')) {
+        el.innerHTML = sanitizeStyledHTML(value || '');
+      } else {
+        el.innerText = value || '';
       }
+
+      el.focus();
+
+      // Select all text
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
     }, 0);
-  }, [disabled]);
+  }, [disabled, isEditing, value]);
 
   // Handle blur to stop editing - only emit content, not styles (styles are emitted on change)
   const handleBlur = useCallback((e: React.FocusEvent) => {
@@ -464,6 +479,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           const span = applyStylesToSelection(styleOptions);
           if (span) {
             activeInlineSpanRef.current = span;
+            setSessionHasInlineStyles(true);
             scheduleInlineHtmlSave();
             syncToolbarState();
             return true;
@@ -474,6 +490,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         if (target && (!hasSelection || isWholeSpanSelected())) {
           updateSpanStyle(target, styleOptions);
           activeInlineSpanRef.current = target;
+          setSessionHasInlineStyles(true);
           scheduleInlineHtmlSave();
           syncToolbarState();
           return true;
@@ -484,6 +501,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           const span = applyStylesToSelection(styleOptions);
           if (span) {
             activeInlineSpanRef.current = span;
+            setSessionHasInlineStyles(true);
             scheduleInlineHtmlSave();
             syncToolbarState();
             return true;
@@ -818,29 +836,46 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     return value;
   };
   
-  // Determine if we should use dangerouslySetInnerHTML
-  const useHtmlRendering = isHtmlContent;
-  
-  // Track the last value we applied to innerHTML to avoid resetting selection during edits
+  // Track the last value we applied to the contentEditable while editing.
+  // This prevents cursor/selection glitches when the parent re-renders.
   const lastAppliedHtmlRef = useRef<string>('');
+  const lastAppliedPlainTextRef = useRef<string>('');
 
-  // When editing HTML content, only set innerHTML on initial entry or external value change
-  // This prevents selection loss during slider drags / gradient tweaks
+  // Keep editing DOM in sync with external value changes *only when safe*.
+  // While we're applying inline spans, the DOM is the source of truth until the debounced save updates `value`.
   useEffect(() => {
-    if (!isEditing || !useHtmlRendering) {
-      lastAppliedHtmlRef.current = '';
-      return;
-    }
     const el = contentRef.current;
     if (!el) return;
-    
-    const sanitized = sanitizeStyledHTML(value || '');
-    // Only apply if this is a fresh edit session OR value changed externally
-    if (lastAppliedHtmlRef.current !== sanitized && el.innerHTML !== sanitized) {
-      el.innerHTML = sanitized;
-      lastAppliedHtmlRef.current = sanitized;
+
+    if (!isEditing) {
+      lastAppliedHtmlRef.current = '';
+      lastAppliedPlainTextRef.current = '';
+      if (sessionHasInlineStyles) setSessionHasInlineStyles(false);
+      return;
     }
-  }, [isEditing, useHtmlRendering, value]);
+
+    // If we just introduced inline spans locally, don't overwrite from `value` yet.
+    if (sessionHasInlineStyles && !isHtmlContent) return;
+
+    if (isHtmlContent) {
+      const sanitized = sanitizeStyledHTML(value || '');
+      if (lastAppliedHtmlRef.current !== sanitized && el.innerHTML !== sanitized) {
+        el.innerHTML = sanitized;
+        lastAppliedHtmlRef.current = sanitized;
+      }
+      return;
+    }
+
+    const nextText = value || '';
+    if (lastAppliedPlainTextRef.current !== nextText && el.innerText !== nextText) {
+      el.innerText = nextText;
+      lastAppliedPlainTextRef.current = nextText;
+    }
+  }, [isEditing, isHtmlContent, value, sessionHasInlineStyles]);
+
+  const shouldUseDangerouslySetHtml =
+    !isEditing && !!isHtmlContent && styles.textFillType !== 'gradient';
+
   return (
     <div ref={containerRef} className="relative">
       {/* Floating Rich Text Toolbar */}
@@ -853,78 +888,46 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           onClose={() => setShowToolbar(false)}
         />
       )}
-      
+
       {/* Editable Content */}
-      {useHtmlRendering ? (
-        <div
-          ref={contentRef}
-          contentEditable={isEditing && !disabled}
-          suppressContentEditableWarning
-          onDoubleClick={handleDoubleClick}
-          onBlur={handleBlur}
-          onSelect={handleSelect}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              setIsEditing(false);
-              setShowToolbar(false);
-              contentRef.current?.blur();
-            }
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              setIsEditing(false);
-              setShowToolbar(false);
-              contentRef.current?.blur();
-            }
-          }}
-          style={getInlineStyles()}
-          className={`
-            outline-none transition-all duration-150
-            ${getStyleClasses()}
-            ${isEditing 
-              ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-white/5' 
-              : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
-            }
-            ${!value && !isEditing ? 'text-gray-400' : ''}
-            ${className}
-          `}
-          {...(!isEditing ? { dangerouslySetInnerHTML: { __html: sanitizeStyledHTML(value || '') } } : {})}
-        />
-      ) : (
-        <div
-          ref={contentRef}
-          contentEditable={isEditing && !disabled}
-          suppressContentEditableWarning
-          onDoubleClick={handleDoubleClick}
-          onBlur={handleBlur}
-          onSelect={handleSelect}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              setIsEditing(false);
-              setShowToolbar(false);
-              contentRef.current?.blur();
-            }
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              setIsEditing(false);
-              setShowToolbar(false);
-              contentRef.current?.blur();
-            }
-          }}
-          style={getInlineStyles()}
-          className={`
-            outline-none transition-all duration-150
-            ${getStyleClasses()}
-            ${isEditing 
-              ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-white/5' 
-              : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
-            }
-            ${!value && !isEditing ? 'text-gray-400' : ''}
-            ${className}
-          `}
-        >
-          {renderContent()}
-        </div>
-      )}
+      <div
+        ref={contentRef}
+        contentEditable={isEditing && !disabled}
+        suppressContentEditableWarning
+        onDoubleClick={handleDoubleClick}
+        onBlur={handleBlur}
+        onSelect={handleSelect}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            setIsEditing(false);
+            setShowToolbar(false);
+            contentRef.current?.blur();
+          }
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            setIsEditing(false);
+            setShowToolbar(false);
+            contentRef.current?.blur();
+          }
+        }}
+        style={getInlineStyles()}
+        className={`
+          outline-none transition-all duration-150
+          ${getStyleClasses()}
+          ${isEditing
+            ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-white/5'
+            : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
+          }
+          ${!value && !isEditing ? 'text-gray-400' : ''}
+          ${className}
+        `}
+        {...(shouldUseDangerouslySetHtml
+          ? { dangerouslySetInnerHTML: { __html: sanitizeStyledHTML(value || '') } }
+          : {})}
+      >
+        {/* When editing, we never render children from React to avoid DOM clobbering. */}
+        {!isEditing && !shouldUseDangerouslySetHtml ? renderContent() : null}
+      </div>
     </div>
   );
 };
