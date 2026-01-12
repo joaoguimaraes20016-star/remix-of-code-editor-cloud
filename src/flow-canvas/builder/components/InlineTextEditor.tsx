@@ -453,7 +453,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             // selection changes via keyboard (handleSelect doesn't fire reliably).
             const fill = getSpanFillStyles(span);
             if (fill.textFillType) {
-              setStyles((prev) => {
+              setSelectionFill((prev) => {
                 const nextFillType = fill.textFillType ?? prev.textFillType;
                 const nextColor = fill.textColor ?? prev.textColor;
                 const nextGradient = fill.textGradient ? cloneGradient(fill.textGradient) : prev.textGradient;
@@ -463,7 +463,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
                 if (unchanged) return prev;
 
                 return {
-                  ...prev,
                   textFillType: nextFillType,
                   textColor: nextColor,
                   textGradient: nextGradient,
@@ -484,11 +483,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
                 return;
               }
               
-              // Real solid color - update state to reflect solid fill
-              setStyles((prev) => {
+              // Real solid color - update selectionFill (not block-level styles)
+              setSelectionFill((prev) => {
                 if (prev.textFillType === 'solid' && prev.textColor === computedColor) return prev;
                 return {
-                  ...prev,
                   textFillType: 'solid',
                   textColor: computedColor,
                 };

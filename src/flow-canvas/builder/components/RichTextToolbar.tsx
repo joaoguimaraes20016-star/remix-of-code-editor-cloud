@@ -33,7 +33,7 @@ const colorPresets = [
 ];
 
 interface RichTextToolbarProps {
-  styles: TextStyles;
+  styles: Partial<TextStyles>;
   onChange: (styles: Partial<TextStyles>) => void;
   position: { top: number; left: number };
   onClose: () => void;
