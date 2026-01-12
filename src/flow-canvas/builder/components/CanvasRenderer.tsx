@@ -843,6 +843,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               placeholder="Add heading..."
               disabled={readOnly}
               onEditingChange={setIsInlineEditing}
+              elementId={element.id}
               initialStyles={{
                 fontSize: element.props?.fontSize as TextStyles['fontSize'],
                 fontWeight: element.props?.fontWeight as TextStyles['fontWeight'],
@@ -1008,6 +1009,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               placeholder={isLogo ? "Brand®" : isFooterHeading ? "Section" : "Add text..."}
               disabled={readOnly}
               onEditingChange={setIsInlineEditing}
+              elementId={element.id}
               initialStyles={{
                 fontSize: element.props?.fontSize as TextStyles['fontSize'],
                 fontWeight: element.props?.fontWeight as TextStyles['fontWeight'],

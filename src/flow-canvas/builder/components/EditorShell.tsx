@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { PanelLeftClose, PanelRightClose, Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { InlineEditProvider } from '../contexts/InlineEditContext';
 
 // Multi-selection state type
 interface MultiSelection {
@@ -937,6 +938,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   ]);
 
   return (
+    <InlineEditProvider>
     <div
       className={
         `h-screen flex flex-col overflow-hidden ` +
@@ -1194,5 +1196,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         currentImage={page.settings.meta?.og_image}
       />
     </div>
+    </InlineEditProvider>
   );
 };
