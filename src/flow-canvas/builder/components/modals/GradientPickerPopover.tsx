@@ -287,6 +287,30 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
         align="end"
         sideOffset={5}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => {
+          // Only prevent closing if interacting with a slider element
+          const target = e.target as HTMLElement;
+          const isSliderInteraction = 
+            target.closest('[role="slider"]') ||
+            target.closest('[data-radix-slider-track]') ||
+            target.closest('[data-radix-slider-range]') ||
+            target.closest('[data-radix-slider-thumb]');
+          if (isSliderInteraction) {
+            e.preventDefault();
+          }
+        }}
+        onInteractOutside={(e) => {
+          // Same logic for interact outside
+          const target = e.target as HTMLElement;
+          const isSliderInteraction = 
+            target.closest('[role="slider"]') ||
+            target.closest('[data-radix-slider-track]') ||
+            target.closest('[data-radix-slider-range]') ||
+            target.closest('[data-radix-slider-thumb]');
+          if (isSliderInteraction) {
+            e.preventDefault();
+          }
+        }}
       >
         {/* Header */}
         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[hsl(220,18%,14%)]">
