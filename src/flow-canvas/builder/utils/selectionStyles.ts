@@ -249,6 +249,8 @@ export function getSpanFillStyles(span: HTMLSpanElement): {
 }
 
 /**
+ * Get a styled span at the current selection (for reading fill styles).
+ */
 export function getStyledSpanAtSelection(root: HTMLElement): HTMLSpanElement | null {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;
