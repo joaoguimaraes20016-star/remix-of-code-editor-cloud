@@ -287,29 +287,28 @@ export const GradientPickerPopover: React.FC<GradientPickerPopoverProps> = ({
         align="end"
         sideOffset={5}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownCapture={(e) => {
+          // Prevent underlying canvas handlers from firing while dragging sliders inside the popover.
+          e.stopPropagation();
+        }}
+        onPointerMoveCapture={(e) => {
+          e.stopPropagation();
+        }}
         onPointerDownOutside={(e) => {
-          // Only prevent closing if interacting with a slider element
           const target = e.target as HTMLElement;
-          const isSliderInteraction = 
-            target.closest('[role="slider"]') ||
-            target.closest('[data-radix-slider-track]') ||
-            target.closest('[data-radix-slider-range]') ||
-            target.closest('[data-radix-slider-thumb]');
-          if (isSliderInteraction) {
-            e.preventDefault();
-          }
+          const isSliderInteraction =
+            !!target.closest('[data-lovable-slider="true"]') ||
+            !!target.closest('[role="slider"]');
+
+          if (isSliderInteraction) e.preventDefault();
         }}
         onInteractOutside={(e) => {
-          // Same logic for interact outside
           const target = e.target as HTMLElement;
-          const isSliderInteraction = 
-            target.closest('[role="slider"]') ||
-            target.closest('[data-radix-slider-track]') ||
-            target.closest('[data-radix-slider-range]') ||
-            target.closest('[data-radix-slider-thumb]');
-          if (isSliderInteraction) {
-            e.preventDefault();
-          }
+          const isSliderInteraction =
+            !!target.closest('[data-lovable-slider="true"]') ||
+            !!target.closest('[role="slider"]');
+
+          if (isSliderInteraction) e.preventDefault();
         }}
       >
         {/* Header */}

@@ -476,29 +476,31 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownCapture={(e) => {
+            // Prevent the underlying canvas from receiving pointer events while adjusting sliders.
+            // (This is a major source of "popover disappears" when the canvas selection changes.)
+            e.stopPropagation();
+          }}
+          onPointerMoveCapture={(e) => {
+            e.stopPropagation();
+          }}
           onPointerDownOutside={(e) => {
-            // Only prevent closing if interacting with a slider element
+            // Prevent closing if the user is interacting with ANY part of a slider
+            // (thumb, track, range). We mark our Slider root with data-lovable-slider.
             const target = e.target as HTMLElement;
-            const isSliderInteraction = 
-              target.closest('[role="slider"]') ||
-              target.closest('[data-radix-slider-track]') ||
-              target.closest('[data-radix-slider-range]') ||
-              target.closest('[data-radix-slider-thumb]');
-            if (isSliderInteraction) {
-              e.preventDefault();
-            }
+            const isSliderInteraction =
+              !!target.closest('[data-lovable-slider="true"]') ||
+              !!target.closest('[role="slider"]');
+
+            if (isSliderInteraction) e.preventDefault();
           }}
           onInteractOutside={(e) => {
-            // Same logic for interact outside
             const target = e.target as HTMLElement;
-            const isSliderInteraction = 
-              target.closest('[role="slider"]') ||
-              target.closest('[data-radix-slider-track]') ||
-              target.closest('[data-radix-slider-range]') ||
-              target.closest('[data-radix-slider-thumb]');
-            if (isSliderInteraction) {
-              e.preventDefault();
-            }
+            const isSliderInteraction =
+              !!target.closest('[data-lovable-slider="true"]') ||
+              !!target.closest('[role="slider"]');
+
+            if (isSliderInteraction) e.preventDefault();
           }}
         >
           <div className="space-y-3">
