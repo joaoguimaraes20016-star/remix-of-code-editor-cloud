@@ -184,7 +184,10 @@ function buildStyleUpdates(options: SelectionStyleOptions): { set: StyleMap; uns
     set['color'] = 'transparent'; // Prevent white fallback
   } else if (options.color) {
     set['color'] = options.color;
+    // Explicitly clear ALL gradient-related styles to ensure clean solid color
     unset.push(...gradientProps);
+    // Also explicitly reset -webkit-text-fill-color to prevent transparent text
+    set['-webkit-text-fill-color'] = 'unset';
   }
 
   if (options.fontWeight) set['font-weight'] = options.fontWeight;
