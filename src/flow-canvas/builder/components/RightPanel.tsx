@@ -237,36 +237,8 @@ const TogglePill: React.FC<{ value: boolean; onToggle: () => void; labels?: [str
   </div>
 );
 
-// Staging/Production Toggle
-const PublishToggle: React.FC<{ isPublished?: boolean; onPublish?: () => void }> = ({ isPublished = false, onPublish }) => {
-  const [mode, setMode] = useState<'draft' | 'live'>(isPublished ? 'live' : 'draft');
-  
-  const handleModeChange = (newMode: 'draft' | 'live') => {
-    setMode(newMode);
-    if (newMode === 'live' && onPublish) {
-      onPublish();
-    }
-  };
-  
-  return (
-    <div className="p-4 border-b border-builder-border">
-      <div className="toggle-pill w-full">
-        <button 
-          onClick={() => handleModeChange('draft')}
-          className={cn('toggle-pill-option flex-1 text-center', mode === 'draft' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
-        >
-          Draft
-        </button>
-        <button 
-          onClick={() => handleModeChange('live')}
-          className={cn('toggle-pill-option flex-1 text-center', mode === 'live' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
-        >
-          Live
-        </button>
-      </div>
-    </div>
-  );
-};
+// PublishToggle removed - Draft/Live toggle was non-functional and confusing
+// Publish is now handled by the dedicated "Publish Changes" button in SiteInfo
 
 // Site Info Section
 const SiteInfo: React.FC<{ page: Page; onPublish?: () => void }> = ({ page, onPublish }) => {
@@ -559,36 +531,48 @@ const ElementInspector: React.FC<{
               <Zap className="w-4 h-4 text-[hsl(315,85%,58%)]" />
               <span className="text-xs font-medium text-builder-text">Animation</span>
             </div>
-            <EffectsPickerPopover 
-              onSelectEffect={(effect) => {
-                onUpdate({ 
-                  animation: { 
-                    ...(element.animation || {}), 
-                    effect,
-                    trigger: element.animation?.trigger || 'scroll',
-                    delay: element.animation?.delay || 0,
-                    duration: element.animation?.duration || 500,
-                    easing: element.animation?.easing || 'ease-out',
-                    threshold: element.animation?.threshold || 0.1
-                  } as AnimationSettings
-                });
-              }} 
-              currentEffect={element.animation?.effect}
-            >
-              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[hsl(315,85%,58%)]/10 text-[hsl(315,85%,58%)] text-xs font-medium hover:bg-[hsl(315,85%,58%)]/20 transition-colors border border-[hsl(315,85%,58%)]/20">
-                {element.animation?.effect ? (
-                  <>
-                    <Sparkles className="w-3 h-3" />
-                    <span className="capitalize">{element.animation.effect.replace('-', ' ')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-3 h-3" />
-                    <span>Add Effect</span>
-                  </>
-                )}
-              </button>
-            </EffectsPickerPopover>
+            <div className="flex items-center gap-1.5">
+              {/* Replay button - only show when animation is set */}
+              {element.animation?.effect && onReplayAnimation && (
+                <button
+                  onClick={onReplayAnimation}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-builder-surface-hover text-builder-text-muted hover:text-[hsl(315,85%,58%)] hover:bg-[hsl(315,85%,58%)]/10 transition-colors text-xs"
+                  title="Replay animation"
+                >
+                  <Play className="w-3 h-3" />
+                </button>
+              )}
+              <EffectsPickerPopover 
+                onSelectEffect={(effect) => {
+                  onUpdate({ 
+                    animation: { 
+                      ...(element.animation || {}), 
+                      effect,
+                      trigger: element.animation?.trigger || 'scroll',
+                      delay: element.animation?.delay || 0,
+                      duration: element.animation?.duration || 500,
+                      easing: element.animation?.easing || 'ease-out',
+                      threshold: element.animation?.threshold || 0.1
+                    } as AnimationSettings
+                  });
+                }} 
+                currentEffect={element.animation?.effect}
+              >
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[hsl(315,85%,58%)]/10 text-[hsl(315,85%,58%)] text-xs font-medium hover:bg-[hsl(315,85%,58%)]/20 transition-colors border border-[hsl(315,85%,58%)]/20">
+                  {element.animation?.effect ? (
+                    <>
+                      <Sparkles className="w-3 h-3" />
+                      <span className="capitalize">{element.animation.effect.replace('-', ' ')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3 h-3" />
+                      <span>Add Effect</span>
+                    </>
+                  )}
+                </button>
+              </EffectsPickerPopover>
+            </div>
           </div>
           {element.animation?.effect && (
             <div className="mt-3 space-y-3">
@@ -616,7 +600,7 @@ const ElementInspector: React.FC<{
                 </button>
               </div>
               
-              {/* Duration slider - uses direct value not preset */}
+              {/* Duration slider with real-time feedback */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Duration</span>
@@ -3434,8 +3418,6 @@ export const RightPanel: React.FC<RightPanelProps> = ({
 
   return (
     <div className="builder-right-panel w-72 bg-builder-surface border-l border-builder-border flex flex-col h-full min-h-0">
-      {/* Staging/Production Toggle */}
-      <PublishToggle onPublish={onPublish} />
       
       {/* Selection Breadcrumb - shows hierarchy when something is selected */}
       {breadcrumbItems.length > 0 && (
