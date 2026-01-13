@@ -1451,7 +1451,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const lastAppliedPlainTextRef = useRef<string>('');
 
   // Keep editing DOM in sync with external value changes *only when safe*.
-  // While we're applying inline spans, the DOM is the source of truth until the debounced save updates `value`.
+  // While we're applying inline spans, the DOM is the source of truth until blur/save.
+  // Re-applying innerHTML during an edit session recreates nodes and INVALIDATES Range refs,
+  // which makes B/I/U toggles feel "stuck" on the second click.
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
@@ -1463,8 +1465,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       return;
     }
 
-    // If we just introduced inline spans locally, don't overwrite from `value` yet.
-    if (sessionHasInlineStyles && !isHtmlContent) return;
+    // CRITICAL: once we are in an inline-style session, do not clobber the live DOM from props.
+    // The DOM is already authoritative; the parent `value` updates are just persistence.
+    if (sessionHasInlineStyles) return;
 
     if (isHtmlContent) {
       const sanitized = sanitizeStyledHTML(value || '');
