@@ -1051,7 +1051,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // FINAL HACK: Don't trust DOM format detection for B/I/U toggles.
       // If the user clicks the same toggle twice in a row, the 2nd click is ALWAYS undo.
       // ─────────────────────────────────────────────────────────────────────
-      const isBold = newStyles.fontWeight === 'bold';
+      // BUG FIX: Bold detection must handle BOTH 'bold' string AND numeric weights >=600.
+      // Previous code only checked === 'bold', which missed '700', '600', etc.
+      // This caused "second click" detection to never fire when weight was numeric.
+      const parseBoldIntent = (fw: string | undefined): boolean => {
+        if (!fw) return false;
+        if (fw === 'bold') return true;
+        const n = Number(fw);
+        // >=600 is industry standard for "bold" threshold (see CSS font-weight spec)
+        return Number.isFinite(n) && n >= 600;
+      };
+      const isBold = parseBoldIntent(newStyles.fontWeight);
       const isItalic = newStyles.fontStyle === 'italic';
       const isUnderline =
         typeof newStyles.textDecoration === 'string' &&
