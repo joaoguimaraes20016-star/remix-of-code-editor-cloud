@@ -219,11 +219,6 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
     console.warn('Selection wrap failed:', e);
     return null;
   }
-    return span;
-  } catch (e) {
-    console.warn('Selection wrap failed:', e);
-    return null;
-  }
 }
 
 /**
