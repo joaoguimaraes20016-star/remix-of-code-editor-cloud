@@ -2023,7 +2023,10 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
           </div>
           <div>
             <p className="text-sm font-semibold text-builder-text">{getBlockTypeLabel(block.type)}</p>
-            <p className="text-[10px] text-builder-text-muted">{getBlockCategory(block.type)}</p>
+            {/* Only show Container badge for section-type blocks, not content blocks */}
+            {getBlockCategory(block.type) === 'Container' && (
+              <p className="text-[10px] text-builder-text-muted">Container</p>
+            )}
           </div>
         </div>
       </div>
@@ -2151,221 +2154,228 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
       </CollapsibleSection>
       )}
 
-      <CollapsibleSection title="Spacing" icon={<BoxSelect className="w-4 h-4" />}>
-        <div className="space-y-3 pt-3">
-          {/* Margin */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-builder-text-muted">Margin</span>
-            <Input 
-              className="builder-input w-20 text-xs text-center" 
-              value={block.styles?.margin || '0'}
-              onChange={(e) => handleStyleUpdate('margin', e.target.value)}
-              placeholder="0px"
-            />
-          </div>
-          {/* Padding (detailed) */}
-          <div className="space-y-2">
-            <span className="text-xs text-builder-text-muted">Padding (detailed)</span>
-            <div className="grid grid-cols-4 gap-1">
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] text-builder-text-muted">Top</span>
-                <Input 
-                  className="builder-input text-xs text-center h-8 w-full" 
-                  value={block.styles?.paddingTop || ''}
-                  onChange={(e) => handleStyleUpdate('paddingTop', e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] text-builder-text-muted">Right</span>
-                <Input 
-                  className="builder-input text-xs text-center h-8 w-full" 
-                  value={block.styles?.paddingRight || ''}
-                  onChange={(e) => handleStyleUpdate('paddingRight', e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] text-builder-text-muted">Bottom</span>
-                <Input 
-                  className="builder-input text-xs text-center h-8 w-full" 
-                  value={block.styles?.paddingBottom || ''}
-                  onChange={(e) => handleStyleUpdate('paddingBottom', e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] text-builder-text-muted">Left</span>
-                <Input 
-                  className="builder-input text-xs text-center h-8 w-full" 
-                  value={block.styles?.paddingLeft || ''}
-                  onChange={(e) => handleStyleUpdate('paddingLeft', e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Border & Shadow" icon={<Square className="w-4 h-4" />}>
-        <div className="space-y-3 pt-3">
-          {/* Border Width */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-builder-text-muted">Border Width</span>
-            <div className="flex items-center gap-2">
-              <Slider 
-                value={[parseInt(block.styles?.borderWidth as string || '0')]}
-                onValueChange={(v) => handleStyleUpdate('borderWidth', `${v[0]}px`)}
-                min={0}
-                max={8}
-                step={1}
-                className="w-16"
+      {/* Spacing controls only for Container blocks - content inherits from parent */}
+      {getBlockCategory(block.type) === 'Container' && (
+        <CollapsibleSection title="Spacing" icon={<BoxSelect className="w-4 h-4" />}>
+          <div className="space-y-3 pt-3">
+            {/* Margin */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Margin</span>
+              <Input 
+                className="builder-input w-20 text-xs text-center" 
+                value={block.styles?.margin || '0'}
+                onChange={(e) => handleStyleUpdate('margin', e.target.value)}
+                placeholder="0px"
               />
-              <span className="text-xs text-builder-text w-10">{block.styles?.borderWidth || '0px'}</span>
             </div>
-          </div>
-          {/* Border Color */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-builder-text-muted">Border Color</span>
-            <ColorPickerPopover
-              color={block.styles?.borderColor as string || 'transparent'}
-              onChange={(color) => handleStyleUpdate('borderColor', color)}
-            >
-              <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                <div 
-                  className="w-6 h-6 rounded-md border border-builder-border" 
-                  style={{ backgroundColor: block.styles?.borderColor as string || 'transparent' }}
-                />
-                <span className="text-xs text-builder-text-muted">Edit</span>
-              </button>
-            </ColorPickerPopover>
-          </div>
-          {/* Gradient Border */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-builder-text-muted">Gradient Border</span>
-            <TogglePill 
-              value={block.props?.gradientBorder === true} 
-              onToggle={() => {
-                const isCurrentlyOn = block.props?.gradientBorder === true;
-                if (!isCurrentlyOn) {
-                  // When turning on, set a default gradient if none exists
-                  const defaultGradient = {
-                    type: 'linear' as const,
-                    angle: 135,
-                    stops: [
-                      { color: '#8B5CF6', position: 0 },
-                      { color: '#EC4899', position: 100 }
-                    ]
-                  };
-                  onUpdate({ 
-                    props: { 
-                      ...block.props, 
-                      gradientBorder: true,
-                      borderGradient: block.props?.borderGradient || defaultGradient
-                    } 
-                  });
-                } else {
-                  onUpdate({ props: { ...block.props, gradientBorder: false } });
-                }
-              }} 
-              labels={['On', 'Off']} 
-            />
-          </div>
-          {block.props?.gradientBorder && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Border Gradient</span>
-              <GradientPickerPopover
-                value={block.props?.borderGradient as GradientValue | undefined}
-                onChange={(gradient) => onUpdate({ props: { ...block.props, borderGradient: cloneGradient(gradient) } })}
-              >
-                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                  <div 
-                    className="w-12 h-6 rounded-md border border-builder-border" 
-                    style={{ background: block.props?.borderGradient ? gradientToCSS(block.props.borderGradient as GradientValue) : 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}
+            {/* Padding (detailed) */}
+            <div className="space-y-2">
+              <span className="text-xs text-builder-text-muted">Padding (detailed)</span>
+              <div className="grid grid-cols-4 gap-1">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-builder-text-muted">Top</span>
+                  <Input 
+                    className="builder-input text-xs text-center h-8 w-full" 
+                    value={block.styles?.paddingTop || ''}
+                    onChange={(e) => handleStyleUpdate('paddingTop', e.target.value)}
+                    placeholder="0"
                   />
-                  <span className="text-xs text-builder-text-muted">Edit</span>
-                </button>
-              </GradientPickerPopover>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-builder-text-muted">Right</span>
+                  <Input 
+                    className="builder-input text-xs text-center h-8 w-full" 
+                    value={block.styles?.paddingRight || ''}
+                    onChange={(e) => handleStyleUpdate('paddingRight', e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-builder-text-muted">Bottom</span>
+                  <Input 
+                    className="builder-input text-xs text-center h-8 w-full" 
+                    value={block.styles?.paddingBottom || ''}
+                    onChange={(e) => handleStyleUpdate('paddingBottom', e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-builder-text-muted">Left</span>
+                  <Input 
+                    className="builder-input text-xs text-center h-8 w-full" 
+                    value={block.styles?.paddingLeft || ''}
+                    onChange={(e) => handleStyleUpdate('paddingLeft', e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
             </div>
-          )}
-          {/* Shadow */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-builder-text-muted">Shadow</span>
-            <Select 
-              value={block.props?.shadow as string || 'none'}
-              onValueChange={(value) => onUpdate({ props: { ...block.props, shadow: value } })}
-            >
-              <SelectTrigger className="builder-input w-28">
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="sm">Subtle</SelectItem>
-                <SelectItem value="md">Medium</SelectItem>
-                <SelectItem value="lg">Large</SelectItem>
-                <SelectItem value="xl">X-Large</SelectItem>
-                <SelectItem value="2xl">2X-Large</SelectItem>
-                <SelectItem value="inner">Inner</SelectItem>
-                <SelectItem value="glow">Glow</SelectItem>
-                <SelectItem value="neon">Neon</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
-          {/* Glow Color - only show for glow/neon shadows */}
-          {(block.props?.shadow === 'glow' || block.props?.shadow === 'neon') && (
+        </CollapsibleSection>
+      )}
+
+      {/* Border & Shadow only for Container blocks */}
+      {getBlockCategory(block.type) === 'Container' && (
+        <CollapsibleSection title="Border & Shadow" icon={<Square className="w-4 h-4" />}>
+          <div className="space-y-3 pt-3">
+            {/* Border Width */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Glow Color</span>
+              <span className="text-xs text-builder-text-muted">Border Width</span>
+              <div className="flex items-center gap-2">
+                <Slider 
+                  value={[parseInt(block.styles?.borderWidth as string || '0')]}
+                  onValueChange={(v) => handleStyleUpdate('borderWidth', `${v[0]}px`)}
+                  min={0}
+                  max={8}
+                  step={1}
+                  className="w-16"
+                />
+                <span className="text-xs text-builder-text w-10">{block.styles?.borderWidth || '0px'}</span>
+              </div>
+            </div>
+            {/* Border Color */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Border Color</span>
               <ColorPickerPopover
-                color={block.props?.glowColor as string || '#8b5cf6'}
-                onChange={(color) => onUpdate({ props: { ...block.props, glowColor: color } })}
+                color={block.styles?.borderColor as string || 'transparent'}
+                onChange={(color) => handleStyleUpdate('borderColor', color)}
               >
                 <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                   <div 
                     className="w-6 h-6 rounded-md border border-builder-border" 
-                    style={{ backgroundColor: block.props?.glowColor as string || '#8b5cf6' }}
+                    style={{ backgroundColor: block.styles?.borderColor as string || 'transparent' }}
                   />
                   <span className="text-xs text-builder-text-muted">Edit</span>
                 </button>
               </ColorPickerPopover>
             </div>
-          )}
-          {/* Backdrop Blur (Glassmorphism) - requires semi-transparent background */}
-          <div className="space-y-2">
+            {/* Gradient Border */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Backdrop Blur</span>
-              <div className="flex items-center gap-2">
-                <Slider 
-                  value={[parseInt((block.styles?.backdropBlur as string || '0').replace('px', ''))]}
-                  onValueChange={(v) => handleStyleUpdate('backdropBlur', `${v[0]}px`)}
-                  min={0}
-                  max={24}
-                  step={2}
-                  className="w-16"
-                />
-                <span className="text-xs text-builder-text w-10">{parseInt((block.styles?.backdropBlur as string || '0').replace('px', ''))}px</span>
-              </div>
+              <span className="text-xs text-builder-text-muted">Gradient Border</span>
+              <TogglePill 
+                value={block.props?.gradientBorder === true} 
+                onToggle={() => {
+                  const isCurrentlyOn = block.props?.gradientBorder === true;
+                  if (!isCurrentlyOn) {
+                    const defaultGradient = {
+                      type: 'linear' as const,
+                      angle: 135,
+                      stops: [
+                        { color: '#8B5CF6', position: 0 },
+                        { color: '#EC4899', position: 100 }
+                      ]
+                    };
+                    onUpdate({ 
+                      props: { 
+                        ...block.props, 
+                        gradientBorder: true,
+                        borderGradient: block.props?.borderGradient || defaultGradient
+                      } 
+                    });
+                  } else {
+                    onUpdate({ props: { ...block.props, gradientBorder: false } });
+                  }
+                }} 
+                labels={['On', 'Off']} 
+              />
             </div>
-            {parseInt((block.styles?.backdropBlur as string || '0').replace('px', '')) > 0 && (
-              <p className="text-[10px] text-builder-text-muted flex items-center gap-1">
-                <Info className="w-3 h-3" />
-                Works best with semi-transparent background
-              </p>
+            {block.props?.gradientBorder && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Border Gradient</span>
+                <GradientPickerPopover
+                  value={block.props?.borderGradient as GradientValue | undefined}
+                  onChange={(gradient) => onUpdate({ props: { ...block.props, borderGradient: cloneGradient(gradient) } })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div 
+                      className="w-12 h-6 rounded-md border border-builder-border" 
+                      style={{ background: block.props?.borderGradient ? gradientToCSS(block.props.borderGradient as GradientValue) : 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}
+                    />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </GradientPickerPopover>
+              </div>
             )}
+            {/* Shadow */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Shadow</span>
+              <Select 
+                value={block.props?.shadow as string || 'none'}
+                onValueChange={(value) => onUpdate({ props: { ...block.props, shadow: value } })}
+              >
+                <SelectTrigger className="builder-input w-28">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="sm">Subtle</SelectItem>
+                  <SelectItem value="md">Medium</SelectItem>
+                  <SelectItem value="lg">Large</SelectItem>
+                  <SelectItem value="xl">X-Large</SelectItem>
+                  <SelectItem value="2xl">2X-Large</SelectItem>
+                  <SelectItem value="inner">Inner</SelectItem>
+                  <SelectItem value="glow">Glow</SelectItem>
+                  <SelectItem value="neon">Neon</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Glow Color - only show for glow/neon shadows */}
+            {(block.props?.shadow === 'glow' || block.props?.shadow === 'neon') && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Glow Color</span>
+                <ColorPickerPopover
+                  color={block.props?.glowColor as string || '#8b5cf6'}
+                  onChange={(color) => onUpdate({ props: { ...block.props, glowColor: color } })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div 
+                      className="w-6 h-6 rounded-md border border-builder-border" 
+                      style={{ backgroundColor: block.props?.glowColor as string || '#8b5cf6' }}
+                    />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            )}
+            {/* Backdrop Blur (Glassmorphism) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Backdrop Blur</span>
+                <div className="flex items-center gap-2">
+                  <Slider 
+                    value={[parseInt((block.styles?.backdropBlur as string || '0').replace('px', ''))]}
+                    onValueChange={(v) => handleStyleUpdate('backdropBlur', `${v[0]}px`)}
+                    min={0}
+                    max={24}
+                    step={2}
+                    className="w-16"
+                  />
+                  <span className="text-xs text-builder-text w-10">{parseInt((block.styles?.backdropBlur as string || '0').replace('px', ''))}px</span>
+                </div>
+              </div>
+              {parseInt((block.styles?.backdropBlur as string || '0').replace('px', '')) > 0 && (
+                <p className="text-[10px] text-builder-text-muted flex items-center gap-1">
+                  <Info className="w-3 h-3" />
+                  Works best with semi-transparent background
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      </CollapsibleSection>
+        </CollapsibleSection>
+      )}
 
-      {/* Background - using unified BackgroundEditor */}
-      <CollapsibleSection title="Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
-        <div className="pt-3">
-          <BackgroundEditor
-            value={getBlockBackgroundValue()}
-            onChange={handleBackgroundEditorChange}
-            showImageOption={false}
-          />
-        </div>
-      </CollapsibleSection>
+      {/* Background only for Container blocks - content inherits from parent */}
+      {getBlockCategory(block.type) === 'Container' && (
+        <CollapsibleSection title="Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
+          <div className="pt-3">
+            <BackgroundEditor
+              value={getBlockBackgroundValue()}
+              onChange={handleBackgroundEditorChange}
+              showImageOption={false}
+            />
+          </div>
+        </CollapsibleSection>
+      )}
     </div>
   );
 };

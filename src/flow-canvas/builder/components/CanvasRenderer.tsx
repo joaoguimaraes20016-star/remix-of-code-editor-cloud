@@ -2685,13 +2685,13 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add block button - only show for truly empty sections (no blocks with content) */}
+          {/* Add block button - only show for sections that aren't "done" yet
+              A section feels complete when it has at least one block with 2+ elements (headline + button/text) */}
           {!readOnly && (() => {
-            // A section is "complete" when it has any block with actual elements
-            const hasContent = stack.blocks.some(block => 
-              block.elements && block.elements.length > 0
+            const isComplete = stack.blocks.some(block => 
+              block.elements && block.elements.length >= 2
             );
-            return !hasContent;
+            return !isComplete;
           })() && (
             <div className="mt-3 opacity-0 group-hover/section:opacity-100 transition-opacity">
               <AddSectionPopover 
