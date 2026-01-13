@@ -712,48 +712,100 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // ─────────────────────────────────────────────────────────────────────────
-      // CRITICAL TOGGLE LOGIC: Check current format state and INVERT if needed
-      // This is what makes Bold/Italic/Underline work as true toggles.
+      // CRITICAL TOGGLE LOGIC (SOURCE OF TRUTH = DOM, not React state)
+      // We compute format state from the *live selection* on every click so the
+      // toolbar can never drift out of sync.
       // ─────────────────────────────────────────────────────────────────────────
+      const liveFormat: FormatState = (() => {
+        try {
+          if (!editorEl) return selectionFormat;
+
+          const sel = window.getSelection();
+          const liveRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+
+          const isRangeInEditor = (r: Range | null) => {
+            if (!r) return false;
+            return editorEl.contains(r.startContainer) || editorEl.contains(r.endContainer) || r.commonAncestorContainer === editorEl;
+          };
+
+          // Prefer the *actual* current selection if it's inside the editor.
+          if (isRangeInEditor(liveRange)) {
+            return getSelectionFormatState(editorEl, liveRange as Range);
+          }
+
+          // Fallback: when toolbar has focus, selection can appear "outside" the editor.
+          // Use the last known valid selection/caret range.
+          if (isRangeInEditor(lastSelectionRangeRef.current)) {
+            return getSelectionFormatState(editorEl, lastSelectionRangeRef.current as Range);
+          }
+
+          if (isRangeInEditor(lastCaretRangeRef.current)) {
+            return getSelectionFormatState(editorEl, lastCaretRangeRef.current as Range);
+          }
+
+          return selectionFormat;
+        } catch {
+          return selectionFormat;
+        }
+      })();
+
       if (newStyles.fontWeight) {
-        const wMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
+        const wMap: Record<string, string> = {
+          normal: '400',
+          medium: '500',
+          semibold: '600',
+          bold: '700',
+          black: '900',
+        };
+
         const requestedWeight = wMap[newStyles.fontWeight] || newStyles.fontWeight;
-        const isTurningBoldOn = Number(requestedWeight) >= 600 || newStyles.fontWeight === 'bold';
-        
-        // TRUE TOGGLE: If selection is already bold AND user clicked "bold" → turn OFF
-        // If selection is 'mixed', normalize to the requested state.
-        if (isTurningBoldOn && selectionFormat.bold === 'on') {
-          opts.fontWeight = '400'; // REMOVE bold
-          if (import.meta.env.DEV) console.log('[Toggle] Bold OFF (was on)');
+        const wantsBold = Number(requestedWeight) >= 600 || newStyles.fontWeight === 'bold';
+
+        // TRUE TOGGLE:
+        // - If user *wants bold* but selection is already bold -> remove (400)
+        // - If user *wants normal* and selection is mixed/on -> normalize to normal (400)
+        // - If selection is mixed and user wants bold -> normalize to bold (requestedWeight)
+        if (wantsBold) {
+          const shouldRemove = liveFormat.bold === 'on';
+          opts.fontWeight = shouldRemove ? '400' : requestedWeight;
         } else {
-          opts.fontWeight = requestedWeight;
-          if (import.meta.env.DEV) console.log('[Toggle] Bold ON →', requestedWeight);
+          opts.fontWeight = '400';
+        }
+
+        if (import.meta.env.DEV) {
+          console.log('[Toggle] Bold', { live: liveFormat.bold, requested: newStyles.fontWeight, applied: opts.fontWeight });
         }
       }
-      
+
       if (newStyles.fontStyle) {
-        const isTurningItalicOn = newStyles.fontStyle === 'italic';
-        
-        // TRUE TOGGLE: If already italic AND user clicked "italic" → turn OFF
-        if (isTurningItalicOn && selectionFormat.italic === 'on') {
-          opts.fontStyle = 'normal'; // REMOVE italic
-          if (import.meta.env.DEV) console.log('[Toggle] Italic OFF (was on)');
+        const wantsItalic = newStyles.fontStyle === 'italic';
+        if (wantsItalic) {
+          const shouldRemove = liveFormat.italic === 'on';
+          opts.fontStyle = shouldRemove ? 'normal' : 'italic';
         } else {
-          opts.fontStyle = newStyles.fontStyle;
-          if (import.meta.env.DEV) console.log('[Toggle] Italic →', newStyles.fontStyle);
+          opts.fontStyle = 'normal';
+        }
+
+        if (import.meta.env.DEV) {
+          console.log('[Toggle] Italic', { live: liveFormat.italic, requested: newStyles.fontStyle, applied: opts.fontStyle });
         }
       }
-      
+
       if (newStyles.textDecoration) {
-        const isTurningUnderlineOn = String(newStyles.textDecoration).toLowerCase().includes('underline');
-        
-        // TRUE TOGGLE: If already underlined AND user clicked "underline" → turn OFF
-        if (isTurningUnderlineOn && selectionFormat.underline === 'on') {
-          opts.textDecoration = 'none'; // REMOVE underline
-          if (import.meta.env.DEV) console.log('[Toggle] Underline OFF (was on)');
+        const wantsUnderline = String(newStyles.textDecoration).toLowerCase().includes('underline');
+        if (wantsUnderline) {
+          const shouldRemove = liveFormat.underline === 'on';
+          opts.textDecoration = shouldRemove ? 'none' : 'underline';
         } else {
-          opts.textDecoration = newStyles.textDecoration;
-          if (import.meta.env.DEV) console.log('[Toggle] Underline →', newStyles.textDecoration);
+          opts.textDecoration = 'none';
+        }
+
+        if (import.meta.env.DEV) {
+          console.log('[Toggle] Underline', {
+            live: liveFormat.underline,
+            requested: newStyles.textDecoration,
+            applied: opts.textDecoration,
+          });
         }
       }
 
