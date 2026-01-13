@@ -1022,7 +1022,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               value={element.content || ''}
               onChange={handleContentChange}
               elementType="text"
-              placeholder={isLogo ? "Brand®" : isFooterHeading ? "Section" : "Type here..."}
+              placeholder={isLogo ? "Brand®" : isFooterHeading ? "Section" : ""}
               disabled={readOnly}
               onEditingChange={setIsInlineEditing}
               elementId={element.id}
@@ -2685,8 +2685,8 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add block button - subtle, shows on hover */}
-          {!readOnly && (
+          {/* Add block button - only show for sections that aren't "complete" (hero/cta with content) */}
+          {!readOnly && stack.blocks.length < 2 && (
             <div className="mt-3 opacity-0 group-hover/section:opacity-100 transition-opacity">
               <AddSectionPopover 
                 onAddBlock={handleAddBlockToStack}
