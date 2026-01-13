@@ -3086,7 +3086,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
             
 
             {/* Frames */}
-            <div className="min-h-[600px] relative z-10">
+            <div className="min-h-[600px] relative z-10 group/canvas">
               {step.frames.map((frame) => (
                 <FrameRenderer
                   key={frame.id}
@@ -3115,16 +3115,16 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                 />
               ))}
               
-              {/* Add Section button */}
+              {/* Add Section button - only visible on hover */}
               {!readOnly && onAddFrame && (
-                <div className="px-4 py-6">
+                <div className="px-4 py-6 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200">
                   <button
                     onClick={onAddFrame}
                     className={cn(
                       "w-full py-3 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all text-sm font-medium",
                       isDarkTheme 
-                        ? "border-gray-700/60 bg-gray-800/20 text-gray-400 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-gray-200" 
-                        : "border-gray-300 bg-gray-50/50 text-gray-500 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.05)] hover:text-gray-700"
+                        ? "border-gray-700/50 bg-gray-800/10 text-gray-500 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-gray-200" 
+                        : "border-gray-200/50 bg-gray-50/30 text-gray-400 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.05)] hover:text-gray-700"
                     )}
                   >
                     <Plus className="w-4 h-4" />
