@@ -2082,12 +2082,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           if (isMod && !e.shiftKey && (k === 'b' || k === 'i' || k === 'u')) {
             e.preventDefault();
 
+            // Guaranteed toggle behavior is handled in handleStyleChange (DOM is source of truth).
             if (k === 'b') {
-              handleStyleChange({ fontWeight: selectionFormat.bold === 'on' ? 'normal' : 'bold' });
+              handleStyleChange({ fontWeight: 'bold' });
             } else if (k === 'i') {
-              handleStyleChange({ fontStyle: selectionFormat.italic === 'on' ? 'normal' : 'italic' });
+              handleStyleChange({ fontStyle: 'italic' });
             } else if (k === 'u') {
-              handleStyleChange({ textDecoration: selectionFormat.underline === 'on' ? 'none' : 'underline' });
+              handleStyleChange({ textDecoration: 'underline' });
             }
             return;
           }
