@@ -111,6 +111,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const activeInlineSpanIdRef = useRef<string | null>(null); // Stable ID to re-acquire span after DOM mutations
   const inlineSaveTimerRef = useRef<number | null>(null);
 
+  // HACK: Track the last inline B/I/U toggle intent so the second click can always force "undo"
+  // (We do NOT rely on DOM detection for this decision.)
+  const lastInlineToggleRef = useRef<null | 'bold' | 'italic' | 'underline'>(null);
+
   // Persist the last selection range so Right Panel edits can apply to the intended letters
   const lastSelectionRangeRef = useRef<Range | null>(null);
   // Persist the last caret (collapsed) range so toolbar toggles can apply to "next typed text"
@@ -1043,7 +1047,44 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     // INLINE STYLING PATH
     // ─────────────────────────────────────────────────────────────────────────
     if (shouldApplyInline && editorEl && isEditing) {
-      const styleOpts = buildStyleOptions();
+      // ─────────────────────────────────────────────────────────────────────
+      // FINAL HACK: Don't trust DOM format detection for B/I/U toggles.
+      // If the user clicks the same toggle twice in a row, the 2nd click is ALWAYS undo.
+      // ─────────────────────────────────────────────────────────────────────
+      const isBold = newStyles.fontWeight === 'bold';
+      const isItalic = newStyles.fontStyle === 'italic';
+      const isUnderline =
+        typeof newStyles.textDecoration === 'string' &&
+        newStyles.textDecoration.toLowerCase().includes('underline');
+
+      const toggleType: null | 'bold' | 'italic' | 'underline' = isBold
+        ? 'bold'
+        : isItalic
+          ? 'italic'
+          : isUnderline
+            ? 'underline'
+            : null;
+
+      const isSecondClick = toggleType !== null && lastInlineToggleRef.current === toggleType;
+
+      const forcedRemoveStyleOpts: SelectionStyleOptions | null = isSecondClick
+        ? {
+            ...(toggleType === 'bold' ? { fontWeight: null } : {}),
+            ...(toggleType === 'italic' ? { fontStyle: null } : {}),
+            ...(toggleType === 'underline' ? { textDecoration: null } : {}),
+          }
+        : null;
+
+      // Update intent tracker
+      if (isSecondClick) {
+        lastInlineToggleRef.current = null;
+      } else if (toggleType) {
+        lastInlineToggleRef.current = toggleType;
+      } else {
+        lastInlineToggleRef.current = null;
+      }
+
+      const styleOpts = forcedRemoveStyleOpts ?? buildStyleOptions();
       if (!styleOpts) return false;
 
       // Get current DOM selection state
