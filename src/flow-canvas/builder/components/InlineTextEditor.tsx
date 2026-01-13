@@ -1921,26 +1921,41 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // Mark toolbar interaction timestamp for blur safety net
       lastToolbarInteractionAtRef.current = Date.now();
 
-      // STEP 1: Capture live selection FIRST before any focus changes.
-      // This prevents stale saved selections from being used when user highlights text
-      // and immediately clicks a toolbar button.
+      // STEP 1: Capture live selection/caret FIRST before any focus changes.
+      // IMPORTANT: if the user only has a caret (collapsed selection), we must NOT
+      // blindly restore an older non-collapsed selection, or caret toggles will never work.
       const sel = window.getSelection();
       const liveRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-      
-      // Check if we have a valid live selection inside the editor
-      const liveRangeValid =
+
+      const isRangeInsideEditor = (r: Range | null) => {
+        if (!r) return false;
+        return (
+          el.contains(r.startContainer) ||
+          el.contains(r.endContainer) ||
+          el.contains(r.commonAncestorContainer) ||
+          el === r.startContainer ||
+          el === r.endContainer
+        );
+      };
+
+      const liveHasTextSelection =
         !!liveRange &&
         !liveRange.collapsed &&
         liveRange.toString().length > 0 &&
-        (el.contains(liveRange.startContainer) ||
-          el.contains(liveRange.endContainer) ||
-          el.contains(liveRange.commonAncestorContainer));
-      
-      // If we have a valid live selection, update our saved reference immediately
-      if (liveRangeValid && liveRange) {
+        isRangeInsideEditor(liveRange);
+
+      const liveHasCaret = !!liveRange && liveRange.collapsed && isRangeInsideEditor(liveRange);
+
+      // Snapshot the *right* kind of intent
+      if (liveHasTextSelection && liveRange) {
         lastSelectionRangeRef.current = liveRange.cloneRange();
         if (import.meta.env.DEV) {
           console.debug('[Toolbar] Captured live selection:', liveRange.toString().slice(0, 30));
+        }
+      } else if (liveHasCaret && liveRange) {
+        lastCaretRangeRef.current = liveRange.cloneRange();
+        if (import.meta.env.DEV) {
+          console.debug('[Toolbar] Captured live caret');
         }
       }
 
@@ -1952,10 +1967,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         !!activeEl?.closest('[data-radix-popper-content-wrapper]') ||
         !!activeEl?.closest('[data-radix-popover-content]') ||
         !!activeEl?.closest('[data-radix-select-content]');
-      
+
       // Check if pointer is currently down on toolbar (slider drag in progress)
       const isPointerDownOnToolbar = isPointerDownRef.current && pointerDownContextRef.current === 'toolbar';
-      
+
       // Also check if any Radix popover is open in the DOM (gradient panel, color picker, etc.)
       const hasOpenPopover = !!document.querySelector(
         '[data-radix-popper-content-wrapper], [data-radix-popover-content], [data-radix-select-content]'
@@ -1966,30 +1981,39 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         el.focus();
       }
 
-      // STEP 2: Restore selection from saved reference (now updated with live selection if valid)
-      if (sel && lastSelectionRangeRef.current) {
+      // STEP 2: Restore the *correct* range before applying.
+      // Prefer live selection, then live caret, then last caret, then last selection.
+      const preferredRange: Range | null =
+        (liveHasTextSelection ? liveRange : null) ??
+        (liveHasCaret ? liveRange : null) ??
+        (lastCaretRangeRef.current ?? null) ??
+        (lastSelectionRangeRef.current ?? null);
+
+      if (sel && preferredRange) {
         try {
-          const savedRange = lastSelectionRangeRef.current;
-          const startValid = el.contains(savedRange.startContainer) || savedRange.startContainer === el;
-          const endValid = el.contains(savedRange.endContainer) || savedRange.endContainer === el;
-          
+          const startValid = el.contains(preferredRange.startContainer) || preferredRange.startContainer === el;
+          const endValid = el.contains(preferredRange.endContainer) || preferredRange.endContainer === el;
+
           if (startValid && endValid) {
             sel.removeAllRanges();
-            sel.addRange(savedRange.cloneRange());
-            
+            sel.addRange(preferredRange.cloneRange());
+
             if (import.meta.env.DEV) {
-              console.debug('[Toolbar] Selection restored:', savedRange.toString().slice(0, 30));
+              console.debug('[Toolbar] Range restored', {
+                collapsed: preferredRange.collapsed,
+                text: preferredRange.toString().slice(0, 30),
+              });
             }
           } else if (import.meta.env.DEV) {
-            console.debug('[Toolbar] Selection restore skipped - range endpoints not in editor');
+            console.debug('[Toolbar] Range restore skipped - endpoints not in editor');
           }
         } catch (err) {
           if (import.meta.env.DEV) {
-            console.debug('[Toolbar] Selection restore failed:', err);
+            console.debug('[Toolbar] Range restore failed:', err);
           }
         }
       } else if (import.meta.env.DEV) {
-        console.debug('[Toolbar] No saved selection to restore');
+        console.debug('[Toolbar] No range to restore');
       }
 
       const applied = handleStyleChange(nextStyles);
