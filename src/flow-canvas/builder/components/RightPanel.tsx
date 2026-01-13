@@ -2632,7 +2632,7 @@ const FrameInspector: React.FC<{
                 onClick={() => onUpdate({ layout: 'contained' })}
                 className={cn(
                   'toggle-pill-option flex-1 text-center',
-                  (frame.layout || 'contained') === 'contained' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive'
+                  frame.layout === 'contained' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive'
                 )}
               >
                 Contained
@@ -2642,7 +2642,7 @@ const FrameInspector: React.FC<{
                 onClick={() => onUpdate({ layout: 'full-width' })}
                 className={cn(
                   'toggle-pill-option flex-1 text-center',
-                  frame.layout === 'full-width' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive'
+                  (frame.layout || 'full-width') === 'full-width' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive'
                 )}
               >
                 Full Width
@@ -2651,7 +2651,7 @@ const FrameInspector: React.FC<{
           </FieldGroup>
 
           {/* Max Width Slider - only when contained */}
-          {(frame.layout || 'contained') === 'contained' && (
+          {frame.layout === 'contained' && (
             <FieldGroup label={`Max Width: ${frame.maxWidth || 520}px`} hint="Control the maximum content width">
               <Slider
                 value={[frame.maxWidth || 520]}

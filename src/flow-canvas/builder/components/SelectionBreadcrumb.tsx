@@ -70,6 +70,7 @@ export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
         'flex items-center gap-1 px-3 py-2',
         'bg-[hsl(var(--builder-bg))]',
         'border-b border-[hsl(var(--builder-border))]',
+        'overflow-x-auto overflow-y-hidden scrollbar-none flex-shrink-0',
         className
       )}
     >

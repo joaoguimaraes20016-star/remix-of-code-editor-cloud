@@ -648,6 +648,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         const newFrame = {
           id: generateId(),
           label: 'Section',
+          layout: 'full-width' as const, // Default to full-width for better UX
           stacks: [{
             id: generateId(),
             label: 'Main Stack',

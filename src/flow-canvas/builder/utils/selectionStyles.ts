@@ -42,22 +42,30 @@ export function getSelectionText(): string {
 }
 
 /**
- * Build inline style string from options
+ * Build inline style string from options.
+ * IMPORTANT: Only include color/gradient styles if explicitly provided.
+ * This prevents bold/italic from inadvertently changing text color.
  */
 function buildStyleString(options: SelectionStyleOptions): string {
   const styleProps: string[] = [];
   
-  if (options.gradient) {
-    const gradientCSS = gradientToCSS(options.gradient);
-    styleProps.push(`background-image: ${gradientCSS}`);
-    styleProps.push('-webkit-background-clip: text');
-    styleProps.push('-webkit-text-fill-color: transparent');
-    styleProps.push('background-clip: text');
-    styleProps.push('display: inline'); // Ensure gradient works on inline elements
-    styleProps.push('color: transparent'); // Prevent white fallback in all browsers
-  } else if (options.color) {
-    styleProps.push(`color: ${options.color}`);
+  // Only apply color/gradient if explicitly provided (not undefined)
+  const hasColorChange = options.gradient !== undefined || options.color !== undefined;
+  
+  if (hasColorChange) {
+    if (options.gradient) {
+      const gradientCSS = gradientToCSS(options.gradient);
+      styleProps.push(`background-image: ${gradientCSS}`);
+      styleProps.push('-webkit-background-clip: text');
+      styleProps.push('-webkit-text-fill-color: transparent');
+      styleProps.push('background-clip: text');
+      styleProps.push('display: inline'); // Ensure gradient works on inline elements
+      styleProps.push('color: transparent'); // Prevent white fallback in all browsers
+    } else if (options.color) {
+      styleProps.push(`color: ${options.color}`);
+    }
   }
+  // If no color/gradient specified, don't add any color styles - preserve existing
   
   if (options.fontWeight) {
     styleProps.push(`font-weight: ${options.fontWeight}`);
