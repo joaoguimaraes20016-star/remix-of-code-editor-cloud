@@ -948,6 +948,24 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         if (preserveCaretHosts && sp.dataset.caretHost) continue;
         // Preserve gradient metadata spans
         if (sp.getAttribute('data-gradient')) continue;
+
+        // Normalize empty/garbage style attributes (e.g. style="" or style=" ; ")
+        // so they can be unwrapped cleanly.
+        const rawStyle = sp.getAttribute('style');
+        if (rawStyle != null) {
+          const meaningful = rawStyle
+            .split(';')
+            .map((p) => p.trim())
+            .filter(Boolean)
+            .some((pair) => {
+              const idx = pair.indexOf(':');
+              if (idx === -1) return false;
+              const value = pair.slice(idx + 1).trim();
+              return value.length > 0;
+            });
+          if (!meaningful) sp.removeAttribute('style');
+        }
+
         // Only unwrap spans that are truly style-less wrappers
         if (sp.getAttribute('style')) continue;
 
