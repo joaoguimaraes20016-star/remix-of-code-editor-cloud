@@ -242,20 +242,17 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   const underlineState = resolveTriState(styles.textDecoration === 'underline', formatState?.underline);
 
   const toggleBold = () => {
-    // True toggle:
-    // on -> off, off/mixed -> on
-    const next = boldState === 'on' ? 'normal' : 'bold';
-    onChange({ fontWeight: next });
+    // Guaranteed toggle behavior is handled in InlineTextEditor (DOM is source of truth).
+    // Always request "bold"; InlineTextEditor will remove it when it's already active.
+    onChange({ fontWeight: 'bold' });
   };
 
   const toggleItalic = () => {
-    const next = italicState === 'on' ? 'normal' : 'italic';
-    onChange({ fontStyle: next });
+    onChange({ fontStyle: 'italic' });
   };
 
   const toggleUnderline = () => {
-    const next = underlineState === 'on' ? 'none' : 'underline';
-    onChange({ textDecoration: next });
+    onChange({ textDecoration: 'underline' });
   };
 
   const setAlignment = (align: TextStyles['textAlign']) => {
