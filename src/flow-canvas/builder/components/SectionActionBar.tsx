@@ -27,6 +27,9 @@ interface SectionActionBarProps {
   onAddAbove?: () => void;
   onAddBelow?: () => void;
   onRename?: (newName: string) => void;
+  // Drag and drop
+  dragHandleListeners?: React.DOMAttributes<HTMLButtonElement>;
+  dragHandleAttributes?: React.HTMLAttributes<HTMLButtonElement>;
 }
 
 export const SectionActionBar: React.FC<SectionActionBarProps> = ({
@@ -43,6 +46,8 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
   onAddAbove,
   onAddBelow,
   onRename,
+  dragHandleListeners,
+  dragHandleAttributes,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(sectionLabel);
@@ -91,10 +96,12 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
         {/* Drag Handle */}
         <button
           className={cn(
-            "p-1.5 rounded-md transition-colors cursor-grab active:cursor-grabbing",
+            "p-1.5 rounded-md transition-colors cursor-grab active:cursor-grabbing touch-none",
             isSelected ? "text-white/80 hover:text-white hover:bg-white/10" : "text-white/50 hover:text-white hover:bg-white/10"
           )}
           title="Drag to reorder"
+          {...dragHandleListeners}
+          {...dragHandleAttributes}
         >
           <GripVertical className="w-3.5 h-3.5" />
         </button>

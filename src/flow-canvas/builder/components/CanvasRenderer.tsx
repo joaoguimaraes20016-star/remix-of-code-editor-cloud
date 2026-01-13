@@ -2750,6 +2750,9 @@ interface FrameRendererProps {
   onAddAbove?: () => void;
   onAddBelow?: () => void;
   onRename?: (newName: string) => void;
+  // Drag and drop
+  dragHandleListeners?: React.DOMAttributes<HTMLButtonElement>;
+  dragHandleAttributes?: React.HTMLAttributes<HTMLButtonElement>;
 }
 
 const FrameRenderer: React.FC<FrameRendererProps> = ({ 
@@ -2786,6 +2789,9 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   onAddAbove,
   onAddBelow,
   onRename,
+  // Drag and drop
+  dragHandleListeners,
+  dragHandleAttributes,
 }) => {
   const isSelected = selection.type === 'frame' && selection.id === frame.id;
   const framePath = [...path, 'frame', frame.id];
@@ -2881,6 +2887,8 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
             onAddAbove={onAddAbove}
             onAddBelow={onAddBelow}
             onRename={onRename}
+            dragHandleListeners={dragHandleListeners}
+            dragHandleAttributes={dragHandleAttributes}
           />
         );
       })()}
@@ -2923,6 +2931,39 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
           ))}
         </div>
       </div>
+    </div>
+  );
+};
+
+// Sortable wrapper for FrameRenderer - enables drag-and-drop reordering
+interface SortableFrameRendererProps extends FrameRendererProps {
+  id: string;
+}
+
+const SortableFrameRenderer: React.FC<SortableFrameRendererProps> = ({ id, ...props }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <FrameRenderer 
+        {...props} 
+        dragHandleListeners={listeners}
+        dragHandleAttributes={attributes}
+      />
     </div>
   );
 };
@@ -3018,6 +3059,32 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   const handlePanMouseUp = useCallback(() => {
     setIsPanning(false);
   }, []);
+  
+  // Drag and drop sensors for section reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  // Handle frame drag end
+  const handleFrameDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id && step) {
+      const oldIndex = step.frames.findIndex(f => f.id === active.id);
+      const newIndex = step.frames.findIndex(f => f.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onReorderFrames?.(oldIndex, newIndex);
+      }
+    }
+  }, [step, onReorderFrames]);
   
   // Determine if we're in preview mode (readOnly means preview)
   const isPreviewMode = readOnly;
@@ -3120,54 +3187,64 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
             })()}
             
 
-            {/* Frames */}
-            <div className="min-h-[600px] relative z-10 group/canvas">
-              {step.frames.map((frame, frameIndex) => (
-                <React.Fragment key={frame.id}>
-                  {/* Section Divider - visible between frames on hover */}
-                  {frameIndex > 0 && !readOnly && (
-                    <div 
-                      className="relative h-6 flex items-center px-4 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200"
-                    >
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[hsl(var(--builder-accent)/0.3)] to-transparent" />
-                    </div>
-                  )}
-                  <FrameRenderer
-                    frame={frame}
-                    frameIndex={frameIndex}
-                    totalFrames={step.frames.length}
-                    selection={selection}
-                    onSelect={onSelect}
-                    path={stepPath}
-                    onReorderBlocks={onReorderBlocks}
-                    onReorderElements={onReorderElements}
-                    onAddBlock={onAddBlock}
-                    onDuplicateBlock={onDuplicateBlock}
-                    onDeleteBlock={onDeleteBlock}
-                    onUpdateElement={onUpdateElement}
-                    onDuplicateElement={onDuplicateElement}
-                    onDeleteElement={onDeleteElement}
-                    onCopy={onCopy}
-                    onPaste={onPaste}
-                    canPaste={canPaste}
-                    readOnly={readOnly}
-                    isDarkTheme={isDarkTheme}
-                    replayAnimationKey={replayAnimationKey}
-                    deviceMode={deviceMode}
-                    onNextStep={onNextStep}
-                    onGoToStep={onGoToStep}
-                    onFormSubmit={onFormSubmit}
-                    // Section actions
-                    onMoveUp={frameIndex > 0 ? () => onReorderFrames?.(frameIndex, frameIndex - 1) : undefined}
-                    onMoveDown={frameIndex < step.frames.length - 1 ? () => onReorderFrames?.(frameIndex, frameIndex + 1) : undefined}
-                    onDuplicate={() => onDuplicateFrame?.(frame.id)}
-                    onDelete={() => onDeleteFrame?.(frame.id)}
-                    onAddAbove={() => onAddFrameAt?.('above', frame.id)}
-                    onAddBelow={() => onAddFrameAt?.('below', frame.id)}
-                    onRename={(newName) => onRenameFrame?.(frame.id, newName)}
-                  />
-                </React.Fragment>
-              ))}
+            {/* Frames - wrapped in DndContext for drag-and-drop reordering */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleFrameDragEnd}
+            >
+              <SortableContext 
+                items={step.frames.map(f => f.id)} 
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="min-h-[600px] relative z-10 group/canvas">
+                  {step.frames.map((frame, frameIndex) => (
+                    <React.Fragment key={frame.id}>
+                      {/* Section Divider - visible between frames on hover */}
+                      {frameIndex > 0 && !readOnly && (
+                        <div 
+                          className="relative h-6 flex items-center px-4 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200"
+                        >
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[hsl(var(--builder-accent)/0.3)] to-transparent" />
+                        </div>
+                      )}
+                      <SortableFrameRenderer
+                        id={frame.id}
+                        frame={frame}
+                        frameIndex={frameIndex}
+                        totalFrames={step.frames.length}
+                        selection={selection}
+                        onSelect={onSelect}
+                        path={stepPath}
+                        onReorderBlocks={onReorderBlocks}
+                        onReorderElements={onReorderElements}
+                        onAddBlock={onAddBlock}
+                        onDuplicateBlock={onDuplicateBlock}
+                        onDeleteBlock={onDeleteBlock}
+                        onUpdateElement={onUpdateElement}
+                        onDuplicateElement={onDuplicateElement}
+                        onDeleteElement={onDeleteElement}
+                        onCopy={onCopy}
+                        onPaste={onPaste}
+                        canPaste={canPaste}
+                        readOnly={readOnly}
+                        isDarkTheme={isDarkTheme}
+                        replayAnimationKey={replayAnimationKey}
+                        deviceMode={deviceMode}
+                        onNextStep={onNextStep}
+                        onGoToStep={onGoToStep}
+                        onFormSubmit={onFormSubmit}
+                        // Section actions
+                        onMoveUp={frameIndex > 0 ? () => onReorderFrames?.(frameIndex, frameIndex - 1) : undefined}
+                        onMoveDown={frameIndex < step.frames.length - 1 ? () => onReorderFrames?.(frameIndex, frameIndex + 1) : undefined}
+                        onDuplicate={() => onDuplicateFrame?.(frame.id)}
+                        onDelete={() => onDeleteFrame?.(frame.id)}
+                        onAddAbove={() => onAddFrameAt?.('above', frame.id)}
+                        onAddBelow={() => onAddFrameAt?.('below', frame.id)}
+                        onRename={(newName) => onRenameFrame?.(frame.id, newName)}
+                      />
+                    </React.Fragment>
+                  ))}
               
               {/* Add Section button - only visible on hover */}
               {!readOnly && onAddFrame && (
@@ -3186,7 +3263,9 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   </button>
                 </div>
               )}
-            </div>
+                </div>
+              </SortableContext>
+            </DndContext>
 
           </div>
         </div>
