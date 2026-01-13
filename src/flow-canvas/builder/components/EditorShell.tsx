@@ -567,7 +567,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     if (step) {
       step.frames.push({
         id: generateId(),
-        label: 'New Section',
+        label: 'Section',
         stacks: [{
           id: generateId(),
           label: 'Main Stack',
