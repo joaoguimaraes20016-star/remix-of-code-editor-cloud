@@ -174,21 +174,29 @@ function buildStyleUpdates(options: SelectionStyleOptions): { set: StyleMap; uns
     'display',
   ];
 
-  if (options.gradient) {
-    const gradientCSS = gradientToCSS(options.gradient);
-    set['background-image'] = gradientCSS;
-    set['-webkit-background-clip'] = 'text';
-    set['-webkit-text-fill-color'] = 'transparent';
-    set['background-clip'] = 'text';
-    set['display'] = 'inline';
-    set['color'] = 'transparent'; // Prevent white fallback
-  } else if (options.color) {
-    set['color'] = options.color;
-    // Explicitly clear ALL gradient-related styles to ensure clean solid color
-    unset.push(...gradientProps);
-    // Also explicitly reset -webkit-text-fill-color to prevent transparent text
-    set['-webkit-text-fill-color'] = 'unset';
+  // IMPORTANT: Only modify color/gradient if explicitly provided
+  // This prevents bold/italic from changing the text color
+  const hasColorChange = options.gradient !== undefined || options.color !== undefined;
+
+  if (hasColorChange) {
+    if (options.gradient) {
+      const gradientCSS = gradientToCSS(options.gradient);
+      set['background-image'] = gradientCSS;
+      set['-webkit-background-clip'] = 'text';
+      set['-webkit-text-fill-color'] = 'transparent';
+      set['background-clip'] = 'text';
+      set['display'] = 'inline';
+      set['color'] = 'transparent'; // Prevent white fallback
+    } else if (options.color) {
+      set['color'] = options.color;
+      // Explicitly clear ALL gradient-related styles to ensure clean solid color
+      unset.push(...gradientProps);
+      // Also explicitly reset -webkit-text-fill-color to prevent transparent text
+      set['-webkit-text-fill-color'] = 'unset';
+    }
   }
+  // If no color/gradient provided, leave existing color styles untouched
+  // This allows bold/italic to work without changing colors
 
   if (options.fontWeight) set['font-weight'] = options.fontWeight;
   if (options.fontStyle) set['font-style'] = options.fontStyle;

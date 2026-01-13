@@ -116,6 +116,7 @@ import { BackgroundEditor, BackgroundValue, backgroundValueToCSS } from './Backg
 import type { GradientValue, ButtonAction, VideoSettings } from './modals';
 import { toast } from 'sonner';
 import { useInlineEdit } from '../contexts/InlineEditContext';
+import { ButtonIconPicker } from './ButtonIconPicker';
 
 interface RightPanelProps {
   page: Page;
@@ -871,7 +872,18 @@ const ElementInspector: React.FC<{
                 </div>
               </div>
               
-              {/* Size */}
+              {/* Icon */}
+              {element.props?.showIcon !== false && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Icon</span>
+                  <ButtonIconPicker 
+                    value={element.props?.iconType as string || 'ArrowRight'} 
+                    onChange={(value) => handlePropsChange('iconType', value)}
+                  />
+                </div>
+              )}
+              
+              {/* Size Preset */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Size</span>
                 <Select value={element.props?.buttonSize as string || 'md'} onValueChange={(value) => handlePropsChange('buttonSize', value)}>
@@ -883,6 +895,42 @@ const ElementInspector: React.FC<{
                     <SelectItem value="xl">X-Large</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              
+              {/* Custom Width */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Width</span>
+                <div className="flex items-center gap-1">
+                  <Select 
+                    value={element.styles?.width ? (element.styles.width.toString().endsWith('%') ? 'percent' : 'fixed') : 'auto'} 
+                    onValueChange={(value) => {
+                      if (value === 'auto') {
+                        handleStyleChange('width', undefined as any);
+                      } else if (value === 'fixed') {
+                        handleStyleChange('width', '200px');
+                      } else if (value === 'percent') {
+                        handleStyleChange('width', '100%');
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="builder-input w-16"><SelectValue placeholder="Auto" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto</SelectItem>
+                      <SelectItem value="fixed">Fixed</SelectItem>
+                      <SelectItem value="percent">100%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {element.styles?.width && !element.styles.width.toString().endsWith('%') && (
+                    <Input
+                      type="number"
+                      value={parseInt(element.styles.width.toString()) || 200}
+                      onChange={(e) => handleStyleChange('width', `${e.target.value}px`)}
+                      className="builder-input w-16 text-xs"
+                      min={50}
+                      max={600}
+                    />
+                  )}
+                </div>
               </div>
               
               {/* Shadow */}
