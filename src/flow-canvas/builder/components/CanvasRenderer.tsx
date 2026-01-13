@@ -36,6 +36,21 @@ interface MultiSelection {
   ids: Set<string>;
 }
 
+// Helper to get contrasting text color based on background luminance
+function getContrastTextColor(backgroundColor: string): string {
+  try {
+    const hex = backgroundColor.replace('#', '');
+    if (hex.length !== 6) return '#ffffff';
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5 ? '#1f2937' : '#ffffff';
+  } catch {
+    return '#ffffff';
+  }
+}
+
 // Helper to generate page background styles
 const getPageBackgroundStyles = (bg: PageBackground | undefined, isDarkTheme: boolean): React.CSSProperties => {
   // Always return a visible background - never leave blank
@@ -1185,12 +1200,12 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           ? 'none' 
           : (isDarkTheme ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.2)');
         
-        // Text color based on variant
+        // Text color based on variant - auto-contrast for visibility
         const buttonTextColor = isNavPill 
           ? (isDarkTheme ? '#ffffff' : '#1f2937')
           : isFooterLink 
             ? (isDarkTheme ? '#9ca3af' : '#6b7280')
-            : (element.props?.textColor as string || '#ffffff');
+            : (element.props?.textColor as string || getContrastTextColor(effectiveBg));
         
         const customButtonStyle: React.CSSProperties = {
           backgroundColor: buttonGradient ? undefined : effectiveBg,
