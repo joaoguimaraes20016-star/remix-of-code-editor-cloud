@@ -661,42 +661,47 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
         ) : variant === 'minimal' ? (
           <button
             className={`
-              flex items-center justify-center gap-1.5 w-full py-1.5
-              text-[11px] text-[hsl(var(--builder-text-dim))]
+              flex items-center justify-center gap-1.5 w-full py-2
+              text-xs text-[hsl(var(--builder-text-muted))]
               hover:text-[hsl(var(--builder-accent))] transition-colors
               ${className}
             `}
           >
-            <Plus size={12} />
+            <Plus size={14} />
             <span>Add block</span>
           </button>
         ) : (
           <button
             type="button"
             className={`
-              group w-full flex items-center justify-center py-10 px-4
+              group w-full flex flex-col items-center justify-center py-12 px-4
               transition-all duration-200
               ${className ?? ''}
             `}
           >
+            {/* Empty section guidance */}
+            <div className="w-12 h-12 rounded-xl bg-[hsl(var(--builder-surface-active))] flex items-center justify-center mb-3">
+              <Package size={24} className="text-[hsl(var(--builder-text-dim))]" />
+            </div>
+            <span className="text-sm font-medium text-[hsl(var(--builder-text-muted))] mb-1">
+              Add a block to this section
+            </span>
+            <span className="text-xs text-[hsl(var(--builder-text-dim))] mb-4">
+              Headlines, text, images, buttons & more
+            </span>
             <span
               className={`
-                inline-flex items-center gap-2 rounded-full px-4 py-2
-                bg-[hsl(var(--builder-surface-hover))]
-                border border-[hsl(var(--builder-border)/0.9)]
-                shadow-[inset_0_1px_0_0_hsl(var(--builder-text)/0.06),0_1px_2px_hsl(0_0%_0%/0.12)]
-                text-sm font-medium text-[hsl(var(--builder-text-muted))]
-                group-hover:bg-[hsl(var(--builder-surface-active))]
-                group-hover:border-[hsl(var(--builder-accent)/0.55)]
-                group-hover:text-[hsl(var(--builder-text))]
-                group-hover:shadow-[0_10px_25px_-15px_hsl(var(--builder-accent)/0.6)]
-                group-active:scale-[0.99]
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--builder-accent)/0.4)]
-                focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--builder-surface))]
+                inline-flex items-center gap-2 rounded-lg px-4 py-2
+                bg-[hsl(var(--builder-accent))] text-white
+                text-sm font-medium
+                shadow-lg shadow-[hsl(var(--builder-accent)/0.3)]
+                group-hover:brightness-110
+                group-active:scale-[0.98]
+                transition-all duration-150
               `}
             >
-              <Plus size={16} className="text-[hsl(var(--builder-accent))]" />
-              <span>Start with a headline or button</span>
+              <Plus size={16} />
+              <span>Add Block</span>
             </span>
           </button>
         )}
