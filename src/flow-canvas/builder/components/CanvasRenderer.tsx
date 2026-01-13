@@ -1,7 +1,7 @@
 import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
 import { Step, Frame, Stack, Block, Element, SelectionState, Page, VisibilitySettings, AnimationSettings, ElementStateStyles, DeviceModeType, PageBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
-import { Type, Image, Video, Minus, ArrowRight, ArrowUpRight, ChevronRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Download, Smartphone, MousePointer2, Layout, Menu } from 'lucide-react';
+import { Type, Image, Video, Minus, ArrowRight, ArrowUpRight, ChevronRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Download, Smartphone, MousePointer2, Layout, Menu, Layers } from 'lucide-react';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
 // SectionActionBar removed - actions now in right panel sidebar
@@ -2696,13 +2696,9 @@ const StackRenderer: React.FC<StackRendererProps> = ({
           
           {/* Add block button - only show for sections that aren't "done" yet
               A section feels complete when it has at least one block with 2+ elements (headline + button/text) */}
-          {!readOnly && (() => {
-            const isComplete = stack.blocks.some(block => 
-              block.elements && block.elements.length >= 2
-            );
-            return !isComplete;
-          })() && (
-            <div className="mt-3 opacity-0 group-hover/section:opacity-100 transition-opacity">
+          {/* Add block hint - always visible when section has content but could use more */}
+          {!readOnly && stack.blocks.length > 0 && (
+            <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
               <AddSectionPopover 
                 onAddBlock={handleAddBlockToStack}
                 variant="minimal"
@@ -3220,8 +3216,43 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Add Section button - only visible on hover */}
-              {!readOnly && onAddFrame && (
+              {/* Empty canvas state - always visible when no sections */}
+              {step.frames.length === 0 && !readOnly && onAddFrame && (
+                <div className="flex items-center justify-center min-h-[400px] px-4">
+                  <div className="text-center">
+                    <div 
+                      className={cn(
+                        "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4",
+                        isDarkTheme ? "bg-gray-800" : "bg-gray-100"
+                      )}
+                    >
+                      <Layers className={cn("w-8 h-8", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
+                    </div>
+                    <h3 className={cn(
+                      "text-lg font-medium mb-2",
+                      isDarkTheme ? "text-gray-200" : "text-gray-700"
+                    )}>
+                      Add your first section
+                    </h3>
+                    <p className={cn(
+                      "text-sm mb-6 max-w-[240px] mx-auto",
+                      isDarkTheme ? "text-gray-500" : "text-gray-500"
+                    )}>
+                      Sections are containers that hold your content blocks
+                    </p>
+                    <button
+                      onClick={onAddFrame}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[hsl(var(--builder-accent))] text-white font-medium text-sm hover:brightness-110 transition-all shadow-lg shadow-[hsl(var(--builder-accent)/0.3)]"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Section</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Add Section button at bottom - visible on hover when sections exist */}
+              {step.frames.length > 0 && !readOnly && onAddFrame && (
                 <div className="px-4 py-6 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200">
                   <button
                     onClick={onAddFrame}
