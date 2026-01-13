@@ -789,6 +789,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const isRangeInEditor = (r: Range | null) => {
           if (!r) return false;
           try {
+            // Check if range containers are still in the DOM (not detached by extractContents)
+            if (!r.startContainer.isConnected || !r.endContainer.isConnected) return false;
+
             return (
               editorEl.contains(r.startContainer) ||
               editorEl.contains(r.endContainer) ||
@@ -805,17 +808,33 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         // We still compute from DOM, but may need to fall back to the last known DOM Range.
         const isRecent = Date.now() - lastUserSelectionAtRef.current < 10000;
 
+        // Prefer the live range if it's in the editor
+        const liveInEditor = isRangeInEditor(liveRange);
+
         const range: Range | null =
-          (isRangeInEditor(liveRange) ? liveRange : null) ??
+          (liveInEditor ? liveRange : null) ??
           (isRecent && isRangeInEditor(lastSelectionRangeRef.current) ? lastSelectionRangeRef.current : null) ??
           (isRecent && isRangeInEditor(lastCaretRangeRef.current) ? lastCaretRangeRef.current : null);
 
         if (!range) {
+          if (import.meta.env.DEV) {
+            console.debug('[computeLiveFormat] no valid range', { liveInEditor, isRecent });
+          }
           return { bold: 'off', italic: 'off', underline: 'off' };
         }
 
         try {
-          return getSelectionFormatState(editorEl, range);
+          const fmt = getSelectionFormatState(editorEl, range);
+          if (import.meta.env.DEV) {
+            console.debug('[computeLiveFormat]', {
+              bold: fmt.bold,
+              italic: fmt.italic,
+              underline: fmt.underline,
+              rangeText: range.toString().slice(0, 30),
+              usedLive: range === liveRange,
+            });
+          }
+          return fmt;
         } catch {
           return { bold: 'off', italic: 'off', underline: 'off' };
         }
@@ -1308,6 +1327,24 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             scheduleInlineHtmlSave();
             syncToolbarState();
 
+            // CRITICAL: Update selection refs so next toggle can find the selection.
+            // removeFormatFromSelection() restores browser selection between markers,
+            // so we capture that restored range here.
+            try {
+              const sel = window.getSelection();
+              if (sel && sel.rangeCount > 0) {
+                const r = sel.getRangeAt(0);
+                if (!r.collapsed && r.toString().length > 0) {
+                  lastSelectionRangeRef.current = r.cloneRange();
+                } else if (r.collapsed) {
+                  lastCaretRangeRef.current = r.cloneRange();
+                }
+                lastUserSelectionAtRef.current = Date.now();
+              }
+            } catch {
+              // ignore
+            }
+
             requestAnimationFrame(recomputeFormatState);
             return true; // 🚨 NOTHING BELOW MAY RUN
           }
@@ -1341,6 +1378,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               const r = document.createRange();
               r.selectNodeContents(target);
               lastSelectionRangeRef.current = r.cloneRange();
+              lastUserSelectionAtRef.current = Date.now();
               // Also restore browser selection
               const sel = window.getSelection();
               sel?.removeAllRanges();
