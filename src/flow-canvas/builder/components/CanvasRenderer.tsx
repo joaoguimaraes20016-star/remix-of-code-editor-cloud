@@ -2602,12 +2602,11 @@ const StackRenderer: React.FC<StackRendererProps> = ({
         stack.direction === 'horizontal' ? 'flex flex-row gap-4' : 'flex flex-col gap-3'
       )}
       onClick={(e) => {
-        e.stopPropagation();
-        onSelect({ type: 'stack', id: stack.id, path: stackPath });
+        // Clicking content area selects the parent frame (section), not the stack
+        // This is handled by event bubbling to the FrameRenderer
       }}
     >
-      {/* Section Type Badge */}
-      <span className="section-type-badge">Section</span>
+      {/* Content area - no badge, clicking selects parent frame */}
       {stack.blocks.length === 0 ? (
         <div className="w-full">
           <AddSectionPopover 

@@ -610,7 +610,7 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             `}
           >
             <Plus size={18} className="text-[hsl(var(--builder-text-muted))] group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-semibold">Add Section</span>
+            <span className="text-sm font-semibold">Add Block</span>
           </button>
         )}
       </PopoverTrigger>
@@ -627,7 +627,7 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search sections..."
+              placeholder="Search blocks..."
               className="pl-9 h-8 text-sm bg-[hsl(var(--builder-surface-hover))] border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text))] placeholder:text-[hsl(var(--builder-text-dim))]"
             />
           </div>
@@ -663,7 +663,7 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
         <div className="max-h-[320px] overflow-y-auto builder-scroll">
           {filteredTemplates.length === 0 ? (
             <div className="p-6 text-center text-[hsl(var(--builder-text-muted))] text-sm">
-              No sections found
+              No blocks found
             </div>
           ) : (
             <div className="p-2 grid grid-cols-3 gap-1.5">
