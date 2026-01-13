@@ -15,6 +15,8 @@ export const blockTypeLabels: Record<BlockType, string> = {
   media: 'Media',
   'text-block': 'Text Block',
   custom: 'Custom Block',
+  spacer: 'Spacer',
+  divider: 'Divider',
   'multiple-choice': 'Multiple Choice',
   'single-choice': 'Single Choice',
   quiz: 'Quiz',
@@ -28,6 +30,7 @@ export const blockTypeLabels: Record<BlockType, string> = {
   trust: 'Trust Badges',
   'logo-bar': 'Logo Bar',
   footer: 'Footer',
+  contact: 'Contact',
 };
 
 // Element type labels
@@ -44,6 +47,7 @@ export const elementTypeLabels: Record<ElementType, string> = {
   divider: 'Divider',
   spacer: 'Spacer',
   icon: 'Icon',
+  link: 'Link',
   'multiple-choice': 'Multiple Choice',
   'single-choice': 'Single Choice',
   'quiz-question': 'Quiz Question',
