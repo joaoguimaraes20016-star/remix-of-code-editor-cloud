@@ -449,7 +449,11 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
 
       {/* Bold */}
       <button
-        onClick={toggleBold}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleBold();
+        }}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
           boldState === 'on'
@@ -466,7 +470,11 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
 
       {/* Italic */}
       <button
-        onClick={toggleItalic}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleItalic();
+        }}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
           italicState === 'on'
@@ -483,7 +491,11 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
 
       {/* Underline */}
       <button
-        onClick={toggleUnderline}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleUnderline();
+        }}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
           underlineState === 'on'
@@ -674,11 +686,15 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
 
       {/* Alignment */}
       <button
-        onClick={() => setAlignment('left')}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setAlignment('left');
+        }}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
-          styles.textAlign === 'left' 
-            ? 'bg-[hsl(var(--builder-accent))] text-white' 
+          styles.textAlign === 'left'
+            ? 'bg-[hsl(var(--builder-accent))] text-white'
             : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Align Left"
@@ -687,11 +703,15 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
       </button>
 
       <button
-        onClick={() => setAlignment('center')}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setAlignment('center');
+        }}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
-          styles.textAlign === 'center' 
-            ? 'bg-[hsl(var(--builder-accent))] text-white' 
+          styles.textAlign === 'center'
+            ? 'bg-[hsl(var(--builder-accent))] text-white'
             : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Align Center"
@@ -700,11 +720,15 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
       </button>
 
       <button
-        onClick={() => setAlignment('right')}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setAlignment('right');
+        }}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
-          styles.textAlign === 'right' 
-            ? 'bg-[hsl(var(--builder-accent))] text-white' 
+          styles.textAlign === 'right'
+            ? 'bg-[hsl(var(--builder-accent))] text-white'
             : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
         )}
         title="Align Right"
