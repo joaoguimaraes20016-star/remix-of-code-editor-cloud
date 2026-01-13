@@ -404,6 +404,9 @@ export function insertStyledSpanAtCaret(options: SelectionStyleOptions): HTMLSpa
     delete span.dataset.gradient;
   }
 
+  // Mark as caret host so normalization can preserve it
+  span.dataset.caretHost = '1';
+
   // Add a caret host node
   const zwsp = document.createTextNode('\u200B');
   span.appendChild(zwsp);

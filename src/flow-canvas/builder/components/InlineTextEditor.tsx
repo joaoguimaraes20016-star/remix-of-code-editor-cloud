@@ -309,6 +309,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // Clean up adjacent spans with same styles
       mergeAdjacentStyledSpans(contentRef.current);
       
+      // Clean up caret host markers before saving - they're only needed during live editing
+      const caretHosts = contentRef.current.querySelectorAll('span[data-caret-host]');
+      caretHosts.forEach(el => {
+        el.removeAttribute('data-caret-host');
+        // If the span only contains ZWSP and nothing else, remove it entirely
+        if (el.textContent === '\u200B') {
+          el.parentNode?.removeChild(el);
+        }
+      });
+      
       // Check if content has inline styled spans - if so, preserve HTML
       const hasInlineStyles = contentRef.current.querySelector('span[style]') !== null;
       
@@ -852,8 +862,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (Object.keys(sync).length) setSelectionFill(prev => ({ ...prev, ...sync }));
     };
 
-    // DOM cleanup that preserves selection/caret across normalize()/innerHTML sanitization.
-    const normalizeInlineDom = () => {
+    // DOM cleanup that preserves selection/caret across normalize().
+    // IMPORTANT: During live editing, we do NOT call sanitizeStyledHTML() because it
+    // strips ZWSP caret hosts, breaking caret toggles. Sanitization happens on blur/save.
+    const normalizeInlineDom = (preserveCaretHosts = true) => {
       if (!editorEl) return;
 
       const sel = window.getSelection();
@@ -868,90 +880,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         );
       };
 
-      const baseRange = (isRangeInEditor(live) ? live : null) ?? (isRangeInEditor(lastSelectionRangeRef.current) ? lastSelectionRangeRef.current : null) ?? (isRangeInEditor(lastCaretRangeRef.current) ? lastCaretRangeRef.current : null);
-      if (!baseRange) {
-        // Still do structural cleanup.
-        unwrapNestedStyledSpans(editorEl);
-        mergeAdjacentStyledSpans(editorEl);
-        const sanitized = sanitizeStyledHTML(editorEl.innerHTML);
-        if (sanitized !== editorEl.innerHTML) editorEl.innerHTML = sanitized;
-        return;
-      }
-
-      const mkId = (prefix: string) => `${prefix}-${crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
-      const startId = mkId('sel-start');
-      const endId = baseRange.collapsed ? null : mkId('sel-end');
-
-      const insertMarkerAt = (r: Range, id: string) => {
-        const marker = document.createElement('span');
-        marker.setAttribute('data-inline-style-id', id);
-        r.insertNode(marker);
-      };
-
-      try {
-        // Insert end marker first so start offsets remain valid.
-        if (endId) {
-          const endRange = baseRange.cloneRange();
-          endRange.collapse(false);
-          insertMarkerAt(endRange, endId);
-        }
-
-        const startRange = baseRange.cloneRange();
-        startRange.collapse(true);
-        insertMarkerAt(startRange, startId);
-      } catch {
-        // If marker insertion fails, fall back to non-preserving cleanup.
-        unwrapNestedStyledSpans(editorEl);
-        mergeAdjacentStyledSpans(editorEl);
-        const sanitized = sanitizeStyledHTML(editorEl.innerHTML);
-        if (sanitized !== editorEl.innerHTML) editorEl.innerHTML = sanitized;
-        return;
-      }
-
-      // 1) sanitize (converts legacy tags like <b>/<i>/<u> into spans)
-      // 2) unwrap/merge (keeps span graph stable)
-      const sanitized = sanitizeStyledHTML(editorEl.innerHTML);
-      if (sanitized !== editorEl.innerHTML) editorEl.innerHTML = sanitized;
+      // Structural cleanup only (no innerHTML rewrite during live editing)
       unwrapNestedStyledSpans(editorEl);
       mergeAdjacentStyledSpans(editorEl);
 
-      const startEl = editorEl.querySelector(`span[data-inline-style-id="${startId}"]`) as HTMLSpanElement | null;
-      const endEl = endId
-        ? (editorEl.querySelector(`span[data-inline-style-id="${endId}"]`) as HTMLSpanElement | null)
-        : null;
-
-      if (startEl) {
-        const nextRange = document.createRange();
-        if (endEl) {
-          nextRange.setStartAfter(startEl);
-          nextRange.setEndBefore(endEl);
-        } else {
-          nextRange.setStartAfter(startEl);
-          nextRange.collapse(true);
-        }
-
-        sel?.removeAllRanges();
-        sel?.addRange(nextRange);
-
-        // Remove marker elements.
-        endEl?.remove();
-        startEl.remove();
-
-        // Update cached ranges.
-        if (!nextRange.collapsed && nextRange.toString().length > 0) {
-          lastSelectionRangeRef.current = nextRange.cloneRange();
-        } else if (nextRange.collapsed) {
-          lastCaretRangeRef.current = nextRange.cloneRange();
-        }
-      }
-
       // Unwrap style-less spans that we may have created while removing formatting.
       // (Leaves styled spans intact; strips markup-only wrappers.)
+      // IMPORTANT: Don't unwrap caret host spans even if they have no visible styles yet
       const styleless = Array.from(editorEl.querySelectorAll('span')) as HTMLSpanElement[];
       for (const sp of styleless) {
         if (sp.getAttribute('style')) continue;
         if (sp.getAttribute('data-gradient')) continue;
-        // If it still has an inline-style id but no styles, it's redundant.
+        // Preserve caret host spans during live editing
+        if (preserveCaretHosts && sp.dataset.caretHost) continue;
         const parent = sp.parentNode;
         if (!parent) continue;
         while (sp.firstChild) parent.insertBefore(sp.firstChild, sp);
@@ -960,7 +901,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
       editorEl.normalize();
 
-      // Re-acquire active span ref by stable ID (innerHTML sanitization recreates nodes).
+      // Re-acquire active span ref by stable ID
       if (activeInlineSpanIdRef.current) {
         const found = editorEl.querySelector(`span[data-inline-style-id="${activeInlineSpanIdRef.current}"]`);
         activeInlineSpanRef.current = (found as HTMLSpanElement) || null;
@@ -1089,20 +1030,57 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           ...(styleOpts.textDecoration === null ? { textDecoration: 'none' } : {}),
         };
 
-        const span = insertStyledSpanAtCaret(caretOpts);
-        if (span) {
-          activeInlineSpanRef.current = span;
-          activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
-          lastCaretRangeRef.current = window.getSelection()?.getRangeAt(0)?.cloneRange() ?? null;
-          setSessionHasInlineStyles(true);
+        // Check if caret is already inside a caret host span we can update
+        const findCaretHostSpan = (): HTMLSpanElement | null => {
+          if (!liveRange) return null;
+          let node: Node | null = liveRange.startContainer;
+          let el: HTMLElement | null = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+          while (el && el !== editorEl) {
+            if (el.tagName === 'SPAN' && (el as HTMLSpanElement).dataset.caretHost) {
+              return el as HTMLSpanElement;
+            }
+            el = el.parentElement;
+          }
+          return null;
+        };
 
-          normalizeInlineDom();
-          scheduleInlineHtmlSave();
-          syncToolbarState();
+        const existingCaretSpan = findCaretHostSpan();
 
-          requestAnimationFrame(recomputeFormatState);
-          return true;
+        if (existingCaretSpan) {
+          // Update the existing caret host span instead of creating a new one
+          updateSpanStyle(existingCaretSpan, caretOpts);
+          activeInlineSpanRef.current = existingCaretSpan;
+          activeInlineSpanIdRef.current = existingCaretSpan.dataset.inlineStyleId || null;
+          
+          if (import.meta.env.DEV) {
+            console.log('[Caret toggle] Updated existing caret host span', {
+              style: existingCaretSpan.getAttribute('style'),
+            });
+          }
+        } else {
+          // Insert a new caret host span
+          const span = insertStyledSpanAtCaret(caretOpts);
+          if (span) {
+            activeInlineSpanRef.current = span;
+            activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
+            
+            if (import.meta.env.DEV) {
+              console.log('[Caret toggle] Inserted new caret host span', {
+                style: span.getAttribute('style'),
+              });
+            }
+          }
         }
+
+        lastCaretRangeRef.current = window.getSelection()?.getRangeAt(0)?.cloneRange() ?? null;
+        setSessionHasInlineStyles(true);
+
+        normalizeInlineDom();
+        scheduleInlineHtmlSave();
+        syncToolbarState();
+
+        requestAnimationFrame(recomputeFormatState);
+        return true;
       }
 
       // Find existing styled span at selection/caret (fresh lookup)
