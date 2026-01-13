@@ -2398,16 +2398,16 @@ const FrameInspector: React.FC<{
 
   return (
     <div className="space-y-0">
-      {/* Frame Header - Purple accent for Sections */}
-      <div className="px-4 py-3 border-b border-builder-border">
+      {/* Section Header - prominent with accent color */}
+      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(var(--builder-accent)/0.1)] to-transparent">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-builder-surface-hover flex items-center justify-center">
-              <Layout className="w-4 h-4 text-builder-text-muted" />
+            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--builder-accent)/0.15)] flex items-center justify-center">
+              <Layout className="w-4 h-4 text-[hsl(var(--builder-accent))]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-builder-text">{frame.label || 'Content Card'}</p>
-              <p className="text-xs text-builder-text-muted">Card that sits on top of canvas</p>
+              <p className="text-sm font-semibold text-builder-text">Section</p>
+              <p className="text-[10px] text-builder-text-muted">{frame.label || 'Content card on canvas'}</p>
             </div>
           </div>
           {/* Delete button */}
@@ -2625,6 +2625,19 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
 
   return (
     <div className="space-y-0">
+      {/* Canvas Selection Header */}
+      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(var(--builder-accent)/0.1)] to-transparent">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-[hsl(var(--builder-accent)/0.15)] flex items-center justify-center">
+            <Layers className="w-4 h-4 text-[hsl(var(--builder-accent))]" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-builder-text">Canvas</p>
+            <p className="text-[10px] text-builder-text-muted">Page-level background & settings</p>
+          </div>
+        </div>
+      </div>
+      
       <SiteInfo page={page} onPublish={onPublish} />
 
       <CollapsibleSection title="SEO & Meta" icon={<Sparkles className="w-4 h-4" />} defaultOpen>
@@ -3131,7 +3144,8 @@ export const RightPanel: React.FC<RightPanelProps> = ({
 
       {/* Content - min-h-0 critical for flex scroll */}
       <div className="flex-1 overflow-y-auto builder-scroll min-h-0">
-        {!selection.id ? (
+        {/* Show PageInspector for: no selection, or explicit 'page' type selection */}
+        {(!selection.id || selection.type === 'page') ? (
           <PageInspector page={page} onUpdate={handleUpdate} onPublish={onPublish} />
         ) : resolvedType === 'step' && selectedNode ? (
           <StepInspector step={selectedNode as Step} onUpdate={handleUpdate} />

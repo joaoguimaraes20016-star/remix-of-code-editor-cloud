@@ -2790,28 +2790,43 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   return (
     <div
       className={cn(
-        'overflow-hidden transition-all relative group/frame',
+        'overflow-hidden transition-all relative group/frame cursor-pointer',
         // Apply rounded corners only for contained layout
         !isFullWidth && 'rounded-2xl mx-4 md:mx-8',
         frameStyles.className,
         isSelected && 'ring-2 ring-builder-accent shadow-[0_0_0_4px_hsl(var(--builder-accent)/0.15)]'
       )}
       style={frameStyles.style}
+      onClick={(e) => {
+        // Click anywhere on frame selects it (if not clicking a child element that handles selection)
+        if (!readOnly) {
+          e.stopPropagation();
+          onSelect({ type: 'frame', id: frame.id, path: framePath });
+        }
+      }}
     >
-      {/* Frame selection handle - positioned outside content flow with generous spacing */}
+      {/* Frame selection handle - always visible when selected, hover otherwise */}
       {!readOnly && (
         <div 
-          className="absolute -top-12 left-1/2 -translate-x-1/2 cursor-pointer z-30 opacity-0 group-hover/frame:opacity-100 transition-all duration-200"
+          className={cn(
+            "absolute -top-12 left-1/2 -translate-x-1/2 cursor-pointer z-30 transition-all duration-200",
+            isSelected ? "opacity-100" : "opacity-0 group-hover/frame:opacity-100"
+          )}
           onClick={(e) => {
             e.stopPropagation();
             onSelect({ type: 'frame', id: frame.id, path: framePath });
           }}
         >
           {/* Section label - modern pill design with touch-friendly size */}
-          <div className="px-4 py-2 text-xs font-medium bg-[hsl(220,10%,10%)]/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl shadow-black/50 border border-white/[0.08] flex items-center gap-2 hover:bg-[hsl(220,10%,15%)] transition-colors min-h-[40px]">
-            <Layout className="w-4 h-4 text-[hsl(var(--builder-accent))]" />
+          <div className={cn(
+            "px-4 py-2 text-xs font-medium backdrop-blur-xl text-white rounded-2xl shadow-2xl shadow-black/50 border flex items-center gap-2 transition-colors min-h-[40px]",
+            isSelected 
+              ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))]" 
+              : "bg-[hsl(220,10%,10%)]/95 border-white/[0.08] hover:bg-[hsl(220,10%,15%)]"
+          )}>
+            <Layout className="w-4 h-4" />
             <span className="font-semibold">{frame.label || 'Section'}</span>
-            <span className="text-white/40 text-[11px] hidden sm:inline">· Click to edit</span>
+            {!isSelected && <span className="text-white/40 text-[11px] hidden sm:inline">· Click to edit</span>}
           </div>
         </div>
       )}
@@ -3026,9 +3041,9 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ),
             } as React.CSSProperties}
             onClick={(e) => {
-              // Click on empty device frame = select page / clear selection
+              // Click on empty device frame = select canvas/page (not null)
               if (e.target === e.currentTarget) {
-                onSelect({ type: null, id: null, path: [] });
+                onSelect({ type: 'page', id: 'canvas', path: [] });
               }
             }}
           >
