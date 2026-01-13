@@ -1,41 +1,33 @@
 import React, { useState } from 'react';
 import { 
-  Plus, 
-  Search, 
-  Type, 
-  Image, 
-  Video, 
-  MessageSquare, 
-  ListChecks, 
-  Calendar, 
-  Upload, 
-  ChevronDown, 
-  Sparkles, 
-  LayoutGrid, 
-  MousePointer,
-  Menu,
-  Link2,
-  Users,
-  Star,
-  Grid3X3,
-  CreditCard,
-  HelpCircle,
-  Mail,
-  Building2,
-  Award,
-  Quote,
-  Grip,
-  MapPin
+  Plus, Search, Type, Image, MousePointer, LayoutGrid, Sparkles,
+  Minus, Square, ChevronRight, Award, Quote, Users, HelpCircle,
+  ListChecks, Calendar, Mail, ChevronDown, Upload, Video,
+  FileText, Link, Star, Package, Zap, MessageSquare
 } from 'lucide-react';
-import { Block, BlockType } from '../../types/infostack';
-import { generateId } from '../utils/helpers';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
+import { Block } from '@/flow-canvas/types/infostack';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+// ============ TYPE DEFINITIONS ============
+
+interface BlockTemplate {
+  type: string;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+  template: () => Block;
+}
+
+interface SectionCategory {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  templates: BlockTemplate[];
+}
 
 interface AddSectionPopoverProps {
   onAddBlock: (block: Block) => void;
@@ -45,348 +37,139 @@ interface AddSectionPopoverProps {
   className?: string;
 }
 
-interface BlockTemplate {
-  type: BlockType;
-  label: string;
-  icon: React.ReactNode;
-  description: string;
-  category: 'layout' | 'content' | 'interactive';
-  template: () => Block;
-}
+// ============ BASIC BLOCKS (Single Elements) ============
 
-const blockTemplates: BlockTemplate[] = [
-  // ============ LAYOUT SECTIONS ============
-  {
-    type: 'custom',
-    label: 'Navigation',
-    icon: <Menu size={18} />,
-    description: 'Header with logo & nav links',
-    category: 'layout',
-    template: () => ({
-      id: generateId(),
-      type: 'custom',
-      label: 'Navigation',
-      elements: [
-        { id: generateId(), type: 'image', content: '', props: { isLogo: true, placeholder: 'Logo', alt: 'Logo' }, styles: { width: '120px', height: '40px' } },
-        { id: generateId(), type: 'button', content: 'Features', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#features' } },
-        { id: generateId(), type: 'button', content: 'Pricing', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#pricing' } },
-        { id: generateId(), type: 'button', content: 'Contact', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#contact' } },
-      ],
-      props: { layout: 'navbar', direction: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '12px', sticky: true },
-      styles: { padding: '16px 48px' },
-    }),
-  },
-  {
-    type: 'hero',
-    label: 'Hero',
-    icon: <LayoutGrid size={18} />,
-    description: 'Hero section with CTA',
-    category: 'layout',
-    template: () => ({
-      id: generateId(),
-      type: 'hero',
-      label: 'Hero Section',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Welcome to our platform', props: { level: 1 } },
-        { id: generateId(), type: 'text', content: 'Build beautiful landing pages in minutes. No coding required.', props: {} },
-        { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg' } },
-      ],
-      props: { backgroundImage: '', overlay: true },
-    }),
-  },
-  {
-    type: 'feature',
-    label: 'Features Grid',
-    icon: <Grid3X3 size={18} />,
-    description: '3-column features layout',
-    category: 'layout',
-    template: () => ({
-      id: generateId(),
-      type: 'feature',
-      label: 'Features',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Why Choose Us', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: 'Everything you need to succeed', props: { variant: 'caption' } },
-        { id: generateId(), type: 'icon', content: '⚡', props: { title: 'Fast & Reliable', description: 'Lightning-fast performance with 99.9% uptime' } },
-        { id: generateId(), type: 'icon', content: '🔒', props: { title: 'Secure', description: 'Bank-level security for your peace of mind' } },
-        { id: generateId(), type: 'icon', content: '💎', props: { title: 'Premium Quality', description: 'Exceptional craftsmanship in every detail' } },
-      ],
-      props: { columns: 3, layout: 'grid' },
-    }),
-  },
-  {
-    type: 'pricing',
-    label: 'Pricing',
-    icon: <CreditCard size={18} />,
-    description: 'Pricing table with plans',
-    category: 'layout',
-    template: () => ({
-      id: generateId(),
-      type: 'pricing',
-      label: 'Pricing',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Simple Pricing', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: 'Choose the plan that works for you', props: { variant: 'caption' } },
-        { id: generateId(), type: 'text', content: 'Starter|$29/mo|Perfect for getting started|5 Projects,10GB Storage,Email Support', props: { variant: 'pricing-card' } },
-        { id: generateId(), type: 'text', content: 'Pro|$79/mo|Most popular choice|Unlimited Projects,100GB Storage,Priority Support,Advanced Analytics', props: { variant: 'pricing-card', featured: true } },
-        { id: generateId(), type: 'text', content: 'Enterprise|$199/mo|For large teams|Everything in Pro,Dedicated Account Manager,Custom Integrations,SLA', props: { variant: 'pricing-card' } },
-      ],
-      props: { columns: 3, highlightPlan: 1 },
-    }),
-  },
-  {
-    type: 'faq',
-    label: 'FAQ',
-    icon: <HelpCircle size={18} />,
-    description: 'Frequently asked questions',
-    category: 'layout',
-    template: () => ({
-      id: generateId(),
-      type: 'faq',
-      label: 'FAQ Section',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Frequently Asked Questions', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: 'How do I get started?|Simply sign up for a free account and follow our onboarding guide.', props: { variant: 'faq-item' } },
-        { id: generateId(), type: 'text', content: 'Can I cancel anytime?|Yes, you can cancel your subscription at any time with no questions asked.', props: { variant: 'faq-item' } },
-        { id: generateId(), type: 'text', content: 'Do you offer refunds?|We offer a 30-day money-back guarantee on all plans.', props: { variant: 'faq-item' } },
-      ],
-      props: { accordion: true },
-    }),
-  },
-  {
-    type: 'logo-bar',
-    label: 'Logo Bar',
-    icon: <Building2 size={18} />,
-    description: 'Trusted by companies',
-    category: 'layout',
-    template: () => ({
-      id: generateId(),
-      type: 'logo-bar',
-      label: 'Logo Bar',
-      elements: [
-        { id: generateId(), type: 'text', content: 'Trusted by leading companies', props: { variant: 'caption' } },
-        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 1', width: '100px', placeholder: 'Logo 1' } },
-        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 2', width: '100px', placeholder: 'Logo 2' } },
-        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 3', width: '100px', placeholder: 'Logo 3' } },
-        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 4', width: '100px', placeholder: 'Logo 4' } },
-        { id: generateId(), type: 'image', content: '', props: { src: '', alt: 'Company 5', width: '100px', placeholder: 'Logo 5' } },
-      ],
-      props: { grayscale: true, scrolling: false },
-      styles: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px' },
-    }),
-  },
-  {
-    type: 'footer',
-    label: 'Footer',
-    icon: <Grip size={18} />,
-    description: 'Framer-style multi-column footer',
-    category: 'layout',
-    template: () => ({
-      id: generateId(),
-      type: 'footer',
-      label: 'Footer',
-      elements: [
-        // Logo column
-        { id: generateId(), type: 'text', content: '■○▲', props: { variant: 'footer-logo', fontSize: '24px', color: '#999' } },
-        // Product column
-        { id: generateId(), type: 'text', content: 'Product', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
-        { id: generateId(), type: 'button', content: 'Features', props: { variant: 'footer-link', size: 'sm', href: '#features' } },
-        { id: generateId(), type: 'button', content: 'Pricing', props: { variant: 'footer-link', size: 'sm', href: '#pricing' } },
-        { id: generateId(), type: 'button', content: 'Support', props: { variant: 'footer-link', size: 'sm', href: '#support' } },
-        // Company column
-        { id: generateId(), type: 'text', content: 'Company', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
-        { id: generateId(), type: 'button', content: 'About', props: { variant: 'footer-link', size: 'sm', href: '/about' } },
-        { id: generateId(), type: 'button', content: 'Careers', props: { variant: 'footer-link', size: 'sm', href: '/careers' } },
-        { id: generateId(), type: 'button', content: 'Press', props: { variant: 'footer-link', size: 'sm', href: '/press' } },
-        // Resources column
-        { id: generateId(), type: 'text', content: 'Resources', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
-        { id: generateId(), type: 'button', content: 'Blog', props: { variant: 'footer-link', size: 'sm', href: '/blog' } },
-        { id: generateId(), type: 'button', content: 'Newsletter', props: { variant: 'footer-link', size: 'sm', href: '/newsletter' } },
-        { id: generateId(), type: 'button', content: 'Contact', props: { variant: 'footer-link', size: 'sm', href: '/contact' } },
-      ],
-      props: { layout: 'footer-framer', columns: 4, direction: 'row', gap: '48px' },
-      styles: { padding: '64px 48px', backgroundColor: '#f5f5f5' },
-    }),
-  },
-  {
-    type: 'about',
-    label: 'About Section',
-    icon: <Users size={18} />,
-    description: 'About us with image',
-    category: 'layout',
-    template: () => ({
-      id: generateId(),
-      type: 'about',
-      label: 'About Us',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'About Us', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: "We're on a mission to help businesses grow faster with innovative solutions. Our team of experts brings years of experience and passion to everything we do.", props: {} },
-        { id: generateId(), type: 'image', content: '', props: { src: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop', alt: 'Team photo' } },
-        { id: generateId(), type: 'button', content: 'Learn More', props: { variant: 'secondary' } },
-      ],
-      props: { layout: 'split', imagePosition: 'right' },
-    }),
-  },
-
-  // ============ CONTENT BLOCKS ============
+const basicBlocks: BlockTemplate[] = [
   {
     type: 'text-block',
     label: 'Text',
-    icon: <Type size={18} />,
-    description: 'Paragraph or heading',
-    category: 'content',
+    icon: <Type size={16} />,
+    description: 'Paragraph text',
     template: () => ({
       id: generateId(),
       type: 'text-block',
-      label: 'Text Block',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Your heading here', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: 'Add your paragraph text here. Click to edit.', props: {} },
-      ],
+      label: 'Text',
+      elements: [{ id: generateId(), type: 'text', content: 'Add your text here...', props: {} }],
+      props: {},
+    }),
+  },
+  {
+    type: 'heading',
+    label: 'Heading',
+    icon: <FileText size={16} />,
+    description: 'Title text',
+    template: () => ({
+      id: generateId(),
+      type: 'text-block',
+      label: 'Heading',
+      elements: [{ id: generateId(), type: 'heading', content: 'Your Heading', props: { level: 2 } }],
       props: {},
     }),
   },
   {
     type: 'media',
     label: 'Image',
-    icon: <Image size={18} />,
-    description: 'Add an image',
-    category: 'content',
+    icon: <Image size={16} />,
+    description: 'Photo or graphic',
     template: () => ({
       id: generateId(),
       type: 'media',
-      label: 'Image Block',
-      elements: [
-        { id: generateId(), type: 'image', content: '', props: { src: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=400&fit=crop', alt: 'Placeholder image' } },
-      ],
-      props: {},
+      label: 'Image',
+      elements: [{ id: generateId(), type: 'image', content: '', props: { alt: 'Image', src: '' } }],
+      props: { aspectRatio: '16:9' },
     }),
   },
   {
-    type: 'media',
+    type: 'video',
     label: 'Video',
-    icon: <Video size={18} />,
-    description: 'Embed a video',
-    category: 'content',
+    icon: <Video size={16} />,
+    description: 'Embed video',
     template: () => ({
       id: generateId(),
       type: 'media',
-      label: 'Video Block',
-      elements: [
-        { id: generateId(), type: 'video', content: '', props: { src: '', placeholder: 'Paste video URL' } },
-      ],
-      props: {},
+      label: 'Video',
+      elements: [{ id: generateId(), type: 'video', content: '', props: { src: '', autoplay: false } }],
+      props: { aspectRatio: '16:9' },
     }),
   },
   {
     type: 'cta',
     label: 'Button',
-    icon: <MousePointer size={18} />,
-    description: 'Call-to-action button',
-    category: 'content',
+    icon: <MousePointer size={16} />,
+    description: 'Call to action',
     template: () => ({
       id: generateId(),
       type: 'cta',
-      label: 'Button Block',
-      elements: [
-        { id: generateId(), type: 'button', content: 'Click me', props: { variant: 'primary' } },
-      ],
+      label: 'Button',
+      elements: [{ id: generateId(), type: 'button', content: 'Click Here', props: { variant: 'primary' } }],
+      props: { action: 'next-step', href: '' },
+    }),
+  },
+  {
+    type: 'link',
+    label: 'Link',
+    icon: <Link size={16} />,
+    description: 'Text link',
+    template: () => ({
+      id: generateId(),
+      type: 'text-block',
+      label: 'Link',
+      elements: [{ id: generateId(), type: 'link', content: 'Learn more', props: { href: '#' } }],
       props: {},
     }),
   },
   {
-    type: 'custom',
+    type: 'spacer',
     label: 'Spacer',
-    icon: <div className="w-4 h-4 border-t-2 border-b-2 border-current flex items-center justify-center" />,
-    description: 'Vertical spacing',
-    category: 'content',
+    icon: <Minus size={16} />,
+    description: 'Vertical space',
     template: () => ({
       id: generateId(),
-      type: 'custom',
+      type: 'spacer',
       label: 'Spacer',
-      elements: [
-        { id: generateId(), type: 'spacer', content: '', props: {}, styles: { height: '48px' } },
-      ],
-      props: {},
+      elements: [],
+      props: { height: 32 },
     }),
   },
   {
-    type: 'custom',
+    type: 'divider',
     label: 'Divider',
-    icon: <div className="w-4 h-0.5 bg-current" />,
-    description: 'Horizontal separator',
-    category: 'content',
+    icon: <Minus size={16} className="rotate-90" />,
+    description: 'Horizontal line',
     template: () => ({
       id: generateId(),
-      type: 'custom',
+      type: 'divider',
       label: 'Divider',
-      elements: [
-        { id: generateId(), type: 'divider', content: '', props: {} },
-      ],
-      props: {},
+      elements: [],
+      props: { style: 'solid', color: 'border' },
     }),
   },
-  {
-    type: 'custom',
-    label: 'Icon',
-    icon: <Star size={18} />,
-    description: 'Decorative icon',
-    category: 'content',
-    template: () => ({
-      id: generateId(),
-      type: 'custom',
-      label: 'Icon',
-      elements: [
-        { id: generateId(), type: 'icon', content: 'star', props: { color: '#8B5CF6' }, styles: { fontSize: '32px' } },
-      ],
-      props: {},
-    }),
-  },
-  {
-    type: 'testimonial',
-    label: 'Testimonial',
-    icon: <Quote size={18} />,
-    description: 'Customer review',
-    category: 'content',
-    template: () => ({
-      id: generateId(),
-      type: 'testimonial',
-      label: 'Testimonial',
-      elements: [
-        { id: generateId(), type: 'text', content: '"This product changed my life! Highly recommend to everyone."', props: {} },
-        { id: generateId(), type: 'text', content: '— Sarah Johnson, CEO', props: { variant: 'caption' } },
-      ],
-      props: { rating: 5, avatar: '' },
-    }),
-  },
-  {
-    type: 'trust',
-    label: 'Trust Badges',
-    icon: <Award size={18} />,
-    description: 'Social proof badges',
-    category: 'content',
-    template: () => ({
-      id: generateId(),
-      type: 'trust',
-      label: 'Trust Badges',
-      elements: [
-        { id: generateId(), type: 'text', content: '⭐ 4.9/5 Rating', props: { variant: 'badge' } },
-        { id: generateId(), type: 'text', content: '🏆 #1 Rated', props: { variant: 'badge' } },
-        { id: generateId(), type: 'text', content: '✓ 10,000+ Users', props: { variant: 'badge' } },
-        { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'badge' } },
-      ],
-      props: { layout: 'horizontal' },
-      styles: { display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' },
-    }),
-  },
+];
 
-  // ============ INTERACTIVE BLOCKS ============
+// ============ INTERACTIVE BLOCKS (Form Elements) ============
+
+const interactiveBlocks: BlockTemplate[] = [
+  {
+    type: 'form-field',
+    label: 'Text Input',
+    icon: <Type size={16} />,
+    description: 'Text field',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Text Input',
+      elements: [
+        { id: generateId(), type: 'text', content: 'Enter your email', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
+      ],
+      props: { trackingId: '' },
+    }),
+  },
   {
     type: 'form-field',
     label: 'Multiple Choice',
-    icon: <ListChecks size={18} />,
-    description: 'Multi-select question',
-    category: 'interactive',
+    icon: <ListChecks size={16} />,
+    description: 'Multi-select',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -396,7 +179,6 @@ const blockTemplates: BlockTemplate[] = [
         { id: generateId(), type: 'checkbox', content: 'Option A', props: { name: 'choice', value: 'a' } },
         { id: generateId(), type: 'checkbox', content: 'Option B', props: { name: 'choice', value: 'b' } },
         { id: generateId(), type: 'checkbox', content: 'Option C', props: { name: 'choice', value: 'c' } },
-        { id: generateId(), type: 'button', content: 'Submit and proceed', props: { variant: 'primary' } },
       ],
       props: { trackingId: '', required: false },
     }),
@@ -405,8 +187,7 @@ const blockTemplates: BlockTemplate[] = [
     type: 'form-field',
     label: 'Single Choice',
     icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
-    description: 'Radio button question',
-    category: 'interactive',
+    description: 'Radio buttons',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -416,96 +197,15 @@ const blockTemplates: BlockTemplate[] = [
         { id: generateId(), type: 'radio', content: 'Option A', props: { name: 'single_choice', value: 'a' } },
         { id: generateId(), type: 'radio', content: 'Option B', props: { name: 'single_choice', value: 'b' } },
         { id: generateId(), type: 'radio', content: 'Option C', props: { name: 'single_choice', value: 'c' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
       ],
       props: { trackingId: '', required: true },
     }),
   },
   {
     type: 'form-field',
-    label: 'Quiz Question',
-    icon: <Sparkles size={18} />,
-    description: 'Quiz with answer',
-    category: 'interactive',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Quiz Question',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'What is the answer?', props: { level: 3 } },
-        { id: generateId(), type: 'radio', content: 'Answer A', props: { name: 'quiz', value: 'a', isCorrect: false } },
-        { id: generateId(), type: 'radio', content: 'Answer B (Correct)', props: { name: 'quiz', value: 'b', isCorrect: true } },
-        { id: generateId(), type: 'radio', content: 'Answer C', props: { name: 'quiz', value: 'c', isCorrect: false } },
-        { id: generateId(), type: 'button', content: 'Check Answer', props: { variant: 'primary' } },
-      ],
-      props: { trackingId: '', showCorrectAnswer: true },
-    }),
-  },
-  {
-    type: 'form-field',
-    label: 'Form Input',
-    icon: <Type size={18} />,
-    description: 'Text input field',
-    category: 'interactive',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Form Input',
-      elements: [
-        { id: generateId(), type: 'text', content: 'Enter your email', props: { variant: 'label' } },
-        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
-        { id: generateId(), type: 'button', content: 'Submit', props: { variant: 'primary' } },
-      ],
-      props: { trackingId: '' },
-    }),
-  },
-  {
-    type: 'form-field',
-    label: 'Contact Form',
-    icon: <Mail size={18} />,
-    description: 'Full contact form',
-    category: 'interactive',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Contact Form',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Get in Touch', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: 'Name', props: { variant: 'label' } },
-        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true } },
-        { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
-        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
-        { id: generateId(), type: 'text', content: 'Message', props: { variant: 'label' } },
-        { id: generateId(), type: 'input', content: '', props: { type: 'textarea', placeholder: 'Your message...', required: true } },
-        { id: generateId(), type: 'button', content: 'Send Message', props: { variant: 'primary', size: 'lg' } },
-      ],
-      props: { trackingId: '' },
-    }),
-  },
-  {
-    type: 'form-field',
-    label: 'Date Picker',
-    icon: <Calendar size={18} />,
-    description: 'Date selection',
-    category: 'interactive',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Date Picker',
-      elements: [
-        { id: generateId(), type: 'text', content: 'Select a date', props: { variant: 'label' } },
-        { id: generateId(), type: 'input', content: '', props: { type: 'date', placeholder: 'Choose date' } },
-        { id: generateId(), type: 'button', content: 'Confirm', props: { variant: 'primary' } },
-      ],
-      props: { trackingId: '', minDate: '', maxDate: '' },
-    }),
-  },
-  {
-    type: 'form-field',
     label: 'Dropdown',
-    icon: <ChevronDown size={18} />,
-    description: 'Select dropdown',
-    category: 'interactive',
+    icon: <ChevronDown size={16} />,
+    description: 'Select menu',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -513,17 +213,31 @@ const blockTemplates: BlockTemplate[] = [
       elements: [
         { id: generateId(), type: 'text', content: 'Choose an option', props: { variant: 'label' } },
         { id: generateId(), type: 'select', content: '', props: { options: ['Option 1', 'Option 2', 'Option 3'], placeholder: 'Select...' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
       ],
       props: { trackingId: '' },
     }),
   },
   {
     type: 'form-field',
+    label: 'Date Picker',
+    icon: <Calendar size={16} />,
+    description: 'Date selection',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Date Picker',
+      elements: [
+        { id: generateId(), type: 'text', content: 'Select a date', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'date', placeholder: 'Choose date' } },
+      ],
+      props: { trackingId: '', minDate: '', maxDate: '' },
+    }),
+  },
+  {
+    type: 'form-field',
     label: 'File Upload',
-    icon: <Upload size={18} />,
+    icon: <Upload size={16} />,
     description: 'Upload files',
-    category: 'interactive',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -531,31 +245,371 @@ const blockTemplates: BlockTemplate[] = [
       elements: [
         { id: generateId(), type: 'text', content: 'Upload your file', props: { variant: 'label' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'file', accept: '.pdf,.doc,.docx,.jpg,.png', multiple: false } },
-        { id: generateId(), type: 'button', content: 'Upload', props: { variant: 'primary' } },
       ],
       props: { trackingId: '', maxSize: '10MB', allowedTypes: ['pdf', 'doc', 'jpg', 'png'] },
     }),
   },
+];
+
+// ============ SECTION TEMPLATES (Pre-designed) ============
+
+const sectionCategories: SectionCategory[] = [
   {
-    type: 'booking',
-    label: 'Appointment',
-    icon: <Calendar size={18} />,
-    description: 'Schedule booking',
-    category: 'interactive',
-    template: () => ({
-      id: generateId(),
-      type: 'booking',
-      label: 'Appointment Booking',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Book your appointment', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: 'Select a date and time that works for you.', props: {} },
-        { id: generateId(), type: 'input', content: '', props: { type: 'datetime-local', placeholder: 'Select date & time' } },
-        { id: generateId(), type: 'button', content: 'Book Now', props: { variant: 'primary' } },
-      ],
-      props: { trackingId: '', duration: 30, timezone: 'auto' },
-    }),
+    id: 'hero',
+    label: 'Hero',
+    icon: <LayoutGrid size={16} />,
+    templates: [
+      {
+        type: 'hero',
+        label: 'Simple Hero',
+        icon: <LayoutGrid size={16} />,
+        description: 'Title + subtitle + CTA',
+        template: () => ({
+          id: generateId(),
+          type: 'hero',
+          label: 'Hero Section',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'Welcome to Our Platform', props: { level: 1 } },
+            { id: generateId(), type: 'text', content: 'Discover how we can help you achieve your goals faster than ever before.', props: {} },
+            { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg' } },
+          ],
+          props: { alignment: 'center' },
+        }),
+      },
+      {
+        type: 'hero',
+        label: 'Hero with Image',
+        icon: <LayoutGrid size={16} />,
+        description: 'Hero + media',
+        template: () => ({
+          id: generateId(),
+          type: 'hero',
+          label: 'Hero with Image',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'Transform Your Business', props: { level: 1 } },
+            { id: generateId(), type: 'text', content: 'Join thousands of companies already using our platform.', props: {} },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Hero image', src: '' } },
+            { id: generateId(), type: 'button', content: 'Start Free Trial', props: { variant: 'primary', size: 'lg' } },
+          ],
+          props: { alignment: 'center' },
+        }),
+      },
+    ],
+  },
+  {
+    id: 'cta',
+    label: 'Call to Action',
+    icon: <MousePointer size={16} />,
+    templates: [
+      {
+        type: 'cta-section',
+        label: 'Simple CTA',
+        icon: <MousePointer size={16} />,
+        description: 'Text + button',
+        template: () => ({
+          id: generateId(),
+          type: 'cta',
+          label: 'Call to Action',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'Ready to get started?', props: { level: 2 } },
+            { id: generateId(), type: 'text', content: 'Take the first step towards your goals today.', props: {} },
+            { id: generateId(), type: 'button', content: 'Get Started Now', props: { variant: 'primary', size: 'lg' } },
+          ],
+          props: { action: 'next-step' },
+        }),
+      },
+      {
+        type: 'cta-section',
+        label: 'CTA with Input',
+        icon: <MousePointer size={16} />,
+        description: 'Capture + CTA',
+        template: () => ({
+          id: generateId(),
+          type: 'cta',
+          label: 'CTA with Email',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'Join our newsletter', props: { level: 2 } },
+            { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'Enter your email' } },
+            { id: generateId(), type: 'button', content: 'Subscribe', props: { variant: 'primary' } },
+          ],
+          props: { action: 'submit' },
+        }),
+      },
+    ],
+  },
+  {
+    id: 'about',
+    label: 'About Us',
+    icon: <Users size={16} />,
+    templates: [
+      {
+        type: 'about',
+        label: 'About Section',
+        icon: <Users size={16} />,
+        description: 'Company info',
+        template: () => ({
+          id: generateId(),
+          type: 'about',
+          label: 'About Us',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'About Us', props: { level: 2 } },
+            { id: generateId(), type: 'text', content: 'We are a team of passionate individuals dedicated to helping you succeed. With years of experience and a commitment to excellence, we deliver results that matter.', props: {} },
+            { id: generateId(), type: 'button', content: 'Learn More', props: { variant: 'outline' } },
+          ],
+          props: {},
+        }),
+      },
+    ],
+  },
+  {
+    id: 'testimonials',
+    label: 'Testimonials',
+    icon: <Quote size={16} />,
+    templates: [
+      {
+        type: 'testimonial',
+        label: 'Single Testimonial',
+        icon: <Quote size={16} />,
+        description: 'Customer quote',
+        template: () => ({
+          id: generateId(),
+          type: 'testimonial',
+          label: 'Testimonial',
+          elements: [
+            { id: generateId(), type: 'text', content: '"This product changed my life! Highly recommend to everyone."', props: {} },
+            { id: generateId(), type: 'text', content: '— Sarah Johnson, CEO', props: { variant: 'caption' } },
+          ],
+          props: { rating: 5, avatar: '' },
+        }),
+      },
+      {
+        type: 'testimonial',
+        label: 'Testimonial with Image',
+        icon: <Quote size={16} />,
+        description: 'Quote + avatar',
+        template: () => ({
+          id: generateId(),
+          type: 'testimonial',
+          label: 'Testimonial',
+          elements: [
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Customer photo', src: '', style: 'avatar' } },
+            { id: generateId(), type: 'text', content: '"The best decision I ever made for my business."', props: {} },
+            { id: generateId(), type: 'text', content: '— John Smith, Founder', props: { variant: 'caption' } },
+          ],
+          props: { rating: 5 },
+        }),
+      },
+    ],
+  },
+  {
+    id: 'trust',
+    label: 'Trust',
+    icon: <Award size={16} />,
+    templates: [
+      {
+        type: 'trust',
+        label: 'Trust Badges',
+        icon: <Award size={16} />,
+        description: 'Social proof',
+        template: () => ({
+          id: generateId(),
+          type: 'trust',
+          label: 'Trust Badges',
+          elements: [
+            { id: generateId(), type: 'text', content: '⭐ 4.9/5 Rating', props: { variant: 'badge' } },
+            { id: generateId(), type: 'text', content: '🏆 #1 Rated', props: { variant: 'badge' } },
+            { id: generateId(), type: 'text', content: '✓ 10,000+ Users', props: { variant: 'badge' } },
+            { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'badge' } },
+          ],
+          props: { layout: 'horizontal' },
+          styles: { display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' },
+        }),
+      },
+      {
+        type: 'trust',
+        label: 'Logo Bar',
+        icon: <Star size={16} />,
+        description: 'Partner logos',
+        template: () => ({
+          id: generateId(),
+          type: 'trust',
+          label: 'Logo Bar',
+          elements: [
+            { id: generateId(), type: 'text', content: 'Trusted by leading companies', props: { variant: 'caption' } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 1', src: '' } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 2', src: '' } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 3', src: '' } },
+          ],
+          props: { layout: 'horizontal' },
+        }),
+      },
+    ],
+  },
+  {
+    id: 'features',
+    label: 'Features',
+    icon: <Package size={16} />,
+    templates: [
+      {
+        type: 'feature',
+        label: 'Features Grid',
+        icon: <Package size={16} />,
+        description: '3 feature cards',
+        template: () => ({
+          id: generateId(),
+          type: 'feature',
+          label: 'Features Grid',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'Why Choose Us', props: { level: 2 } },
+            { id: generateId(), type: 'text', content: '🚀 Fast & Reliable', props: { variant: 'feature' } },
+            { id: generateId(), type: 'text', content: 'Lightning-fast performance with 99.9% uptime', props: {} },
+            { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'feature' } },
+            { id: generateId(), type: 'text', content: 'Enterprise-grade security for your data', props: {} },
+            { id: generateId(), type: 'text', content: '💬 24/7 Support', props: { variant: 'feature' } },
+            { id: generateId(), type: 'text', content: 'Round-the-clock support from our team', props: {} },
+          ],
+          props: { columns: 3 },
+        }),
+      },
+      {
+        type: 'feature',
+        label: 'Benefits List',
+        icon: <Zap size={16} />,
+        description: 'Bullet points',
+        template: () => ({
+          id: generateId(),
+          type: 'feature',
+          label: 'Benefits',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'What You Get', props: { level: 2 } },
+            { id: generateId(), type: 'text', content: '✓ Unlimited access to all features', props: {} },
+            { id: generateId(), type: 'text', content: '✓ Priority customer support', props: {} },
+            { id: generateId(), type: 'text', content: '✓ Free updates and upgrades', props: {} },
+            { id: generateId(), type: 'text', content: '✓ 30-day money-back guarantee', props: {} },
+          ],
+          props: {},
+        }),
+      },
+    ],
+  },
+  {
+    id: 'quiz',
+    label: 'Quiz',
+    icon: <HelpCircle size={16} />,
+    templates: [
+      {
+        type: 'quiz',
+        label: 'Quiz Question',
+        icon: <HelpCircle size={16} />,
+        description: 'Interactive quiz',
+        template: () => ({
+          id: generateId(),
+          type: 'form-field',
+          label: 'Quiz Question',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'What is your biggest challenge?', props: { level: 2 } },
+            { id: generateId(), type: 'radio', content: 'Time management', props: { name: 'quiz', value: 'time' } },
+            { id: generateId(), type: 'radio', content: 'Budget constraints', props: { name: 'quiz', value: 'budget' } },
+            { id: generateId(), type: 'radio', content: 'Finding the right tools', props: { name: 'quiz', value: 'tools' } },
+            { id: generateId(), type: 'radio', content: 'Team collaboration', props: { name: 'quiz', value: 'team' } },
+            { id: generateId(), type: 'button', content: 'See My Results', props: { variant: 'primary', size: 'lg' } },
+          ],
+          props: { trackingId: '' },
+        }),
+      },
+    ],
+  },
+  {
+    id: 'team',
+    label: 'Team',
+    icon: <Users size={16} />,
+    templates: [
+      {
+        type: 'team',
+        label: 'Team Section',
+        icon: <Users size={16} />,
+        description: 'Team members',
+        template: () => ({
+          id: generateId(),
+          type: 'team',
+          label: 'Our Team',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'Meet Our Team', props: { level: 2 } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Team member 1', src: '', style: 'avatar' } },
+            { id: generateId(), type: 'text', content: 'Jane Doe', props: { variant: 'strong' } },
+            { id: generateId(), type: 'text', content: 'CEO & Founder', props: { variant: 'caption' } },
+          ],
+          props: {},
+        }),
+      },
+    ],
+  },
+  {
+    id: 'contact',
+    label: 'Contact',
+    icon: <Mail size={16} />,
+    templates: [
+      {
+        type: 'contact',
+        label: 'Contact Form',
+        icon: <Mail size={16} />,
+        description: 'Full form',
+        template: () => ({
+          id: generateId(),
+          type: 'form-field',
+          label: 'Contact Form',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'Get in Touch', props: { level: 2 } },
+            { id: generateId(), type: 'text', content: 'Name', props: { variant: 'label' } },
+            { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true } },
+            { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
+            { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
+            { id: generateId(), type: 'text', content: 'Message', props: { variant: 'label' } },
+            { id: generateId(), type: 'input', content: '', props: { type: 'textarea', placeholder: 'Your message...', required: true } },
+            { id: generateId(), type: 'button', content: 'Send Message', props: { variant: 'primary', size: 'lg' } },
+          ],
+          props: { trackingId: '' },
+        }),
+      },
+      {
+        type: 'booking',
+        label: 'Appointment',
+        icon: <Calendar size={16} />,
+        description: 'Schedule booking',
+        template: () => ({
+          id: generateId(),
+          type: 'booking',
+          label: 'Appointment Booking',
+          elements: [
+            { id: generateId(), type: 'heading', content: 'Book your appointment', props: { level: 2 } },
+            { id: generateId(), type: 'text', content: 'Select a date and time that works for you.', props: {} },
+            { id: generateId(), type: 'input', content: '', props: { type: 'datetime-local', placeholder: 'Select date & time' } },
+            { id: generateId(), type: 'button', content: 'Book Now', props: { variant: 'primary' } },
+          ],
+          props: { trackingId: '', duration: 30, timezone: 'auto' },
+        }),
+      },
+    ],
   },
 ];
+
+// ============ EMPTY SECTION ============
+
+const emptySectionTemplate: BlockTemplate = {
+  type: 'empty',
+  label: 'Empty Section',
+  icon: <Square size={16} />,
+  description: 'Start from scratch',
+  template: () => ({
+    id: generateId(),
+    type: 'custom',
+    label: 'Custom Section',
+    elements: [],
+    props: {},
+  }),
+};
+
+// ============ COMPONENT ============
 
 export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
   onAddBlock,
@@ -566,19 +620,27 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'layout' | 'content' | 'interactive'>('layout');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  const filteredTemplates = blockTemplates.filter(template => {
-    const matchesSearch = template.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          template.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = searchQuery.length > 0 ? true : template.category === activeTab;
-    return matchesSearch && matchesCategory;
-  });
+  // Collect all templates for search
+  const allTemplates = [
+    ...basicBlocks,
+    ...interactiveBlocks,
+    ...sectionCategories.flatMap(cat => cat.templates),
+  ];
+
+  const filteredResults = searchQuery.length > 0
+    ? allTemplates.filter(t => 
+        t.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
 
   const handleAddBlock = (template: BlockTemplate) => {
     onAddBlock(template.template());
     setIsOpen(false);
     setSearchQuery('');
+    setExpandedCategory(null);
   };
 
   return (
@@ -615,7 +677,7 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
         )}
       </PopoverTrigger>
       <PopoverContent 
-        className="w-96 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] shadow-2xl"
+        className="w-80 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] shadow-2xl"
         side={position === 'above' ? 'top' : 'bottom'}
         align="center"
         sideOffset={8}
@@ -627,61 +689,159 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search blocks..."
+              placeholder="Search..."
               className="pl-9 h-8 text-sm bg-[hsl(var(--builder-surface-hover))] border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text))] placeholder:text-[hsl(var(--builder-text-dim))]"
             />
           </div>
         </div>
 
-        {/* Tabs - Only show when not searching */}
-        {searchQuery.length === 0 && (
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'layout' | 'content' | 'interactive')} className="w-full">
-            <TabsList className="w-full h-auto p-1 bg-[hsl(var(--builder-surface-hover))] rounded-none border-b border-[hsl(var(--builder-border-subtle))]">
-              <TabsTrigger 
-                value="layout" 
-                className="flex-1 text-xs py-2 data-[state=active]:bg-[hsl(var(--builder-accent))] data-[state=active]:text-white rounded-md"
-              >
-                Layout
-              </TabsTrigger>
-              <TabsTrigger 
-                value="content" 
-                className="flex-1 text-xs py-2 data-[state=active]:bg-[hsl(var(--builder-accent))] data-[state=active]:text-white rounded-md"
-              >
-                Content
-              </TabsTrigger>
-              <TabsTrigger 
-                value="interactive" 
-                className="flex-1 text-xs py-2 data-[state=active]:bg-[hsl(var(--builder-accent))] data-[state=active]:text-white rounded-md"
-              >
-                Forms
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        )}
-
-        {/* Block Grid */}
-        <div className="max-h-[320px] overflow-y-auto builder-scroll">
-          {filteredTemplates.length === 0 ? (
-            <div className="p-6 text-center text-[hsl(var(--builder-text-muted))] text-sm">
-              No blocks found
+        {/* Content */}
+        <div className="max-h-[400px] overflow-y-auto builder-scroll">
+          {searchQuery.length > 0 ? (
+            // Search Results
+            <div className="p-2">
+              {filteredResults.length === 0 ? (
+                <div className="p-4 text-center text-[hsl(var(--builder-text-muted))] text-sm">
+                  No results found
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {filteredResults.map((template, idx) => (
+                    <button
+                      key={`${template.type}-${template.label}-${idx}`}
+                      onClick={() => handleAddBlock(template)}
+                      className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
+                    >
+                      <div className="w-8 h-8 rounded-md bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))]">
+                        {template.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-[hsl(var(--builder-text))]">{template.label}</div>
+                        <div className="text-xs text-[hsl(var(--builder-text-dim))] truncate">{template.description}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
-            <div className="p-2 grid grid-cols-3 gap-1.5">
-              {filteredTemplates.map((template) => (
-                <button
-                  key={`${template.type}-${template.label}`}
-                  onClick={() => handleAddBlock(template)}
-                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-lg bg-[hsl(var(--builder-surface))] hover:bg-[hsl(var(--builder-surface-hover))] border border-transparent hover:border-[hsl(var(--builder-accent)/0.3)] transition-all text-center group"
+            // Categories View
+            <div className="p-2 space-y-1">
+              {/* Basic Blocks */}
+              <Collapsible>
+                <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Type size={16} className="text-[hsl(var(--builder-text-muted))]" />
+                    <span className="text-sm font-medium text-[hsl(var(--builder-text))]">Basic blocks</span>
+                  </div>
+                  <ChevronRight size={14} className="text-[hsl(var(--builder-text-dim))]" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="pl-2 py-1 grid grid-cols-2 gap-1">
+                    {basicBlocks.map((block) => (
+                      <button
+                        key={block.label}
+                        onClick={() => handleAddBlock(block)}
+                        className="flex items-center gap-2 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
+                      >
+                        <div className="w-6 h-6 rounded bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))]">
+                          {block.icon}
+                        </div>
+                        <span className="text-xs text-[hsl(var(--builder-text))]">{block.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Interactive Blocks */}
+              <Collapsible>
+                <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Zap size={16} className="text-[hsl(var(--builder-text-muted))]" />
+                    <span className="text-sm font-medium text-[hsl(var(--builder-text))]">Interactive blocks</span>
+                  </div>
+                  <ChevronRight size={14} className="text-[hsl(var(--builder-text-dim))]" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="pl-2 py-1 grid grid-cols-2 gap-1">
+                    {interactiveBlocks.map((block) => (
+                      <button
+                        key={block.label}
+                        onClick={() => handleAddBlock(block)}
+                        className="flex items-center gap-2 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
+                      >
+                        <div className="w-6 h-6 rounded bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))]">
+                          {block.icon}
+                        </div>
+                        <span className="text-xs text-[hsl(var(--builder-text))]">{block.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Divider */}
+              <div className="my-2 border-t border-[hsl(var(--builder-border-subtle))]" />
+
+              {/* Section Label */}
+              <div className="px-2 py-1">
+                <span className="text-xs font-medium text-[hsl(var(--builder-text-dim))] uppercase tracking-wider">Sections</span>
+              </div>
+
+              {/* Empty Section */}
+              <button
+                onClick={() => handleAddBlock(emptySectionTemplate)}
+                className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
+              >
+                <div className="w-8 h-8 rounded-md bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))] border border-dashed border-[hsl(var(--builder-border))]">
+                  <Plus size={14} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-[hsl(var(--builder-text))]">Empty Section</div>
+                  <div className="text-xs text-[hsl(var(--builder-text-dim))]">Start from scratch</div>
+                </div>
+              </button>
+
+              {/* Section Categories */}
+              {sectionCategories.map((category) => (
+                <Collapsible
+                  key={category.id}
+                  open={expandedCategory === category.id}
+                  onOpenChange={(open) => setExpandedCategory(open ? category.id : null)}
                 >
-                  <div className="w-9 h-9 rounded-lg bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-accent))] group-hover:bg-[hsl(var(--builder-accent)/0.1)] transition-colors">
-                    {template.icon}
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-medium text-[hsl(var(--builder-text))] leading-tight">
-                      {template.label}
+                  <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-md bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))]">
+                        {category.icon}
+                      </div>
+                      <span className="text-sm font-medium text-[hsl(var(--builder-text))]">{category.label}</span>
                     </div>
-                  </div>
-                </button>
+                    <ChevronRight 
+                      size={14} 
+                      className={`text-[hsl(var(--builder-text-dim))] transition-transform ${expandedCategory === category.id ? 'rotate-90' : ''}`} 
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="pl-4 py-1 space-y-1">
+                      {category.templates.map((template, idx) => (
+                        <button
+                          key={`${template.label}-${idx}`}
+                          onClick={() => handleAddBlock(template)}
+                          className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
+                        >
+                          <div className="w-6 h-6 rounded bg-[hsl(var(--builder-accent)/0.1)] flex items-center justify-center text-[hsl(var(--builder-accent))]">
+                            {template.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium text-[hsl(var(--builder-text))]">{template.label}</div>
+                            <div className="text-[10px] text-[hsl(var(--builder-text-dim))]">{template.description}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               ))}
             </div>
           )}

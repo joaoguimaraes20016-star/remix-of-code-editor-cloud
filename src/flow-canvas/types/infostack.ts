@@ -17,6 +17,7 @@ export type ElementType =
   | 'divider'
   | 'spacer'
   | 'icon'
+  | 'link'
   // Interactive elements
   | 'multiple-choice'
   | 'single-choice'
@@ -40,6 +41,8 @@ export type BlockType =
   | 'media'
   | 'text-block'
   | 'custom'
+  | 'spacer'
+  | 'divider'
   // Interactive blocks
   | 'multiple-choice'
   | 'single-choice'
@@ -54,7 +57,8 @@ export type BlockType =
   | 'team'
   | 'trust'
   | 'logo-bar'
-  | 'footer';
+  | 'footer'
+  | 'contact';
 
 // Conditional visibility rule
 export interface ConditionalRule {
