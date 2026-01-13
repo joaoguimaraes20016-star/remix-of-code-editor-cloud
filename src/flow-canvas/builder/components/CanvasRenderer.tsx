@@ -1,7 +1,8 @@
 import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
 import { Step, Frame, Stack, Block, Element, SelectionState, Page, VisibilitySettings, AnimationSettings, ElementStateStyles, DeviceModeType, PageBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
-import { Type, Image, Video, Minus, ArrowRight, ArrowUpRight, ChevronRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Download, Smartphone, MousePointer2, Layout, Menu, Layers } from 'lucide-react';
+import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers } from 'lucide-react';
+import { getButtonIconComponent } from './ButtonIconPicker';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
 // SectionActionBar removed - actions now in right panel sidebar
@@ -1191,7 +1192,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           : (isGradient ? 'linear-gradient(135deg, #8B5CF6, #D946EF)' : undefined);
         
         // Determine wrapper styles for alignment using textAlign
-        const buttonAlignment = element.styles?.textAlign as 'left' | 'center' | 'right' | undefined;
+        // Default to center alignment for better UX
+        const buttonAlignment = (element.styles?.textAlign as 'left' | 'center' | 'right' | undefined) || 'center';
         const wrapperStyle: React.CSSProperties = {
           ...style,
           ...layoutStyles,
@@ -1324,16 +1326,10 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         
         // Helper to render button icon based on iconType prop
         function renderButtonIcon() {
-          const iconType = element.props?.iconType as string || 'arrow-right';
+          const iconType = element.props?.iconType as string || 'ArrowRight';
           const iconClass = "w-4 h-4";
-          switch (iconType) {
-            case 'arrow-up-right': return <ArrowUpRight className={iconClass} />;
-            case 'chevron-right': return <ChevronRight className={iconClass} />;
-            case 'plus': return <Plus className={iconClass} />;
-            case 'check': return <Check className={iconClass} />;
-            case 'download': return <Download className={iconClass} />;
-            default: return <ArrowRight className={iconClass} />;
-          }
+          const IconComponent = getButtonIconComponent(iconType);
+          return <IconComponent className={iconClass} />;
         }
 
       case 'input':
