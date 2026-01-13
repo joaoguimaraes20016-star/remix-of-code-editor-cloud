@@ -682,14 +682,14 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <span
               className={`
                 inline-flex items-center gap-2 rounded-full px-4 py-2
-                bg-[hsl(var(--builder-surface-hover)/0.7)]
+                bg-[hsl(var(--builder-surface-hover))]
                 border border-[hsl(var(--builder-border)/0.9)]
-                shadow-sm
+                shadow-[inset_0_1px_0_0_hsl(var(--builder-text)/0.06),0_1px_2px_hsl(0_0%_0%/0.12)]
                 text-sm font-medium text-[hsl(var(--builder-text-muted))]
-                group-hover:bg-[hsl(var(--builder-accent)/0.10)]
-                group-hover:border-[hsl(var(--builder-accent)/0.45)]
+                group-hover:bg-[hsl(var(--builder-surface-active))]
+                group-hover:border-[hsl(var(--builder-accent)/0.55)]
                 group-hover:text-[hsl(var(--builder-text))]
-                group-hover:shadow-md
+                group-hover:shadow-[0_10px_25px_-15px_hsl(var(--builder-accent)/0.6)]
                 group-active:scale-[0.99]
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--builder-accent)/0.4)]
                 focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--builder-surface))]
