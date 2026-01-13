@@ -838,6 +838,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         }
       })();
 
+      // ─────────────────────────────────────────────────────────────────────────
+      // FIX: Use EXPLICIT "normal" values instead of null to override inherited styles.
+      // This ensures toggling off actually works even when parent has font-bold, underline, etc.
+      // ─────────────────────────────────────────────────────────────────────────
       if (newStyles.fontWeight) {
         const wMap: Record<string, string> = {
           normal: '400',
@@ -851,20 +855,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const wantsBold = Number(requestedWeight) >= 600 || newStyles.fontWeight === 'bold';
 
         // TRUE TOGGLE:
-        // - If user *wants bold* but selection is already bold -> remove (400)
+        // - If user *wants bold* but selection is already bold -> set explicit normal (400)
         // - If user *wants normal* and selection is mixed/on -> normalize to normal (400)
         // - If selection is mixed and user wants bold -> normalize to bold (requestedWeight)
         if (wantsBold) {
           const shouldRemove = liveFormat.bold === 'on';
-          // Non-negotiable: when toggling OFF, remove the specific style (don't just re-apply).
-          opts.fontWeight = shouldRemove ? null : requestedWeight;
+          // CRITICAL: Use explicit '400' instead of null to override inherited bold
+          opts.fontWeight = shouldRemove ? '400' : requestedWeight;
         } else {
-          // Explicit "normal" request → remove bold formatting from the selection.
-          opts.fontWeight = null;
-        }
-
-        if (import.meta.env.DEV) {
-          console.log('[Toggle] Bold', { live: liveFormat.bold, requested: newStyles.fontWeight, applied: opts.fontWeight });
+          // Explicit "normal" request → set 400 to override any inherited bold
+          opts.fontWeight = '400';
         }
       }
 
@@ -872,13 +872,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const wantsItalic = newStyles.fontStyle === 'italic';
         if (wantsItalic) {
           const shouldRemove = liveFormat.italic === 'on';
-          opts.fontStyle = shouldRemove ? null : 'italic';
+          // CRITICAL: Use explicit 'normal' instead of null to override inherited italic
+          opts.fontStyle = shouldRemove ? 'normal' : 'italic';
         } else {
-          opts.fontStyle = null;
-        }
-
-        if (import.meta.env.DEV) {
-          console.log('[Toggle] Italic', { live: liveFormat.italic, requested: newStyles.fontStyle, applied: opts.fontStyle });
+          opts.fontStyle = 'normal';
         }
       }
 
@@ -886,17 +883,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const wantsUnderline = String(newStyles.textDecoration).toLowerCase().includes('underline');
         if (wantsUnderline) {
           const shouldRemove = liveFormat.underline === 'on';
-          opts.textDecoration = shouldRemove ? null : 'underline';
+          // CRITICAL: Use explicit 'none' instead of null to override inherited underline
+          opts.textDecoration = shouldRemove ? 'none' : 'underline';
         } else {
-          opts.textDecoration = null;
-        }
-
-        if (import.meta.env.DEV) {
-          console.log('[Toggle] Underline', {
-            live: liveFormat.underline,
-            requested: newStyles.textDecoration,
-            applied: opts.textDecoration,
-          });
+          opts.textDecoration = 'none';
         }
       }
 
@@ -1060,26 +1050,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           editorEl.contains(sel?.anchorNode ?? null) ||
           editorEl.contains(sel?.focusNode ?? null));
 
-      // DEBUG: Log all selection state info
-      console.log('[DEBUG handleStyleChange] ENTRY', {
-        elementId,
-        newStyles,
-        isEditing,
-        shouldApplyInline,
-        liveHasSelection,
-        liveRangeCollapsed: liveRange?.collapsed,
-        liveRangeText: liveRange?.toString()?.slice(0, 60),
-        liveRangeStartContainer: liveRange?.startContainer?.nodeName,
-        liveRangeInEditor: liveRange ? (
-          editorEl.contains(liveRange.startContainer) ||
-          editorEl.contains(liveRange.endContainer)
-        ) : false,
-        savedSelectionText: lastSelectionRangeRef.current?.toString()?.slice(0, 60),
-        savedCaretExists: !!lastCaretRangeRef.current,
-        lastUserSelectionAt: lastUserSelectionAtRef.current,
-        timeSinceLastSelection: Date.now() - lastUserSelectionAtRef.current,
-        isSliderDragging: isSliderDraggingRef.current,
-      });
+      if (import.meta.env.DEV) {
+        console.debug('[handleStyleChange] initial', {
+          elementId,
+          newStyles,
+          liveHasSelection,
+          liveRangeText: liveRange?.toString()?.slice(0, 60),
+          savedRangeText: lastSelectionRangeRef.current?.toString()?.slice(0, 60),
+          isSliderDragging: isSliderDraggingRef.current,
+        });
+      }
 
       // If live selection is collapsed/empty, try restoring saved selection
       // CRITICAL: Only restore if the saved selection is RECENT (within 10 seconds)
@@ -1134,17 +1114,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       const hasSelection = liveRange && !liveRange.collapsed && liveRange.toString().length > 0;
-
-      // DEBUG: Log selection state after restoration attempts
-      console.log('[DEBUG handleStyleChange] AFTER RESTORATION', {
-        hasSelection,
-        liveRangeCollapsed: liveRange?.collapsed,
-        liveRangeText: liveRange?.toString()?.slice(0, 60),
-        liveRangeInEditor: liveRange ? (
-          editorEl.contains(liveRange.startContainer) ||
-          editorEl.contains(liveRange.endContainer)
-        ) : false,
-      });
 
       // If caret is active (collapsed selection), insert a styled span so toggles apply
       // to "next typed" characters (and the user sees the toolbar state update).
@@ -1399,12 +1368,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         }
 
         // TOGGLE ON: Wrap the selection with new span
-        console.log('[DEBUG handleStyleChange] CASE A: Attempting applyStylesToSelection', {
-          styleOpts,
-          selectionText: window.getSelection()?.toString()?.slice(0, 60),
-        });
         const span = applyStylesToSelection(styleOpts);
-        console.log('[DEBUG handleStyleChange] applyStylesToSelection result:', span ? 'SUCCESS' : 'NULL');
         if (span) {
           const newSpanId = span.dataset.inlineStyleId || null;
           activeInlineSpanIdRef.current = newSpanId;
@@ -2052,8 +2016,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     }
   }, [isEditing, isHtmlContent, value, sessionHasInlineStyles]);
 
-  const shouldUseDangerouslySetHtml =
-    !isEditing && !!isHtmlContent && styles.textFillType !== 'gradient';
+  // FIX: Always use dangerouslySetInnerHTML for HTML content, even with gradient.
+  // The inline spans contain their own styles; blocking this caused "changes don't persist" bug.
+  const shouldUseDangerouslySetHtml = !isEditing && !!isHtmlContent;
 
   // Toolbar UI interactions can collapse the text selection.
   // Restore the last non-collapsed in-editor selection before applying styles.
@@ -2061,19 +2026,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     (nextStyles: Partial<TextStyles>) => {
       const el = contentRef.current;
       if (!el) return;
-      
-      // DEBUG: Log toolbar click entry point
-      const initialSel = window.getSelection();
-      const initialRange = initialSel && initialSel.rangeCount > 0 ? initialSel.getRangeAt(0) : null;
-      console.log('[DEBUG handleToolbarStyleChange] ENTRY', {
-        nextStyles,
-        hasInitialSelection: !!initialRange && !initialRange.collapsed,
-        initialSelectionText: initialRange?.toString()?.slice(0, 60),
-        initialRangeInEditor: initialRange ? (
-          el.contains(initialRange.startContainer) ||
-          el.contains(initialRange.endContainer)
-        ) : false,
-      });
       
       // Mark toolbar interaction timestamp for blur safety net
       lastToolbarInteractionAtRef.current = Date.now();

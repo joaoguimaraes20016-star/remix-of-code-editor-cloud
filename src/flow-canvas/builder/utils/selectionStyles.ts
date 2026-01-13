@@ -177,21 +177,10 @@ export function removeFormatFromSelection(options: {
  */
 export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpanElement | null {
   const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) {
-    console.log('[DEBUG applyStylesToSelection] No selection or rangeCount=0');
-    return null;
-  }
+  if (!sel || sel.rangeCount === 0) return null;
 
   const range = sel.getRangeAt(0);
-  if (range.collapsed) {
-    console.log('[DEBUG applyStylesToSelection] Range is collapsed (caret only)');
-    return null;
-  }
-  
-  console.log('[DEBUG applyStylesToSelection] Has valid range', {
-    text: range.toString().slice(0, 60),
-    collapsed: range.collapsed,
-  });
+  if (range.collapsed) return null;
 
   const hasExplicitFillChange = options.gradient !== undefined || options.color !== undefined;
 
