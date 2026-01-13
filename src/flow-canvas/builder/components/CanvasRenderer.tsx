@@ -53,6 +53,25 @@ function getContrastTextColor(backgroundColor: string): string {
   }
 }
 
+// Tiny helper: derive a lighter shade from a hex color (used for theme-aware gradient fallbacks)
+function lightenHex(hex: string, mixWithWhite = 0.28): string {
+  try {
+    const h = hex.replace('#', '').trim();
+    if (h.length !== 6) return hex;
+
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+
+    const mix = (c: number) => Math.round(c + (255 - c) * mixWithWhite);
+    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+
+    return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
+  } catch {
+    return hex;
+  }
+}
+
 // Helper to generate page background styles
 const getPageBackgroundStyles = (bg: PageBackground | undefined, isDarkTheme: boolean): React.CSSProperties => {
   // Always return a visible background - never leave blank

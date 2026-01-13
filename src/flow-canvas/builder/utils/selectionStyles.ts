@@ -93,20 +93,75 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
   const range = sel.getRangeAt(0);
   if (range.collapsed) return null;
 
-  const styleString = buildStyleString(options);
+  const hasExplicitFillChange = options.gradient !== undefined || options.color !== undefined;
+
+  // If user is applying formatting (bold/italic/underline) on already-colored/gradient text,
+  // preserve the existing fill styles from the closest styled span at the selection start.
+  let inheritedFillStyle = '';
+  let inheritedGradientJson: string | undefined;
+
+  if (!hasExplicitFillChange) {
+    const findClosestStyledSpan = (node: Node | null): HTMLSpanElement | null => {
+      let el: HTMLElement | null =
+        node && node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node?.parentElement ?? null;
+
+      while (el) {
+        if (el.tagName === 'SPAN' && el.getAttribute('style')) return el as HTMLSpanElement;
+        el = el.parentElement;
+      }
+      return null;
+    };
+
+    const source = findClosestStyledSpan(range.startContainer) || findClosestStyledSpan(range.commonAncestorContainer);
+    if (source) {
+      // Prefer persisted gradient metadata when present.
+      if (source.dataset.gradient) {
+        inheritedGradientJson = source.dataset.gradient;
+        try {
+          const gradient = JSON.parse(inheritedGradientJson) as GradientValue;
+          inheritedFillStyle = buildStyleString({ gradient });
+        } catch {
+          inheritedFillStyle = '';
+        }
+      } else {
+        // Fallback: copy solid color when present.
+        const fill = getSpanFillStyles(source);
+        if (fill.textFillType === 'solid' && fill.textColor) {
+          inheritedFillStyle = buildStyleString({ color: fill.textColor });
+        }
+
+        // Final fallback: if the span visually has a gradient but no dataset, copy its CSS background-image.
+        if (!inheritedFillStyle && source.style.backgroundImage) {
+          inheritedFillStyle = [
+            `background-image: ${source.style.backgroundImage}`,
+            '-webkit-background-clip: text',
+            '-webkit-text-fill-color: transparent',
+            'background-clip: text',
+            'display: inline',
+            'color: transparent',
+          ].join('; ');
+        }
+      }
+    }
+  }
+
+  const styleString = [inheritedFillStyle, buildStyleString(options)].filter(Boolean).join('; ');
   if (!styleString) return null;
 
   // Create a span and wrap the selected contents (preserves nested nodes)
   const span = document.createElement('span');
   span.setAttribute('style', styleString);
-  
+
   // Assign a stable ID for re-acquiring the span if DOM mutations invalidate references
-  span.dataset.inlineStyleId = crypto.randomUUID?.() ?? `span-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  span.dataset.inlineStyleId =
+    crypto.randomUUID?.() ?? `span-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   // Persist gradient metadata so inspector/toolbar can reflect the *selected span's* gradient.
   // (We cannot reliably re-hydrate GradientValue from CSS background-image.)
   if (options.gradient) {
     span.dataset.gradient = JSON.stringify(options.gradient);
+  } else if (!hasExplicitFillChange && inheritedGradientJson) {
+    span.dataset.gradient = inheritedGradientJson;
   } else if (options.color) {
     delete span.dataset.gradient;
   }
@@ -114,16 +169,9 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
   try {
     const fragment = range.extractContents();
 
-    // Prevent nested styled spans inside the newly-created wrapper span.
-    // Nested spans break getStyledSpanAtSelection() (it finds the inner span), which makes
-    // sliders/pickers feel "glitchy" because updates target the wrong node.
-    const nested = Array.from((fragment as unknown as ParentNode).querySelectorAll?.('span[style]') ?? []);
-    for (const el of nested) {
-      const parent = el.parentNode;
-      if (!parent) continue;
-      while (el.firstChild) parent.insertBefore(el.firstChild, el);
-      parent.removeChild(el);
-    }
+    // IMPORTANT: Do not strip nested styled spans here.
+    // Doing so destroys previously-applied inline styles and causes "toolbar weirdness".
+    // Cleanup (if desired) is handled later (blur/save) by the editor.
 
     span.appendChild(fragment);
     range.insertNode(span);

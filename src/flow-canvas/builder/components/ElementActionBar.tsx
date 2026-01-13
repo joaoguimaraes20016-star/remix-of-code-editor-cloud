@@ -68,24 +68,23 @@ export const ElementActionBar = forwardRef<HTMLDivElement, ElementActionBarProps
           'absolute left-1/2 -translate-x-1/2 z-30',
           'flex items-center gap-0.5 px-1.5 py-1 rounded-lg shadow-xl border',
           'opacity-0 group-hover/element:opacity-100 transition-all duration-150',
-          isDarkTheme
-            ? 'bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]'
-            : 'bg-white border-gray-200',
+          // Always use builder tokens so the toolbar follows the canvas/theme colors
+          'bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]',
           position === 'top' ? '-top-11' : '-bottom-11'
         )}
       >
         {/* Drag Handle */}
-        <div className={cn(
-          'p-1 rounded cursor-grab active:cursor-grabbing',
-          isDarkTheme 
-            ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]' 
-            : 'bg-gray-100 text-gray-400 hover:text-gray-600 hover:bg-gray-200'
-        )}>
+        <div
+          className={cn(
+            'p-1 rounded cursor-grab active:cursor-grabbing',
+            'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
+          )}
+        >
           <GripVertical className="w-3.5 h-3.5" />
         </div>
 
         {/* Divider */}
-        <div className={cn('w-px h-4 mx-0.5', isDarkTheme ? 'bg-gray-700' : 'bg-gray-200')} />
+        <div className={cn('w-px h-4 mx-0.5', 'bg-[hsl(var(--builder-border))]')} />
 
         {/* Alignment buttons */}
         {showAlignment && (
@@ -93,87 +92,91 @@ export const ElementActionBar = forwardRef<HTMLDivElement, ElementActionBarProps
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onAlignChange?.('left'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAlignChange?.('left');
+                  }}
                   className={cn(
                     'p-1.5 rounded transition-colors',
                     currentAlign === 'left' || !currentAlign
                       ? 'bg-[hsl(var(--builder-accent))] text-white'
-                      : isDarkTheme
-                        ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                        : 'bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                      : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
                   )}
                 >
                   <AlignLeft className="w-3.5 h-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top"><p>Align Left</p></TooltipContent>
+              <TooltipContent side="top">
+                <p>Align Left</p>
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onAlignChange?.('center'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAlignChange?.('center');
+                  }}
                   className={cn(
                     'p-1.5 rounded transition-colors',
                     currentAlign === 'center'
                       ? 'bg-[hsl(var(--builder-accent))] text-white'
-                      : isDarkTheme
-                        ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                        : 'bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                      : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
                   )}
                 >
                   <AlignCenter className="w-3.5 h-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top"><p>Align Center</p></TooltipContent>
+              <TooltipContent side="top">
+                <p>Align Center</p>
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onAlignChange?.('right'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAlignChange?.('right');
+                  }}
                   className={cn(
                     'p-1.5 rounded transition-colors',
                     currentAlign === 'right'
                       ? 'bg-[hsl(var(--builder-accent))] text-white'
-                      : isDarkTheme
-                        ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                        : 'bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                      : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
                   )}
                 >
                   <AlignRight className="w-3.5 h-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top"><p>Align Right</p></TooltipContent>
+              <TooltipContent side="top">
+                <p>Align Right</p>
+              </TooltipContent>
             </Tooltip>
 
             {/* Divider */}
-            <div className={cn('w-px h-4 mx-0.5', isDarkTheme ? 'bg-[hsl(var(--builder-border))]' : 'bg-gray-200')} />
+            <div className={cn('w-px h-4 mx-0.5', 'bg-[hsl(var(--builder-border))]')} />
           </>
         )}
 
         {/* Color Picker */}
         {showColorPicker && (
           <>
-            <ColorPickerPopover
-              color={currentColor || '#8B5CF6'}
-              onChange={(color) => onColorChange?.(color)}
-            >
+            <ColorPickerPopover color={currentColor || '#8B5CF6'} onChange={(color) => onColorChange?.(color)}>
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
                 className={cn(
                   'p-1.5 rounded transition-colors',
-                  isDarkTheme
-                    ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                    : 'bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                  'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
                 )}
                 title={elementType === 'button' ? 'Background Color' : 'Text Color'}
               >
                 <div className="relative">
                   <Palette className="w-3.5 h-3.5" />
-                  <div 
+                  <div
                     className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white shadow-sm"
                     style={{ backgroundColor: currentColor || '#8B5CF6' }}
                   />
@@ -182,7 +185,7 @@ export const ElementActionBar = forwardRef<HTMLDivElement, ElementActionBarProps
             </ColorPickerPopover>
 
             {/* Divider */}
-            <div className={cn('w-px h-4 mx-0.5', isDarkTheme ? 'bg-[hsl(var(--builder-border))]' : 'bg-gray-200')} />
+            <div className={cn('w-px h-4 mx-0.5', 'bg-[hsl(var(--builder-border))]')} />
           </>
         )}
 
@@ -190,36 +193,42 @@ export const ElementActionBar = forwardRef<HTMLDivElement, ElementActionBarProps
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate?.();
+              }}
               className={cn(
                 'p-1.5 rounded transition-colors',
-                isDarkTheme
-                  ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
-                  : 'bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-[hsl(var(--builder-text))] hover:bg-[hsl(var(--builder-surface-active))]'
               )}
             >
               <Copy className="w-3.5 h-3.5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top"><p>Duplicate</p></TooltipContent>
+          <TooltipContent side="top">
+            <p>Duplicate</p>
+          </TooltipContent>
         </Tooltip>
 
         {/* Delete */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.();
+              }}
               className={cn(
                 'p-1.5 rounded transition-colors',
-                isDarkTheme
-                  ? 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-red-400 hover:bg-red-500/15'
-                  : 'bg-gray-100 text-gray-500 hover:text-red-600 hover:bg-red-50'
+                'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text-muted))] hover:text-destructive hover:bg-destructive/10'
               )}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top"><p>Delete</p></TooltipContent>
+          <TooltipContent side="top">
+            <p>Delete</p>
+          </TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>
