@@ -3018,10 +3018,10 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
         )}
 
         {/* Canvas Container with Device Frame */}
-        <div className={cn('mx-auto px-8 pb-8', deviceWidths[deviceMode])}>
+        <div className={cn('mx-auto px-8 pb-8 overflow-x-hidden', deviceWidths[deviceMode])}>
           {/* Device Frame - Apply theme settings and step/page background */}
           <div 
-            className={cn('device-frame relative min-h-[600px]', isDarkTheme && 'dark-theme')}
+            className={cn('device-frame relative min-h-[600px] overflow-x-hidden', isDarkTheme && 'dark-theme')}
             style={{ 
               fontFamily: fontFamily,
               '--primary-color': primaryColor,
