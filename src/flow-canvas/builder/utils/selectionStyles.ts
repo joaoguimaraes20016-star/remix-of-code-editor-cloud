@@ -672,18 +672,44 @@ export function getStyledSpanAtSelection(root: HTMLElement): HTMLSpanElement | n
  */
 export function unwrapNestedStyledSpans(container: HTMLElement): void {
   let changed = true;
+
   while (changed) {
     changed = false;
-    const spans = Array.from(container.querySelectorAll('span[style]'));
+    const spans = Array.from(container.querySelectorAll('span[style]')) as HTMLSpanElement[];
 
     for (const outer of spans) {
       if (outer.childNodes.length !== 1) continue;
-      const only = outer.firstElementChild;
+      const only = outer.firstElementChild as HTMLElement | null;
       if (!only) continue;
-      if (only.tagName !== 'SPAN' || !(only as HTMLElement).getAttribute('style')) continue;
+      if (only.tagName !== 'SPAN' || !only.getAttribute('style')) continue;
 
-      // Replace outer with inner
-      outer.replaceWith(only);
+      const inner = only as HTMLSpanElement;
+
+      // IMPORTANT:
+      // When a new style is applied we typically WRAP selection -> the newest span is the OUTER one.
+      // The old content may already be inside a styled span (e.g. gradient/color). If we unwrap by
+      // replacing the outer with the inner, we accidentally DROP the newest formatting (bug).
+      //
+      // Correct behavior: keep OUTER, remove INNER, and merge styles (outer wins on conflicts).
+      const outerMap = parseStyleAttribute(outer.getAttribute('style'));
+      const innerMap = parseStyleAttribute(inner.getAttribute('style'));
+      const merged = { ...innerMap, ...outerMap };
+      const mergedStyle = serializeStyleAttribute(merged);
+      if (mergedStyle) outer.setAttribute('style', mergedStyle);
+      else outer.removeAttribute('style');
+
+      // Preserve metadata if present on the inner span.
+      if (!outer.getAttribute('data-gradient') && inner.getAttribute('data-gradient')) {
+        outer.setAttribute('data-gradient', inner.getAttribute('data-gradient') as string);
+      }
+      if (!outer.getAttribute('data-inline-style-id') && inner.getAttribute('data-inline-style-id')) {
+        outer.setAttribute('data-inline-style-id', inner.getAttribute('data-inline-style-id') as string);
+      }
+
+      // Move inner children into outer, then remove inner.
+      while (inner.firstChild) outer.appendChild(inner.firstChild);
+      inner.remove();
+
       changed = true;
       break;
     }
