@@ -14,7 +14,10 @@ function parseFontWeight(value: string): number {
   return Number.isFinite(n) ? n : 400;
 }
 
-function getFlagsForElement(el: HTMLElement): { bold: boolean; italic: boolean; underline: boolean } {
+function getFlagsForElement(
+  el: HTMLElement,
+  root?: HTMLElement
+): { bold: boolean; italic: boolean; underline: boolean } {
   const computed = window.getComputedStyle(el);
 
   const weight = parseFontWeight(computed.fontWeight);
@@ -22,9 +25,26 @@ function getFlagsForElement(el: HTMLElement): { bold: boolean; italic: boolean; 
 
   const italic = (computed.fontStyle || '').toLowerCase() === 'italic';
 
-  // textDecorationLine is the most reliable, but fall back to textDecoration
-  const decoration = (computed.textDecorationLine || computed.textDecoration || '').toLowerCase();
-  const underline = decoration.includes('underline');
+  // text-decoration is NOT inherited, but it *does* visually apply to descendants.
+  // When we wrap formatting spans around already-styled content (e.g. gradient spans),
+  // the Text node's parentElement might be an inner span whose computed
+  // textDecorationLine can still read as "none" even though an ancestor is underlining.
+  //
+  // So: detect underline by walking up to the editor root.
+  let underline = false;
+  let cur: HTMLElement | null = el;
+  const stopAt = root ?? null;
+
+  while (cur) {
+    const c = cur === el ? computed : window.getComputedStyle(cur);
+    const decoration = (c.textDecorationLine || c.textDecoration || '').toLowerCase();
+    if (decoration.includes('underline')) {
+      underline = true;
+      break;
+    }
+    if (stopAt && cur === stopAt) break;
+    cur = cur.parentElement;
+  }
 
   return { bold, italic, underline };
 }
@@ -61,7 +81,7 @@ export function getSelectionFormatState(root: HTMLElement, range: Range): Format
       ? (node as HTMLElement)
       : (node.parentElement as HTMLElement | null)) ?? root;
 
-    const flags = getFlagsForElement(root.contains(el) ? el : root);
+    const flags = getFlagsForElement(root.contains(el) ? el : root, root);
     return {
       bold: flags.bold ? 'on' : 'off',
       italic: flags.italic ? 'on' : 'off',
@@ -83,7 +103,7 @@ export function getSelectionFormatState(root: HTMLElement, range: Range): Format
     const text = current as Text;
     if (rangeIntersectsTextNode(range, text)) {
       const el = text.parentElement ?? root;
-      const flags = getFlagsForElement(el);
+      const flags = getFlagsForElement(el, root);
 
       if (flags.bold) seenBoldTrue = true;
       else seenBoldFalse = true;
