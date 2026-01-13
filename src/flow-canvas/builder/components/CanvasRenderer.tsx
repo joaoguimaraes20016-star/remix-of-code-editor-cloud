@@ -3198,9 +3198,26 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                       {/* Section Divider - visible between frames on hover */}
                       {frameIndex > 0 && !readOnly && (
                         <div 
-                          className="relative h-6 flex items-center px-4 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200"
+                          className="relative h-10 flex items-center px-4 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200 group/divider"
                         >
-                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[hsl(var(--builder-accent)/0.3)] to-transparent" />
+                          {/* Left line */}
+                          <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-[hsl(var(--builder-accent)/0.4)] to-[hsl(var(--builder-accent)/0.4)]" />
+                          
+                          {/* Center add button */}
+                          <button
+                            onClick={() => onAddFrameAt?.('above', frame.id)}
+                            className={cn(
+                              "mx-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                              "bg-[hsl(var(--builder-accent)/0.15)] text-[hsl(var(--builder-accent))] border border-[hsl(var(--builder-accent)/0.3)]",
+                              "hover:bg-[hsl(var(--builder-accent))] hover:text-white hover:border-transparent hover:shadow-lg hover:shadow-[hsl(var(--builder-accent)/0.3)]"
+                            )}
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Section</span>
+                          </button>
+                          
+                          {/* Right line */}
+                          <div className="flex-1 h-[2px] bg-gradient-to-r from-[hsl(var(--builder-accent)/0.4)] via-[hsl(var(--builder-accent)/0.4)] to-transparent" />
                         </div>
                       )}
                       <SortableFrameRenderer
@@ -3278,18 +3295,23 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               
               {/* Add Section button at bottom - visible on hover when sections exist */}
               {step.frames.length > 0 && !readOnly && onAddFrame && (
-                <div className="px-4 py-6 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200">
+                <div className="px-4 py-8 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200">
+                  {/* Divider line above button */}
+                  <div className="flex items-center mb-4">
+                    <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-[hsl(var(--builder-accent)/0.3)] to-[hsl(var(--builder-accent)/0.3)]" />
+                    <div className="flex-1 h-[2px] bg-gradient-to-r from-[hsl(var(--builder-accent)/0.3)] via-[hsl(var(--builder-accent)/0.3)] to-transparent" />
+                  </div>
                   <button
                     onClick={onAddFrame}
                     className={cn(
-                      "w-full py-3 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all text-sm font-medium",
+                      "w-full py-4 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2.5 transition-all text-sm font-medium",
                       isDarkTheme 
-                        ? "border-gray-700/50 bg-gray-800/10 text-gray-500 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-gray-200" 
-                        : "border-gray-200/50 bg-gray-50/30 text-gray-400 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.05)] hover:text-gray-700"
+                        ? "border-[hsl(var(--builder-accent)/0.3)] bg-[hsl(var(--builder-accent)/0.05)] text-[hsl(var(--builder-text-muted))] hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.15)] hover:text-white" 
+                        : "border-[hsl(var(--builder-accent)/0.3)] bg-[hsl(var(--builder-accent)/0.03)] text-gray-500 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-[hsl(var(--builder-accent))]"
                     )}
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Section</span>
+                    <Layers className="w-4 h-4" />
+                    <span>Add New Section</span>
                   </button>
                 </div>
               )}
