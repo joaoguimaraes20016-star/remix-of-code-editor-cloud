@@ -14,6 +14,7 @@ import {
   GripVertical
 } from 'lucide-react';
 import { TextStyles } from './InlineTextEditor';
+import type { FormatState, TriState } from '../utils/selectionFormat';
 import { 
   Popover,
   PopoverContent,
@@ -34,6 +35,8 @@ const colorPresets = [
 
 interface RichTextToolbarProps {
   styles: Partial<TextStyles>;
+  /** Tri-state formatting for current selection (bold/italic/underline). */
+  formatState?: FormatState;
   onChange: (styles: Partial<TextStyles>) => void;
   position: { top: number; left: number };
   onClose: () => void;
@@ -78,6 +81,7 @@ const textShadowPresets = [
 
 export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(({
   styles,
+  formatState,
   onChange,
   position,
   onClose,
@@ -229,17 +233,29 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
     setFontOpen(false);
   };
 
+  const resolveTriState = (fallbackOn: boolean, tri?: TriState): TriState => {
+    return tri ?? (fallbackOn ? 'on' : 'off');
+  };
+
+  const boldState = resolveTriState(styles.fontWeight === 'bold', formatState?.bold);
+  const italicState = resolveTriState(styles.fontStyle === 'italic', formatState?.italic);
+  const underlineState = resolveTriState(styles.textDecoration === 'underline', formatState?.underline);
+
   const toggleBold = () => {
-    const newWeight = styles.fontWeight === 'bold' ? 'normal' : 'bold';
-    onChange({ fontWeight: newWeight });
+    // True toggle:
+    // on -> off, off/mixed -> on
+    const next = boldState === 'on' ? 'normal' : 'bold';
+    onChange({ fontWeight: next });
   };
 
   const toggleItalic = () => {
-    onChange({ fontStyle: styles.fontStyle === 'italic' ? 'normal' : 'italic' });
+    const next = italicState === 'on' ? 'normal' : 'italic';
+    onChange({ fontStyle: next });
   };
 
   const toggleUnderline = () => {
-    onChange({ textDecoration: styles.textDecoration === 'underline' ? 'none' : 'underline' });
+    const next = underlineState === 'on' ? 'none' : 'underline';
+    onChange({ textDecoration: next });
   };
 
   const setAlignment = (align: TextStyles['textAlign']) => {
@@ -436,10 +452,13 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         onClick={toggleBold}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
-          styles.fontWeight === 'bold' 
-            ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
-        )}
+          boldState === 'on'
+            ? 'bg-[hsl(var(--builder-accent))] text-white'
+            : boldState === 'mixed'
+              ? 'bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] ring-1 ring-[hsl(var(--builder-accent))]'
+              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
+        )
+        }
         title="Bold (Cmd+B)"
       >
         <Bold size={14} />
@@ -450,10 +469,13 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         onClick={toggleItalic}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
-          styles.fontStyle === 'italic' 
-            ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
-        )}
+          italicState === 'on'
+            ? 'bg-[hsl(var(--builder-accent))] text-white'
+            : italicState === 'mixed'
+              ? 'bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] ring-1 ring-[hsl(var(--builder-accent))]'
+              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
+        )
+        }
         title="Italic (Cmd+I)"
       >
         <Italic size={14} />
@@ -464,10 +486,13 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         onClick={toggleUnderline}
         className={cn(
           "p-1.5 rounded-lg transition-colors",
-          styles.textDecoration === 'underline' 
-            ? 'bg-[hsl(var(--builder-accent))] text-white' 
-            : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
-        )}
+          underlineState === 'on'
+            ? 'bg-[hsl(var(--builder-accent))] text-white'
+            : underlineState === 'mixed'
+              ? 'bg-[hsl(var(--builder-surface-active))] text-[hsl(var(--builder-text))] ring-1 ring-[hsl(var(--builder-accent))]'
+              : 'bg-[hsl(var(--builder-surface-hover))] text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-active))]'
+        )
+        }
         title="Underline (Cmd+U)"
       >
         <Underline size={14} />

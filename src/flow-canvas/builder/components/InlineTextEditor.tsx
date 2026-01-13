@@ -4,8 +4,21 @@ import { RichTextToolbar } from './RichTextToolbar';
 import { gradientToCSS, cloneGradient, defaultGradient } from './modals';
 import type { GradientValue } from './modals';
 import { parseHighlightedText, hasHighlightSyntax } from '../utils/textHighlight';
-import { applyStylesToSelection, containsHTML, getStyledSpanAtSelection, getSpanFillStyles, getComputedTextColorAtSelection, hasSelectionInElement, mergeAdjacentStyledSpans, sanitizeStyledHTML, unwrapNestedStyledSpans, updateSpanStyle } from '../utils/selectionStyles';
+import {
+  applyStylesToSelection,
+  containsHTML,
+  getStyledSpanAtSelection,
+  getSpanFillStyles,
+  getComputedTextColorAtSelection,
+  hasSelectionInElement,
+  mergeAdjacentStyledSpans,
+  sanitizeStyledHTML,
+  unwrapNestedStyledSpans,
+  updateSpanStyle,
+  insertStyledSpanAtCaret,
+} from '../utils/selectionStyles';
 import type { SelectionStyleOptions } from '../utils/selectionStyles';
+import { getSelectionFormatState, type FormatState } from '../utils/selectionFormat';
 import { useInlineEdit } from '../contexts/InlineEditContext';
 
 export interface TextStyles {
@@ -63,6 +76,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     textColor?: string;
     textGradient?: GradientValue;
   }>({});
+
+  // Tri-state formatting state (source of truth for B/I/U button states)
+  const [selectionFormat, setSelectionFormat] = useState<FormatState>({
+    bold: 'off',
+    italic: 'off',
+    underline: 'off',
+  });
   
   // Track which properties have been explicitly modified by the user
   const [modifiedProps, setModifiedProps] = useState<Set<keyof TextStyles>>(new Set());
@@ -91,8 +111,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
   // Persist the last selection range so Right Panel edits can apply to the intended letters
   const lastSelectionRangeRef = useRef<Range | null>(null);
-
-  // Track whether the last pointer-down happened inside the Right Panel or the floating toolbar
+  // Persist the last caret (collapsed) range so toolbar toggles can apply to "next typed text"
+  const lastCaretRangeRef = useRef<Range | null>(null);
   // (prevents edit-mode from closing when using sliders / popovers that don't move focus)
   const lastPointerDownInInspectorRef = useRef(false);
   const lastPointerDownInToolbarRef = useRef(false);
@@ -437,10 +457,23 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             editorEl.contains(sel?.focusNode ?? null));
 
         if (selectionInside && range) {
-          // Only snapshot *real* selections; don't overwrite with collapsed selection after clicking the toolbar.
-          // CRITICAL: Skip updating selection ref during slider drags to prevent stability issues
+          // Snapshot selections/caret for later toolbar/right-panel actions.
+          // - Non-collapsed: keep as lastSelectionRangeRef
+          // - Collapsed caret: keep as lastCaretRangeRef
           if (!range.collapsed && range.toString().length > 0 && !isSliderDraggingRef.current) {
             lastSelectionRangeRef.current = range.cloneRange();
+          } else if (range.collapsed) {
+            lastCaretRangeRef.current = range.cloneRange();
+          }
+
+          // Compute B/I/U tri-state from the actual DOM selection (not block-level styles)
+          try {
+            const fmt = getSelectionFormatState(editorEl, range);
+            setSelectionFormat((prev) =>
+              prev.bold === fmt.bold && prev.italic === fmt.italic && prev.underline === fmt.underline ? prev : fmt
+            );
+          } catch {
+            // ignore
           }
 
           // Only update active span when the selection/caret is inside the editor.
@@ -474,23 +507,21 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             const computedColor = getComputedTextColorAtSelection(editorEl);
             if (computedColor) {
               // Check if this is a "transparent" color (indicates gradient text with -webkit-text-fill-color: transparent)
-              const isTransparent = computedColor === 'transparent' || 
-                computedColor === 'rgba(0, 0, 0, 0)' || 
+              const isTransparent =
+                computedColor === 'transparent' ||
+                computedColor === 'rgba(0, 0, 0, 0)' ||
                 /rgba?\([^)]*,\s*0\s*\)/.test(computedColor);
-              
-              if (isTransparent) {
-                // Keep gradient state - this is likely gradient text
-                return;
+
+              if (!isTransparent) {
+                // Real solid color - update selectionFill (not block-level styles)
+                setSelectionFill((prev) => {
+                  if (prev.textFillType === 'solid' && prev.textColor === computedColor) return prev;
+                  return {
+                    textFillType: 'solid',
+                    textColor: computedColor,
+                  };
+                });
               }
-              
-              // Real solid color - update selectionFill (not block-level styles)
-              setSelectionFill((prev) => {
-                if (prev.textFillType === 'solid' && prev.textColor === computedColor) return prev;
-                return {
-                  textFillType: 'solid',
-                  textColor: computedColor,
-                };
-              });
             }
           }
         }
@@ -550,10 +581,21 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         editorEl.contains(sel?.focusNode ?? null));
 
     if (selectionInside && range) {
-      // Only snapshot non-collapsed selections so we can restore them after toolbar/right-panel clicks.
-      // Skip during slider drags for stability
+      // Snapshot selection/caret for later toolbar actions.
       if (!range.collapsed && range.toString().length > 0 && !isSliderDraggingRef.current) {
         lastSelectionRangeRef.current = range.cloneRange();
+      } else if (range.collapsed) {
+        lastCaretRangeRef.current = range.cloneRange();
+      }
+
+      // Compute B/I/U tri-state from actual DOM selection
+      try {
+        const fmt = getSelectionFormatState(editorEl, range);
+        setSelectionFormat((prev) =>
+          prev.bold === fmt.bold && prev.italic === fmt.italic && prev.underline === fmt.underline ? prev : fmt
+        );
+      } catch {
+        // ignore
       }
 
       const span = getStyledSpanAtSelection(editorEl);
@@ -714,17 +756,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           const savedRange = lastSelectionRangeRef.current;
           const startContainer = savedRange.startContainer;
           const endContainer = savedRange.endContainer;
-          
+
           // Check if EITHER endpoint is still in the editor (more lenient)
           const startValid = editorEl.contains(startContainer) || startContainer === editorEl;
           const endValid = editorEl.contains(endContainer) || endContainer === editorEl;
-          
+
           if (startValid && endValid) {
             sel?.removeAllRanges();
             sel?.addRange(savedRange.cloneRange());
             liveRange = savedRange.cloneRange();
             liveHasSelection = true;
-            
+
             if (import.meta.env.DEV) {
               console.debug('[handleStyleChange] Selection restored from saved:', savedRange.toString().slice(0, 30));
             }
@@ -738,7 +780,51 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         }
       }
 
+      // If we still don't have a live range inside the editor, try restoring the last caret.
+      if ((!liveRange || !editorEl.contains(liveRange.commonAncestorContainer)) && lastCaretRangeRef.current) {
+        try {
+          const savedCaret = lastCaretRangeRef.current;
+          const startValid = editorEl.contains(savedCaret.startContainer) || savedCaret.startContainer === editorEl;
+          const endValid = editorEl.contains(savedCaret.endContainer) || savedCaret.endContainer === editorEl;
+          if (startValid && endValid) {
+            sel?.removeAllRanges();
+            sel?.addRange(savedCaret.cloneRange());
+            liveRange = savedCaret.cloneRange();
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const hasSelection = liveRange && !liveRange.collapsed && liveRange.toString().length > 0;
+
+      // If caret is active (collapsed selection), insert a styled span so toggles apply
+      // to "next typed" characters (and the user sees the toolbar state update).
+      const isFormattingToggle =
+        styleOpts.fontWeight !== undefined ||
+        styleOpts.fontStyle !== undefined ||
+        styleOpts.textDecoration !== undefined;
+
+      const caretInsideEditor =
+        !!liveRange &&
+        liveRange.collapsed &&
+        (editorEl.contains(liveRange.startContainer) ||
+          editorEl.contains(liveRange.endContainer) ||
+          editorEl.contains(sel?.anchorNode ?? null) ||
+          editorEl.contains(sel?.focusNode ?? null));
+
+      if (!hasSelection && caretInsideEditor && isFormattingToggle) {
+        const span = insertStyledSpanAtCaret(styleOpts);
+        if (span) {
+          activeInlineSpanRef.current = span;
+          activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
+          lastCaretRangeRef.current = window.getSelection()?.getRangeAt(0)?.cloneRange() ?? null;
+          setSessionHasInlineStyles(true);
+          scheduleInlineHtmlSave();
+          syncToolbarState();
+          return true;
+        }
+      }
 
       // Find existing styled span at selection/caret (fresh lookup)
       const findSpanFromRange = (range: Range | null): HTMLSpanElement | null => {
@@ -1465,6 +1551,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         <RichTextToolbar
           ref={toolbarRef}
           styles={toolbarStyles}
+          formatState={selectionFormat}
           onChange={handleToolbarStyleChange}
           position={toolbarPosition}
           onClose={() => setShowToolbar(false)}
