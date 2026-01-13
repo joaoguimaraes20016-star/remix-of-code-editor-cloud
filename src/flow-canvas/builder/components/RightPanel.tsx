@@ -2028,23 +2028,26 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
         </div>
       </div>
 
-      <CollapsibleSection title="Block Settings" icon={<Layout className="w-4 h-4" />} defaultOpen>
-        <div className="space-y-4 pt-3">
-          <FieldGroup label="Label">
-            <Input
-              value={block.label}
-              onChange={(e) => onUpdate({ label: e.target.value })}
-              className="builder-input"
-              placeholder="Enter a name..."
-            />
-          </FieldGroup>
-          <FieldGroup label="Block Type">
-            <div className="px-3 py-2 bg-builder-surface-hover border border-builder-border rounded-lg text-sm text-builder-text-secondary">
-              {getBlockTypeLabel(block.type)}
-            </div>
-          </FieldGroup>
-        </div>
-      </CollapsibleSection>
+      {/* Block Settings only shown for Container types, not content blocks */}
+      {getBlockCategory(block.type) === 'Container' && (
+        <CollapsibleSection title="Block Settings" icon={<Layout className="w-4 h-4" />} defaultOpen>
+          <div className="space-y-4 pt-3">
+            <FieldGroup label="Label">
+              <Input
+                value={block.label}
+                onChange={(e) => onUpdate({ label: e.target.value })}
+                className="builder-input"
+                placeholder="Enter a name..."
+              />
+            </FieldGroup>
+            <FieldGroup label="Block Type">
+              <div className="px-3 py-2 bg-builder-surface-hover border border-builder-border rounded-lg text-sm text-builder-text-secondary">
+                {getBlockTypeLabel(block.type)}
+              </div>
+            </FieldGroup>
+          </div>
+        </CollapsibleSection>
+      )}
 
       {/* Layout controls only shown for Section types, not content blocks like Text/Button/Image */}
       {shouldShowLayoutControls(block.type) && (
