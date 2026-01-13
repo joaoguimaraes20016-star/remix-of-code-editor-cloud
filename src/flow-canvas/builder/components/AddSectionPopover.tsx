@@ -33,7 +33,7 @@ interface AddSectionPopoverProps {
   onAddBlock: (block: Block) => void;
   onOpenAIGenerate?: () => void;
   position?: 'above' | 'below';
-  variant?: 'button' | 'inline';
+  variant?: 'button' | 'inline' | 'minimal';
   className?: string;
 }
 
@@ -658,22 +658,35 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
           >
             <Plus size={20} />
           </button>
-        ) : (
+        ) : variant === 'minimal' ? (
           <button
             className={`
-              group flex items-center justify-center w-full py-2.5 
-              bg-transparent
-              border border-dashed border-[hsl(var(--builder-border-subtle))] rounded-lg
-              text-[hsl(var(--builder-text-dim))] text-xs
-              hover:border-[hsl(var(--builder-accent)/0.5)] hover:bg-[hsl(var(--builder-accent)/0.05)]
-              hover:text-[hsl(var(--builder-text-muted))]
-              transition-all duration-200 gap-1.5
+              flex items-center justify-center gap-1.5 w-full py-1.5
+              text-[11px] text-[hsl(var(--builder-text-dim))]
+              hover:text-[hsl(var(--builder-accent))] transition-colors
               ${className}
             `}
           >
-            <Plus size={14} className="opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all" />
-            <span className="font-medium">Add Block</span>
+            <Plus size={12} />
+            <span>Add block</span>
           </button>
+        ) : (
+          <div
+            className={`
+              group flex flex-col items-center justify-center w-full py-8 px-4
+              bg-[hsl(var(--builder-surface-hover)/0.3)]
+              border-2 border-dashed border-[hsl(var(--builder-border-subtle))] rounded-xl
+              hover:border-[hsl(var(--builder-accent)/0.5)] hover:bg-[hsl(var(--builder-accent)/0.05)]
+              transition-all duration-200 cursor-pointer
+              ${className}
+            `}
+          >
+            <div className="w-10 h-10 rounded-full bg-[hsl(var(--builder-accent)/0.1)] flex items-center justify-center mb-3 group-hover:bg-[hsl(var(--builder-accent)/0.2)] group-hover:scale-110 transition-all">
+              <Plus size={20} className="text-[hsl(var(--builder-accent))]" />
+            </div>
+            <span className="text-sm font-medium text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-text))]">Add content</span>
+            <span className="text-xs text-[hsl(var(--builder-text-dim))] mt-1">Click to add blocks or sections</span>
+          </div>
         )}
       </PopoverTrigger>
       <PopoverContent 
@@ -726,123 +739,115 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             </div>
           ) : (
             // Categories View
-            <div className="p-2 space-y-1">
-              {/* Basic Blocks */}
-              <Collapsible>
-                <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors">
-                  <div className="flex items-center gap-2">
-                    <Type size={16} className="text-[hsl(var(--builder-text-muted))]" />
-                    <span className="text-sm font-medium text-[hsl(var(--builder-text))]">Basic blocks</span>
-                  </div>
-                  <ChevronRight size={14} className="text-[hsl(var(--builder-text-dim))]" />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="pl-2 py-1 grid grid-cols-2 gap-1">
-                    {basicBlocks.map((block) => (
-                      <button
-                        key={block.label}
-                        onClick={() => handleAddBlock(block)}
-                        className="flex items-center gap-2 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
-                      >
-                        <div className="w-6 h-6 rounded bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))]">
-                          {block.icon}
-                        </div>
-                        <span className="text-xs text-[hsl(var(--builder-text))]">{block.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+            <div className="p-2 space-y-0.5">
+              {/* Quick Add - Basic Blocks Grid (always visible) */}
+              <div className="pb-2 mb-2 border-b border-[hsl(var(--builder-border-subtle))]">
+                <div className="px-1 pb-2">
+                  <span className="text-[10px] font-semibold text-[hsl(var(--builder-text-dim))] uppercase tracking-wider">Quick Add</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {basicBlocks.slice(0, 8).map((block) => (
+                    <button
+                      key={block.label}
+                      onClick={() => handleAddBlock(block)}
+                      className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[hsl(var(--builder-surface-hover))] transition-colors group"
+                      title={block.description}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-accent))] group-hover:bg-[hsl(var(--builder-accent)/0.1)] transition-colors">
+                        {block.icon}
+                      </div>
+                      <span className="text-[10px] text-[hsl(var(--builder-text-dim))] group-hover:text-[hsl(var(--builder-text))]">{block.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              {/* Interactive Blocks */}
+              {/* Interactive Blocks - Collapsible */}
               <Collapsible>
-                <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors">
-                  <div className="flex items-center gap-2">
-                    <Zap size={16} className="text-[hsl(var(--builder-text-muted))]" />
-                    <span className="text-sm font-medium text-[hsl(var(--builder-text))]">Interactive blocks</span>
+
+                <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-[hsl(var(--builder-surface-hover))] transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-md bg-amber-500/10 flex items-center justify-center">
+                      <Zap size={14} className="text-amber-500" />
+                    </div>
+                    <div className="text-left">
+                      <span className="text-sm font-medium text-[hsl(var(--builder-text))]">Form inputs</span>
+                      <span className="text-[10px] text-[hsl(var(--builder-text-dim))] block">Text, choice, date, upload</span>
+                    </div>
                   </div>
                   <ChevronRight size={14} className="text-[hsl(var(--builder-text-dim))]" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="pl-2 py-1 grid grid-cols-2 gap-1">
+                  <div className="pl-2 py-1.5 space-y-0.5">
                     {interactiveBlocks.map((block) => (
                       <button
                         key={block.label}
                         onClick={() => handleAddBlock(block)}
-                        className="flex items-center gap-2 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
+                        className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
                       >
-                        <div className="w-6 h-6 rounded bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))]">
+                        <div className="w-6 h-6 rounded-md bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))]">
                           {block.icon}
                         </div>
-                        <span className="text-xs text-[hsl(var(--builder-text))]">{block.label}</span>
+                        <div>
+                          <span className="text-xs font-medium text-[hsl(var(--builder-text))]">{block.label}</span>
+                          <span className="text-[10px] text-[hsl(var(--builder-text-dim))] block">{block.description}</span>
+                        </div>
                       </button>
                     ))}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* Divider */}
-              <div className="my-2 border-t border-[hsl(var(--builder-border-subtle))]" />
-
-              {/* Section Label */}
-              <div className="px-2 py-1">
-                <span className="text-xs font-medium text-[hsl(var(--builder-text-dim))] uppercase tracking-wider">Sections</span>
+              {/* Divider + Section Label */}
+              <div className="pt-2 mt-2 border-t border-[hsl(var(--builder-border-subtle))]">
+                <span className="text-[10px] font-semibold text-[hsl(var(--builder-text-dim))] uppercase tracking-wider px-1">Pre-built Sections</span>
               </div>
 
-              {/* Empty Section */}
-              <button
-                onClick={() => handleAddBlock(emptySectionTemplate)}
-                className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
-              >
-                <div className="w-8 h-8 rounded-md bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))] border border-dashed border-[hsl(var(--builder-border))]">
-                  <Plus size={14} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-[hsl(var(--builder-text))]">Empty Section</div>
-                  <div className="text-xs text-[hsl(var(--builder-text-dim))]">Start from scratch</div>
-                </div>
-              </button>
-
-              {/* Section Categories */}
-              {sectionCategories.map((category) => (
-                <Collapsible
-                  key={category.id}
-                  open={expandedCategory === category.id}
-                  onOpenChange={(open) => setExpandedCategory(open ? category.id : null)}
-                >
-                  <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-md bg-[hsl(var(--builder-surface-active))] flex items-center justify-center text-[hsl(var(--builder-text-muted))]">
-                        {category.icon}
+              {/* Section Categories - More visual with previews */}
+              <div className="space-y-0.5">
+                {sectionCategories.map((category) => (
+                  <Collapsible
+                    key={category.id}
+                    open={expandedCategory === category.id}
+                    onOpenChange={(open) => setExpandedCategory(open ? category.id : null)}
+                  >
+                    <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-[hsl(var(--builder-surface-hover))] transition-colors">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-md bg-[hsl(var(--builder-accent)/0.1)] flex items-center justify-center text-[hsl(var(--builder-accent))]">
+                          {category.icon}
+                        </div>
+                        <div className="text-left">
+                          <span className="text-sm font-medium text-[hsl(var(--builder-text))]">{category.label}</span>
+                          <span className="text-[10px] text-[hsl(var(--builder-text-dim))] block">{category.templates.length} templates</span>
+                        </div>
                       </div>
-                      <span className="text-sm font-medium text-[hsl(var(--builder-text))]">{category.label}</span>
-                    </div>
-                    <ChevronRight 
-                      size={14} 
-                      className={`text-[hsl(var(--builder-text-dim))] transition-transform ${expandedCategory === category.id ? 'rotate-90' : ''}`} 
-                    />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="pl-4 py-1 space-y-1">
-                      {category.templates.map((template, idx) => (
-                        <button
-                          key={`${template.label}-${idx}`}
-                          onClick={() => handleAddBlock(template)}
-                          className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left"
-                        >
-                          <div className="w-6 h-6 rounded bg-[hsl(var(--builder-accent)/0.1)] flex items-center justify-center text-[hsl(var(--builder-accent))]">
-                            {template.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium text-[hsl(var(--builder-text))]">{template.label}</div>
-                            <div className="text-[10px] text-[hsl(var(--builder-text-dim))]">{template.description}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              ))}
+                      <ChevronRight 
+                        size={14} 
+                        className={`text-[hsl(var(--builder-text-dim))] transition-transform duration-200 ${expandedCategory === category.id ? 'rotate-90' : ''}`} 
+                      />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="pl-2 py-1.5 space-y-0.5">
+                        {category.templates.map((template, idx) => (
+                          <button
+                            key={`${template.label}-${idx}`}
+                            onClick={() => handleAddBlock(template)}
+                            className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-[hsl(var(--builder-surface-hover))] transition-colors text-left group"
+                          >
+                            <div className="w-6 h-6 rounded-md bg-[hsl(var(--builder-accent)/0.15)] flex items-center justify-center text-[hsl(var(--builder-accent))] group-hover:scale-110 transition-transform">
+                              {template.icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium text-[hsl(var(--builder-text))]">{template.label}</div>
+                              <div className="text-[10px] text-[hsl(var(--builder-text-dim))]">{template.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </div>
             </div>
           )}
         </div>
