@@ -2448,8 +2448,7 @@ const FrameInspector: React.FC<{
               <Layout className="w-4 h-4 text-[hsl(var(--builder-accent))]" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-builder-text">Section</p>
-              <p className="text-[10px] text-builder-text-muted">{frame.label || 'Container for content'}</p>
+              <p className="text-sm font-semibold text-builder-text">{frame.label || 'Section'}</p>
             </div>
           </div>
           {/* Delete button */}
