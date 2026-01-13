@@ -458,9 +458,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
         const sel = window.getSelection();
         const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+        // Use start/end containers for reliable detection (anchor/focus can be outside for drag selections)
         const selectionInside =
           !!range &&
-          (editorEl.contains(range.commonAncestorContainer) ||
+          (editorEl.contains(range.startContainer) ||
+            editorEl.contains(range.endContainer) ||
+            editorEl.contains(range.commonAncestorContainer) ||
             editorEl.contains(sel?.anchorNode ?? null) ||
             editorEl.contains(sel?.focusNode ?? null));
 
@@ -951,6 +954,14 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           patchFormatState();
           return true;
         }
+        
+        // HARD STOP: If we had a selection but applyStylesToSelection failed,
+        // do NOT fall through to CASE B or block-level formatting.
+        // This prevents "whole block becomes bold" when inline wrap fails.
+        if (isFormattingToggle) {
+          toast.info('Could not apply style to selection. Please reselect text.');
+          return false;
+        }
       }
 
       // CASE B: Caret inside existing span (no text selected) → update that span
@@ -989,9 +1000,15 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const clonedStyles: Partial<TextStyles> = {};
 
     if (newStyles.fontSize !== undefined) clonedStyles.fontSize = newStyles.fontSize;
-    if (newStyles.fontWeight !== undefined) clonedStyles.fontWeight = newStyles.fontWeight;
-    if (newStyles.fontStyle !== undefined) clonedStyles.fontStyle = newStyles.fontStyle;
-    if (newStyles.textDecoration !== undefined) clonedStyles.textDecoration = newStyles.textDecoration;
+    
+    // GUARD: Don't apply fontWeight/fontStyle/textDecoration at block level when this was
+    // an inline attempt that failed. This prevents "whole block becomes bold/italic/underline"
+    // when the user had a text selection but the inline wrap failed.
+    if (!wasInlineAttempt) {
+      if (newStyles.fontWeight !== undefined) clonedStyles.fontWeight = newStyles.fontWeight;
+      if (newStyles.fontStyle !== undefined) clonedStyles.fontStyle = newStyles.fontStyle;
+      if (newStyles.textDecoration !== undefined) clonedStyles.textDecoration = newStyles.textDecoration;
+    }
     if (newStyles.textAlign !== undefined) clonedStyles.textAlign = newStyles.textAlign;
     if (newStyles.fontFamily !== undefined) clonedStyles.fontFamily = newStyles.fontFamily;
     
