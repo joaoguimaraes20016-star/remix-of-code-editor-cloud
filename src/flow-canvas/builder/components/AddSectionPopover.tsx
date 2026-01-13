@@ -674,9 +674,11 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
           <div
             className={`
               group flex flex-col items-center justify-center w-full py-8 px-4
-              bg-[hsl(var(--builder-surface-hover)/0.3)]
-              border-2 border-dashed border-[hsl(var(--builder-border-subtle))] rounded-xl
-              hover:border-[hsl(var(--builder-accent)/0.5)] hover:bg-[hsl(var(--builder-accent)/0.05)]
+              bg-[hsl(var(--builder-surface-hover)/0.5)]
+              border-2 border-dashed border-[hsl(var(--builder-border))] rounded-xl
+              shadow-sm
+              hover:border-[hsl(var(--builder-accent)/0.6)] hover:bg-[hsl(var(--builder-accent)/0.08)]
+              hover:shadow-md hover:shadow-[hsl(var(--builder-accent)/0.1)]
               transition-all duration-200 cursor-pointer
               ${className}
             `}
