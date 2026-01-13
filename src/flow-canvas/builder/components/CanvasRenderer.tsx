@@ -2830,31 +2830,38 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
         }
       }}
     >
-      {/* Frame selection handle - always visible when selected, hover otherwise */}
-      {!readOnly && (
-        <div 
-          className={cn(
-            "absolute -top-12 left-1/2 -translate-x-1/2 cursor-pointer z-30 transition-all duration-200",
-            isSelected ? "opacity-100" : "opacity-0 group-hover/frame:opacity-100"
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect({ type: 'frame', id: frame.id, path: framePath });
-          }}
-        >
-          {/* Section label - modern pill design with touch-friendly size */}
-          <div className={cn(
-            "px-4 py-2 text-xs font-medium backdrop-blur-xl text-white rounded-2xl shadow-2xl shadow-black/50 border flex items-center gap-2 transition-colors min-h-[40px]",
-            isSelected 
-              ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))]" 
-              : "bg-[hsl(220,10%,10%)]/95 border-white/[0.08] hover:bg-[hsl(220,10%,15%)]"
-          )}>
-            <Layout className="w-4 h-4" />
-            <span className="font-semibold">{frame.label || 'Section'}</span>
-            {!isSelected && <span className="text-white/40 text-[11px] hidden sm:inline">· Click to edit</span>}
+      {/* Frame selection handle - only show for sections with content OR when selected */}
+      {!readOnly && (() => {
+        const hasContent = frame.stacks.some(s => s.blocks.length > 0);
+        const showLabel = hasContent || isSelected;
+        
+        if (!showLabel) return null;
+        
+        return (
+          <div 
+            className={cn(
+              "absolute -top-12 left-1/2 -translate-x-1/2 cursor-pointer z-30 transition-all duration-200",
+              isSelected ? "opacity-100" : "opacity-0 group-hover/frame:opacity-100"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect({ type: 'frame', id: frame.id, path: framePath });
+            }}
+          >
+            {/* Section label - modern pill design with touch-friendly size */}
+            <div className={cn(
+              "px-4 py-2 text-xs font-medium backdrop-blur-xl text-white rounded-2xl shadow-2xl shadow-black/50 border flex items-center gap-2 transition-colors min-h-[40px]",
+              isSelected 
+                ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))]" 
+                : "bg-[hsl(220,10%,10%)]/95 border-white/[0.08] hover:bg-[hsl(220,10%,15%)]"
+            )}>
+              <Layout className="w-4 h-4" />
+              <span className="font-semibold">{frame.label || 'Section'}</span>
+              {!isSelected && <span className="text-white/40 text-[11px] hidden sm:inline">· Click to edit</span>}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
       {/* Apply dynamic padding and spacing based on frame settings */}
       <div 
         style={{
