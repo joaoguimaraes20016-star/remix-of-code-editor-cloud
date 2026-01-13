@@ -859,7 +859,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         // - If user *wants normal* and selection is mixed/on -> normalize to normal (400)
         // - If selection is mixed and user wants bold -> normalize to bold (requestedWeight)
         if (wantsBold) {
-          const shouldRemove = liveFormat.bold === 'on';
+          // Treat 'mixed' as active: one click should normalize everything to OFF.
+          const shouldRemove = liveFormat.bold !== 'off';
           // CRITICAL: Use explicit '400' instead of null to override inherited bold
           opts.fontWeight = shouldRemove ? '400' : requestedWeight;
         } else {
@@ -871,7 +872,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (newStyles.fontStyle) {
         const wantsItalic = newStyles.fontStyle === 'italic';
         if (wantsItalic) {
-          const shouldRemove = liveFormat.italic === 'on';
+          // Treat 'mixed' as active: one click should normalize everything to OFF.
+          const shouldRemove = liveFormat.italic !== 'off';
           // CRITICAL: Use explicit 'normal' instead of null to override inherited italic
           opts.fontStyle = shouldRemove ? 'normal' : 'italic';
         } else {
@@ -882,7 +884,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (newStyles.textDecoration) {
         const wantsUnderline = String(newStyles.textDecoration).toLowerCase().includes('underline');
         if (wantsUnderline) {
-          const shouldRemove = liveFormat.underline === 'on';
+          // Treat 'mixed' as active: one click should normalize everything to OFF.
+          const shouldRemove = liveFormat.underline !== 'off';
           // CRITICAL: Use explicit 'none' instead of null to override inherited underline
           opts.textDecoration = shouldRemove ? 'none' : 'underline';
         } else {
