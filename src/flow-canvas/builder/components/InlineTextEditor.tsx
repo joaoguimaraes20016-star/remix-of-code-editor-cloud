@@ -724,6 +724,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   // Returns true if inline styling was applied (for context callback)
   const handleStyleChange = useCallback((newStyles: Partial<TextStyles>): boolean => {
     const editorEl = contentRef.current;
+    let didHandleToggle = false;
 
     const shouldApplyInline =
       newStyles.textColor !== undefined ||
@@ -1273,7 +1274,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           styleOpts.textDecoration === null;
 
         if (isRemoveMode) {
-          // TOGGLE OFF: Use removeFormatFromSelection to strip styles without wrapping
           const removed = removeFormatFromSelection({
             fontWeight: styleOpts.fontWeight === null,
             fontStyle: styleOpts.fontStyle === null,
@@ -1281,30 +1281,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           });
 
           if (removed) {
-            // Update saved selection reference so next toggle can find it
-            try {
-              const sel = window.getSelection();
-              if (sel && sel.rangeCount > 0) {
-                const r = sel.getRangeAt(0);
-                if (!r.collapsed && r.toString().length > 0) {
-                  lastSelectionRangeRef.current = r.cloneRange();
-                }
-              }
-            } catch {
-              // ignore
-            }
+            didHandleToggle = true;
 
             setSessionHasInlineStyles(true);
+
+            // 🔒 ATOMIC EXIT: normalize and leave — never re-wrap
             normalizeInlineDom();
             scheduleInlineHtmlSave();
             syncToolbarState();
+
             requestAnimationFrame(recomputeFormatState);
-            return true;
+            return true; // 🚨 NOTHING BELOW MAY RUN
           }
 
-          if (import.meta.env.DEV) {
-            console.warn('[handleStyleChange] removeFormatFromSelection failed');
-          }
           return false;
         }
 
@@ -1362,6 +1351,11 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           toast.info('Could not apply style to selection. Please reselect text.');
           return false;
         }
+      }
+
+      // Guard: if remove-mode already handled, exit
+      if (didHandleToggle) {
+        return true;
       }
 
       // CASE B: Caret inside existing span (no text selected) → update that span
