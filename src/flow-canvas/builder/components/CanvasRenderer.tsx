@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Type, Image, Video, Minus, ArrowRight, ArrowUpRight, ChevronRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Download, Smartphone, MousePointer2, Layout, Menu } from 'lucide-react';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
+import { SectionActionBar } from './SectionActionBar';
 import { UnifiedElementToolbar, UnifiedToolbarStyles } from './UnifiedElementToolbar';
 import { AddSectionPopover } from './AddSectionPopover';
 import { InlineTextEditor, TextStyles } from './InlineTextEditor';
@@ -158,6 +159,12 @@ interface CanvasRendererProps {
   onFormSubmit?: (values: Record<string, string>) => void;
   showGrid?: boolean;
   onOpenAIGenerate?: () => void;
+  // Section (frame) management
+  onReorderFrames?: (fromIndex: number, toIndex: number) => void;
+  onDuplicateFrame?: (frameId: string) => void;
+  onDeleteFrame?: (frameId: string) => void;
+  onAddFrameAt?: (position: 'above' | 'below', referenceFrameId: string) => void;
+  onRenameFrame?: (frameId: string, newName: string) => void;
 }
 
 // Button Action type
@@ -2711,6 +2718,8 @@ const StackRenderer: React.FC<StackRendererProps> = ({
 // Frame Renderer
 interface FrameRendererProps {
   frame: Frame;
+  frameIndex: number;
+  totalFrames: number;
   selection: SelectionState;
   multiSelectedIds?: Set<string>;
   onSelect: (selection: SelectionState, isShiftHeld?: boolean) => void;
@@ -2733,10 +2742,20 @@ interface FrameRendererProps {
   onNextStep?: () => void;
   onGoToStep?: (stepId: string) => void;
   onFormSubmit?: (values: Record<string, string>) => void;
+  // Section actions
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+  onAddAbove?: () => void;
+  onAddBelow?: () => void;
+  onRename?: (newName: string) => void;
 }
 
 const FrameRenderer: React.FC<FrameRendererProps> = ({ 
   frame, 
+  frameIndex,
+  totalFrames,
   selection,
   multiSelectedIds,
   onSelect, 
@@ -2759,6 +2778,14 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   onNextStep,
   onGoToStep,
   onFormSubmit,
+  // Section actions
+  onMoveUp,
+  onMoveDown,
+  onDuplicate,
+  onDelete,
+  onAddAbove,
+  onAddBelow,
+  onRename,
 }) => {
   const isSelected = selection.type === 'frame' && selection.id === frame.id;
   const framePath = [...path, 'frame', frame.id];
@@ -2832,7 +2859,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
         }
       }}
     >
-      {/* Frame selection handle - only show for sections with content OR when selected */}
+      {/* Section Action Bar - positioned on the left side */}
       {!readOnly && (() => {
         const hasContent = frame.stacks.some(s => s.blocks.length > 0);
         const showLabel = hasContent || isSelected;
@@ -2840,28 +2867,21 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
         if (!showLabel) return null;
         
         return (
-          <div 
-            className={cn(
-              "absolute -top-12 left-1/2 -translate-x-1/2 cursor-pointer z-30 transition-all duration-200",
-              isSelected ? "opacity-100" : "opacity-0 group-hover/frame:opacity-100"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect({ type: 'frame', id: frame.id, path: framePath });
-            }}
-          >
-            {/* Section label - modern pill design with touch-friendly size */}
-            <div className={cn(
-              "px-4 py-2 text-xs font-medium backdrop-blur-xl text-white rounded-2xl shadow-2xl shadow-black/50 border flex items-center gap-2 transition-colors min-h-[40px]",
-              isSelected 
-                ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))]" 
-                : "bg-[hsl(220,10%,10%)]/95 border-white/[0.08] hover:bg-[hsl(220,10%,15%)]"
-            )}>
-              <Layout className="w-4 h-4" />
-              <span className="font-semibold">{frame.label || 'Section'}</span>
-              {!isSelected && <span className="text-white/40 text-[11px] hidden sm:inline">· Click to edit</span>}
-            </div>
-          </div>
+          <SectionActionBar
+            sectionId={frame.id}
+            sectionLabel={frame.label || 'Section'}
+            isSelected={isSelected}
+            frameIndex={frameIndex}
+            totalFrames={totalFrames}
+            onSelect={() => onSelect({ type: 'frame', id: frame.id, path: framePath })}
+            onMoveUp={onMoveUp}
+            onMoveDown={onMoveDown}
+            onDuplicate={onDuplicate}
+            onDelete={onDelete}
+            onAddAbove={onAddAbove}
+            onAddBelow={onAddBelow}
+            onRename={onRename}
+          />
         );
       })()}
       {/* Apply dynamic padding and spacing based on frame settings */}
@@ -2935,6 +2955,12 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   onFormSubmit,
   showGrid = false,
   onOpenAIGenerate,
+  // Section (frame) management
+  onReorderFrames,
+  onDuplicateFrame,
+  onDeleteFrame,
+  onAddFrameAt,
+  onRenameFrame,
 }) => {
   // Form state for preview mode
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -3096,32 +3122,51 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
 
             {/* Frames */}
             <div className="min-h-[600px] relative z-10 group/canvas">
-              {step.frames.map((frame) => (
-                <FrameRenderer
-                  key={frame.id}
-                  frame={frame}
-                  selection={selection}
-                  onSelect={onSelect}
-                  path={stepPath}
-                  onReorderBlocks={onReorderBlocks}
-                  onReorderElements={onReorderElements}
-                  onAddBlock={onAddBlock}
-                  onDuplicateBlock={onDuplicateBlock}
-                  onDeleteBlock={onDeleteBlock}
-                  onUpdateElement={onUpdateElement}
-                  onDuplicateElement={onDuplicateElement}
-                  onDeleteElement={onDeleteElement}
-                  onCopy={onCopy}
-                  onPaste={onPaste}
-                  canPaste={canPaste}
-                  readOnly={readOnly}
-                  isDarkTheme={isDarkTheme}
-                  replayAnimationKey={replayAnimationKey}
-                  deviceMode={deviceMode}
-                  onNextStep={onNextStep}
-                  onGoToStep={onGoToStep}
-                  onFormSubmit={onFormSubmit}
-                />
+              {step.frames.map((frame, frameIndex) => (
+                <React.Fragment key={frame.id}>
+                  {/* Section Divider - visible between frames on hover */}
+                  {frameIndex > 0 && !readOnly && (
+                    <div 
+                      className="relative h-6 flex items-center px-4 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-200"
+                    >
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[hsl(var(--builder-accent)/0.3)] to-transparent" />
+                    </div>
+                  )}
+                  <FrameRenderer
+                    frame={frame}
+                    frameIndex={frameIndex}
+                    totalFrames={step.frames.length}
+                    selection={selection}
+                    onSelect={onSelect}
+                    path={stepPath}
+                    onReorderBlocks={onReorderBlocks}
+                    onReorderElements={onReorderElements}
+                    onAddBlock={onAddBlock}
+                    onDuplicateBlock={onDuplicateBlock}
+                    onDeleteBlock={onDeleteBlock}
+                    onUpdateElement={onUpdateElement}
+                    onDuplicateElement={onDuplicateElement}
+                    onDeleteElement={onDeleteElement}
+                    onCopy={onCopy}
+                    onPaste={onPaste}
+                    canPaste={canPaste}
+                    readOnly={readOnly}
+                    isDarkTheme={isDarkTheme}
+                    replayAnimationKey={replayAnimationKey}
+                    deviceMode={deviceMode}
+                    onNextStep={onNextStep}
+                    onGoToStep={onGoToStep}
+                    onFormSubmit={onFormSubmit}
+                    // Section actions
+                    onMoveUp={frameIndex > 0 ? () => onReorderFrames?.(frameIndex, frameIndex - 1) : undefined}
+                    onMoveDown={frameIndex < step.frames.length - 1 ? () => onReorderFrames?.(frameIndex, frameIndex + 1) : undefined}
+                    onDuplicate={() => onDuplicateFrame?.(frame.id)}
+                    onDelete={() => onDeleteFrame?.(frame.id)}
+                    onAddAbove={() => onAddFrameAt?.('above', frame.id)}
+                    onAddBelow={() => onAddFrameAt?.('below', frame.id)}
+                    onRename={(newName) => onRenameFrame?.(frame.id, newName)}
+                  />
+                </React.Fragment>
               ))}
               
               {/* Add Section button - only visible on hover */}
