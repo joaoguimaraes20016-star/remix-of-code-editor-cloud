@@ -1,7 +1,7 @@
 /**
  * MotionContainer centralizes all runtime motion behavior so we can enable or
- * disable animation without touching every call site. It intentionally keeps
- * the animation subtle to maintain parity with the legacy renderer.
+ * disable animation without touching every call site. Uses spring physics for
+ * natural, fluid step transitions.
  */
 import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -15,14 +15,23 @@ export interface MotionContainerProps {
 }
 
 const MOTION_VARIANTS = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -4 },
+  initial: { opacity: 0, y: 12, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -8, scale: 0.99 },
 };
 
+// Spring-based transition for natural feel
 const MOTION_TRANSITION = {
-  duration: 0.2,
-  ease: [0.16, 1, 0.3, 1] as const,
+  type: 'spring' as const,
+  stiffness: 300,
+  damping: 30,
+  mass: 0.8,
+};
+
+// Faster exit transition
+const EXIT_TRANSITION = {
+  duration: 0.15,
+  ease: [0.32, 0, 0.67, 0] as const,
 };
 
 export function MotionContainer({
@@ -51,6 +60,7 @@ export function MotionContainer({
       exit="exit"
       variants={MOTION_VARIANTS}
       transition={MOTION_TRANSITION}
+      style={{ willChange: 'opacity, transform' }}
     >
       {children}
     </motion.div>
