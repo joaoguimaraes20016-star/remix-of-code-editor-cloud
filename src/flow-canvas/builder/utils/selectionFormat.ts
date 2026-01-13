@@ -74,6 +74,17 @@ function rangeIntersectsTextNode(range: Range, textNode: Text): boolean {
  * - Collapsed caret: 'on'/'off' based on caret position's computed style.
  */
 export function getSelectionFormatState(root: HTMLElement, range: Range): FormatState {
+  // DEBUG: Log input state
+  if (import.meta.env.DEV) {
+    console.debug('[getSelectionFormatState] input:', {
+      collapsed: range.collapsed,
+      startContainer: range.startContainer,
+      startContainerConnected: range.startContainer.isConnected,
+      rangeText: range.toString(),
+      rootContainsStart: root.contains(range.startContainer),
+    });
+  }
+
   // Caret
   if (range.collapsed) {
     const node = range.startContainer;
@@ -82,6 +93,9 @@ export function getSelectionFormatState(root: HTMLElement, range: Range): Format
       : (node.parentElement as HTMLElement | null)) ?? root;
 
     const flags = getFlagsForElement(root.contains(el) ? el : root, root);
+    if (import.meta.env.DEV) {
+      console.debug('[getSelectionFormatState] caret mode, flags:', flags);
+    }
     return {
       bold: flags.bold ? 'on' : 'off',
       italic: flags.italic ? 'on' : 'off',
@@ -95,6 +109,7 @@ export function getSelectionFormatState(root: HTMLElement, range: Range): Format
   let seenItalicFalse = false;
   let seenUnderlineTrue = false;
   let seenUnderlineFalse = false;
+  let textNodesChecked = 0;
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let current: Node | null = walker.nextNode();
@@ -102,8 +117,18 @@ export function getSelectionFormatState(root: HTMLElement, range: Range): Format
   while (current) {
     const text = current as Text;
     if (rangeIntersectsTextNode(range, text)) {
+      textNodesChecked++;
       const el = text.parentElement ?? root;
       const flags = getFlagsForElement(el, root);
+
+      if (import.meta.env.DEV && textNodesChecked <= 3) {
+        console.debug('[getSelectionFormatState] text node:', {
+          text: text.textContent?.substring(0, 20),
+          parentTag: el.tagName,
+          parentStyle: el.getAttribute('style'),
+          flags,
+        });
+      }
 
       if (flags.bold) seenBoldTrue = true;
       else seenBoldFalse = true;
@@ -127,9 +152,20 @@ export function getSelectionFormatState(root: HTMLElement, range: Range): Format
     current = walker.nextNode();
   }
 
-  return {
+  const result = {
     bold: triStateFromSeen(seenBoldTrue, seenBoldFalse),
     italic: triStateFromSeen(seenItalicTrue, seenItalicFalse),
     underline: triStateFromSeen(seenUnderlineTrue, seenUnderlineFalse),
   };
+
+  if (import.meta.env.DEV) {
+    console.debug('[getSelectionFormatState] result:', {
+      textNodesChecked,
+      seenBoldTrue,
+      seenBoldFalse,
+      result,
+    });
+  }
+
+  return result;
 }
