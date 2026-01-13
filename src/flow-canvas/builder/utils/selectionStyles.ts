@@ -1066,3 +1066,110 @@ export function getComputedTextColorAtSelection(root: HTMLElement): string | nul
     return null;
   }
 }
+
+/**
+ * FORCE RESET inline formatting within a root element.
+ * This is a "hack mode" solution to ensure bold/italic/underline toggles work reliably.
+ * 
+ * When toggling OFF formatting, simply removing inline styles is insufficient because:
+ * - Empty spans remain in the DOM
+ * - Inherited styles still apply
+ * - Computed styles still evaluate as bold/italic/underline
+ * 
+ * This function:
+ * 1. Force-resets font-weight, font-style, text-decoration to normal/none on all spans
+ * 2. Removes empty style attributes
+ * 3. Unwraps spans that have no remaining attributes
+ * 4. Normalizes the DOM
+ */
+export function forceResetInlineFormatting(
+  root: HTMLElement,
+  options: {
+    fontWeight?: boolean;
+    fontStyle?: boolean;
+    textDecoration?: boolean;
+  }
+): void {
+  const walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_ELEMENT,
+    null
+  );
+
+  const toUnwrap: HTMLElement[] = [];
+
+  while (walker.nextNode()) {
+    const el = walker.currentNode as HTMLElement;
+    if (el.tagName !== 'SPAN') continue;
+
+    // Skip special markers and caret hosts
+    if (el.getAttribute('data-inline-marker')) continue;
+    if (el.dataset.selMarker) continue;
+
+    // FORCE reset the specified formatting properties
+    if (options.fontWeight) {
+      el.style.fontWeight = 'normal';
+    }
+    if (options.fontStyle) {
+      el.style.fontStyle = 'normal';
+    }
+    if (options.textDecoration) {
+      el.style.textDecoration = 'none';
+    }
+
+    // Clean up empty style attributes
+    const rawStyle = el.getAttribute('style');
+    if (rawStyle != null) {
+      const meaningful = rawStyle
+        .split(';')
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .some((pair) => {
+          const idx = pair.indexOf(':');
+          if (idx === -1) return false;
+          const key = pair.slice(0, idx).trim().toLowerCase();
+          const value = pair.slice(idx + 1).trim().toLowerCase();
+          // These are "neutral" values that don't contribute meaningful styling
+          if (key === 'font-weight' && (value === 'normal' || value === '400')) return false;
+          if (key === 'font-style' && value === 'normal') return false;
+          if (key === 'text-decoration' && value === 'none') return false;
+          return value.length > 0;
+        });
+      
+      if (!meaningful) {
+        el.removeAttribute('style');
+      }
+    }
+
+    // Mark spans with no style and no other attributes for unwrapping
+    if (!el.getAttribute('style') && el.attributes.length === 0) {
+      toUnwrap.push(el);
+    }
+  }
+
+  // Unwrap empty spans (preserve their children)
+  for (const el of toUnwrap) {
+    const parent = el.parentNode;
+    if (!parent) continue;
+    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+    parent.removeChild(el);
+  }
+
+  // Also unwrap legacy formatting tags that may still exist
+  const unwrapLegacyTags = (selectors: string[]) => {
+    const nodes = Array.from(root.querySelectorAll(selectors.join(',')));
+    for (const node of nodes) {
+      const parent = node.parentNode;
+      if (!parent) continue;
+      while (node.firstChild) parent.insertBefore(node.firstChild, node);
+      parent.removeChild(node);
+    }
+  };
+
+  if (options.fontWeight) unwrapLegacyTags(['b', 'strong']);
+  if (options.fontStyle) unwrapLegacyTags(['i', 'em']);
+  if (options.textDecoration) unwrapLegacyTags(['u']);
+
+  // Normalize the DOM to merge adjacent text nodes
+  root.normalize();
+}

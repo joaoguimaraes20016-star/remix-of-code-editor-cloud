@@ -17,6 +17,7 @@ import {
   unwrapNestedStyledSpans,
   updateSpanStyle,
   insertStyledSpanAtCaret,
+  forceResetInlineFormatting,
 } from '../utils/selectionStyles';
 import type { SelectionStyleOptions } from '../utils/selectionStyles';
 import { getSelectionFormatState, type FormatState } from '../utils/selectionFormat';
@@ -842,9 +843,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
       const liveFormat = computeLiveFormat();
 
-      // DEBUG: Log toggle decision
-      console.log('[TOGGLE DEBUG] liveFormat:', liveFormat, 'newStyles:', newStyles);
-
       if (newStyles.fontWeight) {
         const wMap: Record<string, string> = {
           normal: '400',
@@ -862,7 +860,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         // - Else -> APPLY (requestedWeight)
         if (wantsBold) {
           opts.fontWeight = liveFormat.bold !== 'off' ? null : requestedWeight;
-          console.log('[TOGGLE DEBUG] bold decision:', { liveFormatBold: liveFormat.bold, result: opts.fontWeight });
         } else {
           opts.fontWeight = null;
         }
@@ -1200,6 +1197,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
         const target = findStyledSpanAtCaret();
 
+        // Check if we're in "remove mode" for caret toggles
+        const isCaretRemoveMode = 
+          caretOpts.fontWeight === null ||
+          caretOpts.fontStyle === null ||
+          caretOpts.textDecoration === null;
+
         // Only insert a caret host span when we're APPLYING a style (setting a value).
         // If we're only unsetting styles (null) and we aren't inside a styled span,
         // there is nothing to remove.
@@ -1214,6 +1217,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           updateSpanStyle(target, caretOpts);
           activeInlineSpanRef.current = target;
           activeInlineSpanIdRef.current = target.dataset.inlineStyleId || null;
+
+          // 🔥 FORCE RESET for caret toggles: When toggling OFF inside a styled span,
+          // force-reset that span's formatting to ensure it's truly removed
+          if (isCaretRemoveMode) {
+            forceResetInlineFormatting(editorEl, {
+              fontWeight: caretOpts.fontWeight === null,
+              fontStyle: caretOpts.fontStyle === null,
+              textDecoration: caretOpts.textDecoration === null,
+            });
+          }
         } else if (hasAnySetValue) {
           const span = insertStyledSpanAtCaret(caretOpts);
           if (span) {
@@ -1323,6 +1336,18 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
           if (removed) {
             didHandleToggle = true;
+
+            // 🔥 FORCE RESET HACK: Ensure formatting is truly removed from DOM
+            // This is the critical fix for toggle-off not working reliably.
+            // removeFormatFromSelection alone is insufficient because:
+            // - Empty spans may remain
+            // - Inherited styles may persist
+            // - Computed styles may still evaluate as bold/italic/underline
+            forceResetInlineFormatting(editorEl, {
+              fontWeight: styleOpts.fontWeight === null,
+              fontStyle: styleOpts.fontStyle === null,
+              textDecoration: styleOpts.textDecoration === null,
+            });
 
             setSessionHasInlineStyles(true);
 
