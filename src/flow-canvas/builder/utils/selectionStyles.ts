@@ -167,11 +167,41 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
   }
 
   try {
-    const fragment = range.extractContents();
+    const extracted = range.extractContents();
 
-    // IMPORTANT: Do not strip nested styled spans here.
-    // Doing so destroys previously-applied inline styles and causes "toolbar weirdness".
-    // Cleanup (if desired) is handled later (blur/save) by the editor.
+    // IMPORTANT:
+    // We intentionally preserve nested styled spans for color/gradient edits.
+    // However, for B/I/U toggles we MUST prevent descendant spans from overriding
+    // the new formatting state, or toggles won't reliably "turn off".
+    // So, when a formatting property is being applied, we strip ONLY that property
+    // from descendant spans inside the extracted fragment (preserves fill styles).
+    const needsFormatNormalize =
+      options.fontWeight !== undefined ||
+      options.fontStyle !== undefined ||
+      options.textDecoration !== undefined;
+
+    let fragment = extracted;
+
+    if (needsFormatNormalize) {
+      const temp = document.createElement('div');
+      temp.appendChild(fragment);
+
+      const spans = Array.from(temp.querySelectorAll('span[style]')) as HTMLSpanElement[];
+      for (const s of spans) {
+        const current = parseStyleAttribute(s.getAttribute('style'));
+        if (options.fontWeight !== undefined) delete current['font-weight'];
+        if (options.fontStyle !== undefined) delete current['font-style'];
+        if (options.textDecoration !== undefined) delete current['text-decoration'];
+
+        const next = serializeStyleAttribute(current);
+        if (next) s.setAttribute('style', next);
+        else s.removeAttribute('style');
+      }
+
+      const rebuilt = document.createDocumentFragment();
+      while (temp.firstChild) rebuilt.appendChild(temp.firstChild);
+      fragment = rebuilt;
+    }
 
     span.appendChild(fragment);
     range.insertNode(span);
@@ -182,15 +212,113 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
     sel.removeAllRanges();
     sel.addRange(newRange);
 
-    // NOTE: We no longer call unwrapNestedStyledSpans/mergeAdjacentStyledSpans here.
-    // DOM cleanup during active editing invalidates span refs and breaks slider interactions.
-    // Cleanup is now deferred to blur/save time in InlineTextEditor.
+    // NOTE: We still defer full DOM cleanup (unwrap/merge) to blur/save time.
 
     return span;
   } catch (e) {
     console.warn('Selection wrap failed:', e);
     return null;
   }
+    return span;
+  } catch (e) {
+    console.warn('Selection wrap failed:', e);
+    return null;
+  }
+}
+
+/**
+ * Insert a styled span at the caret (collapsed selection) so formatting toggles
+ * apply to the next typed characters (Framer/Figma behavior).
+ *
+ * We insert a zero-width space so the span has a real text node to host the caret.
+ * sanitizeStyledHTML() strips zero-width spaces on save.
+ */
+export function insertStyledSpanAtCaret(options: SelectionStyleOptions): HTMLSpanElement | null {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+
+  const range = sel.getRangeAt(0);
+  if (!range.collapsed) return null;
+
+  const hasExplicitFillChange = options.gradient !== undefined || options.color !== undefined;
+
+  // Inherit fill (color/gradient) when applying formatting-only, matching applyStylesToSelection.
+  let inheritedFillStyle = '';
+  let inheritedGradientJson: string | undefined;
+
+  if (!hasExplicitFillChange) {
+    const findClosestStyledSpan = (node: Node | null): HTMLSpanElement | null => {
+      let el: HTMLElement | null =
+        node && node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node?.parentElement ?? null;
+
+      while (el) {
+        if (el.tagName === 'SPAN' && el.getAttribute('style')) return el as HTMLSpanElement;
+        el = el.parentElement;
+      }
+      return null;
+    };
+
+    const source = findClosestStyledSpan(range.startContainer) || findClosestStyledSpan(range.commonAncestorContainer);
+    if (source) {
+      if (source.dataset.gradient) {
+        inheritedGradientJson = source.dataset.gradient;
+        try {
+          const gradient = JSON.parse(inheritedGradientJson) as GradientValue;
+          inheritedFillStyle = buildStyleString({ gradient });
+        } catch {
+          inheritedFillStyle = '';
+        }
+      } else {
+        const fill = getSpanFillStyles(source);
+        if (fill.textFillType === 'solid' && fill.textColor) {
+          inheritedFillStyle = buildStyleString({ color: fill.textColor });
+        }
+
+        if (!inheritedFillStyle && source.style.backgroundImage) {
+          inheritedFillStyle = [
+            `background-image: ${source.style.backgroundImage}`,
+            '-webkit-background-clip: text',
+            '-webkit-text-fill-color: transparent',
+            'background-clip: text',
+            'display: inline',
+            'color: transparent',
+          ].join('; ');
+        }
+      }
+    }
+  }
+
+  const styleString = [inheritedFillStyle, buildStyleString(options)].filter(Boolean).join('; ');
+  if (!styleString) return null;
+
+  const span = document.createElement('span');
+  span.setAttribute('style', styleString);
+  span.dataset.inlineStyleId =
+    crypto.randomUUID?.() ?? `span-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  if (options.gradient) {
+    span.dataset.gradient = JSON.stringify(options.gradient);
+  } else if (!hasExplicitFillChange && inheritedGradientJson) {
+    span.dataset.gradient = inheritedGradientJson;
+  } else if (options.color) {
+    delete span.dataset.gradient;
+  }
+
+  // Add a caret host node
+  const zwsp = document.createTextNode('\u200B');
+  span.appendChild(zwsp);
+
+  // Insert at caret
+  range.insertNode(span);
+
+  // Move caret inside the span (after zwsp)
+  const newRange = document.createRange();
+  newRange.setStart(zwsp, 1);
+  newRange.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+
+  return span;
 }
 
 type StyleMap = Record<string, string>;
@@ -454,26 +582,40 @@ export function sanitizeStyledHTML(html: string): string {
   
   // Walk the DOM and only keep safe elements/attributes
   const sanitize = (node: Node): void => {
+    // Strip zero-width spaces used for caret-hosting spans during editing.
+    if (node.nodeType === Node.TEXT_NODE) {
+      const txt = node as Text;
+      if (txt.nodeValue?.includes('\u200B')) {
+        txt.nodeValue = txt.nodeValue.replace(/\u200B/g, '');
+        // Remove empty nodes (keeps HTML clean)
+        if (!txt.nodeValue) {
+          txt.parentNode?.removeChild(txt);
+          return;
+        }
+      }
+      return;
+    }
+
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
       const tagName = el.tagName.toLowerCase();
-      
+
       // Only allow span, br, and basic text formatting
       const allowedTags = ['span', 'br', 'b', 'i', 'u', 'strong', 'em'];
-      
+
       if (!allowedTags.includes(tagName)) {
         // Replace with text content
         const text = document.createTextNode(el.textContent || '');
         el.parentNode?.replaceChild(text, el);
         return;
       }
-      
+
       // Only keep style attribute and data-gradient on spans
       if (tagName === 'span') {
         const style = el.getAttribute('style');
         const dataGradient = el.getAttribute('data-gradient');
         const dataInlineStyleId = el.getAttribute('data-inline-style-id');
-        
+
         // Clear all attributes except allowed ones
         const attrs = Array.from(el.attributes);
         attrs.forEach(attr => {
@@ -481,7 +623,7 @@ export function sanitizeStyledHTML(html: string): string {
             el.removeAttribute(attr.name);
           }
         });
-        
+
         // Restore data-gradient if it was present (sanitization may have removed it)
         if (dataGradient) {
           el.setAttribute('data-gradient', dataGradient);
@@ -489,7 +631,7 @@ export function sanitizeStyledHTML(html: string): string {
         if (dataInlineStyleId) {
           el.setAttribute('data-inline-style-id', dataInlineStyleId);
         }
-        
+
         // Sanitize style attribute - only allow safe CSS properties
         if (style) {
           const safeProps = sanitizeStyleAttribute(style);
@@ -504,7 +646,7 @@ export function sanitizeStyledHTML(html: string): string {
         const attrs = Array.from(el.attributes);
         attrs.forEach(attr => el.removeAttribute(attr.name));
       }
-      
+
       // Recursively sanitize children
       Array.from(el.childNodes).forEach(sanitize);
     }
