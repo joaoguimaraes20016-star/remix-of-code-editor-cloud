@@ -234,11 +234,15 @@
   }
 
   /* ============================================ */
-  /* SELECTION SYSTEM - Brand-aligned (Magenta/Purple) */
+  /* SELECTION SYSTEM - Level-differentiated colors */
+  /* Section = Blue, Block = Purple, Element = Pink */
   /* ============================================ */
   
-  /* Unified transition timing */
+  /* Selection color tokens - clear hierarchy */
   :root {
+    --selection-section: 217 91% 60%;      /* Blue - top level */
+    --selection-block: 280 75% 55%;        /* Purple - middle level */
+    --selection-element: 315 85% 58%;      /* Pink/Magenta - lowest level */
     --builder-transition: 0.18s cubic-bezier(0.32, 0.72, 0, 1);
   }
   
@@ -248,55 +252,65 @@
     transition: all 0.15s ease;
   }
 
-  /* Hover - unified pink */
+  /* Hover states - differentiated by level */
   .builder-selectable:hover {
     @apply ring-1;
-    ring-color: hsl(315 85% 58% / 0.35);
+    ring-color: hsl(var(--selection-element) / 0.35);
   }
   
   .builder-section-selectable:hover {
-    outline: 1px dashed hsl(315 85% 58% / 0.4);
+    outline: 1px dashed hsl(var(--selection-section) / 0.5);
     outline-offset: 2px;
   }
   
   .builder-block-selectable:hover {
     @apply ring-1;
-    ring-color: hsl(315 85% 58% / 0.4);
+    ring-color: hsl(var(--selection-block) / 0.5);
   }
   
   .builder-element-selectable:hover {
     @apply ring-1;
-    ring-color: hsl(315 85% 58% / 0.5);
+    ring-color: hsl(var(--selection-element) / 0.5);
   }
 
-  /* Selected - all pink, simple */
+  /* Selected states - clearly differentiated */
   .builder-selected {
     @apply ring-2;
-    ring-color: hsl(315 85% 58%);
-    box-shadow: 0 0 0 3px hsl(315 85% 58% / 0.12);
+    ring-color: hsl(var(--selection-element));
+    box-shadow: 0 0 0 3px hsl(var(--selection-element) / 0.12);
   }
   
+  /* Section = Blue dashed outline */
   .builder-section-selected {
-    outline: 2px dashed hsl(315 85% 58%);
+    outline: 2px dashed hsl(var(--selection-section));
     outline-offset: 3px;
+    box-shadow: 0 0 0 6px hsl(var(--selection-section) / 0.08);
   }
   
+  /* Block = Purple solid ring */
   .builder-block-selected {
     @apply ring-2;
-    ring-color: hsl(315 85% 58%);
-    box-shadow: 0 0 0 3px hsl(315 85% 58% / 0.1);
+    ring-color: hsl(var(--selection-block));
+    box-shadow: 0 0 0 3px hsl(var(--selection-block) / 0.12);
   }
   
+  /* Element = Pink solid ring */
   .builder-element-selected {
     @apply ring-2;
-    ring-color: hsl(315 85% 58%);
-    box-shadow: 0 0 0 3px hsl(315 85% 58% / 0.15);
+    ring-color: hsl(var(--selection-element));
+    box-shadow: 0 0 0 3px hsl(var(--selection-element) / 0.15);
   }
   
-  /* Parent hint when child selected */
+  /* Parent hint when child selected - subtle, uses child's color */
   .builder-parent-of-selected {
-    outline: 1px dashed hsl(315 85% 58% / 0.25);
+    outline: 1px dashed hsl(var(--selection-block) / 0.25);
     outline-offset: 4px;
+  }
+  
+  /* Section parent when block/element is selected */
+  .builder-section-parent-of-selected {
+    outline: 1px dashed hsl(var(--selection-section) / 0.3);
+    outline-offset: 5px;
   }
 
   @keyframes selection-appear {
@@ -304,11 +318,11 @@
     to { opacity: 1; }
   }
   
-  /* Multi-selection - same pink */
+  /* Multi-selection - uses element color */
   .builder-multi-selected {
     @apply ring-2;
-    ring-color: hsl(315 85% 58%);
-    box-shadow: 0 0 0 3px hsl(315 85% 58% / 0.12);
+    ring-color: hsl(var(--selection-element));
+    box-shadow: 0 0 0 3px hsl(var(--selection-element) / 0.12);
   }
   
   /* Click target */
@@ -328,12 +342,12 @@
     @apply hidden;
   }
 
-  /* Block type badge - minimal, pink-only */
+  /* Block type badge - uses purple (block level color) */
   .block-type-badge {
     @apply absolute -top-6 left-2 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide
            text-white/90 rounded whitespace-nowrap
            opacity-0 pointer-events-none z-40;
-    background: hsl(315 85% 55% / 0.9);
+    background: hsl(var(--selection-block) / 0.9);
     backdrop-filter: blur(4px);
     transition: all 0.15s ease;
     transform: translateY(2px);
@@ -351,25 +365,21 @@
     @apply opacity-0;
   }
   
-  /* Block badges use blue to distinguish from Section (pink) */
-  .block-type-badge-block {
-    background: hsl(217 91% 60% / 0.9) !important;
-  }
-  
-  /* Container-specific block badges also use blue */
+  /* All block badges use purple consistently */
+  .block-type-badge-block,
   .block-badge-navigation,
   .block-badge-header,
   .block-badge-footer,
   .block-badge-container {
-    background: hsl(217 91% 60% / 0.9) !important;
+    background: hsl(var(--selection-block) / 0.9) !important;
   }
   
-  /* Section badge - simplified */
+  /* Section badge - uses blue (section level color) */
   .section-type-badge {
     @apply absolute -top-7 left-3 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide
-           text-white/80 rounded whitespace-nowrap
+           text-white/90 rounded whitespace-nowrap
            opacity-0 pointer-events-none z-40;
-    background: hsl(315 60% 40% / 0.85);
+    background: hsl(var(--selection-section) / 0.9);
     backdrop-filter: blur(4px);
     transition: all 0.15s ease;
   }

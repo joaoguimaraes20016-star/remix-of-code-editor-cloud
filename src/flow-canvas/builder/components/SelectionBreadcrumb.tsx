@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Layout, Square, Type, Image, MousePointer2 } from 'lucide-react';
+import { ChevronRight, Layers, Square, MousePointer2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BreadcrumbItem {
-  type: 'section' | 'block' | 'element';
+  type: 'page' | 'section' | 'block' | 'element';
   id: string;
   label: string;
 }
@@ -15,16 +15,42 @@ interface SelectionBreadcrumbProps {
   className?: string;
 }
 
-const typeIcons: Record<string, React.ReactNode> = {
-  section: <Layout size={12} />,
-  block: <Square size={12} />,
-  element: <MousePointer2 size={12} />,
+// Color tokens per level - matches CSS selection colors
+const typeColors: Record<string, { bg: string; text: string; border: string }> = {
+  page: { 
+    bg: 'bg-[hsl(220,20%,15%)]', 
+    text: 'text-[hsl(var(--builder-text-muted))]',
+    border: 'border-[hsl(var(--builder-border))]'
+  },
+  section: { 
+    bg: 'bg-[hsl(217,91%,60%,0.15)]', 
+    text: 'text-[hsl(217,91%,70%)]',
+    border: 'border-[hsl(217,91%,60%,0.3)]'
+  },
+  block: { 
+    bg: 'bg-[hsl(280,75%,55%,0.15)]', 
+    text: 'text-[hsl(280,75%,70%)]',
+    border: 'border-[hsl(280,75%,55%,0.3)]'
+  },
+  element: { 
+    bg: 'bg-[hsl(315,85%,58%,0.15)]', 
+    text: 'text-[hsl(315,85%,70%)]',
+    border: 'border-[hsl(315,85%,58%,0.3)]'
+  },
 };
 
-const typeColors: Record<string, string> = {
-  section: 'text-[hsl(var(--builder-text-secondary))]',
-  block: 'text-[hsl(var(--builder-text-secondary))]',
-  element: 'text-[hsl(var(--builder-text))]',
+const typeIcons: Record<string, React.ReactNode> = {
+  page: <FileText size={11} />,
+  section: <Layers size={11} />,
+  block: <Square size={11} />,
+  element: <MousePointer2 size={11} />,
+};
+
+const typeLabels: Record<string, string> = {
+  page: 'Canvas',
+  section: 'Section',
+  block: 'Block',
+  element: 'Element',
 };
 
 export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
@@ -36,57 +62,62 @@ export const SelectionBreadcrumb: React.FC<SelectionBreadcrumbProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.96 }}
-      transition={{ 
-        duration: 0.18, 
-        ease: [0.32, 0.72, 0, 1],
-      }}
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.15 }}
       className={cn(
-        'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg',
-        'bg-[hsl(var(--builder-surface))] backdrop-blur-xl',
-        'border border-[hsl(var(--builder-border))]',
-        'shadow-xl shadow-black/50',
+        'flex items-center gap-1 px-3 py-2',
+        'bg-[hsl(var(--builder-bg))]',
+        'border-b border-[hsl(var(--builder-border))]',
         className
       )}
     >
       <AnimatePresence mode="popLayout">
-        {items.map((item, index) => (
-          <React.Fragment key={`${item.type}-${item.id}`}>
-            {index > 0 && (
-              <motion.span
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                className="text-[hsl(var(--builder-text-muted))]"
-              >
-                <ChevronRight size={10} />
-              </motion.span>
-            )}
-            <motion.button
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              transition={{ delay: index * 0.03 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect(item.type, item.id);
-              }}
-              className={cn(
-                'flex items-center gap-1.5 px-1.5 py-0.5 rounded-md',
-                'text-[11px] font-medium',
-                'transition-all duration-150',
-                'hover:bg-[hsl(var(--builder-surface-hover))]',
-                typeColors[item.type],
-                index === items.length - 1 && 'text-[hsl(var(--builder-text))] bg-[hsl(var(--builder-surface-hover))]'
+        {items.map((item, index) => {
+          const colors = typeColors[item.type] || typeColors.element;
+          const isLast = index === items.length - 1;
+          
+          return (
+            <React.Fragment key={`${item.type}-${item.id}`}>
+              {index > 0 && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 0.4, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  className="text-[hsl(var(--builder-text-dim))]"
+                >
+                  <ChevronRight size={10} />
+                </motion.span>
               )}
-            >
-              <span className="opacity-70">{typeIcons[item.type]}</span>
-              <span className="truncate max-w-[80px]">{item.label}</span>
-            </motion.button>
-          </React.Fragment>
-        ))}
+              <motion.button
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ delay: index * 0.02 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(item.type, item.id);
+                }}
+                className={cn(
+                  'flex items-center gap-1.5 px-2 py-1 rounded-md border',
+                  'text-[10px] font-medium',
+                  'transition-all duration-150',
+                  'hover:brightness-110',
+                  colors.bg,
+                  colors.text,
+                  colors.border,
+                  isLast && 'ring-1 ring-white/10'
+                )}
+              >
+                <span className="opacity-80">{typeIcons[item.type]}</span>
+                <span className="truncate max-w-[70px]">
+                  {item.label || typeLabels[item.type]}
+                </span>
+              </motion.button>
+            </React.Fragment>
+          );
+        })}
       </AnimatePresence>
     </motion.div>
   );
