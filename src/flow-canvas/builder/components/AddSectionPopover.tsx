@@ -674,34 +674,37 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
           <button
             type="button"
             className={`
-              group w-full flex flex-col items-center justify-center py-12 px-4
+              group w-full flex flex-col items-center justify-center py-16 px-6
+              border-2 border-dashed border-[hsl(var(--builder-accent)/0.25)] rounded-xl
+              bg-[hsl(var(--builder-accent)/0.03)]
+              hover:border-[hsl(var(--builder-accent)/0.5)] hover:bg-[hsl(var(--builder-accent)/0.08)]
               transition-all duration-200
               ${className ?? ''}
             `}
           >
             {/* Empty section guidance */}
-            <div className="w-12 h-12 rounded-xl bg-[hsl(var(--builder-surface-active))] flex items-center justify-center mb-3">
-              <Package size={24} className="text-[hsl(var(--builder-text-dim))]" />
+            <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--builder-surface-active))] border border-[hsl(var(--builder-border))] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <Package size={28} className="text-[hsl(var(--builder-accent)/0.7)]" />
             </div>
-            <span className="text-sm font-medium text-[hsl(var(--builder-text-muted))] mb-1">
+            <span className="text-base font-semibold text-[hsl(var(--builder-text))] mb-1">
               Add a block to this section
             </span>
-            <span className="text-xs text-[hsl(var(--builder-text-dim))] mb-4">
+            <span className="text-sm text-[hsl(var(--builder-text-muted))] mb-5">
               Headlines, text, images, buttons & more
             </span>
             <span
               className={`
-                inline-flex items-center gap-2 rounded-lg px-4 py-2
+                inline-flex items-center gap-2 rounded-lg px-5 py-2.5
                 bg-[hsl(var(--builder-accent))] text-white
-                text-sm font-medium
-                shadow-lg shadow-[hsl(var(--builder-accent)/0.3)]
-                group-hover:brightness-110
+                text-sm font-semibold
+                shadow-lg shadow-[hsl(var(--builder-accent)/0.4)]
+                group-hover:brightness-110 group-hover:scale-[1.02]
                 group-active:scale-[0.98]
                 transition-all duration-150
               `}
             >
-              <Plus size={16} />
-              <span>Add Block</span>
+              <Plus size={18} />
+              <span>Insert Block</span>
             </span>
           </button>
         )}
