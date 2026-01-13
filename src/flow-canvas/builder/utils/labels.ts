@@ -44,16 +44,20 @@ export const blockTypeLabels: Record<BlockType, string> = {
 export const isSectionType = (type: BlockType): boolean => sectionTypes.has(type);
 
 // Get the category badge for a block type
-export const getBlockCategory = (type: BlockType): 'Section' | 'Content' | 'Layout' => {
+// "Container" for section types, "Content" for content blocks, "Layout" for spacer/divider
+export const getBlockCategory = (type: BlockType): 'Container' | 'Content' | 'Layout' => {
   if (type === 'spacer' || type === 'divider') return 'Layout';
-  return sectionTypes.has(type) ? 'Section' : 'Content';
+  return sectionTypes.has(type) ? 'Container' : 'Content';
 };
 
 // Content blocks should NOT show layout controls (Direction, Justify, Align, etc.)
-// Only Section types and Layout types need these controls
+// Section types are containers - they control layout at the Frame level, not Block level
+// Content blocks never need layout controls
 export const shouldShowLayoutControls = (type: BlockType): boolean => {
-  // These are pure content - no layout controls needed
-  const contentOnlyTypes = new Set(['text-block', 'media', 'cta', 'form-field']);
+  // Section types don't show layout controls at the Block level
+  if (isSectionType(type)) return false;
+  // Pure content blocks - no layout controls
+  const contentOnlyTypes = new Set(['text-block', 'media', 'form-field']);
   return !contentOnlyTypes.has(type);
 };
 

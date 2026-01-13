@@ -684,8 +684,8 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <div className="w-10 h-10 rounded-full bg-[hsl(var(--builder-accent)/0.1)] flex items-center justify-center mb-3 group-hover:bg-[hsl(var(--builder-accent)/0.2)] group-hover:scale-110 transition-all">
               <Plus size={20} className="text-[hsl(var(--builder-accent))]" />
             </div>
-            <span className="text-sm font-medium text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-text))]">Add content</span>
-            <span className="text-xs text-[hsl(var(--builder-text-dim))] mt-1">Headline, text, or button</span>
+            <span className="text-sm font-medium text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-text))]">Add your first block</span>
+            <span className="text-xs text-[hsl(var(--builder-text-dim))] mt-1">Start with a headline or button</span>
           </div>
         )}
       </PopoverTrigger>
