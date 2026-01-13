@@ -862,7 +862,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (Object.keys(sync).length) setSelectionFill(prev => ({ ...prev, ...sync }));
     };
 
-    // DOM cleanup that preserves selection/caret across normalize().
+    // DOM cleanup that preserves selection/caret across structural normalization.
     // IMPORTANT: During live editing, we do NOT call sanitizeStyledHTML() because it
     // strips ZWSP caret hosts, breaking caret toggles. Sanitization happens on blur/save.
     const normalizeInlineDom = (preserveCaretHosts = true) => {
@@ -873,12 +873,51 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
       const isRangeInEditor = (r: Range | null) => {
         if (!r) return false;
-        return (
-          editorEl.contains(r.startContainer) ||
-          editorEl.contains(r.endContainer) ||
-          editorEl.contains(r.commonAncestorContainer)
-        );
+        try {
+          return (
+            editorEl.contains(r.startContainer) ||
+            editorEl.contains(r.endContainer) ||
+            editorEl.contains(r.commonAncestorContainer)
+          );
+        } catch {
+          return false;
+        }
       };
+
+      const baseRange =
+        (isRangeInEditor(live) ? live : null) ??
+        (isRangeInEditor(lastSelectionRangeRef.current) ? lastSelectionRangeRef.current : null) ??
+        (isRangeInEditor(lastCaretRangeRef.current) ? lastCaretRangeRef.current : null);
+
+      const mkId = (prefix: string) =>
+        `${prefix}-${crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+
+      const startId = mkId('inline-marker-start');
+      const endId = baseRange && !baseRange.collapsed ? mkId('inline-marker-end') : null;
+
+      const insertMarkerAt = (r: Range, id: string) => {
+        const marker = document.createElement('span');
+        marker.setAttribute('data-inline-marker', id);
+        r.insertNode(marker);
+      };
+
+      // Insert selection markers so we can restore caret/selection after DOM mutations.
+      // (Even unwrap/merge/normalize can invalidate live Range containers.)
+      if (baseRange) {
+        try {
+          if (endId) {
+            const endRange = baseRange.cloneRange();
+            endRange.collapse(false);
+            insertMarkerAt(endRange, endId);
+          }
+
+          const startRange = baseRange.cloneRange();
+          startRange.collapse(true);
+          insertMarkerAt(startRange, startId);
+        } catch {
+          // If we fail to insert markers, proceed without preservation.
+        }
+      }
 
       // Structural cleanup only (no innerHTML rewrite during live editing)
       unwrapNestedStyledSpans(editorEl);
@@ -886,13 +925,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
       // Unwrap style-less spans that we may have created while removing formatting.
       // (Leaves styled spans intact; strips markup-only wrappers.)
-      // IMPORTANT: Don't unwrap caret host spans even if they have no visible styles yet
-      const styleless = Array.from(editorEl.querySelectorAll('span')) as HTMLSpanElement[];
-      for (const sp of styleless) {
-        if (sp.getAttribute('style')) continue;
-        if (sp.getAttribute('data-gradient')) continue;
+      const allSpans = Array.from(editorEl.querySelectorAll('span')) as HTMLSpanElement[];
+      for (const sp of allSpans) {
+        // Keep our selection markers
+        if (sp.getAttribute('data-inline-marker')) continue;
         // Preserve caret host spans during live editing
         if (preserveCaretHosts && sp.dataset.caretHost) continue;
+        // Preserve gradient metadata spans
+        if (sp.getAttribute('data-gradient')) continue;
+        // Only unwrap spans that are truly style-less wrappers
+        if (sp.getAttribute('style')) continue;
+
         const parent = sp.parentNode;
         if (!parent) continue;
         while (sp.firstChild) parent.insertBefore(sp.firstChild, sp);
@@ -900,6 +943,41 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       editorEl.normalize();
+
+      // Restore selection from markers if present
+      const startEl = editorEl.querySelector(`span[data-inline-marker="${startId}"]`) as HTMLSpanElement | null;
+      const endEl = endId
+        ? (editorEl.querySelector(`span[data-inline-marker="${endId}"]`) as HTMLSpanElement | null)
+        : null;
+
+      if (startEl) {
+        try {
+          const nextRange = document.createRange();
+          if (endEl) {
+            nextRange.setStartAfter(startEl);
+            nextRange.setEndBefore(endEl);
+          } else {
+            nextRange.setStartAfter(startEl);
+            nextRange.collapse(true);
+          }
+
+          sel?.removeAllRanges();
+          sel?.addRange(nextRange);
+
+          // Remove markers
+          endEl?.remove();
+          startEl.remove();
+
+          // Update cached ranges
+          if (!nextRange.collapsed && nextRange.toString().length > 0) {
+            lastSelectionRangeRef.current = nextRange.cloneRange();
+          } else if (nextRange.collapsed) {
+            lastCaretRangeRef.current = nextRange.cloneRange();
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       // Re-acquire active span ref by stable ID
       if (activeInlineSpanIdRef.current) {
