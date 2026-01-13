@@ -74,14 +74,14 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
   return (
     <div 
       className={cn(
-        "absolute -left-2 top-0 -translate-x-full flex items-start gap-1 transition-all duration-200 z-30",
+        "absolute -top-14 left-4 flex items-center gap-1.5 transition-all duration-200 z-30",
         isSelected ? "opacity-100" : "opacity-0 group-hover/frame:opacity-100"
       )}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Vertical action bar - matches block action bar design */}
+      {/* Horizontal action bar - positioned at top left of section */}
       <div className={cn(
-        "flex flex-col items-center gap-0.5 p-1 rounded-lg backdrop-blur-xl border shadow-lg",
+        "flex items-center gap-0.5 px-1.5 py-1 rounded-lg backdrop-blur-xl border shadow-lg",
         isSelected 
           ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))]" 
           : "bg-[hsl(220,10%,10%)]/95 border-white/[0.08]"
@@ -96,6 +96,31 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
         >
           <GripVertical className="w-3.5 h-3.5" />
         </button>
+        
+        {/* Section Label */}
+        <div 
+          className="flex items-center gap-1.5 px-2 cursor-pointer"
+          onClick={onSelect}
+        >
+          <Layout className="w-3.5 h-3.5 text-white/70" />
+          {isEditing ? (
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleFinishEdit}
+              onKeyDown={handleKeyDown}
+              className="bg-transparent border-none outline-none text-white text-xs font-medium w-20"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <span className="font-semibold text-xs text-white">{sectionLabel || 'Section'}</span>
+          )}
+        </div>
+        
+        {/* Divider */}
+        <div className="w-px h-4 bg-white/20" />
         
         {/* Move Up */}
         <button
@@ -173,33 +198,6 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-      
-      {/* Section Label Pill (to the right of action bar) */}
-      <div 
-        className={cn(
-          "px-3 py-1.5 text-xs font-medium backdrop-blur-xl text-white rounded-lg shadow-lg border flex items-center gap-2 cursor-pointer min-h-[32px] mt-1",
-          isSelected 
-            ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))]" 
-            : "bg-[hsl(220,10%,10%)]/95 border-white/[0.08] hover:bg-[hsl(220,10%,15%)]"
-        )}
-        onClick={onSelect}
-      >
-        <Layout className="w-3.5 h-3.5" />
-        {isEditing ? (
-          <input
-            type="text"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleFinishEdit}
-            onKeyDown={handleKeyDown}
-            className="bg-transparent border-none outline-none text-white text-xs font-medium w-20"
-            autoFocus
-            onClick={(e) => e.stopPropagation()}
-          />
-        ) : (
-          <span className="font-semibold">{sectionLabel || 'Section'}</span>
-        )}
       </div>
     </div>
   );
