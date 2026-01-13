@@ -1,6 +1,7 @@
 /**
  * StepBoundary keeps each logical step isolated so we can opt into motion
  * transitions without duplicating animation logic across components.
+ * Uses popLayout mode for smoother layout shifts during transitions.
  */
 import type { ReactNode } from 'react';
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -27,7 +28,7 @@ export function StepBoundary({
   }
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="popLayout" initial={false}>
       <MotionContainer
         key={stepId}
         className="runtime-step-boundary"
