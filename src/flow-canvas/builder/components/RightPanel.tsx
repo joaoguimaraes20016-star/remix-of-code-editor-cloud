@@ -1742,8 +1742,18 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
   onUpdate 
 }) => {
   // Background state
+  // BUG FIX: Derive bgType directly from step.background to ensure it resets when step changes.
+  // Previously, useState initialized once and never updated when switching steps, causing
+  // the inspector to show stale background type from the previous step.
   const currentBgType = step.background?.type || 'solid';
   const [bgType, setBgType] = useState<'solid' | 'gradient' | 'image'>(currentBgType);
+  
+  // CRITICAL: Reset local bgType state when the step changes.
+  // Without this, switching to a new step would keep the old step's bgType in state,
+  // causing visual mismatch and potential data corruption when editing.
+  useEffect(() => {
+    setBgType(step.background?.type || 'solid');
+  }, [step.id, step.background?.type]);
   
   const handleBackgroundTypeChange = (newType: 'solid' | 'gradient' | 'image') => {
     setBgType(newType);
