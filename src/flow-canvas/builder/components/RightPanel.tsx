@@ -2464,8 +2464,12 @@ const FrameInspector: React.FC<{
       </CollapsibleSection>
 
       {/* Background - using unified BackgroundEditor */}
-      <CollapsibleSection title="Card Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
+      <CollapsibleSection title="Section Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
         <div className="pt-3">
+          {/* Hint explaining section vs canvas */}
+          <div className="text-[10px] text-builder-text-dim bg-builder-surface-hover rounded-lg px-3 py-2 mb-3">
+            💡 This is the section's background. Set to transparent to show the Canvas Background behind it.
+          </div>
           <BackgroundEditor
             value={getBackgroundValue()}
             onChange={handleBackgroundEditorChange}
@@ -2738,8 +2742,12 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Canvas Background" icon={<Image className="w-4 h-4" />}>
+      <CollapsibleSection title="Canvas Background" icon={<Image className="w-4 h-4" />} defaultOpen>
         <div className="space-y-3 pt-3">
+          {/* Hint explaining canvas vs section */}
+          <div className="text-[10px] text-builder-text-dim bg-builder-surface-hover rounded-lg px-3 py-2 -mt-1">
+            💡 This is the page-level background. Sections (cards) sit on top of this. Click a section to edit its individual background.
+          </div>
           {/* Reset Button */}
           <div className="flex items-center justify-between">
             <span className="text-xs text-builder-text-muted">Background Type</span>

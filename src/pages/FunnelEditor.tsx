@@ -121,6 +121,8 @@ export default function FunnelEditor() {
         .from('funnels')
         .update({ 
           builder_document: document as unknown as Json, 
+          // Also persist page.settings to the funnel.settings column (source of truth for theme/background)
+          settings: (page.settings || {}) as unknown as Json,
           updated_at: new Date().toISOString() 
         })
         .eq('id', funnelId);
