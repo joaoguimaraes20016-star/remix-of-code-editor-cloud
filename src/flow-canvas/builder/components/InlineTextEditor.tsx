@@ -114,6 +114,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const lastSelectionRangeRef = useRef<Range | null>(null);
   // Persist the last caret (collapsed) range so toolbar toggles can apply to "next typed text"
   const lastCaretRangeRef = useRef<Range | null>(null);
+  // Track the "auto select-all" range from double-click so we can ignore it when it's stale
+  const autoSelectAllRangeRef = useRef<Range | null>(null);
+  // Timestamp of last intentional user selection (not auto-select-all)
+  const lastUserSelectionAtRef = useRef<number>(0);
   // (prevents edit-mode from closing when using sliders / popovers that don't move focus)
   const lastPointerDownInInspectorRef = useRef(false);
   const lastPointerDownInToolbarRef = useRef(false);
@@ -235,12 +239,21 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
       el.focus();
 
-      // Select all text
+      // CHANGED: Place caret at END instead of selecting all text.
+      // This prevents "whole block becomes bold" when user clicks Bold without selecting anything.
+      // The user can still select-all via Cmd+A if they want to format everything.
       const range = document.createRange();
       range.selectNodeContents(el);
+      range.collapse(false); // collapse to END
       const selection = window.getSelection();
       selection?.removeAllRanges();
       selection?.addRange(range);
+
+      // Clear any stale auto-select-all range
+      autoSelectAllRangeRef.current = null;
+      lastSelectionRangeRef.current = null;
+      // Store the initial caret position
+      lastCaretRangeRef.current = range.cloneRange();
     }, 0);
   }, [disabled, isEditing, value]);
 
@@ -370,16 +383,40 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       isPointerDownRef.current = false;
       pointerDownContextRef.current = null;
       
-      // Capture selection immediately after mouseup inside the editor
-      // This ensures we have the latest user selection before any popover interaction
-      const target = ev.target as HTMLElement | null;
+      // CRITICAL FIX: Capture selection on ANY pointerup, not just when target is inside editor.
+      // This fixes drag-selections where mouse is released outside the contentEditable bounds.
       const editorEl = contentRef.current;
-      if (editorEl && target && editorEl.contains(target)) {
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-          const range = sel.getRangeAt(0);
+      if (!editorEl) return;
+      
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        
+        // Check if the range is inside the editor (even if pointerup target was outside)
+        const isRangeInEditor = (r: Range): boolean => {
+          try {
+            return (
+              editorEl.contains(r.startContainer) ||
+              editorEl.contains(r.endContainer) ||
+              editorEl.contains(r.commonAncestorContainer) ||
+              r.startContainer === editorEl ||
+              r.endContainer === editorEl
+            );
+          } catch {
+            return false;
+          }
+        };
+        
+        if (isRangeInEditor(range)) {
           if (!range.collapsed && range.toString().length > 0) {
             lastSelectionRangeRef.current = range.cloneRange();
+            lastUserSelectionAtRef.current = Date.now();
+            if (import.meta.env.DEV) {
+              console.debug('[PointerUp] Captured selection:', range.toString().slice(0, 30));
+            }
+          } else if (range.collapsed) {
+            lastCaretRangeRef.current = range.cloneRange();
+            lastUserSelectionAtRef.current = Date.now();
           }
         }
       }
@@ -484,8 +521,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           // - Collapsed caret: keep as lastCaretRangeRef
           if (!range.collapsed && range.toString().length > 0 && !isSliderDraggingRef.current) {
             lastSelectionRangeRef.current = range.cloneRange();
+            lastUserSelectionAtRef.current = Date.now();
           } else if (range.collapsed) {
             lastCaretRangeRef.current = range.cloneRange();
+            lastUserSelectionAtRef.current = Date.now();
           }
 
           // Compute B/I/U tri-state from the actual DOM selection (not block-level styles)
@@ -618,8 +657,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // Snapshot selection/caret for later toolbar actions.
       if (!range.collapsed && range.toString().length > 0 && !isSliderDraggingRef.current) {
         lastSelectionRangeRef.current = range.cloneRange();
+        lastUserSelectionAtRef.current = Date.now();
       } else if (range.collapsed) {
         lastCaretRangeRef.current = range.cloneRange();
+        lastUserSelectionAtRef.current = Date.now();
       }
 
       // Compute B/I/U tri-state from actual DOM selection
@@ -766,8 +807,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           }
 
           // Fallback: when toolbar has focus, selection can appear "outside" the editor.
-          // Use the last known valid selection/caret range.
-          if (isRangeInEditor(lastSelectionRangeRef.current)) {
+          // Use the last known valid selection/caret range, but only if it's recent (within 10s).
+          const isRecentSelection = Date.now() - lastUserSelectionAtRef.current < 10000;
+          
+          if (isRecentSelection && isRangeInEditor(lastSelectionRangeRef.current)) {
             const fmt = getSelectionFormatState(editorEl, lastSelectionRangeRef.current as Range);
             if (import.meta.env.DEV) {
               console.log('[liveFormat] from lastSelectionRangeRef', { fmt, text: lastSelectionRangeRef.current?.toString()?.slice(0, 30) });
@@ -775,7 +818,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             return fmt;
           }
 
-          if (isRangeInEditor(lastCaretRangeRef.current)) {
+          if (isRecentSelection && isRangeInEditor(lastCaretRangeRef.current)) {
             const fmt = getSelectionFormatState(editorEl, lastCaretRangeRef.current as Range);
             if (import.meta.env.DEV) {
               console.log('[liveFormat] from lastCaretRangeRef', { fmt });
@@ -784,7 +827,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           }
 
           if (import.meta.env.DEV) {
-            console.log('[liveFormat] fallback to selectionFormat state', selectionFormat);
+            console.log('[liveFormat] fallback to selectionFormat state (no recent range)', selectionFormat);
           }
           return selectionFormat;
         } catch (e) {
@@ -1029,7 +1072,11 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // If live selection is collapsed/empty, try restoring saved selection
-      if (!liveHasSelection && lastSelectionRangeRef.current) {
+      // CRITICAL: Only restore if the saved selection is RECENT (within 10 seconds)
+      // This prevents restoring a stale "select-all" from minutes ago
+      const selectionIsRecent = Date.now() - lastUserSelectionAtRef.current < 10000;
+      
+      if (!liveHasSelection && lastSelectionRangeRef.current && selectionIsRecent) {
         try {
           // More robust check - verify the range endpoints are still valid
           const savedRange = lastSelectionRangeRef.current;
@@ -1060,7 +1107,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // If we still don't have a live range inside the editor, try restoring the last caret.
-      if ((!liveRange || !editorEl.contains(liveRange.commonAncestorContainer)) && lastCaretRangeRef.current) {
+      // CRITICAL: Only restore if recent (within 10 seconds)
+      if ((!liveRange || !editorEl.contains(liveRange.commonAncestorContainer)) && lastCaretRangeRef.current && selectionIsRecent) {
         try {
           const savedCaret = lastCaretRangeRef.current;
           const startValid = editorEl.contains(savedCaret.startContainer) || savedCaret.startContainer === editorEl;
@@ -1556,11 +1604,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // STEP 1: Restore preferred range (selection > caret > last caret > last selection)
+      // CRITICAL: Only use saved ranges if they are recent (within 10 seconds)
+      const isRecentSelection = Date.now() - lastUserSelectionAtRef.current < 10000;
       const preferredRange: Range | null =
         (liveHasTextSelection ? liveRange : null) ??
         (liveHasCaret ? liveRange : null) ??
-        (lastCaretRangeRef.current ?? null) ??
-        (lastSelectionRangeRef.current ?? null);
+        (isRecentSelection ? lastCaretRangeRef.current : null) ??
+        (isRecentSelection ? lastSelectionRangeRef.current : null);
 
       if (sel && preferredRange) {
         try {
@@ -2050,12 +2100,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // STEP 2: Restore the *correct* range before applying.
-      // Prefer live selection, then live caret, then last caret, then last selection.
+      // Prefer live selection, then live caret, then last caret (if recent), then last selection (if recent).
+      const isRecentSelection = Date.now() - lastUserSelectionAtRef.current < 10000;
       const preferredRange: Range | null =
         (liveHasTextSelection ? liveRange : null) ??
         (liveHasCaret ? liveRange : null) ??
-        (lastCaretRangeRef.current ?? null) ??
-        (lastSelectionRangeRef.current ?? null);
+        (isRecentSelection ? lastCaretRangeRef.current : null) ??
+        (isRecentSelection ? lastSelectionRangeRef.current : null);
 
       if (sel && preferredRange) {
         try {
