@@ -75,16 +75,18 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
     <div 
       className={cn(
         "absolute -top-14 left-4 flex items-center gap-1.5 transition-all duration-200 z-30",
-        isSelected ? "opacity-100" : "opacity-0 group-hover/frame:opacity-100"
+        isSelected 
+          ? "opacity-100" 
+          : "opacity-0 pointer-events-none group-hover/frame:opacity-100 group-hover/frame:pointer-events-auto"
       )}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Horizontal action bar - positioned at top left of section */}
       <div className={cn(
-        "flex items-center gap-0.5 px-1.5 py-1 rounded-lg backdrop-blur-xl border shadow-lg",
+        "flex items-center gap-0.5 px-1.5 py-1 rounded-lg border shadow-lg",
         isSelected 
-          ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))]" 
-          : "bg-[hsl(220,10%,10%)]/95 border-white/[0.08]"
+          ? "bg-[hsl(275,70%,55%)] border-[hsl(275,70%,55%)] backdrop-blur-xl" 
+          : "bg-[hsl(220,10%,10%)] border-white/10"
       )}>
         {/* Drag Handle */}
         <button
@@ -168,27 +170,27 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
           <DropdownMenuContent 
             side="right" 
             align="start"
-            className="w-48 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
+            className="w-48 bg-[hsl(220,22%,7%)] border-[hsl(220,18%,14%)]"
           >
-            <DropdownMenuItem onClick={handleStartEdit} className="text-[hsl(var(--builder-text))]">
+            <DropdownMenuItem onClick={handleStartEdit} className="text-white/90">
               <Layout className="w-4 h-4 mr-2" />
               Rename Section
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-[hsl(var(--builder-border))]" />
-            <DropdownMenuItem onClick={onAddAbove} className="text-[hsl(var(--builder-text))]">
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem onClick={onAddAbove} className="text-white/90">
               <Plus className="w-4 h-4 mr-2" />
               Add Section Above
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onAddBelow} className="text-[hsl(var(--builder-text))]">
+            <DropdownMenuItem onClick={onAddBelow} className="text-white/90">
               <Plus className="w-4 h-4 mr-2" />
               Add Section Below
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-[hsl(var(--builder-border))]" />
-            <DropdownMenuItem onClick={onDuplicate} className="text-[hsl(var(--builder-text))]">
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem onClick={onDuplicate} className="text-white/90">
               <Copy className="w-4 h-4 mr-2" />
               Duplicate Section
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-[hsl(var(--builder-border))]" />
+            <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuItem 
               onClick={onDelete} 
               className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
