@@ -566,9 +566,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   }, [showToolbar, isEditing, updateToolbarPosition]);
 
   // Debounced save for inline HTML updates (prevents re-render jitter while tweaking custom gradients)
-  // NOTE: We no longer run span cleanup (unwrap/merge) during active editing.
-  // DOM mutations during slider drags invalidate span refs and break interactions.
-  // Cleanup happens on blur/exit instead.
+  // NOTE: During active editing, we must NOT run full sanitizeStyledHTML() here because it:
+  // - strips ZWSP caret hosts
+  // - can restructure spans (breaks selection targeting)
+  // Sanitization happens on blur/save and when rendering outside edit mode.
   const scheduleInlineHtmlSave = useCallback(() => {
     const editorEl = contentRef.current;
     if (!editorEl) return;
@@ -577,11 +578,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       window.clearTimeout(inlineSaveTimerRef.current);
     }
 
+    const stripEditingArtifacts = (html: string) => {
+      // Remove ZWSP and caret-host markers from the SAVED html only.
+      // (Do not touch the live DOM here.)
+      return html
+        .replace(/\u200B/g, '')
+        .replace(/\sdata-caret-host=("1"|'1')/g, '');
+    };
+
     inlineSaveTimerRef.current = window.setTimeout(() => {
       const el = contentRef.current;
       if (!el) return;
-      // Skip cleanup here - just save current state to preserve span targeting
-      const htmlContent = sanitizeStyledHTML(el.innerHTML);
+
+      const htmlContent = stripEditingArtifacts(el.innerHTML);
       onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
     }, 150);
   }, [onChange]);
@@ -1081,8 +1090,28 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         if (!isFormattingToggle) return;
         try {
           const sel = window.getSelection();
-          if (sel && sel.rangeCount > 0) {
-            const fmt = getSelectionFormatState(editorEl, sel.getRangeAt(0));
+          const liveRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+
+          const isRangeInEditor = (r: Range | null) => {
+            if (!r) return false;
+            try {
+              return (
+                editorEl.contains(r.startContainer) ||
+                editorEl.contains(r.endContainer) ||
+                editorEl.contains(r.commonAncestorContainer)
+              );
+            } catch {
+              return false;
+            }
+          };
+
+          const rangeForFormat =
+            (isRangeInEditor(liveRange) ? liveRange : null) ??
+            (isRangeInEditor(lastSelectionRangeRef.current) ? lastSelectionRangeRef.current : null) ??
+            (isRangeInEditor(lastCaretRangeRef.current) ? lastCaretRangeRef.current : null);
+
+          if (rangeForFormat) {
+            const fmt = getSelectionFormatState(editorEl, rangeForFormat);
             setSelectionFormat(fmt);
           }
         } catch {
