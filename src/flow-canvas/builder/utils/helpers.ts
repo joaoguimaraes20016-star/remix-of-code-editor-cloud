@@ -1,4 +1,4 @@
-import { Page, Step, Frame, Stack, Block, Element, SelectionState } from '../../types/infostack';
+import { Page, Step, Frame, Stack, Block, Element, SelectionState, PageBackground } from '../../types/infostack';
 
 // Generate unique IDs
 export const generateId = (): string => {
@@ -9,6 +9,22 @@ export const generateId = (): string => {
 export const deepClone = <T>(obj: T): T => {
   return JSON.parse(JSON.stringify(obj));
 };
+
+/**
+ * DEFAULT_STEP_BACKGROUND: Canonical default for new step backgrounds.
+ * CRITICAL: This must be deep-cloned on every use to prevent reference sharing.
+ * If we return the same object reference, editing one step's background would mutate all steps.
+ */
+const DEFAULT_STEP_BACKGROUND: PageBackground = {
+  type: 'solid',
+  color: '#ffffff',
+};
+
+/**
+ * Returns a fresh deep-cloned copy of the default step background.
+ * Call this function every time you need default step styles - never reuse the object directly.
+ */
+export const getDefaultStepBackground = (): PageBackground => deepClone(DEFAULT_STEP_BACKGROUND);
 
 // Find node by path
 export const findNodeByPath = (
@@ -186,6 +202,11 @@ export const getIntentColorClass = (intent: string): string => {
 
 // Create default step with Hero + CTA block template
 // Create a blank step with no preset content
+// BUG FIX: New steps now get an EXPLICIT default background via getDefaultStepBackground().
+// Previously, steps had `background: undefined` which caused the canvas to fall back to
+// the global page background. This led to visual inheritance where new pages appeared
+// to "inherit" the previous page's styles. By assigning a fresh deep-cloned default,
+// each step is guaranteed isolated styling.
 export const createBlankStep = (name?: string): Step => ({
   id: generateId(),
   name: name || 'Untitled Page',
@@ -208,6 +229,9 @@ export const createBlankStep = (name?: string): Step => ({
       props: {},
     },
   ],
+  // CRITICAL: Use getDefaultStepBackground() to get a fresh deep clone.
+  // Never share object references between steps or the same object would be mutated.
+  background: getDefaultStepBackground(),
   settings: {},
 });
 
@@ -259,6 +283,11 @@ export const createDefaultStep = (intent: 'capture' | 'qualify' | 'schedule' | '
     props: {},
   };
 
+  // BUG FIX: New steps now get an EXPLICIT default background via getDefaultStepBackground().
+  // Previously, steps had `background: undefined` which caused the canvas to fall back to
+  // the global page background. This led to visual inheritance where new pages appeared
+  // to "inherit" the previous page's styles. By assigning a fresh deep-cloned default,
+  // each step is guaranteed isolated styling.
   return {
     id: generateId(),
     name: stepNames[intent],
@@ -281,6 +310,9 @@ export const createDefaultStep = (intent: 'capture' | 'qualify' | 'schedule' | '
         props: {},
       },
     ],
+    // CRITICAL: Use getDefaultStepBackground() to get a fresh deep clone.
+    // Never share object references between steps or the same object would be mutated.
+    background: getDefaultStepBackground(),
     settings: {},
   };
 };
