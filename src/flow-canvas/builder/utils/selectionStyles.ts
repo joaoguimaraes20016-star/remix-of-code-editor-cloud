@@ -198,6 +198,22 @@ export function applyStylesToSelection(options: SelectionStyleOptions): HTMLSpan
         else s.removeAttribute('style');
       }
 
+      // Also normalize legacy formatting tags (<b>/<strong>/<i>/<em>/<u>) inside the selection.
+      // Otherwise "toggle off" can appear broken because those tags still force the style.
+      const unwrapTags = (selectors: string[]) => {
+        const nodes = Array.from(temp.querySelectorAll(selectors.join(',')));
+        for (const node of nodes) {
+          const parent = node.parentNode;
+          if (!parent) continue;
+          while (node.firstChild) parent.insertBefore(node.firstChild, node);
+          parent.removeChild(node);
+        }
+      };
+
+      if (options.fontWeight !== undefined) unwrapTags(['b', 'strong']);
+      if (options.fontStyle !== undefined) unwrapTags(['i', 'em']);
+      if (options.textDecoration !== undefined) unwrapTags(['u']);
+
       const rebuilt = document.createDocumentFragment();
       while (temp.firstChild) rebuilt.appendChild(temp.firstChild);
       fragment = rebuilt;
@@ -595,8 +611,32 @@ export function sanitizeStyledHTML(html: string): string {
       const el = node as HTMLElement;
       const tagName = el.tagName.toLowerCase();
 
-      // Only allow span, br, and basic text formatting
-      const allowedTags = ['span', 'br', 'b', 'i', 'u', 'strong', 'em'];
+      // Convert legacy formatting tags into spans so formatting becomes controllable by our
+      // span-based style toggles (prevents "Bold won't turn off" issues).
+      const legacyInlineTagStyles: Record<string, string> = {
+        b: 'font-weight: 700',
+        strong: 'font-weight: 700',
+        i: 'font-style: italic',
+        em: 'font-style: italic',
+        u: 'text-decoration: underline',
+      };
+
+      if (legacyInlineTagStyles[tagName]) {
+        const span = document.createElement('span');
+        const mergedStyle = [el.getAttribute('style'), legacyInlineTagStyles[tagName]].filter(Boolean).join('; ');
+        if (mergedStyle) span.setAttribute('style', mergedStyle);
+
+        // Move children across, then replace the legacy node.
+        while (el.firstChild) span.appendChild(el.firstChild);
+        el.parentNode?.replaceChild(span, el);
+
+        // Sanitize the new span recursively.
+        sanitize(span);
+        return;
+      }
+
+      // Only allow span + br (everything else is stripped)
+      const allowedTags = ['span', 'br'];
 
       if (!allowedTags.includes(tagName)) {
         // Replace with text content
@@ -637,7 +677,7 @@ export function sanitizeStyledHTML(html: string): string {
           }
         }
       } else {
-        // Remove all attributes from other elements
+        // Remove all attributes from <br>
         const attrs = Array.from(el.attributes);
         attrs.forEach(attr => el.removeAttribute(attr.name));
       }

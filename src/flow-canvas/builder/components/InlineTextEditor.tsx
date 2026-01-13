@@ -1567,6 +1567,23 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         onBlur={handleBlur}
         onSelect={handleSelect}
         onKeyDown={(e) => {
+          const isMod = e.metaKey || e.ctrlKey;
+          const k = e.key.toLowerCase();
+
+          // Keep formatting in our span-based system (don't let the browser insert <b>/<u>/<i> tags).
+          if (isMod && !e.shiftKey && (k === 'b' || k === 'i' || k === 'u')) {
+            e.preventDefault();
+
+            if (k === 'b') {
+              handleStyleChange({ fontWeight: selectionFormat.bold === 'on' ? 'normal' : 'bold' });
+            } else if (k === 'i') {
+              handleStyleChange({ fontStyle: selectionFormat.italic === 'on' ? 'normal' : 'italic' });
+            } else if (k === 'u') {
+              handleStyleChange({ textDecoration: selectionFormat.underline === 'on' ? 'none' : 'underline' });
+            }
+            return;
+          }
+
           if (e.key === 'Escape') {
             setIsEditing(false);
             setShowToolbar(false);
