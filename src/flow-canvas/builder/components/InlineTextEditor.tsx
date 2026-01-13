@@ -1157,6 +1157,28 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         scheduleInlineHtmlSave();
         syncToolbarState();
 
+        // Debug: capture the actual caret container + computed tri-state after DOM ops
+        try {
+          const s2 = window.getSelection();
+          const r2 = s2 && s2.rangeCount > 0 ? s2.getRangeAt(0) : null;
+          const fmt2 = r2 ? getSelectionFormatState(editorEl, r2) : null;
+          const hostEl = r2
+            ? (r2.startContainer.nodeType === Node.ELEMENT_NODE
+                ? (r2.startContainer as HTMLElement)
+                : (r2.startContainer.parentElement as HTMLElement | null))
+            : null;
+          console.log('INLINE_DEBUG_CARET', {
+            applied: caretOpts,
+            rangeCollapsed: r2?.collapsed,
+            hostTag: hostEl?.tagName,
+            hostHasCaretHost: (hostEl as any)?.dataset?.caretHost,
+            hostStyle: hostEl?.getAttribute('style'),
+            fmt: fmt2,
+          });
+        } catch {
+          // ignore
+        }
+
         requestAnimationFrame(recomputeFormatState);
         return true;
       }

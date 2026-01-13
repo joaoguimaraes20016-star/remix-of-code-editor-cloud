@@ -688,7 +688,9 @@ export function unwrapNestedStyledSpans(container: HTMLElement): void {
 
       const inner = only as HTMLSpanElement;
 
-      // IMPORTANT:
+      // IMPORTANT: caret-host spans are transient editing helpers.
+      // Unwrapping them can re-merge formatting from ancestors and make caret toggles look broken.
+      if (outer.dataset.caretHost || inner.dataset.caretHost) continue;
       // When a new style is applied we typically WRAP selection -> the newest span is the OUTER one.
       // The old content may already be inside a styled span (e.g. gradient/color). If we unwrap by
       // replacing the outer with the inner, we accidentally DROP the newest formatting (bug).
@@ -732,6 +734,13 @@ export function mergeAdjacentStyledSpans(container: HTMLElement): void {
     if (next && next.nodeType === Node.ELEMENT_NODE) {
       const nextEl = next as HTMLElement;
       if (nextEl.tagName === 'SPAN' && nextEl.getAttribute('style') === span.getAttribute('style')) {
+        // Preserve caret-host metadata when merging
+        const curSpan = span as HTMLSpanElement;
+        const nextSpan = nextEl as HTMLSpanElement;
+        if (curSpan.dataset.caretHost || nextSpan.dataset.caretHost) {
+          curSpan.dataset.caretHost = '1';
+        }
+
         // Merge: move all children of next into current span, then remove next
         while (nextEl.firstChild) {
           span.appendChild(nextEl.firstChild);
