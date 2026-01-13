@@ -127,6 +127,7 @@ interface CanvasRendererProps {
   onReorderElements?: (blockId: string, fromIndex: number, toIndex: number) => void;
   onOpenBlockPalette?: () => void;
   onAddBlock?: (block: Block, position?: { stackId: string; index: number }) => void;
+  onAddFrame?: () => void;
   onUpdateElement?: (elementId: string, updates: Partial<Element>) => void;
   onDuplicateElement?: (elementId: string) => void;
   onDeleteElement?: (elementId: string) => void;
@@ -2214,8 +2215,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         onSelect({ type: 'block', id: block.id, path: blockPath }, e.shiftKey);
       }}
     >
-      {/* Block Type Badge - Shows on hover with container-specific styling, prefixed with "Block:" */}
-      <span className={cn('block-type-badge block-type-badge-block', getBlockBadgeClass())}>Block: {blockTypeLabel}</span>
+      {/* Block Type Badge - Shows on hover with blue styling */}
+      <span className={cn('block-type-badge block-type-badge-block', getBlockBadgeClass())}>{blockTypeLabel}</span>
       
       {/* Block Action Bar - shows on selection with smooth animation */}
       {!readOnly && (
@@ -2878,6 +2879,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   onReorderElements,
   onOpenBlockPalette,
   onAddBlock,
+  onAddFrame,
   onUpdateElement,
   onDuplicateElement,
   onDeleteElement,
@@ -3129,6 +3131,24 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   onFormSubmit={onFormSubmit}
                 />
               ))}
+              
+              {/* Add Section button */}
+              {!readOnly && onAddFrame && (
+                <div className="px-4 py-6">
+                  <button
+                    onClick={onAddFrame}
+                    className={cn(
+                      "w-full py-3 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all text-sm font-medium",
+                      isDarkTheme 
+                        ? "border-gray-700/60 bg-gray-800/20 text-gray-400 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-gray-200" 
+                        : "border-gray-300 bg-gray-50/50 text-gray-500 hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.05)] hover:text-gray-700"
+                    )}
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Section</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Footer area - optional footer placeholder */}
