@@ -859,6 +859,18 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           scheduleInlineHtmlSave();
           syncToolbarState();
           patchFormatState();
+          
+          // Re-read DOM format state immediately
+          try {
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+              const updatedFormat = getSelectionFormatState(editorEl, sel.getRangeAt(0));
+              setSelectionFormat(updatedFormat);
+            }
+          } catch {
+            // patchFormatState fallback
+          }
+          
           return true;
         }
       }
@@ -928,6 +940,18 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               scheduleInlineHtmlSave();
               syncToolbarState();
               patchFormatState();
+              
+              // Re-read DOM format state immediately after update
+              try {
+                const sel = window.getSelection();
+                if (sel && sel.rangeCount > 0) {
+                  const updatedFormat = getSelectionFormatState(editorEl, sel.getRangeAt(0));
+                  setSelectionFormat(updatedFormat);
+                }
+              } catch {
+                // patchFormatState already covered fallback
+              }
+              
               return true;
             }
           } catch {
@@ -954,6 +978,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           scheduleInlineHtmlSave();
           syncToolbarState();
           patchFormatState();
+          
+          // CRITICAL: Re-read the actual DOM format state immediately after applying the span
+          // so the toolbar buttons reflect the new reality on the next click.
+          try {
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+              const updatedFormat = getSelectionFormatState(editorEl, sel.getRangeAt(0));
+              setSelectionFormat(updatedFormat);
+            }
+          } catch {
+            // fallback already handled by patchFormatState
+          }
+          
           return true;
         }
         
@@ -983,6 +1020,18 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         scheduleInlineHtmlSave();
         syncToolbarState();
         patchFormatState();
+        
+        // Re-read DOM format state immediately
+        try {
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount > 0) {
+            const updatedFormat = getSelectionFormatState(editorEl, sel.getRangeAt(0));
+            setSelectionFormat(updatedFormat);
+          }
+        } catch {
+          // patchFormatState fallback
+        }
+        
         return true;
       }
 
