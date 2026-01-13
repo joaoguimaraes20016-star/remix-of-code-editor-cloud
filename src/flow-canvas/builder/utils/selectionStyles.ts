@@ -89,6 +89,89 @@ function buildStyleString(options: SelectionStyleOptions): string {
 }
 
 /**
+ * Remove specific formatting from the current selection WITHOUT wrapping in a new span.
+ * This is used for toggle-OFF operations where we only need to strip existing styles.
+ */
+export function removeFormatFromSelection(options: {
+  fontWeight?: boolean;
+  fontStyle?: boolean;
+  textDecoration?: boolean;
+}): boolean {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return false;
+
+  const range = sel.getRangeAt(0);
+  if (range.collapsed) return false;
+
+  try {
+    const extracted = range.extractContents();
+    const temp = document.createElement('div');
+    temp.appendChild(extracted);
+
+    // Strip the specified formatting properties from ALL spans in the selection
+    const spans = Array.from(temp.querySelectorAll('span[style]')) as HTMLSpanElement[];
+    for (const s of spans) {
+      const current = parseStyleAttribute(s.getAttribute('style'));
+      if (options.fontWeight) delete current['font-weight'];
+      if (options.fontStyle) delete current['font-style'];
+      if (options.textDecoration) delete current['text-decoration'];
+
+      const next = serializeStyleAttribute(current);
+      if (next) s.setAttribute('style', next);
+      else s.removeAttribute('style');
+    }
+
+    // Also unwrap legacy formatting tags
+    const unwrapTags = (selectors: string[]) => {
+      const nodes = Array.from(temp.querySelectorAll(selectors.join(',')));
+      for (const node of nodes) {
+        const parent = node.parentNode;
+        if (!parent) continue;
+        while (node.firstChild) parent.insertBefore(node.firstChild, node);
+        parent.removeChild(node);
+      }
+    };
+
+    if (options.fontWeight) unwrapTags(['b', 'strong']);
+    if (options.fontStyle) unwrapTags(['i', 'em']);
+    if (options.textDecoration) unwrapTags(['u']);
+
+    // Use a marker span to track where we insert, so we can restore selection
+    const markerStart = document.createElement('span');
+    markerStart.dataset.selMarker = 'start';
+    const markerEnd = document.createElement('span');
+    markerEnd.dataset.selMarker = 'end';
+
+    // Insert markers around the content
+    const rebuilt = document.createDocumentFragment();
+    rebuilt.appendChild(markerStart);
+    while (temp.firstChild) rebuilt.appendChild(temp.firstChild);
+    rebuilt.appendChild(markerEnd);
+
+    range.insertNode(rebuilt);
+
+    // Restore selection between markers
+    const parent = markerStart.parentNode;
+    if (parent) {
+      const newRange = document.createRange();
+      newRange.setStartAfter(markerStart);
+      newRange.setEndBefore(markerEnd);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+
+      // Remove markers
+      markerStart.remove();
+      markerEnd.remove();
+    }
+
+    return true;
+  } catch (e) {
+    console.warn('removeFormatFromSelection failed:', e);
+    return false;
+  }
+}
+
+/**
  * Apply inline styles to the currently selected text within a contentEditable element.
  * Returns the created/updated span when successful, otherwise null.
  */
