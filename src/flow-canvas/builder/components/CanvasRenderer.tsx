@@ -2670,12 +2670,12 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add Section Button at bottom */}
+          {/* Add block button - subtle, shows on hover */}
           {!readOnly && (
-            <div className="mt-2">
+            <div className="mt-3 opacity-0 group-hover/section:opacity-100 transition-opacity">
               <AddSectionPopover 
                 onAddBlock={handleAddBlockToStack}
-                variant="inline"
+                variant="minimal"
               />
             </div>
           )}
