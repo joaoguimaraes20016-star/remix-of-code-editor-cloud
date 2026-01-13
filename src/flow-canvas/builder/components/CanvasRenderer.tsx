@@ -2811,7 +2811,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   return (
     <div
       className={cn(
-        'overflow-hidden transition-all relative group/frame cursor-pointer',
+        'overflow-visible transition-all relative group/frame cursor-pointer',
         // Apply rounded corners and centering only for contained layout
         !isFullWidth && 'rounded-2xl mx-auto',
         frameStyles.className,
