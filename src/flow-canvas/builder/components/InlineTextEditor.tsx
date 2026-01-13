@@ -12,6 +12,7 @@ import {
   getComputedTextColorAtSelection,
   hasSelectionInElement,
   mergeAdjacentStyledSpans,
+  removeFormatFromSelection,
   sanitizeStyledHTML,
   unwrapNestedStyledSpans,
   updateSpanStyle,
@@ -725,26 +726,52 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
           const isRangeInEditor = (r: Range | null) => {
             if (!r) return false;
-            return editorEl.contains(r.startContainer) || editorEl.contains(r.endContainer) || r.commonAncestorContainer === editorEl;
+            try {
+              // Range can become invalid after DOM mutations - check if containers still exist
+              const startValid = r.startContainer && document.contains(r.startContainer);
+              const endValid = r.endContainer && document.contains(r.endContainer);
+              if (!startValid || !endValid) return false;
+              return editorEl.contains(r.startContainer) || editorEl.contains(r.endContainer) || r.commonAncestorContainer === editorEl;
+            } catch {
+              return false;
+            }
           };
 
           // Prefer the *actual* current selection if it's inside the editor.
           if (isRangeInEditor(liveRange)) {
-            return getSelectionFormatState(editorEl, liveRange as Range);
+            const fmt = getSelectionFormatState(editorEl, liveRange as Range);
+            if (import.meta.env.DEV) {
+              console.log('[liveFormat] from liveRange', { fmt, text: liveRange?.toString()?.slice(0, 30) });
+            }
+            return fmt;
           }
 
           // Fallback: when toolbar has focus, selection can appear "outside" the editor.
           // Use the last known valid selection/caret range.
           if (isRangeInEditor(lastSelectionRangeRef.current)) {
-            return getSelectionFormatState(editorEl, lastSelectionRangeRef.current as Range);
+            const fmt = getSelectionFormatState(editorEl, lastSelectionRangeRef.current as Range);
+            if (import.meta.env.DEV) {
+              console.log('[liveFormat] from lastSelectionRangeRef', { fmt, text: lastSelectionRangeRef.current?.toString()?.slice(0, 30) });
+            }
+            return fmt;
           }
 
           if (isRangeInEditor(lastCaretRangeRef.current)) {
-            return getSelectionFormatState(editorEl, lastCaretRangeRef.current as Range);
+            const fmt = getSelectionFormatState(editorEl, lastCaretRangeRef.current as Range);
+            if (import.meta.env.DEV) {
+              console.log('[liveFormat] from lastCaretRangeRef', { fmt });
+            }
+            return fmt;
           }
 
+          if (import.meta.env.DEV) {
+            console.log('[liveFormat] fallback to selectionFormat state', selectionFormat);
+          }
           return selectionFormat;
-        } catch {
+        } catch (e) {
+          if (import.meta.env.DEV) {
+            console.warn('[liveFormat] error', e);
+          }
           return selectionFormat;
         }
       })();
@@ -1153,20 +1180,53 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           }
         }
 
-        // Wrap the selection with new span
+        // Determine if we're in "remove mode" for any formatting property
+        const isRemoveMode = 
+          styleOpts.fontWeight === null ||
+          styleOpts.fontStyle === null ||
+          styleOpts.textDecoration === null;
+
+        if (isRemoveMode) {
+          // TOGGLE OFF: Use removeFormatFromSelection to strip styles without wrapping
+          const removed = removeFormatFromSelection({
+            fontWeight: styleOpts.fontWeight === null,
+            fontStyle: styleOpts.fontStyle === null,
+            textDecoration: styleOpts.textDecoration === null,
+          });
+
+          if (removed) {
+            // Update saved selection reference so next toggle can find it
+            try {
+              const sel = window.getSelection();
+              if (sel && sel.rangeCount > 0) {
+                const r = sel.getRangeAt(0);
+                if (!r.collapsed && r.toString().length > 0) {
+                  lastSelectionRangeRef.current = r.cloneRange();
+                }
+              }
+            } catch {
+              // ignore
+            }
+
+            setSessionHasInlineStyles(true);
+            normalizeInlineDom();
+            scheduleInlineHtmlSave();
+            syncToolbarState();
+            requestAnimationFrame(recomputeFormatState);
+            return true;
+          }
+
+          if (import.meta.env.DEV) {
+            console.warn('[handleStyleChange] removeFormatFromSelection failed');
+          }
+          return false;
+        }
+
+        // TOGGLE ON: Wrap the selection with new span
         const span = applyStylesToSelection(styleOpts);
         if (span) {
           const newSpanId = span.dataset.inlineStyleId || null;
           activeInlineSpanIdRef.current = newSpanId;
-
-          // Persist the new selection (span contents) so toolbar/right-panel sliders keep working
-          try {
-            const r = document.createRange();
-            r.selectNodeContents(span);
-            lastSelectionRangeRef.current = r.cloneRange();
-          } catch {
-            // ignore
-          }
 
           setSessionHasInlineStyles(true);
 
@@ -1175,9 +1235,26 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           syncToolbarState();
 
           // After DOM normalization, re-acquire the created span by its stable ID.
+          let foundSpan: HTMLSpanElement | null = null;
           if (newSpanId) {
-            const found = editorEl.querySelector(`span[data-inline-style-id="${newSpanId}"]`) as HTMLSpanElement | null;
-            activeInlineSpanRef.current = found;
+            foundSpan = editorEl.querySelector(`span[data-inline-style-id="${newSpanId}"]`) as HTMLSpanElement | null;
+            activeInlineSpanRef.current = foundSpan;
+          }
+
+          // Update lastSelectionRangeRef to the normalized span's contents
+          try {
+            const target = foundSpan || span;
+            if (editorEl.contains(target)) {
+              const r = document.createRange();
+              r.selectNodeContents(target);
+              lastSelectionRangeRef.current = r.cloneRange();
+              // Also restore browser selection
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(r);
+            }
+          } catch {
+            // ignore
           }
 
           requestAnimationFrame(recomputeFormatState);
