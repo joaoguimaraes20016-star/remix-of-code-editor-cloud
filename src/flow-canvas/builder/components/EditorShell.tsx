@@ -596,6 +596,91 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
   }, [activeStepId, page, handlePageUpdate, handleClearSelection]);
 
+  // Reorder frames within a step
+  const handleReorderFrames = useCallback((fromIndex: number, toIndex: number) => {
+    if (!activeStepId) return;
+    
+    const updatedPage = deepClone(page);
+    const step = updatedPage.steps.find(s => s.id === activeStepId);
+    if (step && fromIndex >= 0 && toIndex >= 0 && fromIndex < step.frames.length && toIndex < step.frames.length) {
+      const [movedFrame] = step.frames.splice(fromIndex, 1);
+      step.frames.splice(toIndex, 0, movedFrame);
+      handlePageUpdate(updatedPage, 'Reorder sections');
+    }
+  }, [activeStepId, page, handlePageUpdate]);
+
+  // Duplicate frame
+  const handleDuplicateFrame = useCallback((frameId: string) => {
+    if (!activeStepId) return;
+    
+    const updatedPage = deepClone(page);
+    const step = updatedPage.steps.find(s => s.id === activeStepId);
+    if (step) {
+      const frameIndex = step.frames.findIndex(f => f.id === frameId);
+      if (frameIndex !== -1) {
+        const frameToDuplicate = deepClone(step.frames[frameIndex]);
+        frameToDuplicate.id = generateId();
+        frameToDuplicate.label = `${frameToDuplicate.label || 'Section'} (Copy)`;
+        // Generate new IDs for nested stacks and blocks
+        frameToDuplicate.stacks.forEach(stack => {
+          stack.id = generateId();
+          stack.blocks.forEach(block => {
+            block.id = generateId();
+            block.elements.forEach(el => { el.id = generateId(); });
+          });
+        });
+        step.frames.splice(frameIndex + 1, 0, frameToDuplicate);
+        handlePageUpdate(updatedPage, 'Duplicate section');
+        toast.success('Section duplicated');
+      }
+    }
+  }, [activeStepId, page, handlePageUpdate]);
+
+  // Add frame at specific position
+  const handleAddFrameAt = useCallback((position: 'above' | 'below', referenceFrameId: string) => {
+    if (!activeStepId) return;
+    
+    const updatedPage = deepClone(page);
+    const step = updatedPage.steps.find(s => s.id === activeStepId);
+    if (step) {
+      const referenceIndex = step.frames.findIndex(f => f.id === referenceFrameId);
+      if (referenceIndex !== -1) {
+        const newFrame = {
+          id: generateId(),
+          label: 'Section',
+          stacks: [{
+            id: generateId(),
+            label: 'Main Stack',
+            direction: 'vertical' as const,
+            blocks: [],
+            props: {},
+          }],
+          props: {},
+        };
+        const insertIndex = position === 'above' ? referenceIndex : referenceIndex + 1;
+        step.frames.splice(insertIndex, 0, newFrame);
+        handlePageUpdate(updatedPage, 'Add section');
+        toast.success('Section added');
+      }
+    }
+  }, [activeStepId, page, handlePageUpdate]);
+
+  // Rename frame
+  const handleRenameFrame = useCallback((frameId: string, newName: string) => {
+    if (!activeStepId) return;
+    
+    const updatedPage = deepClone(page);
+    const step = updatedPage.steps.find(s => s.id === activeStepId);
+    if (step) {
+      const frame = step.frames.find(f => f.id === frameId);
+      if (frame) {
+        frame.label = newName;
+        handlePageUpdate(updatedPage, 'Rename section');
+        toast.success('Section renamed');
+      }
+    }
+  }, [activeStepId, page, handlePageUpdate]);
+
   // Rename step handler
   const handleRenameStep = useCallback((stepId: string, newName: string) => {
     const updatedPage = deepClone(page);
@@ -1100,6 +1185,12 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             showGrid={showGrid}
             onAddFrame={handleAddFrame}
             onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
+            // Section management
+            onReorderFrames={handleReorderFrames}
+            onDuplicateFrame={handleDuplicateFrame}
+            onDeleteFrame={handleDeleteFrame}
+            onAddFrameAt={handleAddFrameAt}
+            onRenameFrame={handleRenameFrame}
             onNextStep={() => {
               const currentIndex = page.steps.findIndex(s => s.id === activeStepId);
               if (currentIndex >= 0 && currentIndex < page.steps.length - 1) {
