@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Type, Image, Video, Minus, ArrowRight, ArrowUpRight, ChevronRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Download, Smartphone, MousePointer2, Layout, Menu } from 'lucide-react';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
-import { SectionActionBar } from './SectionActionBar';
+// SectionActionBar removed - actions now in right panel sidebar
 import { UnifiedElementToolbar, UnifiedToolbarStyles } from './UnifiedElementToolbar';
 import { AddSectionPopover } from './AddSectionPopover';
 import { InlineTextEditor, TextStyles } from './InlineTextEditor';
@@ -2865,33 +2865,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
         }
       }}
     >
-      {/* Section Action Bar - positioned on the left side */}
-      {!readOnly && (() => {
-        const hasContent = frame.stacks.some(s => s.blocks.length > 0);
-        const showLabel = hasContent || isSelected;
-        
-        if (!showLabel) return null;
-        
-        return (
-          <SectionActionBar
-            sectionId={frame.id}
-            sectionLabel={frame.label || 'Section'}
-            isSelected={isSelected}
-            frameIndex={frameIndex}
-            totalFrames={totalFrames}
-            onSelect={() => onSelect({ type: 'frame', id: frame.id, path: framePath })}
-            onMoveUp={onMoveUp}
-            onMoveDown={onMoveDown}
-            onDuplicate={onDuplicate}
-            onDelete={onDelete}
-            onAddAbove={onAddAbove}
-            onAddBelow={onAddBelow}
-            onRename={onRename}
-            dragHandleListeners={dragHandleListeners}
-            dragHandleAttributes={dragHandleAttributes}
-          />
-        );
-      })()}
+      {/* Section actions now in right panel sidebar - removed floating toolbar */}
       {/* Apply dynamic padding and spacing based on frame settings */}
       <div 
         style={{

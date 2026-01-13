@@ -1228,6 +1228,18 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onReplayAnimation={handleReplayAnimation}
             currentDeviceMode={deviceMode}
             onDeleteFrame={handleDeleteFrame}
+            onDuplicateFrame={handleDuplicateFrame}
+            onMoveFrame={(frameId, direction) => {
+              if (!activeStep) return;
+              const currentIndex = activeStep.frames.findIndex(f => f.id === frameId);
+              if (currentIndex === -1) return;
+              const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+              if (newIndex >= 0 && newIndex < activeStep.frames.length) {
+                handleReorderFrames(currentIndex, newIndex);
+              }
+            }}
+            onAddFrameAt={handleAddFrameAt}
+            activeStep={activeStep}
           />
         )}
       </div>
