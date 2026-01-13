@@ -53,16 +53,15 @@ const typeLabels: Record<string, string> = {
   element: 'Element',
 };
 
-export const SelectionBreadcrumb = React.forwardRef<HTMLDivElement, SelectionBreadcrumbProps>(({
+const SelectionBreadcrumbInner: React.FC<SelectionBreadcrumbProps> = ({
   items,
   onSelect,
   className,
-}, ref) => {
+}) => {
   if (items.length === 0) return null;
 
   return (
     <motion.div
-      ref={ref}
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
@@ -123,8 +122,8 @@ export const SelectionBreadcrumb = React.forwardRef<HTMLDivElement, SelectionBre
       </AnimatePresence>
     </motion.div>
   );
-});
+};
 
-SelectionBreadcrumb.displayName = 'SelectionBreadcrumb';
+export const SelectionBreadcrumb = SelectionBreadcrumbInner;
 
 export default SelectionBreadcrumb;
