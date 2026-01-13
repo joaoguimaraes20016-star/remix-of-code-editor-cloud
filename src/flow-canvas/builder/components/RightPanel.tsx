@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { SelectionBreadcrumb } from './SelectionBreadcrumb';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import {
@@ -516,20 +517,20 @@ const ElementInspector: React.FC<{
 
   return (
     <div ref={containerRef} className="space-y-0">
-      {/* Element Type Header with Quick Actions */}
-      <div className="px-4 py-3 border-b border-builder-border">
+      {/* Element Type Header with Quick Actions - Pink for Element level */}
+      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(315,85%,58%,0.1)] to-transparent">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-builder-accent/10 flex items-center justify-center">
-              {element.type === 'button' && <MousePointer2 className="w-4 h-4 text-builder-accent" />}
-              {element.type === 'image' && <Image className="w-4 h-4 text-builder-accent" />}
-              {element.type === 'video' && <Video className="w-4 h-4 text-builder-accent" />}
-              {['input', 'select'].includes(element.type) && <Type className="w-4 h-4 text-builder-accent" />}
-              {!['button', 'image', 'video', 'input', 'select'].includes(element.type) && <Type className="w-4 h-4 text-builder-accent" />}
+            <div className="w-8 h-8 rounded-lg bg-[hsl(315,85%,58%,0.15)] flex items-center justify-center">
+              {element.type === 'button' && <MousePointer2 className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
+              {element.type === 'image' && <Image className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
+              {element.type === 'video' && <Video className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
+              {['input', 'select'].includes(element.type) && <Type className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
+              {!['button', 'image', 'video', 'input', 'select'].includes(element.type) && <Type className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
             </div>
             <div>
               <p className="text-sm font-medium text-builder-text">{getElementTypeLabel(element.type)}</p>
-              <p className="text-[10px] text-builder-text-dim">Click sections below to edit</p>
+              <p className="text-[10px] text-[hsl(315,85%,65%)]">Element</p>
             </div>
           </div>
           {/* Quick Actions */}
@@ -2041,17 +2042,17 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
 
   return (
     <div className="space-y-0">
-      {/* Block Header - prominent with blue accent to distinguish from Section */}
-      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-blue-500/10 to-transparent">
+      {/* Block Header - Purple accent for Block level */}
+      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(280,75%,55%,0.12)] to-transparent">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
-            <Layers className="w-4 h-4 text-blue-500" />
+          <div className="w-8 h-8 rounded-lg bg-[hsl(280,75%,55%,0.2)] flex items-center justify-center">
+            <Square className="w-4 h-4 text-[hsl(280,75%,70%)]" />
           </div>
           <div>
             <p className="text-sm font-semibold text-builder-text">{getBlockTypeLabel(block.type)}</p>
             {/* Only show Container badge for section-type blocks, not content blocks */}
             {getBlockCategory(block.type) === 'Container' && (
-              <p className="text-[10px] text-builder-text-muted">Container</p>
+              <p className="text-[10px] text-[hsl(280,75%,65%)]">Block</p>
             )}
           </div>
         </div>
@@ -2478,17 +2479,17 @@ const FrameInspector: React.FC<{
       {/* Back to Canvas navigation */}
       <button 
         onClick={() => onSelectCanvas?.()}
-        className="w-full text-xs text-builder-text-muted hover:text-builder-accent flex items-center gap-1 px-4 py-2 border-b border-builder-border hover:bg-builder-surface-hover transition-colors"
+        className="w-full text-xs text-builder-text-muted hover:text-[hsl(217,91%,60%)] flex items-center gap-1 px-4 py-2 border-b border-builder-border hover:bg-builder-surface-hover transition-colors"
       >
         <ChevronLeft className="w-3 h-3" /> Canvas
       </button>
       
-      {/* Section Header with Horizontal Action Bar */}
-      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(var(--builder-accent)/0.1)] to-transparent">
+      {/* Section Header with Horizontal Action Bar - Blue color for Section level */}
+      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(217,91%,60%,0.12)] to-transparent">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[hsl(var(--builder-accent)/0.15)] flex items-center justify-center">
-              <Layout className="w-3.5 h-3.5 text-[hsl(var(--builder-accent))]" />
+            <div className="w-7 h-7 rounded-lg bg-[hsl(217,91%,60%,0.2)] flex items-center justify-center">
+              <Layers className="w-3.5 h-3.5 text-[hsl(217,91%,70%)]" />
             </div>
             <p className="text-sm font-semibold text-builder-text truncate max-w-[100px]">{frame.label || 'Section'}</p>
           </div>
@@ -3346,6 +3347,76 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   
   const { index: frameIndex, total: totalFrames } = getFrameIndex();
 
+  // Build breadcrumb items based on current selection hierarchy
+  const buildBreadcrumbItems = useCallback((): Array<{ type: 'page' | 'section' | 'block' | 'element'; id: string; label: string }> => {
+    const items: Array<{ type: 'page' | 'section' | 'block' | 'element'; id: string; label: string }> = [];
+    
+    if (!selection.id || selection.type === 'page') {
+      return items; // No breadcrumb for canvas/page level
+    }
+    
+    // Always start with Canvas (clicking goes to page)
+    items.push({ type: 'page', id: 'canvas', label: 'Canvas' });
+    
+    // Parse the path to find parent nodes
+    if (activeStep && selection.path.length > 0) {
+      // Find frame (section) in path
+      const frameIndex = selection.path.indexOf('frame');
+      if (frameIndex !== -1 && selection.path[frameIndex + 1]) {
+        const frameId = selection.path[frameIndex + 1];
+        const frame = activeStep.frames.find(f => f.id === frameId);
+        if (frame) {
+          items.push({ type: 'section', id: frameId, label: frame.label || 'Section' });
+        }
+      }
+      
+      // Find block in path
+      const blockIndex = selection.path.indexOf('block');
+      if (blockIndex !== -1 && selection.path[blockIndex + 1]) {
+        const blockId = selection.path[blockIndex + 1];
+        // Search for block in step frames
+        for (const frame of activeStep.frames) {
+          for (const stack of frame.stacks) {
+            const block = stack.blocks.find(b => b.id === blockId);
+            if (block) {
+              items.push({ type: 'block', id: blockId, label: block.label || getBlockTypeLabel(block.type) });
+              break;
+            }
+          }
+        }
+      }
+      
+      // Add element if selected
+      if (resolvedType === 'element' && selectedNode) {
+        const element = selectedNode as Element;
+        items.push({ type: 'element', id: element.id, label: getElementTypeLabel(element.type) });
+      }
+    }
+    
+    // If we only have canvas in breadcrumb, don't show it
+    if (items.length <= 1) return [];
+    
+    return items;
+  }, [selection, activeStep, resolvedType, selectedNode]);
+
+  // Handle breadcrumb selection
+  const handleBreadcrumbSelect = useCallback((type: string, id: string) => {
+    if (type === 'page') {
+      onClearSelection();
+    } else if (type === 'section') {
+      // Find the frame and select it
+      if (activeStep) {
+        const frame = activeStep.frames.find(f => f.id === id);
+        if (frame) {
+          onUpdateNode(['step', activeStep.id, 'frame', id], {});
+          // This needs to trigger selection - we need a callback for this
+          // For now, we'll just clear and let parent handle
+        }
+      }
+    }
+    // Block and element selections would need additional callback props
+  }, [onClearSelection, activeStep, onUpdateNode]);
+
   // Use direct element update for elements, path-based for others
   // For page updates (no selection.id), always use empty path to target the page root
   const handleUpdate = (updates: Record<string, unknown>) => {
@@ -3359,10 +3430,20 @@ export const RightPanel: React.FC<RightPanelProps> = ({
     }
   };
 
+  const breadcrumbItems = buildBreadcrumbItems();
+
   return (
     <div className="builder-right-panel w-72 bg-builder-surface border-l border-builder-border flex flex-col h-full min-h-0">
       {/* Staging/Production Toggle */}
       <PublishToggle onPublish={onPublish} />
+      
+      {/* Selection Breadcrumb - shows hierarchy when something is selected */}
+      {breadcrumbItems.length > 0 && (
+        <SelectionBreadcrumb 
+          items={breadcrumbItems}
+          onSelect={handleBreadcrumbSelect}
+        />
+      )}
 
       {/* Content - min-h-0 critical for flex scroll */}
       <div className="flex-1 overflow-y-auto builder-scroll min-h-0">
