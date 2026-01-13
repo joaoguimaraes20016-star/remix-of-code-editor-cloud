@@ -4,8 +4,15 @@
 import { BlockType, ElementType, StepIntent, StepType, SubmitMode } from '../../types/infostack';
 
 // Block type labels
+// Section types - pre-built containers that hold content
+const sectionTypes = new Set([
+  'hero', 'cta', 'about', 'testimonial', 'feature', 'pricing', 
+  'faq', 'team', 'trust', 'footer', 'contact', 'custom'
+]);
+
+// Block type labels - NO "Section" in content block names
 export const blockTypeLabels: Record<BlockType, string> = {
-  hero: 'Hero Section',
+  hero: 'Hero',
   'form-field': 'Form Field',
   cta: 'Call to Action',
   testimonial: 'Testimonial',
@@ -13,8 +20,8 @@ export const blockTypeLabels: Record<BlockType, string> = {
   pricing: 'Pricing',
   faq: 'FAQ',
   media: 'Media',
-  'text-block': 'Text Block',
-  custom: 'Custom Block',
+  'text-block': 'Text',
+  custom: 'Empty Section',
   spacer: 'Spacer',
   divider: 'Divider',
   'multiple-choice': 'Multiple Choice',
@@ -31,6 +38,15 @@ export const blockTypeLabels: Record<BlockType, string> = {
   'logo-bar': 'Logo Bar',
   footer: 'Footer',
   contact: 'Contact',
+};
+
+// Check if a block type is a "Section" (container) vs "Content" (element)
+export const isSectionType = (type: BlockType): boolean => sectionTypes.has(type);
+
+// Get the category badge for a block type
+export const getBlockCategory = (type: BlockType): 'Section' | 'Content' | 'Layout' => {
+  if (type === 'spacer' || type === 'divider') return 'Layout';
+  return sectionTypes.has(type) ? 'Section' : 'Content';
 };
 
 // Element type labels

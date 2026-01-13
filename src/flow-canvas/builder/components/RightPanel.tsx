@@ -17,6 +17,7 @@ import { findNodeByPath, findNodeById } from '../utils/helpers';
 import { collectFieldKeys } from '../hooks/useScrollAnimation';
 import { 
   getBlockTypeLabel, 
+  getBlockCategory,
   getElementTypeLabel, 
   stepIntentLabels, 
   stepTypeLabels, 
@@ -2021,7 +2022,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
           </div>
           <div>
             <p className="text-sm font-semibold text-builder-text">{getBlockTypeLabel(block.type)}</p>
-            <p className="text-[10px] text-builder-text-muted">Block</p>
+            <p className="text-[10px] text-builder-text-muted">{getBlockCategory(block.type)}</p>
           </div>
         </div>
       </div>
@@ -2033,7 +2034,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
               value={block.label}
               onChange={(e) => onUpdate({ label: e.target.value })}
               className="builder-input"
-              placeholder="e.g., Hero Section"
+              placeholder="Enter a name..."
             />
           </FieldGroup>
           <FieldGroup label="Block Type">
