@@ -419,6 +419,43 @@ export function updateSpanStyle(span: HTMLSpanElement, options: SelectionStyleOp
   if (next) span.setAttribute('style', next);
   else span.removeAttribute('style');
 
+  // IMPORTANT: If a formatting toggle is being applied, normalize descendants so
+  // nested spans / legacy tags don't keep forcing the old formatting state.
+  const needsFormatNormalize =
+    options.fontWeight !== undefined || options.fontStyle !== undefined || options.textDecoration !== undefined;
+
+  if (needsFormatNormalize) {
+    // Strip ONLY the relevant formatting props from descendant spans.
+    const descendants = Array.from(span.querySelectorAll('span[style]')) as HTMLSpanElement[];
+    for (const d of descendants) {
+      if (d === span) continue;
+      const m = parseStyleAttribute(d.getAttribute('style'));
+      if (options.fontWeight !== undefined) delete m['font-weight'];
+      if (options.fontStyle !== undefined) delete m['font-style'];
+      if (options.textDecoration !== undefined) delete m['text-decoration'];
+      const s = serializeStyleAttribute(m);
+      if (s) d.setAttribute('style', s);
+      else d.removeAttribute('style');
+    }
+
+    // Unwrap legacy formatting tags inside this span.
+    const unwrapTags = (selectors: string[]) => {
+      const nodes = Array.from(span.querySelectorAll(selectors.join(',')));
+      for (const node of nodes) {
+        const parent = node.parentNode;
+        if (!parent) continue;
+        while (node.firstChild) parent.insertBefore(node.firstChild, node);
+        parent.removeChild(node);
+      }
+    };
+
+    if (options.fontWeight !== undefined) unwrapTags(['b', 'strong']);
+    if (options.fontStyle !== undefined) unwrapTags(['i', 'em']);
+    if (options.textDecoration !== undefined) unwrapTags(['u']);
+
+    span.normalize();
+  }
+
   // Keep gradient metadata in sync for inspector/toolbar.
   if (options.gradient) {
     span.dataset.gradient = JSON.stringify(options.gradient);

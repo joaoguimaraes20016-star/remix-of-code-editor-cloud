@@ -805,6 +805,26 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         styleOpts.fontStyle !== undefined ||
         styleOpts.textDecoration !== undefined;
 
+      const patchFormatState = () => {
+        if (!isFormattingToggle) return;
+        setSelectionFormat((prev) => {
+          const next: FormatState = { ...prev };
+
+          if (styleOpts.fontWeight !== undefined) {
+            const w = Number(styleOpts.fontWeight);
+            next.bold = Number.isFinite(w) ? (w >= 600 ? 'on' : 'off') : styleOpts.fontWeight === 'bold' ? 'on' : 'off';
+          }
+          if (styleOpts.fontStyle !== undefined) {
+            next.italic = styleOpts.fontStyle === 'italic' ? 'on' : 'off';
+          }
+          if (styleOpts.textDecoration !== undefined) {
+            next.underline = String(styleOpts.textDecoration).toLowerCase().includes('underline') ? 'on' : 'off';
+          }
+
+          return next;
+        });
+      };
+
       const caretInsideEditor =
         !!liveRange &&
         liveRange.collapsed &&
@@ -822,6 +842,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           setSessionHasInlineStyles(true);
           scheduleInlineHtmlSave();
           syncToolbarState();
+          patchFormatState();
           return true;
         }
       }
@@ -846,7 +867,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const active = activeInlineSpanRef.current;
         if (active && editorEl.contains(active)) targetSpan = active;
       }
-      
+
       // If the ref is stale (DOM mutation removed it), try re-acquiring by stable ID
       if (!targetSpan && activeInlineSpanIdRef.current) {
         const found = editorEl.querySelector(`span[data-inline-style-id="${activeInlineSpanIdRef.current}"]`);
@@ -855,7 +876,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           activeInlineSpanRef.current = targetSpan; // Re-sync ref
         }
       }
-      
+
       // Mark slider dragging to prevent selection overwrites during rapid updates
       // BUT: only for gradient changes (continuous slider drags), NOT for solid color clicks
       // This ensures solid color changes don't freeze a stale selection
@@ -867,7 +888,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           isSliderDraggingRef.current = false;
         }, 400);
       }
-      
+
       if (!targetSpan) {
         targetSpan = findSpanFromRange(lastSelectionRangeRef.current);
       }
@@ -890,9 +911,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               setSessionHasInlineStyles(true);
               scheduleInlineHtmlSave();
               syncToolbarState();
+              patchFormatState();
               return true;
             }
-          } catch { /* fallthrough to wrap */ }
+          } catch {
+            /* fallthrough to wrap */
+          }
         }
 
         // Wrap the selection with new span
@@ -913,6 +937,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           setSessionHasInlineStyles(true);
           scheduleInlineHtmlSave();
           syncToolbarState();
+          patchFormatState();
           return true;
         }
       }
@@ -925,6 +950,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         setSessionHasInlineStyles(true);
         scheduleInlineHtmlSave();
         syncToolbarState();
+        patchFormatState();
         return true;
       }
 
