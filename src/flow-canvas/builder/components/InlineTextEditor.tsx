@@ -275,6 +275,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     if (isPointerDownRef.current && (pointerDownContextRef.current === 'toolbar' || pointerDownContextRef.current === 'inspector')) {
       return;
     }
+    
+    // SAFETY NET: If we VERY recently interacted with the toolbar (within 500ms),
+    // prevent blur. This handles edge cases where focus collapses before style is applied.
+    if (!relatedTarget && Date.now() - lastToolbarInteractionAtRef.current < 500) {
+      return;
+    }
 
     // Additional check: if relatedTarget is null, check if any Radix popover is currently open in the DOM
     if (!relatedTarget) {
@@ -391,10 +397,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
 
     // Only react to selections inside this editor.
+    // Use start/end containers for reliable detection (anchor/focus can be outside for drag selections)
     const selectionInside =
       !!range &&
-      (editorEl.contains(range.commonAncestorContainer) ||
-        // commonAncestorContainer can be a text node; contains() can be false in some cases
+      (editorEl.contains(range.startContainer) ||
+        editorEl.contains(range.endContainer) ||
+        editorEl.contains(range.commonAncestorContainer) ||
         editorEl.contains(sel?.anchorNode ?? null) ||
         editorEl.contains(sel?.focusNode ?? null));
 
@@ -574,9 +582,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
     const sel = window.getSelection();
     const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+    // Use start/end containers for reliable detection (anchor/focus can be outside for drag selections)
     const selectionInside =
       !!range &&
-      (editorEl.contains(range.commonAncestorContainer) ||
+      (editorEl.contains(range.startContainer) ||
+        editorEl.contains(range.endContainer) ||
+        editorEl.contains(range.commonAncestorContainer) ||
         editorEl.contains(sel?.anchorNode ?? null) ||
         editorEl.contains(sel?.focusNode ?? null));
 
@@ -1494,6 +1505,32 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     (nextStyles: Partial<TextStyles>) => {
       const el = contentRef.current;
       if (!el) return;
+      
+      // Mark toolbar interaction timestamp for blur safety net
+      lastToolbarInteractionAtRef.current = Date.now();
+
+      // STEP 1: Capture live selection FIRST before any focus changes.
+      // This prevents stale saved selections from being used when user highlights text
+      // and immediately clicks a toolbar button.
+      const sel = window.getSelection();
+      const liveRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+      
+      // Check if we have a valid live selection inside the editor
+      const liveRangeValid =
+        !!liveRange &&
+        !liveRange.collapsed &&
+        liveRange.toString().length > 0 &&
+        (el.contains(liveRange.startContainer) ||
+          el.contains(liveRange.endContainer) ||
+          el.contains(liveRange.commonAncestorContainer));
+      
+      // If we have a valid live selection, update our saved reference immediately
+      if (liveRangeValid && liveRange) {
+        lastSelectionRangeRef.current = liveRange.cloneRange();
+        if (import.meta.env.DEV) {
+          console.debug('[Toolbar] Captured live selection:', liveRange.toString().slice(0, 30));
+        }
+      }
 
       // DO NOT steal focus from sliders/pickers inside the toolbar popovers.
       // Use pointer-lock refs for reliable detection of slider drags (no 800ms timeout limit).
@@ -1517,8 +1554,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         el.focus();
       }
 
-      // Attempt to restore selection from saved reference
-      const sel = window.getSelection();
+      // STEP 2: Restore selection from saved reference (now updated with live selection if valid)
       if (sel && lastSelectionRangeRef.current) {
         try {
           const savedRange = lastSelectionRangeRef.current;
