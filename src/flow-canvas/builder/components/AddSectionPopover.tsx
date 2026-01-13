@@ -599,18 +599,18 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
         ) : (
           <button
             className={`
-              group flex items-center justify-center w-full py-3.5 
-              bg-[hsl(var(--builder-surface))] backdrop-blur-sm
-              border-2 border-dashed border-[hsl(var(--builder-border))] rounded-xl
-              text-[hsl(var(--builder-text-muted))] 
-              hover:border-[hsl(var(--builder-text-muted))] hover:bg-[hsl(var(--builder-surface-hover))]
-              hover:text-[hsl(var(--builder-text))]
-              transition-all duration-200 gap-2
+              group flex items-center justify-center w-full py-2.5 
+              bg-transparent
+              border border-dashed border-[hsl(var(--builder-border-subtle))] rounded-lg
+              text-[hsl(var(--builder-text-dim))] text-xs
+              hover:border-[hsl(var(--builder-accent)/0.5)] hover:bg-[hsl(var(--builder-accent)/0.05)]
+              hover:text-[hsl(var(--builder-text-muted))]
+              transition-all duration-200 gap-1.5
               ${className}
             `}
           >
-            <Plus size={18} className="text-[hsl(var(--builder-text-muted))] group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-semibold">Add Block</span>
+            <Plus size={14} className="opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+            <span className="font-medium">Add Block</span>
           </button>
         )}
       </PopoverTrigger>

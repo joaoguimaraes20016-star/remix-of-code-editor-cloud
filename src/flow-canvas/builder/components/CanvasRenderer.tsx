@@ -3014,16 +3014,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
           />
         )}
         
-        {/* Add Block Button - Top */}
-        {!readOnly && (
-          <div className="flex justify-center pt-6 pb-4">
-            <AddSectionPopover 
-              onAddBlock={handleAddBlockToCanvas}
-              onOpenAIGenerate={onOpenAIGenerate}
-              position="below"
-            />
-          </div>
-        )}
+        {/* Spacer at top */}
+        <div className="pt-4" />
 
         {/* Canvas Container with Device Frame */}
         <div className={cn('mx-auto px-8 pb-8 overflow-x-hidden', deviceWidths[deviceMode])}>
@@ -3061,46 +3053,6 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ) : null;
             })()}
             
-            {/* Header area - optional navigation header placeholder */}
-            {!step.frames.some(f => f.stacks.some(s => s.blocks.some(b => b.type === 'custom' && b.props?.layout === 'navbar'))) && !readOnly && (
-              <div className={cn(
-                "px-4 py-2 border-b",
-                isDarkTheme ? "border-gray-800/50" : "border-gray-200/50"
-              )}>
-                <button
-                  onClick={() => {
-                    // Add a navigation header with logo and links
-                    const ts = Date.now();
-                    const navBlock: Block = {
-                      id: `nav-${ts}`,
-                      type: 'custom',
-                      label: 'Navigation',
-                      elements: [
-                        { id: `logo-${ts}`, type: 'image', content: '', props: { isLogo: true, placeholder: 'Logo', alt: 'Logo' }, styles: { width: '120px', height: '40px' } },
-                        { id: `link1-${ts}`, type: 'button', content: 'Features', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#features' } },
-                        { id: `link2-${ts}`, type: 'button', content: 'Pricing', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#pricing' } },
-                        { id: `link3-${ts}`, type: 'button', content: 'Contact', props: { variant: 'nav-pill', size: 'sm', navLink: true, href: '#contact' } },
-                      ],
-                      props: { layout: 'navbar', direction: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '12px', sticky: true },
-                      styles: { padding: '16px 48px' },
-                    };
-                    if (firstStackId) {
-                      onAddBlock?.(navBlock, { stackId: firstStackId, index: 0 });
-                    }
-                  }}
-                  className={cn(
-                    "w-full py-2 px-4 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all text-xs",
-                    isDarkTheme 
-                      ? "border-gray-700/60 bg-gray-800/30 text-gray-500 hover:border-purple-500/50 hover:bg-purple-500/10 hover:text-gray-300" 
-                      : "border-gray-200 bg-gray-50/50 text-gray-400 hover:border-purple-500/50 hover:bg-purple-50 hover:text-gray-600"
-                  )}
-                >
-                  <Menu className="w-3 h-3" />
-                  <span className="font-medium">+ Navigation</span>
-                  <span className="text-[10px] opacity-60">(optional)</span>
-                </button>
-              </div>
-            )}
 
             {/* Frames */}
             <div className="min-h-[600px] relative z-10">
@@ -3151,72 +3103,11 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               )}
             </div>
 
-            {/* Footer area - optional footer placeholder */}
-            {!step.frames.some(f => f.stacks.some(s => s.blocks.some(b => b.type === 'footer'))) && !readOnly && (
-              <div className={cn(
-                "px-4 py-2 border-t",
-                isDarkTheme ? "border-gray-800/50" : "border-gray-200/50"
-              )}>
-                <button
-                  onClick={() => {
-                    // Add a Framer-style footer with logo and multi-column links
-                    const ts = Date.now();
-                    const footerBlock: Block = {
-                      id: `footer-${ts}`,
-                      type: 'footer',
-                      label: 'Footer',
-                      elements: [
-                        // Logo column
-                        { id: `logo-${ts}`, type: 'text', content: '■○▲', props: { variant: 'footer-logo', fontSize: '24px', color: '#999' } },
-                        // Product column
-                        { id: `prod-head-${ts}`, type: 'text', content: 'Product', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
-                        { id: `prod-1-${ts}`, type: 'button', content: 'Features', props: { variant: 'footer-link', size: 'sm', href: '#features' } },
-                        { id: `prod-2-${ts}`, type: 'button', content: 'Pricing', props: { variant: 'footer-link', size: 'sm', href: '#pricing' } },
-                        { id: `prod-3-${ts}`, type: 'button', content: 'Support', props: { variant: 'footer-link', size: 'sm', href: '#support' } },
-                        // Company column
-                        { id: `comp-head-${ts}`, type: 'text', content: 'Company', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
-                        { id: `comp-1-${ts}`, type: 'button', content: 'About', props: { variant: 'footer-link', size: 'sm', href: '/about' } },
-                        { id: `comp-2-${ts}`, type: 'button', content: 'Careers', props: { variant: 'footer-link', size: 'sm', href: '/careers' } },
-                        { id: `comp-3-${ts}`, type: 'button', content: 'Press', props: { variant: 'footer-link', size: 'sm', href: '/press' } },
-                        // Resources column
-                        { id: `res-head-${ts}`, type: 'text', content: 'Resources', props: { variant: 'footer-heading', fontWeight: 'semibold', fontSize: '14px' } },
-                        { id: `res-1-${ts}`, type: 'button', content: 'Blog', props: { variant: 'footer-link', size: 'sm', href: '/blog' } },
-                        { id: `res-2-${ts}`, type: 'button', content: 'Newsletter', props: { variant: 'footer-link', size: 'sm', href: '/newsletter' } },
-                        { id: `res-3-${ts}`, type: 'button', content: 'Contact', props: { variant: 'footer-link', size: 'sm', href: '/contact' } },
-                      ],
-                      props: { layout: 'footer-framer', columns: 4 },
-                      styles: { padding: '64px 48px', backgroundColor: '#f5f5f5' },
-                    };
-                    if (firstStackId) {
-                      onAddBlock?.(footerBlock, { stackId: firstStackId, index: step.frames[0].stacks[0].blocks.length });
-                    }
-                  }}
-                  className={cn(
-                    "w-full py-2 px-4 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all text-xs",
-                    isDarkTheme 
-                      ? "border-gray-700/60 bg-gray-800/30 text-gray-500 hover:border-purple-500/50 hover:bg-purple-500/10 hover:text-gray-300" 
-                      : "border-gray-200 bg-gray-50/50 text-gray-400 hover:border-purple-500/50 hover:bg-purple-50 hover:text-gray-600"
-                  )}
-                >
-                  <Plus className="w-3 h-3" />
-                  <span className="font-medium">+ Footer</span>
-                  <span className="text-[10px] opacity-60">(optional)</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Add Block Button - Bottom */}
-        {!readOnly && (
-          <div className="flex justify-center pb-8">
-            <AddSectionPopover 
-              onAddBlock={handleAddBlockToCanvas}
-              onOpenAIGenerate={onOpenAIGenerate}
-              position="above"
-            />
-          </div>
-        )}
+        {/* Bottom spacer */}
+        <div className="pb-8" />
         
         {/* Form State Debug Panel - Only visible in preview mode with form data */}
         {isPreviewMode && Object.keys(formValues).length > 0 && (
