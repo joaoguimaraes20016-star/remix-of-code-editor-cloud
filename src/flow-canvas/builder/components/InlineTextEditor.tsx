@@ -996,8 +996,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           return { textFillType: 'gradient', textGradient: styles.textGradient ?? defaultGradient };
         }
         
+        // Normalize RGB to hex for consistent display in Right Panel
+        let normalizedColor = computedColor;
+        const match = computedColor.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+        if (match) {
+          const [, r, g, b] = match.map(Number);
+          const toHex = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
+          normalizedColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
+        
         // Solid color
-        return { textFillType: 'solid', textColor: computedColor };
+        return { textFillType: 'solid', textColor: normalizedColor };
       }
       
       return null;

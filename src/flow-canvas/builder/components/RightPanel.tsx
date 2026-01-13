@@ -394,8 +394,29 @@ const ElementInspector: React.FC<{
     [getInlineSelectionStyles, element.id, selectionTick]
   );
 
+  // Compute the actual rendered text color from the DOM element when no explicit color is set
+  const computedTextColorFallback = useMemo(() => {
+    // Try to get the actual rendered color from the canvas element
+    const canvasElement = document.querySelector(`[data-element-id="${element.id}"]`);
+    if (canvasElement) {
+      const computed = window.getComputedStyle(canvasElement).color;
+      // Normalize rgb() to hex for consistent display
+      if (computed && computed !== 'transparent') {
+        const match = computed.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+        if (match) {
+          const [, r, g, b] = match.map(Number);
+          const toHex = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
+          return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
+      }
+    }
+    return '#000000'; // Default fallback (black text is more common than white)
+  }, [element.id, selectionTick]);
+
   const effectiveTextFillType = inlineSelectionStyles?.textFillType ?? (element.props?.textFillType as any);
-  const effectiveTextColor = inlineSelectionStyles?.textColor ?? (element.props?.textColor as string | undefined);
+  const rawTextColor = inlineSelectionStyles?.textColor ?? (element.props?.textColor as string | undefined);
+  // Use computed fallback when no explicit color is set
+  const effectiveTextColor = rawTextColor || computedTextColorFallback;
   const effectiveTextGradient = inlineSelectionStyles?.textGradient ?? (element.props?.textGradient as GradientValue | undefined);
 
   const [isButtonActionOpen, setIsButtonActionOpen] = useState(false);
@@ -998,7 +1019,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Color</span>
                   <ColorPickerPopover 
-                    color={effectiveTextColor || '#FFFFFF'} 
+                    color={effectiveTextColor} 
                     onChange={(color) => {
                       const handled = applyInlineStyle(element.id, {
                         textFillType: 'solid',
@@ -1019,7 +1040,7 @@ const ElementInspector: React.FC<{
                       className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                       <div 
                         className="w-6 h-6 rounded-md border border-builder-border" 
-                        style={{ backgroundColor: effectiveTextColor || '#FFFFFF' }} 
+                        style={{ backgroundColor: effectiveTextColor }} 
                       />
                       <span className="text-xs text-builder-text-muted">Edit</span>
                     </button>
