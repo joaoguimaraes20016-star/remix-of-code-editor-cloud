@@ -1192,6 +1192,11 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const isGradient = element.props?.fillType === 'gradient';
         const elementBg = element.styles?.backgroundColor?.trim();
         
+        // Default template color - buttons created from templates use this
+        // When primary color changes, buttons still using this default should auto-update
+        const DEFAULT_TEMPLATE_COLOR = '#8B5CF6';
+        const isDefaultTemplateColor = elementBg?.toUpperCase() === DEFAULT_TEMPLATE_COLOR.toUpperCase();
+        
         // Special styling for nav-pill and footer-link variants
         let buttonBg: string | undefined;
         if (isNavPill) {
@@ -1200,8 +1205,12 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           buttonBg = 'transparent';
         } else if (isGradient) {
           buttonBg = undefined;
+        } else if (isDefaultTemplateColor || !elementBg || elementBg === '') {
+          // Use theme primary color for: default template buttons, empty bg, or no bg set
+          buttonBg = primaryColor;
         } else {
-          buttonBg = elementBg && elementBg !== '' ? elementBg : primaryColor;
+          // Custom color set by user - keep it
+          buttonBg = elementBg;
         }
         
         // Compute gradient CSS from props.gradient object (not from styles.background)
