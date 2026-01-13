@@ -71,7 +71,8 @@ export function normalizeCssColorToHex(input?: string | null): string | null {
 
 /**
  * Value safe for <input type="color" /> (must be hex).
+ * Default fallback is black (#000000) for better dark-theme text visibility.
  */
-export function normalizeColorForColorInput(input?: string | null, fallback = '#FFFFFF'): string {
+export function normalizeColorForColorInput(input?: string | null, fallback = '#000000'): string {
   return normalizeCssColorToHex(input) ?? expandShortHex(fallback);
 }

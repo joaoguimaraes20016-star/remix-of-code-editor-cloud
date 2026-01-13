@@ -881,7 +881,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         
         return (
           <div 
-            ref={combinedRef} 
+            ref={combinedRef}
+            data-element-id={element.id}
             style={{ ...style, ...layoutStyles }} 
             className={cn(baseClasses, 'relative', shadowClass)}
             {...hoverHandlers}
@@ -1047,7 +1048,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         
         return (
           <div 
-            ref={combinedRef} 
+            ref={combinedRef}
+            data-element-id={element.id}
             style={{ ...style, ...layoutStyles }} 
             className={cn(baseClasses, 'relative', shadowClass)}
             {...hoverHandlers}
@@ -1227,7 +1229,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const useSizeClass = !element.styles?.padding && !isNavPill && !isFooterLink;
         
         return (
-          <div ref={combinedRef} style={wrapperStyle} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+          <div ref={combinedRef} data-element-id={element.id} style={wrapperStyle} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
