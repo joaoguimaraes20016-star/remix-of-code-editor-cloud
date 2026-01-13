@@ -9,9 +9,15 @@ import type { GradientValue } from '../components/modals';
 export interface SelectionStyleOptions {
   color?: string;
   gradient?: GradientValue;
-  fontWeight?: string;
-  fontStyle?: string;
-  textDecoration?: string;
+  /**
+   * Formatting properties support `null` to mean "remove/unset this style".
+   * - undefined: don't touch
+   * - string: set
+   * - null: unset
+   */
+  fontWeight?: string | null;
+  fontStyle?: string | null;
+  textDecoration?: string | null;
 }
 
 /**
@@ -67,15 +73,15 @@ function buildStyleString(options: SelectionStyleOptions): string {
   }
   // If no color/gradient specified, don't add any color styles - preserve existing
   
-  if (options.fontWeight) {
+  if (options.fontWeight !== undefined && options.fontWeight !== null) {
     styleProps.push(`font-weight: ${options.fontWeight}`);
   }
   
-  if (options.fontStyle) {
+  if (options.fontStyle !== undefined && options.fontStyle !== null) {
     styleProps.push(`font-style: ${options.fontStyle}`);
   }
   
-  if (options.textDecoration) {
+  if (options.textDecoration !== undefined && options.textDecoration !== null) {
     styleProps.push(`text-decoration: ${options.textDecoration}`);
   }
   
@@ -393,9 +399,18 @@ function buildStyleUpdates(options: SelectionStyleOptions): { set: StyleMap; uns
   // If no color/gradient provided, leave existing color styles untouched
   // This allows bold/italic to work without changing colors
 
-  if (options.fontWeight) set['font-weight'] = options.fontWeight;
-  if (options.fontStyle) set['font-style'] = options.fontStyle;
-  if (options.textDecoration) set['text-decoration'] = options.textDecoration;
+  if (options.fontWeight !== undefined) {
+    if (options.fontWeight === null) unset.push('font-weight');
+    else set['font-weight'] = options.fontWeight;
+  }
+  if (options.fontStyle !== undefined) {
+    if (options.fontStyle === null) unset.push('font-style');
+    else set['font-style'] = options.fontStyle;
+  }
+  if (options.textDecoration !== undefined) {
+    if (options.textDecoration === null) unset.push('text-decoration');
+    else set['text-decoration'] = options.textDecoration;
+  }
 
   return { set, unset };
 }
