@@ -93,16 +93,23 @@ export default function FunnelEditor() {
   // Convert Supabase document to flow-canvas format
   const initialFlowCanvasPage = useMemo(() => {
     if (!funnel) return null;
-    
+
     // Try to convert existing builder_document
     const converted = editorDocumentToFlowCanvas(
-      funnel.builder_document, 
+      funnel.builder_document,
       funnel.slug
     );
-    
+
+    // Merge persisted funnel-level settings (source of truth for theme/background)
+    // into the flow-canvas page settings.
+    converted.settings = {
+      ...(converted.settings || {}),
+      ...((funnel.settings as unknown as FlowCanvasPage['settings']) || {}),
+    };
+
     // Update page name from funnel
     converted.name = funnel.name;
-    
+
     return converted;
   }, [funnel]);
 
