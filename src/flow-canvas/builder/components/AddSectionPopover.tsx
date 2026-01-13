@@ -49,7 +49,7 @@ const basicBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'text-block',
       label: 'Text',
-      elements: [{ id: generateId(), type: 'text', content: 'Add your text here...', props: {} }],
+      elements: [{ id: generateId(), type: 'text', content: 'Your supporting text', props: {} }],
       props: {},
     }),
   },
@@ -62,7 +62,7 @@ const basicBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'text-block',
       label: 'Heading',
-      elements: [{ id: generateId(), type: 'heading', content: 'Your Heading', props: { level: 2 } }],
+      elements: [{ id: generateId(), type: 'heading', content: 'Your main headline', props: { level: 2 } }],
       props: {},
     }),
   },
@@ -684,8 +684,8 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <div className="w-10 h-10 rounded-full bg-[hsl(var(--builder-accent)/0.1)] flex items-center justify-center mb-3 group-hover:bg-[hsl(var(--builder-accent)/0.2)] group-hover:scale-110 transition-all">
               <Plus size={20} className="text-[hsl(var(--builder-accent))]" />
             </div>
-            <span className="text-sm font-medium text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-text))]">Add content</span>
-            <span className="text-xs text-[hsl(var(--builder-text-dim))] mt-1">Click to add blocks or sections</span>
+            <span className="text-sm font-medium text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-text))]">Start building</span>
+            <span className="text-xs text-[hsl(var(--builder-text-dim))] mt-1">Add a headline, text, or button</span>
           </div>
         )}
       </PopoverTrigger>
