@@ -597,17 +597,34 @@ function buildStyleUpdates(options: SelectionStyleOptions): { set: StyleMap; uns
   // If no color/gradient provided, leave existing color styles untouched
   // This allows bold/italic to work without changing colors
 
+  // FIX: When toggling OFF formatting, we must explicitly SET a neutral value
+  // (e.g., font-weight: 400) rather than just unsetting.
+  // Simply unsetting allows inherited styles to take over, so bold/italic/underline
+  // may persist from a parent element. Setting an explicit neutral value overrides inheritance.
   if (options.fontWeight !== undefined) {
-    if (options.fontWeight === null) unset.push('font-weight');
-    else set['font-weight'] = options.fontWeight;
+    if (options.fontWeight === null) {
+      // BUG FIX: Use '400' (normal) instead of unset to override any inherited bold.
+      // Just unsetting allows parent's font-weight to persist.
+      set['font-weight'] = '400';
+    } else {
+      set['font-weight'] = options.fontWeight;
+    }
   }
   if (options.fontStyle !== undefined) {
-    if (options.fontStyle === null) unset.push('font-style');
-    else set['font-style'] = options.fontStyle;
+    if (options.fontStyle === null) {
+      // Same fix: explicitly set 'normal' to override inherited italic.
+      set['font-style'] = 'normal';
+    } else {
+      set['font-style'] = options.fontStyle;
+    }
   }
   if (options.textDecoration !== undefined) {
-    if (options.textDecoration === null) unset.push('text-decoration');
-    else set['text-decoration'] = options.textDecoration;
+    if (options.textDecoration === null) {
+      // Same fix: explicitly set 'none' to override inherited underline.
+      set['text-decoration'] = 'none';
+    } else {
+      set['text-decoration'] = options.textDecoration;
+    }
   }
 
   return { set, unset };
