@@ -132,8 +132,13 @@ interface RightPanelProps {
   onReplayAnimation?: (elementId: string) => void;
   // Current device mode for responsive editing
   currentDeviceMode?: 'desktop' | 'tablet' | 'mobile';
-  // Frame deletion callback
+  // Frame/Section action callbacks
   onDeleteFrame?: (frameId: string) => void;
+  onDuplicateFrame?: (frameId: string) => void;
+  onMoveFrame?: (frameId: string, direction: 'up' | 'down') => void;
+  onAddFrameAt?: (position: 'above' | 'below', referenceFrameId: string) => void;
+  // Frame index info for move buttons
+  activeStep?: Step | null;
 }
 
 interface CollapsibleSectionProps {
@@ -2404,15 +2409,32 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
 // Frame Inspector - uses unified BackgroundEditor for consistency
 const FrameInspector: React.FC<{ 
   frame: Frame; 
+  frameIndex?: number;
+  totalFrames?: number;
   onUpdate: (updates: Partial<Frame>) => void;
   onDelete?: () => void;
   onSelectCanvas?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onDuplicate?: () => void;
+  onAddAbove?: () => void;
+  onAddBelow?: () => void;
 }> = ({ 
   frame, 
+  frameIndex = 0,
+  totalFrames = 1,
   onUpdate,
   onDelete,
-  onSelectCanvas
+  onSelectCanvas,
+  onMoveUp,
+  onMoveDown,
+  onDuplicate,
+  onAddAbove,
+  onAddBelow
 }) => {
+  const canMoveUp = frameIndex > 0;
+  const canMoveDown = frameIndex < totalFrames - 1;
+  
   // Convert frame background props to BackgroundValue
   const getBackgroundValue = (): BackgroundValue => {
     const bg = frame.background || 'transparent';
@@ -2461,27 +2483,99 @@ const FrameInspector: React.FC<{
         <ChevronLeft className="w-3 h-3" /> Canvas
       </button>
       
-      {/* Section Header - prominent with accent color */}
+      {/* Section Header with Horizontal Action Bar */}
       <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(var(--builder-accent)/0.1)] to-transparent">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--builder-accent)/0.15)] flex items-center justify-center">
-              <Layout className="w-4 h-4 text-[hsl(var(--builder-accent))]" />
+            <div className="w-7 h-7 rounded-lg bg-[hsl(var(--builder-accent)/0.15)] flex items-center justify-center">
+              <Layout className="w-3.5 h-3.5 text-[hsl(var(--builder-accent))]" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-builder-text">{frame.label || 'Section'}</p>
-            </div>
+            <p className="text-sm font-semibold text-builder-text truncate max-w-[100px]">{frame.label || 'Section'}</p>
           </div>
-          {/* Delete button */}
-          {onDelete && (
-            <button
-              onClick={onDelete}
-              className="p-1.5 rounded-md text-builder-text-muted hover:text-destructive hover:bg-destructive/10 transition-colors"
-              title="Delete Section"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+          
+          {/* Horizontal Action Bar */}
+          <div className="flex items-center gap-0.5">
+            <TooltipProvider delayDuration={300}>
+              {/* Move Up */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onMoveUp}
+                    disabled={!canMoveUp}
+                    className={cn(
+                      "p-1.5 rounded-md transition-colors",
+                      canMoveUp 
+                        ? "text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover" 
+                        : "text-builder-text-dim cursor-not-allowed opacity-40"
+                    )}
+                  >
+                    <MoveUp className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Move Up</TooltipContent>
+              </Tooltip>
+              
+              {/* Move Down */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onMoveDown}
+                    disabled={!canMoveDown}
+                    className={cn(
+                      "p-1.5 rounded-md transition-colors",
+                      canMoveDown 
+                        ? "text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover" 
+                        : "text-builder-text-dim cursor-not-allowed opacity-40"
+                    )}
+                  >
+                    <MoveDown className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Move Down</TooltipContent>
+              </Tooltip>
+              
+              {/* Duplicate */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onDuplicate}
+                    className="p-1.5 rounded-md text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Duplicate</TooltipContent>
+              </Tooltip>
+              
+              {/* Add Section Above */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onAddAbove}
+                    className="p-1.5 rounded-md text-builder-text-muted hover:text-builder-accent hover:bg-builder-surface-hover transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Add Section Above</TooltipContent>
+              </Tooltip>
+              
+              {/* Delete */}
+              {onDelete && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={onDelete}
+                      className="p-1.5 rounded-md text-builder-text-muted hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">Delete Section</TooltipContent>
+                </Tooltip>
+              )}
+            </TooltipProvider>
+          </div>
         </div>
       </div>
 
@@ -3222,6 +3316,10 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   onReplayAnimation,
   currentDeviceMode = 'desktop',
   onDeleteFrame,
+  onDuplicateFrame,
+  onMoveFrame,
+  onAddFrameAt,
+  activeStep,
 }) => {
   // Try to find node by path first, then fallback to ID search
   let selectedNode = selection.id ? findNodeByPath(page, selection.path) : null;
@@ -3236,6 +3334,17 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   
   // Get steps for button action modal
   const steps = page.steps.map(s => ({ id: s.id, name: s.name }));
+  
+  // Calculate frame index for move buttons
+  const getFrameIndex = (): { index: number; total: number } => {
+    if (resolvedType === 'frame' && selection.id && activeStep) {
+      const index = activeStep.frames.findIndex(f => f.id === selection.id);
+      return { index: index >= 0 ? index : 0, total: activeStep.frames.length };
+    }
+    return { index: 0, total: 1 };
+  };
+  
+  const { index: frameIndex, total: totalFrames } = getFrameIndex();
 
   // Use direct element update for elements, path-based for others
   // For page updates (no selection.id), always use empty path to target the page root
@@ -3265,9 +3374,16 @@ export const RightPanel: React.FC<RightPanelProps> = ({
         ) : resolvedType === 'frame' && selectedNode ? (
           <FrameInspector 
             frame={selectedNode as Frame} 
+            frameIndex={frameIndex}
+            totalFrames={totalFrames}
             onUpdate={handleUpdate} 
             onDelete={selection.id && onDeleteFrame ? () => onDeleteFrame(selection.id!) : undefined}
             onSelectCanvas={() => onClearSelection()}
+            onMoveUp={selection.id && onMoveFrame ? () => onMoveFrame(selection.id!, 'up') : undefined}
+            onMoveDown={selection.id && onMoveFrame ? () => onMoveFrame(selection.id!, 'down') : undefined}
+            onDuplicate={selection.id && onDuplicateFrame ? () => onDuplicateFrame(selection.id!) : undefined}
+            onAddAbove={selection.id && onAddFrameAt ? () => onAddFrameAt('above', selection.id!) : undefined}
+            onAddBelow={selection.id && onAddFrameAt ? () => onAddFrameAt('below', selection.id!) : undefined}
           />
         ) : resolvedType === 'block' && selectedNode ? (
           <BlockInspector block={selectedNode as Block} onUpdate={handleUpdate} />
