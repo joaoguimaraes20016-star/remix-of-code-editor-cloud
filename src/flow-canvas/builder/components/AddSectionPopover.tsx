@@ -671,26 +671,34 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <span>Add block</span>
           </button>
         ) : (
-          <div
+          <button
+            type="button"
             className={`
-              group flex flex-col items-center justify-center w-full py-8 px-4
-              bg-gradient-to-b from-[hsl(var(--builder-surface-hover)/0.6)] to-[hsl(var(--builder-surface-hover)/0.4)]
-              border border-[hsl(var(--builder-border)/0.8)] rounded-xl
-              shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]
-              hover:from-[hsl(var(--builder-accent)/0.12)] hover:to-[hsl(var(--builder-accent)/0.06)]
-              hover:border-[hsl(var(--builder-accent)/0.5)]
-              hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_4px_12px_-4px_hsl(var(--builder-accent)/0.2)]
-              active:scale-[0.99]
-              transition-all duration-200 cursor-pointer
-              ${className}
+              group w-full flex items-center justify-center py-10 px-4
+              transition-all duration-200
+              ${className ?? ''}
             `}
           >
-            <div className="w-10 h-10 rounded-full bg-[hsl(var(--builder-accent)/0.1)] flex items-center justify-center mb-3 group-hover:bg-[hsl(var(--builder-accent)/0.2)] group-hover:scale-110 transition-all">
-              <Plus size={20} className="text-[hsl(var(--builder-accent))]" />
-            </div>
-            <span className="text-sm font-medium text-[hsl(var(--builder-text-muted))] group-hover:text-[hsl(var(--builder-text))]">Add your first block</span>
-            <span className="text-xs text-[hsl(var(--builder-text-dim))] mt-1">Start with a headline or button</span>
-          </div>
+            <span
+              className={`
+                inline-flex items-center gap-2 rounded-full px-4 py-2
+                bg-[hsl(var(--builder-surface-hover)/0.7)]
+                border border-[hsl(var(--builder-border)/0.9)]
+                shadow-sm
+                text-sm font-medium text-[hsl(var(--builder-text-muted))]
+                group-hover:bg-[hsl(var(--builder-accent)/0.10)]
+                group-hover:border-[hsl(var(--builder-accent)/0.45)]
+                group-hover:text-[hsl(var(--builder-text))]
+                group-hover:shadow-md
+                group-active:scale-[0.99]
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--builder-accent)/0.4)]
+                focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--builder-surface))]
+              `}
+            >
+              <Plus size={16} className="text-[hsl(var(--builder-accent))]" />
+              <span>Start with a headline or button</span>
+            </span>
+          </button>
         )}
       </PopoverTrigger>
       <PopoverContent 
