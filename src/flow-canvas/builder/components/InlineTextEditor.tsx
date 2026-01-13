@@ -620,29 +620,40 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const buildStyleOptions = (): SelectionStyleOptions | null => {
       const opts: SelectionStyleOptions = {};
 
-      // IMPORTANT: Only set color/gradient if explicitly requested in newStyles
-      // This prevents bold/italic from accidentally changing colors
+      // Check if user explicitly requested a color/gradient change
       const hasColorRequest = newStyles.textFillType !== undefined || 
                               newStyles.textColor !== undefined || 
                               newStyles.textGradient !== undefined;
 
+      // Check if this is a formatting-only change (bold/italic/underline)
+      const isFormattingOnly = !hasColorRequest && (
+        newStyles.fontWeight !== undefined ||
+        newStyles.fontStyle !== undefined ||
+        newStyles.textDecoration !== undefined
+      );
+
       if (hasColorRequest) {
+        // User explicitly wants to change color/gradient
         if (newStyles.textFillType === 'gradient') {
           opts.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
-          // Explicitly clear solid color to prevent conflicts
           opts.color = undefined;
         } else if (newStyles.textColor !== undefined || newStyles.textFillType === 'solid') {
-          // Explicit solid color change OR switching to solid mode
-          // Do NOT default to white (causes "whole block turns white" bugs).
-          // Use the new color, then existing style, then computed color, then fallback to currentColor.
           const computed = editorEl ? window.getComputedStyle(editorEl).color : '';
           opts.color = newStyles.textColor || styles.textColor || computed || 'currentColor';
-          // Explicitly clear gradient to ensure clean transition from gradient to solid
           opts.gradient = undefined;
         }
+      } else if (isFormattingOnly) {
+        // CRITICAL FIX: When applying B/I/U only, inherit the block-level gradient/color
+        // so the new span doesn't lose the existing visual style.
+        // The selectionStyles utility also handles inheriting from existing spans,
+        // but this covers the case where no span exists yet (block-level gradient).
+        if (styles.textFillType === 'gradient' && styles.textGradient) {
+          opts.gradient = cloneGradient(styles.textGradient);
+        } else if (styles.textColor) {
+          opts.color = styles.textColor;
+        }
+        // If no block-level color set, leave undefined - selectionStyles will handle computed color
       }
-      // If no color request, leave opts.color and opts.gradient undefined
-      // This preserves existing colors when applying bold/italic only
 
       if (newStyles.fontWeight) {
         const wMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
