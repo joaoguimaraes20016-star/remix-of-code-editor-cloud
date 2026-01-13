@@ -773,20 +773,55 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       // ─────────────────────────────────────────────────────────────────────────
-      // CRITICAL TOGGLE LOGIC (SOURCE OF TRUTH = DOM, not React state)
-      // We compute format state from the *live selection* on every click so the
-      // toolbar can never drift out of sync.
+      // CRITICAL TOGGLE LOGIC (DOM = source of truth)
+      // - Decisions MUST be based on live DOM selection formatting.
+      // - React state (selectionFormat) is for UI only.
       // ─────────────────────────────────────────────────────────────────────────
-      // IMPORTANT: For reliable toggling, use the toolbar's tri-state (selectionFormat)
-      // as the source of truth.
-      // Rationale: when clicking toolbar buttons, the browser selection can collapse/move
-      // to a boundary node, making computed style checks flaky and causing "won't undo".
-      const liveFormat: FormatState = selectionFormat;
+      const computeLiveFormat = (): FormatState => {
+        if (!editorEl) {
+          return { bold: 'off', italic: 'off', underline: 'off' };
+        }
 
-      // ─────────────────────────────────────────────────────────────────────────
-      // FIX: Use EXPLICIT "normal" values instead of null to override inherited styles.
-      // This ensures toggling off actually works even when parent has font-bold, underline, etc.
-      // ─────────────────────────────────────────────────────────────────────────
+        const sel = window.getSelection();
+        const liveRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+
+        const isRangeInEditor = (r: Range | null) => {
+          if (!r) return false;
+          try {
+            return (
+              editorEl.contains(r.startContainer) ||
+              editorEl.contains(r.endContainer) ||
+              editorEl.contains(r.commonAncestorContainer) ||
+              r.startContainer === editorEl ||
+              r.endContainer === editorEl
+            );
+          } catch {
+            return false;
+          }
+        };
+
+        // When clicking the toolbar, browser selection can temporarily “move”.
+        // We still compute from DOM, but may need to fall back to the last known DOM Range.
+        const isRecent = Date.now() - lastUserSelectionAtRef.current < 10000;
+
+        const range: Range | null =
+          (isRangeInEditor(liveRange) ? liveRange : null) ??
+          (isRecent && isRangeInEditor(lastSelectionRangeRef.current) ? lastSelectionRangeRef.current : null) ??
+          (isRecent && isRangeInEditor(lastCaretRangeRef.current) ? lastCaretRangeRef.current : null);
+
+        if (!range) {
+          return { bold: 'off', italic: 'off', underline: 'off' };
+        }
+
+        try {
+          return getSelectionFormatState(editorEl, range);
+        } catch {
+          return { bold: 'off', italic: 'off', underline: 'off' };
+        }
+      };
+
+      const liveFormat = computeLiveFormat();
+
       if (newStyles.fontWeight) {
         const wMap: Record<string, string> = {
           normal: '400',
@@ -800,41 +835,30 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const wantsBold = Number(requestedWeight) >= 600 || newStyles.fontWeight === 'bold';
 
         // TRUE TOGGLE:
-        // - If user *wants bold* but selection is already bold -> set explicit normal (400)
-        // - If user *wants normal* and selection is mixed/on -> normalize to normal (400)
-        // - If selection is mixed and user wants bold -> normalize to bold (requestedWeight)
+        // - If selection is bold/mixed -> REMOVE (null)
+        // - Else -> APPLY (requestedWeight)
         if (wantsBold) {
-          // Treat 'mixed' as active: one click should normalize everything to OFF.
-          const shouldRemove = liveFormat.bold !== 'off';
-          // CRITICAL: Use explicit '400' instead of null to override inherited bold
-          opts.fontWeight = shouldRemove ? '400' : requestedWeight;
+          opts.fontWeight = liveFormat.bold !== 'off' ? null : requestedWeight;
         } else {
-          // Explicit "normal" request → set 400 to override any inherited bold
-          opts.fontWeight = '400';
+          opts.fontWeight = null;
         }
       }
 
       if (newStyles.fontStyle) {
         const wantsItalic = newStyles.fontStyle === 'italic';
         if (wantsItalic) {
-          // Treat 'mixed' as active: one click should normalize everything to OFF.
-          const shouldRemove = liveFormat.italic !== 'off';
-          // CRITICAL: Use explicit 'normal' instead of null to override inherited italic
-          opts.fontStyle = shouldRemove ? 'normal' : 'italic';
+          opts.fontStyle = liveFormat.italic !== 'off' ? null : 'italic';
         } else {
-          opts.fontStyle = 'normal';
+          opts.fontStyle = null;
         }
       }
 
       if (newStyles.textDecoration) {
         const wantsUnderline = String(newStyles.textDecoration).toLowerCase().includes('underline');
         if (wantsUnderline) {
-          // Treat 'mixed' as active: one click should normalize everything to OFF.
-          const shouldRemove = liveFormat.underline !== 'off';
-          // CRITICAL: Use explicit 'none' instead of null to override inherited underline
-          opts.textDecoration = shouldRemove ? 'none' : 'underline';
+          opts.textDecoration = liveFormat.underline !== 'off' ? null : 'underline';
         } else {
-          opts.textDecoration = 'none';
+          opts.textDecoration = null;
         }
       }
 
@@ -1114,54 +1138,45 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           editorEl.contains(sel?.focusNode ?? null));
 
       if (!hasSelection && caretInsideEditor && isFormattingToggle) {
-        // For caret-only toggles, we need explicit "normal/none" values so the next typed
-        // characters visibly change even if the caret is inside a bold/italic/underlined span.
-        const caretOpts: SelectionStyleOptions = {
-          ...styleOpts,
-          ...(styleOpts.fontWeight === null ? { fontWeight: '400' } : {}),
-          ...(styleOpts.fontStyle === null ? { fontStyle: 'normal' } : {}),
-          ...(styleOpts.textDecoration === null ? { textDecoration: 'none' } : {}),
-        };
+        const caretOpts: SelectionStyleOptions = { ...styleOpts };
 
-        // Check if caret is already inside a caret host span we can update
-        const findCaretHostSpan = (): HTMLSpanElement | null => {
+        // GUARANTEED CARET TOGGLE:
+        // If the caret is already inside a styled span (e.g. <span style="font-weight:700">),
+        // we must update THAT span. Otherwise, toggle-off can never work because inserting a
+        // new span with “unset” styles would be a no-op.
+        const findStyledSpanAtCaret = (): HTMLSpanElement | null => {
           if (!liveRange) return null;
           let node: Node | null = liveRange.startContainer;
-          let el: HTMLElement | null = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+          let el: HTMLElement | null =
+            node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
           while (el && el !== editorEl) {
-            if (el.tagName === 'SPAN' && (el as HTMLSpanElement).dataset.caretHost) {
-              return el as HTMLSpanElement;
-            }
+            if (el.tagName === 'SPAN' && el.getAttribute('style')) return el as HTMLSpanElement;
             el = el.parentElement;
           }
           return null;
         };
 
-        const existingCaretSpan = findCaretHostSpan();
+        const target = findStyledSpanAtCaret();
 
-        if (existingCaretSpan) {
-          // Update the existing caret host span instead of creating a new one
-          updateSpanStyle(existingCaretSpan, caretOpts);
-          activeInlineSpanRef.current = existingCaretSpan;
-          activeInlineSpanIdRef.current = existingCaretSpan.dataset.inlineStyleId || null;
-          
-          if (import.meta.env.DEV) {
-            console.log('[Caret toggle] Updated existing caret host span', {
-              style: existingCaretSpan.getAttribute('style'),
-            });
-          }
-        } else {
-          // Insert a new caret host span
+        // Only insert a caret host span when we're APPLYING a style (setting a value).
+        // If we're only unsetting styles (null) and we aren't inside a styled span,
+        // there is nothing to remove.
+        const hasAnySetValue =
+          caretOpts.color !== undefined ||
+          caretOpts.gradient !== undefined ||
+          (caretOpts.fontWeight !== undefined && caretOpts.fontWeight !== null) ||
+          (caretOpts.fontStyle !== undefined && caretOpts.fontStyle !== null) ||
+          (caretOpts.textDecoration !== undefined && caretOpts.textDecoration !== null);
+
+        if (target) {
+          updateSpanStyle(target, caretOpts);
+          activeInlineSpanRef.current = target;
+          activeInlineSpanIdRef.current = target.dataset.inlineStyleId || null;
+        } else if (hasAnySetValue) {
           const span = insertStyledSpanAtCaret(caretOpts);
           if (span) {
             activeInlineSpanRef.current = span;
             activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
-            
-            if (import.meta.env.DEV) {
-              console.log('[Caret toggle] Inserted new caret host span', {
-                style: span.getAttribute('style'),
-              });
-            }
           }
         }
 
@@ -1171,28 +1186,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         normalizeInlineDom();
         scheduleInlineHtmlSave();
         syncToolbarState();
-
-        // Debug: capture the actual caret container + computed tri-state after DOM ops
-        try {
-          const s2 = window.getSelection();
-          const r2 = s2 && s2.rangeCount > 0 ? s2.getRangeAt(0) : null;
-          const fmt2 = r2 ? getSelectionFormatState(editorEl, r2) : null;
-          const hostEl = r2
-            ? (r2.startContainer.nodeType === Node.ELEMENT_NODE
-                ? (r2.startContainer as HTMLElement)
-                : (r2.startContainer.parentElement as HTMLElement | null))
-            : null;
-          console.log('INLINE_DEBUG_CARET', {
-            applied: caretOpts,
-            rangeCollapsed: r2?.collapsed,
-            hostTag: hostEl?.tagName,
-            hostHasCaretHost: (hostEl as any)?.dataset?.caretHost,
-            hostStyle: hostEl?.getAttribute('style'),
-            fmt: fmt2,
-          });
-        } catch {
-          // ignore
-        }
 
         requestAnimationFrame(recomputeFormatState);
         return true;
