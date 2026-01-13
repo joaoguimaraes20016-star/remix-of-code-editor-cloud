@@ -755,10 +755,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           editorEl.contains(sel?.focusNode ?? null));
 
       if (import.meta.env.DEV) {
-        console.debug('[handleStyleChange] Initial state:', {
+        console.warn('[handleStyleChange] initial', {
+          elementId,
+          newStyles,
           liveHasSelection,
-          liveRangeText: liveRange?.toString()?.slice(0, 30),
-          savedRangeText: lastSelectionRangeRef.current?.toString()?.slice(0, 30),
+          liveRangeText: liveRange?.toString()?.slice(0, 60),
+          savedRangeText: lastSelectionRangeRef.current?.toString()?.slice(0, 60),
           isSliderDragging: isSliderDraggingRef.current,
         });
       }
@@ -959,6 +961,14 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         // do NOT fall through to CASE B or block-level formatting.
         // This prevents "whole block becomes bold" when inline wrap fails.
         if (isFormattingToggle) {
+          if (import.meta.env.DEV) {
+            console.warn('[handleStyleChange] applyStylesToSelection returned null', {
+              elementId,
+              styleOpts,
+              liveSelection: window.getSelection()?.toString()?.slice(0, 60),
+              hasSelection,
+            });
+          }
           toast.info('Could not apply style to selection. Please reselect text.');
           return false;
         }
@@ -1597,7 +1607,14 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         console.debug('[Toolbar] No saved selection to restore');
       }
 
-      handleStyleChange(nextStyles);
+      const applied = handleStyleChange(nextStyles);
+      if (import.meta.env.DEV) {
+        console.warn('[Toolbar] onChange applied=', applied, {
+          nextStyles,
+          liveSelection: window.getSelection()?.toString()?.slice(0, 60),
+          savedSelection: lastSelectionRangeRef.current?.toString()?.slice(0, 60),
+        });
+      }
     },
     [handleStyleChange]
   );
