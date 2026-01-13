@@ -842,6 +842,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
       const liveFormat = computeLiveFormat();
 
+      // DEBUG: Log toggle decision
+      console.log('[TOGGLE DEBUG] liveFormat:', liveFormat, 'newStyles:', newStyles);
+
       if (newStyles.fontWeight) {
         const wMap: Record<string, string> = {
           normal: '400',
@@ -859,6 +862,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         // - Else -> APPLY (requestedWeight)
         if (wantsBold) {
           opts.fontWeight = liveFormat.bold !== 'off' ? null : requestedWeight;
+          console.log('[TOGGLE DEBUG] bold decision:', { liveFormatBold: liveFormat.bold, result: opts.fontWeight });
         } else {
           opts.fontWeight = null;
         }
