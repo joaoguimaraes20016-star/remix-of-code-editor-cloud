@@ -2640,121 +2640,6 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
       
       <SiteInfo page={page} onPublish={onPublish} />
 
-      <CollapsibleSection title="SEO & Meta" icon={<Sparkles className="w-4 h-4" />} defaultOpen>
-        <div className="space-y-4 pt-3">
-          <FieldGroup label="Page Title" hint="Appears in browser tab and search results">
-            <Input
-              value={page.settings.meta?.title || ''}
-              onChange={(e) => handleMetaUpdate('title', e.target.value)}
-              className="builder-input"
-              placeholder="My Awesome Page"
-            />
-          </FieldGroup>
-          <FieldGroup label="Description" hint="Shown in search engine results">
-            <Textarea
-              value={page.settings.meta?.description || ''}
-              onChange={(e) => handleMetaUpdate('description', e.target.value)}
-              className="builder-input resize-none"
-              rows={2}
-              placeholder="A brief description of your page..."
-            />
-          </FieldGroup>
-          <FieldGroup label="Social Image URL" hint="Image shown when shared on social media">
-            <Input
-              value={page.settings.meta?.og_image || ''}
-              onChange={(e) => handleMetaUpdate('og_image', e.target.value)}
-              className="builder-input"
-              placeholder="https://..."
-            />
-          </FieldGroup>
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Theme" icon={<Palette className="w-4 h-4" />} defaultOpen>
-        <div className="space-y-4 pt-3">
-          <FieldGroup label="Color Mode">
-            <Select 
-              value={page.settings.theme || 'light'} 
-              onValueChange={(value) => handleSettingsUpdate('theme', value)}
-            >
-              <SelectTrigger className="builder-input">
-                <SelectValue placeholder="Select mode..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-white border border-gray-300" />
-                    <span>Light</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="dark">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-gray-900 border border-gray-600" />
-                    <span>Dark</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FieldGroup>
-          <FieldGroup label="Accent Color" hint="Default button color, focus rings, and link colors in the published funnel">
-            <ColorPickerPopover
-              color={primaryColor}
-              onChange={(color) => handleSettingsUpdate('primary_color', color)}
-            >
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg border border-builder-border hover:border-builder-text-muted transition-colors">
-                <div 
-                  className="w-8 h-8 rounded-lg border border-builder-border" 
-                  style={{ backgroundColor: primaryColor }}
-                />
-                <span className="text-sm text-builder-text font-mono flex-1 text-left">
-                  {primaryColor}
-                </span>
-                <Palette className="w-4 h-4 text-builder-text-muted" />
-              </button>
-            </ColorPickerPopover>
-          </FieldGroup>
-          <FieldGroup label="Font Family">
-            <Select 
-              value={page.settings.font_family || 'Inter'} 
-              onValueChange={(value) => handleSettingsUpdate('font_family', value)}
-            >
-              <SelectTrigger className="builder-input">
-                <SelectValue placeholder="Select font..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Inter">
-                  <span style={{ fontFamily: 'Inter' }}>Inter</span>
-                </SelectItem>
-                <SelectItem value="DM Sans">
-                  <span style={{ fontFamily: 'DM Sans' }}>DM Sans</span>
-                </SelectItem>
-                <SelectItem value="Roboto">
-                  <span style={{ fontFamily: 'Roboto' }}>Roboto</span>
-                </SelectItem>
-                <SelectItem value="Open Sans">
-                  <span style={{ fontFamily: 'Open Sans' }}>Open Sans</span>
-                </SelectItem>
-                <SelectItem value="Poppins">
-                  <span style={{ fontFamily: 'Poppins' }}>Poppins</span>
-                </SelectItem>
-                <SelectItem value="Montserrat">
-                  <span style={{ fontFamily: 'Montserrat' }}>Montserrat</span>
-                </SelectItem>
-                <SelectItem value="Playfair Display">
-                  <span style={{ fontFamily: 'Playfair Display' }}>Playfair Display</span>
-                </SelectItem>
-                <SelectItem value="Lato">
-                  <span style={{ fontFamily: 'Lato' }}>Lato</span>
-                </SelectItem>
-                <SelectItem value="Raleway">
-                  <span style={{ fontFamily: 'Raleway' }}>Raleway</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FieldGroup>
-        </div>
-      </CollapsibleSection>
-
       <CollapsibleSection title="Canvas Background" icon={<Image className="w-4 h-4" />} defaultOpen>
         <div className="space-y-3 pt-3">
           {/* Hint explaining canvas vs section */}
@@ -3076,6 +2961,121 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
           <p className="text-[10px] text-builder-text-dim pt-2 border-t border-builder-border mt-2">
             This is the outermost background layer. Content cards sit on top of this canvas.
           </p>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Theme" icon={<Palette className="w-4 h-4" />} defaultOpen={false}>
+        <div className="space-y-4 pt-3">
+          <FieldGroup label="Color Mode">
+            <Select 
+              value={page.settings.theme || 'light'} 
+              onValueChange={(value) => handleSettingsUpdate('theme', value)}
+            >
+              <SelectTrigger className="builder-input">
+                <SelectValue placeholder="Select mode..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-white border border-gray-300" />
+                    <span>Light</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="dark">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-gray-900 border border-gray-600" />
+                    <span>Dark</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          <FieldGroup label="Accent Color" hint="Default button color, focus rings, and link colors in the published funnel">
+            <ColorPickerPopover
+              color={primaryColor}
+              onChange={(color) => handleSettingsUpdate('primary_color', color)}
+            >
+              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg border border-builder-border hover:border-builder-text-muted transition-colors">
+                <div 
+                  className="w-8 h-8 rounded-lg border border-builder-border" 
+                  style={{ backgroundColor: primaryColor }}
+                />
+                <span className="text-sm text-builder-text font-mono flex-1 text-left">
+                  {primaryColor}
+                </span>
+                <Palette className="w-4 h-4 text-builder-text-muted" />
+              </button>
+            </ColorPickerPopover>
+          </FieldGroup>
+          <FieldGroup label="Font Family">
+            <Select 
+              value={page.settings.font_family || 'Inter'} 
+              onValueChange={(value) => handleSettingsUpdate('font_family', value)}
+            >
+              <SelectTrigger className="builder-input">
+                <SelectValue placeholder="Select font..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Inter">
+                  <span style={{ fontFamily: 'Inter' }}>Inter</span>
+                </SelectItem>
+                <SelectItem value="DM Sans">
+                  <span style={{ fontFamily: 'DM Sans' }}>DM Sans</span>
+                </SelectItem>
+                <SelectItem value="Roboto">
+                  <span style={{ fontFamily: 'Roboto' }}>Roboto</span>
+                </SelectItem>
+                <SelectItem value="Open Sans">
+                  <span style={{ fontFamily: 'Open Sans' }}>Open Sans</span>
+                </SelectItem>
+                <SelectItem value="Poppins">
+                  <span style={{ fontFamily: 'Poppins' }}>Poppins</span>
+                </SelectItem>
+                <SelectItem value="Montserrat">
+                  <span style={{ fontFamily: 'Montserrat' }}>Montserrat</span>
+                </SelectItem>
+                <SelectItem value="Playfair Display">
+                  <span style={{ fontFamily: 'Playfair Display' }}>Playfair Display</span>
+                </SelectItem>
+                <SelectItem value="Lato">
+                  <span style={{ fontFamily: 'Lato' }}>Lato</span>
+                </SelectItem>
+                <SelectItem value="Raleway">
+                  <span style={{ fontFamily: 'Raleway' }}>Raleway</span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="SEO & Meta" icon={<Sparkles className="w-4 h-4" />} defaultOpen={false}>
+        <div className="space-y-4 pt-3">
+          <FieldGroup label="Page Title" hint="Appears in browser tab and search results">
+            <Input
+              value={page.settings.meta?.title || ''}
+              onChange={(e) => handleMetaUpdate('title', e.target.value)}
+              className="builder-input"
+              placeholder="My Awesome Page"
+            />
+          </FieldGroup>
+          <FieldGroup label="Description" hint="Shown in search engine results">
+            <Textarea
+              value={page.settings.meta?.description || ''}
+              onChange={(e) => handleMetaUpdate('description', e.target.value)}
+              className="builder-input resize-none"
+              rows={2}
+              placeholder="A brief description of your page..."
+            />
+          </FieldGroup>
+          <FieldGroup label="Social Image URL" hint="Image shown when shared on social media">
+            <Input
+              value={page.settings.meta?.og_image || ''}
+              onChange={(e) => handleMetaUpdate('og_image', e.target.value)}
+              className="builder-input"
+              placeholder="https://..."
+            />
+          </FieldGroup>
         </div>
       </CollapsibleSection>
 
