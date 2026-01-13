@@ -61,6 +61,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
   Plus,
   Eye,
@@ -2019,8 +2020,8 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
             <Layers className="w-4 h-4 text-blue-500" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-builder-text">Block</p>
-            <p className="text-[10px] text-builder-text-muted">{getBlockTypeLabel(block.type)} · Inside section</p>
+            <p className="text-sm font-semibold text-builder-text">{getBlockTypeLabel(block.type)}</p>
+            <p className="text-[10px] text-builder-text-muted">Block</p>
           </div>
         </div>
       </div>
@@ -2366,10 +2367,12 @@ const FrameInspector: React.FC<{
   frame: Frame; 
   onUpdate: (updates: Partial<Frame>) => void;
   onDelete?: () => void;
+  onSelectCanvas?: () => void;
 }> = ({ 
   frame, 
   onUpdate,
-  onDelete
+  onDelete,
+  onSelectCanvas
 }) => {
   // Convert frame background props to BackgroundValue
   const getBackgroundValue = (): BackgroundValue => {
@@ -2411,6 +2414,14 @@ const FrameInspector: React.FC<{
 
   return (
     <div className="space-y-0">
+      {/* Back to Canvas navigation */}
+      <button 
+        onClick={() => onSelectCanvas?.()}
+        className="w-full text-xs text-builder-text-muted hover:text-builder-accent flex items-center gap-1 px-4 py-2 border-b border-builder-border hover:bg-builder-surface-hover transition-colors"
+      >
+        <ChevronLeft className="w-3 h-3" /> Canvas
+      </button>
+      
       {/* Section Header - prominent with accent color */}
       <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(var(--builder-accent)/0.1)] to-transparent">
         <div className="flex items-center justify-between">
@@ -2656,8 +2667,9 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
       <CollapsibleSection title="Canvas Background" icon={<Image className="w-4 h-4" />} defaultOpen>
         <div className="space-y-3 pt-3">
           {/* Hint explaining canvas vs section */}
-          <div className="text-[10px] text-builder-text-dim bg-builder-surface-hover rounded-lg px-3 py-2 -mt-1">
-            💡 This is the page-level background. Sections (cards) sit on top of this. Click a section to edit its individual background.
+          <div className="text-[10px] text-builder-text-dim bg-builder-surface-hover rounded-lg px-3 py-2 -mt-1 space-y-1">
+            <p>💡 This is the page-level background. Sections (cards) sit on top of this.</p>
+            <p>To change section width, click a section first.</p>
           </div>
           {/* Reset Button */}
           <div className="flex items-center justify-between">
@@ -3167,6 +3179,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             frame={selectedNode as Frame} 
             onUpdate={handleUpdate} 
             onDelete={selection.id && onDeleteFrame ? () => onDeleteFrame(selection.id!) : undefined}
+            onSelectCanvas={() => onClearSelection()}
           />
         ) : resolvedType === 'block' && selectedNode ? (
           <BlockInspector block={selectedNode as Block} onUpdate={handleUpdate} />

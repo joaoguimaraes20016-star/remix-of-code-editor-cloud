@@ -1098,6 +1098,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             pageSettings={page.settings}
             replayAnimationKey={replayAnimationKey}
             showGrid={showGrid}
+            onAddFrame={handleAddFrame}
             onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
             onNextStep={() => {
               const currentIndex = page.steps.findIndex(s => s.id === activeStepId);
