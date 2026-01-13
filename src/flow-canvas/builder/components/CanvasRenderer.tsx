@@ -2833,7 +2833,8 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   const frameStyles = getFrameBackgroundStyles();
   
   // Determine layout mode - 'contained' (centered box) or 'full-width' (edge-to-edge within device frame)
-  const isFullWidth = frame.layout === 'full-width';
+  // Default to full-width for better out-of-box experience
+  const isFullWidth = frame.layout !== 'contained';
   
   return (
     <div

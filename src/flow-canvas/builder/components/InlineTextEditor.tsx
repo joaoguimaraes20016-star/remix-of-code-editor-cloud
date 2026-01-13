@@ -620,19 +620,29 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const buildStyleOptions = (): SelectionStyleOptions | null => {
       const opts: SelectionStyleOptions = {};
 
-      if (newStyles.textFillType === 'gradient') {
-        opts.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
-        // Explicitly clear solid color to prevent conflicts
-        opts.color = undefined;
-      } else if (newStyles.textColor !== undefined || newStyles.textFillType === 'solid') {
-        // Explicit solid color change OR switching to solid mode
-        // Do NOT default to white (causes "whole block turns white" bugs).
-        // Use the new color, then existing style, then computed color, then fallback to currentColor.
-        const computed = editorEl ? window.getComputedStyle(editorEl).color : '';
-        opts.color = newStyles.textColor || styles.textColor || computed || 'currentColor';
-        // Explicitly clear gradient to ensure clean transition from gradient to solid
-        opts.gradient = undefined;
+      // IMPORTANT: Only set color/gradient if explicitly requested in newStyles
+      // This prevents bold/italic from accidentally changing colors
+      const hasColorRequest = newStyles.textFillType !== undefined || 
+                              newStyles.textColor !== undefined || 
+                              newStyles.textGradient !== undefined;
+
+      if (hasColorRequest) {
+        if (newStyles.textFillType === 'gradient') {
+          opts.gradient = newStyles.textGradient || styles.textGradient || defaultGradient;
+          // Explicitly clear solid color to prevent conflicts
+          opts.color = undefined;
+        } else if (newStyles.textColor !== undefined || newStyles.textFillType === 'solid') {
+          // Explicit solid color change OR switching to solid mode
+          // Do NOT default to white (causes "whole block turns white" bugs).
+          // Use the new color, then existing style, then computed color, then fallback to currentColor.
+          const computed = editorEl ? window.getComputedStyle(editorEl).color : '';
+          opts.color = newStyles.textColor || styles.textColor || computed || 'currentColor';
+          // Explicitly clear gradient to ensure clean transition from gradient to solid
+          opts.gradient = undefined;
+        }
       }
+      // If no color request, leave opts.color and opts.gradient undefined
+      // This preserves existing colors when applying bold/italic only
 
       if (newStyles.fontWeight) {
         const wMap: Record<string, string> = { normal: '400', medium: '500', semibold: '600', bold: '700', black: '900' };
