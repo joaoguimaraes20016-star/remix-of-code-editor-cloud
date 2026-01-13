@@ -777,66 +777,11 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // We compute format state from the *live selection* on every click so the
       // toolbar can never drift out of sync.
       // ─────────────────────────────────────────────────────────────────────────
-      const liveFormat: FormatState = (() => {
-        try {
-          if (!editorEl) return selectionFormat;
-
-          const sel = window.getSelection();
-          const liveRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-
-          const isRangeInEditor = (r: Range | null) => {
-            if (!r) return false;
-            try {
-              // Range can become invalid after DOM mutations - check if containers still exist
-              const startValid = r.startContainer && document.contains(r.startContainer);
-              const endValid = r.endContainer && document.contains(r.endContainer);
-              if (!startValid || !endValid) return false;
-              return editorEl.contains(r.startContainer) || editorEl.contains(r.endContainer) || r.commonAncestorContainer === editorEl;
-            } catch {
-              return false;
-            }
-          };
-
-          // Prefer the *actual* current selection if it's inside the editor.
-          if (isRangeInEditor(liveRange)) {
-            const fmt = getSelectionFormatState(editorEl, liveRange as Range);
-            if (import.meta.env.DEV) {
-              console.log('[liveFormat] from liveRange', { fmt, text: liveRange?.toString()?.slice(0, 30) });
-            }
-            return fmt;
-          }
-
-          // Fallback: when toolbar has focus, selection can appear "outside" the editor.
-          // Use the last known valid selection/caret range, but only if it's recent (within 10s).
-          const isRecentSelection = Date.now() - lastUserSelectionAtRef.current < 10000;
-          
-          if (isRecentSelection && isRangeInEditor(lastSelectionRangeRef.current)) {
-            const fmt = getSelectionFormatState(editorEl, lastSelectionRangeRef.current as Range);
-            if (import.meta.env.DEV) {
-              console.log('[liveFormat] from lastSelectionRangeRef', { fmt, text: lastSelectionRangeRef.current?.toString()?.slice(0, 30) });
-            }
-            return fmt;
-          }
-
-          if (isRecentSelection && isRangeInEditor(lastCaretRangeRef.current)) {
-            const fmt = getSelectionFormatState(editorEl, lastCaretRangeRef.current as Range);
-            if (import.meta.env.DEV) {
-              console.log('[liveFormat] from lastCaretRangeRef', { fmt });
-            }
-            return fmt;
-          }
-
-          if (import.meta.env.DEV) {
-            console.log('[liveFormat] fallback to selectionFormat state (no recent range)', selectionFormat);
-          }
-          return selectionFormat;
-        } catch (e) {
-          if (import.meta.env.DEV) {
-            console.warn('[liveFormat] error', e);
-          }
-          return selectionFormat;
-        }
-      })();
+      // IMPORTANT: For reliable toggling, use the toolbar's tri-state (selectionFormat)
+      // as the source of truth.
+      // Rationale: when clicking toolbar buttons, the browser selection can collapse/move
+      // to a boundary node, making computed style checks flaky and causing "won't undo".
+      const liveFormat: FormatState = selectionFormat;
 
       // ─────────────────────────────────────────────────────────────────────────
       // FIX: Use EXPLICIT "normal" values instead of null to override inherited styles.
