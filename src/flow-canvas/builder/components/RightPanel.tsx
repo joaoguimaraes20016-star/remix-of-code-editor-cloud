@@ -2484,6 +2484,56 @@ const FrameInspector: React.FC<{
               </button>
             </div>
           </FieldGroup>
+
+          {/* Max Width Slider - only when contained */}
+          {(frame.layout || 'contained') === 'contained' && (
+            <FieldGroup label={`Max Width: ${frame.maxWidth || 520}px`} hint="Control the maximum content width">
+              <Slider
+                value={[frame.maxWidth || 520]}
+                onValueChange={([v]) => onUpdate({ maxWidth: v })}
+                min={400}
+                max={800}
+                step={20}
+                className="w-full"
+              />
+            </FieldGroup>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Spacing Controls */}
+      <CollapsibleSection title="Spacing" icon={<ArrowUpDown className="w-4 h-4" />} defaultOpen>
+        <div className="space-y-3 pt-3">
+          <FieldGroup label={`Vertical Padding: ${frame.paddingVertical || 32}px`}>
+            <Slider
+              value={[frame.paddingVertical || 32]}
+              onValueChange={([v]) => onUpdate({ paddingVertical: v })}
+              min={16}
+              max={64}
+              step={4}
+              className="w-full"
+            />
+          </FieldGroup>
+          <FieldGroup label={`Horizontal Padding: ${frame.paddingHorizontal || 32}px`}>
+            <Slider
+              value={[frame.paddingHorizontal || 32]}
+              onValueChange={([v]) => onUpdate({ paddingHorizontal: v })}
+              min={16}
+              max={64}
+              step={4}
+              className="w-full"
+            />
+          </FieldGroup>
+          <FieldGroup label={`Block Spacing: ${frame.blockGap || 12}px`} hint="Gap between blocks inside this section">
+            <Slider
+              value={[frame.blockGap || 12]}
+              onValueChange={([v]) => onUpdate({ blockGap: v })}
+              min={8}
+              max={32}
+              step={4}
+              className="w-full"
+            />
+          </FieldGroup>
         </div>
       </CollapsibleSection>
 

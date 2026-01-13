@@ -225,6 +225,11 @@ export interface Frame {
   styles?: Record<string, string>;
   // Frame layout - contained (centered box) or full-width (edge-to-edge)
   layout?: FrameLayout;
+  // Spacing controls
+  paddingVertical?: number;      // 16-64px, default 32
+  paddingHorizontal?: number;    // 16-64px, default 32
+  blockGap?: number;             // 8-32px, default 12
+  maxWidth?: number;             // 400-800px, default 520 (only applies when contained)
   // Frame-specific background settings
   background?: FrameBackgroundType;
   backgroundColor?: string;

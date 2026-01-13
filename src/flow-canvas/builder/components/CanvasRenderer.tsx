@@ -2791,12 +2791,16 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
     <div
       className={cn(
         'overflow-hidden transition-all relative group/frame cursor-pointer',
-        // Apply rounded corners only for contained layout
-        !isFullWidth && 'rounded-2xl mx-4 md:mx-8',
+        // Apply rounded corners and centering only for contained layout
+        !isFullWidth && 'rounded-2xl mx-auto',
         frameStyles.className,
         isSelected && 'ring-2 ring-builder-accent shadow-[0_0_0_4px_hsl(var(--builder-accent)/0.15)]'
       )}
-      style={frameStyles.style}
+      style={{
+        ...frameStyles.style,
+        // Apply maxWidth for contained layout
+        maxWidth: !isFullWidth ? (frame.maxWidth || 520) : undefined,
+      }}
       onClick={(e) => {
         // Click anywhere on frame selects it (if not clicking a child element that handles selection)
         if (!readOnly) {
@@ -2830,38 +2834,44 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
           </div>
         </div>
       )}
-      {/* Apply padding based on layout - contained gets extra padding, full-width stretches to edges */}
-      <div className={cn(
-        'py-8',
-        isFullWidth ? 'px-4 md:px-8' : 'p-8'
-      )}>
-        {frame.stacks.map((stack) => (
-          <StackRenderer
-            key={stack.id}
-            stack={stack}
-            selection={selection}
-            multiSelectedIds={multiSelectedIds}
-            onSelect={onSelect}
-            path={framePath}
-            onReorderBlocks={onReorderBlocks}
-            onReorderElements={onReorderElements}
-            onAddBlock={onAddBlock}
-            onDuplicateBlock={onDuplicateBlock}
-            onDeleteBlock={onDeleteBlock}
-            onUpdateElement={onUpdateElement}
-            onDuplicateElement={onDuplicateElement}
-            onDeleteElement={onDeleteElement}
-            onCopy={onCopy}
-            onPaste={onPaste}
-            canPaste={canPaste}
-            readOnly={readOnly}
-            replayAnimationKey={replayAnimationKey}
-            deviceMode={deviceMode}
-            onNextStep={onNextStep}
-            onGoToStep={onGoToStep}
-            onFormSubmit={onFormSubmit}
-          />
-        ))}
+      {/* Apply dynamic padding and spacing based on frame settings */}
+      <div 
+        style={{
+          paddingTop: frame.paddingVertical || 32,
+          paddingBottom: frame.paddingVertical || 32,
+          paddingLeft: isFullWidth ? 16 : (frame.paddingHorizontal || 32),
+          paddingRight: isFullWidth ? 16 : (frame.paddingHorizontal || 32),
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: frame.blockGap || 12 }}>
+          {frame.stacks.map((stack) => (
+            <StackRenderer
+              key={stack.id}
+              stack={stack}
+              selection={selection}
+              multiSelectedIds={multiSelectedIds}
+              onSelect={onSelect}
+              path={framePath}
+              onReorderBlocks={onReorderBlocks}
+              onReorderElements={onReorderElements}
+              onAddBlock={onAddBlock}
+              onDuplicateBlock={onDuplicateBlock}
+              onDeleteBlock={onDeleteBlock}
+              onUpdateElement={onUpdateElement}
+              onDuplicateElement={onDuplicateElement}
+              onDeleteElement={onDeleteElement}
+              onCopy={onCopy}
+              onPaste={onPaste}
+              canPaste={canPaste}
+              readOnly={readOnly}
+              replayAnimationKey={replayAnimationKey}
+              deviceMode={deviceMode}
+              onNextStep={onNextStep}
+              onGoToStep={onGoToStep}
+              onFormSubmit={onFormSubmit}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
