@@ -3183,6 +3183,11 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             onReplayAnimation={selection.id ? () => onReplayAnimation?.(selection.id!) : undefined}
             currentDeviceMode={currentDeviceMode}
           />
+        ) : resolvedType === 'stack' ? (
+          /* Stack selections should select parent frame instead - show frame inspector if we can find parent */
+          <div className="p-4 text-center text-builder-text-muted text-sm">
+            <p>Click the section header above to edit section settings.</p>
+          </div>
         ) : (
           <PageInspector page={page} onUpdate={handleUpdate} onPublish={onPublish} />
         )}
