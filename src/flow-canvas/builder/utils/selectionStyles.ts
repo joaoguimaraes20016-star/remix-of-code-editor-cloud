@@ -108,7 +108,9 @@ export function removeFormatFromSelection(options: {
     const temp = document.createElement('div');
     temp.appendChild(extracted);
 
-    // Strip the specified formatting properties from ALL spans in the selection
+    // Strip the specified formatting properties from ALL spans in the selection fragment.
+    // NOTE: This alone is not sufficient when the selection lives inside a styled ancestor span.
+    // We'll also "split" any formatting ancestors around the markers after reinsertion.
     const spans = Array.from(temp.querySelectorAll('span[style]')) as HTMLSpanElement[];
     for (const s of spans) {
       const current = parseStyleAttribute(s.getAttribute('style'));
@@ -121,13 +123,13 @@ export function removeFormatFromSelection(options: {
       else s.removeAttribute('style');
     }
 
-    // Also unwrap legacy formatting tags
+    // Also unwrap legacy formatting tags inside the extracted fragment.
     const unwrapTags = (selectors: string[]) => {
       const nodes = Array.from(temp.querySelectorAll(selectors.join(',')));
       for (const node of nodes) {
         const parent = node.parentNode;
         if (!parent) continue;
-        while (node.firstChild) parent.insertBefore(node.firstChild, node);
+        while ((node as HTMLElement).firstChild) parent.insertBefore((node as HTMLElement).firstChild!, node);
         parent.removeChild(node);
       }
     };
@@ -136,19 +138,129 @@ export function removeFormatFromSelection(options: {
     if (options.fontStyle) unwrapTags(['i', 'em']);
     if (options.textDecoration) unwrapTags(['u']);
 
-    // Use a marker span to track where we insert, so we can restore selection
+    // Markers allow us to (1) split formatting ancestors around the removed region and
+    // (2) restore the selection precisely after DOM surgery.
     const markerStart = document.createElement('span');
     markerStart.dataset.selMarker = 'start';
     const markerEnd = document.createElement('span');
     markerEnd.dataset.selMarker = 'end';
 
-    // Insert markers around the content
     const rebuilt = document.createDocumentFragment();
     rebuilt.appendChild(markerStart);
     while (temp.firstChild) rebuilt.appendChild(temp.firstChild);
     rebuilt.appendChild(markerEnd);
 
     range.insertNode(rebuilt);
+
+    // If the selection originally lived inside a bold/italic/underline wrapper (e.g. a styled span
+    // or a legacy <b>/<i>/<u> tag), simply stripping styles from the extracted fragment is not enough,
+    // because reinsertion can happen *inside* the original wrapper.
+    //
+    // We fix this by splitting any formatting ancestor element around the marker boundary so the
+    // "removed" content is no longer inside that formatting ancestor.
+    const isLegacyTag = (el: HTMLElement, tag: string) => el.tagName.toLowerCase() === tag;
+
+    const spanAppliesFormat = (el: HTMLSpanElement) => {
+      const style = parseStyleAttribute(el.getAttribute('style'));
+
+      const weightRaw = (style['font-weight'] || '').toLowerCase();
+      const weightNum = Number.parseInt(weightRaw, 10);
+      const isBold = Number.isFinite(weightNum) ? weightNum >= 600 : weightRaw === 'bold' || weightRaw === 'bolder';
+
+      const isItalic = (style['font-style'] || '').toLowerCase() === 'italic';
+      const deco = (style['text-decoration'] || '').toLowerCase();
+      const isUnderline = deco.includes('underline');
+
+      return {
+        bold: isBold,
+        italic: isItalic,
+        underline: isUnderline,
+      };
+    };
+
+    const isFormattingAncestor = (el: HTMLElement) => {
+      if (options.fontWeight && (isLegacyTag(el, 'b') || isLegacyTag(el, 'strong'))) return true;
+      if (options.fontStyle && (isLegacyTag(el, 'i') || isLegacyTag(el, 'em'))) return true;
+      if (options.textDecoration && isLegacyTag(el, 'u')) return true;
+
+      if (el.tagName.toLowerCase() === 'span' && el.getAttribute('style')) {
+        const fmt = spanAppliesFormat(el as HTMLSpanElement);
+        if (options.fontWeight && fmt.bold) return true;
+        if (options.fontStyle && fmt.italic) return true;
+        if (options.textDecoration && fmt.underline) return true;
+      }
+
+      return false;
+    };
+
+    const adjustMiddleSpanStyle = (original: HTMLSpanElement, middle: HTMLSpanElement) => {
+      const style = parseStyleAttribute(middle.getAttribute('style'));
+      const fmt = spanAppliesFormat(original);
+
+      // When turning OFF formatting for a region, ensure the middle wrapper is neutral for that format.
+      // We use explicit resets to avoid inherited formatting from outer wrappers in edge cases.
+      if (options.fontWeight && fmt.bold) style['font-weight'] = '400';
+      if (options.fontStyle && fmt.italic) style['font-style'] = 'normal';
+      if (options.textDecoration && fmt.underline) style['text-decoration'] = 'none';
+
+      const next = serializeStyleAttribute(style);
+      if (next) middle.setAttribute('style', next);
+      else middle.removeAttribute('style');
+    };
+
+    const splitWrapperAroundMarkers = (wrapper: HTMLElement) => {
+      const parent = wrapper.parentNode;
+      if (!parent) return;
+
+      const before = wrapper.cloneNode(false) as HTMLElement;
+      const after = wrapper.cloneNode(false) as HTMLElement;
+
+      // Move nodes before start marker into before wrapper
+      while (wrapper.firstChild && wrapper.firstChild !== markerStart) {
+        before.appendChild(wrapper.firstChild);
+      }
+
+      // Move markerStart..markerEnd (inclusive) into middle container.
+      const middleFrag = document.createDocumentFragment();
+      let node: ChildNode | null = wrapper.firstChild;
+      while (node) {
+        const next = node.nextSibling;
+        middleFrag.appendChild(node);
+        if (node === markerEnd) break;
+        node = next;
+      }
+
+      // Remaining nodes into after wrapper
+      while (wrapper.firstChild) {
+        after.appendChild(wrapper.firstChild);
+      }
+
+      // Decide whether to preserve a middle wrapper (span only) to keep non-format styles (e.g., gradients)
+      // while ensuring the removed format is neutralized.
+      let middleNode: Node = middleFrag;
+      if (wrapper.tagName.toLowerCase() === 'span') {
+        const mid = wrapper.cloneNode(false) as HTMLSpanElement;
+        mid.appendChild(middleFrag);
+        adjustMiddleSpanStyle(wrapper as HTMLSpanElement, mid);
+        middleNode = mid;
+      }
+
+      if (before.childNodes.length) parent.insertBefore(before, wrapper);
+      parent.insertBefore(middleNode, wrapper);
+      if (after.childNodes.length) parent.insertBefore(after, wrapper);
+      parent.removeChild(wrapper);
+    };
+
+    // Keep splitting upward until markers are no longer inside any formatting ancestor.
+    let cur: HTMLElement | null = markerStart.parentElement;
+    while (cur && cur.contains(markerEnd)) {
+      if (isFormattingAncestor(cur)) {
+        splitWrapperAroundMarkers(cur);
+        cur = markerStart.parentElement;
+        continue;
+      }
+      cur = cur.parentElement;
+    }
 
     // Restore selection between markers
     const parent = markerStart.parentNode;
