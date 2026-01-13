@@ -1060,16 +1060,26 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           editorEl.contains(sel?.anchorNode ?? null) ||
           editorEl.contains(sel?.focusNode ?? null));
 
-      if (import.meta.env.DEV) {
-        console.warn('[handleStyleChange] initial', {
-          elementId,
-          newStyles,
-          liveHasSelection,
-          liveRangeText: liveRange?.toString()?.slice(0, 60),
-          savedRangeText: lastSelectionRangeRef.current?.toString()?.slice(0, 60),
-          isSliderDragging: isSliderDraggingRef.current,
-        });
-      }
+      // DEBUG: Log all selection state info
+      console.log('[DEBUG handleStyleChange] ENTRY', {
+        elementId,
+        newStyles,
+        isEditing,
+        shouldApplyInline,
+        liveHasSelection,
+        liveRangeCollapsed: liveRange?.collapsed,
+        liveRangeText: liveRange?.toString()?.slice(0, 60),
+        liveRangeStartContainer: liveRange?.startContainer?.nodeName,
+        liveRangeInEditor: liveRange ? (
+          editorEl.contains(liveRange.startContainer) ||
+          editorEl.contains(liveRange.endContainer)
+        ) : false,
+        savedSelectionText: lastSelectionRangeRef.current?.toString()?.slice(0, 60),
+        savedCaretExists: !!lastCaretRangeRef.current,
+        lastUserSelectionAt: lastUserSelectionAtRef.current,
+        timeSinceLastSelection: Date.now() - lastUserSelectionAtRef.current,
+        isSliderDragging: isSliderDraggingRef.current,
+      });
 
       // If live selection is collapsed/empty, try restoring saved selection
       // CRITICAL: Only restore if the saved selection is RECENT (within 10 seconds)
@@ -1124,6 +1134,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
 
       const hasSelection = liveRange && !liveRange.collapsed && liveRange.toString().length > 0;
+
+      // DEBUG: Log selection state after restoration attempts
+      console.log('[DEBUG handleStyleChange] AFTER RESTORATION', {
+        hasSelection,
+        liveRangeCollapsed: liveRange?.collapsed,
+        liveRangeText: liveRange?.toString()?.slice(0, 60),
+        liveRangeInEditor: liveRange ? (
+          editorEl.contains(liveRange.startContainer) ||
+          editorEl.contains(liveRange.endContainer)
+        ) : false,
+      });
 
       // If caret is active (collapsed selection), insert a styled span so toggles apply
       // to "next typed" characters (and the user sees the toolbar state update).
@@ -1378,7 +1399,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         }
 
         // TOGGLE ON: Wrap the selection with new span
+        console.log('[DEBUG handleStyleChange] CASE A: Attempting applyStylesToSelection', {
+          styleOpts,
+          selectionText: window.getSelection()?.toString()?.slice(0, 60),
+        });
         const span = applyStylesToSelection(styleOpts);
+        console.log('[DEBUG handleStyleChange] applyStylesToSelection result:', span ? 'SUCCESS' : 'NULL');
         if (span) {
           const newSpanId = span.dataset.inlineStyleId || null;
           activeInlineSpanIdRef.current = newSpanId;
@@ -2035,6 +2061,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     (nextStyles: Partial<TextStyles>) => {
       const el = contentRef.current;
       if (!el) return;
+      
+      // DEBUG: Log toolbar click entry point
+      const initialSel = window.getSelection();
+      const initialRange = initialSel && initialSel.rangeCount > 0 ? initialSel.getRangeAt(0) : null;
+      console.log('[DEBUG handleToolbarStyleChange] ENTRY', {
+        nextStyles,
+        hasInitialSelection: !!initialRange && !initialRange.collapsed,
+        initialSelectionText: initialRange?.toString()?.slice(0, 60),
+        initialRangeInEditor: initialRange ? (
+          el.contains(initialRange.startContainer) ||
+          el.contains(initialRange.endContainer)
+        ) : false,
+      });
       
       // Mark toolbar interaction timestamp for blur safety net
       lastToolbarInteractionAtRef.current = Date.now();
