@@ -767,9 +767,11 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         // - If selection is mixed and user wants bold -> normalize to bold (requestedWeight)
         if (wantsBold) {
           const shouldRemove = liveFormat.bold === 'on';
-          opts.fontWeight = shouldRemove ? '400' : requestedWeight;
+          // Non-negotiable: when toggling OFF, remove the specific style (don't just re-apply).
+          opts.fontWeight = shouldRemove ? null : requestedWeight;
         } else {
-          opts.fontWeight = '400';
+          // Explicit "normal" request → remove bold formatting from the selection.
+          opts.fontWeight = null;
         }
 
         if (import.meta.env.DEV) {
@@ -781,9 +783,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const wantsItalic = newStyles.fontStyle === 'italic';
         if (wantsItalic) {
           const shouldRemove = liveFormat.italic === 'on';
-          opts.fontStyle = shouldRemove ? 'normal' : 'italic';
+          opts.fontStyle = shouldRemove ? null : 'italic';
         } else {
-          opts.fontStyle = 'normal';
+          opts.fontStyle = null;
         }
 
         if (import.meta.env.DEV) {
@@ -795,9 +797,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         const wantsUnderline = String(newStyles.textDecoration).toLowerCase().includes('underline');
         if (wantsUnderline) {
           const shouldRemove = liveFormat.underline === 'on';
-          opts.textDecoration = shouldRemove ? 'none' : 'underline';
+          opts.textDecoration = shouldRemove ? null : 'underline';
         } else {
-          opts.textDecoration = 'none';
+          opts.textDecoration = null;
         }
 
         if (import.meta.env.DEV) {
@@ -821,6 +823,121 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (newStyles.textGradient) sync.textGradient = cloneGradient(newStyles.textGradient);
       if (newStyles.textColor !== undefined) sync.textColor = newStyles.textColor;
       if (Object.keys(sync).length) setSelectionFill(prev => ({ ...prev, ...sync }));
+    };
+
+    // DOM cleanup that preserves selection/caret across normalize()/innerHTML sanitization.
+    const normalizeInlineDom = () => {
+      if (!editorEl) return;
+
+      const sel = window.getSelection();
+      const live = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+
+      const isRangeInEditor = (r: Range | null) => {
+        if (!r) return false;
+        return (
+          editorEl.contains(r.startContainer) ||
+          editorEl.contains(r.endContainer) ||
+          editorEl.contains(r.commonAncestorContainer)
+        );
+      };
+
+      const baseRange = (isRangeInEditor(live) ? live : null) ?? (isRangeInEditor(lastSelectionRangeRef.current) ? lastSelectionRangeRef.current : null) ?? (isRangeInEditor(lastCaretRangeRef.current) ? lastCaretRangeRef.current : null);
+      if (!baseRange) {
+        // Still do structural cleanup.
+        unwrapNestedStyledSpans(editorEl);
+        mergeAdjacentStyledSpans(editorEl);
+        const sanitized = sanitizeStyledHTML(editorEl.innerHTML);
+        if (sanitized !== editorEl.innerHTML) editorEl.innerHTML = sanitized;
+        return;
+      }
+
+      const mkId = (prefix: string) => `${prefix}-${crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+      const startId = mkId('sel-start');
+      const endId = baseRange.collapsed ? null : mkId('sel-end');
+
+      const insertMarkerAt = (r: Range, id: string) => {
+        const marker = document.createElement('span');
+        marker.setAttribute('data-inline-style-id', id);
+        r.insertNode(marker);
+      };
+
+      try {
+        // Insert end marker first so start offsets remain valid.
+        if (endId) {
+          const endRange = baseRange.cloneRange();
+          endRange.collapse(false);
+          insertMarkerAt(endRange, endId);
+        }
+
+        const startRange = baseRange.cloneRange();
+        startRange.collapse(true);
+        insertMarkerAt(startRange, startId);
+      } catch {
+        // If marker insertion fails, fall back to non-preserving cleanup.
+        unwrapNestedStyledSpans(editorEl);
+        mergeAdjacentStyledSpans(editorEl);
+        const sanitized = sanitizeStyledHTML(editorEl.innerHTML);
+        if (sanitized !== editorEl.innerHTML) editorEl.innerHTML = sanitized;
+        return;
+      }
+
+      // 1) sanitize (converts legacy tags like <b>/<i>/<u> into spans)
+      // 2) unwrap/merge (keeps span graph stable)
+      const sanitized = sanitizeStyledHTML(editorEl.innerHTML);
+      if (sanitized !== editorEl.innerHTML) editorEl.innerHTML = sanitized;
+      unwrapNestedStyledSpans(editorEl);
+      mergeAdjacentStyledSpans(editorEl);
+
+      const startEl = editorEl.querySelector(`span[data-inline-style-id="${startId}"]`) as HTMLSpanElement | null;
+      const endEl = endId
+        ? (editorEl.querySelector(`span[data-inline-style-id="${endId}"]`) as HTMLSpanElement | null)
+        : null;
+
+      if (startEl) {
+        const nextRange = document.createRange();
+        if (endEl) {
+          nextRange.setStartAfter(startEl);
+          nextRange.setEndBefore(endEl);
+        } else {
+          nextRange.setStartAfter(startEl);
+          nextRange.collapse(true);
+        }
+
+        sel?.removeAllRanges();
+        sel?.addRange(nextRange);
+
+        // Remove marker elements.
+        endEl?.remove();
+        startEl.remove();
+
+        // Update cached ranges.
+        if (!nextRange.collapsed && nextRange.toString().length > 0) {
+          lastSelectionRangeRef.current = nextRange.cloneRange();
+        } else if (nextRange.collapsed) {
+          lastCaretRangeRef.current = nextRange.cloneRange();
+        }
+      }
+
+      // Unwrap style-less spans that we may have created while removing formatting.
+      // (Leaves styled spans intact; strips markup-only wrappers.)
+      const styleless = Array.from(editorEl.querySelectorAll('span')) as HTMLSpanElement[];
+      for (const sp of styleless) {
+        if (sp.getAttribute('style')) continue;
+        if (sp.getAttribute('data-gradient')) continue;
+        // If it still has an inline-style id but no styles, it's redundant.
+        const parent = sp.parentNode;
+        if (!parent) continue;
+        while (sp.firstChild) parent.insertBefore(sp.firstChild, sp);
+        parent.removeChild(sp);
+      }
+
+      editorEl.normalize();
+
+      // Re-acquire active span ref by stable ID (innerHTML sanitization recreates nodes).
+      if (activeInlineSpanIdRef.current) {
+        const found = editorEl.querySelector(`span[data-inline-style-id="${activeInlineSpanIdRef.current}"]`);
+        activeInlineSpanRef.current = (found as HTMLSpanElement) || null;
+      }
     };
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -912,24 +1029,19 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         styleOpts.fontStyle !== undefined ||
         styleOpts.textDecoration !== undefined;
 
-      const patchFormatState = () => {
+      // NOTE: We intentionally do NOT "patch" selectionFormat based on what we *think* we applied.
+      // The toolbar must be driven by computed DOM state (getSelectionFormatState) only.
+      const recomputeFormatState = () => {
         if (!isFormattingToggle) return;
-        setSelectionFormat((prev) => {
-          const next: FormatState = { ...prev };
-
-          if (styleOpts.fontWeight !== undefined) {
-            const w = Number(styleOpts.fontWeight);
-            next.bold = Number.isFinite(w) ? (w >= 600 ? 'on' : 'off') : styleOpts.fontWeight === 'bold' ? 'on' : 'off';
+        try {
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount > 0) {
+            const fmt = getSelectionFormatState(editorEl, sel.getRangeAt(0));
+            setSelectionFormat(fmt);
           }
-          if (styleOpts.fontStyle !== undefined) {
-            next.italic = styleOpts.fontStyle === 'italic' ? 'on' : 'off';
-          }
-          if (styleOpts.textDecoration !== undefined) {
-            next.underline = String(styleOpts.textDecoration).toLowerCase().includes('underline') ? 'on' : 'off';
-          }
-
-          return next;
-        });
+        } catch {
+          // ignore
+        }
       };
 
       const caretInsideEditor =
@@ -941,33 +1053,27 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           editorEl.contains(sel?.focusNode ?? null));
 
       if (!hasSelection && caretInsideEditor && isFormattingToggle) {
-        const span = insertStyledSpanAtCaret(styleOpts);
+        // For caret-only toggles, we need explicit "normal/none" values so the next typed
+        // characters visibly change even if the caret is inside a bold/italic/underlined span.
+        const caretOpts: SelectionStyleOptions = {
+          ...styleOpts,
+          ...(styleOpts.fontWeight === null ? { fontWeight: '400' } : {}),
+          ...(styleOpts.fontStyle === null ? { fontStyle: 'normal' } : {}),
+          ...(styleOpts.textDecoration === null ? { textDecoration: 'none' } : {}),
+        };
+
+        const span = insertStyledSpanAtCaret(caretOpts);
         if (span) {
           activeInlineSpanRef.current = span;
           activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
           lastCaretRangeRef.current = window.getSelection()?.getRangeAt(0)?.cloneRange() ?? null;
           setSessionHasInlineStyles(true);
-          
-          // DOM CLEANUP
-          unwrapNestedStyledSpans(editorEl);
-          mergeAdjacentStyledSpans(editorEl);
-          
+
+          normalizeInlineDom();
           scheduleInlineHtmlSave();
           syncToolbarState();
-          
-          // Re-read DOM format state immediately
-          requestAnimationFrame(() => {
-            try {
-              const sel = window.getSelection();
-              if (sel && sel.rangeCount > 0) {
-                const updatedFormat = getSelectionFormatState(editorEl, sel.getRangeAt(0));
-                setSelectionFormat(updatedFormat);
-              }
-            } catch {
-              patchFormatState();
-            }
-          });
-          
+
+          requestAnimationFrame(recomputeFormatState);
           return true;
         }
       }
@@ -1034,27 +1140,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               activeInlineSpanRef.current = targetSpan;
               activeInlineSpanIdRef.current = targetSpan.dataset.inlineStyleId || null;
               setSessionHasInlineStyles(true);
-              
-              // DOM CLEANUP
-              unwrapNestedStyledSpans(editorEl);
-              mergeAdjacentStyledSpans(editorEl);
-              
+
+              normalizeInlineDom();
               scheduleInlineHtmlSave();
               syncToolbarState();
-              
-              // Re-read DOM format state immediately after update
-              requestAnimationFrame(() => {
-                try {
-                  const sel = window.getSelection();
-                  if (sel && sel.rangeCount > 0) {
-                    const updatedFormat = getSelectionFormatState(editorEl, sel.getRangeAt(0));
-                    setSelectionFormat(updatedFormat);
-                  }
-                } catch {
-                  patchFormatState();
-                }
-              });
-              
+
+              requestAnimationFrame(recomputeFormatState);
               return true;
             }
           } catch {
@@ -1065,8 +1156,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         // Wrap the selection with new span
         const span = applyStylesToSelection(styleOpts);
         if (span) {
-          activeInlineSpanRef.current = span;
-          activeInlineSpanIdRef.current = span.dataset.inlineStyleId || null;
+          const newSpanId = span.dataset.inlineStyleId || null;
+          activeInlineSpanIdRef.current = newSpanId;
 
           // Persist the new selection (span contents) so toolbar/right-panel sliders keep working
           try {
@@ -1078,29 +1169,18 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           }
 
           setSessionHasInlineStyles(true);
-          
-          // DOM CLEANUP: Normalize after formatting changes
-          unwrapNestedStyledSpans(editorEl);
-          mergeAdjacentStyledSpans(editorEl);
-          
+
+          normalizeInlineDom();
           scheduleInlineHtmlSave();
           syncToolbarState();
-          
-          // CRITICAL: Re-read the actual DOM format state immediately after applying the span
-          // so the toolbar buttons reflect the new reality on the next click.
-          requestAnimationFrame(() => {
-            try {
-              const sel = window.getSelection();
-              if (sel && sel.rangeCount > 0) {
-                const updatedFormat = getSelectionFormatState(editorEl, sel.getRangeAt(0));
-                setSelectionFormat(updatedFormat);
-              }
-            } catch {
-              // fallback - use the opts we just applied
-              patchFormatState();
-            }
-          });
-          
+
+          // After DOM normalization, re-acquire the created span by its stable ID.
+          if (newSpanId) {
+            const found = editorEl.querySelector(`span[data-inline-style-id="${newSpanId}"]`) as HTMLSpanElement | null;
+            activeInlineSpanRef.current = found;
+          }
+
+          requestAnimationFrame(recomputeFormatState);
           return true;
         }
         
@@ -1127,27 +1207,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         activeInlineSpanRef.current = targetSpan;
         activeInlineSpanIdRef.current = targetSpan.dataset.inlineStyleId || null;
         setSessionHasInlineStyles(true);
-        
-        // DOM CLEANUP: Normalize after formatting changes
-        unwrapNestedStyledSpans(editorEl);
-        mergeAdjacentStyledSpans(editorEl);
-        
+
+        normalizeInlineDom();
         scheduleInlineHtmlSave();
         syncToolbarState();
-        
-        // Re-read DOM format state immediately
-        requestAnimationFrame(() => {
-          try {
-            const sel = window.getSelection();
-            if (sel && sel.rangeCount > 0) {
-              const updatedFormat = getSelectionFormatState(editorEl, sel.getRangeAt(0));
-              setSelectionFormat(updatedFormat);
-            }
-          } catch {
-            patchFormatState();
-          }
-        });
-        
+
+        requestAnimationFrame(recomputeFormatState);
         return true;
       }
 
