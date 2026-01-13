@@ -2214,8 +2214,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         onSelect({ type: 'block', id: block.id, path: blockPath }, e.shiftKey);
       }}
     >
-      {/* Block Type Badge - Shows on hover with container-specific styling */}
-      <span className={cn('block-type-badge', getBlockBadgeClass())}>{blockTypeLabel}</span>
+      {/* Block Type Badge - Shows on hover with container-specific styling, prefixed with "Block:" */}
+      <span className={cn('block-type-badge block-type-badge-block', getBlockBadgeClass())}>Block: {blockTypeLabel}</span>
       
       {/* Block Action Bar - shows on selection with smooth animation */}
       {!readOnly && (

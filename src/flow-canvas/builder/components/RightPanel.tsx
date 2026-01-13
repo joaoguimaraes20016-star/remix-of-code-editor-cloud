@@ -2012,6 +2012,19 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
 
   return (
     <div className="space-y-0">
+      {/* Block Header - prominent with blue accent to distinguish from Section */}
+      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-blue-500/10 to-transparent">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
+            <Layers className="w-4 h-4 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-builder-text">Block</p>
+            <p className="text-[10px] text-builder-text-muted">{getBlockTypeLabel(block.type)} · Inside section</p>
+          </div>
+        </div>
+      </div>
+
       <CollapsibleSection title="Block Settings" icon={<Layout className="w-4 h-4" />} defaultOpen>
         <div className="space-y-4 pt-3">
           <FieldGroup label="Label">
@@ -2468,7 +2481,7 @@ const FrameInspector: React.FC<{
         <div className="pt-3">
           {/* Hint explaining section vs canvas */}
           <div className="text-[10px] text-builder-text-dim bg-builder-surface-hover rounded-lg px-3 py-2 mb-3">
-            💡 This is the section's background. Set to transparent to show the Canvas Background behind it.
+            💡 This is the section (card) background. Blocks like Hero, CTA, and Forms sit inside this section.
           </div>
           <BackgroundEditor
             value={getBackgroundValue()}

@@ -351,12 +351,17 @@
     @apply opacity-0;
   }
   
-  /* All container badges use same pink */
+  /* Block badges use blue to distinguish from Section (pink) */
+  .block-type-badge-block {
+    background: hsl(217 91% 60% / 0.9) !important;
+  }
+  
+  /* Container-specific block badges also use blue */
   .block-badge-navigation,
   .block-badge-header,
   .block-badge-footer,
   .block-badge-container {
-    background: hsl(315 85% 55% / 0.9) !important;
+    background: hsl(217 91% 60% / 0.9) !important;
   }
   
   /* Section badge - simplified */
