@@ -310,11 +310,18 @@ export const GradientPickerPopover = React.forwardRef<HTMLDivElement, GradientPi
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <span ref={(el) => {
-          triggerRef.current = el;
-          if (typeof ref === 'function') ref(el as any);
-          else if (ref) ref.current = el as any;
-        }} className="contents">{children}</span>
+        <div 
+          ref={(el) => {
+            triggerRef.current = el as HTMLSpanElement;
+            if (typeof ref === 'function') ref(el as any);
+            else if (ref) ref.current = el as any;
+          }} 
+          className="inline-block w-full"
+          role="button"
+          tabIndex={0}
+        >
+          {children}
+        </div>
       </PopoverTrigger>
       <PopoverContent 
         ref={contentRef}
