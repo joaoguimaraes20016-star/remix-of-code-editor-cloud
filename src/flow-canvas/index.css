@@ -430,8 +430,8 @@
     /* Clip only the inner content, not positioned elements */
     /* Don't set background here - let inline styles control it */
     box-shadow: 
-      0 0 0 1px hsl(var(--canvas-frame-border)),
-      0 25px 50px -12px rgba(0, 0, 0, 0.5),
+      0 0 0 1px hsl(var(--canvas-frame-border) / 0.3),
+      0 25px 50px -12px rgba(0, 0, 0, 0.4),
       0 0 80px -20px hsl(var(--builder-accent) / 0.15);
   }
   
