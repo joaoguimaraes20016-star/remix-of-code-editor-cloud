@@ -1497,7 +1497,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     
     if (!elementId) return;
 
-    // Wrapper that restores the user's last in-editor selection before applying styles.
+    // Wrapper that captures/restores the user's last in-editor selection OR caret before applying styles.
+    // This is critical for B/I/U toggles to work even when no text is selected (caret-only behavior).
     const applyFromInspector = (nextStyles: Partial<TextStyles>): boolean => {
       const el = contentRef.current;
       if (!el) return false;
@@ -1506,6 +1507,35 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (!isEditingRef.current && registeredElementIdRef.current === elementId) {
         setIsEditing(true);
         setShowToolbar(true);
+      }
+
+      // STEP 0: Capture live selection/caret BEFORE any focus changes
+      const sel = window.getSelection();
+      const liveRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+
+      const isRangeInsideEditor = (r: Range | null) => {
+        if (!r) return false;
+        try {
+          return (
+            el.contains(r.startContainer) ||
+            el.contains(r.endContainer) ||
+            el.contains(r.commonAncestorContainer) ||
+            r.startContainer === el ||
+            r.endContainer === el
+          );
+        } catch {
+          return false;
+        }
+      };
+
+      const liveHasTextSelection =
+        !!liveRange && !liveRange.collapsed && liveRange.toString().length > 0 && isRangeInsideEditor(liveRange);
+      const liveHasCaret = !!liveRange && liveRange.collapsed && isRangeInsideEditor(liveRange);
+
+      if (liveHasTextSelection && liveRange) {
+        lastSelectionRangeRef.current = liveRange.cloneRange();
+      } else if (liveHasCaret && liveRange) {
+        lastCaretRangeRef.current = liveRange.cloneRange();
       }
 
       // Keep editing active, but don't steal focus from inspector controls (sliders/inputs)
@@ -1525,15 +1555,24 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         el.focus();
       }
 
-      // Restore saved selection
-      const sel = window.getSelection();
-      if (sel && lastSelectionRangeRef.current) {
+      // STEP 1: Restore preferred range (selection > caret > last caret > last selection)
+      const preferredRange: Range | null =
+        (liveHasTextSelection ? liveRange : null) ??
+        (liveHasCaret ? liveRange : null) ??
+        (lastCaretRangeRef.current ?? null) ??
+        (lastSelectionRangeRef.current ?? null);
+
+      if (sel && preferredRange) {
         try {
-          if (el.contains(lastSelectionRangeRef.current.commonAncestorContainer)) {
+          const startValid = el.contains(preferredRange.startContainer) || preferredRange.startContainer === el;
+          const endValid = el.contains(preferredRange.endContainer) || preferredRange.endContainer === el;
+          if (startValid && endValid) {
             sel.removeAllRanges();
-            sel.addRange(lastSelectionRangeRef.current.cloneRange());
+            sel.addRange(preferredRange.cloneRange());
           }
-        } catch { /* ignore */ }
+        } catch {
+          // ignore
+        }
       }
 
       return handleStyleChange(nextStyles);
