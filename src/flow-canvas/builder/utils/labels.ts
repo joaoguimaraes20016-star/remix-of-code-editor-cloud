@@ -49,6 +49,14 @@ export const getBlockCategory = (type: BlockType): 'Section' | 'Content' | 'Layo
   return sectionTypes.has(type) ? 'Section' : 'Content';
 };
 
+// Content blocks should NOT show layout controls (Direction, Justify, Align, etc.)
+// Only Section types and Layout types need these controls
+export const shouldShowLayoutControls = (type: BlockType): boolean => {
+  // These are pure content - no layout controls needed
+  const contentOnlyTypes = new Set(['text-block', 'media', 'cta', 'form-field']);
+  return !contentOnlyTypes.has(type);
+};
+
 // Element type labels
 export const elementTypeLabels: Record<ElementType, string> = {
   text: 'Text',

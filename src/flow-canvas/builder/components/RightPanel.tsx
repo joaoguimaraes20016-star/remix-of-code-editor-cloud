@@ -18,6 +18,7 @@ import { collectFieldKeys } from '../hooks/useScrollAnimation';
 import { 
   getBlockTypeLabel, 
   getBlockCategory,
+  shouldShowLayoutControls,
   getElementTypeLabel, 
   stepIntentLabels, 
   stepTypeLabels, 
@@ -2045,6 +2046,8 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
         </div>
       </CollapsibleSection>
 
+      {/* Layout controls only shown for Section types, not content blocks like Text/Button/Image */}
+      {shouldShowLayoutControls(block.type) && (
       <CollapsibleSection title="Layout" icon={<Rows className="w-4 h-4" />} defaultOpen>
         <div className="space-y-3 pt-3">
           {/* Direction */}
@@ -2143,6 +2146,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
           </div>
         </div>
       </CollapsibleSection>
+      )}
 
       <CollapsibleSection title="Spacing" icon={<BoxSelect className="w-4 h-4" />}>
         <div className="space-y-3 pt-3">
@@ -2432,7 +2436,7 @@ const FrameInspector: React.FC<{
             </div>
             <div>
               <p className="text-sm font-semibold text-builder-text">Section</p>
-              <p className="text-[10px] text-builder-text-muted">{frame.label || 'Content card on canvas'}</p>
+              <p className="text-[10px] text-builder-text-muted">{frame.label || 'Container for content'}</p>
             </div>
           </div>
           {/* Delete button */}
