@@ -138,67 +138,77 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         </div>
       </div>
 
-      {/* Step Preview - matches canvas exactly using semantic tokens */}
+      {/* Step Preview - shows how the step will look on the published funnel (light theme) */}
       <div className="px-4 py-3 border-b border-border">
         <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Preview</div>
         <div 
-          className="border border-border rounded-xl p-3 bg-transparent overflow-hidden"
-          style={{ height: '220px' }}
+          className="border border-gray-200 rounded-xl p-3 overflow-hidden"
+          style={{ height: '220px', backgroundColor: '#fafafa' }}
         >
           <div 
             className="origin-top"
             style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}
           >
-            {/* Render same content as ApplicationFlowCard canvas - exact match, uses bg-background */}
-            <div className="text-center py-12 px-8 bg-background rounded-lg">
-              {/* Title - matches ApplicationFlowCard exactly (text-2xl for welcome, text-xl for others) */}
-              <h3 className={cn(
-                'font-bold text-foreground',
-                step.type === 'welcome' ? 'text-2xl' : 'text-xl'
-              )}>
+            {/* Render same content as published funnel - light theme */}
+            <div className="text-center py-12 px-8 rounded-lg" style={{ backgroundColor: '#ffffff' }}>
+              {/* Title - light theme colors for preview */}
+              <h3 
+                className={cn('font-bold', step.type === 'welcome' ? 'text-2xl' : 'text-xl')}
+                style={{ color: '#1a1a1a' }}
+              >
                 {questionTitle || (step.type === 'welcome' ? 'Apply Now' : step.type === 'question' ? 'Your question here' : step.type === 'capture' ? 'Where should we send your results?' : step.type === 'ending' ? 'Thanks — we will be in touch!' : 'Heading')}
               </h3>
               
-              {/* Description - matches ApplicationFlowCard */}
+              {/* Description */}
               {(questionDescription || step.type === 'welcome') && (
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm mt-2" style={{ color: '#6b7280' }}>
                   {questionDescription || (step.type === 'welcome' ? 'Answer a few quick questions to see if we are a good fit.' : '')}
                 </p>
               )}
               
-              {/* Question options for multiple choice - matches renderQuestionStep */}
+              {/* Question options for multiple choice */}
               {step.type === 'question' && questionType === 'multiple-choice' && options.length > 0 && (
                 <div className="mt-6 space-y-2 max-w-md mx-auto">
                   {options.slice(0, 3).map((option, i) => (
                     <div 
                       key={i}
-                      className="px-4 py-3 border border-border rounded-lg text-left text-sm text-foreground bg-background"
+                      className="px-4 py-3 rounded-lg text-left text-sm"
+                      style={{ border: '1px solid #e5e5e5', color: '#1a1a1a', backgroundColor: '#ffffff' }}
                     >
                       {option}
                     </div>
                   ))}
                   {options.length > 3 && (
-                    <div className="text-xs text-muted-foreground">+{options.length - 3} more</div>
+                    <div className="text-xs" style={{ color: '#9ca3af' }}>+{options.length - 3} more</div>
                   )}
                 </div>
               )}
               
-              {/* Text input for text questions - matches renderQuestionStep */}
+              {/* Text input for text questions */}
               {step.type === 'question' && questionType === 'text' && (
                 <div className="mt-6 max-w-md mx-auto">
-                  <div className="w-full px-4 py-3 border border-border rounded-lg text-sm text-muted-foreground bg-background text-left">
+                  <div 
+                    className="w-full px-4 py-3 rounded-lg text-sm text-left"
+                    style={{ border: '1px solid #e5e5e5', color: '#9ca3af', backgroundColor: '#ffffff' }}
+                  >
                     Type your answer...
                   </div>
                 </div>
               )}
               
-              {/* Capture fields - matches renderCaptureStep */}
+              {/* Capture fields */}
               {step.type === 'capture' && (
                 <div className="mt-6 space-y-3 max-w-md mx-auto">
-                  <div className="px-4 py-3 border border-border rounded-lg text-sm text-muted-foreground bg-background text-left">
+                  <div 
+                    className="px-4 py-3 rounded-lg text-sm text-left"
+                    style={{ border: '1px solid #e5e5e5', color: '#9ca3af', backgroundColor: '#ffffff' }}
+                  >
                     Your name
                   </div>
-                  <div className="px-4 py-3 border border-border rounded-lg text-sm text-muted-foreground bg-background text-left">
+                  <div 
+                    className="px-4 py-3 rounded-lg text-sm text-left"
+                    style={{ border: '1px solid #e5e5e5', color: '#9ca3af', backgroundColor: '#ffffff' }}
+                  >
                     Your email
                   </div>
                 </div>
@@ -207,13 +217,16 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               {/* Ending step - no button, just message */}
               {step.type === 'ending' ? (
                 questionDescription ? null : (
-                  <p className="text-muted-foreground mt-4 text-sm">
-                    We'll be in touch shortly.
+                  <p className="mt-4 text-sm" style={{ color: '#6b7280' }}>
+                    We will be in touch shortly.
                   </p>
                 )
               ) : (
-                /* Button - matches all step types except ending */
-                <span className="inline-block mt-6 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium text-sm">
+                /* Button - uses brand primary color */
+                <span 
+                  className="inline-block mt-6 px-6 py-3 rounded-lg font-medium text-sm"
+                  style={{ backgroundColor: 'hsl(var(--primary))', color: 'white' }}
+                >
                   {buttonText || (step.type === 'welcome' ? 'Start Application →' : step.type === 'capture' ? 'Submit' : 'Continue')}
                 </span>
               )}
