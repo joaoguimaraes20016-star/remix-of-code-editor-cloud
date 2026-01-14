@@ -224,7 +224,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
             "text-sm truncate block",
             isActive ? "text-builder-accent font-medium" : ""
           )}>
-            {step.name || (index === 0 ? 'Home' : `Page ${index + 1}`)}
+            {step.name || 'Untitled Page'}
           </span>
         )}
       </div>
@@ -247,7 +247,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
         <DropdownMenuContent align="end" className="bg-builder-surface border-builder-border">
           <DropdownMenuItem 
             onClick={() => {
-              setEditValue(step.name || (index === 0 ? 'Home' : `Page ${index + 1}`));
+              setEditValue(step.name || 'Untitled Page');
               setIsEditing(true);
               setTimeout(() => inputRef.current?.focus(), 100);
             }}
@@ -282,7 +282,7 @@ const DragOverlayItem: React.FC<{ step: Step; index: number }> = ({ step, index 
       {index === 0 ? <Home className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
     </div>
     <span className="text-sm font-medium text-builder-accent">
-      {step.name || (index === 0 ? 'Home' : `Page ${index + 1}`)}
+      {step.name || 'Untitled Page'}
     </span>
   </div>
 );
@@ -867,7 +867,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
             onClick={() => setActiveTab('pages')}
             className={cn('builder-tab flex-1', activeTab === 'pages' && 'builder-tab-active')}
           >
-            Steps
+            Pages
           </button>
           <button
             onClick={() => setActiveTab('layers')}
@@ -887,53 +887,28 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
         <div className="flex-1 overflow-hidden flex flex-col">
           {activeTab === 'pages' && (
             <>
-              {/* Steps Header */}
+              {/* Pages Header */}
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-builder-text">Steps</span>
+                  <span className="text-sm font-medium text-builder-text">Pages</span>
                   <Tooltip>
                     <TooltipTrigger>
                       <HelpCircle className="w-3.5 h-3.5 text-builder-text-dim" />
                     </TooltipTrigger>
                     <TooltipContent side="right" className="max-w-xs">
                       <p className="font-medium mb-1">Hierarchy:</p>
-                      <p className="text-xs text-muted-foreground">Page → Step → Section → Block → Element</p>
-                      <p className="text-xs text-muted-foreground mt-1">Double-click a step to rename it.</p>
+                      <p className="text-xs text-muted-foreground">Pages → Sections → Content</p>
+                      <p className="text-xs text-muted-foreground mt-1">Double-click a page to rename it.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-1.5 rounded bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active transition-colors">
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 bg-builder-surface border-builder-border z-50">
-                    {/* Blank Page Option */}
-                    <DropdownMenuItem
-                      onClick={() => onAddBlankStep?.()}
-                      className="flex items-center gap-2 text-builder-text hover:bg-builder-surface-hover"
-                    >
-                      <span className="intent-badge bg-builder-surface-active text-builder-text-muted">
-                        <FileText className="w-3.5 h-3.5" />
-                      </span>
-                      Blank Page
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-builder-border-subtle" />
-                    {(Object.keys(stepIntentLabels) as StepIntent[]).map((intent) => (
-                      <DropdownMenuItem
-                        key={intent}
-                        onClick={() => onAddStep(intent)}
-                        className="flex items-center gap-2 text-builder-text hover:bg-builder-surface-hover"
-                      >
-                        <span className={cn('intent-badge', getIntentColorClass(intent))}>
-                          {intentIcons[intent]}
-                        </span>
-                        {stepIntentLabels[intent]}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <button 
+                  onClick={() => onAddBlankStep?.()}
+                  className="p-1.5 rounded bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active transition-colors"
+                  title="Add Page"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
 
             {/* Pages List with DnD */}
