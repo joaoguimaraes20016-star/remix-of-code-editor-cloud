@@ -3034,6 +3034,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   onDeleteFrame,
   onAddFrameAt,
   onRenameFrame,
+  // Block picker in left panel
+  onOpenBlockPickerInPanel,
 }) => {
   // Form state for preview mode
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -3283,6 +3285,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                         onNextStep={onNextStep}
                         onGoToStep={onGoToStep}
                         onFormSubmit={onFormSubmit}
+                        onOpenBlockPickerInPanel={onOpenBlockPickerInPanel}
                         // Section actions
                         onMoveUp={frameIndex > 0 ? () => onReorderFrames?.(frameIndex, frameIndex - 1) : undefined}
                         onMoveDown={frameIndex < step.frames.length - 1 ? () => onReorderFrames?.(frameIndex, frameIndex + 1) : undefined}
