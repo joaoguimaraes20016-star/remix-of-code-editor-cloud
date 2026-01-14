@@ -3301,24 +3301,24 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                 <div className="flex items-center justify-center min-h-[500px] px-4">
                   <div className="w-full max-w-md text-center">
                     {/* Icon */}
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-builder-surface-hover border border-builder-border flex items-center justify-center">
-                      <Layers className="w-8 h-8 text-builder-text-muted" />
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center">
+                      <Layers className="w-8 h-8 text-gray-400" />
                     </div>
                     
                     {/* Title */}
-                    <h2 className="text-lg font-semibold text-builder-text mb-2">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-2">
                       Add a Section
                     </h2>
                     
                     {/* Subtitle */}
-                    <p className="text-sm text-builder-text-muted mb-6">
+                    <p className="text-sm text-gray-500 mb-6">
                       Start building your page by adding sections
                     </p>
                     
                     {/* Primary CTA */}
                     <button
                       onClick={() => onOpenSectionPicker()}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-builder-accent text-white font-medium hover:bg-builder-accent/90 transition-all"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all shadow-sm"
                     >
                       <Plus size={18} />
                       Add Section
