@@ -15,27 +15,27 @@ interface SelectionBreadcrumbProps {
   className?: string;
 }
 
-// Color tokens per level - matches CSS selection colors
+// Color tokens per level - uses CSS variables for consistency
 const typeColors: Record<string, { bg: string; text: string; border: string }> = {
   page: { 
-    bg: 'bg-[hsl(220,20%,15%)]', 
+    bg: 'bg-[hsl(var(--builder-surface-active))]', 
     text: 'text-[hsl(var(--builder-text-muted))]',
     border: 'border-[hsl(var(--builder-border))]'
   },
   section: { 
-    bg: 'bg-[hsl(217,91%,60%,0.15)]', 
-    text: 'text-[hsl(217,91%,70%)]',
-    border: 'border-[hsl(217,91%,60%,0.3)]'
+    bg: 'bg-[hsl(var(--builder-accent))]/15', 
+    text: 'text-[hsl(var(--builder-accent-glow))]',
+    border: 'border-[hsl(var(--builder-accent))]/30'
   },
   block: { 
-    bg: 'bg-[hsl(280,75%,55%,0.15)]', 
-    text: 'text-[hsl(280,75%,70%)]',
-    border: 'border-[hsl(280,75%,55%,0.3)]'
+    bg: 'bg-[hsl(var(--builder-accent-secondary))]/15', 
+    text: 'text-[hsl(var(--builder-accent-secondary))]',
+    border: 'border-[hsl(var(--builder-accent-secondary))]/30'
   },
   element: { 
-    bg: 'bg-[hsl(315,85%,58%,0.15)]', 
-    text: 'text-[hsl(315,85%,70%)]',
-    border: 'border-[hsl(315,85%,58%,0.3)]'
+    bg: 'bg-[hsl(var(--builder-accent-tertiary))]/15', 
+    text: 'text-[hsl(var(--builder-accent-tertiary))]',
+    border: 'border-[hsl(var(--builder-accent-tertiary))]/30'
   },
 };
 

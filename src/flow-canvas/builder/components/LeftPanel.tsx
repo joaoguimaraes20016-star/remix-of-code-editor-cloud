@@ -363,9 +363,9 @@ const LayerItem: React.FC<LayerItemWrapperProps> = ({
   forwardedRef,
 }) => {
   const typeColors = {
-    frame: 'text-[hsl(315,85%,58%)]',
-    block: 'text-[hsl(315,70%,50%)]',
-    element: 'text-[hsl(315,60%,45%)]',
+    frame: 'text-[hsl(var(--builder-accent-secondary))]',
+    block: 'text-[hsl(var(--builder-accent))]',
+    element: 'text-[hsl(var(--builder-accent-muted))]',
   };
 
   return (
@@ -374,7 +374,7 @@ const LayerItem: React.FC<LayerItemWrapperProps> = ({
       className={cn(
         "group flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-all text-sm",
         isSelected 
-          ? "bg-[hsl(315,85%,58%)]/15 text-[hsl(315,85%,58%)] ring-1 ring-[hsl(315,85%,58%)]/30" 
+          ? "bg-[hsl(var(--builder-accent-secondary))]/15 text-[hsl(var(--builder-accent-secondary))] ring-1 ring-[hsl(var(--builder-accent-secondary))]/30" 
           : "hover:bg-builder-surface-hover text-builder-text-secondary",
         !isVisible && "opacity-50"
       )}
@@ -398,7 +398,7 @@ const LayerItem: React.FC<LayerItemWrapperProps> = ({
       <span className={cn("shrink-0", typeColors[type])}>{icon}</span>
       <span className="flex-1 truncate text-xs">{label}</span>
       {typeBadge && (
-        <span className="shrink-0 px-1 py-0.5 text-[8px] font-medium rounded bg-[hsl(315,85%,58%)]/10 text-[hsl(315,60%,50%)] uppercase tracking-wide">
+        <span className="shrink-0 px-1 py-0.5 text-[8px] font-medium rounded bg-[hsl(var(--builder-accent-secondary))]/10 text-[hsl(var(--builder-accent-muted))] uppercase tracking-wide">
           {typeBadge}
         </span>
       )}
