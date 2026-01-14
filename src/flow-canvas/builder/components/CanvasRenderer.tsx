@@ -185,6 +185,8 @@ interface CanvasRendererProps {
   onDeleteFrame?: (frameId: string) => void;
   onAddFrameAt?: (position: 'above' | 'below', referenceFrameId: string) => void;
   onRenameFrame?: (frameId: string, newName: string) => void;
+  // Block picker in left panel
+  onOpenBlockPickerInPanel?: (stackId: string) => void;
 }
 
 // Button Action type
@@ -2579,6 +2581,7 @@ interface StackRendererProps {
   onNextStep?: () => void;
   onGoToStep?: (stepId: string) => void;
   onFormSubmit?: (values: Record<string, string>) => void;
+  onOpenBlockPickerInPanel?: (stackId: string) => void;
 }
 
 const StackRenderer: React.FC<StackRendererProps> = ({ 
@@ -2604,6 +2607,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   onNextStep,
   onGoToStep,
   onFormSubmit,
+  onOpenBlockPickerInPanel,
 }) => {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const isSelected = selection.type === 'stack' && selection.id === stack.id;
@@ -2658,10 +2662,20 @@ const StackRenderer: React.FC<StackRendererProps> = ({
       {/* Content area - no badge, clicking selects parent frame */}
       {stack.blocks.length === 0 ? (
         <div className="w-full">
-          <AddSectionPopover 
-            onAddBlock={handleAddBlockToStack}
-            variant="inline"
-          />
+          <button
+            onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
+            className="group w-full flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-200"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <Plus size={28} className="text-gray-400" />
+            </div>
+            <span className="text-base font-semibold text-gray-700 mb-1">Add a block to this section</span>
+            <span className="text-sm text-gray-500 mb-5">Click to open block picker in left panel</span>
+            <span className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
+              <Plus size={18} />
+              <span>Insert Block</span>
+            </span>
+          </button>
         </div>
       ) : (
         <>
@@ -2718,15 +2732,16 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add block button - only show for sections that aren't "done" yet
-              A section feels complete when it has at least one block with 2+ elements (headline + button/text) */}
-          {/* Add block hint - always visible when section has content but could use more */}
+          {/* Add block button */}
           {!readOnly && stack.blocks.length > 0 && (
             <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
-              <AddSectionPopover 
-                onAddBlock={handleAddBlockToStack}
-                variant="minimal"
-              />
+              <button
+                onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
+                className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <Plus size={14} />
+                <span>Add block</span>
+              </button>
             </div>
           )}
         </>
@@ -2773,6 +2788,7 @@ interface FrameRendererProps {
   // Drag and drop
   dragHandleListeners?: React.DOMAttributes<HTMLButtonElement>;
   dragHandleAttributes?: React.HTMLAttributes<HTMLButtonElement>;
+  onOpenBlockPickerInPanel?: (stackId: string) => void;
 }
 
 const FrameRenderer: React.FC<FrameRendererProps> = ({ 
@@ -2812,6 +2828,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   // Drag and drop
   dragHandleListeners,
   dragHandleAttributes,
+  onOpenBlockPickerInPanel,
 }) => {
   const isSelected = selection.type === 'frame' && selection.id === frame.id;
   const framePath = [...path, 'frame', frame.id];
@@ -2941,6 +2958,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
               onNextStep={onNextStep}
               onGoToStep={onGoToStep}
               onFormSubmit={onFormSubmit}
+              onOpenBlockPickerInPanel={onOpenBlockPickerInPanel}
             />
           ))}
         </div>
