@@ -2661,14 +2661,32 @@ const StackRenderer: React.FC<StackRendererProps> = ({
     >
       {/* Content area - no badge, clicking selects parent frame */}
       {stack.blocks.length === 0 ? (
-        // Minimal empty state - main "Add Content" button is below
+        // Polished empty state - matches the original "Add Block" design
         <div 
           onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
-          className="w-full py-8 flex items-center justify-center cursor-pointer group"
+          className="w-full py-16 flex items-center justify-center cursor-pointer"
         >
-          <div className="flex items-center gap-2 text-[hsl(var(--builder-text-dim))] group-hover:text-[hsl(var(--builder-text-muted))] transition-colors">
-            <Plus size={16} className="opacity-50 group-hover:opacity-100" />
-            <span className="text-sm">Empty section</span>
+          <div className="group flex flex-col items-center justify-center py-20 px-8 w-full max-w-2xl border-2 border-dashed border-purple-300/50 rounded-2xl bg-white hover:border-purple-400/60 transition-all duration-200">
+            {/* Icon container */}
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
+              <Layers size={32} className="text-gray-400" />
+            </div>
+            
+            {/* Title */}
+            <span className="text-lg font-semibold text-gray-800 mb-1">
+              Add a block to this section
+            </span>
+            
+            {/* Subtitle */}
+            <span className="text-sm text-gray-400 mb-6">
+              Headlines, text, images, buttons & more
+            </span>
+            
+            {/* Dark button */}
+            <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
+              <Plus size={18} />
+              <span>Insert Block</span>
+            </span>
           </div>
         </div>
       ) : (
