@@ -1180,6 +1180,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                 onSelectElement={handleSelectElement}
                 onRenameStep={handleRenameStep}
                 onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
+                onOpenBlockPicker={() => {
+                  setBlockPickerOpen(true);
+                  setBlockPickerMode('sections');
+                }}
               />
             )}
           </div>
@@ -1202,6 +1206,11 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                 onSelectBlock={(id, path) => { handleSelectBlock(id, path); setMobileLeftOpen(false); }}
                 onSelectElement={(id, path) => { handleSelectElement(id, path); setMobileLeftOpen(false); }}
                 onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
+                onOpenBlockPicker={() => {
+                  setBlockPickerOpen(true);
+                  setBlockPickerMode('sections');
+                  setMobileLeftOpen(false);
+                }}
               />
             </SheetContent>
           </Sheet>
