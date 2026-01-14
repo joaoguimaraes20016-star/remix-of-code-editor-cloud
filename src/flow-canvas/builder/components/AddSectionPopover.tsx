@@ -710,10 +710,12 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
         )}
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] shadow-2xl"
+        className="w-80 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] shadow-2xl z-[100]"
         side={position === 'above' ? 'top' : 'bottom'}
         align="center"
         sideOffset={8}
+        collisionPadding={20}
+        avoidCollisions={true}
       >
         {/* Search */}
         <div className="p-3 border-b border-[hsl(var(--builder-border-subtle))]">
@@ -729,7 +731,7 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
         </div>
 
         {/* Content */}
-        <div className="max-h-[400px] overflow-y-auto builder-scroll">
+        <div className="max-h-[min(400px,60vh)] overflow-y-auto builder-scroll">
           {searchQuery.length > 0 ? (
             // Search Results
             <div className="p-2">
