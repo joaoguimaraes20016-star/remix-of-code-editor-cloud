@@ -4,6 +4,7 @@ export type StepIntent = 'capture' | 'qualify' | 'schedule' | 'convert' | 'compl
 export type StepType = 'form' | 'content' | 'quiz' | 'booking' | 'checkout' | 'thankyou';
 export type SubmitMode = 'next' | 'submit' | 'redirect' | 'custom';
 
+// Element types - primary types used by canvas renderer
 export type ElementType = 
   | 'text' 
   | 'heading' 
@@ -18,47 +19,32 @@ export type ElementType =
   | 'spacer'
   | 'icon'
   | 'link'
-  // Interactive elements
+  // Extended types for flexibility
   | 'multiple-choice'
-  | 'single-choice'
-  | 'quiz-question'
-  | 'date-picker'
-  | 'dropdown'
-  | 'file-upload'
-  | 'appointment-picker'
-  | 'message-input'
-  | 'rating'
-  | 'slider';
+  | 'single-choice';
 
+// Block types - core types actively used in builder
 export type BlockType = 
   | 'hero' 
   | 'form-field' 
   | 'cta' 
   | 'testimonial' 
-  | 'feature' 
-  | 'pricing' 
-  | 'faq'
   | 'media'
   | 'text-block'
   | 'custom'
-  | 'spacer'
-  | 'divider'
-  // Interactive blocks
-  | 'multiple-choice'
-  | 'single-choice'
-  | 'quiz'
-  | 'appointment'
-  | 'file-upload'
-  | 'dropdown'
   | 'booking'
-  // Section templates
-  | 'product'
+  // Extended types for section templates
+  | 'feature'
+  | 'pricing'
+  | 'faq'
   | 'about'
   | 'team'
   | 'trust'
   | 'logo-bar'
   | 'footer'
-  | 'contact';
+  | 'contact'
+  | 'spacer'
+  | 'divider';
 
 // Conditional visibility rule
 export interface ConditionalRule {

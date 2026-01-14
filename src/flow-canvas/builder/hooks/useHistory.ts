@@ -62,16 +62,59 @@ export function useHistory(initialState: Page): UseHistoryReturn {
   const canUndo = history.past.length > 0;
   const canRedo = history.future.length > 0;
 
-  // Debounced save to localStorage
+  // Debounced save to localStorage with quota handling
   const saveToLocalStorage = useRef(
     debounce((historyState: HistoryState) => {
       try {
-        localStorage.setItem(
-          `${STORAGE_KEY}_${historyState.present.page.id}`,
-          JSON.stringify(historyState)
-        );
+        // Trim history to reduce storage size
+        const trimmedState: HistoryState = {
+          past: historyState.past.slice(-MAX_HISTORY_LENGTH),
+          present: historyState.present,
+          future: historyState.future.slice(0, 10), // Keep fewer future states
+        };
+        
+        const key = `${STORAGE_KEY}_${historyState.present.page.id}`;
+        const serialized = JSON.stringify(trimmedState);
+        
+        // Check if we're approaching quota (rough estimate)
+        const estimatedSize = new Blob([serialized]).size;
+        if (estimatedSize > 2 * 1024 * 1024) {
+          // Over 2MB, trim more aggressively
+          trimmedState.past = trimmedState.past.slice(-20);
+          trimmedState.future = [];
+        }
+        
+        localStorage.setItem(key, JSON.stringify(trimmedState));
       } catch (e) {
-        console.warn('Could not save history to localStorage:', e);
+        // Handle quota exceeded by clearing old entries
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+          console.warn('localStorage quota exceeded, clearing old history entries');
+          try {
+            // Clear all history entries for this project
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key?.startsWith(STORAGE_KEY)) {
+                keysToRemove.push(key);
+              }
+            }
+            // Keep current one, remove others
+            const currentKey = `${STORAGE_KEY}_${historyState.present.page.id}`;
+            keysToRemove.filter(k => k !== currentKey).forEach(k => localStorage.removeItem(k));
+            
+            // Try saving minimal state
+            const minimalState: HistoryState = {
+              past: historyState.past.slice(-5),
+              present: historyState.present,
+              future: [],
+            };
+            localStorage.setItem(currentKey, JSON.stringify(minimalState));
+          } catch (cleanupErr) {
+            console.warn('Could not cleanup localStorage:', cleanupErr);
+          }
+        } else {
+          console.warn('Could not save history to localStorage:', e);
+        }
       }
     }, 500)
   ).current;
