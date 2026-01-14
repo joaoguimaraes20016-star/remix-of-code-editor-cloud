@@ -551,12 +551,11 @@ const EnhancedLayersTree: React.FC<{
                   
                   return (
                     <div key={block.id}>
-                      {/* Block Level */}
+                      {/* Block Level - labeled as "Content" */}
                       <LayerItem
                         label={block.label || getBlockTypeLabel(block.type)}
                         icon={getBlockIcon(block.type)}
                         type="block"
-                        typeBadge={block.type}
                         isSelected={isBlockSelected}
                         isVisible={!hiddenLayers.has(block.id)}
                         hasChildren={block.elements.length > 0}
@@ -568,7 +567,7 @@ const EnhancedLayersTree: React.FC<{
                         forwardedRef={isBlockSelected ? selectedRef : undefined}
                       />
                       
-                      {/* Element Level */}
+                      {/* Element Level - no type badge shown */}
                       {isBlockExpanded && block.elements.map((element) => {
                         const isElementSelected = selection.type === 'element' && selection.id === element.id;
                         const elementPath = [...blockPath, 'element', element.id];
@@ -580,7 +579,6 @@ const EnhancedLayersTree: React.FC<{
                             label={elementLabel}
                             icon={getElementIcon(element.type)}
                             type="element"
-                            typeBadge={element.type}
                             isSelected={isElementSelected}
                             isVisible={!hiddenLayers.has(element.id)}
                             depth={blockDepth + 1}
@@ -599,10 +597,10 @@ const EnhancedLayersTree: React.FC<{
         );
       })}
       
-      {/* Empty state if no blocks */}
+      {/* Empty state if no content */}
       {activeStep.frames.every(f => f.stacks.every(s => s.blocks.length === 0)) && (
         <div className="mt-4 p-4 text-center">
-          <p className="text-xs text-builder-text-dim">No blocks yet. Add sections from the canvas.</p>
+          <p className="text-xs text-builder-text-dim">No content yet. Add sections from the canvas.</p>
         </div>
       )}
     </div>

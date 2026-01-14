@@ -35,6 +35,8 @@ interface BlockPickerPanelProps {
   onAddBlock: (block: Block, options?: { type: AddMode }) => void;
   onClose: () => void;
   targetSectionId?: string | null;
+  /** When true, hides the Sections tab (used when adding content inside an existing section) */
+  hideSecionsTab?: boolean;
 }
 
 type ActiveTab = 'blocks' | 'sections';
@@ -390,6 +392,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   onAddBlock,
   onClose,
   targetSectionId,
+  hideSecionsTab = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -435,33 +438,35 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
         </button>
       </div>
 
-      {/* Tab Switcher */}
-      <div className="flex-shrink-0 flex p-2 gap-1 border-b border-builder-border-subtle">
-        <button
-          onClick={() => setActiveTab('blocks')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
-            activeTab === 'blocks'
-              ? "bg-builder-accent text-white"
-              : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text"
-          )}
-        >
-          <Plus size={14} />
-          <span>Blocks</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('sections')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
-            activeTab === 'sections'
-              ? "bg-builder-accent text-white"
-              : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text"
-          )}
-        >
-          <Layers size={14} />
-          <span>Sections</span>
-        </button>
-      </div>
+      {/* Tab Switcher - only show when sections tab is available */}
+      {!hideSecionsTab && (
+        <div className="flex-shrink-0 flex p-2 gap-1 border-b border-builder-border-subtle">
+          <button
+            onClick={() => setActiveTab('blocks')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+              activeTab === 'blocks'
+                ? "bg-builder-accent text-white"
+                : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text"
+            )}
+          >
+            <Plus size={14} />
+            <span>Content</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('sections')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+              activeTab === 'sections'
+                ? "bg-builder-accent text-white"
+                : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text"
+            )}
+          >
+            <Layers size={14} />
+            <span>Sections</span>
+          </button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="flex-shrink-0 p-3 border-b border-builder-border-subtle">

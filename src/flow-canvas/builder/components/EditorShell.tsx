@@ -235,34 +235,34 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     const newStep = createDefaultStep(intent);
     const updatedPage = deepClone(page);
     updatedPage.steps.push(newStep);
-    handlePageUpdate(updatedPage, 'Add step');
+    handlePageUpdate(updatedPage, 'Add page');
     setActiveStepId(newStep.id);
-    toast.success('Step added');
+    toast.success('Page added');
   }, [page, handlePageUpdate]);
 
   const handleAddBlankStep = useCallback(() => {
     const newStep = createBlankStep();
     const updatedPage = deepClone(page);
     updatedPage.steps.push(newStep);
-    handlePageUpdate(updatedPage, 'Add blank page');
+    handlePageUpdate(updatedPage, 'Add page');
     setActiveStepId(newStep.id);
-    toast.success('Blank page added');
+    toast.success('Page added');
   }, [page, handlePageUpdate]);
 
   const handleDeleteStep = useCallback((stepId: string) => {
     if (page.steps.length <= 1) {
-      toast.error('Cannot delete the only step');
+      toast.error('Cannot delete the only page');
       return;
     }
     
     const updatedPage = deepClone(page);
     updatedPage.steps = updatedPage.steps.filter(s => s.id !== stepId);
-    handlePageUpdate(updatedPage, 'Delete step');
+    handlePageUpdate(updatedPage, 'Delete page');
     
     if (activeStepId === stepId) {
       setActiveStepId(updatedPage.steps[0]?.id || null);
     }
-    toast.success('Step deleted');
+    toast.success('Page deleted');
   }, [page, activeStepId, handlePageUpdate]);
 
   const handleDuplicateStep = useCallback((stepId: string) => {
@@ -287,15 +287,15 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     const updatedPage = deepClone(page);
     const stepIndex = updatedPage.steps.findIndex(s => s.id === stepId);
     updatedPage.steps.splice(stepIndex + 1, 0, duplicatedStep);
-    handlePageUpdate(updatedPage, 'Duplicate step');
-    toast.success('Step duplicated');
+    handlePageUpdate(updatedPage, 'Duplicate page');
+    toast.success('Page duplicated');
   }, [page, handlePageUpdate]);
 
   const handleReorderSteps = useCallback((fromIndex: number, toIndex: number) => {
     const updatedPage = deepClone(page);
     const [movedStep] = updatedPage.steps.splice(fromIndex, 1);
     updatedPage.steps.splice(toIndex, 0, movedStep);
-    handlePageUpdate(updatedPage, 'Reorder steps');
+    handlePageUpdate(updatedPage, 'Reorder pages');
   }, [page, handlePageUpdate]);
 
   // Block reordering within a stack
@@ -1171,6 +1171,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                   setBlockPickerTargetStackId(null);
                 }}
                 targetSectionId={blockPickerTargetStackId}
+                hideSecionsTab={!!blockPickerTargetStackId}
               />
             ) : (
               <LeftPanel
