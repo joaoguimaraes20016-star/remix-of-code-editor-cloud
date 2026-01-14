@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FunnelRenderer } from '@/components/funnel-public/FunnelRenderer';
+import { FlowCanvasRenderer } from '@/flow-canvas/components/FlowCanvasRenderer';
 
 interface FunnelStep {
   id: string;
@@ -27,6 +28,7 @@ interface Funnel {
   name: string;
   slug: string;
   settings: FunnelSettings;
+  published_document_snapshot?: Record<string, any> | null;
 }
 
 // Check if we're on a custom domain (not localhost or preview domains)
@@ -93,7 +95,11 @@ export default function PublicFunnel() {
         .single();
 
       if (error) throw error;
-      return { ...data, settings: data.settings as unknown as FunnelSettings } as Funnel;
+      return { 
+        ...data, 
+        settings: data.settings as unknown as FunnelSettings,
+        published_document_snapshot: data.published_document_snapshot as Record<string, any> | null,
+      } as Funnel;
     },
     enabled: !!slug,
   });
@@ -140,6 +146,23 @@ export default function PublicFunnel() {
     );
   }
 
+  // Check if this is a flow-canvas funnel (has published_document_snapshot with steps array)
+  const isFlowCanvasFunnel = activeFunnel?.published_document_snapshot?.steps?.length > 0;
+
+  if (isFlowCanvasFunnel) {
+    // Use FlowCanvasRenderer for flow-canvas funnels
+    const flowCanvasPage = activeFunnel.published_document_snapshot;
+    
+    return (
+      <FlowCanvasRenderer
+        funnelId={activeFunnel.id}
+        page={flowCanvasPage}
+        settings={activeFunnel.settings}
+      />
+    );
+  }
+
+  // Legacy funnel - requires steps
   if (!activeSteps || activeSteps.length === 0) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">

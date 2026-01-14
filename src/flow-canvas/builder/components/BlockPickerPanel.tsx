@@ -41,6 +41,8 @@ interface BlockPickerPanelProps {
   targetSectionId?: string | null;
   /** When true, hides the Sections tab (used when adding content inside an existing section) */
   hideSecionsTab?: boolean;
+  /** Which tab to start on */
+  initialTab?: ActiveTab;
 }
 
 type ActiveTab = 'blocks' | 'sections';
@@ -539,9 +541,10 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   onClose,
   targetSectionId,
   hideSecionsTab = false,
+  initialTab = 'blocks',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<ActiveTab>('blocks');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
 
   // All templates for search
   const allTemplates = [
