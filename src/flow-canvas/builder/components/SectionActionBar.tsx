@@ -90,8 +90,8 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
       <div className={cn(
         "flex items-center gap-0.5 px-1.5 py-1 rounded-lg border shadow-lg",
         isSelected 
-          ? "bg-[hsl(275,70%,55%)] border-[hsl(275,70%,55%)] backdrop-blur-xl" 
-          : "bg-[hsl(220,10%,10%)] border-white/10"
+          ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))] backdrop-blur-xl" 
+          : "bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
       )}>
         {/* Drag Handle */}
         <button

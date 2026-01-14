@@ -686,19 +686,19 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--builder-surface-active))] border border-[hsl(var(--builder-border))] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
               <Package size={28} className="text-[hsl(var(--builder-accent)/0.7)]" />
             </div>
-            <span className="text-base font-semibold text-gray-800 mb-1">
+            <span className="text-base font-semibold text-[hsl(var(--builder-text))] mb-1">
               Add a block to this section
             </span>
-            <span className="text-sm text-gray-500 mb-5">
+            <span className="text-sm text-[hsl(var(--builder-text-muted))] mb-5">
               Headlines, text, images, buttons & more
             </span>
             <span
               className={`
                 inline-flex items-center gap-2 rounded-lg px-5 py-2.5
-                bg-gray-900 text-white
+                bg-[hsl(var(--builder-accent))] text-white
                 text-sm font-semibold
-                shadow-lg
-                group-hover:bg-gray-800 group-hover:scale-[1.02]
+                shadow-lg shadow-[hsl(var(--builder-accent))]/30
+                group-hover:brightness-110 group-hover:scale-[1.02]
                 group-active:scale-[0.98]
                 transition-all duration-150
               `}
