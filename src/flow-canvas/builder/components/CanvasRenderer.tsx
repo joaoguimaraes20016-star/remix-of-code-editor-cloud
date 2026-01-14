@@ -2261,7 +2261,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           onSelect({ type: 'block', id: block.id, path: blockPath }, e.shiftKey);
         }}
       >
-        <span className="block-type-badge block-type-badge-block">Application Flow</span>
+        {/* Clean canvas - no badge for application flow */}
         {!readOnly && (
           <BlockActionBar
             blockId={block.id}
@@ -2287,7 +2287,16 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           isSelected={isSelected}
           onSelect={() => onSelect({ type: 'block', id: block.id, path: blockPath })}
           onUpdateBlock={(updates) => {
-            // Updates are handled through the context - this is a visual component
+            // Wire up element updates to propagate through the canvas
+            if (updates.elements && onUpdateElement) {
+              // Update each element that changed
+              updates.elements.forEach((newEl) => {
+                const oldEl = block.elements.find(e => e.id === newEl.id);
+                if (oldEl && oldEl.content !== newEl.content) {
+                  onUpdateElement(newEl.id, { content: newEl.content });
+                }
+              });
+            }
           }}
           readOnly={readOnly}
         />

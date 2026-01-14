@@ -66,6 +66,8 @@ interface StepSettings {
   titleSize?: string;
   align?: string;
   buttonColor?: string;
+  buttonStyle?: 'primary' | 'outline';
+  inputStyle?: 'rounded' | 'square';
   spacing?: string;
 }
 
@@ -136,6 +138,103 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         </div>
       </div>
 
+      {/* Step Preview */}
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-2">Preview</div>
+        <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center">
+          {/* Title */}
+          <h3 
+            className={cn(
+              'font-bold text-gray-900 dark:text-white',
+              stepSettings.titleSize === 'lg' ? 'text-lg' :
+              stepSettings.titleSize === '2xl' ? 'text-2xl' :
+              stepSettings.titleSize === '3xl' ? 'text-3xl' : 'text-xl'
+            )} 
+            style={{ textAlign: (stepSettings.align as any) || 'center' }}
+          >
+            {questionTitle || (step.type === 'question' ? 'Question title here' : step.type === 'welcome' ? 'Welcome!' : step.type === 'ending' ? 'Thank you!' : 'Heading')}
+          </h3>
+          
+          {/* Description */}
+          {questionDescription && (
+            <p className="text-sm text-gray-500 mt-2">{questionDescription}</p>
+          )}
+          
+          {/* Options (for MCQ) */}
+          {step.type === 'question' && questionType === 'multiple-choice' && options.length > 0 && (
+            <div className="mt-4 space-y-2 max-w-xs mx-auto">
+              {options.slice(0, 3).map((opt, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "px-4 py-2 border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300",
+                    stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
+                  )}
+                >
+                  {opt}
+                </div>
+              ))}
+              {options.length > 3 && (
+                <div className="text-xs text-gray-400">+{options.length - 3} more</div>
+              )}
+            </div>
+          )}
+          
+          {/* Text Input Preview */}
+          {step.type === 'question' && questionType === 'text' && (
+            <div className="mt-4 max-w-xs mx-auto">
+              <input 
+                className={cn(
+                  "w-full px-4 py-2 border border-gray-200 dark:border-gray-600 text-sm bg-transparent",
+                  stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
+                )}
+                placeholder="Type your answer..."
+                disabled
+              />
+            </div>
+          )}
+
+          {/* Capture Fields Preview */}
+          {step.type === 'capture' && (
+            <div className="mt-4 max-w-xs mx-auto space-y-2">
+              <input 
+                className={cn(
+                  "w-full px-4 py-2 border border-gray-200 dark:border-gray-600 text-sm bg-transparent",
+                  stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
+                )}
+                placeholder="Your name"
+                disabled
+              />
+              <input 
+                className={cn(
+                  "w-full px-4 py-2 border border-gray-200 dark:border-gray-600 text-sm bg-transparent",
+                  stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
+                )}
+                placeholder="Your email"
+                disabled
+              />
+            </div>
+          )}
+          
+          {/* Button Preview */}
+          <div 
+            className={cn(
+              "inline-block mt-6 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              stepSettings.buttonStyle === 'outline' 
+                ? 'border-2 bg-transparent' 
+                : 'text-white'
+            )}
+            style={{ 
+              backgroundColor: stepSettings.buttonStyle === 'outline' ? 'transparent' : (stepSettings.buttonColor || '#18181b'),
+              borderColor: stepSettings.buttonColor || '#18181b',
+              color: stepSettings.buttonStyle === 'outline' ? (stepSettings.buttonColor || '#18181b') : 'white'
+            }}
+          >
+            {buttonText || 'Continue'}
+          </div>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex border-b border-gray-200 dark:border-gray-700">
         {(['content', 'style', 'logic'] as const).map((tab) => (
@@ -159,15 +258,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         <div className="flex-1 overflow-y-auto builder-scroll p-4 space-y-4">
           {/* Step Type */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">Step Type</Label>
+            <Label className="text-[10px] text-gray-500 uppercase">Step Type</Label>
             <Select 
               value={step.type} 
               onValueChange={(value) => onUpdate({ type: value as ApplicationStepType })}
             >
-              <SelectTrigger className="h-8 text-xs bg-builder-surface border-builder-border">
+              <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-builder-surface border-builder-border">
+              <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                 {Object.entries(stepTypeLabels).map(([value, label]) => (
                   <SelectItem key={value} value={value} className="text-xs">
                     <div className="flex items-center gap-2">
@@ -183,15 +282,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           {/* Question Type (for question steps) */}
           {step.type === 'question' && (
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-builder-text-muted uppercase">Question Type</Label>
+              <Label className="text-[10px] text-gray-500 uppercase">Question Type</Label>
               <Select 
                 value={questionType}
                 onValueChange={(value) => updateSettings({ questionType: value as QuestionType })}
               >
-                <SelectTrigger className="h-8 text-xs bg-builder-surface border-builder-border">
+                <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-builder-surface border-builder-border">
+                <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                   <SelectItem value="multiple-choice" className="text-xs">
                     <div className="flex items-center gap-2">
                       {questionTypeIcons['multiple-choice']} Multiple Choice
@@ -224,44 +323,44 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Question/Heading Title */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">
+            <Label className="text-[10px] text-gray-500 uppercase">
               {step.type === 'question' ? 'Question' : 'Heading'}
             </Label>
             <Input
               value={questionTitle}
               onChange={(e) => updateSettings({ title: e.target.value })}
               placeholder={step.type === 'question' ? 'What is your biggest challenge?' : 'Welcome!'}
-              className="h-8 text-xs bg-builder-surface border-builder-border"
+              className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
             />
           </div>
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">Description (optional)</Label>
+            <Label className="text-[10px] text-gray-500 uppercase">Description (optional)</Label>
             <Textarea
               value={questionDescription}
               onChange={(e) => updateSettings({ description: e.target.value })}
               placeholder="Add additional context..."
-              className="text-xs bg-builder-surface border-builder-border min-h-[60px] resize-none"
+              className="text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 min-h-[60px] resize-none"
             />
           </div>
 
           {/* Options List (for multiple choice) */}
           {step.type === 'question' && (questionType === 'multiple-choice' || questionType === 'dropdown') && (
             <div className="space-y-2">
-              <Label className="text-[10px] text-builder-text-muted uppercase">Options</Label>
+              <Label className="text-[10px] text-gray-500 uppercase">Options</Label>
               <div className="space-y-1.5">
                 {options.map((option, index) => (
                   <div key={index} className="flex items-center gap-1.5 group">
-                    <GripVertical className="w-3 h-3 text-builder-text-dim opacity-0 group-hover:opacity-100 cursor-grab" />
+                    <GripVertical className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 cursor-grab" />
                     <Input
                       value={option}
                       onChange={(e) => updateOption(index, e.target.value)}
-                      className="h-7 text-xs bg-builder-surface border-builder-border flex-1"
+                      className="h-7 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 flex-1"
                     />
                     <button
                       onClick={() => removeOption(index)}
-                      className="p-1 rounded hover:bg-builder-error/10 text-builder-text-dim hover:text-builder-error opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -270,7 +369,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               </div>
               <button
                 onClick={addOption}
-                className="flex items-center gap-1.5 text-[10px] text-builder-accent hover:text-builder-accent/80"
+                className="flex items-center gap-1.5 text-[10px] text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <Plus className="w-3 h-3" />
                 Add Option
@@ -280,8 +379,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Required Toggle */}
           {step.type === 'question' && (
-            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-builder-surface border border-builder-border">
-              <Label className="text-xs text-builder-text">Required</Label>
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              <Label className="text-xs text-gray-700 dark:text-gray-300">Required</Label>
               <Switch
                 checked={isRequired}
                 onCheckedChange={(checked) => updateSettings({ required: checked })}
@@ -291,65 +390,14 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Button Text */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">Button Text</Label>
+            <Label className="text-[10px] text-gray-500 uppercase">Button Text</Label>
             <Input
               value={buttonText}
               onChange={(e) => updateSettings({ buttonText: e.target.value })}
               placeholder="Continue"
-              className="h-8 text-xs bg-builder-surface border-builder-border"
+              className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
             />
           </div>
-
-          {/* Button Action */}
-          <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">After This Step</Label>
-            <Select 
-              value={step.navigation.action}
-              onValueChange={(value) => onUpdate({ navigation: { ...step.navigation, action: value as any } })}
-            >
-              <SelectTrigger className="h-8 text-xs bg-builder-surface border-builder-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-builder-surface border-builder-border">
-                <SelectItem value="next" className="text-xs">Next Step</SelectItem>
-                <SelectItem value="go-to-step" className="text-xs">Go to Funnel Page</SelectItem>
-                <SelectItem value="submit" className="text-xs">Submit Form</SelectItem>
-                <SelectItem value="redirect" className="text-xs">Redirect to URL</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {step.navigation.action === 'go-to-step' && (
-            <div className="space-y-1.5">
-              <Label className="text-[10px] text-builder-text-muted uppercase">Target Page</Label>
-              <Select 
-                value={step.navigation.targetStepId || ''}
-                onValueChange={(value) => onUpdate({ navigation: { ...step.navigation, targetStepId: value } })}
-              >
-                <SelectTrigger className="h-8 text-xs bg-builder-surface border-builder-border">
-                  <SelectValue placeholder="Select page..." />
-                </SelectTrigger>
-                <SelectContent className="bg-builder-surface border-builder-border">
-                  {allSteps.filter(s => s.id !== step.id).map((s) => (
-                    <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-builder-text-dim">Use this to jump to any step on another page.</p>
-            </div>
-          )}
-
-          {step.navigation.action === 'redirect' && (
-            <div className="space-y-1.5">
-              <Label className="text-[10px] text-builder-text-muted uppercase">Redirect URL</Label>
-              <Input
-                value={step.navigation.redirectUrl || ''}
-                onChange={(e) => onUpdate({ navigation: { ...step.navigation, redirectUrl: e.target.value } })}
-                placeholder="https://..."
-                className="h-8 text-xs bg-builder-surface border-builder-border"
-              />
-            </div>
-          )}
         </div>
       )}
 
@@ -358,36 +406,35 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         <div className="flex-1 overflow-y-auto builder-scroll p-4 space-y-4">
           {/* Title Size */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">Title Size</Label>
+            <Label className="text-[10px] text-gray-500 uppercase">Text Size</Label>
             <Select 
               value={stepSettings.titleSize || 'xl'}
               onValueChange={(value) => updateSettings({ titleSize: value })}
             >
-              <SelectTrigger className="h-8 text-xs bg-builder-surface border-builder-border">
+              <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-builder-surface border-builder-border">
-                <SelectItem value="lg" className="text-xs">Large</SelectItem>
-                <SelectItem value="xl" className="text-xs">Extra Large</SelectItem>
-                <SelectItem value="2xl" className="text-xs">Huge</SelectItem>
-                <SelectItem value="3xl" className="text-xs">Giant</SelectItem>
+              <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <SelectItem value="lg" className="text-xs">Small</SelectItem>
+                <SelectItem value="xl" className="text-xs">Medium</SelectItem>
+                <SelectItem value="2xl" className="text-xs">Large</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Text Alignment */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">Alignment</Label>
-            <div className="flex rounded-md overflow-hidden border border-builder-border">
-              {['left', 'center', 'right'].map((align) => (
+            <Label className="text-[10px] text-gray-500 uppercase">Alignment</Label>
+            <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+              {['left', 'center'].map((align) => (
                 <button
                   key={align}
                   onClick={() => updateSettings({ align })}
                   className={cn(
                     'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors capitalize',
                     (stepSettings.align || 'center') === align
-                      ? 'bg-builder-accent text-white'
-                      : 'bg-builder-surface text-builder-text-muted hover:bg-builder-surface-hover'
+                      ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                      : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
                   )}
                 >
                   {align}
@@ -396,18 +443,78 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             </div>
           </div>
 
+          {/* Button Style */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-gray-500 uppercase">Button Style</Label>
+            <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => updateSettings({ buttonStyle: 'primary' })}
+                className={cn(
+                  'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                  (stepSettings.buttonStyle || 'primary') === 'primary'
+                    ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                    : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                )}
+              >
+                Primary
+              </button>
+              <button
+                onClick={() => updateSettings({ buttonStyle: 'outline' })}
+                className={cn(
+                  'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                  stepSettings.buttonStyle === 'outline'
+                    ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                    : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                )}
+              >
+                Outline
+              </button>
+            </div>
+          </div>
+
+          {/* Input Style (for question steps) */}
+          {step.type === 'question' && (
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-gray-500 uppercase">Input Style</Label>
+              <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => updateSettings({ inputStyle: 'rounded' })}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                    (stepSettings.inputStyle || 'rounded') === 'rounded'
+                      ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                      : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  )}
+                >
+                  Rounded
+                </button>
+                <button
+                  onClick={() => updateSettings({ inputStyle: 'square' })}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                    stepSettings.inputStyle === 'square'
+                      ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                      : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  )}
+                >
+                  Square
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Button Color */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">Button Color</Label>
-            <div className="flex gap-2">
-              {['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'].map((color) => (
+            <Label className="text-[10px] text-gray-500 uppercase">Button Color</Label>
+            <div className="flex gap-2 flex-wrap">
+              {['#18181b', '#3f3f46', '#71717a', '#0ea5e9', '#10b981', '#ef4444'].map((color) => (
                 <button
                   key={color}
                   onClick={() => updateSettings({ buttonColor: color })}
                   className={cn(
                     'w-7 h-7 rounded-md transition-all',
-                    (stepSettings.buttonColor || '#6366f1') === color
-                      ? 'ring-2 ring-offset-2 ring-builder-accent' 
+                    (stepSettings.buttonColor || '#18181b') === color
+                      ? 'ring-2 ring-offset-2 ring-gray-900 dark:ring-white' 
                       : 'hover:scale-110'
                   )}
                   style={{ backgroundColor: color }}
@@ -418,18 +525,18 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Spacing */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-builder-text-muted uppercase">Spacing</Label>
+            <Label className="text-[10px] text-gray-500 uppercase">Spacing</Label>
             <Select 
               value={stepSettings.spacing || 'normal'}
               onValueChange={(value) => updateSettings({ spacing: value })}
             >
-              <SelectTrigger className="h-8 text-xs bg-builder-surface border-builder-border">
+              <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-builder-surface border-builder-border">
+              <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                 <SelectItem value="compact" className="text-xs">Compact</SelectItem>
                 <SelectItem value="normal" className="text-xs">Normal</SelectItem>
-                <SelectItem value="relaxed" className="text-xs">Relaxed</SelectItem>
+                <SelectItem value="relaxed" className="text-xs">Spacious</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -438,10 +545,64 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
       {/* Logic Tab */}
       {activeTab === 'logic' && (
-        <div className="flex-1 overflow-y-auto builder-scroll p-4">
-          <div className="text-center py-8 text-builder-text-muted">
-            <p className="text-xs">Conditional logic coming soon</p>
-            <p className="text-[10px] mt-1">Show/hide this step based on previous answers</p>
+        <div className="flex-1 overflow-y-auto builder-scroll p-4 space-y-4">
+          {/* After This Step */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-gray-500 uppercase">After This Step</Label>
+            <Select 
+              value={step.navigation.action}
+              onValueChange={(value) => onUpdate({ navigation: { ...step.navigation, action: value as any } })}
+            >
+              <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <SelectItem value="next" className="text-xs">Next Step</SelectItem>
+                <SelectItem value="go-to-step" className="text-xs">Go to Funnel Page</SelectItem>
+                <SelectItem value="submit" className="text-xs">Submit & Complete</SelectItem>
+                <SelectItem value="redirect" className="text-xs">Redirect to URL</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Target Page (if go-to-step) */}
+          {step.navigation.action === 'go-to-step' && (
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-gray-500 uppercase">Target Page</Label>
+              <Select 
+                value={step.navigation.targetStepId || ''}
+                onValueChange={(value) => onUpdate({ navigation: { ...step.navigation, targetStepId: value } })}
+              >
+                <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                  <SelectValue placeholder="Select page..." />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                  {allSteps.filter(s => s.id !== step.id).map((s) => (
+                    <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-gray-400">Use this to jump to another page in the funnel.</p>
+            </div>
+          )}
+
+          {/* Redirect URL (if redirect) */}
+          {step.navigation.action === 'redirect' && (
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-gray-500 uppercase">Redirect URL</Label>
+              <Input
+                value={step.navigation.redirectUrl || ''}
+                onChange={(e) => onUpdate({ navigation: { ...step.navigation, redirectUrl: e.target.value } })}
+                placeholder="https://..."
+                className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+              />
+            </div>
+          )}
+
+          {/* Conditional Logic Placeholder */}
+          <div className="mt-6 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-center">
+            <p className="text-xs text-gray-500">Conditional logic coming soon</p>
+            <p className="text-[10px] text-gray-400 mt-1">Show/hide this step based on previous answers</p>
           </div>
         </div>
       )}
