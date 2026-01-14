@@ -289,8 +289,8 @@ const SortableStepItem: React.FC<SortableStepItemProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-builder-surface border-builder-border">
-                <SelectItem value="next" className="text-xs">Go to Next Step</SelectItem>
-                <SelectItem value="go-to-step" className="text-xs">Jump to Step...</SelectItem>
+                <SelectItem value="next" className="text-xs">Next Step</SelectItem>
+                <SelectItem value="go-to-step" className="text-xs">Go to Funnel Page</SelectItem>
                 <SelectItem value="submit" className="text-xs">Submit Form</SelectItem>
                 <SelectItem value="redirect" className="text-xs">Redirect to URL</SelectItem>
               </SelectContent>
@@ -298,14 +298,14 @@ const SortableStepItem: React.FC<SortableStepItemProps> = ({
           </div>
 
           {step.navigation.action === 'go-to-step' && (
-            <div className="space-y-1">
-              <Label className="text-[10px] text-builder-text-muted uppercase">Target Step</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-builder-text-muted uppercase">Target Page</Label>
               <Select 
                 value={step.navigation.targetStepId || ''}
                 onValueChange={(value) => onUpdateNavigation({ ...step.navigation, targetStepId: value })}
               >
                 <SelectTrigger className="h-7 text-xs bg-builder-surface border-builder-border">
-                  <SelectValue placeholder="Select step..." />
+                  <SelectValue placeholder="Select page..." />
                 </SelectTrigger>
                 <SelectContent className="bg-builder-surface border-builder-border">
                   {allSteps.filter(s => s.id !== step.id).map((s) => (
@@ -313,6 +313,7 @@ const SortableStepItem: React.FC<SortableStepItemProps> = ({
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-builder-text-dim">Use this to jump to any step on another page.</p>
             </div>
           )}
 
