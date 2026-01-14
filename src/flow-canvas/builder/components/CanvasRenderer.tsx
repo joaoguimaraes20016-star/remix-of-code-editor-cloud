@@ -1,7 +1,7 @@
 import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
 import { Step, Frame, Stack, Block, Element, SelectionState, Page, VisibilitySettings, AnimationSettings, ElementStateStyles, DeviceModeType, PageBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
-import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers } from 'lucide-react';
+import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers, LayoutGrid } from 'lucide-react';
 import { getButtonIconComponent } from './ButtonIconPicker';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
@@ -185,6 +185,8 @@ interface CanvasRendererProps {
   onDeleteFrame?: (frameId: string) => void;
   onAddFrameAt?: (position: 'above' | 'below', referenceFrameId: string) => void;
   onRenameFrame?: (frameId: string, newName: string) => void;
+  // Block picker in left panel
+  onOpenBlockPickerInPanel?: (stackId: string) => void;
 }
 
 // Button Action type
@@ -2579,6 +2581,7 @@ interface StackRendererProps {
   onNextStep?: () => void;
   onGoToStep?: (stepId: string) => void;
   onFormSubmit?: (values: Record<string, string>) => void;
+  onOpenBlockPickerInPanel?: (stackId: string) => void;
 }
 
 const StackRenderer: React.FC<StackRendererProps> = ({ 
@@ -2604,6 +2607,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   onNextStep,
   onGoToStep,
   onFormSubmit,
+  onOpenBlockPickerInPanel,
 }) => {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const isSelected = selection.type === 'stack' && selection.id === stack.id;
@@ -2657,11 +2661,15 @@ const StackRenderer: React.FC<StackRendererProps> = ({
     >
       {/* Content area - no badge, clicking selects parent frame */}
       {stack.blocks.length === 0 ? (
-        <div className="w-full">
-          <AddSectionPopover 
-            onAddBlock={handleAddBlockToStack}
-            variant="inline"
-          />
+        // Minimal empty state - main "Add Content" button is below
+        <div 
+          onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
+          className="w-full py-8 flex items-center justify-center cursor-pointer group"
+        >
+          <div className="flex items-center gap-2 text-[hsl(var(--builder-text-dim))] group-hover:text-[hsl(var(--builder-text-muted))] transition-colors">
+            <Plus size={16} className="opacity-50 group-hover:opacity-100" />
+            <span className="text-sm">Empty section</span>
+          </div>
         </div>
       ) : (
         <>
@@ -2718,15 +2726,16 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add block button - only show for sections that aren't "done" yet
-              A section feels complete when it has at least one block with 2+ elements (headline + button/text) */}
-          {/* Add block hint - always visible when section has content but could use more */}
+          {/* Add block button */}
           {!readOnly && stack.blocks.length > 0 && (
             <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
-              <AddSectionPopover 
-                onAddBlock={handleAddBlockToStack}
-                variant="minimal"
-              />
+              <button
+                onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
+                className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <Plus size={14} />
+                <span>Add block</span>
+              </button>
             </div>
           )}
         </>
@@ -2773,6 +2782,7 @@ interface FrameRendererProps {
   // Drag and drop
   dragHandleListeners?: React.DOMAttributes<HTMLButtonElement>;
   dragHandleAttributes?: React.HTMLAttributes<HTMLButtonElement>;
+  onOpenBlockPickerInPanel?: (stackId: string) => void;
 }
 
 const FrameRenderer: React.FC<FrameRendererProps> = ({ 
@@ -2812,6 +2822,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   // Drag and drop
   dragHandleListeners,
   dragHandleAttributes,
+  onOpenBlockPickerInPanel,
 }) => {
   const isSelected = selection.type === 'frame' && selection.id === frame.id;
   const framePath = [...path, 'frame', frame.id];
@@ -2941,6 +2952,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
               onNextStep={onNextStep}
               onGoToStep={onGoToStep}
               onFormSubmit={onFormSubmit}
+              onOpenBlockPickerInPanel={onOpenBlockPickerInPanel}
             />
           ))}
         </div>
@@ -3016,6 +3028,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   onDeleteFrame,
   onAddFrameAt,
   onRenameFrame,
+  // Block picker in left panel
+  onOpenBlockPickerInPanel,
 }) => {
   // Form state for preview mode
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -3181,9 +3195,9 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ),
             } as React.CSSProperties}
             onClick={(e) => {
-              // Click on empty device frame = select canvas/page (not null)
+              // Click on empty device frame = clear selection (don't open settings panel)
               if (e.target === e.currentTarget) {
-                onSelect({ type: 'page', id: 'canvas', path: [] });
+                onSelect({ type: null, id: null, path: [] });
               }
             }}
           >
@@ -3215,28 +3229,10 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   {step.frames.map((frame, frameIndex) => (
                     <React.Fragment key={frame.id}>
                       {/* Section Divider - always visible between frames for clarity */}
-                      {frameIndex > 0 && !readOnly && (
-                        <div 
-                          className="relative h-12 flex items-center px-4 group/divider"
-                        >
-                          {/* Left line - always visible */}
-                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
-                          
-                          {/* Center add button - always visible */}
-                          <button
-                            onClick={() => onAddFrameAt?.('above', frame.id)}
-                            className={cn(
-                              "mx-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                              "bg-[hsl(var(--builder-surface))] text-[hsl(var(--builder-text-muted))] border border-[hsl(var(--builder-border))]",
-                              "hover:bg-[hsl(var(--builder-accent))] hover:text-white hover:border-transparent hover:shadow-lg hover:shadow-[hsl(var(--builder-accent)/0.3)]"
-                            )}
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Add Section</span>
-                          </button>
-                          
-                          {/* Right line - always visible */}
-                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
+                      {/* Simple divider line between sections */}
+                      {frameIndex > 0 && (
+                        <div className="relative h-4 flex items-center px-4">
+                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border-subtle))]" />
                         </div>
                       )}
                       <SortableFrameRenderer
@@ -3265,6 +3261,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                         onNextStep={onNextStep}
                         onGoToStep={onGoToStep}
                         onFormSubmit={onFormSubmit}
+                        onOpenBlockPickerInPanel={onOpenBlockPickerInPanel}
                         // Section actions
                         onMoveUp={frameIndex > 0 ? () => onReorderFrames?.(frameIndex, frameIndex - 1) : undefined}
                         onMoveDown={frameIndex < step.frames.length - 1 ? () => onReorderFrames?.(frameIndex, frameIndex + 1) : undefined}
@@ -3277,60 +3274,52 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Empty canvas state - always visible when no sections */}
-              {step.frames.length === 0 && !readOnly && onAddFrame && (
+              {/* Empty canvas state - the original nice box design */}
+              {step.frames.length === 0 && !readOnly && onOpenBlockPickerInPanel && (
                 <div className="flex items-center justify-center min-h-[400px] px-4">
-                  <div className="text-center">
-                    <div 
-                      className={cn(
-                        "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4",
-                        isDarkTheme ? "bg-gray-800" : "bg-gray-100"
-                      )}
-                    >
-                      <Layers className={cn("w-8 h-8", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
+                  <button
+                    onClick={() => onOpenBlockPickerInPanel('new')}
+                    className="group w-full max-w-md flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-200"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                      <Plus size={28} className="text-gray-400" />
                     </div>
-                    <h3 className={cn(
-                      "text-lg font-medium mb-2",
-                      isDarkTheme ? "text-gray-200" : "text-gray-700"
-                    )}>
-                      Add your first section
-                    </h3>
-                    <p className={cn(
-                      "text-sm mb-6 max-w-[240px] mx-auto",
-                      isDarkTheme ? "text-gray-500" : "text-gray-500"
-                    )}>
-                      Sections are containers that hold your content blocks
-                    </p>
-                    <button
-                      onClick={onAddFrame}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[hsl(var(--builder-accent))] text-white font-medium text-sm hover:brightness-110 transition-all shadow-lg shadow-[hsl(var(--builder-accent)/0.3)]"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Section</span>
-                    </button>
-                  </div>
+                    <span className="text-base font-semibold text-gray-700 mb-1">Add Content</span>
+                    <span className="text-sm text-gray-500 mb-5">Sections, text, images, buttons & more</span>
+                    <span className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
+                      <Plus size={18} />
+                      <span>Add Content</span>
+                    </span>
+                  </button>
                 </div>
               )}
               
-              {/* Add Section button at bottom - visible on hover when sections exist */}
-              {/* Bottom Add Section - always visible for clarity */}
-              {step.frames.length > 0 && !readOnly && onAddFrame && (
-                <div className="px-4 py-6">
-                  {/* Divider line above button - always visible */}
-                  <div className="flex items-center mb-4">
-                    <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
-                  </div>
+              {/* Subtle Add More button - only when content exists */}
+              {step.frames.length > 0 && !readOnly && onOpenBlockPickerInPanel && (
+                <div className="flex flex-col items-center py-8 group">
                   <button
-                    onClick={onAddFrame}
+                    onClick={() => {
+                      const lastStack = step.frames[step.frames.length - 1]?.stacks[0];
+                      if (lastStack) {
+                        onOpenBlockPickerInPanel(lastStack.id);
+                      }
+                    }}
                     className={cn(
-                      "w-full py-4 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2.5 transition-all text-sm font-medium",
-                      "border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface))] text-[hsl(var(--builder-text-muted))]",
-                      "hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-[hsl(var(--builder-accent))]"
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                      "border-2 border-dashed",
+                      isDarkTheme 
+                        ? "border-gray-600 text-gray-500 hover:border-gray-400 hover:text-gray-300 hover:bg-gray-800" 
+                        : "border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
                     )}
                   >
-                    <Layers className="w-4 h-4" />
-                    <span>Add New Section</span>
+                    <Plus size={18} />
                   </button>
+                  <span className={cn(
+                    "mt-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity",
+                    isDarkTheme ? "text-gray-500" : "text-gray-400"
+                  )}>
+                    Add more content
+                  </span>
                 </div>
               )}
                 </div>

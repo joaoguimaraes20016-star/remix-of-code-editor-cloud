@@ -6,6 +6,7 @@ import { RightPanel } from './RightPanel';
 import { TopToolbar, DeviceMode } from './TopToolbar';
 import { AIBuilderCopilot } from './AIBuilderCopilot';
 import { BlockPalette } from './BlockPalette';
+import { BlockPickerPanel } from './BlockPickerPanel';
 import { useHistory } from '../hooks/useHistory';
 import { 
   deepClone, 
@@ -104,6 +105,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [isBlockPaletteOpen, setIsBlockPaletteOpen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [replayAnimationKey, setReplayAnimationKey] = useState(0);
+  
+  // Block picker state - for left panel integration
+  const [blockPickerOpen, setBlockPickerOpen] = useState(false);
+  const [blockPickerTargetStackId, setBlockPickerTargetStackId] = useState<string | null>(null);
   
   // Editor UI theme state - controls panels/toolbar appearance (dark by default)
   const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark');
@@ -328,16 +333,41 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   }, [page, handlePageUpdate]);
 
   // Add block from palette (with optional position)
-  const handleAddBlock = useCallback((newBlock: Block, position?: { stackId: string; index: number }) => {
+  const handleAddBlock = useCallback((newBlock: Block, position?: { stackId: string; index: number }, options?: { type?: 'block' | 'section' }) => {
     const updatedPage = deepClone(page);
+    const addMode = options?.type || 'block';
+    
+    // If it's a section, create a new frame with the block
+    if (addMode === 'section') {
+      const step = updatedPage.steps.find(s => s.id === activeStepId);
+      if (step) {
+        const newFrame = {
+          id: generateId(),
+          label: newBlock.label || 'New Section',
+          stacks: [{
+            id: generateId(),
+            label: 'Main Stack',
+            direction: 'vertical' as const,
+            blocks: [newBlock],
+            props: { alignment: 'center' },
+          }],
+          props: {},
+        };
+        step.frames.push(newFrame);
+        handlePageUpdate(updatedPage, 'Add section');
+        toast.success('Section added');
+        return;
+      }
+    }
     
     if (position) {
-      // Insert at specific position
+      // Insert at specific position in stack - add at end (use Infinity)
       for (const step of updatedPage.steps) {
         for (const frame of step.frames) {
           for (const stack of frame.stacks) {
             if (stack.id === position.stackId) {
-              stack.blocks.splice(position.index, 0, newBlock);
+              // Always insert at end of stack
+              stack.blocks.push(newBlock);
               handlePageUpdate(updatedPage, 'Add block');
               toast.success('Block added');
               return;
@@ -346,7 +376,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         }
       }
     } else {
-      // Default: add to first stack of active step
+      // Default: add to first stack of active step at the end
       const step = updatedPage.steps.find(s => s.id === activeStepId);
       if (step && step.frames[0] && step.frames[0].stacks[0]) {
         step.frames[0].stacks[0].blocks.push(newBlock);
@@ -1108,21 +1138,45 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             >
               <PanelLeftClose size={14} />
             </button>
-            <LeftPanel
-              steps={page.steps}
-              activeStepId={activeStepId}
-              selection={selection}
-              onStepSelect={handleStepSelect}
-              onAddStep={handleAddStep}
-              onDeleteStep={handleDeleteStep}
-              onDuplicateStep={handleDuplicateStep}
-              onAddBlankStep={handleAddBlankStep}
-              onReorderSteps={handleReorderSteps}
-              onSelectBlock={handleSelectBlock}
-              onSelectElement={handleSelectElement}
-              onRenameStep={handleRenameStep}
-              onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
-            />
+            {blockPickerOpen ? (
+              <BlockPickerPanel
+                onAddBlock={(block, options) => {
+                  if (options?.type === 'section') {
+                    // Add as a new section (frame)
+                    handleAddBlock(block, undefined, { type: 'section' });
+                  } else if (blockPickerTargetStackId) {
+                    // Add to specific stack at the end
+                    handleAddBlock(block, { stackId: blockPickerTargetStackId, index: Infinity });
+                  } else {
+                    // Add to first stack of active step
+                    handleAddBlock(block);
+                  }
+                  setBlockPickerOpen(false);
+                  setBlockPickerTargetStackId(null);
+                }}
+                onClose={() => {
+                  setBlockPickerOpen(false);
+                  setBlockPickerTargetStackId(null);
+                }}
+                targetSectionId={blockPickerTargetStackId}
+              />
+            ) : (
+              <LeftPanel
+                steps={page.steps}
+                activeStepId={activeStepId}
+                selection={selection}
+                onStepSelect={handleStepSelect}
+                onAddStep={handleAddStep}
+                onDeleteStep={handleDeleteStep}
+                onDuplicateStep={handleDuplicateStep}
+                onAddBlankStep={handleAddBlankStep}
+                onReorderSteps={handleReorderSteps}
+                onSelectBlock={handleSelectBlock}
+                onSelectElement={handleSelectElement}
+                onRenameStep={handleRenameStep}
+                onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
+              />
+            )}
           </div>
         )}
         
@@ -1192,6 +1246,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onDeleteFrame={handleDeleteFrame}
             onAddFrameAt={handleAddFrameAt}
             onRenameFrame={handleRenameFrame}
+            onOpenBlockPickerInPanel={(stackId) => {
+              setBlockPickerTargetStackId(stackId);
+              setBlockPickerOpen(true);
+            }}
             onNextStep={() => {
               const currentIndex = page.steps.findIndex(s => s.id === activeStepId);
               if (currentIndex >= 0 && currentIndex < page.steps.length - 1) {
