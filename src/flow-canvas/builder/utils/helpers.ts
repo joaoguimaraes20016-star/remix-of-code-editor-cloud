@@ -207,15 +207,28 @@ export const getIntentColorClass = (intent: string): string => {
 // the global page background. This led to visual inheritance where new pages appeared
 // to "inherit" the previous page's styles. By assigning a fresh deep-cloned default,
 // each step is guaranteed isolated styling.
-// Create a blank step (Page) with NO sections - user adds sections via SectionPickerPanel.
-// This ensures the empty canvas shows "Add a Section" prompt instead of "Add Block".
 export const createBlankStep = (name?: string): Step => ({
   id: generateId(),
   name: name || 'Untitled Page',
   step_type: 'form',
   step_intent: 'capture',
   submit_mode: 'next',
-  frames: [], // Empty: user adds sections via canvas
+  frames: [
+    {
+      id: generateId(),
+      label: 'Section 1',
+      stacks: [
+        {
+          id: generateId(),
+          label: 'Content',
+          direction: 'vertical',
+          blocks: [],
+          props: {},
+        },
+      ],
+      props: {},
+    },
+  ],
   // CRITICAL: Use getDefaultStepBackground() to get a fresh deep clone.
   // Never share object references between steps or the same object would be mutated.
   background: getDefaultStepBackground(),

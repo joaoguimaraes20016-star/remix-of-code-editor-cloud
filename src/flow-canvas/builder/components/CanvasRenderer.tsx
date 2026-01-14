@@ -2676,7 +2676,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             
             {/* Title */}
             <span className="text-lg font-semibold text-gray-800 mb-1">
-              Add content to this section
+              Add a block to this section
             </span>
             
             {/* Subtitle */}
@@ -2687,7 +2687,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             {/* Dark button */}
             <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
               <Plus size={18} />
-              <span>Add Content</span>
+              <span>Insert Block</span>
             </span>
           </div>
         </div>
@@ -2746,7 +2746,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add content button */}
+          {/* Add block button */}
           {!readOnly && stack.blocks.length > 0 && (
             <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
               <button
@@ -2754,7 +2754,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
                 className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <Plus size={14} />
-                <span>Add content</span>
+                <span>Add block</span>
               </button>
             </div>
           )}
