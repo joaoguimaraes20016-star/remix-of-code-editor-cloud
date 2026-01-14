@@ -190,6 +190,8 @@ interface CanvasRendererProps {
   onOpenBlockPickerInPanel?: (stackId: string) => void;
   // Section picker for adding new sections
   onOpenSectionPicker?: () => void;
+  // Application Flow step selection (for canvas step switching)
+  selectedApplicationStepId?: string | null;
 }
 
 // Button Action type
@@ -2020,6 +2022,7 @@ interface SortableBlockRendererProps {
   onNextStep?: () => void;
   onGoToStep?: (stepId: string) => void;
   onFormSubmit?: (values: Record<string, string>) => void;
+  selectedApplicationStepId?: string | null;
 }
 
 const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({ 
@@ -2047,6 +2050,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   onNextStep,
   onGoToStep,
   onFormSubmit,
+  selectedApplicationStepId,
 }) => {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const isSelected = selection.type === 'block' && selection.id === block.id;
@@ -2299,6 +2303,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
             }
           }}
           readOnly={readOnly}
+          selectedStepId={selectedApplicationStepId}
         />
       </div>
     );
@@ -2673,6 +2678,7 @@ interface StackRendererProps {
   onGoToStep?: (stepId: string) => void;
   onFormSubmit?: (values: Record<string, string>) => void;
   onOpenBlockPickerInPanel?: (stackId: string) => void;
+  selectedApplicationStepId?: string | null;
 }
 
 const StackRenderer: React.FC<StackRendererProps> = ({ 
@@ -2699,6 +2705,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   onGoToStep,
   onFormSubmit,
   onOpenBlockPickerInPanel,
+  selectedApplicationStepId,
 }) => {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const isSelected = selection.type === 'stack' && selection.id === stack.id;
@@ -2824,11 +2831,12 @@ const StackRenderer: React.FC<StackRendererProps> = ({
                   readOnly={readOnly}
                   replayAnimationKey={replayAnimationKey}
                   deviceMode={deviceMode}
-                  onNextStep={onNextStep}
-                  onGoToStep={onGoToStep}
-                  onFormSubmit={onFormSubmit}
-                />
-              ))}
+                    onNextStep={onNextStep}
+                    onGoToStep={onGoToStep}
+                    onFormSubmit={onFormSubmit}
+                    selectedApplicationStepId={selectedApplicationStepId}
+                  />
+                ))}
             </SortableContext>
             <DragOverlay>
               {activeBlock ? <BlockDragOverlay block={activeBlock} /> : null}
@@ -3062,6 +3070,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
               onGoToStep={onGoToStep}
               onFormSubmit={onFormSubmit}
               onOpenBlockPickerInPanel={onOpenBlockPickerInPanel}
+              selectedApplicationStepId={selectedApplicationStepId}
             />
           ))}
         </div>
@@ -3141,6 +3150,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   onOpenBlockPickerInPanel,
   // Section picker
   onOpenSectionPicker,
+  // Application Flow step selection
+  selectedApplicationStepId,
 }) => {
   // Form state for preview mode
   const [formValues, setFormValues] = useState<Record<string, string>>({});

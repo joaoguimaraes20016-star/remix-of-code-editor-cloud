@@ -99,6 +99,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [activeStepId, setActiveStepId] = useState<string | null>(
     page.steps[0]?.id || null
   );
+  // State for selected step within Application Flow block (for canvas step switching)
+  const [selectedApplicationStepId, setSelectedApplicationStepId] = useState<string | null>(null);
   const [isAICopilotExpanded, setIsAICopilotExpanded] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
@@ -1248,6 +1250,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onDeleteElement={handleDeleteElement}
             onCopy={handleCopy}
             onPaste={handlePaste}
+            selectedApplicationStepId={selectedApplicationStepId}
             canPaste={!!clipboardRef.current}
             pageSettings={page.settings}
             replayAnimationKey={replayAnimationKey}
@@ -1317,6 +1320,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             }}
             onAddFrameAt={handleAddFrameAt}
             activeStep={activeStep}
+            selectedApplicationStepId={selectedApplicationStepId}
+            onSelectApplicationStep={setSelectedApplicationStepId}
           />
         )}
       </div>

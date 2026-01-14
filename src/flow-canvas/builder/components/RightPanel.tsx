@@ -142,6 +142,9 @@ interface RightPanelProps {
   onAddFrameAt?: (position: 'above' | 'below', referenceFrameId: string) => void;
   // Frame index info for move buttons
   activeStep?: Step | null;
+  // Application Flow step selection (for canvas step switching)
+  selectedApplicationStepId?: string | null;
+  onSelectApplicationStep?: (stepId: string | null) => void;
 }
 
 interface CollapsibleSectionProps {
@@ -3415,6 +3418,8 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   onMoveFrame,
   onAddFrameAt,
   activeStep,
+  selectedApplicationStepId,
+  onSelectApplicationStep,
 }) => {
   // Try to find node by path first, then fallback to ID search
   let selectedNode = selection.id ? findNodeByPath(page, selection.path) : null;
@@ -3563,6 +3568,8 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             <ApplicationFlowInspector 
               block={selectedNode as Block} 
               onUpdateBlock={(updates) => handleUpdate(updates)}
+              selectedStepId={selectedApplicationStepId}
+              onSelectStep={onSelectApplicationStep}
             />
           ) : (
             <BlockInspector block={selectedNode as Block} onUpdate={handleUpdate} />

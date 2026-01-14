@@ -70,6 +70,7 @@ const stepTypeLabels: Record<ApplicationStepType, string> = {
 interface ApplicationFlowInspectorProps {
   block: Block;
   onUpdateBlock: (updates: Partial<Block>) => void;
+  selectedStepId?: string | null;
   onSelectStep?: (stepId: string | null) => void;
 }
 
@@ -198,10 +199,13 @@ const StepListItem: React.FC<StepListItemProps> = ({
 export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> = ({
   block,
   onUpdateBlock,
+  selectedStepId: controlledStepId,
   onSelectStep,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  // Use controlled state from props, or fallback to local state
+  const [localStepId, setLocalStepId] = useState<string | null>(null);
+  const selectedStepId = controlledStepId !== undefined ? controlledStepId : localStepId;
 
   const defaultSettings: ApplicationFlowSettings = {
     displayMode: 'one-at-a-time',
@@ -248,8 +252,11 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
     const newStep = createDefaultStep(type, steps.length);
     onUpdateBlock({ props: { ...settings, steps: [...steps, newStep] } });
     // Auto-select the new step
-    setSelectedStepId(newStep.id);
-    onSelectStep?.(newStep.id);
+    if (onSelectStep) {
+      onSelectStep(newStep.id);
+    } else {
+      setLocalStepId(newStep.id);
+    }
   };
 
   const duplicateStep = (stepId: string) => {
@@ -266,19 +273,28 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
     const newSteps = steps.filter(s => s.id !== stepId);
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
     if (selectedStepId === stepId) {
-      setSelectedStepId(null);
-      onSelectStep?.(null);
+      if (onSelectStep) {
+        onSelectStep(null);
+      } else {
+        setLocalStepId(null);
+      }
     }
   };
 
   const handleSelectStep = (stepId: string) => {
-    setSelectedStepId(stepId);
-    onSelectStep?.(stepId);
+    if (onSelectStep) {
+      onSelectStep(stepId);
+    } else {
+      setLocalStepId(stepId);
+    }
   };
 
   const handleBackToList = () => {
-    setSelectedStepId(null);
-    onSelectStep?.(null);
+    if (onSelectStep) {
+      onSelectStep(null);
+    } else {
+      setLocalStepId(null);
+    }
   };
 
   const activeStep = activeId ? steps.find(s => s.id === activeId) : null;
