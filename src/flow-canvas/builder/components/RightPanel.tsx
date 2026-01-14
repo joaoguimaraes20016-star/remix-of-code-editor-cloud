@@ -2100,6 +2100,18 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
         </div>
       </div>
 
+      {/* Media Block Controls - for media/image/video content blocks */}
+      {block.type === 'media' && (
+        <CollapsibleSection title="Media Settings" icon={<Image className="w-4 h-4" />} defaultOpen>
+          <div className="pt-3 space-y-3">
+            <div className="text-xs text-builder-text-muted bg-builder-surface-hover rounded-lg p-3">
+              <p className="font-medium text-builder-text mb-1">💡 To edit the image:</p>
+              <p>Click directly on the image element in the canvas to access image controls (source, size, fit).</p>
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
       {/* Block Settings only shown for Container types, not content blocks */}
       {getBlockCategory(block.type) === 'Container' && (
         <CollapsibleSection title="Block Settings" icon={<Layout className="w-4 h-4" />} defaultOpen>

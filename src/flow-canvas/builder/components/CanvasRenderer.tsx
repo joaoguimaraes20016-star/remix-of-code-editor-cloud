@@ -5,7 +5,7 @@ import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circl
 import { getButtonIconComponent } from './ButtonIconPicker';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
-// SectionActionBar removed - actions now in right panel sidebar
+import { SectionActionBar } from './SectionActionBar';
 import { UnifiedElementToolbar, UnifiedToolbarStyles } from './UnifiedElementToolbar';
 import { AddSectionPopover } from './AddSectionPopover';
 import { InlineTextEditor, TextStyles } from './InlineTextEditor';
@@ -2886,7 +2886,26 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
         }
       }}
     >
-      {/* Section actions now in right panel sidebar - removed floating toolbar */}
+      {/* Section Action Bar - floating toolbar for section management */}
+      {!readOnly && (
+        <SectionActionBar
+          sectionId={frame.id}
+          sectionLabel={frame.label || `Section ${frameIndex + 1}`}
+          isSelected={isSelected}
+          frameIndex={frameIndex}
+          totalFrames={totalFrames}
+          onSelect={() => onSelect({ type: 'frame', id: frame.id, path: framePath })}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+          onAddAbove={onAddAbove}
+          onAddBelow={onAddBelow}
+          onRename={onRename}
+          dragHandleListeners={dragHandleListeners}
+          dragHandleAttributes={dragHandleAttributes}
+        />
+      )}
       {/* Apply dynamic padding and spacing based on frame settings */}
       <div 
         style={{
