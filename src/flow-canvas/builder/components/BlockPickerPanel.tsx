@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { 
   Plus, Search, Type, Image, MousePointer, 
-  Mail, Phone, User, UserCheck, ChevronRight, 
+  Mail, Phone, User, UserCheck, ChevronRight, ChevronDown,
   HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
 import { cn } from '@/lib/utils';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -25,6 +30,7 @@ interface BlockCategory {
   label: string;
   hint?: string;
   blocks: BlockTemplate[];
+  defaultOpen?: boolean;
 }
 
 type AddMode = 'block' | 'section';
@@ -39,14 +45,14 @@ interface BlockPickerPanelProps {
 
 type ActiveTab = 'blocks' | 'sections';
 
-// ============ QUESTIONS & CAPTURE BLOCKS ============
+// ============ FORM ELEMENTS (Questions & Capture) ============
 
-const captureBlocks: BlockTemplate[] = [
+const formElements: BlockTemplate[] = [
   {
     type: 'form-field',
     label: 'Open Question',
     icon: <Type size={16} />,
-    description: 'Text answer — type response + Enter ↵',
+    description: 'Text answer — qualify the lead',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -63,7 +69,7 @@ const captureBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Multiple Choice',
     icon: <ListChecks size={16} />,
-    description: 'Select all that apply — checkboxes',
+    description: 'Checkboxes — segment by interest',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -82,7 +88,7 @@ const captureBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Single Choice',
     icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
-    description: 'Pick one option — click to select',
+    description: 'Radio buttons — qualify or route',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -101,7 +107,7 @@ const captureBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Email Capture',
     icon: <Mail size={16} />,
-    description: 'Capture email address',
+    description: 'Get their email — main capture',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -119,7 +125,7 @@ const captureBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Phone Capture',
     icon: <Phone size={16} />,
-    description: 'Capture phone number',
+    description: 'Get their phone — for callbacks',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -175,7 +181,7 @@ const captureBlocks: BlockTemplate[] = [
   },
 ];
 
-// ============ CONTENT & MEDIA BLOCKS ============
+// ============ CONTENT BLOCKS ============
 
 const contentBlocks: BlockTemplate[] = [
   {
@@ -232,14 +238,14 @@ const contentBlocks: BlockTemplate[] = [
   },
 ];
 
-// ============ ACTION BLOCKS ============
+// ============ BUTTONS & ACTIONS ============
 
 const actionBlocks: BlockTemplate[] = [
   {
     type: 'cta',
     label: 'Submit Button',
     icon: <MousePointer size={16} />,
-    description: 'Next question or submit form',
+    description: 'Triggers form submission + next action',
     template: () => ({
       id: generateId(),
       type: 'cta',
@@ -252,7 +258,7 @@ const actionBlocks: BlockTemplate[] = [
     type: 'booking',
     label: 'Book a Call',
     icon: <Calendar size={16} />,
-    description: 'Calendly or scheduling embed',
+    description: 'Calendly embed — schedule appointments',
     template: () => ({
       id: generateId(),
       type: 'booking',
@@ -270,26 +276,36 @@ const actionBlocks: BlockTemplate[] = [
 
 const blockCategories: BlockCategory[] = [
   {
-    id: 'capture',
-    label: 'Questions & Capture',
+    id: 'form-elements',
+    label: 'Form Elements',
     hint: 'One question per section converts 2-3x better',
-    blocks: captureBlocks,
+    blocks: formElements,
+    defaultOpen: false,
   },
   {
     id: 'content',
-    label: 'Content & Media',
+    label: 'Content',
     blocks: contentBlocks,
+    defaultOpen: false,
   },
   {
     id: 'actions',
-    label: 'Actions',
+    label: 'Buttons & Actions',
     blocks: actionBlocks,
+    defaultOpen: false,
   },
 ];
 
-// ============ SECTION TEMPLATES FOR TAB ============
+// ============ SECTION TEMPLATES ============
 
-const sectionTemplates: BlockTemplate[] = [
+interface SectionCategory {
+  id: string;
+  label: string;
+  sections: BlockTemplate[];
+  defaultOpen?: boolean;
+}
+
+const captureSections: BlockTemplate[] = [
   {
     type: 'form-field',
     label: 'Single Question',
@@ -354,6 +370,157 @@ const sectionTemplates: BlockTemplate[] = [
   },
 ];
 
+const contentSections: BlockTemplate[] = [
+  {
+    type: 'hero',
+    label: 'Welcome / Hero',
+    icon: <Layers size={16} />,
+    description: 'First impression with CTA',
+    template: () => ({
+      id: generateId(),
+      type: 'hero',
+      label: 'Welcome',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Welcome! Let\'s Get Started', props: { level: 1 } },
+        { id: generateId(), type: 'text', content: 'Answer a few quick questions to see if we\'re a good fit.', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'button', content: 'Start Application', props: { variant: 'primary', size: 'lg' } },
+      ],
+      props: { intent: 'collect' },
+    }),
+  },
+  {
+    type: 'testimonial',
+    label: 'Testimonial',
+    icon: <FileText size={16} />,
+    description: 'Social proof',
+    template: () => ({
+      id: generateId(),
+      type: 'testimonial',
+      label: 'Testimonial',
+      elements: [
+        { id: generateId(), type: 'text', content: '"This completely transformed my business. I went from struggling to scaling in just 3 months."', props: { variant: 'quote' } },
+        { id: generateId(), type: 'text', content: '— Sarah M., Agency Owner', props: { variant: 'caption' } },
+      ],
+      props: {},
+    }),
+  },
+  {
+    type: 'text-block',
+    label: 'Thank You',
+    icon: <HelpCircle size={16} />,
+    description: 'Confirmation screen',
+    template: () => ({
+      id: generateId(),
+      type: 'text-block',
+      label: 'Thank You',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'You\'re All Set! 🎉', props: { level: 1 } },
+        { id: generateId(), type: 'text', content: 'We\'ve received your application. Check your inbox for next steps.', props: { variant: 'subtext' } },
+      ],
+      props: { intent: 'complete' },
+    }),
+  },
+];
+
+const advancedSections: BlockTemplate[] = [
+  {
+    type: 'custom',
+    label: 'Empty Section',
+    icon: <Plus size={16} />,
+    description: 'Build from scratch',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Section',
+      elements: [],
+      props: {},
+    }),
+  },
+];
+
+const sectionCategories: SectionCategory[] = [
+  {
+    id: 'capture',
+    label: 'Capture Sections',
+    sections: captureSections,
+    defaultOpen: true,
+  },
+  {
+    id: 'content',
+    label: 'Content Sections',
+    sections: contentSections,
+    defaultOpen: false,
+  },
+  {
+    id: 'advanced',
+    label: 'Advanced',
+    sections: advancedSections,
+    defaultOpen: false,
+  },
+];
+
+// ============ COLLAPSIBLE CATEGORY COMPONENT ============
+
+interface CollapsibleCategoryProps {
+  category: BlockCategory | SectionCategory;
+  onAddBlock: (template: BlockTemplate, isSection: boolean) => void;
+  isSection?: boolean;
+}
+
+const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({ 
+  category, 
+  onAddBlock,
+  isSection = false 
+}) => {
+  const [isOpen, setIsOpen] = useState(category.defaultOpen ?? false);
+  const blocks = 'blocks' in category ? category.blocks : category.sections;
+  const hint = 'hint' in category ? category.hint : undefined;
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger className="w-full">
+        <div className="flex items-center justify-between px-2 py-2.5 rounded-lg hover:bg-builder-surface-hover transition-colors group">
+          <div className="flex items-center gap-2">
+            {isOpen ? (
+              <ChevronDown size={14} className="text-builder-text-muted" />
+            ) : (
+              <ChevronRight size={14} className="text-builder-text-muted" />
+            )}
+            <span className="text-sm font-medium text-builder-text">{category.label}</span>
+            <span className="text-[10px] text-builder-text-dim bg-builder-surface-active px-1.5 py-0.5 rounded">
+              {blocks.length}
+            </span>
+          </div>
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="pl-4 pr-1 pb-2">
+          {hint && (
+            <p className="text-[10px] text-builder-accent mb-2 ml-2">{hint}</p>
+          )}
+          <div className="space-y-0.5">
+            {blocks.map((block, idx) => (
+              <button
+                key={`${block.label}-${idx}`}
+                onClick={() => onAddBlock(block, isSection)}
+                className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
+              >
+                <div className="w-7 h-7 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
+                  {block.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-builder-text">{block.label}</div>
+                  <div className="text-[10px] text-builder-text-dim">{block.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 // ============ COMPONENT ============
 
 export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
@@ -367,10 +534,12 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
 
   // All templates for search
   const allTemplates = [
-    ...captureBlocks.map(b => ({ ...b, isSection: false })),
+    ...formElements.map(b => ({ ...b, isSection: false })),
     ...contentBlocks.map(b => ({ ...b, isSection: false })),
     ...actionBlocks.map(b => ({ ...b, isSection: false })),
-    ...sectionTemplates.map(t => ({ ...t, isSection: true })),
+    ...captureSections.map(t => ({ ...t, isSection: true })),
+    ...contentSections.map(t => ({ ...t, isSection: true })),
+    ...advancedSections.map(t => ({ ...t, isSection: true })),
   ];
 
   const filteredResults = searchQuery.length > 0
@@ -486,72 +655,28 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
             )}
           </div>
         ) : activeTab === 'blocks' ? (
-          // Blocks Tab Content - Categorized
-          <div className="p-2 pb-20 space-y-4">
+          // Blocks Tab Content - Collapsible Categories
+          <div className="p-2 pb-20 space-y-1">
             {blockCategories.map((category) => (
-              <div key={category.id}>
-                {/* Category Header */}
-                <div className="px-1 pb-2">
-                  <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">
-                    {category.label}
-                  </span>
-                  {category.hint && (
-                    <p className="text-[10px] text-builder-accent mt-0.5">{category.hint}</p>
-                  )}
-                </div>
-                
-                {/* Block List */}
-                <div className="space-y-0.5">
-                  {category.blocks.map((block) => (
-                    <button
-                      key={block.label}
-                      onClick={() => handleAddBlock(block, false)}
-                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
-                        {block.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-builder-text">{block.label}</div>
-                        <div className="text-[11px] text-builder-text-dim">{block.description}</div>
-                      </div>
-                      <ChevronRight size={14} className="text-builder-text-dim group-hover:text-builder-text-muted transition-colors" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <CollapsibleCategory
+                key={category.id}
+                category={category}
+                onAddBlock={handleAddBlock}
+                isSection={false}
+              />
             ))}
           </div>
         ) : (
-          // Sections Tab Content
-          <div className="p-2 pb-20">
-            <div className="px-1 pb-2">
-              <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">
-                Section Templates
-              </span>
-              <p className="text-xs text-builder-text-muted mt-1">
-                Each section = one question or capture. Keep it focused.
-              </p>
-            </div>
-            
-            <div className="space-y-0.5 mt-2">
-              {sectionTemplates.map((template, idx) => (
-                <button
-                  key={`${template.type}-${idx}`}
-                  onClick={() => handleAddBlock(template, true)}
-                  className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
-                    {template.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-builder-text">{template.label}</div>
-                    <div className="text-[11px] text-builder-text-dim">{template.description}</div>
-                  </div>
-                  <ChevronRight size={14} className="text-builder-text-dim group-hover:text-builder-text-muted transition-colors" />
-                </button>
-              ))}
-            </div>
+          // Sections Tab Content - Collapsible Categories
+          <div className="p-2 pb-20 space-y-1">
+            {sectionCategories.map((category) => (
+              <CollapsibleCategory
+                key={category.id}
+                category={category}
+                onAddBlock={handleAddBlock}
+                isSection={true}
+              />
+            ))}
           </div>
         )}
       </div>
