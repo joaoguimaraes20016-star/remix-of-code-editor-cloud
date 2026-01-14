@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Plus, Search, Type, Image, MousePointer, 
   Mail, Phone, User, UserCheck, ChevronRight, ChevronDown,
-  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar
+  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
@@ -275,6 +275,27 @@ const actionBlocks: BlockTemplate[] = [
         { id: generateId(), type: 'text', content: 'Pick a time that works best for you.', props: { variant: 'subtext' } },
       ],
       props: { calendlyUrl: '', intent: 'schedule' },
+    }),
+  },
+  {
+    type: 'application-flow',
+    label: 'Application Flow',
+    icon: <Workflow size={16} />,
+    description: 'Typeform-style multi-step experience',
+    template: () => ({
+      id: generateId(),
+      type: 'application-flow',
+      label: 'Application',
+      elements: [],
+      props: {
+        displayMode: 'one-at-a-time',
+        showProgress: true,
+        transition: 'slide-up',
+        steps: [
+          { id: generateId(), name: 'Welcome', type: 'welcome', elements: [], navigation: { action: 'next' } },
+          { id: generateId(), name: 'Get Started', type: 'capture', elements: [], navigation: { action: 'submit' } },
+        ]
+      },
     }),
   },
 ];

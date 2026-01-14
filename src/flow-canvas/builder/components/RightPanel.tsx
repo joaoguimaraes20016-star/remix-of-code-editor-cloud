@@ -117,6 +117,7 @@ import type { GradientValue, ButtonAction, VideoSettings } from './modals';
 import { toast } from 'sonner';
 import { useInlineEdit } from '../contexts/InlineEditContext';
 import { ButtonIconPicker } from './ButtonIconPicker';
+import { ApplicationFlowInspector } from './inspectors/ApplicationFlowInspector';
 
 interface RightPanelProps {
   page: Page;
@@ -3558,7 +3559,14 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             onAddBelow={selection.id && onAddFrameAt ? () => onAddFrameAt('below', selection.id!) : undefined}
           />
         ) : resolvedType === 'block' && selectedNode ? (
-          <BlockInspector block={selectedNode as Block} onUpdate={handleUpdate} />
+          (selectedNode as Block).type === 'application-flow' ? (
+            <ApplicationFlowInspector 
+              block={selectedNode as Block} 
+              onUpdateBlock={(updates) => handleUpdate(updates)}
+            />
+          ) : (
+            <BlockInspector block={selectedNode as Block} onUpdate={handleUpdate} />
+          )
         ) : resolvedType === 'element' && selectedNode ? (
           <ElementInspector 
             element={selectedNode as Element} 

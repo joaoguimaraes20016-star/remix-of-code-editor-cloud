@@ -20,6 +20,7 @@ export const blockTypeLabels: Record<BlockType, string> = {
   'text-block': 'Text',
   custom: 'Empty Section',
   booking: 'Booking',
+  'application-flow': 'Application Flow',
   // Extended types
   feature: 'Feature',
   pricing: 'Pricing',

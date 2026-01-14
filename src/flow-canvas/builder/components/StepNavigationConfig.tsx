@@ -1,5 +1,5 @@
 import React from 'react';
-import { Step, StepNavigation, StepNavigationAction } from '../../types/infostack';
+import { Step, StepNavigation } from '../../types/infostack';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,7 @@ interface StepNavigationConfigProps {
   onUpdate: (navigation: StepNavigation) => void;
 }
 
-const actionOptions: { value: StepNavigationAction; label: string; description: string; icon: React.ReactNode }[] = [
+const actionOptions: { value: StepNavigation['action']; label: string; description: string; icon: React.ReactNode }[] = [
   { 
     value: 'next', 
     label: 'Go to next step', 
@@ -62,7 +62,7 @@ export const StepNavigationConfig: React.FC<StepNavigationConfigProps> = ({
   const availableSteps = allSteps.filter((s, i) => i !== currentIndex);
   const isLastStep = currentIndex === allSteps.length - 1;
 
-  const handleActionChange = (action: StepNavigationAction) => {
+  const handleActionChange = (action: StepNavigation['action']) => {
     const updated: StepNavigation = { action };
     
     // Set defaults based on action
