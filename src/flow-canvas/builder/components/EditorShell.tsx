@@ -6,7 +6,6 @@ import { RightPanel } from './RightPanel';
 import { TopToolbar, DeviceMode } from './TopToolbar';
 import { AIBuilderCopilot } from './AIBuilderCopilot';
 import { BlockPalette } from './BlockPalette';
-import { BlockPickerPanel } from './BlockPickerPanel';
 import { useHistory } from '../hooks/useHistory';
 import { 
   deepClone, 
@@ -105,10 +104,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [isBlockPaletteOpen, setIsBlockPaletteOpen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [replayAnimationKey, setReplayAnimationKey] = useState(0);
-  
-  // Block picker state - for left panel integration
-  const [blockPickerOpen, setBlockPickerOpen] = useState(false);
-  const [blockPickerTargetStackId, setBlockPickerTargetStackId] = useState<string | null>(null);
   
   // Editor UI theme state - controls panels/toolbar appearance (dark by default)
   const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark');
@@ -1113,41 +1108,21 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             >
               <PanelLeftClose size={14} />
             </button>
-            {blockPickerOpen ? (
-              <BlockPickerPanel
-                onAddBlock={(block) => {
-                  if (blockPickerTargetStackId) {
-                    handleAddBlock(block, { stackId: blockPickerTargetStackId, index: 0 });
-                  } else {
-                    // Add to first stack of active step if no target
-                    handleAddBlock(block);
-                  }
-                  setBlockPickerOpen(false);
-                  setBlockPickerTargetStackId(null);
-                }}
-                onClose={() => {
-                  setBlockPickerOpen(false);
-                  setBlockPickerTargetStackId(null);
-                }}
-                targetSectionId={blockPickerTargetStackId}
-              />
-            ) : (
-              <LeftPanel
-                steps={page.steps}
-                activeStepId={activeStepId}
-                selection={selection}
-                onStepSelect={handleStepSelect}
-                onAddStep={handleAddStep}
-                onDeleteStep={handleDeleteStep}
-                onDuplicateStep={handleDuplicateStep}
-                onAddBlankStep={handleAddBlankStep}
-                onReorderSteps={handleReorderSteps}
-                onSelectBlock={handleSelectBlock}
-                onSelectElement={handleSelectElement}
-                onRenameStep={handleRenameStep}
-                onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
-              />
-            )}
+            <LeftPanel
+              steps={page.steps}
+              activeStepId={activeStepId}
+              selection={selection}
+              onStepSelect={handleStepSelect}
+              onAddStep={handleAddStep}
+              onDeleteStep={handleDeleteStep}
+              onDuplicateStep={handleDuplicateStep}
+              onAddBlankStep={handleAddBlankStep}
+              onReorderSteps={handleReorderSteps}
+              onSelectBlock={handleSelectBlock}
+              onSelectElement={handleSelectElement}
+              onRenameStep={handleRenameStep}
+              onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
+            />
           </div>
         )}
         
@@ -1217,10 +1192,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onDeleteFrame={handleDeleteFrame}
             onAddFrameAt={handleAddFrameAt}
             onRenameFrame={handleRenameFrame}
-            onOpenBlockPickerInPanel={(stackId) => {
-              setBlockPickerTargetStackId(stackId);
-              setBlockPickerOpen(true);
-            }}
             onNextStep={() => {
               const currentIndex = page.steps.findIndex(s => s.id === activeStepId);
               if (currentIndex >= 0 && currentIndex < page.steps.length - 1) {
