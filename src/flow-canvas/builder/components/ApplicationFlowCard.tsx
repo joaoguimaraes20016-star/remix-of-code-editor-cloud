@@ -51,65 +51,53 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
   };
 
-  // Welcome step renders from block.elements (the Apply Section)
-  const renderWelcomeFromElements = () => (
-    <div className="text-center py-12 px-8">
-      {block.elements && block.elements.length > 0 ? (
-        block.elements.map((el) => {
-          if (el.type === 'heading') {
-            return (
-              <div key={el.id} className="block">
-                <InlineTextEditor
-                  value={el.content || ''}
-                  onChange={(newContent) => updateElementContent(el.id, newContent)}
-                  placeholder="Apply Now"
-                  className="text-2xl font-bold text-foreground inline-block"
-                  elementType="heading"
-                  elementId={el.id}
-                />
-              </div>
-            );
-          }
-          if (el.type === 'text') {
-            return (
-              <div key={el.id} className="block mt-2">
-                <InlineTextEditor
-                  value={el.content || ''}
-                  onChange={(newContent) => updateElementContent(el.id, newContent)}
-                  placeholder="Answer a few quick questions..."
-                  className="text-sm text-muted-foreground inline-block"
-                  elementType="text"
-                  elementId={el.id}
-                />
-              </div>
-            );
-          }
-          if (el.type === 'button') {
-            return (
-              <span 
-                key={el.id} 
-                className="inline-block mt-6 px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg font-medium text-sm transition-colors cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                {el.content || 'Start Application →'}
-              </span>
-            );
-          }
-          return null;
-        })
-      ) : (
-        <>
-          <h2 className="text-2xl font-bold text-foreground">Apply Now</h2>
-          <p className="text-sm text-muted-foreground mt-2">Answer a few quick questions to get started.</p>
-          <span className="inline-block mt-6 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium text-sm">
-            Start Application →
-          </span>
-        </>
-      )}
-    </div>
-  );
+  // ─────────────────────────────────────────────────────────
+  // Render "welcome" step using step.settings (single source of truth)
+  // This syncs with right panel edits - no more block.elements split
+  // ─────────────────────────────────────────────────────────
+  const renderWelcomeStep = () => {
+    const welcomeStep = steps.find(s => s.type === 'welcome');
+    const s = (welcomeStep as any)?.settings || {};
+    const stepId = welcomeStep?.id || '';
+
+    return (
+      <div className="text-center py-12 px-8">
+        {/* Heading – inline editable, reads from step.settings.title */}
+        <div className="block">
+          <InlineTextEditor
+            value={s.title || 'Apply Now'}
+            onChange={(content) => updateStepSetting(stepId, 'title', content)}
+            placeholder="Apply Now"
+            className="text-2xl font-bold text-foreground inline-block"
+            elementType="heading"
+            elementId={`step-${stepId}-title`}
+          />
+        </div>
+        {/* Subline – inline editable, reads from step.settings.description */}
+        <div className="block mt-2">
+          <InlineTextEditor
+            value={s.description || 'Answer a few quick questions to see if we are a good fit.'}
+            onChange={(content) => updateStepSetting(stepId, 'description', content)}
+            placeholder="Answer a few quick questions to see if we are a good fit."
+            className="text-sm text-muted-foreground inline-block"
+            elementType="text"
+            elementId={`step-${stepId}-desc`}
+          />
+        </div>
+        {/* CTA button – inline editable */}
+        <div className="block mt-6">
+          <InlineTextEditor
+            value={s.buttonText || 'Start Application →'}
+            onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
+            placeholder="Start Application →"
+            className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium text-sm"
+            elementType="text"
+            elementId={`step-${stepId}-btn`}
+          />
+        </div>
+      </div>
+    );
+  };
 
   // Question step - show question text, options/input, and continue button
   const renderQuestionStep = (step: ApplicationFlowStep) => {
@@ -219,9 +207,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
 
   // Render different layouts based on step type
   const renderStepContent = () => {
-    // If no step or welcome step: render block.elements (Apply Section)
+    // If no step or welcome step: render from step.settings (unified source of truth)
     if (!activeStep || activeStep.type === 'welcome') {
-      return renderWelcomeFromElements();
+      return renderWelcomeStep();
     }
     
     switch (activeStep.type) {
@@ -232,7 +220,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
       case 'ending':
         return renderEndingStep(activeStep);
       default:
-        return renderWelcomeFromElements();
+        return renderWelcomeStep();
     }
   };
 

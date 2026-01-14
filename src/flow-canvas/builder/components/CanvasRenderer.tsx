@@ -2294,7 +2294,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           isSelected={isSelected}
           onSelect={() => onSelect({ type: 'block', id: block.id, path: blockPath })}
           onUpdateBlock={(updates) => {
-            // Wire up element updates to propagate through the canvas
+            // Wire up element updates to propagate through the canvas (legacy)
             if (updates.elements && onUpdateElement) {
               updates.elements.forEach((newEl) => {
                 const oldEl = block.elements.find(e => e.id === newEl.id);
@@ -2304,8 +2304,9 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
               });
             }
             // Wire up props updates for step settings (bidirectional sync)
+            // This ensures canvas edits update the block.props which syncs with right panel
             if (updates.props && onUpdateBlock) {
-              onUpdateBlock(updates);
+              onUpdateBlock({ props: updates.props });
             }
           }}
           readOnly={readOnly}
