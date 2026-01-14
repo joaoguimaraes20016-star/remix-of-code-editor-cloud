@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Search, LayoutGrid, MousePointer, Quote, Package, Mail,
-  X, ArrowLeft, Layers, Square, Users, ChevronRight
+  X, ArrowLeft, Layers, Square, Users, ChevronRight, HelpCircle, ClipboardList
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
@@ -31,6 +31,47 @@ const sectionTemplates: SectionTemplate[] = [
       label: 'Section',
       elements: [],
       props: {},
+    }),
+  },
+  {
+    id: 'single-question',
+    label: 'Single Question',
+    icon: <HelpCircle size={18} />,
+    description: 'One question per screen — Typeform style',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Question',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What is your biggest challenge?', props: { level: 2 } },
+        { id: generateId(), type: 'radio', content: 'Option A', props: { name: 'question', value: 'a' } },
+        { id: generateId(), type: 'radio', content: 'Option B', props: { name: 'question', value: 'b' } },
+        { id: generateId(), type: 'radio', content: 'Option C', props: { name: 'question', value: 'c' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', size: 'lg' } },
+      ],
+      props: { trackingId: '' },
+    }),
+  },
+  {
+    id: 'application-form',
+    label: 'Application Form',
+    icon: <ClipboardList size={18} />,
+    description: 'Multi-step qualifying questions',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Application Form',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Apply Now', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Full Name', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true } },
+        { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
+        { id: generateId(), type: 'text', content: 'Phone', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: '+1 (555) 000-0000', required: false } },
+        { id: generateId(), type: 'button', content: 'Submit Application', props: { variant: 'primary', size: 'lg' } },
+      ],
+      props: { trackingId: '' },
     }),
   },
   {
@@ -189,7 +230,7 @@ export const SectionPickerPanel: React.FC<SectionPickerPanelProps> = ({
           Section Templates
         </div>
         <div className="text-xs text-builder-text-muted">
-          Sections define purpose — capture, qualify, persuade, or schedule.
+          Each section = one question or action. Keep it focused.
         </div>
       </div>
 

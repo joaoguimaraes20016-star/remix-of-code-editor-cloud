@@ -74,6 +74,15 @@ export interface FunnelSettings {
   facebook_pixel_id?: string;
   facebookPixelId?: string; // alias
   
+  // Pop-Up Opt-In Gate
+  popup_optin_enabled?: boolean;
+  popup_optin_headline?: string;
+  popup_optin_subtext?: string;
+  popup_optin_fields?: ('name' | 'email' | 'phone')[];
+  popup_optin_button_text?: string;
+  popup_optin_require_phone?: boolean;
+  popup_optin_require_name?: boolean;
+  
   // Allow additional properties
   [key: string]: unknown;
 }

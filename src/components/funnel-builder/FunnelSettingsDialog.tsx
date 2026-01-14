@@ -11,8 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { 
   Plus, Trash2, Zap, Link2, TestTube, CheckCircle, AlertCircle, 
   Image, Palette, BarChart3, Share2, Globe, Archive, Settings2,
-  Check, Upload, ExternalLink
+  Check, Upload, ExternalLink, Lock, Mail, Phone, User
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ interface FunnelSettingsDialogProps {
   onSave: () => void;
 }
 
-type SettingsSection = 'overview' | 'social' | 'favicon' | 'logo' | 'colors' | 'progress' | 'tracking' | 'integrations' | 'archive';
+type SettingsSection = 'overview' | 'social' | 'favicon' | 'logo' | 'colors' | 'progress' | 'popup-gate' | 'tracking' | 'integrations' | 'archive';
 
 const sidebarItems: { id: SettingsSection; label: string; icon: React.ReactNode; danger?: boolean }[] = [
   { id: 'overview', label: 'Overview', icon: <Settings2 className="w-4 h-4" /> },
@@ -41,6 +42,7 @@ const sidebarItems: { id: SettingsSection; label: string; icon: React.ReactNode;
   { id: 'logo', label: 'Logo', icon: <Image className="w-4 h-4" /> },
   { id: 'colors', label: 'Colors & Style', icon: <Palette className="w-4 h-4" /> },
   { id: 'progress', label: 'Progress bar', icon: <BarChart3 className="w-4 h-4" /> },
+  { id: 'popup-gate', label: 'Pop-Up Gate', icon: <Lock className="w-4 h-4" /> },
   { id: 'tracking', label: 'Tracking', icon: <BarChart3 className="w-4 h-4" /> },
   { id: 'integrations', label: 'Integrations', icon: <Link2 className="w-4 h-4" /> },
   { id: 'archive', label: 'Archive funnel', icon: <Archive className="w-4 h-4" />, danger: true },
@@ -545,6 +547,183 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                 </p>
               </button>
             </div>
+          </div>
+        );
+
+      case 'popup-gate':
+        const popupFields = (settings.popup_optin_fields || ['email']) as ('name' | 'email' | 'phone')[];
+        const toggleField = (field: 'name' | 'email' | 'phone') => {
+          const current = [...popupFields];
+          const index = current.indexOf(field);
+          if (index > -1) {
+            // Can't remove email - it's always required
+            if (field === 'email') return;
+            current.splice(index, 1);
+          } else {
+            current.push(field);
+          }
+          updateSetting('popup_optin_fields', current);
+        };
+        
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Pop-Up Opt-In Gate</h3>
+              <p className="text-sm text-muted-foreground">
+                Require visitors to enter their details before viewing funnel content
+              </p>
+            </div>
+
+            {/* Enable Toggle */}
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-0.5">
+                <Label className="text-base font-medium">Enable Pop-Up Gate</Label>
+                <p className="text-sm text-muted-foreground">
+                  Show opt-in form before funnel loads
+                </p>
+              </div>
+              <Switch
+                checked={settings.popup_optin_enabled || false}
+                onCheckedChange={(checked) => updateSetting('popup_optin_enabled', checked)}
+              />
+            </div>
+
+            {/* Settings (only show when enabled) */}
+            {settings.popup_optin_enabled && (
+              <div className="space-y-5 p-4 border rounded-lg bg-muted/30">
+                {/* Headline */}
+                <div className="space-y-2">
+                  <Label>Headline</Label>
+                  <Input
+                    value={settings.popup_optin_headline || ''}
+                    onChange={(e) => updateSetting('popup_optin_headline', e.target.value || null)}
+                    placeholder="Before we begin..."
+                  />
+                </div>
+
+                {/* Subtext */}
+                <div className="space-y-2">
+                  <Label>Subtext</Label>
+                  <Input
+                    value={settings.popup_optin_subtext || ''}
+                    onChange={(e) => updateSetting('popup_optin_subtext', e.target.value || null)}
+                    placeholder="Enter your details to continue"
+                  />
+                </div>
+
+                {/* Fields to collect */}
+                <div className="space-y-3">
+                  <Label>Fields to collect</Label>
+                  <div className="space-y-3">
+                    {/* Name */}
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="field-name"
+                          checked={popupFields.includes('name')}
+                          onCheckedChange={() => toggleField('name')}
+                        />
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                          <Label htmlFor="field-name" className="cursor-pointer">Name</Label>
+                        </div>
+                      </div>
+                      {popupFields.includes('name') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Required</span>
+                          <Switch
+                            checked={settings.popup_optin_require_name || false}
+                            onCheckedChange={(checked) => updateSetting('popup_optin_require_name', checked)}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Email */}
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <Checkbox id="field-email" checked disabled />
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <Label htmlFor="field-email" className="cursor-pointer">Email</Label>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Always required</span>
+                    </div>
+
+                    {/* Phone */}
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="field-phone"
+                          checked={popupFields.includes('phone')}
+                          onCheckedChange={() => toggleField('phone')}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-muted-foreground" />
+                          <Label htmlFor="field-phone" className="cursor-pointer">Phone</Label>
+                        </div>
+                      </div>
+                      {popupFields.includes('phone') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Required</span>
+                          <Switch
+                            checked={settings.popup_optin_require_phone || false}
+                            onCheckedChange={(checked) => updateSetting('popup_optin_require_phone', checked)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Button Text */}
+                <div className="space-y-2">
+                  <Label>Button Text</Label>
+                  <Input
+                    value={settings.popup_optin_button_text || ''}
+                    onChange={(e) => updateSetting('popup_optin_button_text', e.target.value || null)}
+                    placeholder="Continue"
+                  />
+                </div>
+
+                {/* Preview */}
+                <div className="pt-4 border-t">
+                  <Label className="text-xs text-muted-foreground">Preview</Label>
+                  <div className="mt-2 border rounded-lg overflow-hidden bg-background p-4">
+                    <div className="text-center">
+                      <p className="font-semibold">
+                        {settings.popup_optin_headline || 'Before we begin...'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {settings.popup_optin_subtext || 'Enter your details to continue'}
+                      </p>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {popupFields.includes('name') && (
+                        <div className="h-8 bg-muted rounded flex items-center px-3 text-xs text-muted-foreground">
+                          Name {settings.popup_optin_require_name && '*'}
+                        </div>
+                      )}
+                      <div className="h-8 bg-muted rounded flex items-center px-3 text-xs text-muted-foreground">
+                        Email *
+                      </div>
+                      {popupFields.includes('phone') && (
+                        <div className="h-8 bg-muted rounded flex items-center px-3 text-xs text-muted-foreground">
+                          Phone {settings.popup_optin_require_phone && '*'}
+                        </div>
+                      )}
+                      <div 
+                        className="h-9 rounded flex items-center justify-center text-xs font-medium text-white"
+                        style={{ backgroundColor: settings.primary_color || '#8B5CF6' }}
+                      >
+                        {settings.popup_optin_button_text || 'Continue'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 
