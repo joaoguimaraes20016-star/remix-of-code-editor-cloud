@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { 
-  Plus, Search, Type, Image, MousePointer, LayoutGrid, Sparkles,
-  Minus, Square, ChevronRight, Award, Quote, Users, HelpCircle,
-  ListChecks, Calendar, Mail, ChevronDown, Upload, Video,
-  FileText, Link, Star, Package, Zap, X, ArrowLeft, Layers
+  Plus, Search, Type, Image, MousePointer, 
+  Mail, Phone, User, UserCheck, ChevronRight, 
+  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
 const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -22,11 +20,11 @@ interface BlockTemplate {
   template: () => Block;
 }
 
-interface SectionCategory {
+interface BlockCategory {
   id: string;
   label: string;
-  icon: React.ReactNode;
-  templates: BlockTemplate[];
+  hint?: string;
+  blocks: BlockTemplate[];
 }
 
 type AddMode = 'block' | 'section';
@@ -41,9 +39,158 @@ interface BlockPickerPanelProps {
 
 type ActiveTab = 'blocks' | 'sections';
 
-// ============ BASIC BLOCKS (Single Elements) ============
+// ============ QUESTIONS & CAPTURE BLOCKS ============
 
-const basicBlocks: BlockTemplate[] = [
+const captureBlocks: BlockTemplate[] = [
+  {
+    type: 'form-field',
+    label: 'Open Question',
+    icon: <Type size={16} />,
+    description: 'Text answer — type response + Enter ↵',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Open Question',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What is your biggest challenge right now?', props: { level: 3 } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Type your answer...', required: true, fieldKey: 'challenge' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+      ],
+      props: { trackingId: '', intent: 'qualify' },
+    }),
+  },
+  {
+    type: 'form-field',
+    label: 'Multiple Choice',
+    icon: <ListChecks size={16} />,
+    description: 'Select all that apply — checkboxes',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Multiple Choice',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What are you looking for? (Select all)', props: { level: 3 } },
+        { id: generateId(), type: 'checkbox', content: 'More leads', props: { name: 'goals', value: 'leads' } },
+        { id: generateId(), type: 'checkbox', content: 'Higher conversions', props: { name: 'goals', value: 'conversions' } },
+        { id: generateId(), type: 'checkbox', content: 'Better retention', props: { name: 'goals', value: 'retention' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+      ],
+      props: { trackingId: '', intent: 'qualify' },
+    }),
+  },
+  {
+    type: 'form-field',
+    label: 'Single Choice',
+    icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
+    description: 'Pick one option — click to select',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Single Choice',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What best describes you?', props: { level: 3 } },
+        { id: generateId(), type: 'radio', content: 'Just getting started', props: { name: 'stage', value: 'beginner' } },
+        { id: generateId(), type: 'radio', content: 'Growing my business', props: { name: 'stage', value: 'growing' } },
+        { id: generateId(), type: 'radio', content: 'Scaling to 7+ figures', props: { name: 'stage', value: 'scaling' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+      ],
+      props: { trackingId: '', intent: 'qualify' },
+    }),
+  },
+  {
+    type: 'form-field',
+    label: 'Email Capture',
+    icon: <Mail size={16} />,
+    description: 'Capture email address',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Email Capture',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What is your email?', props: { level: 3 } },
+        { id: generateId(), type: 'text', content: 'We\'ll send your results here.', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
+  },
+  {
+    type: 'form-field',
+    label: 'Phone Capture',
+    icon: <Phone size={16} />,
+    description: 'Capture phone number',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Phone Capture',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What is your phone number?', props: { level: 3 } },
+        { id: generateId(), type: 'text', content: 'For important updates only.', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: '+1 (555) 000-0000', required: true, fieldKey: 'phone', icon: 'phone' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
+  },
+  {
+    type: 'form-field',
+    label: 'Name Capture',
+    icon: <User size={16} />,
+    description: 'Capture full name',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Name Capture',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What is your name?', props: { level: 3 } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your full name', required: true, fieldKey: 'name', icon: 'user' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
+  },
+  {
+    type: 'form-field',
+    label: 'Full Opt-In',
+    icon: <UserCheck size={16} />,
+    description: 'Name + email + phone capture',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Full Opt-In',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Complete your application', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Enter your details to continue.', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'text', content: 'Full Name', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true, fieldKey: 'name', icon: 'user' } },
+        { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
+        { id: generateId(), type: 'text', content: 'Phone', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: '+1 (555) 000-0000', required: false, fieldKey: 'phone', icon: 'phone' } },
+        { id: generateId(), type: 'button', content: 'Submit Application', props: { variant: 'primary', size: 'lg' } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
+  },
+];
+
+// ============ CONTENT & MEDIA BLOCKS ============
+
+const contentBlocks: BlockTemplate[] = [
+  {
+    type: 'heading',
+    label: 'Heading',
+    icon: <FileText size={16} />,
+    description: 'Question or section title',
+    template: () => ({
+      id: generateId(),
+      type: 'text-block',
+      label: 'Heading',
+      elements: [{ id: generateId(), type: 'heading', content: 'Your main headline', props: { level: 2 } }],
+      props: {},
+    }),
+  },
   {
     type: 'text-block',
     label: 'Text',
@@ -53,20 +200,7 @@ const basicBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'text-block',
       label: 'Text',
-      elements: [{ id: generateId(), type: 'text', content: 'Your supporting text', props: {} }],
-      props: {},
-    }),
-  },
-  {
-    type: 'heading',
-    label: 'Heading',
-    icon: <FileText size={16} />,
-    description: 'Question headline — What is your biggest challenge?',
-    template: () => ({
-      id: generateId(),
-      type: 'text-block',
-      label: 'Heading',
-      elements: [{ id: generateId(), type: 'heading', content: 'Your main headline', props: { level: 2 } }],
+      elements: [{ id: generateId(), type: 'text', content: 'Your supporting text goes here. Keep it short and persuasive.', props: {} }],
       props: {},
     }),
   },
@@ -96,293 +230,127 @@ const basicBlocks: BlockTemplate[] = [
       props: { aspectRatio: '16:9' },
     }),
   },
+];
+
+// ============ ACTION BLOCKS ============
+
+const actionBlocks: BlockTemplate[] = [
   {
     type: 'cta',
-    label: 'Button',
+    label: 'Submit Button',
     icon: <MousePointer size={16} />,
-    description: 'Next Question / Submit — drives the flow forward',
+    description: 'Next question or submit form',
     template: () => ({
       id: generateId(),
       type: 'cta',
       label: 'Button',
-      elements: [{ id: generateId(), type: 'button', content: 'Click Here', props: { variant: 'primary' } }],
+      elements: [{ id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } }],
       props: { action: 'next-step', href: '' },
     }),
   },
   {
-    type: 'link',
-    label: 'Link',
-    icon: <Link size={16} />,
-    description: 'Text link',
+    type: 'booking',
+    label: 'Book a Call',
+    icon: <Calendar size={16} />,
+    description: 'Calendly or scheduling embed',
     template: () => ({
       id: generateId(),
-      type: 'text-block',
-      label: 'Link',
-      elements: [{ id: generateId(), type: 'link', content: 'Learn more', props: { href: '#' } }],
-      props: {},
-    }),
-  },
-  {
-    type: 'spacer',
-    label: 'Spacer',
-    icon: <Minus size={16} />,
-    description: 'Vertical space',
-    template: () => ({
-      id: generateId(),
-      type: 'spacer',
-      label: 'Spacer',
-      elements: [],
-      props: { height: 32 },
-    }),
-  },
-  {
-    type: 'divider',
-    label: 'Divider',
-    icon: <Minus size={16} className="rotate-90" />,
-    description: 'Horizontal line',
-    template: () => ({
-      id: generateId(),
-      type: 'divider',
-      label: 'Divider',
-      elements: [],
-      props: { style: 'solid', color: 'border' },
+      type: 'booking',
+      label: 'Book a Call',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Schedule Your Call', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Pick a time that works best for you.', props: { variant: 'subtext' } },
+      ],
+      props: { calendlyUrl: '', intent: 'schedule' },
     }),
   },
 ];
 
-// ============ INTERACTIVE BLOCKS (Form Elements) ============
+// ============ BLOCK CATEGORIES ============
 
-const interactiveBlocks: BlockTemplate[] = [
+const blockCategories: BlockCategory[] = [
   {
-    type: 'form-field',
-    label: 'Text Input',
-    icon: <Type size={16} />,
-    description: 'Open answer — type your response + Enter ↵',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Text Input',
-      elements: [
-        { id: generateId(), type: 'text', content: 'Enter your email', props: { variant: 'label' } },
-        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
-      ],
-      props: { trackingId: '' },
-    }),
+    id: 'capture',
+    label: 'Questions & Capture',
+    hint: 'One question per section converts 2-3x better',
+    blocks: captureBlocks,
   },
   {
-    type: 'form-field',
-    label: 'Multiple Choice',
-    icon: <ListChecks size={16} />,
-    description: 'Select all that apply — checkboxes',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Multiple Choice',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Select all that apply:', props: { level: 3 } },
-        { id: generateId(), type: 'checkbox', content: 'Option A', props: { name: 'choice', value: 'a' } },
-        { id: generateId(), type: 'checkbox', content: 'Option B', props: { name: 'choice', value: 'b' } },
-        { id: generateId(), type: 'checkbox', content: 'Option C', props: { name: 'choice', value: 'c' } },
-      ],
-      props: { trackingId: '', required: false },
-    }),
+    id: 'content',
+    label: 'Content & Media',
+    blocks: contentBlocks,
   },
   {
-    type: 'form-field',
-    label: 'Single Choice',
-    icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
-    description: 'A/B/C options — click to select, Enter ↵ to continue',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Single Choice',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'Choose one option:', props: { level: 3 } },
-        { id: generateId(), type: 'radio', content: 'Option A', props: { name: 'single_choice', value: 'a' } },
-        { id: generateId(), type: 'radio', content: 'Option B', props: { name: 'single_choice', value: 'b' } },
-        { id: generateId(), type: 'radio', content: 'Option C', props: { name: 'single_choice', value: 'c' } },
-      ],
-      props: { trackingId: '', required: true },
-    }),
-  },
-  {
-    type: 'form-field',
-    label: 'Dropdown',
-    icon: <ChevronDown size={16} />,
-    description: 'Dropdown — qualify with options',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Dropdown',
-      elements: [
-        { id: generateId(), type: 'text', content: 'Choose an option', props: { variant: 'label' } },
-        { id: generateId(), type: 'select', content: '', props: { options: ['Option 1', 'Option 2', 'Option 3'], placeholder: 'Select...' } },
-      ],
-      props: { trackingId: '' },
-    }),
-  },
-  {
-    type: 'form-field',
-    label: 'File Upload',
-    icon: <Upload size={16} />,
-    description: 'File upload — collect documents',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'File Upload',
-      elements: [
-        { id: generateId(), type: 'text', content: 'Upload your file', props: { variant: 'label' } },
-        { id: generateId(), type: 'input', content: '', props: { type: 'file', accept: '.pdf,.doc,.docx,.jpg,.png', multiple: false } },
-      ],
-      props: { trackingId: '', maxSize: '10MB', allowedTypes: ['pdf', 'doc', 'jpg', 'png'] },
-    }),
+    id: 'actions',
+    label: 'Actions',
+    blocks: actionBlocks,
   },
 ];
 
-// ============ SECTION TEMPLATES ============
+// ============ SECTION TEMPLATES FOR TAB ============
 
-const sectionCategories: SectionCategory[] = [
+const sectionTemplates: BlockTemplate[] = [
   {
-    id: 'hero',
-    label: 'Hero',
-    icon: <LayoutGrid size={16} />,
-    templates: [
-      {
-        type: 'hero',
-        label: 'Simple Hero',
-        icon: <LayoutGrid size={16} />,
-        description: 'Title + subtitle + CTA',
-        template: () => ({
-          id: generateId(),
-          type: 'hero',
-          label: 'Hero Section',
-          elements: [
-            { id: generateId(), type: 'heading', content: 'Welcome to Our Platform', props: { level: 1 } },
-            { id: generateId(), type: 'text', content: 'Discover how we can help you achieve your goals faster than ever before.', props: {} },
-            { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg' } },
-          ],
-          props: { alignment: 'center' },
-        }),
-      },
-      {
-        type: 'hero',
-        label: 'Hero with Image',
-        icon: <LayoutGrid size={16} />,
-        description: 'Hero + media',
-        template: () => ({
-          id: generateId(),
-          type: 'hero',
-          label: 'Hero with Image',
-          elements: [
-            { id: generateId(), type: 'heading', content: 'Transform Your Business', props: { level: 1 } },
-            { id: generateId(), type: 'text', content: 'Join thousands of companies already using our platform.', props: {} },
-            { id: generateId(), type: 'image', content: '', props: { alt: 'Hero image', src: '' } },
-            { id: generateId(), type: 'button', content: 'Start Free Trial', props: { variant: 'primary', size: 'lg' } },
-          ],
-          props: { alignment: 'center' },
-        }),
-      },
-    ],
+    type: 'form-field',
+    label: 'Single Question',
+    icon: <HelpCircle size={16} />,
+    description: 'One question per screen',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Question',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What is your biggest challenge?', props: { level: 2 } },
+        { id: generateId(), type: 'radio', content: 'Not enough leads', props: { name: 'challenge', value: 'leads' } },
+        { id: generateId(), type: 'radio', content: 'Low conversions', props: { name: 'challenge', value: 'conversions' } },
+        { id: generateId(), type: 'radio', content: 'Can\'t scale', props: { name: 'challenge', value: 'scale' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', size: 'lg' } },
+      ],
+      props: { trackingId: '', intent: 'qualify' },
+    }),
   },
   {
-    id: 'cta',
-    label: 'Call to Action',
-    icon: <MousePointer size={16} />,
-    templates: [
-      {
-        type: 'cta-section',
-        label: 'Simple CTA',
-        icon: <MousePointer size={16} />,
-        description: 'Text + button',
-        template: () => ({
-          id: generateId(),
-          type: 'cta',
-          label: 'Call to Action',
-          elements: [
-            { id: generateId(), type: 'heading', content: 'Ready to get started?', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'Take the first step towards your goals today.', props: {} },
-            { id: generateId(), type: 'button', content: 'Get Started Now', props: { variant: 'primary', size: 'lg' } },
-          ],
-          props: { action: 'next-step' },
-        }),
-      },
-    ],
+    type: 'form-field',
+    label: 'Opt-In Form',
+    icon: <UserCheck size={16} />,
+    description: 'Name, email & phone capture',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Opt-In Form',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Get Instant Access', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Enter your details below.', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'text', content: 'Name', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true, fieldKey: 'name', icon: 'user' } },
+        { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
+        { id: generateId(), type: 'button', content: 'Get Access', props: { variant: 'primary', size: 'lg' } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
   },
   {
-    id: 'testimonials',
-    label: 'Testimonials',
-    icon: <Quote size={16} />,
-    templates: [
-      {
-        type: 'testimonial',
-        label: 'Single Testimonial',
-        icon: <Quote size={16} />,
-        description: 'Customer quote',
-        template: () => ({
-          id: generateId(),
-          type: 'testimonial',
-          label: 'Testimonial',
-          elements: [
-            { id: generateId(), type: 'text', content: '"This product changed my life! Highly recommend to everyone."', props: {} },
-            { id: generateId(), type: 'text', content: '— Sarah Johnson, CEO', props: { variant: 'caption' } },
-          ],
-          props: { rating: 5, avatar: '' },
-        }),
-      },
-    ],
-  },
-  {
-    id: 'features',
-    label: 'Features',
-    icon: <Package size={16} />,
-    templates: [
-      {
-        type: 'feature',
-        label: 'Features Grid',
-        icon: <Package size={16} />,
-        description: '3 feature cards',
-        template: () => ({
-          id: generateId(),
-          type: 'feature',
-          label: 'Features Grid',
-          elements: [
-            { id: generateId(), type: 'heading', content: 'Why Choose Us', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: '🚀 Fast & Reliable', props: { variant: 'feature' } },
-            { id: generateId(), type: 'text', content: 'Lightning-fast performance with 99.9% uptime', props: {} },
-            { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'feature' } },
-            { id: generateId(), type: 'text', content: 'Enterprise-grade security for your data', props: {} },
-          ],
-          props: { columns: 3 },
-        }),
-      },
-    ],
-  },
-  {
-    id: 'contact',
-    label: 'Contact',
-    icon: <Mail size={16} />,
-    templates: [
-      {
-        type: 'contact',
-        label: 'Contact Form',
-        icon: <Mail size={16} />,
-        description: 'Contact form — primary capture',
-        template: () => ({
-          id: generateId(),
-          type: 'form-field',
-          label: 'Contact Form',
-          elements: [
-            { id: generateId(), type: 'heading', content: 'Get in Touch', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'Name', props: { variant: 'label' } },
-            { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true } },
-            { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
-            { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true } },
-            { id: generateId(), type: 'button', content: 'Send Message', props: { variant: 'primary', size: 'lg' } },
-          ],
-          props: { trackingId: '' },
-        }),
-      },
-    ],
+    type: 'form-field',
+    label: 'Application Form',
+    icon: <FileText size={16} />,
+    description: 'Multi-field qualification',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Application Form',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Apply Now', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Full Name', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true, fieldKey: 'name', icon: 'user' } },
+        { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
+        { id: generateId(), type: 'text', content: 'Phone', props: { variant: 'label' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: '+1 (555) 000-0000', required: false, fieldKey: 'phone', icon: 'phone' } },
+        { id: generateId(), type: 'button', content: 'Submit Application', props: { variant: 'primary', size: 'lg' } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
   },
 ];
 
@@ -395,14 +363,14 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   hideSecionsTab = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('blocks');
 
   // All templates for search
   const allTemplates = [
-    ...basicBlocks.map(b => ({ ...b, isSection: false })),
-    ...interactiveBlocks.map(b => ({ ...b, isSection: false })),
-    ...sectionCategories.flatMap(cat => cat.templates.map(t => ({ ...t, isSection: true }))),
+    ...captureBlocks.map(b => ({ ...b, isSection: false })),
+    ...contentBlocks.map(b => ({ ...b, isSection: false })),
+    ...actionBlocks.map(b => ({ ...b, isSection: false })),
+    ...sectionTemplates.map(t => ({ ...t, isSection: true })),
   ];
 
   const filteredResults = searchQuery.length > 0
@@ -518,97 +486,72 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
             )}
           </div>
         ) : activeTab === 'blocks' ? (
-          // Blocks Tab Content
-          <div className="p-2 pb-20 space-y-0.5">
-            {/* Quick Add - Basic Blocks Grid */}
-            <div className="pb-2 mb-2 border-b border-builder-border-subtle">
-              <div className="px-1 pb-2">
-                <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Quick Add</span>
+          // Blocks Tab Content - Categorized
+          <div className="p-2 pb-20 space-y-4">
+            {blockCategories.map((category) => (
+              <div key={category.id}>
+                {/* Category Header */}
+                <div className="px-1 pb-2">
+                  <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">
+                    {category.label}
+                  </span>
+                  {category.hint && (
+                    <p className="text-[10px] text-builder-accent mt-0.5">{category.hint}</p>
+                  )}
+                </div>
+                
+                {/* Block List */}
+                <div className="space-y-0.5">
+                  {category.blocks.map((block) => (
+                    <button
+                      key={block.label}
+                      onClick={() => handleAddBlock(block, false)}
+                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
+                        {block.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-builder-text">{block.label}</div>
+                        <div className="text-[11px] text-builder-text-dim">{block.description}</div>
+                      </div>
+                      <ChevronRight size={14} className="text-builder-text-dim group-hover:text-builder-text-muted transition-colors" />
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-4 gap-1">
-                {basicBlocks.slice(0, 8).map((block) => (
-                  <button
-                    key={block.label}
-                    onClick={() => handleAddBlock(block, false)}
-                    className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-builder-surface-hover transition-colors group"
-                    title={block.description}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
-                      {block.icon}
-                    </div>
-                    <span className="text-[10px] text-builder-text-muted group-hover:text-builder-text transition-colors">{block.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Interactive Blocks */}
-            <div className="pb-2">
-              <div className="px-1 pb-2">
-                <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Lead Capture</span>
-              </div>
-              <div className="space-y-0.5">
-                {interactiveBlocks.map((block) => (
-                  <button
-                    key={block.label}
-                    onClick={() => handleAddBlock(block, false)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-builder-surface-hover transition-colors text-left"
-                  >
-                    <div className="w-6 h-6 rounded flex items-center justify-center text-builder-text-muted">
-                      {block.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-builder-text">{block.label}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         ) : (
           // Sections Tab Content
-          <div className="p-2 pb-20 space-y-0.5">
+          <div className="p-2 pb-20">
             <div className="px-1 pb-2">
-              <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Section Templates</span>
+              <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">
+                Section Templates
+              </span>
+              <p className="text-xs text-builder-text-muted mt-1">
+                Each section = one question or capture. Keep it focused.
+              </p>
             </div>
-            <p className="px-2 pb-3 text-xs text-builder-text-dim">
-              Each section serves a purpose — capture leads, build trust, or drive action.
-            </p>
-            {sectionCategories.map((category) => (
-              <Collapsible
-                key={category.id}
-                open={expandedCategory === category.id}
-                onOpenChange={(open) => setExpandedCategory(open ? category.id : null)}
-              >
-                <CollapsibleTrigger className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-builder-surface-hover transition-colors">
-                  <div className="w-6 h-6 rounded flex items-center justify-center text-builder-text-muted">
-                    {category.icon}
+            
+            <div className="space-y-0.5 mt-2">
+              {sectionTemplates.map((template, idx) => (
+                <button
+                  key={`${template.type}-${idx}`}
+                  onClick={() => handleAddBlock(template, true)}
+                  className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
+                    {template.icon}
                   </div>
-                  <span className="flex-1 text-left text-sm font-medium text-builder-text">{category.label}</span>
-                  <ChevronRight 
-                    size={14} 
-                    className={cn(
-                      "text-builder-text-dim transition-transform duration-200",
-                      expandedCategory === category.id && "rotate-90"
-                    )}
-                  />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="ml-4 pl-4 border-l border-builder-border-subtle space-y-0.5 py-1">
-                    {category.templates.map((template, idx) => (
-                      <button
-                        key={`${template.type}-${idx}`}
-                        onClick={() => handleAddBlock(template, true)}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-builder-surface-hover transition-colors text-left"
-                      >
-                        <div className="text-xs font-medium text-builder-text">{template.label}</div>
-                        <div className="text-[10px] text-builder-text-dim">{template.description}</div>
-                      </button>
-                    ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-builder-text">{template.label}</div>
+                    <div className="text-[11px] text-builder-text-dim">{template.description}</div>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            ))}
+                  <ChevronRight size={14} className="text-builder-text-dim group-hover:text-builder-text-muted transition-colors" />
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
