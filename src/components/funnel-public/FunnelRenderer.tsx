@@ -24,7 +24,9 @@ interface FunnelStep {
 interface FunnelSettings {
   logo_url?: string;
   primary_color: string;
+  primaryColor?: string; // alias
   background_color: string;
+  backgroundColor?: string; // alias
   button_text: string;
   ghl_webhook_url?: string;
   // Pixel Tracking
@@ -34,6 +36,14 @@ interface FunnelSettings {
   tiktok_pixel_id?: string;
   // Display settings
   show_progress_bar?: boolean;
+  // Pop-up Opt-In Gate
+  popup_optin_enabled?: boolean;
+  popup_optin_headline?: string;
+  popup_optin_subtext?: string;
+  popup_optin_fields?: ('name' | 'email' | 'phone')[];
+  popup_optin_button_text?: string;
+  popup_optin_require_phone?: boolean;
+  popup_optin_require_name?: boolean;
 }
 
 interface Funnel {
@@ -58,6 +68,9 @@ interface FunnelRendererProps {
   utmCampaign?: string | null;
 }
 
+// Lazy import PopupOptInGate to avoid circular deps
+import { PopupOptInGate } from './PopupOptInGate';
+
 export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaign }: FunnelRendererProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -67,6 +80,10 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const [teamCalendlySettings, setTeamCalendlySettings] = useState<TeamCalendlySettings | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
+  
+  // Pop-up opt-in gate state
+  const [showPopupGate, setShowPopupGate] = useState(false);
+  const [popupGateData, setPopupGateData] = useState<{ name?: string; email?: string; phone?: string } | null>(null);
 
   const calendlyBookingRef = useRef<CalendlyBookingData | null>(null);
   const pendingSaveRef = useRef(false);
@@ -106,6 +123,36 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
 
     fetchTeamCalendlySettings();
   }, [funnel.team_id]);
+
+  // Check if popup gate should be shown on mount
+  useEffect(() => {
+    if (funnel.settings.popup_optin_enabled) {
+      const storageKey = `popup_optin_${funnel.id}_submitted`;
+      const alreadySubmitted = localStorage.getItem(storageKey);
+      if (!alreadySubmitted) {
+        setShowPopupGate(true);
+      }
+    }
+  }, [funnel.id, funnel.settings.popup_optin_enabled]);
+
+  // Handle popup gate submission
+  const handlePopupGateSubmit = useCallback((data: { name?: string; email?: string; phone?: string }) => {
+    const storageKey = `popup_optin_${funnel.id}_submitted`;
+    localStorage.setItem(storageKey, 'true');
+    setPopupGateData(data);
+    setShowPopupGate(false);
+    
+    // Merge popup data into answers for final lead submission
+    setAnswers(prev => ({
+      ...prev,
+      popup_gate: {
+        value: data,
+        step_type: 'popup_gate',
+      }
+    }));
+    
+    console.log('[PopupOptInGate] Submitted:', data);
+  }, [funnel.id]);
 
   const currentStep = steps[currentStepIndex] ?? null;
   const isLastStep = currentStepIndex === steps.length - 1;
@@ -926,68 +973,81 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   };
 
   return (
-    <div
-      className="min-h-screen w-full relative overflow-x-hidden overflow-y-auto"
-      style={{ backgroundColor: funnel.settings.background_color }}
-    >
-      {/* Logo */}
-      {funnel.settings.logo_url && (
-        <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10">
-          <img src={funnel.settings.logo_url} alt="Logo" className="h-6 md:h-8 w-auto object-contain" />
-        </div>
+    <>
+      {/* Pop-Up Opt-In Gate */}
+      {showPopupGate && (
+        <PopupOptInGate
+          settings={funnel.settings}
+          onSubmit={handlePopupGateSubmit}
+        />
       )}
-
-      {/* Progress Dots */}
-      {!isThankYouStep && (
-        <div className="absolute top-4 right-4 md:top-6 md:right-6 z-10">
-          <ProgressDots total={steps.length} current={currentStepIndex} primaryColor={funnel.settings.primary_color} />
-        </div>
-      )}
-
-      {/* Steps Container - scrollable on each step */}
-      <div className="min-h-screen w-full pt-16 md:pt-20 pb-8 relative">
-        {steps.map((step, index) => {
-          const backgroundStyle = getStepBackgroundStyle(step);
-          const backgroundImageStyle = getStepBackgroundImageStyle(step);
-          const backgroundOverlayStyle = getStepBackgroundOverlayStyle(step);
-
-          return (
-            <div
-              key={step.id}
-              className={cn(
-                "min-h-[calc(100vh-5rem)] w-full flex flex-col items-center justify-center py-4 md:py-8 px-4 md:px-6 transition-opacity transition-transform duration-500 ease-out",
-                index === currentStepIndex
-                  ? "relative opacity-100 translate-y-0 pointer-events-auto"
-                  : "absolute inset-0 opacity-0 translate-y-4 pointer-events-none",
-              )}
-              style={backgroundStyle}
-            >
-              {backgroundImageStyle && (
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={backgroundImageStyle}
-                />
-              )}
-              {backgroundOverlayStyle && (
-                <div
-                  className="absolute inset-0"
-                  style={backgroundOverlayStyle}
-                />
-              )}
-              <div className="w-full max-w-2xl mx-auto relative">
-                {renderStep(step, index === currentStepIndex, index)}
-              </div>
+      
+      {/* Main Funnel Content - only show when popup gate is dismissed */}
+      {!showPopupGate && (
+        <div
+          className="min-h-screen w-full relative overflow-x-hidden overflow-y-auto"
+          style={{ backgroundColor: funnel.settings.background_color }}
+        >
+          {/* Logo */}
+          {funnel.settings.logo_url && (
+            <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10">
+              <img src={funnel.settings.logo_url} alt="Logo" className="h-6 md:h-8 w-auto object-contain" />
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      {/* Loading overlay during submission */}
-      {isSubmitting && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          {/* Progress Dots */}
+          {!isThankYouStep && (
+            <div className="absolute top-4 right-4 md:top-6 md:right-6 z-10">
+              <ProgressDots total={steps.length} current={currentStepIndex} primaryColor={funnel.settings.primary_color} />
+            </div>
+          )}
+
+          {/* Steps Container - scrollable on each step */}
+          <div className="min-h-screen w-full pt-16 md:pt-20 pb-8 relative">
+            {steps.map((step, index) => {
+              const backgroundStyle = getStepBackgroundStyle(step);
+              const backgroundImageStyle = getStepBackgroundImageStyle(step);
+              const backgroundOverlayStyle = getStepBackgroundOverlayStyle(step);
+
+              return (
+                <div
+                  key={step.id}
+                  className={cn(
+                    "min-h-[calc(100vh-5rem)] w-full flex flex-col items-center justify-center py-4 md:py-8 px-4 md:px-6 transition-opacity transition-transform duration-500 ease-out",
+                    index === currentStepIndex
+                      ? "relative opacity-100 translate-y-0 pointer-events-auto"
+                      : "absolute inset-0 opacity-0 translate-y-4 pointer-events-none",
+                  )}
+                  style={backgroundStyle}
+                >
+                  {backgroundImageStyle && (
+                    <div
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={backgroundImageStyle}
+                    />
+                  )}
+                  {backgroundOverlayStyle && (
+                    <div
+                      className="absolute inset-0"
+                      style={backgroundOverlayStyle}
+                    />
+                  )}
+                  <div className="w-full max-w-2xl mx-auto relative">
+                    {renderStep(step, index === currentStepIndex, index)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Loading overlay during submission */}
+          {isSubmitting && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </>
   );
 }

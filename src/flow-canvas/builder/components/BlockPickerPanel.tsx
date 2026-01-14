@@ -48,7 +48,7 @@ const basicBlocks: BlockTemplate[] = [
     type: 'text-block',
     label: 'Text',
     icon: <Type size={16} />,
-    description: 'Paragraph text',
+    description: 'Paragraph or body copy',
     template: () => ({
       id: generateId(),
       type: 'text-block',
@@ -61,7 +61,7 @@ const basicBlocks: BlockTemplate[] = [
     type: 'heading',
     label: 'Heading',
     icon: <FileText size={16} />,
-    description: 'Title text',
+    description: 'Question headline — What is your biggest challenge?',
     template: () => ({
       id: generateId(),
       type: 'text-block',
@@ -100,7 +100,7 @@ const basicBlocks: BlockTemplate[] = [
     type: 'cta',
     label: 'Button',
     icon: <MousePointer size={16} />,
-    description: 'Call to action',
+    description: 'Next Question / Submit — drives the flow forward',
     template: () => ({
       id: generateId(),
       type: 'cta',
@@ -157,7 +157,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Text Input',
     icon: <Type size={16} />,
-    description: 'Free-form input — capture names, answers',
+    description: 'Open answer — type your response + Enter ↵',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -173,7 +173,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Multiple Choice',
     icon: <ListChecks size={16} />,
-    description: 'Multi-select — qualify & segment leads',
+    description: 'Select all that apply — checkboxes',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -191,7 +191,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Single Choice',
     icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
-    description: 'Single select — qualify leads fast',
+    description: 'A/B/C options — click to select, Enter ↵ to continue',
     template: () => ({
       id: generateId(),
       type: 'form-field',
