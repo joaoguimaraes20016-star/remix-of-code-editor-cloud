@@ -445,8 +445,8 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       {/* Content - Scrollable */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {searchQuery.length > 0 ? (
-          // Search Results
-          <div className="p-2">
+          // Search Results - add pb-20 for AI Copilot clearance
+          <div className="p-2 pb-20">
             {filteredResults.length === 0 ? (
               <div className="p-4 text-center text-builder-text-muted text-sm">
                 No results found
@@ -472,8 +472,8 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
             )}
           </div>
         ) : (
-          // Categories View
-          <div className="p-2 space-y-0.5">
+          // Categories View - add pb-20 for AI Copilot clearance
+          <div className="p-2 pb-20 space-y-0.5">
             {/* Quick Add - Basic Blocks Grid */}
             <div className="pb-2 mb-2 border-b border-builder-border-subtle">
               <div className="px-1 pb-2">
