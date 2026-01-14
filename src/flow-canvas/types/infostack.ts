@@ -50,11 +50,36 @@ export type BlockType =
 // Application Flow Step - for Typeform-style multi-step experiences
 export type ApplicationStepType = 'welcome' | 'question' | 'capture' | 'booking' | 'ending';
 
+// Question types for Application Flow
+export type QuestionType = 'multiple-choice' | 'text' | 'dropdown' | 'scale' | 'yes-no';
+
+// Settings for individual Application Flow steps
+export interface ApplicationFlowStepSettings {
+  title?: string;
+  description?: string;
+  buttonText?: string;
+  buttonColor?: string;
+  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary';
+  questionType?: QuestionType;
+  options?: string[];
+  required?: boolean;
+  placeholder?: string;
+  collectName?: boolean;
+  collectEmail?: boolean;
+  collectPhone?: boolean;
+  alignment?: 'left' | 'center' | 'right';
+  align?: 'left' | 'center' | 'right';
+  spacing?: 'compact' | 'normal' | 'relaxed';
+  inputStyle?: 'default' | 'minimal' | 'rounded' | 'square';
+  titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+}
+
 export interface ApplicationFlowStep {
   id: string;
   name: string;
   type: ApplicationStepType;
   elements: Element[];
+  settings?: ApplicationFlowStepSettings;
   navigation: {
     action: 'next' | 'go-to-step' | 'submit' | 'redirect';
     targetStepId?: string;

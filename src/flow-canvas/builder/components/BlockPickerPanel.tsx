@@ -5,7 +5,7 @@ import {
   HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow, Sparkles
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Block } from '@/flow-canvas/types/infostack';
+import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '@/flow-canvas/types/infostack';
 import { cn } from '@/lib/utils';
 import {
   Collapsible,
@@ -44,6 +44,12 @@ interface BlockPickerPanelProps {
   hideSecionsTab?: boolean;
   /** Which tab to start on */
   initialTab?: ActiveTab;
+  /** ID of the active Application Flow block (if one exists) */
+  activeApplicationFlowBlockId?: string | null;
+  /** Callback to add a step to existing Application Flow */
+  onAddApplicationFlowStep?: (step: ApplicationFlowStep) => void;
+  /** Callback to create a new Application Flow with an initial step */
+  onCreateApplicationFlowWithStep?: (step: ApplicationFlowStep) => void;
 }
 
 type ActiveTab = 'blocks' | 'sections';
@@ -500,7 +506,7 @@ const sectionCategories: SectionCategory[] = [
 
 interface CollapsibleCategoryProps {
   category: BlockCategory | SectionCategory;
-  onAddBlock: (template: BlockTemplate, isSection: boolean) => void;
+  onAddBlock: (template: BlockTemplate, isSection: boolean, categoryId?: string) => void;
   isSection?: boolean;
   onOpenCaptureFlowSelector?: () => void;
 }
@@ -571,7 +577,7 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
                 {blocks.map((block, idx) => (
                   <button
                     key={`${block.label}-${idx}`}
-                    onClick={() => onAddBlock(block, isSection)}
+                    onClick={() => onAddBlock(block, isSection, category.id)}
                     className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
                   >
                     <div className="w-7 h-7 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
@@ -600,20 +606,113 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   targetSectionId,
   hideSecionsTab = false,
   initialTab = 'blocks',
+  activeApplicationFlowBlockId,
+  onAddApplicationFlowStep,
+  onCreateApplicationFlowWithStep,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
   const [showCaptureFlowSelector, setShowCaptureFlowSelector] = useState(false);
 
+  // Categories that should add to Application Flow instead of standalone blocks
+  const APPLICATION_FLOW_CATEGORIES = ['questions', 'capture'];
+
+  // Convert block template to Application Flow step
+  const blockTemplateToFlowStep = (
+    blockLabel: string, 
+    blockType: string,
+    template: Block
+  ): ApplicationFlowStep => {
+    const id = `step-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Map form-field block types to Application Flow step types
+    if (blockType === 'form-field') {
+      const intent = template.props?.intent as string | undefined;
+      const hasInputs = template.elements.some(e => e.type === 'input');
+      const hasRadio = template.elements.some(e => e.type === 'radio');
+      const hasCheckbox = template.elements.some(e => e.type === 'checkbox');
+      
+      // Determine step type
+      let stepType: ApplicationStepType = 'question';
+      if (intent === 'capture' || blockLabel.includes('Email') || blockLabel.includes('Phone') || blockLabel.includes('Name')) {
+        stepType = 'capture';
+      }
+      
+      // Extract question type
+      let questionType: QuestionType | undefined;
+      if (hasRadio) questionType = 'multiple-choice';
+      else if (hasCheckbox) questionType = 'multiple-choice';
+      else if (hasInputs) questionType = 'text';
+      
+      // Extract title from heading element
+      const headingEl = template.elements.find(e => e.type === 'heading');
+      const title = headingEl?.content || blockLabel;
+      
+      // Extract description from text element (if any)
+      const textEl = template.elements.find(e => e.type === 'text');
+      const description = textEl?.content || '';
+      
+      // Extract options from radio/checkbox elements
+      const options = template.elements
+        .filter(e => e.type === 'radio' || e.type === 'checkbox')
+        .map(e => e.content);
+      
+      // Extract button text
+      const buttonEl = template.elements.find(e => e.type === 'button');
+      const buttonText = buttonEl?.content || 'Continue';
+      
+      // Build settings based on step type
+      const settings: ApplicationFlowStepSettings = {
+        title,
+        description: description || undefined,
+        buttonText,
+        buttonColor: '#18181b',
+        questionType,
+        options: options.length > 0 ? options : undefined,
+        required: true,
+      };
+      
+      // For capture steps, determine which fields to collect
+      if (stepType === 'capture') {
+        settings.collectName = blockLabel.toLowerCase().includes('name');
+        settings.collectEmail = blockLabel.toLowerCase().includes('email');
+        settings.collectPhone = blockLabel.toLowerCase().includes('phone');
+      }
+      
+      return {
+        id,
+        name: blockLabel,
+        type: stepType,
+        elements: [],
+        settings,
+        navigation: { action: 'next' },
+      };
+    }
+    
+    return {
+      id,
+      name: blockLabel,
+      type: 'question',
+      elements: [],
+      settings: { title: blockLabel, buttonText: 'Continue' },
+      navigation: { action: 'next' },
+    };
+  };
+
+  // Check if a template belongs to Application Flow categories
+  const isApplicationFlowCategory = (categoryId: string) => {
+    return APPLICATION_FLOW_CATEGORIES.includes(categoryId);
+  };
+
   // All templates for search
   const allTemplates = [
-    ...applicationQuestions.map(b => ({ ...b, isSection: false })),
-    ...captureFields.map(b => ({ ...b, isSection: false })),
-    ...contentBlocks.map(b => ({ ...b, isSection: false })),
-    ...actionBlocks.map(b => ({ ...b, isSection: false })),
-    ...captureSections.map(t => ({ ...t, isSection: true })),
-    ...contentSections.map(t => ({ ...t, isSection: true })),
-    ...advancedSections.map(t => ({ ...t, isSection: true })),
+    ...applicationQuestions.map(b => ({ ...b, isSection: false, categoryId: 'questions' })),
+    ...captureFields.map(b => ({ ...b, isSection: false, categoryId: 'capture' })),
+    ...contentBlocks.map(b => ({ ...b, isSection: false, categoryId: 'content' })),
+    ...actionBlocks.map(b => ({ ...b, isSection: false, categoryId: 'actions' })),
+    ...captureSections.map(t => ({ ...t, isSection: true, categoryId: 'capture-sections' })),
+    ...contentSections.map(t => ({ ...t, isSection: true, categoryId: 'content-sections' })),
+    ...advancedSections.map(t => ({ ...t, isSection: true, categoryId: 'advanced-sections' })),
   ];
 
   const filteredResults = searchQuery.length > 0
@@ -623,7 +722,25 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       )
     : [];
 
-  const handleAddBlock = (template: BlockTemplate, isSection: boolean = false) => {
+  const handleAddBlock = (template: BlockTemplate, isSection: boolean = false, categoryId?: string) => {
+    // Check if this is an application question/capture that should go into Application Flow
+    const isApplicationContent = categoryId && isApplicationFlowCategory(categoryId);
+    
+    if (isApplicationContent && activeApplicationFlowBlockId && onAddApplicationFlowStep) {
+      // Convert to flow step and add to existing flow
+      const step = blockTemplateToFlowStep(template.label, template.type, template.template());
+      onAddApplicationFlowStep(step);
+      return;
+    }
+    
+    if (isApplicationContent && !activeApplicationFlowBlockId && onCreateApplicationFlowWithStep) {
+      // Create new Application Flow with this step
+      const step = blockTemplateToFlowStep(template.label, template.type, template.template());
+      onCreateApplicationFlowWithStep(step);
+      return;
+    }
+    
+    // Default: add as standalone block (for non-question content)
     onAddBlock(template.template(), { type: isSection ? 'section' : 'block' });
     onClose();
   };
@@ -717,7 +834,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 {filteredResults.map((template, idx) => (
                   <button
                     key={`${template.type}-${template.label}-${idx}`}
-                    onClick={() => handleAddBlock(template, template.isSection)}
+                    onClick={() => handleAddBlock(template, template.isSection, template.categoryId)}
                     className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-builder-surface-hover transition-colors text-left"
                   >
                     <div className="w-8 h-8 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted">
