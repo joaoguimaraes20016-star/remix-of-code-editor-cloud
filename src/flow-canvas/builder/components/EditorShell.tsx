@@ -7,6 +7,7 @@ import { TopToolbar, DeviceMode } from './TopToolbar';
 import { AIBuilderCopilot } from './AIBuilderCopilot';
 import { BlockPalette } from './BlockPalette';
 import { BlockPickerPanel } from './BlockPickerPanel';
+import { SectionPickerPanel } from './SectionPickerPanel';
 import { useHistory } from '../hooks/useHistory';
 import { 
   deepClone, 
@@ -109,6 +110,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   // Block picker state - for left panel integration
   const [blockPickerOpen, setBlockPickerOpen] = useState(false);
   const [blockPickerTargetStackId, setBlockPickerTargetStackId] = useState<string | null>(null);
+  
+  // Section picker state - for adding new sections
+  const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
   
   // Editor UI theme state - controls panels/toolbar appearance (dark by default)
   const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark');
@@ -1138,7 +1142,15 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             >
               <PanelLeftClose size={14} />
             </button>
-            {blockPickerOpen ? (
+            {sectionPickerOpen ? (
+              <SectionPickerPanel
+                onAddSection={(block) => {
+                  handleAddBlock(block, undefined, { type: 'section' });
+                  setSectionPickerOpen(false);
+                }}
+                onClose={() => setSectionPickerOpen(false)}
+              />
+            ) : blockPickerOpen ? (
               <BlockPickerPanel
                 onAddBlock={(block, options) => {
                   if (options?.type === 'section') {
@@ -1249,6 +1261,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onOpenBlockPickerInPanel={(stackId) => {
               setBlockPickerTargetStackId(stackId);
               setBlockPickerOpen(true);
+            }}
+            onOpenSectionPicker={() => {
+              setSectionPickerOpen(true);
             }}
             onNextStep={() => {
               const currentIndex = page.steps.findIndex(s => s.id === activeStepId);
