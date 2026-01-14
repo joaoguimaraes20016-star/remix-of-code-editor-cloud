@@ -3201,9 +3201,9 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ),
             } as React.CSSProperties}
             onClick={(e) => {
-              // Click on empty device frame = select canvas/page (not null)
+              // Click on empty device frame = clear selection (don't open settings panel)
               if (e.target === e.currentTarget) {
-                onSelect({ type: 'page', id: 'canvas', path: [] });
+                onSelect({ type: null, id: null, path: [] });
               }
             }}
           >
@@ -3235,28 +3235,10 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   {step.frames.map((frame, frameIndex) => (
                     <React.Fragment key={frame.id}>
                       {/* Section Divider - always visible between frames for clarity */}
-                      {frameIndex > 0 && !readOnly && (
-                        <div 
-                          className="relative h-12 flex items-center px-4 group/divider"
-                        >
-                          {/* Left line - always visible */}
-                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
-                          
-                          {/* Center add button - always visible */}
-                          <button
-                            onClick={() => onAddFrameAt?.('above', frame.id)}
-                            className={cn(
-                              "mx-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                              "bg-[hsl(var(--builder-surface))] text-[hsl(var(--builder-text-muted))] border border-[hsl(var(--builder-border))]",
-                              "hover:bg-[hsl(var(--builder-accent))] hover:text-white hover:border-transparent hover:shadow-lg hover:shadow-[hsl(var(--builder-accent)/0.3)]"
-                            )}
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Add Section</span>
-                          </button>
-                          
-                          {/* Right line - always visible */}
-                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
+                      {/* Simple divider line between sections */}
+                      {frameIndex > 0 && (
+                        <div className="relative h-4 flex items-center px-4">
+                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border-subtle))]" />
                         </div>
                       )}
                       <SortableFrameRenderer
@@ -3333,24 +3315,29 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                 </div>
               )}
               
-              {/* Add Section button at bottom - visible on hover when sections exist */}
-              {/* Bottom Add Section - always visible for clarity */}
-              {step.frames.length > 0 && !readOnly && onAddFrame && (
+              {/* Bottom Add Content button - opens the unified picker */}
+              {step.frames.length > 0 && !readOnly && onOpenBlockPickerInPanel && (
                 <div className="px-4 py-6">
-                  {/* Divider line above button - always visible */}
+                  {/* Divider line above button */}
                   <div className="flex items-center mb-4">
-                    <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
+                    <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border-subtle))]" />
                   </div>
                   <button
-                    onClick={onAddFrame}
+                    onClick={() => {
+                      // Open block picker targeting the first stack (blocks will be added at end)
+                      const firstStack = step.frames[step.frames.length - 1]?.stacks[0];
+                      if (firstStack) {
+                        onOpenBlockPickerInPanel(firstStack.id);
+                      }
+                    }}
                     className={cn(
-                      "w-full py-4 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2.5 transition-all text-sm font-medium",
+                      "w-full py-3 px-4 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all text-sm font-medium",
                       "border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface))] text-[hsl(var(--builder-text-muted))]",
                       "hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-[hsl(var(--builder-accent))]"
                     )}
                   >
-                    <Layers className="w-4 h-4" />
-                    <span>Add New Section</span>
+                    <Plus className="w-4 h-4" />
+                    <span>Add Content</span>
                   </button>
                 </div>
               )}
