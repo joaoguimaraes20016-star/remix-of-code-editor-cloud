@@ -372,8 +372,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             if (stack.id === position.stackId) {
               // Always insert at end of stack
               stack.blocks.push(newBlock);
-              handlePageUpdate(updatedPage, 'Add block');
-              toast.success('Block added');
+              handlePageUpdate(updatedPage, 'Add content');
+              toast.success('Content added');
               return;
             }
           }
@@ -384,8 +384,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       const step = updatedPage.steps.find(s => s.id === activeStepId);
       if (step && step.frames[0] && step.frames[0].stacks[0]) {
         step.frames[0].stacks[0].blocks.push(newBlock);
-        handlePageUpdate(updatedPage, 'Add block');
-        toast.success('Block added');
+        handlePageUpdate(updatedPage, 'Add content');
+        toast.success('Content added');
       }
     }
   }, [page, activeStepId, handlePageUpdate]);
@@ -404,8 +404,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             blockToDuplicate.label = `${blockToDuplicate.label} (Copy)`;
             blockToDuplicate.elements.forEach(el => { el.id = generateId(); });
             stack.blocks.splice(blockIndex + 1, 0, blockToDuplicate);
-            handlePageUpdate(updatedPage, 'Duplicate block');
-            toast.success('Block duplicated');
+            handlePageUpdate(updatedPage, 'Duplicate content');
+            toast.success('Content duplicated');
             return;
           }
         }
@@ -505,9 +505,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
     
     if (deletedCount > 0) {
-      handlePageUpdate(updatedPage, `Delete ${deletedCount} block${deletedCount > 1 ? 's' : ''}`);
+      handlePageUpdate(updatedPage, `Delete ${deletedCount} content item${deletedCount > 1 ? 's' : ''}`);
       handleClearSelection();
-      toast.success(`${deletedCount} block${deletedCount > 1 ? 's' : ''} deleted`);
+      toast.success(`${deletedCount} content item${deletedCount > 1 ? 's' : ''} deleted`);
     }
   }, [page, multiSelection, handlePageUpdate, handleClearSelection]);
 

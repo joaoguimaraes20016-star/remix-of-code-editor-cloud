@@ -2681,13 +2681,13 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             
             {/* Subtitle */}
             <span className="text-sm text-gray-400 mb-6">
-              Headlines, text, images, buttons & more
+              Text, images, buttons & more
             </span>
             
             {/* Dark button */}
             <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
               <Plus size={18} />
-              <span>Add Content</span>
+              <span>Insert Content</span>
             </span>
           </div>
         </div>
@@ -3315,7 +3315,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     
                     {/* Subtitle */}
                     <span className="text-sm text-gray-400 mb-6">
-                      Hero, CTA, about us & more
+                      Hero, CTA, testimonials & more
                     </span>
                     
                     {/* Dark button */}
