@@ -157,7 +157,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Text Input',
     icon: <Type size={16} />,
-    description: 'Text field — common for capture',
+    description: 'Free-form input — capture names, answers',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -173,7 +173,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Multiple Choice',
     icon: <ListChecks size={16} />,
-    description: 'Multi-select — qualify users',
+    description: 'Multi-select — qualify & segment leads',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -191,7 +191,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Single Choice',
     icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
-    description: 'Radio buttons — qualification',
+    description: 'Single select — qualify leads fast',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -209,7 +209,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Dropdown',
     icon: <ChevronDown size={16} />,
-    description: 'Select menu',
+    description: 'Dropdown — qualify with options',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -225,7 +225,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'File Upload',
     icon: <Upload size={16} />,
-    description: 'Upload files',
+    description: 'File upload — collect documents',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -545,7 +545,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
             {/* Interactive Blocks */}
             <div className="pb-2">
               <div className="px-1 pb-2">
-                <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Form Elements</span>
+                <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Lead Capture</span>
               </div>
               <div className="space-y-0.5">
                 {interactiveBlocks.map((block) => (
@@ -572,7 +572,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
               <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Section Templates</span>
             </div>
             <p className="px-2 pb-3 text-xs text-builder-text-dim">
-              Sections create a new container with content blocks.
+              Each section serves a purpose — capture leads, build trust, or drive action.
             </p>
             {sectionCategories.map((category) => (
               <Collapsible

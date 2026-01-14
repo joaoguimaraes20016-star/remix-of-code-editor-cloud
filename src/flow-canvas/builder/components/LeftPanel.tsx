@@ -896,9 +896,10 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
                       <HelpCircle className="w-3.5 h-3.5 text-builder-text-dim" />
                     </TooltipTrigger>
                     <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-xs text-muted-foreground">Pages = screens in your flow</p>
+                      <p className="text-xs text-muted-foreground">Pages = screens in your funnel</p>
                       <p className="text-xs text-muted-foreground">Sections = layout containers</p>
                       <p className="text-xs text-muted-foreground">Content = what users see</p>
+                      <p className="text-xs text-muted-foreground mt-1">Common flow: Qualify → Capture → Book → Thank You</p>
                       <p className="text-xs text-muted-foreground mt-1">Double-click a page to rename it.</p>
                     </TooltipContent>
                   </Tooltip>
