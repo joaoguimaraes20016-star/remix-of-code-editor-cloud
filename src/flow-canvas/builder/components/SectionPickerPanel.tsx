@@ -24,7 +24,7 @@ const sectionTemplates: SectionTemplate[] = [
     id: 'empty',
     label: 'Empty Section',
     icon: <Square size={18} />,
-    description: 'Start with a blank canvas',
+    description: 'Start empty — add any content',
     template: () => ({
       id: generateId(),
       type: 'custom',
@@ -37,7 +37,7 @@ const sectionTemplates: SectionTemplate[] = [
     id: 'hero',
     label: 'Hero',
     icon: <LayoutGrid size={18} />,
-    description: 'Title, subtitle & CTA',
+    description: 'First impression — title, subtitle & CTA',
     template: () => ({
       id: generateId(),
       type: 'hero',
@@ -54,7 +54,7 @@ const sectionTemplates: SectionTemplate[] = [
     id: 'cta',
     label: 'Call to Action',
     icon: <MousePointer size={18} />,
-    description: 'Prompt user action',
+    description: 'Drive action — prompt next step',
     template: () => ({
       id: generateId(),
       type: 'cta',
@@ -71,7 +71,7 @@ const sectionTemplates: SectionTemplate[] = [
     id: 'testimonials',
     label: 'Testimonials',
     icon: <Quote size={18} />,
-    description: 'Social proof & reviews',
+    description: 'Build trust — social proof & reviews',
     template: () => ({
       id: generateId(),
       type: 'testimonial',
@@ -87,7 +87,7 @@ const sectionTemplates: SectionTemplate[] = [
     id: 'features',
     label: 'Features',
     icon: <Package size={18} />,
-    description: 'Highlight key benefits',
+    description: 'Persuade — highlight key benefits',
     template: () => ({
       id: generateId(),
       type: 'feature',
@@ -106,7 +106,7 @@ const sectionTemplates: SectionTemplate[] = [
     id: 'contact',
     label: 'Contact',
     icon: <Mail size={18} />,
-    description: 'Capture name, email & more',
+    description: 'Primary capture — name, email & phone',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -189,7 +189,7 @@ export const SectionPickerPanel: React.FC<SectionPickerPanelProps> = ({
           Section Templates
         </div>
         <div className="text-xs text-builder-text-muted">
-          Sections create layout. Choose a template or start empty.
+          Sections define purpose — capture, qualify, persuade, or schedule.
         </div>
       </div>
 

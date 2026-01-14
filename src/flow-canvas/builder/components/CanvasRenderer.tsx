@@ -2681,7 +2681,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             
             {/* Subtitle */}
             <span className="text-sm text-gray-400 mb-6">
-              Forms, text, images, buttons & more
+              Capture forms, questions, buttons & more
             </span>
             
             {/* Dark button */}
@@ -3315,7 +3315,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     
                     {/* Subtitle */}
                     <span className="text-sm text-gray-400 mb-6">
-                      Sections create layout — hero, capture forms, CTAs & more
+                      Start with a hero, opt-in form, or qualification section
                     </span>
                     
                     {/* Dark button */}
