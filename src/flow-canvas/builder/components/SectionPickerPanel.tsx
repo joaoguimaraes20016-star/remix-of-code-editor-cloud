@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Plus, Search, LayoutGrid, MousePointer, Quote, Package, Mail,
-  X, ArrowLeft, Layers, Square
+  X, ArrowLeft, Layers, Square, Users
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
@@ -69,6 +69,23 @@ const sectionTemplates: SectionTemplate[] = [
         { id: generateId(), type: 'button', content: 'Get Started Now', props: { variant: 'primary', size: 'lg' } },
       ],
       props: { action: 'next-step' },
+    }),
+  },
+  {
+    id: 'about',
+    label: 'About Us',
+    icon: <Users size={20} />,
+    description: 'Company story & team',
+    color: 'bg-indigo-100 text-indigo-600',
+    template: () => ({
+      id: generateId(),
+      type: 'about',
+      label: 'About Section',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'About Us', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'We are a team passionate about helping you succeed. Our mission is to provide the best tools and support to help you achieve your goals.', props: {} },
+      ],
+      props: {},
     }),
   },
   {
