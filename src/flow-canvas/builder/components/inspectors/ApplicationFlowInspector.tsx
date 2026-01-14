@@ -129,8 +129,8 @@ const StepListItem: React.FC<StepListItemProps> = ({
       className={cn(
         'group relative flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all duration-150',
         isActive 
-          ? 'bg-gray-100 dark:bg-gray-800 border-l-2 border-gray-900 dark:border-white' 
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
+          ? 'bg-accent/40 border-l-2 border-foreground' 
+          : 'hover:bg-accent/30',
         isDragging && 'opacity-50 z-50 shadow-lg'
       )}
       onClick={onSelect}
@@ -141,26 +141,26 @@ const StepListItem: React.FC<StepListItemProps> = ({
         {...listeners}
         className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
       >
-        <GripVertical className="w-3 h-3 text-gray-400" />
+        <GripVertical className="w-3 h-3 text-muted-foreground" />
       </div>
 
       {/* Step Number Badge */}
-      <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-medium text-gray-600 dark:text-gray-400 shrink-0">
+      <div className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground shrink-0">
         {index + 1}
       </div>
 
       {/* Step Info */}
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+        <div className="text-xs font-medium text-foreground truncate">
           {step.name}
         </div>
-        <div className="text-[10px] text-gray-400 dark:text-gray-500">
+        <div className="text-[10px] text-muted-foreground">
           {stepTypeLabels[step.type]}
         </div>
       </div>
 
       {/* Step Type Icon */}
-      <div className="shrink-0 text-gray-500 dark:text-gray-400">
+      <div className="shrink-0 text-muted-foreground">
         {stepTypeIcons[step.type]}
       </div>
 
@@ -168,13 +168,13 @@ const StepListItem: React.FC<StepListItemProps> = ({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button 
-            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shrink-0"
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-accent transition-all shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <MoreHorizontal className="w-3 h-3 text-gray-500" />
+            <MoreHorizontal className="w-3 h-3 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+        <DropdownMenuContent align="end" className="bg-background border-border">
           <DropdownMenuItem 
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
             className="text-xs"
@@ -185,7 +185,7 @@ const StepListItem: React.FC<StepListItemProps> = ({
           <DropdownMenuSeparator />
           <DropdownMenuItem 
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="text-red-600 dark:text-red-400 text-xs"
+            className="text-destructive text-xs"
           >
             <Trash2 className="w-3 h-3 mr-2" />
             Delete
@@ -312,16 +312,16 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700">
+      <div className="px-3 py-2.5 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-            <FileText className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+          <div className="w-6 h-6 rounded bg-muted flex items-center justify-center">
+            <FileText className="w-3 h-3 text-muted-foreground" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-900 dark:text-white">Application Flow</div>
-            <div className="text-[10px] text-gray-500">{steps.length} steps</div>
+            <div className="text-sm font-medium text-foreground">Application Flow</div>
+            <div className="text-[10px] text-muted-foreground">{steps.length} steps</div>
           </div>
         </div>
       </div>
@@ -329,8 +329,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
       {/* Steps List */}
       <div className="flex-1 overflow-y-auto builder-scroll p-3 space-y-1">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Steps</span>
-          <span className="text-[10px] text-gray-400">Click to edit</span>
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Steps</span>
+          <span className="text-[10px] text-muted-foreground">Click to edit</span>
         </div>
 
         <DndContext
@@ -355,8 +355,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
           </SortableContext>
           <DragOverlay>
             {activeStep ? (
-              <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-xl border border-gray-300 dark:border-gray-600">
-                <GripVertical className="w-3 h-3 text-gray-400" />
+              <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-background text-foreground shadow-xl border border-border">
+                <GripVertical className="w-3 h-3 text-muted-foreground" />
                 <span className="text-xs font-medium">{activeStep.name}</span>
               </div>
             ) : null}
@@ -366,30 +366,30 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         {/* Add Step Button */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="w-full flex items-center justify-center gap-1 py-2 mt-2 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 rounded-md transition-colors">
+            <button className="w-full flex items-center justify-center gap-1 py-2 mt-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-foreground/30 rounded-md transition-colors">
               <Plus className="w-3 h-3" />
               Add Step
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-40 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+          <DropdownMenuContent align="center" className="w-40 bg-background border-border">
             <DropdownMenuItem onClick={() => addStep('welcome')} className="text-xs">
-              <Sparkles className="w-3 h-3 mr-2 text-gray-500" />
+              <Sparkles className="w-3 h-3 mr-2 text-muted-foreground" />
               Welcome Screen
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => addStep('question')} className="text-xs">
-              <HelpCircle className="w-3 h-3 mr-2 text-gray-500" />
+              <HelpCircle className="w-3 h-3 mr-2 text-muted-foreground" />
               Question
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => addStep('capture')} className="text-xs">
-              <UserPlus className="w-3 h-3 mr-2 text-gray-500" />
+              <UserPlus className="w-3 h-3 mr-2 text-muted-foreground" />
               Capture Info
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => addStep('booking')} className="text-xs">
-              <Calendar className="w-3 h-3 mr-2 text-gray-500" />
+              <Calendar className="w-3 h-3 mr-2 text-muted-foreground" />
               Book a Call
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => addStep('ending')} className="text-xs">
-              <CheckCircle2 className="w-3 h-3 mr-2 text-gray-500" />
+              <CheckCircle2 className="w-3 h-3 mr-2 text-muted-foreground" />
               Thank You
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -397,22 +397,22 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
       </div>
 
       {/* Flow Settings */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-3 space-y-3">
+      <div className="border-t border-border p-3 space-y-3">
         <div className="flex items-center gap-2 mb-2">
-          <Settings2 className="w-3 h-3 text-gray-500" />
-          <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Flow Settings</span>
+          <Settings2 className="w-3 h-3 text-muted-foreground" />
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Flow Settings</span>
         </div>
 
         <div className="space-y-1">
-          <Label className="text-[10px] text-gray-500">Display Mode</Label>
-          <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+          <Label className="text-[10px] text-muted-foreground">Display Mode</Label>
+          <div className="flex rounded-md overflow-hidden border border-border">
             <button
               onClick={() => onUpdateBlock({ props: { ...settings, displayMode: 'one-at-a-time' } })}
               className={cn(
                 'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
                 settings.displayMode === 'one-at-a-time' 
-                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
-                  : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'bg-foreground text-background' 
+                  : 'bg-background text-muted-foreground hover:bg-accent'
               )}
             >
               One at a Time
@@ -422,8 +422,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               className={cn(
                 'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
                 settings.displayMode === 'all-visible' 
-                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
-                  : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'bg-foreground text-background' 
+                  : 'bg-background text-muted-foreground hover:bg-accent'
               )}
             >
               All Visible
@@ -432,15 +432,15 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
 
         <div className="space-y-1">
-          <Label className="text-[10px] text-gray-500">Progress Bar</Label>
-          <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+          <Label className="text-[10px] text-muted-foreground">Progress Bar</Label>
+          <div className="flex rounded-md overflow-hidden border border-border">
             <button
               onClick={() => onUpdateBlock({ props: { ...settings, showProgress: true } })}
               className={cn(
                 'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
                 settings.showProgress 
-                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
-                  : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'bg-foreground text-background' 
+                  : 'bg-background text-muted-foreground hover:bg-accent'
               )}
             >
               Show
@@ -450,8 +450,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               className={cn(
                 'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
                 !settings.showProgress 
-                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
-                  : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'bg-foreground text-background' 
+                  : 'bg-background text-muted-foreground hover:bg-accent'
               )}
             >
               Hide
@@ -460,15 +460,15 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
 
         <div className="space-y-1">
-          <Label className="text-[10px] text-gray-500">Transition</Label>
+          <Label className="text-[10px] text-muted-foreground">Transition</Label>
           <Select 
             value={settings.transition || 'slide-up'}
             onValueChange={(value) => onUpdateBlock({ props: { ...settings, transition: value } })}
           >
-            <SelectTrigger className="h-7 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+            <SelectTrigger className="h-7 text-xs bg-background border-border">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+            <SelectContent className="bg-background border-border">
               <SelectItem value="slide-up" className="text-xs">Slide Up</SelectItem>
               <SelectItem value="slide-left" className="text-xs">Slide Left</SelectItem>
               <SelectItem value="fade" className="text-xs">Fade</SelectItem>

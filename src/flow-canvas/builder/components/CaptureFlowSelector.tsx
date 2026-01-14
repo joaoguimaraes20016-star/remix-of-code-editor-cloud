@@ -232,13 +232,13 @@ export const CaptureFlowSelector: React.FC<CaptureFlowSelectorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+      <DialogContent className="sm:max-w-lg bg-background border-border">
         <DialogHeader className="pb-2">
-          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <Workflow size={20} className="text-gray-600 dark:text-gray-400" />
+          <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Workflow size={20} className="text-muted-foreground" />
             Add Capture Flow
           </DialogTitle>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Choose how you want to capture leads
           </p>
         </DialogHeader>
@@ -248,16 +248,16 @@ export const CaptureFlowSelector: React.FC<CaptureFlowSelectorProps> = ({
             <button
               key={option.id}
               onClick={() => handleSelectFlow(option.id)}
-              className="w-full flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-left group"
+              className="w-full flex items-start gap-3 p-3 rounded-lg border border-border hover:border-foreground/30 hover:bg-accent transition-all text-left group"
             >
-              <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-lg bg-muted text-muted-foreground flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                 {option.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">
+                <div className="text-sm font-medium text-foreground group-hover:text-foreground transition-colors">
                   {option.label}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <div className="text-xs text-muted-foreground mt-0.5">
                   {option.description}
                 </div>
               </div>
@@ -266,9 +266,9 @@ export const CaptureFlowSelector: React.FC<CaptureFlowSelectorProps> = ({
         </div>
 
         {/* Flow guidance footer */}
-        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center">
-            💡 Typical flow: <span className="text-gray-500 dark:text-gray-400">Qualify → Capture → Book → Thank You</span>
+        <div className="mt-4 pt-3 border-t border-border">
+          <p className="text-[11px] text-muted-foreground text-center">
+            💡 Typical flow: <span className="text-muted-foreground">Qualify → Capture → Book → Thank You</span>
           </p>
         </div>
       </DialogContent>
