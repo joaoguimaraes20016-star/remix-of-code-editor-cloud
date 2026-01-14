@@ -224,7 +224,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
             "text-sm truncate block",
             isActive ? "text-builder-accent font-medium" : ""
           )}>
-            {step.name || (index === 0 ? 'Home' : `Step ${index + 1}`)}
+            {step.name || (index === 0 ? 'Home' : `Page ${index + 1}`)}
           </span>
         )}
       </div>
@@ -247,7 +247,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
         <DropdownMenuContent align="end" className="bg-builder-surface border-builder-border">
           <DropdownMenuItem 
             onClick={() => {
-              setEditValue(step.name || (index === 0 ? 'Home' : `Step ${index + 1}`));
+              setEditValue(step.name || (index === 0 ? 'Home' : `Page ${index + 1}`));
               setIsEditing(true);
               setTimeout(() => inputRef.current?.focus(), 100);
             }}
@@ -282,7 +282,7 @@ const DragOverlayItem: React.FC<{ step: Step; index: number }> = ({ step, index 
       {index === 0 ? <Home className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
     </div>
     <span className="text-sm font-medium text-builder-accent">
-      {step.name || (index === 0 ? 'Home' : `Step ${index + 1}`)}
+      {step.name || (index === 0 ? 'Home' : `Page ${index + 1}`)}
     </span>
   </div>
 );
