@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Plus, Search, Type, Image, MousePointer, 
   Mail, Phone, User, UserCheck, ChevronRight, ChevronDown,
-  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow
+  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow, Sparkles
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
@@ -12,6 +12,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { CaptureFlowSelector } from './CaptureFlowSelector';
 
 const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -335,6 +336,7 @@ const blockCategories: BlockCategory[] = [
 interface SectionCategory {
   id: string;
   label: string;
+  hint?: string;
   sections: BlockTemplate[];
   defaultOpen?: boolean;
 }
@@ -342,9 +344,9 @@ interface SectionCategory {
 const captureSections: BlockTemplate[] = [
   {
     type: 'form-field',
-    label: 'Single Question',
+    label: 'One Question Screen',
     icon: <HelpCircle size={16} />,
-    description: 'One question per screen',
+    description: 'Best for one-question-per-page flows',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -476,6 +478,7 @@ const sectionCategories: SectionCategory[] = [
   {
     id: 'capture',
     label: 'Capture Sections',
+    hint: 'Typical flow: Qualify → Capture → Book → Thank You',
     sections: captureSections,
     defaultOpen: true,
   },
@@ -499,16 +502,19 @@ interface CollapsibleCategoryProps {
   category: BlockCategory | SectionCategory;
   onAddBlock: (template: BlockTemplate, isSection: boolean) => void;
   isSection?: boolean;
+  onOpenCaptureFlowSelector?: () => void;
 }
 
 const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({ 
   category, 
   onAddBlock,
-  isSection = false 
+  isSection = false,
+  onOpenCaptureFlowSelector,
 }) => {
   const [isOpen, setIsOpen] = useState(category.defaultOpen ?? false);
   const blocks = 'blocks' in category ? category.blocks : category.sections;
   const hint = 'hint' in category ? category.hint : undefined;
+  const showCaptureFlowCTA = isSection && category.id === 'capture' && onOpenCaptureFlowSelector;
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -529,6 +535,32 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="pl-4 pr-1 pb-2">
+          {/* Capture Flow CTA - appears at top of Capture Sections */}
+          {showCaptureFlowCTA && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenCaptureFlowSelector();
+              }}
+              className="w-full mb-3 flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-builder-accent/10 to-purple-500/10 border border-builder-accent/30 hover:border-builder-accent/50 transition-all text-left group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-builder-accent/20 flex items-center justify-center text-builder-accent group-hover:scale-105 transition-transform">
+                <Sparkles size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-builder-text group-hover:text-builder-accent transition-colors flex items-center gap-1.5">
+                  Add Capture Flow
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-builder-accent/20 text-builder-accent font-medium">
+                    NEW
+                  </span>
+                </div>
+                <div className="text-[10px] text-builder-text-muted">
+                  Build lead capture with guided templates
+                </div>
+              </div>
+            </button>
+          )}
+          
           {hint && (
             <p className="text-[10px] text-builder-accent mb-2 ml-2">{hint}</p>
           )}
@@ -566,6 +598,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
+  const [showCaptureFlowSelector, setShowCaptureFlowSelector] = useState(false);
 
   // All templates for search
   const allTemplates = [
@@ -590,7 +623,18 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
     onClose();
   };
 
+  const handleAddCaptureFlow = (block: Block) => {
+    onAddBlock(block, { type: 'section' });
+    onClose();
+  };
+
   return (
+    <>
+      <CaptureFlowSelector
+        isOpen={showCaptureFlowSelector}
+        onClose={() => setShowCaptureFlowSelector(false)}
+        onSelectFlow={handleAddCaptureFlow}
+      />
     <div className="flex flex-col h-full min-h-0 bg-builder-surface">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-builder-border">
@@ -711,12 +755,14 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 category={category}
                 onAddBlock={handleAddBlock}
                 isSection={true}
+                onOpenCaptureFlowSelector={() => setShowCaptureFlowSelector(true)}
               />
             ))}
           </div>
         )}
       </div>
     </div>
+    </>
   );
 };
 
