@@ -574,12 +574,23 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
               </p>
             </div>
 
-            {/* Enable Toggle */}
-            <div className="flex items-center justify-between p-4 border rounded-lg">
+            {/* Enable Toggle - More Prominent */}
+            <div className={cn(
+              "flex items-center justify-between p-4 border-2 rounded-xl transition-all",
+              settings.popup_optin_enabled 
+                ? "border-primary bg-primary/5" 
+                : "border-border"
+            )}>
               <div className="space-y-0.5">
-                <Label className="text-base font-medium">Enable Pop-Up Gate</Label>
-                <p className="text-sm text-muted-foreground">
-                  Show opt-in form before funnel loads
+                <div className="flex items-center gap-2">
+                  <Lock className={cn(
+                    "w-5 h-5",
+                    settings.popup_optin_enabled ? "text-primary" : "text-muted-foreground"
+                  )} />
+                  <Label className="text-base font-semibold">Enable Pop-Up Gate</Label>
+                </div>
+                <p className="text-sm text-muted-foreground pl-7">
+                  Captures lead info before they see the funnel
                 </p>
               </div>
               <Switch
@@ -687,37 +698,53 @@ export function FunnelSettingsDialog({ open, onOpenChange, funnel, onSave }: Fun
                   />
                 </div>
 
-                {/* Preview */}
+                {/* Preview - More Prominent */}
                 <div className="pt-4 border-t">
-                  <Label className="text-xs text-muted-foreground">Preview</Label>
-                  <div className="mt-2 border rounded-lg overflow-hidden bg-background p-4">
-                    <div className="text-center">
-                      <p className="font-semibold">
-                        {settings.popup_optin_headline || 'Before we begin...'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {settings.popup_optin_subtext || 'Enter your details to continue'}
-                      </p>
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {popupFields.includes('name') && (
-                        <div className="h-8 bg-muted rounded flex items-center px-3 text-xs text-muted-foreground">
-                          Name {settings.popup_optin_require_name && '*'}
-                        </div>
-                      )}
-                      <div className="h-8 bg-muted rounded flex items-center px-3 text-xs text-muted-foreground">
-                        Email *
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-sm font-medium">Live Preview</Label>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                      How visitors see it
+                    </span>
+                  </div>
+                  <div className="border-2 border-dashed border-primary/30 rounded-xl overflow-hidden bg-gradient-to-b from-background to-muted/30 p-6">
+                    <div className="max-w-xs mx-auto text-center space-y-4">
+                      <div>
+                        <p className="font-bold text-lg">
+                          {settings.popup_optin_headline || 'Before we begin...'}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {settings.popup_optin_subtext || 'Enter your details to continue'}
+                        </p>
                       </div>
-                      {popupFields.includes('phone') && (
-                        <div className="h-8 bg-muted rounded flex items-center px-3 text-xs text-muted-foreground">
-                          Phone {settings.popup_optin_require_phone && '*'}
+                      <div className="space-y-2.5">
+                        {popupFields.includes('name') && (
+                          <div className="h-10 bg-background border border-border rounded-lg flex items-center px-3 gap-2">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              Your name {settings.popup_optin_require_name && <span className="text-destructive">*</span>}
+                            </span>
+                          </div>
+                        )}
+                        <div className="h-10 bg-background border border-border rounded-lg flex items-center px-3 gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            Email address <span className="text-destructive">*</span>
+                          </span>
                         </div>
-                      )}
-                      <div 
-                        className="h-9 rounded flex items-center justify-center text-xs font-medium text-white"
-                        style={{ backgroundColor: settings.primary_color || '#8B5CF6' }}
-                      >
-                        {settings.popup_optin_button_text || 'Continue'}
+                        {popupFields.includes('phone') && (
+                          <div className="h-10 bg-background border border-border rounded-lg flex items-center px-3 gap-2">
+                            <Phone className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              Phone number {settings.popup_optin_require_phone && <span className="text-destructive">*</span>}
+                            </span>
+                          </div>
+                        )}
+                        <button 
+                          className="w-full h-11 rounded-lg flex items-center justify-center text-sm font-semibold text-white shadow-lg transition-all hover:brightness-110"
+                          style={{ backgroundColor: settings.primary_color || '#8B5CF6' }}
+                        >
+                          {settings.popup_optin_button_text || 'Continue'}
+                        </button>
                       </div>
                     </div>
                   </div>

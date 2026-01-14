@@ -737,22 +737,61 @@ const ElementInspector: React.FC<{
       {/* ========== BUTTON SECTIONS ========== */}
       {element.type === 'button' && (
         <>
-          {/* Click Action */}
-          <CollapsibleSection title="Click Action" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen sectionId="action" isHighlighted={highlightedSection === 'action'}>
+          {/* Click Action - Enhanced with quick action selector */}
+          <CollapsibleSection title="After Click" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen sectionId="action" isHighlighted={highlightedSection === 'action'}>
             <div className="pt-3 space-y-3">
-              <div className="p-3 rounded-lg border border-builder-border bg-builder-surface-hover">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-builder-text">
-                    {buttonAction?.type ? buttonAction.type.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'No action set'}
-                  </span>
+              {/* Quick Action Selector */}
+              <div className="space-y-2">
+                <span className="text-[10px] text-builder-text-dim uppercase tracking-wide">What happens after click?</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { type: 'next-step', label: 'Next Step', icon: '→' },
+                    { type: 'go-to-step', label: 'Go to Step', icon: '↗' },
+                    { type: 'submit', label: 'Submit Form', icon: '✓' },
+                    { type: 'url', label: 'Open URL', icon: '↗' },
+                  ].map((action) => (
+                    <button
+                      key={action.type}
+                      onClick={() => {
+                        if (action.type === 'go-to-step' || action.type === 'url') {
+                          // Open modal for these since they need additional input
+                          setIsButtonActionOpen(true);
+                        } else {
+                          handlePropsChange('buttonAction', { type: action.type });
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all border",
+                        buttonAction?.type === action.type
+                          ? "border-builder-accent bg-builder-accent/10 text-builder-accent"
+                          : "border-builder-border bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:border-builder-text-muted"
+                      )}
+                    >
+                      <span>{action.icon}</span>
+                      <span>{action.label}</span>
+                    </button>
+                  ))}
                 </div>
-                {buttonAction?.value && (
-                  <p className="text-xs text-builder-text-muted truncate">{buttonAction.value}</p>
-                )}
               </div>
-              <Button variant="outline" onClick={() => setIsButtonActionOpen(true)} className="w-full border-builder-border text-builder-text hover:bg-builder-surface-hover">
-                <Settings2 className="w-4 h-4 mr-2" />
-                Configure Action
+
+              {/* Current Action Summary */}
+              {buttonAction?.type && (buttonAction.type === 'go-to-step' || buttonAction.type === 'url') && buttonAction.value && (
+                <div className="p-2.5 rounded-lg border border-builder-border bg-builder-surface-hover/50">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-builder-text-muted">
+                      {buttonAction.type === 'go-to-step' ? 'Target Step:' : 'URL:'}
+                    </span>
+                    <span className="text-xs text-builder-text font-medium truncate max-w-[120px]">
+                      {buttonAction.value}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Advanced Config Button */}
+              <Button variant="ghost" size="sm" onClick={() => setIsButtonActionOpen(true)} className="w-full text-xs text-builder-text-muted hover:text-builder-text h-7">
+                <Settings2 className="w-3 h-3 mr-1.5" />
+                More Actions...
               </Button>
             </div>
           </CollapsibleSection>
