@@ -227,10 +227,10 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   return (
     <div
       className={cn(
-        'w-full rounded-lg border transition-all duration-200 cursor-pointer overflow-hidden bg-card',
+        'w-full rounded-lg transition-all duration-200 cursor-pointer overflow-hidden bg-background',
         isSelected 
-          ? 'border-primary ring-1 ring-primary/20' 
-          : 'border-border hover:border-primary/30'
+          ? 'ring-2 ring-primary ring-offset-2' 
+          : 'hover:ring-1 hover:ring-primary/30'
       )}
       onClick={onSelect}
     >
@@ -238,7 +238,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
       
       {/* Step indicator - subtle, at bottom */}
       {activeStep && steps.length > 1 && (
-        <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground text-center bg-muted/30">
+        <div className="border-t border-border/50 px-4 py-2 text-xs text-muted-foreground text-center">
           Editing: {activeStep.name}
         </div>
       )}
