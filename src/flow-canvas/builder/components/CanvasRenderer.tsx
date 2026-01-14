@@ -1,7 +1,7 @@
 import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
 import { Step, Frame, Stack, Block, Element, SelectionState, Page, VisibilitySettings, AnimationSettings, ElementStateStyles, DeviceModeType, PageBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
-import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers } from 'lucide-react';
+import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers, LayoutGrid } from 'lucide-react';
 import { getButtonIconComponent } from './ButtonIconPicker';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
@@ -3275,64 +3275,112 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   ))}
               
               {/* Empty canvas state - always visible when no sections */}
-              {step.frames.length === 0 && !readOnly && onAddFrame && (
+              {step.frames.length === 0 && !readOnly && onOpenBlockPickerInPanel && (
                 <div className="flex items-center justify-center min-h-[400px] px-4">
-                  <div className="text-center">
+                  <div className="w-full max-w-md">
+                    {/* Main Add Content Box */}
                     <div 
                       className={cn(
-                        "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4",
-                        isDarkTheme ? "bg-gray-800" : "bg-gray-100"
+                        "rounded-2xl border-2 border-dashed p-8 text-center transition-all",
+                        isDarkTheme 
+                          ? "bg-gray-800/50 border-gray-600 hover:border-gray-500" 
+                          : "bg-gray-50/80 border-gray-300 hover:border-gray-400"
                       )}
                     >
-                      <Layers className={cn("w-8 h-8", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
+                      <div 
+                        className={cn(
+                          "w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4",
+                          isDarkTheme ? "bg-gray-700" : "bg-gray-200"
+                        )}
+                      >
+                        <Plus className={cn("w-7 h-7", isDarkTheme ? "text-gray-400" : "text-gray-500")} />
+                      </div>
+                      <h3 className={cn(
+                        "text-lg font-semibold mb-2",
+                        isDarkTheme ? "text-gray-100" : "text-gray-800"
+                      )}>
+                        Add Content
+                      </h3>
+                      <p className={cn(
+                        "text-sm mb-6",
+                        isDarkTheme ? "text-gray-400" : "text-gray-500"
+                      )}>
+                        Start building your page
+                      </p>
+                      
+                      {/* Quick Action Buttons */}
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {[
+                          { label: 'Text', icon: <Type size={14} /> },
+                          { label: 'Image', icon: <Image size={14} /> },
+                          { label: 'Button', icon: <MousePointer2 size={14} /> },
+                          { label: 'Video', icon: <Video size={14} /> },
+                        ].map((item) => (
+                          <button
+                            key={item.label}
+                            onClick={() => {
+                              // Create a new frame with the quick-add block type, then open picker
+                              const firstStack = step.frames[0]?.stacks[0];
+                              onOpenBlockPickerInPanel(firstStack?.id || 'new');
+                            }}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                              isDarkTheme 
+                                ? "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white" 
+                                : "bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 shadow-sm"
+                            )}
+                          >
+                            {item.icon}
+                            <span>{item.label}</span>
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => {
+                            const firstStack = step.frames[0]?.stacks[0];
+                            onOpenBlockPickerInPanel(firstStack?.id || 'new');
+                          }}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                            isDarkTheme 
+                              ? "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white" 
+                              : "bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 shadow-sm"
+                          )}
+                        >
+                          <LayoutGrid size={14} />
+                          <span>More...</span>
+                        </button>
+                      </div>
                     </div>
-                    <h3 className={cn(
-                      "text-lg font-medium mb-2",
-                      isDarkTheme ? "text-gray-200" : "text-gray-700"
-                    )}>
-                      Add your first section
-                    </h3>
-                    <p className={cn(
-                      "text-sm mb-6 max-w-[240px] mx-auto",
-                      isDarkTheme ? "text-gray-500" : "text-gray-500"
-                    )}>
-                      Sections are containers that hold your content blocks
-                    </p>
-                    <button
-                      onClick={onAddFrame}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[hsl(var(--builder-accent))] text-white font-medium text-sm hover:brightness-110 transition-all shadow-lg shadow-[hsl(var(--builder-accent)/0.3)]"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Section</span>
-                    </button>
                   </div>
                 </div>
               )}
               
-              {/* Bottom Add Content button - opens the unified picker */}
+              {/* Subtle Add More button - only when content exists */}
               {step.frames.length > 0 && !readOnly && onOpenBlockPickerInPanel && (
-                <div className="px-4 py-6">
-                  {/* Divider line above button */}
-                  <div className="flex items-center mb-4">
-                    <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border-subtle))]" />
-                  </div>
+                <div className="flex flex-col items-center py-8 group">
                   <button
                     onClick={() => {
-                      // Open block picker targeting the first stack (blocks will be added at end)
-                      const firstStack = step.frames[step.frames.length - 1]?.stacks[0];
-                      if (firstStack) {
-                        onOpenBlockPickerInPanel(firstStack.id);
+                      const lastStack = step.frames[step.frames.length - 1]?.stacks[0];
+                      if (lastStack) {
+                        onOpenBlockPickerInPanel(lastStack.id);
                       }
                     }}
                     className={cn(
-                      "w-full py-3 px-4 rounded-lg border border-dashed flex items-center justify-center gap-2 transition-all text-sm font-medium",
-                      "border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface))] text-[hsl(var(--builder-text-muted))]",
-                      "hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-[hsl(var(--builder-accent))]"
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                      "border-2 border-dashed",
+                      isDarkTheme 
+                        ? "border-gray-600 text-gray-500 hover:border-gray-400 hover:text-gray-300 hover:bg-gray-800" 
+                        : "border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
                     )}
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Content</span>
+                    <Plus size={18} />
                   </button>
+                  <span className={cn(
+                    "mt-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity",
+                    isDarkTheme ? "text-gray-500" : "text-gray-400"
+                  )}>
+                    Add more content
+                  </span>
                 </div>
               )}
                 </div>
