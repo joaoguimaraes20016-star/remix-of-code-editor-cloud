@@ -13,8 +13,6 @@ import {
   CheckCircle2,
   Trash2,
   Copy,
-  ChevronDown,
-  ChevronRight,
   Settings2,
 } from 'lucide-react';
 import {
@@ -32,7 +30,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import {
   DndContext,
   closestCenter,
@@ -52,13 +49,14 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { StepContentEditor } from './StepContentEditor';
 
 const stepTypeIcons: Record<ApplicationStepType, React.ReactNode> = {
-  welcome: <Sparkles className="w-4 h-4" />,
-  question: <HelpCircle className="w-4 h-4" />,
-  capture: <UserPlus className="w-4 h-4" />,
-  booking: <Calendar className="w-4 h-4" />,
-  ending: <CheckCircle2 className="w-4 h-4" />,
+  welcome: <Sparkles className="w-3.5 h-3.5" />,
+  question: <HelpCircle className="w-3.5 h-3.5" />,
+  capture: <UserPlus className="w-3.5 h-3.5" />,
+  booking: <Calendar className="w-3.5 h-3.5" />,
+  ending: <CheckCircle2 className="w-3.5 h-3.5" />,
 };
 
 const stepTypeLabels: Record<ApplicationStepType, string> = {
@@ -72,7 +70,7 @@ const stepTypeLabels: Record<ApplicationStepType, string> = {
 interface ApplicationFlowInspectorProps {
   block: Block;
   onUpdateBlock: (updates: Partial<Block>) => void;
-  onSelectStep?: (stepId: string) => void;
+  onSelectStep?: (stepId: string | null) => void;
 }
 
 // Generate unique ID
@@ -89,40 +87,26 @@ const createDefaultStep = (type: ApplicationStepType, index: number): Applicatio
   },
 });
 
-// Sortable Step Item
-interface SortableStepItemProps {
+// Minimal Step Item for the list
+interface StepListItemProps {
   step: ApplicationFlowStep;
   index: number;
   isActive: boolean;
-  isExpanded: boolean;
   totalSteps: number;
-  allSteps: ApplicationFlowStep[];
   onSelect: () => void;
-  onToggleExpand: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
-  onRename: (newName: string) => void;
-  onUpdateNavigation: (nav: ApplicationFlowStep['navigation']) => void;
 }
 
-const SortableStepItem: React.FC<SortableStepItemProps> = ({
+const StepListItem: React.FC<StepListItemProps> = ({
   step,
   index,
   isActive,
-  isExpanded,
   totalSteps,
-  allSteps,
   onSelect,
-  onToggleExpand,
   onDuplicate,
   onDelete,
-  onRename,
-  onUpdateNavigation,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(step.name);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  
   const isFirst = index === 0;
   const isLast = index === totalSteps - 1;
 
@@ -140,196 +124,87 @@ const SortableStepItem: React.FC<SortableStepItemProps> = ({
     transition,
   };
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(step.name);
-    setIsEditing(true);
-    setTimeout(() => inputRef.current?.focus(), 0);
-  };
-
-  const handleBlur = () => {
-    setIsEditing(false);
-    if (editValue.trim() && editValue !== step.name) {
-      onRename(editValue.trim());
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleBlur();
-    if (e.key === 'Escape') {
-      setIsEditing(false);
-      setEditValue(step.name);
-    }
-  };
-
   return (
-    <div ref={setNodeRef} style={style} className="space-y-0">
-      <div
-        className={cn(
-          'group relative flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all duration-150',
-          isActive 
-            ? 'bg-builder-accent/15 ring-1 ring-builder-accent/30' 
-            : 'bg-builder-surface hover:bg-builder-surface-hover',
-          isDragging && 'opacity-50 z-50 shadow-lg'
-        )}
-        onClick={() => !isEditing && onSelect()}
+    <div 
+      ref={setNodeRef} 
+      style={style}
+      className={cn(
+        'group relative flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all duration-150',
+        isActive 
+          ? 'bg-builder-accent/15 ring-1 ring-builder-accent/30' 
+          : 'bg-builder-surface hover:bg-builder-surface-hover',
+        isDragging && 'opacity-50 z-50 shadow-lg'
+      )}
+      onClick={onSelect}
+    >
+      {/* Drag Handle */}
+      <div 
+        {...attributes}
+        {...listeners}
+        className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
       >
-        {/* Drag Handle */}
-        <div 
-          {...attributes}
-          {...listeners}
-          className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
-        >
-          <GripVertical className="w-3 h-3 text-builder-text-dim" />
-        </div>
-
-        {/* Step Number Badge */}
-        <div className={cn(
-          'w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0',
-          isFirst ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' :
-          isLast ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white' :
-          isActive ? 'bg-builder-accent text-white' : 'bg-builder-surface-active text-builder-text-muted'
-        )}>
-          {isFirst ? '★' : isLast ? '✓' : index}
-        </div>
-
-        {/* Step Info */}
-        <div className="flex-1 min-w-0" onDoubleClick={handleDoubleClick}>
-          {isEditing ? (
-            <input
-              ref={inputRef}
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              className="w-full text-xs bg-transparent border-b border-builder-accent outline-none text-builder-text"
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <div className={cn(
-              "text-xs font-medium truncate",
-              isActive ? "text-builder-accent" : "text-builder-text"
-            )}>
-              {step.name}
-            </div>
-          )}
-        </div>
-
-        {/* Step Type Icon */}
-        <div className={cn(
-          "shrink-0",
-          isActive ? "text-builder-accent" : "text-builder-text-muted"
-        )}>
-          {stepTypeIcons[step.type]}
-        </div>
-
-        {/* Expand/Collapse */}
-        <button 
-          onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
-          className="p-0.5 rounded hover:bg-builder-surface-active transition-all shrink-0"
-        >
-          {isExpanded ? (
-            <ChevronDown className="w-3 h-3 text-builder-text-muted" />
-          ) : (
-            <ChevronRight className="w-3 h-3 text-builder-text-muted" />
-          )}
-        </button>
-
-        {/* Actions Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button 
-              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-builder-surface-active transition-all shrink-0"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="w-3 h-3 text-builder-text-muted" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-builder-surface border-builder-border">
-            <DropdownMenuItem 
-              onClick={() => {
-                setEditValue(step.name);
-                setIsEditing(true);
-                setTimeout(() => inputRef.current?.focus(), 100);
-              }}
-              className="text-builder-text hover:bg-builder-surface-hover text-xs"
-            >
-              Rename
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={onDuplicate}
-              className="text-builder-text hover:bg-builder-surface-hover text-xs"
-            >
-              <Copy className="w-3 h-3 mr-2" />
-              Duplicate
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-builder-border-subtle" />
-            <DropdownMenuItem 
-              onClick={onDelete}
-              className="text-builder-error hover:bg-builder-error/10 text-xs"
-            >
-              <Trash2 className="w-3 h-3 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <GripVertical className="w-3 h-3 text-builder-text-dim" />
       </div>
 
-      {/* Expanded Navigation Config */}
-      {isExpanded && (
-        <div className="ml-8 mt-1 p-2 rounded-lg bg-builder-bg border border-builder-border-subtle space-y-2">
-          <div className="space-y-1">
-            <Label className="text-[10px] text-builder-text-muted uppercase">After This Step</Label>
-            <Select 
-              value={step.navigation.action}
-              onValueChange={(value) => onUpdateNavigation({ ...step.navigation, action: value as any })}
-            >
-              <SelectTrigger className="h-7 text-xs bg-builder-surface border-builder-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-builder-surface border-builder-border">
-                <SelectItem value="next" className="text-xs">Next Step</SelectItem>
-                <SelectItem value="go-to-step" className="text-xs">Go to Funnel Page</SelectItem>
-                <SelectItem value="submit" className="text-xs">Submit Form</SelectItem>
-                <SelectItem value="redirect" className="text-xs">Redirect to URL</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Step Number Badge */}
+      <div className={cn(
+        'w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold shrink-0',
+        isFirst ? 'bg-amber-500/20 text-amber-600' :
+        isLast ? 'bg-emerald-500/20 text-emerald-600' :
+        isActive ? 'bg-builder-accent/20 text-builder-accent' : 'bg-builder-surface-active text-builder-text-muted'
+      )}>
+        {isFirst ? '★' : isLast ? '✓' : index}
+      </div>
 
-          {step.navigation.action === 'go-to-step' && (
-            <div className="space-y-1.5">
-              <Label className="text-[10px] text-builder-text-muted uppercase">Target Page</Label>
-              <Select 
-                value={step.navigation.targetStepId || ''}
-                onValueChange={(value) => onUpdateNavigation({ ...step.navigation, targetStepId: value })}
-              >
-                <SelectTrigger className="h-7 text-xs bg-builder-surface border-builder-border">
-                  <SelectValue placeholder="Select page..." />
-                </SelectTrigger>
-                <SelectContent className="bg-builder-surface border-builder-border">
-                  {allSteps.filter(s => s.id !== step.id).map((s) => (
-                    <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-builder-text-dim">Use this to jump to any step on another page.</p>
-            </div>
-          )}
-
-          {step.navigation.action === 'redirect' && (
-            <div className="space-y-1">
-              <Label className="text-[10px] text-builder-text-muted uppercase">Redirect URL</Label>
-              <Input
-                value={step.navigation.redirectUrl || ''}
-                onChange={(e) => onUpdateNavigation({ ...step.navigation, redirectUrl: e.target.value })}
-                placeholder="https://..."
-                className="h-7 text-xs bg-builder-surface border-builder-border"
-              />
-            </div>
-          )}
+      {/* Step Info */}
+      <div className="flex-1 min-w-0">
+        <div className={cn(
+          "text-xs font-medium truncate",
+          isActive ? "text-builder-accent" : "text-builder-text"
+        )}>
+          {step.name}
         </div>
-      )}
+        <div className="text-[10px] text-builder-text-dim truncate">
+          {stepTypeLabels[step.type]}
+        </div>
+      </div>
+
+      {/* Step Type Icon */}
+      <div className={cn(
+        "shrink-0",
+        isActive ? "text-builder-accent" : "text-builder-text-muted"
+      )}>
+        {stepTypeIcons[step.type]}
+      </div>
+
+      {/* Actions Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button 
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-builder-surface-active transition-all shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="w-3 h-3 text-builder-text-muted" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-builder-surface border-builder-border">
+          <DropdownMenuItem 
+            onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+            className="text-builder-text hover:bg-builder-surface-hover text-xs"
+          >
+            <Copy className="w-3 h-3 mr-2" />
+            Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-builder-border-subtle" />
+          <DropdownMenuItem 
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="text-builder-error hover:bg-builder-error/10 text-xs"
+          >
+            <Trash2 className="w-3 h-3 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
@@ -340,7 +215,6 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   onSelectStep,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
   const defaultSettings: ApplicationFlowSettings = {
@@ -356,6 +230,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   };
 
   const steps = settings.steps || [];
+  const selectedStep = selectedStepId ? steps.find(s => s.id === selectedStepId) : null;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -386,6 +261,9 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   const addStep = (type: ApplicationStepType = 'question') => {
     const newStep = createDefaultStep(type, steps.length);
     onUpdateBlock({ props: { ...settings, steps: [...steps, newStep] } });
+    // Auto-select the new step
+    setSelectedStepId(newStep.id);
+    onSelectStep?.(newStep.id);
   };
 
   const duplicateStep = (stepId: string) => {
@@ -401,17 +279,43 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   const deleteStep = (stepId: string) => {
     const newSteps = steps.filter(s => s.id !== stepId);
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
+    if (selectedStepId === stepId) {
+      setSelectedStepId(null);
+      onSelectStep?.(null);
+    }
+  };
+
+  const handleSelectStep = (stepId: string) => {
+    setSelectedStepId(stepId);
+    onSelectStep?.(stepId);
+  };
+
+  const handleBackToList = () => {
+    setSelectedStepId(null);
+    onSelectStep?.(null);
   };
 
   const activeStep = activeId ? steps.find(s => s.id === activeId) : null;
+
+  // Two-panel layout: Step List View vs Step Editor View
+  if (selectedStep) {
+    return (
+      <StepContentEditor
+        step={selectedStep}
+        allSteps={steps}
+        onUpdate={(updates) => updateStep(selectedStep.id, updates)}
+        onBack={handleBackToList}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(var(--builder-accent))]/10 to-transparent">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[hsl(var(--builder-accent))]/15 flex items-center justify-center">
-            <FileText className="w-4 h-4 text-[hsl(var(--builder-accent))]" />
+          <div className="w-7 h-7 rounded-lg bg-[hsl(var(--builder-accent))]/15 flex items-center justify-center">
+            <FileText className="w-3.5 h-3.5 text-[hsl(var(--builder-accent))]" />
           </div>
           <div>
             <div className="text-sm font-semibold text-builder-text">Application Flow</div>
@@ -424,6 +328,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
       <div className="flex-1 overflow-y-auto builder-scroll p-3 space-y-1">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-medium text-builder-text-muted uppercase tracking-wide">Steps</span>
+          <span className="text-[10px] text-builder-text-dim">Click to edit</span>
         </div>
 
         <DndContext
@@ -434,23 +339,15 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         >
           <SortableContext items={steps.map(s => s.id)} strategy={verticalListSortingStrategy}>
             {steps.map((step, index) => (
-              <SortableStepItem
+              <StepListItem
                 key={step.id}
                 step={step}
                 index={index}
                 isActive={step.id === selectedStepId}
-                isExpanded={step.id === expandedStepId}
                 totalSteps={steps.length}
-                allSteps={steps}
-                onSelect={() => {
-                  setSelectedStepId(step.id);
-                  onSelectStep?.(step.id);
-                }}
-                onToggleExpand={() => setExpandedStepId(expandedStepId === step.id ? null : step.id)}
+                onSelect={() => handleSelectStep(step.id)}
                 onDuplicate={() => duplicateStep(step.id)}
                 onDelete={() => deleteStep(step.id)}
-                onRename={(name) => updateStep(step.id, { name })}
-                onUpdateNavigation={(nav) => updateStep(step.id, { navigation: nav })}
               />
             ))}
           </SortableContext>
@@ -467,26 +364,36 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         {/* Add Step Button */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="w-full flex items-center justify-center gap-2 px-3 py-2 mt-2 rounded-lg bg-builder-accent/10 text-builder-accent hover:bg-builder-accent/20 text-xs font-medium transition-colors">
-              <Plus className="w-3 h-3" />
+            <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 mt-2 rounded-lg bg-builder-accent/10 text-builder-accent hover:bg-builder-accent/20 text-xs font-medium transition-colors">
+              <Plus className="w-3.5 h-3.5" />
               Add Step
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="bg-builder-surface border-builder-border">
-            <DropdownMenuItem onClick={() => addStep('welcome')} className="text-xs">
-              {stepTypeIcons.welcome} <span className="ml-2">Welcome Screen</span>
+          <DropdownMenuContent align="center" className="bg-builder-surface border-builder-border w-48">
+            <DropdownMenuItem onClick={() => addStep('welcome')} className="text-xs py-2">
+              <div className="flex items-center gap-2">
+                {stepTypeIcons.welcome} <span>Welcome Screen</span>
+              </div>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('question')} className="text-xs">
-              {stepTypeIcons.question} <span className="ml-2">Question</span>
+            <DropdownMenuItem onClick={() => addStep('question')} className="text-xs py-2">
+              <div className="flex items-center gap-2">
+                {stepTypeIcons.question} <span>Question</span>
+              </div>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('capture')} className="text-xs">
-              {stepTypeIcons.capture} <span className="ml-2">Capture Info</span>
+            <DropdownMenuItem onClick={() => addStep('capture')} className="text-xs py-2">
+              <div className="flex items-center gap-2">
+                {stepTypeIcons.capture} <span>Capture Info</span>
+              </div>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('booking')} className="text-xs">
-              {stepTypeIcons.booking} <span className="ml-2">Book a Call</span>
+            <DropdownMenuItem onClick={() => addStep('booking')} className="text-xs py-2">
+              <div className="flex items-center gap-2">
+                {stepTypeIcons.booking} <span>Book a Call</span>
+              </div>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('ending')} className="text-xs">
-              {stepTypeIcons.ending} <span className="ml-2">Thank You</span>
+            <DropdownMenuItem onClick={() => addStep('ending')} className="text-xs py-2">
+              <div className="flex items-center gap-2">
+                {stepTypeIcons.ending} <span>Thank You</span>
+              </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
