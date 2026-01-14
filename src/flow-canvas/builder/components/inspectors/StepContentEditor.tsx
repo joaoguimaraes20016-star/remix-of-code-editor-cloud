@@ -114,30 +114,30 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header with Back Button */}
-      <div className="px-4 py-3 border-b border-builder-border bg-builder-surface">
+      <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-xs text-builder-text-muted hover:text-builder-text transition-colors mb-2"
+          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors mb-2"
         >
           <ArrowLeft className="w-3 h-3" />
           Back to Steps
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-builder-accent/15 flex items-center justify-center text-builder-accent">
+          <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400">
             {stepTypeIcons[step.type]}
           </div>
           <Input
             value={step.name}
             onChange={(e) => onUpdate({ name: e.target.value })}
-            className="h-7 text-sm font-semibold bg-transparent border-transparent hover:border-builder-border focus:border-builder-accent px-1"
+            className="h-7 text-sm font-medium bg-transparent border-transparent hover:border-gray-300 focus:border-gray-400 px-1"
           />
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-builder-border">
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
         {(['content', 'style', 'logic'] as const).map((tab) => (
           <button
             key={tab}
@@ -145,8 +145,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             className={cn(
               'flex-1 px-3 py-2 text-xs font-medium transition-colors',
               activeTab === tab
-                ? 'text-builder-accent border-b-2 border-builder-accent'
-                : 'text-builder-text-muted hover:text-builder-text'
+                ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             )}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}

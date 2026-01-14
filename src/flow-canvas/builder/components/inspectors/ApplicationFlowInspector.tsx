@@ -129,10 +129,10 @@ const StepListItem: React.FC<StepListItemProps> = ({
       ref={setNodeRef} 
       style={style}
       className={cn(
-        'group relative flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all duration-150',
+        'group relative flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all duration-150',
         isActive 
-          ? 'bg-builder-accent/15 ring-1 ring-builder-accent/30' 
-          : 'bg-builder-surface hover:bg-builder-surface-hover',
+          ? 'bg-gray-100 dark:bg-gray-800' 
+          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
         isDragging && 'opacity-50 z-50 shadow-lg'
       )}
       onClick={onSelect}
@@ -143,37 +143,23 @@ const StepListItem: React.FC<StepListItemProps> = ({
         {...listeners}
         className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
       >
-        <GripVertical className="w-3 h-3 text-builder-text-dim" />
+        <GripVertical className="w-3 h-3 text-gray-400" />
       </div>
 
       {/* Step Number Badge */}
-      <div className={cn(
-        'w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold shrink-0',
-        isFirst ? 'bg-amber-500/20 text-amber-600' :
-        isLast ? 'bg-emerald-500/20 text-emerald-600' :
-        isActive ? 'bg-builder-accent/20 text-builder-accent' : 'bg-builder-surface-active text-builder-text-muted'
-      )}>
-        {isFirst ? '★' : isLast ? '✓' : index}
+      <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-medium text-gray-600 dark:text-gray-400 shrink-0">
+        {index + 1}
       </div>
 
       {/* Step Info */}
       <div className="flex-1 min-w-0">
-        <div className={cn(
-          "text-xs font-medium truncate",
-          isActive ? "text-builder-accent" : "text-builder-text"
-        )}>
+        <div className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
           {step.name}
-        </div>
-        <div className="text-[10px] text-builder-text-dim truncate">
-          {stepTypeLabels[step.type]}
         </div>
       </div>
 
       {/* Step Type Icon */}
-      <div className={cn(
-        "shrink-0",
-        isActive ? "text-builder-accent" : "text-builder-text-muted"
-      )}>
+      <div className="shrink-0 text-gray-500 dark:text-gray-400">
         {stepTypeIcons[step.type]}
       </div>
 
@@ -181,24 +167,24 @@ const StepListItem: React.FC<StepListItemProps> = ({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button 
-            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-builder-surface-active transition-all shrink-0"
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <MoreHorizontal className="w-3 h-3 text-builder-text-muted" />
+            <MoreHorizontal className="w-3 h-3 text-gray-500" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-builder-surface border-builder-border">
+        <DropdownMenuContent align="end" className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
           <DropdownMenuItem 
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-            className="text-builder-text hover:bg-builder-surface-hover text-xs"
+            className="text-xs"
           >
             <Copy className="w-3 h-3 mr-2" />
             Duplicate
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-builder-border-subtle" />
+          <DropdownMenuSeparator />
           <DropdownMenuItem 
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="text-builder-error hover:bg-builder-error/10 text-xs"
+            className="text-red-600 dark:text-red-400 text-xs"
           >
             <Trash2 className="w-3 h-3 mr-2" />
             Delete
@@ -310,16 +296,16 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(var(--builder-accent))]/10 to-transparent">
+      <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[hsl(var(--builder-accent))]/15 flex items-center justify-center">
-            <FileText className="w-3.5 h-3.5 text-[hsl(var(--builder-accent))]" />
+          <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <FileText className="w-3 h-3 text-gray-600 dark:text-gray-400" />
           </div>
           <div>
-            <div className="text-sm font-semibold text-builder-text">Application Flow</div>
-            <div className="text-[10px] text-builder-text-muted">{steps.length} steps</div>
+            <div className="text-sm font-medium text-gray-900 dark:text-white">Application Flow</div>
+            <div className="text-[10px] text-gray-500">{steps.length} steps</div>
           </div>
         </div>
       </div>
@@ -364,36 +350,31 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         {/* Add Step Button */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 mt-2 rounded-lg bg-builder-accent/10 text-builder-accent hover:bg-builder-accent/20 text-xs font-medium transition-colors">
-              <Plus className="w-3.5 h-3.5" />
+            <button className="w-full flex items-center justify-center gap-1 py-2 mt-2 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 rounded-md transition-colors">
+              <Plus className="w-3 h-3" />
               Add Step
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="bg-builder-surface border-builder-border w-48">
-            <DropdownMenuItem onClick={() => addStep('welcome')} className="text-xs py-2">
-              <div className="flex items-center gap-2">
-                {stepTypeIcons.welcome} <span>Welcome Screen</span>
-              </div>
+          <DropdownMenuContent align="center" className="w-40">
+            <DropdownMenuItem onClick={() => addStep('welcome')} className="text-xs">
+              <Sparkles className="w-3 h-3 mr-2 text-gray-500" />
+              Welcome Screen
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('question')} className="text-xs py-2">
-              <div className="flex items-center gap-2">
-                {stepTypeIcons.question} <span>Question</span>
-              </div>
+            <DropdownMenuItem onClick={() => addStep('question')} className="text-xs">
+              <HelpCircle className="w-3 h-3 mr-2 text-gray-500" />
+              Question
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('capture')} className="text-xs py-2">
-              <div className="flex items-center gap-2">
-                {stepTypeIcons.capture} <span>Capture Info</span>
-              </div>
+            <DropdownMenuItem onClick={() => addStep('capture')} className="text-xs">
+              <UserPlus className="w-3 h-3 mr-2 text-gray-500" />
+              Capture Info
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('booking')} className="text-xs py-2">
-              <div className="flex items-center gap-2">
-                {stepTypeIcons.booking} <span>Book a Call</span>
-              </div>
+            <DropdownMenuItem onClick={() => addStep('booking')} className="text-xs">
+              <Calendar className="w-3 h-3 mr-2 text-gray-500" />
+              Book a Call
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('ending')} className="text-xs py-2">
-              <div className="flex items-center gap-2">
-                {stepTypeIcons.ending} <span>Thank You</span>
-              </div>
+            <DropdownMenuItem onClick={() => addStep('ending')} className="text-xs">
+              <CheckCircle2 className="w-3 h-3 mr-2 text-gray-500" />
+              Thank You
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
