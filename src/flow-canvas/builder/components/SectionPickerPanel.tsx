@@ -106,7 +106,7 @@ const sectionTemplates: SectionTemplate[] = [
     id: 'contact',
     label: 'Contact',
     icon: <Mail size={18} />,
-    description: 'Capture leads',
+    description: 'Capture name, email & more',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -189,7 +189,7 @@ export const SectionPickerPanel: React.FC<SectionPickerPanelProps> = ({
           Section Templates
         </div>
         <div className="text-xs text-builder-text-muted">
-          Sections create a new container with content blocks.
+          Sections create layout. Choose a template or start empty.
         </div>
       </div>
 
