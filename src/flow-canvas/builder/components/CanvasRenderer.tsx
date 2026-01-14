@@ -12,6 +12,7 @@ import { InlineTextEditor, TextStyles } from './InlineTextEditor';
 import { evaluateVisibility } from '../hooks/useScrollAnimation';
 import { gradientToCSS, cloneGradient, GradientValue } from './modals';
 import { BuilderContextMenu } from './ContextMenu';
+import { ApplicationFlowCard } from './ApplicationFlowCard';
 import {
   DndContext,
   closestCenter,
@@ -2239,6 +2240,85 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
     'end': 'flex-end', 
     'stretch': 'stretch',
   };
+
+  // Special case: Application Flow blocks render as a card
+  if (block.type === 'application-flow') {
+    const applicationFlowContent = (
+      <div
+        ref={setCombinedBlockRef}
+        style={{
+          transform: CSS.Transform.toString(transform),
+          transition,
+        }}
+        className={cn(
+          'builder-block-selectable builder-click-target group/block relative p-4',
+          isSelected && 'builder-block-selected',
+          isMultiSelected && !isSelected && 'builder-multi-selected',
+          isDragging && 'opacity-50 z-50'
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect({ type: 'block', id: block.id, path: blockPath }, e.shiftKey);
+        }}
+      >
+        <span className="block-type-badge block-type-badge-block">Application Flow</span>
+        {!readOnly && (
+          <BlockActionBar
+            blockId={block.id}
+            blockLabel={block.label}
+            position="left"
+            isSelected={isSelected}
+            canMoveUp={blockIndex > 0}
+            canMoveDown={blockIndex < totalBlocks - 1}
+            onMoveUp={() => onMoveBlock?.('up')}
+            onMoveDown={() => onMoveBlock?.('down')}
+            onDuplicate={() => onDuplicateBlock?.()}
+            onDelete={() => onDeleteBlock?.()}
+            onAddAbove={() => onAddBlock?.('above')}
+            onAddBelow={() => onAddBlock?.('below')}
+            dragHandleProps={{ attributes, listeners }}
+            deviceMode={deviceMode}
+            targetRef={blockWrapperRef}
+            editorTheme={isDarkTheme ? 'dark' : 'light'}
+          />
+        )}
+        <ApplicationFlowCard
+          block={block}
+          isSelected={isSelected}
+          onSelect={() => onSelect({ type: 'block', id: block.id, path: blockPath })}
+          onUpdateBlock={(updates) => {
+            // Updates are handled through the context - this is a visual component
+          }}
+          readOnly={readOnly}
+        />
+      </div>
+    );
+
+    if (readOnly) {
+      return applicationFlowContent;
+    }
+
+    return (
+      <BuilderContextMenu
+        type="block"
+        onCopy={() => {
+          onSelect({ type: 'block', id: block.id, path: blockPath });
+          onCopy?.();
+        }}
+        onPaste={() => onPaste?.()}
+        onDuplicate={() => onDuplicateBlock?.()}
+        onDelete={() => onDeleteBlock?.()}
+        onMoveUp={() => onMoveBlock?.('up')}
+        onMoveDown={() => onMoveBlock?.('down')}
+        canMoveUp={blockIndex > 0}
+        canMoveDown={blockIndex < totalBlocks - 1}
+        canPaste={canPaste}
+        disabled={readOnly}
+      >
+        {applicationFlowContent}
+      </BuilderContextMenu>
+    );
+  }
 
   const blockInnerContent = (
     <div
