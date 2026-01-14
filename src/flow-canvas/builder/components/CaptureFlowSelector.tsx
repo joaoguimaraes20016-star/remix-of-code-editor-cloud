@@ -68,9 +68,10 @@ const createFullApplicationBlock = (): Block => ({
         name: 'Welcome', 
         type: 'welcome',
         settings: {
-          title: 'Welcome!',
-          description: 'Let\'s see if we\'re a good fit.',
-          buttonText: 'Get Started',
+          // Sync with block.elements - Welcome = Apply Section
+          title: 'Apply Now',
+          description: 'Answer a few quick questions to see if we\'re a good fit.',
+          buttonText: 'Start Application →',
           buttonColor: '#18181b',
         },
         elements: [], 
