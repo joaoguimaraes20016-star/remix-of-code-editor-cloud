@@ -3274,21 +3274,32 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Empty canvas state - the original nice box design */}
+              {/* Empty canvas state - polished "Add Block" design */}
               {step.frames.length === 0 && !readOnly && onOpenBlockPickerInPanel && (
                 <div className="flex items-center justify-center min-h-[400px] px-4">
                   <button
                     onClick={() => onOpenBlockPickerInPanel('new')}
-                    className="group w-full max-w-md flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-200"
+                    className="group w-full max-w-lg flex flex-col items-center justify-center py-20 px-8 border-2 border-dashed border-purple-300/60 rounded-2xl bg-white hover:border-purple-400 hover:bg-purple-50/30 transition-all duration-200"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                      <Plus size={28} className="text-gray-400" />
+                    {/* Icon container - teal accent */}
+                    <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+                      <Layers size={32} className="text-teal-500" />
                     </div>
-                    <span className="text-base font-semibold text-gray-700 mb-1">Add Content</span>
-                    <span className="text-sm text-gray-500 mb-5">Sections, text, images, buttons & more</span>
-                    <span className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
+                    
+                    {/* Title */}
+                    <span className="text-lg font-semibold text-gray-800 mb-1">
+                      Add a block to this section
+                    </span>
+                    
+                    {/* Subtitle */}
+                    <span className="text-sm text-gray-500 mb-6">
+                      Headlines, text, images, buttons & more
+                    </span>
+                    
+                    {/* Dark button */}
+                    <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
                       <Plus size={18} />
-                      <span>Add Content</span>
+                      <span>Insert Block</span>
                     </span>
                   </button>
                 </div>
