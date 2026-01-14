@@ -116,52 +116,49 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-background">
       {/* Header with Back Button */}
-      <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700">
+      <div className="px-3 py-2.5 border-b border-border">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors mb-2"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
         >
           <ArrowLeft className="w-3 h-3" />
           Back to Steps
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400">
+          <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-muted-foreground">
             {stepTypeIcons[step.type]}
           </div>
           <Input
             value={step.name}
             onChange={(e) => onUpdate({ name: e.target.value })}
-            className="h-7 text-sm font-medium bg-transparent border-transparent hover:border-gray-300 focus:border-gray-400 px-1"
+            className="h-7 text-sm font-medium bg-transparent border-transparent hover:border-border focus:border-border px-1"
           />
         </div>
       </div>
 
-      {/* Step Preview - shows how the step will look on the published funnel (light theme) */}
+      {/* Step Preview - shows how the step will look on the published funnel */}
       <div className="px-4 py-3 border-b border-border">
         <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Preview</div>
         <div 
-          className="border border-gray-200 rounded-xl p-3 overflow-hidden"
-          style={{ height: '220px', backgroundColor: '#fafafa' }}
+          className="border border-border rounded-xl p-3 overflow-hidden bg-muted/20"
+          style={{ height: '220px' }}
         >
           <div 
             className="origin-top"
             style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}
           >
-            {/* Render same content as published funnel - light theme */}
-            <div className="text-center py-12 px-8 rounded-lg" style={{ backgroundColor: '#ffffff' }}>
-              {/* Title - light theme colors for preview */}
-              <h3 
-                className={cn('font-bold', step.type === 'welcome' ? 'text-2xl' : 'text-xl')}
-                style={{ color: '#1a1a1a' }}
-              >
+            {/* Render same content as published funnel */}
+            <div className="text-center py-12 px-8 rounded-lg bg-background">
+              {/* Title */}
+              <h3 className={cn('font-bold text-foreground', step.type === 'welcome' ? 'text-2xl' : 'text-xl')}>
                 {questionTitle || (step.type === 'welcome' ? 'Apply Now' : step.type === 'question' ? 'Your question here' : step.type === 'capture' ? 'Where should we send your results?' : step.type === 'ending' ? 'Thanks — we will be in touch!' : 'Heading')}
               </h3>
               
               {/* Description */}
               {(questionDescription || step.type === 'welcome') && (
-                <p className="text-sm mt-2" style={{ color: '#6b7280' }}>
+                <p className="text-sm mt-2 text-muted-foreground">
                   {questionDescription || (step.type === 'welcome' ? 'Answer a few quick questions to see if we are a good fit.' : '')}
                 </p>
               )}
@@ -172,14 +169,13 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                   {options.slice(0, 3).map((option, i) => (
                     <div 
                       key={i}
-                      className="px-4 py-3 rounded-lg text-left text-sm"
-                      style={{ border: '1px solid #e5e5e5', color: '#1a1a1a', backgroundColor: '#ffffff' }}
+                      className="px-4 py-3 rounded-lg text-left text-sm border border-border text-foreground bg-background"
                     >
                       {option}
                     </div>
                   ))}
                   {options.length > 3 && (
-                    <div className="text-xs" style={{ color: '#9ca3af' }}>+{options.length - 3} more</div>
+                    <div className="text-xs text-muted-foreground">+{options.length - 3} more</div>
                   )}
                 </div>
               )}
@@ -187,10 +183,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               {/* Text input for text questions */}
               {step.type === 'question' && questionType === 'text' && (
                 <div className="mt-6 max-w-md mx-auto">
-                  <div 
-                    className="w-full px-4 py-3 rounded-lg text-sm text-left"
-                    style={{ border: '1px solid #e5e5e5', color: '#9ca3af', backgroundColor: '#ffffff' }}
-                  >
+                  <div className="w-full px-4 py-3 rounded-lg text-sm text-left border border-border text-muted-foreground bg-background">
                     Type your answer...
                   </div>
                 </div>
@@ -199,16 +192,10 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               {/* Capture fields */}
               {step.type === 'capture' && (
                 <div className="mt-6 space-y-3 max-w-md mx-auto">
-                  <div 
-                    className="px-4 py-3 rounded-lg text-sm text-left"
-                    style={{ border: '1px solid #e5e5e5', color: '#9ca3af', backgroundColor: '#ffffff' }}
-                  >
+                  <div className="px-4 py-3 rounded-lg text-sm text-left border border-border text-muted-foreground bg-background">
                     Your name
                   </div>
-                  <div 
-                    className="px-4 py-3 rounded-lg text-sm text-left"
-                    style={{ border: '1px solid #e5e5e5', color: '#9ca3af', backgroundColor: '#ffffff' }}
-                  >
+                  <div className="px-4 py-3 rounded-lg text-sm text-left border border-border text-muted-foreground bg-background">
                     Your email
                   </div>
                 </div>
@@ -217,15 +204,14 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               {/* Ending step - no button, just message */}
               {step.type === 'ending' ? (
                 questionDescription ? null : (
-                  <p className="mt-4 text-sm" style={{ color: '#6b7280' }}>
+                  <p className="mt-4 text-sm text-muted-foreground">
                     We will be in touch shortly.
                   </p>
                 )
               ) : (
                 /* Button - uses brand primary color */
                 <span 
-                  className="inline-block mt-6 px-6 py-3 rounded-lg font-medium text-sm"
-                  style={{ backgroundColor: 'hsl(var(--primary))', color: 'white' }}
+                  className="inline-block mt-6 px-6 py-3 rounded-lg font-medium text-sm bg-primary text-primary-foreground"
                 >
                   {buttonText || (step.type === 'welcome' ? 'Start Application →' : step.type === 'capture' ? 'Submit' : 'Continue')}
                 </span>
@@ -236,7 +222,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
+      <div className="flex border-b border-border">
         {(['content', 'style', 'logic'] as const).map((tab) => (
           <button
             key={tab}
@@ -244,8 +230,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             className={cn(
               'flex-1 px-3 py-2 text-xs font-medium transition-colors',
               activeTab === tab
-                ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
-                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                ? 'text-foreground border-b-2 border-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -258,15 +244,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         <div className="flex-1 overflow-y-auto builder-scroll p-4 space-y-4">
           {/* Step Type */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">Step Type</Label>
+            <Label className="text-[10px] text-muted-foreground uppercase">Step Type</Label>
             <Select 
               value={step.type} 
               onValueChange={(value) => onUpdate({ type: value as ApplicationStepType })}
             >
-              <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <SelectTrigger className="h-8 text-xs bg-background border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <SelectContent className="bg-background border-border">
                 {Object.entries(stepTypeLabels).map(([value, label]) => (
                   <SelectItem key={value} value={value} className="text-xs">
                     <div className="flex items-center gap-2">
@@ -282,15 +268,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           {/* Question Type (for question steps) */}
           {step.type === 'question' && (
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-gray-500 uppercase">Question Type</Label>
+              <Label className="text-[10px] text-muted-foreground uppercase">Question Type</Label>
               <Select 
                 value={questionType}
                 onValueChange={(value) => updateSettings({ questionType: value as QuestionType })}
               >
-                <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <SelectTrigger className="h-8 text-xs bg-background border-border">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <SelectContent className="bg-background border-border">
                   <SelectItem value="multiple-choice" className="text-xs">
                     <div className="flex items-center gap-2">
                       {questionTypeIcons['multiple-choice']} Multiple Choice
@@ -323,44 +309,44 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Question/Heading Title */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">
+            <Label className="text-[10px] text-muted-foreground uppercase">
               {step.type === 'question' ? 'Question' : 'Heading'}
             </Label>
             <Input
               value={questionTitle}
               onChange={(e) => updateSettings({ title: e.target.value })}
               placeholder={step.type === 'question' ? 'What is your biggest challenge?' : 'Welcome!'}
-              className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+              className="h-8 text-xs bg-background border-border"
             />
           </div>
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">Description (optional)</Label>
+            <Label className="text-[10px] text-muted-foreground uppercase">Description (optional)</Label>
             <Textarea
               value={questionDescription}
               onChange={(e) => updateSettings({ description: e.target.value })}
               placeholder="Add additional context..."
-              className="text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 min-h-[60px] resize-none"
+              className="text-xs bg-background border-border min-h-[60px] resize-none"
             />
           </div>
 
           {/* Options List (for multiple choice) */}
           {step.type === 'question' && (questionType === 'multiple-choice' || questionType === 'dropdown') && (
             <div className="space-y-2">
-              <Label className="text-[10px] text-gray-500 uppercase">Options</Label>
+              <Label className="text-[10px] text-muted-foreground uppercase">Options</Label>
               <div className="space-y-1.5">
                 {options.map((option, index) => (
                   <div key={index} className="flex items-center gap-1.5 group">
-                    <GripVertical className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 cursor-grab" />
+                    <GripVertical className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab" />
                     <Input
                       value={option}
                       onChange={(e) => updateOption(index, e.target.value)}
-                      className="h-7 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 flex-1"
+                      className="h-7 text-xs bg-background border-border flex-1"
                     />
                     <button
                       onClick={() => removeOption(index)}
-                      className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -369,7 +355,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               </div>
               <button
                 onClick={addOption}
-                className="flex items-center gap-1.5 text-[10px] text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
               >
                 <Plus className="w-3 h-3" />
                 Add Option
@@ -379,8 +365,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Required Toggle */}
           {step.type === 'question' && (
-            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <Label className="text-xs text-gray-700 dark:text-gray-300">Required</Label>
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+              <Label className="text-xs text-foreground">Required</Label>
               <Switch
                 checked={isRequired}
                 onCheckedChange={(checked) => updateSettings({ required: checked })}
@@ -390,12 +376,12 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Button Text */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">Button Text</Label>
+            <Label className="text-[10px] text-muted-foreground uppercase">Button Text</Label>
             <Input
               value={buttonText}
               onChange={(e) => updateSettings({ buttonText: e.target.value })}
               placeholder="Continue"
-              className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+              className="h-8 text-xs bg-background border-border"
             />
           </div>
         </div>
@@ -406,15 +392,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         <div className="flex-1 overflow-y-auto builder-scroll p-4 space-y-4">
           {/* Title Size */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">Text Size</Label>
+            <Label className="text-[10px] text-muted-foreground uppercase">Text Size</Label>
             <Select 
               value={stepSettings.titleSize || 'xl'}
               onValueChange={(value) => updateSettings({ titleSize: value })}
             >
-              <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <SelectTrigger className="h-8 text-xs bg-background border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <SelectContent className="bg-background border-border">
                 <SelectItem value="lg" className="text-xs">Small</SelectItem>
                 <SelectItem value="xl" className="text-xs">Medium</SelectItem>
                 <SelectItem value="2xl" className="text-xs">Large</SelectItem>
@@ -424,8 +410,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Text Alignment */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">Alignment</Label>
-            <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+            <Label className="text-[10px] text-muted-foreground uppercase">Alignment</Label>
+            <div className="flex rounded-md overflow-hidden border border-border">
               {['left', 'center'].map((align) => (
                 <button
                   key={align}
@@ -433,8 +419,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                   className={cn(
                     'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors capitalize',
                     (stepSettings.align || 'center') === align
-                      ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                      : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
                   )}
                 >
                   {align}
@@ -445,15 +431,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Button Style */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">Button Style</Label>
-            <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+            <Label className="text-[10px] text-muted-foreground uppercase">Button Style</Label>
+            <div className="flex rounded-md overflow-hidden border border-border">
               <button
                 onClick={() => updateSettings({ buttonStyle: 'primary' })}
                 className={cn(
                   'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
                   (stepSettings.buttonStyle || 'primary') === 'primary'
-                    ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                    : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
                 )}
               >
                 Primary
@@ -463,8 +449,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                 className={cn(
                   'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
                   stepSettings.buttonStyle === 'outline'
-                    ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                    : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
                 )}
               >
                 Outline
@@ -475,15 +461,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           {/* Input Style (for question steps) */}
           {step.type === 'question' && (
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-gray-500 uppercase">Input Style</Label>
-              <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+              <Label className="text-[10px] text-muted-foreground uppercase">Input Style</Label>
+              <div className="flex rounded-md overflow-hidden border border-border">
                 <button
                   onClick={() => updateSettings({ inputStyle: 'rounded' })}
                   className={cn(
                     'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
                     (stepSettings.inputStyle || 'rounded') === 'rounded'
-                      ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                      : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
                   )}
                 >
                   Rounded
@@ -493,8 +479,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                   className={cn(
                     'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
                     stepSettings.inputStyle === 'square'
-                      ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                      : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
                   )}
                 >
                   Square
@@ -505,7 +491,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Button Color */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">Button Color</Label>
+            <Label className="text-[10px] text-muted-foreground uppercase">Button Color</Label>
             <div className="flex gap-2 flex-wrap">
               {['#18181b', '#3f3f46', '#71717a', '#0ea5e9', '#10b981', '#ef4444'].map((color) => (
                 <button
@@ -514,7 +500,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                   className={cn(
                     'w-7 h-7 rounded-md transition-all',
                     (stepSettings.buttonColor || '#18181b') === color
-                      ? 'ring-2 ring-offset-2 ring-gray-900 dark:ring-white' 
+                      ? 'ring-2 ring-offset-2 ring-foreground' 
                       : 'hover:scale-110'
                   )}
                   style={{ backgroundColor: color }}
@@ -525,15 +511,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Spacing */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">Spacing</Label>
+            <Label className="text-[10px] text-muted-foreground uppercase">Spacing</Label>
             <Select 
               value={stepSettings.spacing || 'normal'}
               onValueChange={(value) => updateSettings({ spacing: value })}
             >
-              <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <SelectTrigger className="h-8 text-xs bg-background border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <SelectContent className="bg-background border-border">
                 <SelectItem value="compact" className="text-xs">Compact</SelectItem>
                 <SelectItem value="normal" className="text-xs">Normal</SelectItem>
                 <SelectItem value="relaxed" className="text-xs">Spacious</SelectItem>
@@ -548,15 +534,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         <div className="flex-1 overflow-y-auto builder-scroll p-4 space-y-4">
           {/* After This Step */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-gray-500 uppercase">After This Step</Label>
+            <Label className="text-[10px] text-muted-foreground uppercase">After This Step</Label>
             <Select 
               value={step.navigation.action}
               onValueChange={(value) => onUpdate({ navigation: { ...step.navigation, action: value as any } })}
             >
-              <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <SelectTrigger className="h-8 text-xs bg-background border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <SelectContent className="bg-background border-border">
                 <SelectItem value="next" className="text-xs">Next Step</SelectItem>
                 <SelectItem value="go-to-step" className="text-xs">Go to Funnel Page</SelectItem>
                 <SelectItem value="submit" className="text-xs">Submit & Complete</SelectItem>
@@ -568,41 +554,41 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           {/* Target Page (if go-to-step) */}
           {step.navigation.action === 'go-to-step' && (
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-gray-500 uppercase">Target Page</Label>
+              <Label className="text-[10px] text-muted-foreground uppercase">Target Page</Label>
               <Select 
                 value={step.navigation.targetStepId || ''}
                 onValueChange={(value) => onUpdate({ navigation: { ...step.navigation, targetStepId: value } })}
               >
-                <SelectTrigger className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <SelectTrigger className="h-8 text-xs bg-background border-border">
                   <SelectValue placeholder="Select page..." />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <SelectContent className="bg-background border-border">
                   {allSteps.filter(s => s.id !== step.id).map((s) => (
                     <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[10px] text-gray-400">Use this to jump to another page in the funnel.</p>
+              <p className="text-[10px] text-muted-foreground">Use this to jump to another page in the funnel.</p>
             </div>
           )}
 
           {/* Redirect URL (if redirect) */}
           {step.navigation.action === 'redirect' && (
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-gray-500 uppercase">Redirect URL</Label>
+              <Label className="text-[10px] text-muted-foreground uppercase">Redirect URL</Label>
               <Input
                 value={step.navigation.redirectUrl || ''}
                 onChange={(e) => onUpdate({ navigation: { ...step.navigation, redirectUrl: e.target.value } })}
                 placeholder="https://..."
-                className="h-8 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                className="h-8 text-xs bg-background border-border"
               />
             </div>
           )}
 
           {/* Conditional Logic Placeholder */}
-          <div className="mt-6 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-center">
-            <p className="text-xs text-gray-500">Conditional logic coming soon</p>
-            <p className="text-[10px] text-gray-400 mt-1">Show/hide this step based on previous answers</p>
+          <div className="mt-6 p-4 rounded-lg border border-dashed border-border text-center">
+            <p className="text-xs text-muted-foreground">Conditional logic coming soon</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Show/hide this step based on previous answers</p>
           </div>
         </div>
       )}
