@@ -333,16 +333,41 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   }, [page, handlePageUpdate]);
 
   // Add block from palette (with optional position)
-  const handleAddBlock = useCallback((newBlock: Block, position?: { stackId: string; index: number }) => {
+  const handleAddBlock = useCallback((newBlock: Block, position?: { stackId: string; index: number }, options?: { type?: 'block' | 'section' }) => {
     const updatedPage = deepClone(page);
+    const addMode = options?.type || 'block';
+    
+    // If it's a section, create a new frame with the block
+    if (addMode === 'section') {
+      const step = updatedPage.steps.find(s => s.id === activeStepId);
+      if (step) {
+        const newFrame = {
+          id: generateId(),
+          label: newBlock.label || 'New Section',
+          stacks: [{
+            id: generateId(),
+            label: 'Main Stack',
+            direction: 'vertical' as const,
+            blocks: [newBlock],
+            props: { alignment: 'center' },
+          }],
+          props: {},
+        };
+        step.frames.push(newFrame);
+        handlePageUpdate(updatedPage, 'Add section');
+        toast.success('Section added');
+        return;
+      }
+    }
     
     if (position) {
-      // Insert at specific position
+      // Insert at specific position in stack - add at end (use Infinity)
       for (const step of updatedPage.steps) {
         for (const frame of step.frames) {
           for (const stack of frame.stacks) {
             if (stack.id === position.stackId) {
-              stack.blocks.splice(position.index, 0, newBlock);
+              // Always insert at end of stack
+              stack.blocks.push(newBlock);
               handlePageUpdate(updatedPage, 'Add block');
               toast.success('Block added');
               return;
@@ -351,7 +376,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         }
       }
     } else {
-      // Default: add to first stack of active step
+      // Default: add to first stack of active step at the end
       const step = updatedPage.steps.find(s => s.id === activeStepId);
       if (step && step.frames[0] && step.frames[0].stacks[0]) {
         step.frames[0].stacks[0].blocks.push(newBlock);
@@ -1115,11 +1140,15 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             </button>
             {blockPickerOpen ? (
               <BlockPickerPanel
-                onAddBlock={(block) => {
-                  if (blockPickerTargetStackId) {
-                    handleAddBlock(block, { stackId: blockPickerTargetStackId, index: 0 });
+                onAddBlock={(block, options) => {
+                  if (options?.type === 'section') {
+                    // Add as a new section (frame)
+                    handleAddBlock(block, undefined, { type: 'section' });
+                  } else if (blockPickerTargetStackId) {
+                    // Add to specific stack at the end
+                    handleAddBlock(block, { stackId: blockPickerTargetStackId, index: Infinity });
                   } else {
-                    // Add to first stack of active step if no target
+                    // Add to first stack of active step
                     handleAddBlock(block);
                   }
                   setBlockPickerOpen(false);
