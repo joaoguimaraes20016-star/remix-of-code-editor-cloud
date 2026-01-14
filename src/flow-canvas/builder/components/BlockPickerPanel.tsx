@@ -3,7 +3,7 @@ import {
   Plus, Search, Type, Image, MousePointer, LayoutGrid, Sparkles,
   Minus, Square, ChevronRight, Award, Quote, Users, HelpCircle,
   ListChecks, Calendar, Mail, ChevronDown, Upload, Video,
-  FileText, Link, Star, Package, Zap, X, ArrowLeft, Layers
+  FileText, Link, Star, Package, Zap, X, ArrowLeft
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
@@ -29,15 +29,11 @@ interface SectionCategory {
   templates: BlockTemplate[];
 }
 
-type AddMode = 'block' | 'section';
-
 interface BlockPickerPanelProps {
-  onAddBlock: (block: Block, options?: { type: AddMode }) => void;
+  onAddBlock: (block: Block) => void;
   onClose: () => void;
   targetSectionId?: string | null;
 }
-
-type ActiveTab = 'blocks' | 'sections';
 
 // ============ BASIC BLOCKS (Single Elements) ============
 
@@ -393,13 +389,11 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('blocks');
 
-  // All templates for search
   const allTemplates = [
-    ...basicBlocks.map(b => ({ ...b, isSection: false })),
-    ...interactiveBlocks.map(b => ({ ...b, isSection: false })),
-    ...sectionCategories.flatMap(cat => cat.templates.map(t => ({ ...t, isSection: true }))),
+    ...basicBlocks,
+    ...interactiveBlocks,
+    ...sectionCategories.flatMap(cat => cat.templates),
   ];
 
   const filteredResults = searchQuery.length > 0
@@ -409,8 +403,8 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       )
     : [];
 
-  const handleAddBlock = (template: BlockTemplate, isSection: boolean = false) => {
-    onAddBlock(template.template(), { type: isSection ? 'section' : 'block' });
+  const handleAddBlock = (template: BlockTemplate) => {
+    onAddBlock(template.template());
     onClose();
   };
 
@@ -425,41 +419,13 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
           >
             <ArrowLeft size={16} />
           </button>
-          <span className="text-sm font-medium text-builder-text">Add Content</span>
+          <span className="text-sm font-medium text-builder-text">Add Block</span>
         </div>
         <button 
           onClick={onClose}
           className="p-1 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
         >
           <X size={16} />
-        </button>
-      </div>
-
-      {/* Tab Switcher */}
-      <div className="flex-shrink-0 flex p-2 gap-1 border-b border-builder-border-subtle">
-        <button
-          onClick={() => setActiveTab('blocks')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
-            activeTab === 'blocks'
-              ? "bg-builder-accent text-white"
-              : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text"
-          )}
-        >
-          <Plus size={14} />
-          <span>Blocks</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('sections')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
-            activeTab === 'sections'
-              ? "bg-builder-accent text-white"
-              : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text"
-          )}
-        >
-          <Layers size={14} />
-          <span>Sections</span>
         </button>
       </div>
 
@@ -470,7 +436,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={activeTab === 'blocks' ? "Search blocks..." : "Search sections..."}
+            placeholder="Search blocks..."
             className="pl-9 h-8 text-sm bg-builder-surface-hover border-builder-border text-builder-text placeholder:text-builder-text-dim"
           />
         </div>
@@ -480,7 +446,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       <div className="flex-1 min-h-0 overflow-y-auto">
         {searchQuery.length > 0 ? (
           // Search Results
-          <div className="p-2 pb-20">
+          <div className="p-2">
             {filteredResults.length === 0 ? (
               <div className="p-4 text-center text-builder-text-muted text-sm">
                 No results found
@@ -490,21 +456,14 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 {filteredResults.map((template, idx) => (
                   <button
                     key={`${template.type}-${template.label}-${idx}`}
-                    onClick={() => handleAddBlock(template, template.isSection)}
+                    onClick={() => handleAddBlock(template)}
                     className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-builder-surface-hover transition-colors text-left"
                   >
                     <div className="w-8 h-8 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted">
                       {template.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-builder-text flex items-center gap-2">
-                        {template.label}
-                        {template.isSection && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-builder-accent/20 text-builder-accent font-medium">
-                            Section
-                          </span>
-                        )}
-                      </div>
+                      <div className="text-sm font-medium text-builder-text">{template.label}</div>
                       <div className="text-xs text-builder-text-dim truncate">{template.description}</div>
                     </div>
                   </button>
@@ -512,9 +471,9 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
               </div>
             )}
           </div>
-        ) : activeTab === 'blocks' ? (
-          // Blocks Tab Content
-          <div className="p-2 pb-20 space-y-0.5">
+        ) : (
+          // Categories View
+          <div className="p-2 space-y-0.5">
             {/* Quick Add - Basic Blocks Grid */}
             <div className="pb-2 mb-2 border-b border-builder-border-subtle">
               <div className="px-1 pb-2">
@@ -524,7 +483,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 {basicBlocks.slice(0, 8).map((block) => (
                   <button
                     key={block.label}
-                    onClick={() => handleAddBlock(block, false)}
+                    onClick={() => handleAddBlock(block)}
                     className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-builder-surface-hover transition-colors group"
                     title={block.description}
                   >
@@ -538,7 +497,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
             </div>
 
             {/* Interactive Blocks */}
-            <div className="pb-2">
+            <div className="pb-2 mb-2 border-b border-builder-border-subtle">
               <div className="px-1 pb-2">
                 <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Form Elements</span>
               </div>
@@ -546,7 +505,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 {interactiveBlocks.map((block) => (
                   <button
                     key={block.label}
-                    onClick={() => handleAddBlock(block, false)}
+                    onClick={() => handleAddBlock(block)}
                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-builder-surface-hover transition-colors text-left"
                   >
                     <div className="w-6 h-6 rounded flex items-center justify-center text-builder-text-muted">
@@ -559,16 +518,11 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 ))}
               </div>
             </div>
-          </div>
-        ) : (
-          // Sections Tab Content
-          <div className="p-2 pb-20 space-y-0.5">
+
+            {/* Section Categories */}
             <div className="px-1 pb-2">
-              <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Section Templates</span>
+              <span className="text-[10px] font-semibold text-builder-text-dim uppercase tracking-wider">Sections</span>
             </div>
-            <p className="px-2 pb-3 text-xs text-builder-text-dim">
-              Sections create a new container with content blocks.
-            </p>
             {sectionCategories.map((category) => (
               <Collapsible
                 key={category.id}
@@ -593,7 +547,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                     {category.templates.map((template, idx) => (
                       <button
                         key={`${template.type}-${idx}`}
-                        onClick={() => handleAddBlock(template, true)}
+                        onClick={() => handleAddBlock(template)}
                         className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-builder-surface-hover transition-colors text-left"
                       >
                         <div className="text-xs font-medium text-builder-text">{template.label}</div>

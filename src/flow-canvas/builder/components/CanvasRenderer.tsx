@@ -1,7 +1,7 @@
 import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
 import { Step, Frame, Stack, Block, Element, SelectionState, Page, VisibilitySettings, AnimationSettings, ElementStateStyles, DeviceModeType, PageBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
-import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers, LayoutGrid } from 'lucide-react';
+import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers } from 'lucide-react';
 import { getButtonIconComponent } from './ButtonIconPicker';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
@@ -2661,15 +2661,21 @@ const StackRenderer: React.FC<StackRendererProps> = ({
     >
       {/* Content area - no badge, clicking selects parent frame */}
       {stack.blocks.length === 0 ? (
-        // Minimal empty state - main "Add Content" button is below
-        <div 
-          onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
-          className="w-full py-8 flex items-center justify-center cursor-pointer group"
-        >
-          <div className="flex items-center gap-2 text-[hsl(var(--builder-text-dim))] group-hover:text-[hsl(var(--builder-text-muted))] transition-colors">
-            <Plus size={16} className="opacity-50 group-hover:opacity-100" />
-            <span className="text-sm">Empty section</span>
-          </div>
+        <div className="w-full">
+          <button
+            onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
+            className="group w-full flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-200"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <Plus size={28} className="text-gray-400" />
+            </div>
+            <span className="text-base font-semibold text-gray-700 mb-1">Add a block to this section</span>
+            <span className="text-sm text-gray-500 mb-5">Click to open block picker in left panel</span>
+            <span className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
+              <Plus size={18} />
+              <span>Insert Block</span>
+            </span>
+          </button>
         </div>
       ) : (
         <>
@@ -3195,9 +3201,9 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               ),
             } as React.CSSProperties}
             onClick={(e) => {
-              // Click on empty device frame = clear selection (don't open settings panel)
+              // Click on empty device frame = select canvas/page (not null)
               if (e.target === e.currentTarget) {
-                onSelect({ type: null, id: null, path: [] });
+                onSelect({ type: 'page', id: 'canvas', path: [] });
               }
             }}
           >
@@ -3229,10 +3235,28 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   {step.frames.map((frame, frameIndex) => (
                     <React.Fragment key={frame.id}>
                       {/* Section Divider - always visible between frames for clarity */}
-                      {/* Simple divider line between sections */}
-                      {frameIndex > 0 && (
-                        <div className="relative h-4 flex items-center px-4">
-                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border-subtle))]" />
+                      {frameIndex > 0 && !readOnly && (
+                        <div 
+                          className="relative h-12 flex items-center px-4 group/divider"
+                        >
+                          {/* Left line - always visible */}
+                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
+                          
+                          {/* Center add button - always visible */}
+                          <button
+                            onClick={() => onAddFrameAt?.('above', frame.id)}
+                            className={cn(
+                              "mx-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                              "bg-[hsl(var(--builder-surface))] text-[hsl(var(--builder-text-muted))] border border-[hsl(var(--builder-border))]",
+                              "hover:bg-[hsl(var(--builder-accent))] hover:text-white hover:border-transparent hover:shadow-lg hover:shadow-[hsl(var(--builder-accent)/0.3)]"
+                            )}
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Section</span>
+                          </button>
+                          
+                          {/* Right line - always visible */}
+                          <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
                         </div>
                       )}
                       <SortableFrameRenderer
@@ -3274,52 +3298,60 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Empty canvas state - the original nice box design */}
-              {step.frames.length === 0 && !readOnly && onOpenBlockPickerInPanel && (
+              {/* Empty canvas state - always visible when no sections */}
+              {step.frames.length === 0 && !readOnly && onAddFrame && (
                 <div className="flex items-center justify-center min-h-[400px] px-4">
-                  <button
-                    onClick={() => onOpenBlockPickerInPanel('new')}
-                    className="group w-full max-w-md flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-200"
-                  >
-                    <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                      <Plus size={28} className="text-gray-400" />
+                  <div className="text-center">
+                    <div 
+                      className={cn(
+                        "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4",
+                        isDarkTheme ? "bg-gray-800" : "bg-gray-100"
+                      )}
+                    >
+                      <Layers className={cn("w-8 h-8", isDarkTheme ? "text-gray-500" : "text-gray-400")} />
                     </div>
-                    <span className="text-base font-semibold text-gray-700 mb-1">Add Content</span>
-                    <span className="text-sm text-gray-500 mb-5">Sections, text, images, buttons & more</span>
-                    <span className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
-                      <Plus size={18} />
-                      <span>Add Content</span>
-                    </span>
-                  </button>
+                    <h3 className={cn(
+                      "text-lg font-medium mb-2",
+                      isDarkTheme ? "text-gray-200" : "text-gray-700"
+                    )}>
+                      Add your first section
+                    </h3>
+                    <p className={cn(
+                      "text-sm mb-6 max-w-[240px] mx-auto",
+                      isDarkTheme ? "text-gray-500" : "text-gray-500"
+                    )}>
+                      Sections are containers that hold your content blocks
+                    </p>
+                    <button
+                      onClick={onAddFrame}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[hsl(var(--builder-accent))] text-white font-medium text-sm hover:brightness-110 transition-all shadow-lg shadow-[hsl(var(--builder-accent)/0.3)]"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Section</span>
+                    </button>
+                  </div>
                 </div>
               )}
               
-              {/* Subtle Add More button - only when content exists */}
-              {step.frames.length > 0 && !readOnly && onOpenBlockPickerInPanel && (
-                <div className="flex flex-col items-center py-8 group">
+              {/* Add Section button at bottom - visible on hover when sections exist */}
+              {/* Bottom Add Section - always visible for clarity */}
+              {step.frames.length > 0 && !readOnly && onAddFrame && (
+                <div className="px-4 py-6">
+                  {/* Divider line above button - always visible */}
+                  <div className="flex items-center mb-4">
+                    <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border))]" />
+                  </div>
                   <button
-                    onClick={() => {
-                      const lastStack = step.frames[step.frames.length - 1]?.stacks[0];
-                      if (lastStack) {
-                        onOpenBlockPickerInPanel(lastStack.id);
-                      }
-                    }}
+                    onClick={onAddFrame}
                     className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                      "border-2 border-dashed",
-                      isDarkTheme 
-                        ? "border-gray-600 text-gray-500 hover:border-gray-400 hover:text-gray-300 hover:bg-gray-800" 
-                        : "border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                      "w-full py-4 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2.5 transition-all text-sm font-medium",
+                      "border-[hsl(var(--builder-border))] bg-[hsl(var(--builder-surface))] text-[hsl(var(--builder-text-muted))]",
+                      "hover:border-[hsl(var(--builder-accent))] hover:bg-[hsl(var(--builder-accent)/0.1)] hover:text-[hsl(var(--builder-accent))]"
                     )}
                   >
-                    <Plus size={18} />
+                    <Layers className="w-4 h-4" />
+                    <span>Add New Section</span>
                   </button>
-                  <span className={cn(
-                    "mt-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity",
-                    isDarkTheme ? "text-gray-500" : "text-gray-400"
-                  )}>
-                    Add more content
-                  </span>
                 </div>
               )}
                 </div>
