@@ -558,29 +558,34 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
                   Build lead capture with guided templates
                 </div>
               </div>
-            </button>
+          </button>
           )}
           
-          {hint && (
-            <p className="text-[10px] text-builder-accent mb-2 ml-2">{hint}</p>
+          {/* Only show individual templates if NOT showing Capture Flow CTA */}
+          {!showCaptureFlowCTA && (
+            <>
+              {hint && (
+                <p className="text-[10px] text-builder-accent mb-2 ml-2">{hint}</p>
+              )}
+              <div className="space-y-0.5">
+                {blocks.map((block, idx) => (
+                  <button
+                    key={`${block.label}-${idx}`}
+                    onClick={() => onAddBlock(block, isSection)}
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
+                  >
+                    <div className="w-7 h-7 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
+                      {block.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-builder-text">{block.label}</div>
+                      <div className="text-[10px] text-builder-text-dim">{block.description}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
-          <div className="space-y-0.5">
-            {blocks.map((block, idx) => (
-              <button
-                key={`${block.label}-${idx}`}
-                onClick={() => onAddBlock(block, isSection)}
-                className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
-              >
-                <div className="w-7 h-7 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
-                  {block.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-builder-text">{block.label}</div>
-                  <div className="text-[10px] text-builder-text-dim">{block.description}</div>
-                </div>
-              </button>
-            ))}
-          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
