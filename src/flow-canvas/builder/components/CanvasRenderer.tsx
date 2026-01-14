@@ -2900,6 +2900,7 @@ interface FrameRendererProps {
   dragHandleListeners?: React.DOMAttributes<HTMLButtonElement>;
   dragHandleAttributes?: React.HTMLAttributes<HTMLButtonElement>;
   onOpenBlockPickerInPanel?: (stackId: string) => void;
+  selectedApplicationStepId?: string | null;
 }
 
 const FrameRenderer: React.FC<FrameRendererProps> = ({ 
@@ -2940,6 +2941,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   dragHandleListeners,
   dragHandleAttributes,
   onOpenBlockPickerInPanel,
+  selectedApplicationStepId,
 }) => {
   const isSelected = selection.type === 'frame' && selection.id === frame.id;
   const framePath = [...path, 'frame', frame.id];
