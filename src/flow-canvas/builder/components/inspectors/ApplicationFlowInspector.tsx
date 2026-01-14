@@ -107,9 +107,6 @@ const StepListItem: React.FC<StepListItemProps> = ({
   onDuplicate,
   onDelete,
 }) => {
-  const isFirst = index === 0;
-  const isLast = index === totalSteps - 1;
-
   const {
     attributes,
     listeners,
@@ -131,7 +128,7 @@ const StepListItem: React.FC<StepListItemProps> = ({
       className={cn(
         'group relative flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all duration-150',
         isActive 
-          ? 'bg-gray-100 dark:bg-gray-800' 
+          ? 'bg-gray-100 dark:bg-gray-800 border-l-2 border-gray-900 dark:border-white' 
           : 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
         isDragging && 'opacity-50 z-50 shadow-lg'
       )}
@@ -155,6 +152,9 @@ const StepListItem: React.FC<StepListItemProps> = ({
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
           {step.name}
+        </div>
+        <div className="text-[10px] text-gray-400 dark:text-gray-500">
+          {stepTypeLabels[step.type]}
         </div>
       </div>
 
@@ -313,8 +313,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
       {/* Steps List */}
       <div className="flex-1 overflow-y-auto builder-scroll p-3 space-y-1">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-medium text-builder-text-muted uppercase tracking-wide">Steps</span>
-          <span className="text-[10px] text-builder-text-dim">Click to edit</span>
+          <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Steps</span>
+          <span className="text-[10px] text-gray-400">Click to edit</span>
         </div>
 
         <DndContext
@@ -339,9 +339,9 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
           </SortableContext>
           <DragOverlay>
             {activeStep ? (
-              <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-builder-surface-active text-builder-text shadow-xl border border-builder-accent">
-                <GripVertical className="w-3 h-3 text-builder-text-dim" />
-                <span className="text-xs font-medium text-builder-accent">{activeStep.name}</span>
+              <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-xl border border-gray-300 dark:border-gray-600">
+                <GripVertical className="w-3 h-3 text-gray-400" />
+                <span className="text-xs font-medium">{activeStep.name}</span>
               </div>
             ) : null}
           </DragOverlay>
@@ -355,7 +355,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               Add Step
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-40">
+          <DropdownMenuContent align="center" className="w-40 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
             <DropdownMenuItem onClick={() => addStep('welcome')} className="text-xs">
               <Sparkles className="w-3 h-3 mr-2 text-gray-500" />
               Welcome Screen
@@ -381,22 +381,22 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
       </div>
 
       {/* Flow Settings */}
-      <div className="border-t border-builder-border p-3 space-y-3">
+      <div className="border-t border-gray-200 dark:border-gray-700 p-3 space-y-3">
         <div className="flex items-center gap-2 mb-2">
-          <Settings2 className="w-3 h-3 text-builder-text-muted" />
-          <span className="text-[10px] font-medium text-builder-text-muted uppercase tracking-wide">Flow Settings</span>
+          <Settings2 className="w-3 h-3 text-gray-500" />
+          <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Flow Settings</span>
         </div>
 
         <div className="space-y-1">
-          <Label className="text-[10px] text-builder-text-muted">Display Mode</Label>
-          <div className="flex rounded-md overflow-hidden border border-builder-border">
+          <Label className="text-[10px] text-gray-500">Display Mode</Label>
+          <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => onUpdateBlock({ props: { ...settings, displayMode: 'one-at-a-time' } })}
               className={cn(
                 'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
                 settings.displayMode === 'one-at-a-time' 
-                  ? 'bg-builder-accent text-white' 
-                  : 'bg-builder-surface text-builder-text-muted hover:bg-builder-surface-hover'
+                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
+                  : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
               )}
             >
               One at a Time
@@ -406,8 +406,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               className={cn(
                 'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
                 settings.displayMode === 'all-visible' 
-                  ? 'bg-builder-accent text-white' 
-                  : 'bg-builder-surface text-builder-text-muted hover:bg-builder-surface-hover'
+                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
+                  : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
               )}
             >
               All Visible
@@ -416,15 +416,15 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
 
         <div className="space-y-1">
-          <Label className="text-[10px] text-builder-text-muted">Progress Bar</Label>
-          <div className="flex rounded-md overflow-hidden border border-builder-border">
+          <Label className="text-[10px] text-gray-500">Progress Bar</Label>
+          <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => onUpdateBlock({ props: { ...settings, showProgress: true } })}
               className={cn(
                 'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
                 settings.showProgress 
-                  ? 'bg-builder-accent text-white' 
-                  : 'bg-builder-surface text-builder-text-muted hover:bg-builder-surface-hover'
+                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
+                  : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
               )}
             >
               Show
@@ -434,8 +434,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               className={cn(
                 'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
                 !settings.showProgress 
-                  ? 'bg-builder-accent text-white' 
-                  : 'bg-builder-surface text-builder-text-muted hover:bg-builder-surface-hover'
+                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
+                  : 'bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
               )}
             >
               Hide
@@ -444,15 +444,15 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
 
         <div className="space-y-1">
-          <Label className="text-[10px] text-builder-text-muted">Transition</Label>
+          <Label className="text-[10px] text-gray-500">Transition</Label>
           <Select 
             value={settings.transition || 'slide-up'}
             onValueChange={(value) => onUpdateBlock({ props: { ...settings, transition: value } })}
           >
-            <SelectTrigger className="h-7 text-xs bg-builder-surface border-builder-border">
+            <SelectTrigger className="h-7 text-xs bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-builder-surface border-builder-border">
+            <SelectContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <SelectItem value="slide-up" className="text-xs">Slide Up</SelectItem>
               <SelectItem value="slide-left" className="text-xs">Slide Left</SelectItem>
               <SelectItem value="fade" className="text-xs">Fade</SelectItem>
