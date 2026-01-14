@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Workflow, HelpCircle, UserCheck, GitBranch, X 
+  Workflow, HelpCircle, UserCheck, GitBranch
 } from 'lucide-react';
 import {
   Dialog,
@@ -19,8 +19,6 @@ interface CaptureFlowOption {
   label: string;
   description: string;
   icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
 }
 
 const captureFlowOptions: CaptureFlowOption[] = [
@@ -29,32 +27,24 @@ const captureFlowOptions: CaptureFlowOption[] = [
     label: 'Full Application',
     description: 'Multiple questions inside one flow card (Typeform style)',
     icon: <Workflow size={20} />,
-    iconBg: 'bg-indigo-500/10',
-    iconColor: 'text-indigo-500',
   },
   {
     id: 'inline-question',
     label: 'One Question Screen',
     description: 'Best for one-question-per-page flows',
     icon: <HelpCircle size={20} />,
-    iconBg: 'bg-emerald-500/10',
-    iconColor: 'text-emerald-500',
   },
   {
     id: 'inline-optin',
     label: 'Inline Opt-In',
     description: 'Quick name + email capture',
     icon: <UserCheck size={20} />,
-    iconBg: 'bg-amber-500/10',
-    iconColor: 'text-amber-500',
   },
   {
     id: 'conditional-question',
     label: 'Conditional Question',
     description: 'Question shows only if previous answer matches',
     icon: <GitBranch size={20} />,
-    iconBg: 'bg-purple-500/10',
-    iconColor: 'text-purple-500',
   },
 ];
 
@@ -65,7 +55,7 @@ const createFullApplicationBlock = (): Block => ({
   label: 'Application',
   elements: [
     { id: generateId(), type: 'heading', content: 'Apply Now', props: { level: 1 } },
-    { id: generateId(), type: 'text', content: 'Answer a few quick questions to get started.', props: { variant: 'subtext' } },
+    { id: generateId(), type: 'text', content: 'Answer a few quick questions to see if we\'re a good fit.', props: { variant: 'subtext' } },
     { id: generateId(), type: 'button', content: 'Start Application →', props: { variant: 'primary', size: 'lg' } },
   ],
   props: {
@@ -76,31 +66,61 @@ const createFullApplicationBlock = (): Block => ({
       { 
         id: generateId(), 
         name: 'Welcome', 
-        type: 'welcome', 
-        elements: [
-          { id: generateId(), type: 'heading', content: 'Welcome!', props: { level: 2 } },
-          { id: generateId(), type: 'text', content: "Let's find out how we can help you.", props: {} },
-        ], 
+        type: 'welcome',
+        settings: {
+          title: 'Welcome!',
+          description: 'Let\'s see if we\'re a good fit.',
+          buttonText: 'Get Started',
+          buttonColor: '#18181b',
+        },
+        elements: [], 
         navigation: { action: 'next' } 
       },
       { 
         id: generateId(), 
         name: 'Your Challenge', 
-        type: 'question', 
-        elements: [
-          { id: generateId(), type: 'heading', content: "What's your biggest challenge?", props: { level: 2 } },
-          { id: generateId(), type: 'radio', content: 'Not enough leads', props: { name: 'challenge', value: 'leads' } },
-          { id: generateId(), type: 'radio', content: 'Low conversions', props: { name: 'challenge', value: 'conversions' } },
-          { id: generateId(), type: 'radio', content: "Can't scale", props: { name: 'challenge', value: 'scale' } },
-        ], 
+        type: 'question',
+        settings: {
+          title: 'What\'s your biggest challenge right now?',
+          questionType: 'multiple-choice',
+          options: [
+            'Not enough leads',
+            'Low conversion rates', 
+            'Unclear offer / positioning',
+            'Need a repeatable system'
+          ],
+          required: true,
+          buttonText: 'Continue',
+          buttonColor: '#18181b',
+        },
+        elements: [], 
+        navigation: { action: 'next' } 
+      },
+      { 
+        id: generateId(), 
+        name: 'Your Situation', 
+        type: 'question',
+        settings: {
+          title: 'Briefly describe your current situation.',
+          questionType: 'text',
+          description: 'What are you working on and where do you want to be?',
+          required: true,
+          buttonText: 'Continue',
+          buttonColor: '#18181b',
+        },
+        elements: [], 
         navigation: { action: 'next' } 
       },
       { 
         id: generateId(), 
         name: 'Your Info', 
-        type: 'capture', 
+        type: 'capture',
+        settings: {
+          title: 'Where should we send your results?',
+          buttonText: 'Submit Application',
+          buttonColor: '#18181b',
+        },
         elements: [
-          { id: generateId(), type: 'heading', content: 'Almost there!', props: { level: 2 } },
           { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true, fieldKey: 'name' } },
           { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'Your email', required: true, fieldKey: 'email' } },
         ], 
@@ -109,11 +129,14 @@ const createFullApplicationBlock = (): Block => ({
       { 
         id: generateId(), 
         name: 'Thank You', 
-        type: 'ending', 
-        elements: [
-          { id: generateId(), type: 'heading', content: 'Thank you!', props: { level: 2 } },
-          { id: generateId(), type: 'text', content: "We'll be in touch soon.", props: {} },
-        ], 
+        type: 'ending',
+        settings: {
+          title: 'Thanks — we\'ll be in touch.',
+          description: 'We\'ll review your answers and reach out shortly.',
+          buttonText: 'Done',
+          buttonColor: '#18181b',
+        },
+        elements: [], 
         navigation: { action: 'submit' } 
       },
     ]
@@ -208,13 +231,13 @@ export const CaptureFlowSelector: React.FC<CaptureFlowSelectorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-builder-surface border-builder-border">
+      <DialogContent className="sm:max-w-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
         <DialogHeader className="pb-2">
-          <DialogTitle className="text-lg font-semibold text-builder-text flex items-center gap-2">
-            <Workflow size={20} className="text-builder-accent" />
+          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <Workflow size={20} className="text-gray-600 dark:text-gray-400" />
             Add Capture Flow
           </DialogTitle>
-          <p className="text-sm text-builder-text-muted mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Choose how you want to capture leads
           </p>
         </DialogHeader>
@@ -224,16 +247,16 @@ export const CaptureFlowSelector: React.FC<CaptureFlowSelectorProps> = ({
             <button
               key={option.id}
               onClick={() => handleSelectFlow(option.id)}
-              className="w-full flex items-start gap-3 p-3 rounded-lg border border-builder-border hover:border-builder-accent/50 hover:bg-builder-surface-hover transition-all text-left group"
+              className="w-full flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-left group"
             >
-              <div className={`w-10 h-10 rounded-lg ${option.iconBg} ${option.iconColor} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+              <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                 {option.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-builder-text group-hover:text-builder-accent transition-colors">
+                <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">
                   {option.label}
                 </div>
-                <div className="text-xs text-builder-text-muted mt-0.5">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {option.description}
                 </div>
               </div>
@@ -242,9 +265,9 @@ export const CaptureFlowSelector: React.FC<CaptureFlowSelectorProps> = ({
         </div>
 
         {/* Flow guidance footer */}
-        <div className="mt-4 pt-3 border-t border-builder-border">
-          <p className="text-[11px] text-builder-text-dim text-center">
-            💡 Typical flow: <span className="text-builder-text-muted">Qualify → Capture → Book → Thank You</span>
+        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center">
+            💡 Typical flow: <span className="text-gray-500 dark:text-gray-400">Qualify → Capture → Book → Thank You</span>
           </p>
         </div>
       </DialogContent>
