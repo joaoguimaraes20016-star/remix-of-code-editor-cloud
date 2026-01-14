@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  Plus, Search, LayoutGrid, MousePointer, Quote, Package, Mail,
-  X, ArrowLeft, Layers, Square, Users
+  Search, LayoutGrid, MousePointer, Quote, Package, Mail,
+  X, ArrowLeft, Layers, Square, Users, ChevronRight
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
@@ -16,7 +16,6 @@ interface SectionTemplate {
   label: string;
   icon: React.ReactNode;
   description: string;
-  color: string;
   template: () => Block;
 }
 
@@ -24,9 +23,8 @@ const sectionTemplates: SectionTemplate[] = [
   {
     id: 'empty',
     label: 'Empty Section',
-    icon: <Square size={20} />,
+    icon: <Square size={18} />,
     description: 'Start with a blank canvas',
-    color: 'bg-gray-100 text-gray-500',
     template: () => ({
       id: generateId(),
       type: 'custom',
@@ -38,9 +36,8 @@ const sectionTemplates: SectionTemplate[] = [
   {
     id: 'hero',
     label: 'Hero',
-    icon: <LayoutGrid size={20} />,
+    icon: <LayoutGrid size={18} />,
     description: 'Title, subtitle & CTA',
-    color: 'bg-purple-100 text-purple-600',
     template: () => ({
       id: generateId(),
       type: 'hero',
@@ -56,9 +53,8 @@ const sectionTemplates: SectionTemplate[] = [
   {
     id: 'cta',
     label: 'Call to Action',
-    icon: <MousePointer size={20} />,
+    icon: <MousePointer size={18} />,
     description: 'Prompt user action',
-    color: 'bg-blue-100 text-blue-600',
     template: () => ({
       id: generateId(),
       type: 'cta',
@@ -72,28 +68,26 @@ const sectionTemplates: SectionTemplate[] = [
     }),
   },
   {
-    id: 'about',
-    label: 'About Us',
-    icon: <Users size={20} />,
-    description: 'Company story & team',
-    color: 'bg-indigo-100 text-indigo-600',
+    id: 'testimonials',
+    label: 'Testimonials',
+    icon: <Quote size={18} />,
+    description: 'Social proof & reviews',
     template: () => ({
       id: generateId(),
-      type: 'about',
-      label: 'About Section',
+      type: 'testimonial',
+      label: 'Testimonial',
       elements: [
-        { id: generateId(), type: 'heading', content: 'About Us', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: 'We are a team passionate about helping you succeed. Our mission is to provide the best tools and support to help you achieve your goals.', props: {} },
+        { id: generateId(), type: 'text', content: '"This product changed my life! Highly recommend to everyone."', props: {} },
+        { id: generateId(), type: 'text', content: '— Sarah Johnson, CEO', props: { variant: 'caption' } },
       ],
-      props: {},
+      props: { rating: 5, avatar: '' },
     }),
   },
   {
     id: 'features',
     label: 'Features',
-    icon: <Package size={20} />,
+    icon: <Package size={18} />,
     description: 'Highlight key benefits',
-    color: 'bg-green-100 text-green-600',
     template: () => ({
       id: generateId(),
       type: 'feature',
@@ -109,28 +103,10 @@ const sectionTemplates: SectionTemplate[] = [
     }),
   },
   {
-    id: 'testimonials',
-    label: 'Testimonials',
-    icon: <Quote size={20} />,
-    description: 'Social proof & reviews',
-    color: 'bg-amber-100 text-amber-600',
-    template: () => ({
-      id: generateId(),
-      type: 'testimonial',
-      label: 'Testimonial',
-      elements: [
-        { id: generateId(), type: 'text', content: '"This product changed my life! Highly recommend to everyone."', props: {} },
-        { id: generateId(), type: 'text', content: '— Sarah Johnson, CEO', props: { variant: 'caption' } },
-      ],
-      props: { rating: 5, avatar: '' },
-    }),
-  },
-  {
     id: 'contact',
-    label: 'Contact Form',
-    icon: <Mail size={20} />,
+    label: 'Contact',
+    icon: <Mail size={18} />,
     description: 'Capture leads',
-    color: 'bg-rose-100 text-rose-600',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -176,7 +152,7 @@ export const SectionPickerPanel: React.FC<SectionPickerPanelProps> = ({
   return (
     <div className="flex flex-col h-full min-h-0 bg-builder-surface">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-builder-border">
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2.5 border-b border-builder-border">
         <div className="flex items-center gap-2">
           <button 
             onClick={onClose}
@@ -195,53 +171,54 @@ export const SectionPickerPanel: React.FC<SectionPickerPanelProps> = ({
       </div>
 
       {/* Search */}
-      <div className="flex-shrink-0 p-3 border-b border-builder-border-subtle">
+      <div className="flex-shrink-0 px-3 py-3">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-builder-text-muted" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search sections..."
-            className="pl-9 h-8 text-sm bg-builder-surface-hover border-builder-border text-builder-text placeholder:text-builder-text-dim"
+            className="pl-9 h-9 text-sm bg-builder-surface-hover border-builder-border text-builder-text placeholder:text-builder-text-dim"
           />
         </div>
       </div>
 
-      {/* Content - Scrollable */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 pb-20">
-        <div className="grid gap-2">
+      {/* Section Header */}
+      <div className="flex-shrink-0 px-4 pb-2">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-builder-text-dim mb-1">
+          Section Templates
+        </div>
+        <div className="text-xs text-builder-text-muted">
+          Sections create a new container with content blocks.
+        </div>
+      </div>
+
+      {/* Content - Scrollable List */}
+      <div className="flex-1 min-h-0 overflow-y-auto builder-scroll px-2 pb-20">
+        <div className="flex flex-col">
           {filteredTemplates.map((template) => (
             <button
               key={template.id}
               onClick={() => handleAddSection(template)}
               className={cn(
-                "w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left group",
-                "bg-builder-surface-hover hover:bg-builder-surface-active",
-                "border border-transparent hover:border-builder-border"
+                "w-full flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all text-left group",
+                "hover:bg-builder-surface-hover"
               )}
             >
               {/* Icon */}
-              <div className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-                template.color
-              )}>
+              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-builder-text-muted">
                 {template.icon}
               </div>
               
-              {/* Text */}
+              {/* Label */}
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-builder-text">
+                <span className="text-sm text-builder-text">
                   {template.label}
-                </div>
-                <div className="text-xs text-builder-text-muted truncate">
-                  {template.description}
-                </div>
+                </span>
               </div>
 
-              {/* Add indicator */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <Plus size={16} className="text-builder-text-muted" />
-              </div>
+              {/* Chevron */}
+              <ChevronRight size={14} className="text-builder-text-dim group-hover:text-builder-text-muted transition-colors" />
             </button>
           ))}
         </div>
