@@ -63,14 +63,59 @@ const createFullApplicationBlock = (): Block => ({
   id: generateId(),
   type: 'application-flow',
   label: 'Application',
-  elements: [],
+  elements: [
+    { id: generateId(), type: 'heading', content: 'Apply Now', props: { level: 1 } },
+    { id: generateId(), type: 'text', content: 'Answer a few quick questions to get started.', props: { variant: 'subtext' } },
+    { id: generateId(), type: 'button', content: 'Start Application →', props: { variant: 'primary', size: 'lg' } },
+  ],
   props: {
     displayMode: 'one-at-a-time',
     showProgress: true,
     transition: 'slide-up',
     steps: [
-      { id: generateId(), name: 'Welcome', type: 'welcome', elements: [], navigation: { action: 'next' } },
-      { id: generateId(), name: 'Get Started', type: 'capture', elements: [], navigation: { action: 'submit' } },
+      { 
+        id: generateId(), 
+        name: 'Welcome', 
+        type: 'welcome', 
+        elements: [
+          { id: generateId(), type: 'heading', content: 'Welcome!', props: { level: 2 } },
+          { id: generateId(), type: 'text', content: "Let's find out how we can help you.", props: {} },
+        ], 
+        navigation: { action: 'next' } 
+      },
+      { 
+        id: generateId(), 
+        name: 'Your Challenge', 
+        type: 'question', 
+        elements: [
+          { id: generateId(), type: 'heading', content: "What's your biggest challenge?", props: { level: 2 } },
+          { id: generateId(), type: 'radio', content: 'Not enough leads', props: { name: 'challenge', value: 'leads' } },
+          { id: generateId(), type: 'radio', content: 'Low conversions', props: { name: 'challenge', value: 'conversions' } },
+          { id: generateId(), type: 'radio', content: "Can't scale", props: { name: 'challenge', value: 'scale' } },
+        ], 
+        navigation: { action: 'next' } 
+      },
+      { 
+        id: generateId(), 
+        name: 'Your Info', 
+        type: 'capture', 
+        elements: [
+          { id: generateId(), type: 'heading', content: 'Almost there!', props: { level: 2 } },
+          { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true, fieldKey: 'name' } },
+          { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'Your email', required: true, fieldKey: 'email' } },
+        ], 
+        navigation: { action: 'next' } 
+      },
+      { 
+        id: generateId(), 
+        name: 'Thank You', 
+        type: 'ending', 
+        elements: [
+          { id: generateId(), type: 'heading', content: 'Thank you!', props: { level: 2 } },
+          { id: generateId(), type: 'text', content: "We'll be in touch soon.", props: {} },
+        ], 
+        navigation: { action: 'submit' } 
+      },
     ]
   },
 });
@@ -78,8 +123,9 @@ const createFullApplicationBlock = (): Block => ({
 const createInlineQuestionBlock = (): Block => ({
   id: generateId(),
   type: 'form-field',
-  label: 'Question',
+  label: 'Question Screen',
   elements: [
+    { id: generateId(), type: 'text', content: 'QUESTION SCREEN', props: { variant: 'tag' } },
     { id: generateId(), type: 'heading', content: 'What is your biggest challenge?', props: { level: 2 } },
     { id: generateId(), type: 'radio', content: 'Not enough leads', props: { name: 'challenge', value: 'leads' } },
     { id: generateId(), type: 'radio', content: 'Low conversions', props: { name: 'challenge', value: 'conversions' } },

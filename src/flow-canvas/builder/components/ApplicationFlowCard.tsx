@@ -84,8 +84,41 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           </div>
         </div>
 
-        {/* Steps Preview */}
+        {/* Visual Preview Section - Shows the headline, subtext, and start button */}
         <div className="p-4">
+          {block.elements && block.elements.length > 0 ? (
+            <div className="text-center space-y-3 py-6 bg-white/60 dark:bg-gray-800/60 rounded-lg mb-4">
+              {block.elements.map((el) => {
+                if (el.type === 'heading') {
+                  return (
+                    <h2 key={el.id} className="text-xl font-bold text-gray-900 dark:text-white">
+                      {el.content}
+                    </h2>
+                  );
+                }
+                if (el.type === 'text') {
+                  return (
+                    <p key={el.id} className="text-sm text-gray-600 dark:text-gray-400">
+                      {el.content}
+                    </p>
+                  );
+                }
+                if (el.type === 'button') {
+                  return (
+                    <span 
+                      key={el.id} 
+                      className="inline-block px-5 py-2.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-medium shadow-md"
+                    >
+                      {el.content}
+                    </span>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          ) : null}
+
+          {/* Steps Preview - Compact badges */}
           {steps.length > 0 ? (
             <div className="flex flex-wrap gap-2 mb-4">
               {steps.slice(0, 6).map((step, index) => (
