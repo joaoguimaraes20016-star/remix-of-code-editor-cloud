@@ -138,7 +138,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         </div>
       </div>
 
-      {/* Step Preview - uses same styling as canvas (scaled 0.6x) */}
+      {/* Step Preview - matches canvas exactly using semantic tokens */}
       <div className="px-4 py-3 border-b border-border">
         <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Preview</div>
         <div 
@@ -149,38 +149,32 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             className="origin-top"
             style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}
           >
-            {/* Render same content as canvas - matching ApplicationFlowCard */}
+            {/* Render same content as ApplicationFlowCard canvas - exact match */}
             <div className="text-center py-12 px-8 bg-card rounded-lg">
-              {/* Title */}
-              <h3 
-                className={cn(
-                  'font-bold text-foreground',
-                  stepSettings.titleSize === 'lg' ? 'text-lg' :
-                  stepSettings.titleSize === '2xl' ? 'text-2xl' :
-                  stepSettings.titleSize === '3xl' ? 'text-3xl' : 'text-xl'
-                )} 
-                style={{ textAlign: (stepSettings.align as any) || 'center' }}
-              >
-                {questionTitle || (step.type === 'question' ? 'Question title here' : step.type === 'welcome' ? 'Welcome!' : step.type === 'ending' ? 'Thank you!' : 'Heading')}
+              {/* Title - matches ApplicationFlowCard exactly (text-2xl for welcome, text-xl for others) */}
+              <h3 className={cn(
+                'font-bold text-foreground',
+                step.type === 'welcome' ? 'text-2xl' : 'text-xl'
+              )}>
+                {questionTitle || (step.type === 'welcome' ? 'Apply Now' : step.type === 'question' ? 'Your question here' : step.type === 'capture' ? 'Where should we send your results?' : step.type === 'ending' ? 'Thanks — we will be in touch!' : 'Heading')}
               </h3>
               
-              {/* Description */}
-              {questionDescription && (
-                <p className="text-sm text-muted-foreground mt-2">{questionDescription}</p>
+              {/* Description - matches ApplicationFlowCard */}
+              {(questionDescription || step.type === 'welcome') && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  {questionDescription || (step.type === 'welcome' ? 'Answer a few quick questions to see if we are a good fit.' : '')}
+                </p>
               )}
               
-              {/* Options (for MCQ) */}
+              {/* Question options for multiple choice - matches renderQuestionStep */}
               {step.type === 'question' && questionType === 'multiple-choice' && options.length > 0 && (
-                <div className="mt-4 space-y-2 max-w-xs mx-auto">
-                  {options.slice(0, 3).map((opt, i) => (
+                <div className="mt-6 space-y-2 max-w-md mx-auto">
+                  {options.slice(0, 3).map((option, i) => (
                     <div 
-                      key={i} 
-                      className={cn(
-                        "px-4 py-2 border border-border text-sm text-foreground bg-background",
-                        stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
-                      )}
+                      key={i}
+                      className="px-4 py-3 border border-border rounded-lg text-left text-sm text-foreground bg-background"
                     >
-                      {opt}
+                      {option}
                     </div>
                   ))}
                   {options.length > 3 && (
@@ -189,53 +183,40 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                 </div>
               )}
               
-              {/* Text Input Preview */}
+              {/* Text input for text questions - matches renderQuestionStep */}
               {step.type === 'question' && questionType === 'text' && (
-                <div className="mt-4 max-w-xs mx-auto">
-                  <input 
-                    className={cn(
-                      "w-full px-4 py-2 border border-border text-sm bg-background text-foreground",
-                      stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
-                    )}
-                    placeholder="Type your answer..."
-                    disabled
-                  />
-                </div>
-              )}
-
-              {/* Capture Fields Preview */}
-              {step.type === 'capture' && (
-                <div className="mt-4 max-w-xs mx-auto space-y-2">
-                  <input 
-                    className={cn(
-                      "w-full px-4 py-2 border border-border text-sm bg-background text-foreground",
-                      stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
-                    )}
-                    placeholder="Your name"
-                    disabled
-                  />
-                  <input 
-                    className={cn(
-                      "w-full px-4 py-2 border border-border text-sm bg-background text-foreground",
-                      stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
-                    )}
-                    placeholder="Your email"
-                    disabled
-                  />
+                <div className="mt-6 max-w-md mx-auto">
+                  <div className="w-full px-4 py-3 border border-border rounded-lg text-sm text-muted-foreground bg-background text-left">
+                    Type your answer...
+                  </div>
                 </div>
               )}
               
-              {/* Button Preview - uses primary color */}
-              <span 
-                className={cn(
-                  "inline-block mt-6 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  stepSettings.buttonStyle === 'outline' 
-                    ? 'border-2 border-primary bg-transparent text-primary' 
-                    : 'bg-primary text-primary-foreground'
-                )}
-              >
-                {buttonText || 'Continue'}
-              </span>
+              {/* Capture fields - matches renderCaptureStep */}
+              {step.type === 'capture' && (
+                <div className="mt-6 space-y-3 max-w-md mx-auto">
+                  <div className="px-4 py-3 border border-border rounded-lg text-sm text-muted-foreground bg-background text-left">
+                    Your name
+                  </div>
+                  <div className="px-4 py-3 border border-border rounded-lg text-sm text-muted-foreground bg-background text-left">
+                    Your email
+                  </div>
+                </div>
+              )}
+              
+              {/* Ending step - no button, just message */}
+              {step.type === 'ending' ? (
+                questionDescription ? null : (
+                  <p className="text-muted-foreground mt-4 text-sm">
+                    We'll be in touch shortly.
+                  </p>
+                )
+              ) : (
+                /* Button - matches all step types except ending */
+                <span className="inline-block mt-6 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium text-sm">
+                  {buttonText || (step.type === 'welcome' ? 'Start Application →' : step.type === 'capture' ? 'Submit' : 'Continue')}
+                </span>
+              )}
             </div>
           </div>
         </div>
