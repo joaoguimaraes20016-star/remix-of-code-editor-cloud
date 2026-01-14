@@ -33,6 +33,7 @@ export type BlockType =
   | 'text-block'
   | 'custom'
   | 'booking'
+  | 'application-flow'  // Typeform-style multi-step experience
   // Extended types for section templates
   | 'feature'
   | 'pricing'
@@ -45,6 +46,28 @@ export type BlockType =
   | 'contact'
   | 'spacer'
   | 'divider';
+
+// Application Flow Step - for Typeform-style multi-step experiences
+export type ApplicationStepType = 'welcome' | 'question' | 'capture' | 'booking' | 'ending';
+
+export interface ApplicationFlowStep {
+  id: string;
+  name: string;
+  type: ApplicationStepType;
+  elements: Element[];
+  navigation: {
+    action: 'next' | 'go-to-step' | 'submit' | 'redirect';
+    targetStepId?: string;
+    redirectUrl?: string;
+  };
+}
+
+export interface ApplicationFlowSettings {
+  displayMode: 'one-at-a-time' | 'all-visible';
+  showProgress: boolean;
+  transition: 'slide-up' | 'slide-left' | 'fade' | 'none';
+  steps: ApplicationFlowStep[];
+}
 
 // Conditional visibility rule
 export interface ConditionalRule {
@@ -334,39 +357,24 @@ export interface BlockAction {
   stackId?: string;
 }
 
-// ============ APPLICATION FLOW TYPES ============
-// These types enable Typeform-style step-by-step flows
-
-export type ApplicationStepType = 
-  | 'welcome'      // First screen with intro + start button
-  | 'question'     // Single or multi-choice question
-  | 'capture'      // Email, phone, name capture
-  | 'content'      // Statement or info screen
-  | 'booking'      // Calendly or scheduling embed
-  | 'ending';      // Thank you / confirmation screen
-
-export type StepNavigationAction = 
-  | 'next'         // Go to next step in order
-  | 'go-to-step'   // Jump to specific step by ID
-  | 'submit'       // Submit form data
-  | 'redirect';    // Redirect to external URL
+// ============ LEGACY APPLICATION FLOW TYPES (deprecated - use ApplicationFlowSettings) ============
+// Kept for backwards compatibility with existing content
 
 export interface StepNavigation {
-  action: StepNavigationAction;
-  targetStepId?: string;   // For 'go-to-step' action
-  redirectUrl?: string;    // For 'redirect' action
-  submitAndContinue?: boolean; // Submit then continue to next/redirect
+  action: 'next' | 'go-to-step' | 'submit' | 'redirect';
+  targetStepId?: string;
+  redirectUrl?: string;
+  submitAndContinue?: boolean;
 }
 
 export interface ApplicationStep {
   id: string;
   type: ApplicationStepType;
-  label: string;              // Display name in step list
-  elements: Element[];        // The actual content
+  label: string;
+  elements: Element[];
   navigation: StepNavigation;
-  // Optional settings
-  required?: boolean;         // Must complete before continuing
-  skipCondition?: ConditionalRule[]; // Skip if conditions met
+  required?: boolean;
+  skipCondition?: ConditionalRule[];
 }
 
 export interface ApplicationFlow {
@@ -376,7 +384,6 @@ export interface ApplicationFlow {
   showProgress: boolean;
   transitionEffect: 'slide-up' | 'slide-left' | 'fade' | 'none';
   steps: ApplicationStep[];
-  // Styling
   progressStyle?: 'bar' | 'dots' | 'fraction' | 'none';
 }
 
@@ -385,7 +392,6 @@ export const applicationStepTypeLabels: Record<ApplicationStepType, string> = {
   welcome: 'Welcome Screen',
   question: 'Question',
   capture: 'Contact Info',
-  content: 'Statement',
   booking: 'Book a Call',
   ending: 'Thank You',
 };
@@ -395,7 +401,6 @@ export const applicationStepTypeIcons: Record<ApplicationStepType, string> = {
   welcome: 'Sparkles',
   question: 'HelpCircle',
   capture: 'UserPlus',
-  content: 'FileText',
   booking: 'Calendar',
   ending: 'CheckCircle2',
 };
