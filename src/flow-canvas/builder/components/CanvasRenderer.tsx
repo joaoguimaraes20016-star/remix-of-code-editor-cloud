@@ -170,6 +170,7 @@ interface CanvasRendererProps {
   onDeleteElement?: (elementId: string) => void;
   onDuplicateBlock?: (blockId: string) => void;
   onDeleteBlock?: (blockId: string) => void;
+  onUpdateBlock?: (blockId: string, updates: Partial<Block>) => void;
   onCopy?: () => void;
   onPaste?: () => void;
   canPaste?: boolean;
@@ -2011,6 +2012,7 @@ interface SortableBlockRendererProps {
   onDeleteBlock?: () => void;
   onAddBlock?: (position: 'above' | 'below') => void;
   onUpdateElement?: (elementId: string, updates: Partial<Element>) => void;
+  onUpdateBlock?: (updates: Partial<Block>) => void;
   onDuplicateElement?: (elementId: string) => void;
   onDeleteElement?: (elementId: string) => void;
   onCopy?: () => void;
@@ -2039,6 +2041,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   onDeleteBlock,
   onAddBlock,
   onUpdateElement,
+  onUpdateBlock,
   onDuplicateElement,
   onDeleteElement,
   onCopy,
@@ -2293,13 +2296,16 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           onUpdateBlock={(updates) => {
             // Wire up element updates to propagate through the canvas
             if (updates.elements && onUpdateElement) {
-              // Update each element that changed
               updates.elements.forEach((newEl) => {
                 const oldEl = block.elements.find(e => e.id === newEl.id);
                 if (oldEl && oldEl.content !== newEl.content) {
                   onUpdateElement(newEl.id, { content: newEl.content });
                 }
               });
+            }
+            // Wire up props updates for step settings (bidirectional sync)
+            if (updates.props && onUpdateBlock) {
+              onUpdateBlock(updates);
             }
           }}
           readOnly={readOnly}
@@ -2665,6 +2671,7 @@ interface StackRendererProps {
   onAddBlock?: (block: Block, position?: { stackId: string; index: number }) => void;
   onDuplicateBlock?: (blockId: string) => void;
   onDeleteBlock?: (blockId: string) => void;
+  onUpdateBlock?: (blockId: string, updates: Partial<Block>) => void;
   onUpdateElement?: (elementId: string, updates: Partial<Element>) => void;
   onDuplicateElement?: (elementId: string) => void;
   onDeleteElement?: (elementId: string) => void;
@@ -2692,6 +2699,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   onAddBlock,
   onDuplicateBlock,
   onDeleteBlock,
+  onUpdateBlock,
   onUpdateElement,
   onDuplicateElement,
   onDeleteElement,
@@ -2822,6 +2830,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
                   onAddBlock={(position) => {
                     // This would be handled by parent for inserting at specific position
                   }}
+                  onUpdateBlock={(updates) => onUpdateBlock?.(block.id, updates)}
                   onUpdateElement={onUpdateElement}
                   onDuplicateElement={onDuplicateElement}
                   onDeleteElement={onDeleteElement}
@@ -2875,6 +2884,7 @@ interface FrameRendererProps {
   onAddBlock?: (block: Block, position?: { stackId: string; index: number }) => void;
   onDuplicateBlock?: (blockId: string) => void;
   onDeleteBlock?: (blockId: string) => void;
+  onUpdateBlock?: (blockId: string, updates: Partial<Block>) => void;
   onUpdateElement?: (elementId: string, updates: Partial<Element>) => void;
   onDuplicateElement?: (elementId: string) => void;
   onDeleteElement?: (elementId: string) => void;
@@ -2916,6 +2926,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   onAddBlock,
   onDuplicateBlock,
   onDeleteBlock,
+  onUpdateBlock,
   onUpdateElement,
   onDuplicateElement,
   onDeleteElement,
@@ -3059,6 +3070,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
               onAddBlock={onAddBlock}
               onDuplicateBlock={onDuplicateBlock}
               onDeleteBlock={onDeleteBlock}
+              onUpdateBlock={onUpdateBlock}
               onUpdateElement={onUpdateElement}
               onDuplicateElement={onDuplicateElement}
               onDeleteElement={onDeleteElement}
@@ -3132,6 +3144,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   onDeleteElement,
   onDuplicateBlock,
   onDeleteBlock,
+  onUpdateBlock,
   onCopy,
   onPaste,
   canPaste = false,
@@ -3372,6 +3385,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                         onAddBlock={onAddBlock}
                         onDuplicateBlock={onDuplicateBlock}
                         onDeleteBlock={onDeleteBlock}
+                        onUpdateBlock={onUpdateBlock}
                         onUpdateElement={onUpdateElement}
                         onDuplicateElement={onDuplicateElement}
                         onDeleteElement={onDeleteElement}
