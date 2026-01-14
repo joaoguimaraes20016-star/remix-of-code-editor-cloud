@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Page, SelectionState, StepIntent, AIsuggestion, Block, Element } from '../../types/infostack';
+import { Page, SelectionState, StepIntent, AIsuggestion, Block, Element, ApplicationFlowStep, ApplicationFlowSettings } from '../../types/infostack';
 import { LeftPanel } from './LeftPanel';
 import { CanvasRenderer } from './CanvasRenderer';
 import { RightPanel } from './RightPanel';
@@ -509,6 +509,115 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       toast.success(`${deletedCount} content item${deletedCount > 1 ? 's' : ''} deleted`);
     }
   }, [page, multiSelection, handlePageUpdate, handleClearSelection]);
+
+  // Find the first application-flow block in the active step
+  const findApplicationFlowBlock = useCallback((): Block | null => {
+    const step = page.steps.find(s => s.id === activeStepId);
+    if (!step) return null;
+    
+    for (const frame of step.frames) {
+      for (const stack of frame.stacks) {
+        for (const block of stack.blocks) {
+          if (block.type === 'application-flow') {
+            return block;
+          }
+        }
+      }
+    }
+    return null;
+  }, [page, activeStepId]);
+
+  // Add step to existing Application Flow block
+  const handleAddApplicationFlowStep = useCallback((newStep: ApplicationFlowStep) => {
+    const flowBlock = findApplicationFlowBlock();
+    if (!flowBlock) {
+      toast.error('No Application Flow found. Add one first.');
+      return;
+    }
+    
+    const updatedPage = deepClone(page);
+    
+    for (const step of updatedPage.steps) {
+      for (const frame of step.frames) {
+        for (const stack of frame.stacks) {
+          const blockIndex = stack.blocks.findIndex(b => b.id === flowBlock.id);
+          if (blockIndex !== -1) {
+            const block = stack.blocks[blockIndex];
+            const settings = (block.props || {}) as unknown as ApplicationFlowSettings;
+            const steps = [...(settings.steps || [])];
+            
+            // Insert before ending step (if exists), otherwise at end
+            const endingIndex = steps.findIndex(s => s.type === 'ending');
+            if (endingIndex !== -1) {
+              steps.splice(endingIndex, 0, newStep);
+            } else {
+              steps.push(newStep);
+            }
+            
+            block.props = { ...settings, steps } as unknown as Record<string, unknown>;
+            handlePageUpdate(updatedPage, 'Add flow step');
+            
+            // Select the new step
+            setSelectedApplicationStepId(newStep.id);
+            
+            // Select the flow block
+            handleSelect({ type: 'block', id: flowBlock.id, path: ['block', flowBlock.id] });
+            
+            toast.success('Step added to flow');
+            return;
+          }
+        }
+      }
+    }
+  }, [page, findApplicationFlowBlock, handlePageUpdate, handleSelect]);
+
+  // Create new Application Flow with initial step
+  const handleCreateApplicationFlowWithStep = useCallback((initialStep: ApplicationFlowStep) => {
+    const newFlowBlock: Block = {
+      id: generateId(),
+      type: 'application-flow',
+      label: 'Application',
+      elements: [],
+      props: ({
+        displayMode: 'one-at-a-time',
+        showProgress: true,
+        transition: 'slide-up',
+        steps: [
+          { 
+            id: generateId(), 
+            name: 'Welcome', 
+            type: 'welcome',
+            settings: {
+              title: 'Apply Now',
+              description: 'Answer a few quick questions.',
+              buttonText: 'Start →',
+            },
+            elements: [], 
+            navigation: { action: 'next' } 
+          },
+          initialStep,
+          { 
+            id: generateId(), 
+            name: 'Thank You', 
+            type: 'ending',
+            settings: {
+              title: "Thanks — we'll be in touch!",
+            },
+            elements: [], 
+            navigation: { action: 'submit' } 
+          },
+        ]
+      }) as unknown as Record<string, unknown>,
+    };
+    
+    // Add as section
+    handleAddBlock(newFlowBlock, undefined, { type: 'section' });
+    
+    // Select the initial step
+    setSelectedApplicationStepId(initialStep.id);
+    
+    toast.success('Application Flow created');
+  }, [handleAddBlock]);
 
   // Move element up/down
   const handleMoveElement = useCallback((elementId: string, direction: 'up' | 'down') => {
@@ -1166,6 +1275,19 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                 targetSectionId={blockPickerTargetStackId}
                 hideSecionsTab={!!blockPickerTargetStackId}
                 initialTab={blockPickerMode === 'sections' ? 'sections' : 'blocks'}
+                activeApplicationFlowBlockId={findApplicationFlowBlock()?.id || null}
+                onAddApplicationFlowStep={(step) => {
+                  handleAddApplicationFlowStep(step);
+                  setBlockPickerOpen(false);
+                  setBlockPickerTargetStackId(null);
+                  setBlockPickerMode('blocks');
+                }}
+                onCreateApplicationFlowWithStep={(step) => {
+                  handleCreateApplicationFlowWithStep(step);
+                  setBlockPickerOpen(false);
+                  setBlockPickerTargetStackId(null);
+                  setBlockPickerMode('blocks');
+                }}
               />
             ) : (
               <LeftPanel

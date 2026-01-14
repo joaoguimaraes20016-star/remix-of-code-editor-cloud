@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ApplicationFlowStep, ApplicationStepType } from '../../../types/infostack';
+import { ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -45,8 +45,6 @@ const stepTypeLabels: Record<ApplicationStepType, string> = {
   ending: 'Ending',
 };
 
-type QuestionType = 'multiple-choice' | 'text' | 'dropdown' | 'scale' | 'yes-no';
-
 const questionTypeIcons: Record<QuestionType, React.ReactNode> = {
   'multiple-choice': <List className="w-4 h-4" />,
   'text': <Type className="w-4 h-4" />,
@@ -55,26 +53,13 @@ const questionTypeIcons: Record<QuestionType, React.ReactNode> = {
   'yes-no': <ToggleLeft className="w-4 h-4" />,
 };
 
-// Step settings stored in elements or as extended step data
-interface StepSettings {
-  questionType?: QuestionType;
-  options?: string[];
-  required?: boolean;
-  title?: string;
-  description?: string;
-  buttonText?: string;
-  titleSize?: string;
-  align?: string;
-  buttonColor?: string;
-  buttonStyle?: 'primary' | 'outline';
-  inputStyle?: 'rounded' | 'square';
-  spacing?: string;
-}
+// Use the shared settings type from infostack.ts
+type StepSettings = ApplicationFlowStepSettings;
 
 interface StepContentEditorProps {
-  step: ApplicationFlowStep & { settings?: StepSettings };
+  step: ApplicationFlowStep;
   allSteps: ApplicationFlowStep[];
-  onUpdate: (updates: Partial<ApplicationFlowStep & { settings?: StepSettings }>) => void;
+  onUpdate: (updates: Partial<ApplicationFlowStep>) => void;
   onBack: () => void;
 }
 
@@ -395,7 +380,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             <Label className="text-[10px] text-muted-foreground uppercase">Text Size</Label>
             <Select 
               value={stepSettings.titleSize || 'xl'}
-              onValueChange={(value) => updateSettings({ titleSize: value })}
+              onValueChange={(value) => updateSettings({ titleSize: value as ApplicationFlowStepSettings['titleSize'] })}
             >
               <SelectTrigger className="h-8 text-xs bg-background border-border">
                 <SelectValue />
@@ -412,7 +397,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           <div className="space-y-1.5">
             <Label className="text-[10px] text-muted-foreground uppercase">Alignment</Label>
             <div className="flex rounded-md overflow-hidden border border-border">
-              {['left', 'center'].map((align) => (
+              {(['left', 'center'] as const).map((align) => (
                 <button
                   key={align}
                   onClick={() => updateSettings({ align })}
@@ -514,7 +499,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             <Label className="text-[10px] text-muted-foreground uppercase">Spacing</Label>
             <Select 
               value={stepSettings.spacing || 'normal'}
-              onValueChange={(value) => updateSettings({ spacing: value })}
+              onValueChange={(value) => updateSettings({ spacing: value as ApplicationFlowStepSettings['spacing'] })}
             >
               <SelectTrigger className="h-8 text-xs bg-background border-border">
                 <SelectValue />
