@@ -187,6 +187,8 @@ interface CanvasRendererProps {
   onRenameFrame?: (frameId: string, newName: string) => void;
   // Block picker in left panel
   onOpenBlockPickerInPanel?: (stackId: string) => void;
+  // Section picker for adding new sections
+  onOpenSectionPicker?: () => void;
 }
 
 // Button Action type
@@ -3048,6 +3050,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   onRenameFrame,
   // Block picker in left panel
   onOpenBlockPickerInPanel,
+  // Section picker
+  onOpenSectionPicker,
 }) => {
   // Form state for preview mode
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -3292,47 +3296,42 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Empty canvas state - polished "Add Block" design */}
-              {step.frames.length === 0 && !readOnly && onOpenBlockPickerInPanel && (
+              {/* Empty canvas state - "Add a Section" */}
+              {step.frames.length === 0 && !readOnly && onOpenSectionPicker && (
                 <div className="flex items-center justify-center min-h-[400px] px-4">
                   <button
-                    onClick={() => onOpenBlockPickerInPanel('new')}
+                    onClick={() => onOpenSectionPicker()}
                     className="group w-full max-w-2xl flex flex-col items-center justify-center py-24 px-8 border-2 border-dashed border-purple-300/50 rounded-2xl bg-white hover:border-purple-400/60 transition-all duration-200"
                   >
-                    {/* Icon container - subtle gray with cube icon */}
-                    <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
-                      <Layers size={32} className="text-gray-400" />
+                    {/* Icon container */}
+                    <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mb-5">
+                      <Layers size={32} className="text-purple-400" />
                     </div>
                     
                     {/* Title */}
                     <span className="text-lg font-semibold text-gray-800 mb-1">
-                      Add a block to this section
+                      Add a Section
                     </span>
                     
                     {/* Subtitle */}
                     <span className="text-sm text-gray-400 mb-6">
-                      Headlines, text, images, buttons & more
+                      Hero, CTA, features, or start empty
                     </span>
                     
                     {/* Dark button */}
                     <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
                       <Plus size={18} />
-                      <span>Insert Block</span>
+                      <span>Add Section</span>
                     </span>
                   </button>
                 </div>
               )}
               
-              {/* Subtle Add More button - only when content exists */}
-              {step.frames.length > 0 && !readOnly && onOpenBlockPickerInPanel && (
+              {/* Subtle Add Section button at bottom - only when content exists */}
+              {step.frames.length > 0 && !readOnly && onOpenSectionPicker && (
                 <div className="flex flex-col items-center py-8 group">
                   <button
-                    onClick={() => {
-                      const lastStack = step.frames[step.frames.length - 1]?.stacks[0];
-                      if (lastStack) {
-                        onOpenBlockPickerInPanel(lastStack.id);
-                      }
-                    }}
+                    onClick={() => onOpenSectionPicker()}
                     className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center transition-all",
                       "border-2 border-dashed",
@@ -3347,7 +3346,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     "mt-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity",
                     isDarkTheme ? "text-gray-500" : "text-gray-400"
                   )}>
-                    Add more content
+                    Add Section
                   </span>
                 </div>
               )}
