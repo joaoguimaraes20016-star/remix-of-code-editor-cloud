@@ -31,8 +31,10 @@ import {
   X,
   Film,
   FileIcon,
-  Copy
+  Copy,
+  Workflow
 } from 'lucide-react';
+import { ApplicationStepsPanel } from './ApplicationStepsPanel';
 import { getIntentColorClass } from '../utils/helpers';
 import { 
   stepIntentLabels, 
@@ -74,7 +76,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 
-type TabType = 'pages' | 'layers' | 'assets';
+type TabType = 'flow' | 'pages' | 'layers' | 'assets';
 
 // Asset type definition
 interface Asset {
@@ -100,6 +102,7 @@ interface LeftPanelProps {
   onSelectElement?: (elementId: string, path: string[]) => void;
   onRenameStep?: (stepId: string, newName: string) => void;
   onOpenImagePicker?: () => void;
+  onOpenBlockPicker?: () => void;
 }
 
 const intentIcons: Record<StepIntent, React.ReactNode> = {
@@ -825,8 +828,9 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onSelectElement,
   onRenameStep,
   onOpenImagePicker,
+  onOpenBlockPicker,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('pages');
+  const [activeTab, setActiveTab] = useState<TabType>('flow');
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -864,6 +868,13 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
         {/* Tab Bar */}
         <div className="flex items-center border-b border-builder-border">
           <button
+            onClick={() => setActiveTab('flow')}
+            className={cn('builder-tab flex-1 flex items-center justify-center gap-1.5', activeTab === 'flow' && 'builder-tab-active')}
+          >
+            <Workflow className="w-3.5 h-3.5" />
+            Flow
+          </button>
+          <button
             onClick={() => setActiveTab('pages')}
             className={cn('builder-tab flex-1', activeTab === 'pages' && 'builder-tab-active')}
           >
@@ -885,6 +896,20 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
 
         {/* Panel Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
+          {/* NEW: Flow Tab - Typeform-style step list */}
+          {activeTab === 'flow' && (
+            <ApplicationStepsPanel
+              steps={steps}
+              activeStepId={activeStepId}
+              onStepSelect={onStepSelect}
+              onReorderSteps={onReorderSteps}
+              onAddStep={() => onOpenBlockPicker?.()}
+              onDeleteStep={onDeleteStep}
+              onDuplicateStep={onDuplicateStep}
+              onRenameStep={onRenameStep}
+            />
+          )}
+
           {activeTab === 'pages' && (
             <>
               {/* Pages Header */}

@@ -333,3 +333,69 @@ export interface BlockAction {
   blockId: string;
   stackId?: string;
 }
+
+// ============ APPLICATION FLOW TYPES ============
+// These types enable Typeform-style step-by-step flows
+
+export type ApplicationStepType = 
+  | 'welcome'      // First screen with intro + start button
+  | 'question'     // Single or multi-choice question
+  | 'capture'      // Email, phone, name capture
+  | 'content'      // Statement or info screen
+  | 'booking'      // Calendly or scheduling embed
+  | 'ending';      // Thank you / confirmation screen
+
+export type StepNavigationAction = 
+  | 'next'         // Go to next step in order
+  | 'go-to-step'   // Jump to specific step by ID
+  | 'submit'       // Submit form data
+  | 'redirect';    // Redirect to external URL
+
+export interface StepNavigation {
+  action: StepNavigationAction;
+  targetStepId?: string;   // For 'go-to-step' action
+  redirectUrl?: string;    // For 'redirect' action
+  submitAndContinue?: boolean; // Submit then continue to next/redirect
+}
+
+export interface ApplicationStep {
+  id: string;
+  type: ApplicationStepType;
+  label: string;              // Display name in step list
+  elements: Element[];        // The actual content
+  navigation: StepNavigation;
+  // Optional settings
+  required?: boolean;         // Must complete before continuing
+  skipCondition?: ConditionalRule[]; // Skip if conditions met
+}
+
+export interface ApplicationFlow {
+  id: string;
+  type: 'application-flow';
+  displayMode: 'one-at-a-time' | 'all-visible';
+  showProgress: boolean;
+  transitionEffect: 'slide-up' | 'slide-left' | 'fade' | 'none';
+  steps: ApplicationStep[];
+  // Styling
+  progressStyle?: 'bar' | 'dots' | 'fraction' | 'none';
+}
+
+// Helper to get step type label
+export const applicationStepTypeLabels: Record<ApplicationStepType, string> = {
+  welcome: 'Welcome Screen',
+  question: 'Question',
+  capture: 'Contact Info',
+  content: 'Statement',
+  booking: 'Book a Call',
+  ending: 'Thank You',
+};
+
+// Helper to get step type icon name
+export const applicationStepTypeIcons: Record<ApplicationStepType, string> = {
+  welcome: 'Sparkles',
+  question: 'HelpCircle',
+  capture: 'UserPlus',
+  content: 'FileText',
+  booking: 'Calendar',
+  ending: 'CheckCircle2',
+};

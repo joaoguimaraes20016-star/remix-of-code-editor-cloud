@@ -3296,34 +3296,64 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Empty canvas state - "Add a Section" */}
+              {/* Empty canvas state - "Create Your Application" */}
               {step.frames.length === 0 && !readOnly && onOpenSectionPicker && (
-                <div className="flex items-center justify-center min-h-[400px] px-4">
-                  <button
-                    onClick={() => onOpenSectionPicker()}
-                    className="group w-full max-w-2xl flex flex-col items-center justify-center py-24 px-8 border-2 border-dashed border-purple-300/50 rounded-2xl bg-white hover:border-purple-400/60 transition-all duration-200"
-                  >
-                    {/* Icon container */}
-                    <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mb-5">
-                      <Layers size={32} className="text-purple-400" />
+                <div className="flex items-center justify-center min-h-[500px] px-4">
+                  <div className="w-full max-w-lg text-center">
+                    {/* Main content card */}
+                    <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100">
+                      {/* Icon */}
+                      <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                        <Sparkles className="w-10 h-10 text-white" />
+                      </div>
+                      
+                      {/* Title */}
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Create Your Application
+                      </h2>
+                      
+                      {/* Subtitle */}
+                      <p className="text-gray-500 mb-8 max-w-sm mx-auto">
+                        Build a step-by-step flow to qualify and capture leads, Typeform-style.
+                      </p>
+                      
+                      {/* Primary CTA */}
+                      <button
+                        onClick={() => onOpenSectionPicker()}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl"
+                      >
+                        <Plus size={20} />
+                        Add Your First Step
+                      </button>
+                      
+                      {/* Quick Start Options */}
+                      <div className="mt-8 pt-6 border-t border-purple-200">
+                        <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-4">
+                          or start with a template
+                        </p>
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={() => onOpenSectionPicker()}
+                            className="px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                          >
+                            🎯 Quiz Funnel
+                          </button>
+                          <button
+                            onClick={() => onOpenSectionPicker()}
+                            className="px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                          >
+                            📝 Opt-In Form
+                          </button>
+                          <button
+                            onClick={() => onOpenSectionPicker()}
+                            className="px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                          >
+                            📅 Book a Call
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Title */}
-                    <span className="text-lg font-semibold text-gray-800 mb-1">
-                      Add a Section
-                    </span>
-                    
-                    {/* Subtitle */}
-                    <span className="text-sm text-gray-400 mb-6">
-                      Start with a hero, opt-in form, or qualification section
-                    </span>
-                    
-                    {/* Dark button */}
-                    <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
-                      <Plus size={18} />
-                      <span>Insert Section</span>
-                    </span>
-                  </button>
+                  </div>
                 </div>
               )}
               
