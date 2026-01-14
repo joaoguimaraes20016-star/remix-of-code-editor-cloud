@@ -710,11 +710,12 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
         )}
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] shadow-2xl z-[100]"
-        side={position === 'above' ? 'top' : 'bottom'}
-        align="center"
-        sideOffset={8}
-        collisionPadding={20}
+        className="w-80 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] shadow-2xl z-[100] rounded-xl"
+        side="right"
+        align="start"
+        sideOffset={16}
+        alignOffset={-8}
+        collisionPadding={{ top: 20, bottom: 20, left: 280, right: 20 }}
         avoidCollisions={true}
       >
         {/* Search */}
