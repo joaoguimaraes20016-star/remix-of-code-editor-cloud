@@ -409,9 +409,9 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-builder-surface">
+    <div className="flex flex-col h-full min-h-0 bg-builder-surface">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-builder-border">
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-builder-border">
         <div className="flex items-center gap-2">
           <button 
             onClick={onClose}
@@ -430,7 +430,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       </div>
 
       {/* Search */}
-      <div className="p-3 border-b border-builder-border-subtle">
+      <div className="flex-shrink-0 p-3 border-b border-builder-border-subtle">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-builder-text-muted" />
           <Input
@@ -442,8 +442,8 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto builder-scroll">
+      {/* Content - Scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {searchQuery.length > 0 ? (
           // Search Results
           <div className="p-2">
