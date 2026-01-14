@@ -3274,84 +3274,23 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Empty canvas state - always visible when no sections */}
+              {/* Empty canvas state - the original nice box design */}
               {step.frames.length === 0 && !readOnly && onOpenBlockPickerInPanel && (
                 <div className="flex items-center justify-center min-h-[400px] px-4">
-                  <div className="w-full max-w-md">
-                    {/* Main Add Content Box */}
-                    <div 
-                      className={cn(
-                        "rounded-2xl border-2 border-dashed p-8 text-center transition-all",
-                        isDarkTheme 
-                          ? "bg-gray-800/50 border-gray-600 hover:border-gray-500" 
-                          : "bg-gray-50/80 border-gray-300 hover:border-gray-400"
-                      )}
-                    >
-                      <div 
-                        className={cn(
-                          "w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4",
-                          isDarkTheme ? "bg-gray-700" : "bg-gray-200"
-                        )}
-                      >
-                        <Plus className={cn("w-7 h-7", isDarkTheme ? "text-gray-400" : "text-gray-500")} />
-                      </div>
-                      <h3 className={cn(
-                        "text-lg font-semibold mb-2",
-                        isDarkTheme ? "text-gray-100" : "text-gray-800"
-                      )}>
-                        Add Content
-                      </h3>
-                      <p className={cn(
-                        "text-sm mb-6",
-                        isDarkTheme ? "text-gray-400" : "text-gray-500"
-                      )}>
-                        Start building your page
-                      </p>
-                      
-                      {/* Quick Action Buttons */}
-                      <div className="flex flex-wrap justify-center gap-2">
-                        {[
-                          { label: 'Text', icon: <Type size={14} /> },
-                          { label: 'Image', icon: <Image size={14} /> },
-                          { label: 'Button', icon: <MousePointer2 size={14} /> },
-                          { label: 'Video', icon: <Video size={14} /> },
-                        ].map((item) => (
-                          <button
-                            key={item.label}
-                            onClick={() => {
-                              // Create a new frame with the quick-add block type, then open picker
-                              const firstStack = step.frames[0]?.stacks[0];
-                              onOpenBlockPickerInPanel(firstStack?.id || 'new');
-                            }}
-                            className={cn(
-                              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                              isDarkTheme 
-                                ? "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white" 
-                                : "bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 shadow-sm"
-                            )}
-                          >
-                            {item.icon}
-                            <span>{item.label}</span>
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => {
-                            const firstStack = step.frames[0]?.stacks[0];
-                            onOpenBlockPickerInPanel(firstStack?.id || 'new');
-                          }}
-                          className={cn(
-                            "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                            isDarkTheme 
-                              ? "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white" 
-                              : "bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 shadow-sm"
-                          )}
-                        >
-                          <LayoutGrid size={14} />
-                          <span>More...</span>
-                        </button>
-                      </div>
+                  <button
+                    onClick={() => onOpenBlockPickerInPanel('new')}
+                    className="group w-full max-w-md flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-200"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                      <Plus size={28} className="text-gray-400" />
                     </div>
-                  </div>
+                    <span className="text-base font-semibold text-gray-700 mb-1">Add Content</span>
+                    <span className="text-sm text-gray-500 mb-5">Sections, text, images, buttons & more</span>
+                    <span className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
+                      <Plus size={18} />
+                      <span>Add Content</span>
+                    </span>
+                  </button>
                 </div>
               )}
               
