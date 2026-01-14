@@ -113,8 +113,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [blockPickerTargetStackId, setBlockPickerTargetStackId] = useState<string | null>(null);
   const [blockPickerMode, setBlockPickerMode] = useState<'blocks' | 'sections'>('blocks');
   
-  // Editor UI theme state - controls panels/toolbar appearance (dark by default)
-  const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark');
+  // Editor UI theme state - controls panels/toolbar appearance (LIGHT by default to match brand aesthetic)
+  const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('light');
 
   // Sync editor theme to document body for Radix portals (they render outside the React tree)
   useEffect(() => {
