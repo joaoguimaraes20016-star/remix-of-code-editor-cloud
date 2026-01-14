@@ -896,8 +896,9 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
                       <HelpCircle className="w-3.5 h-3.5 text-builder-text-dim" />
                     </TooltipTrigger>
                     <TooltipContent side="right" className="max-w-xs">
-                      <p className="font-medium mb-1">Hierarchy:</p>
-                      <p className="text-xs text-muted-foreground">Pages → Sections → Content</p>
+                      <p className="text-xs text-muted-foreground">Pages = screens in your flow</p>
+                      <p className="text-xs text-muted-foreground">Sections = layout containers</p>
+                      <p className="text-xs text-muted-foreground">Content = what users see</p>
                       <p className="text-xs text-muted-foreground mt-1">Double-click a page to rename it.</p>
                     </TooltipContent>
                   </Tooltip>
@@ -982,41 +983,15 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
 
           {activeTab === 'assets' && <AssetsPanel />}
 
-          {/* Add Step Button */}
+          {/* Add Page Button */}
           <div className="p-3 border-t border-builder-border-subtle">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active text-sm transition-colors">
-                  <Plus className="w-4 h-4" />
-                  Add step
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-48 bg-builder-surface border-builder-border z-50">
-                {/* Blank Page Option */}
-                <DropdownMenuItem
-                  onClick={() => onAddBlankStep?.()}
-                  className="flex items-center gap-2 text-builder-text hover:bg-builder-surface-hover"
-                >
-                  <span className="intent-badge bg-builder-surface-active text-builder-text-muted">
-                    <FileText className="w-3.5 h-3.5" />
-                  </span>
-                  Blank Page
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-builder-border-subtle" />
-                {(Object.keys(stepIntentLabels) as StepIntent[]).map((intent) => (
-                  <DropdownMenuItem
-                    key={intent}
-                    onClick={() => onAddStep(intent)}
-                    className="flex items-center gap-2 text-builder-text hover:bg-builder-surface-hover"
-                  >
-                    <span className={cn('intent-badge', getIntentColorClass(intent))}>
-                      {intentIcons[intent]}
-                    </span>
-                    {stepIntentLabels[intent]}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <button 
+              onClick={() => onAddBlankStep?.()}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active text-sm transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Page
+            </button>
           </div>
         </div>
       </div>

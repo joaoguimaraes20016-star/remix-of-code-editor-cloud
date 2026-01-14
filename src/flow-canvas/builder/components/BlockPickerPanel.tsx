@@ -157,7 +157,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Text Input',
     icon: <Type size={16} />,
-    description: 'Text field',
+    description: 'Text field — common for capture',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -173,7 +173,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Multiple Choice',
     icon: <ListChecks size={16} />,
-    description: 'Multi-select',
+    description: 'Multi-select — qualify users',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -191,7 +191,7 @@ const interactiveBlocks: BlockTemplate[] = [
     type: 'form-field',
     label: 'Single Choice',
     icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
-    description: 'Radio buttons',
+    description: 'Radio buttons — qualification',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -366,7 +366,7 @@ const sectionCategories: SectionCategory[] = [
         type: 'contact',
         label: 'Contact Form',
         icon: <Mail size={16} />,
-        description: 'Full form',
+        description: 'Contact form — primary capture',
         template: () => ({
           id: generateId(),
           type: 'form-field',
@@ -475,7 +475,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={activeTab === 'blocks' ? "Search blocks..." : "Search sections..."}
+            placeholder={activeTab === 'blocks' ? "Search content..." : "Search sections..."}
             className="pl-9 h-8 text-sm bg-builder-surface-hover border-builder-border text-builder-text placeholder:text-builder-text-dim"
           />
         </div>
