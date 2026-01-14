@@ -3279,11 +3279,11 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                 <div className="flex items-center justify-center min-h-[400px] px-4">
                   <button
                     onClick={() => onOpenBlockPickerInPanel('new')}
-                    className="group w-full max-w-lg flex flex-col items-center justify-center py-20 px-8 border-2 border-dashed border-purple-300/60 rounded-2xl bg-white hover:border-purple-400 hover:bg-purple-50/30 transition-all duration-200"
+                    className="group w-full max-w-2xl flex flex-col items-center justify-center py-24 px-8 border-2 border-dashed border-purple-300/50 rounded-2xl bg-white hover:border-purple-400/60 transition-all duration-200"
                   >
-                    {/* Icon container - teal accent */}
-                    <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                      <Layers size={32} className="text-teal-500" />
+                    {/* Icon container - subtle gray with cube icon */}
+                    <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
+                      <Layers size={32} className="text-gray-400" />
                     </div>
                     
                     {/* Title */}
@@ -3292,7 +3292,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </span>
                     
                     {/* Subtitle */}
-                    <span className="text-sm text-gray-500 mb-6">
+                    <span className="text-sm text-gray-400 mb-6">
                       Headlines, text, images, buttons & more
                     </span>
                     
