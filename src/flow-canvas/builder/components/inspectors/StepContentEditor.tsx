@@ -149,8 +149,8 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             className="origin-top"
             style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}
           >
-            {/* Render same content as ApplicationFlowCard canvas - exact match */}
-            <div className="text-center py-12 px-8 bg-card rounded-lg">
+            {/* Render same content as ApplicationFlowCard canvas - exact match, uses bg-background */}
+            <div className="text-center py-12 px-8 bg-background rounded-lg">
               {/* Title - matches ApplicationFlowCard exactly (text-2xl for welcome, text-xl for others) */}
               <h3 className={cn(
                 'font-bold text-foreground',
