@@ -70,8 +70,8 @@ interface FunnelSettings {
 
 interface FlowCanvasRendererProps {
   funnelId: string;
-  teamId: string;
-  page: FlowCanvasPage;
+  teamId?: string;
+  page: FlowCanvasPage | Record<string, any>;
   settings?: FunnelSettings;
   utmSource?: string | null;
   utmMedium?: string | null;
