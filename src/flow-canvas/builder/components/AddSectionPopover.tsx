@@ -695,10 +695,10 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
             <span
               className={`
                 inline-flex items-center gap-2 rounded-lg px-5 py-2.5
-                bg-[hsl(var(--builder-accent))] text-white
+                bg-gray-900 text-white
                 text-sm font-semibold
-                shadow-lg shadow-[hsl(var(--builder-accent)/0.4)]
-                group-hover:brightness-110 group-hover:scale-[1.02]
+                shadow-lg
+                group-hover:bg-gray-800 group-hover:scale-[1.02]
                 group-active:scale-[0.98]
                 transition-all duration-150
               `}
