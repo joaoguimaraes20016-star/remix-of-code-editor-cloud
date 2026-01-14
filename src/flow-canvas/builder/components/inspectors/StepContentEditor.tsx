@@ -138,99 +138,105 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         </div>
       </div>
 
-      {/* Step Preview */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-2">Preview</div>
-        <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center">
-          {/* Title */}
-          <h3 
-            className={cn(
-              'font-bold text-gray-900 dark:text-white',
-              stepSettings.titleSize === 'lg' ? 'text-lg' :
-              stepSettings.titleSize === '2xl' ? 'text-2xl' :
-              stepSettings.titleSize === '3xl' ? 'text-3xl' : 'text-xl'
-            )} 
-            style={{ textAlign: (stepSettings.align as any) || 'center' }}
-          >
-            {questionTitle || (step.type === 'question' ? 'Question title here' : step.type === 'welcome' ? 'Welcome!' : step.type === 'ending' ? 'Thank you!' : 'Heading')}
-          </h3>
-          
-          {/* Description */}
-          {questionDescription && (
-            <p className="text-sm text-gray-500 mt-2">{questionDescription}</p>
-          )}
-          
-          {/* Options (for MCQ) */}
-          {step.type === 'question' && questionType === 'multiple-choice' && options.length > 0 && (
-            <div className="mt-4 space-y-2 max-w-xs mx-auto">
-              {options.slice(0, 3).map((opt, i) => (
-                <div 
-                  key={i} 
-                  className={cn(
-                    "px-4 py-2 border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300",
-                    stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
-                  )}
-                >
-                  {opt}
-                </div>
-              ))}
-              {options.length > 3 && (
-                <div className="text-xs text-gray-400">+{options.length - 3} more</div>
-              )}
-            </div>
-          )}
-          
-          {/* Text Input Preview */}
-          {step.type === 'question' && questionType === 'text' && (
-            <div className="mt-4 max-w-xs mx-auto">
-              <input 
-                className={cn(
-                  "w-full px-4 py-2 border border-gray-200 dark:border-gray-600 text-sm bg-transparent",
-                  stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
-                )}
-                placeholder="Type your answer..."
-                disabled
-              />
-            </div>
-          )}
-
-          {/* Capture Fields Preview */}
-          {step.type === 'capture' && (
-            <div className="mt-4 max-w-xs mx-auto space-y-2">
-              <input 
-                className={cn(
-                  "w-full px-4 py-2 border border-gray-200 dark:border-gray-600 text-sm bg-transparent",
-                  stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
-                )}
-                placeholder="Your name"
-                disabled
-              />
-              <input 
-                className={cn(
-                  "w-full px-4 py-2 border border-gray-200 dark:border-gray-600 text-sm bg-transparent",
-                  stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
-                )}
-                placeholder="Your email"
-                disabled
-              />
-            </div>
-          )}
-          
-          {/* Button Preview */}
+      {/* Step Preview - uses same styling as canvas (scaled 0.6x) */}
+      <div className="px-4 py-3 border-b border-border">
+        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Preview</div>
+        <div 
+          className="border border-border rounded-xl p-3 bg-transparent overflow-hidden"
+          style={{ height: '220px' }}
+        >
           <div 
-            className={cn(
-              "inline-block mt-6 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors",
-              stepSettings.buttonStyle === 'outline' 
-                ? 'border-2 bg-transparent' 
-                : 'text-white'
-            )}
-            style={{ 
-              backgroundColor: stepSettings.buttonStyle === 'outline' ? 'transparent' : (stepSettings.buttonColor || '#18181b'),
-              borderColor: stepSettings.buttonColor || '#18181b',
-              color: stepSettings.buttonStyle === 'outline' ? (stepSettings.buttonColor || '#18181b') : 'white'
-            }}
+            className="origin-top"
+            style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}
           >
-            {buttonText || 'Continue'}
+            {/* Render same content as canvas - matching ApplicationFlowCard */}
+            <div className="text-center py-12 px-8 bg-card rounded-lg">
+              {/* Title */}
+              <h3 
+                className={cn(
+                  'font-bold text-foreground',
+                  stepSettings.titleSize === 'lg' ? 'text-lg' :
+                  stepSettings.titleSize === '2xl' ? 'text-2xl' :
+                  stepSettings.titleSize === '3xl' ? 'text-3xl' : 'text-xl'
+                )} 
+                style={{ textAlign: (stepSettings.align as any) || 'center' }}
+              >
+                {questionTitle || (step.type === 'question' ? 'Question title here' : step.type === 'welcome' ? 'Welcome!' : step.type === 'ending' ? 'Thank you!' : 'Heading')}
+              </h3>
+              
+              {/* Description */}
+              {questionDescription && (
+                <p className="text-sm text-muted-foreground mt-2">{questionDescription}</p>
+              )}
+              
+              {/* Options (for MCQ) */}
+              {step.type === 'question' && questionType === 'multiple-choice' && options.length > 0 && (
+                <div className="mt-4 space-y-2 max-w-xs mx-auto">
+                  {options.slice(0, 3).map((opt, i) => (
+                    <div 
+                      key={i} 
+                      className={cn(
+                        "px-4 py-2 border border-border text-sm text-foreground bg-background",
+                        stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
+                      )}
+                    >
+                      {opt}
+                    </div>
+                  ))}
+                  {options.length > 3 && (
+                    <div className="text-xs text-muted-foreground">+{options.length - 3} more</div>
+                  )}
+                </div>
+              )}
+              
+              {/* Text Input Preview */}
+              {step.type === 'question' && questionType === 'text' && (
+                <div className="mt-4 max-w-xs mx-auto">
+                  <input 
+                    className={cn(
+                      "w-full px-4 py-2 border border-border text-sm bg-background text-foreground",
+                      stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
+                    )}
+                    placeholder="Type your answer..."
+                    disabled
+                  />
+                </div>
+              )}
+
+              {/* Capture Fields Preview */}
+              {step.type === 'capture' && (
+                <div className="mt-4 max-w-xs mx-auto space-y-2">
+                  <input 
+                    className={cn(
+                      "w-full px-4 py-2 border border-border text-sm bg-background text-foreground",
+                      stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
+                    )}
+                    placeholder="Your name"
+                    disabled
+                  />
+                  <input 
+                    className={cn(
+                      "w-full px-4 py-2 border border-border text-sm bg-background text-foreground",
+                      stepSettings.inputStyle === 'square' ? 'rounded' : 'rounded-lg'
+                    )}
+                    placeholder="Your email"
+                    disabled
+                  />
+                </div>
+              )}
+              
+              {/* Button Preview - uses primary color */}
+              <span 
+                className={cn(
+                  "inline-block mt-6 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  stepSettings.buttonStyle === 'outline' 
+                    ? 'border-2 border-primary bg-transparent text-primary' 
+                    : 'bg-primary text-primary-foreground'
+                )}
+              >
+                {buttonText || 'Continue'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
