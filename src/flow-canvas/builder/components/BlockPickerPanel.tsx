@@ -45,14 +45,14 @@ interface BlockPickerPanelProps {
 
 type ActiveTab = 'blocks' | 'sections';
 
-// ============ FORM ELEMENTS (Questions & Capture) ============
+// ============ APPLICATION QUESTIONS (prioritized first) ============
 
-const formElements: BlockTemplate[] = [
+const applicationQuestions: BlockTemplate[] = [
   {
     type: 'form-field',
-    label: 'Open Question',
+    label: 'Open-Ended Question',
     icon: <Type size={16} />,
-    description: 'Text answer — qualify the lead',
+    description: 'Free text answer',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -60,26 +60,7 @@ const formElements: BlockTemplate[] = [
       elements: [
         { id: generateId(), type: 'heading', content: 'What is your biggest challenge right now?', props: { level: 3 } },
         { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Type your answer...', required: true, fieldKey: 'challenge' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
-      ],
-      props: { trackingId: '', intent: 'qualify' },
-    }),
-  },
-  {
-    type: 'form-field',
-    label: 'Multiple Choice',
-    icon: <ListChecks size={16} />,
-    description: 'Checkboxes — segment by interest',
-    template: () => ({
-      id: generateId(),
-      type: 'form-field',
-      label: 'Multiple Choice',
-      elements: [
-        { id: generateId(), type: 'heading', content: 'What are you looking for? (Select all)', props: { level: 3 } },
-        { id: generateId(), type: 'checkbox', content: 'More leads', props: { name: 'goals', value: 'leads' } },
-        { id: generateId(), type: 'checkbox', content: 'Higher conversions', props: { name: 'goals', value: 'conversions' } },
-        { id: generateId(), type: 'checkbox', content: 'Better retention', props: { name: 'goals', value: 'retention' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
       ],
       props: { trackingId: '', intent: 'qualify' },
     }),
@@ -88,7 +69,7 @@ const formElements: BlockTemplate[] = [
     type: 'form-field',
     label: 'Single Choice',
     icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
-    description: 'Radio buttons — qualify or route',
+    description: 'Radio — pick one',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -98,16 +79,40 @@ const formElements: BlockTemplate[] = [
         { id: generateId(), type: 'radio', content: 'Just getting started', props: { name: 'stage', value: 'beginner' } },
         { id: generateId(), type: 'radio', content: 'Growing my business', props: { name: 'stage', value: 'growing' } },
         { id: generateId(), type: 'radio', content: 'Scaling to 7+ figures', props: { name: 'stage', value: 'scaling' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
       ],
       props: { trackingId: '', intent: 'qualify' },
     }),
   },
   {
     type: 'form-field',
-    label: 'Email Capture',
+    label: 'Multiple Choice',
+    icon: <ListChecks size={16} />,
+    description: 'Checkboxes — pick many',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Multiple Choice',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What are you looking for? (Select all)', props: { level: 3 } },
+        { id: generateId(), type: 'checkbox', content: 'More leads', props: { name: 'goals', value: 'leads' } },
+        { id: generateId(), type: 'checkbox', content: 'Higher conversions', props: { name: 'goals', value: 'conversions' } },
+        { id: generateId(), type: 'checkbox', content: 'Better retention', props: { name: 'goals', value: 'retention' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
+      ],
+      props: { trackingId: '', intent: 'qualify' },
+    }),
+  },
+];
+
+// ============ CAPTURE FIELDS ============
+
+const captureFields: BlockTemplate[] = [
+  {
+    type: 'form-field',
+    label: 'Email Field',
     icon: <Mail size={16} />,
-    description: 'Get their email — main capture',
+    description: 'Email with validation',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -116,16 +121,16 @@ const formElements: BlockTemplate[] = [
         { id: generateId(), type: 'heading', content: 'What is your email?', props: { level: 3 } },
         { id: generateId(), type: 'text', content: 'We\'ll send your results here.', props: { variant: 'subtext' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
       ],
       props: { trackingId: '', intent: 'capture' },
     }),
   },
   {
     type: 'form-field',
-    label: 'Phone Capture',
+    label: 'Phone Field',
     icon: <Phone size={16} />,
-    description: 'Get their phone — for callbacks',
+    description: 'Phone with formatting',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -134,16 +139,16 @@ const formElements: BlockTemplate[] = [
         { id: generateId(), type: 'heading', content: 'What is your phone number?', props: { level: 3 } },
         { id: generateId(), type: 'text', content: 'For important updates only.', props: { variant: 'subtext' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: '+1 (555) 000-0000', required: true, fieldKey: 'phone', icon: 'phone' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
       ],
       props: { trackingId: '', intent: 'capture' },
     }),
   },
   {
     type: 'form-field',
-    label: 'Name Capture',
+    label: 'Name Field',
     icon: <User size={16} />,
-    description: 'Capture full name',
+    description: 'Full name input',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -151,16 +156,16 @@ const formElements: BlockTemplate[] = [
       elements: [
         { id: generateId(), type: 'heading', content: 'What is your name?', props: { level: 3 } },
         { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your full name', required: true, fieldKey: 'name', icon: 'user' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
       ],
       props: { trackingId: '', intent: 'capture' },
     }),
   },
   {
     type: 'form-field',
-    label: 'Full Opt-In',
+    label: 'Full Form',
     icon: <UserCheck size={16} />,
-    description: 'Name + email + phone capture',
+    description: 'Name + email + phone combo',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -174,7 +179,7 @@ const formElements: BlockTemplate[] = [
         { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
         { id: generateId(), type: 'text', content: 'Phone', props: { variant: 'label' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: '+1 (555) 000-0000', required: false, fieldKey: 'phone', icon: 'phone' } },
-        { id: generateId(), type: 'button', content: 'Submit Application', props: { variant: 'primary', size: 'lg' } },
+        { id: generateId(), type: 'button', content: 'Submit Application', props: { variant: 'primary', size: 'lg', action: 'submit' } },
       ],
       props: { trackingId: '', intent: 'capture' },
     }),
@@ -276,10 +281,16 @@ const actionBlocks: BlockTemplate[] = [
 
 const blockCategories: BlockCategory[] = [
   {
-    id: 'form-elements',
-    label: 'Form Elements',
+    id: 'questions',
+    label: 'Application Questions',
     hint: 'One question per section converts 2-3x better',
-    blocks: formElements,
+    blocks: applicationQuestions,
+    defaultOpen: true, // First category always open
+  },
+  {
+    id: 'capture',
+    label: 'Capture Fields',
+    blocks: captureFields,
     defaultOpen: false,
   },
   {
@@ -290,7 +301,7 @@ const blockCategories: BlockCategory[] = [
   },
   {
     id: 'actions',
-    label: 'Buttons & Actions',
+    label: 'Actions',
     blocks: actionBlocks,
     defaultOpen: false,
   },
@@ -534,7 +545,8 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
 
   // All templates for search
   const allTemplates = [
-    ...formElements.map(b => ({ ...b, isSection: false })),
+    ...applicationQuestions.map(b => ({ ...b, isSection: false })),
+    ...captureFields.map(b => ({ ...b, isSection: false })),
     ...contentBlocks.map(b => ({ ...b, isSection: false })),
     ...actionBlocks.map(b => ({ ...b, isSection: false })),
     ...captureSections.map(t => ({ ...t, isSection: true })),
