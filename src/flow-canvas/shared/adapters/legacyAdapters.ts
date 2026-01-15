@@ -234,3 +234,130 @@ export function applicationStepToCaptureNode(step: ApplicationStep): CaptureNode
     },
   };
 }
+
+// ============ FUNNEL STEP → APPLICATION STEPS ============
+
+// Minimal shape for funnel step content that may contain application flow
+interface FunnelStepContent {
+  steps?: Array<{
+    id: string;
+    type: string;
+    name?: string;
+    settings?: Record<string, any>;
+    navigation?: { action?: string; targetStepId?: string; redirectUrl?: string };
+    elements?: any[];
+  }>;
+  displayMode?: string;
+  showProgress?: boolean;
+  [key: string]: any;
+}
+
+interface FunnelStep {
+  id: string;
+  step_type: string;
+  content: FunnelStepContent;
+}
+
+/**
+ * Converts a funnel step containing application-flow content to ApplicationSteps.
+ * Returns null if the step is not an application-flow type.
+ */
+export function funnelStepToApplicationSteps(funnelStep: FunnelStep): ApplicationStep[] | null {
+  if (funnelStep.step_type !== 'application_flow' && funnelStep.step_type !== 'application-flow') {
+    return null;
+  }
+
+  const content = funnelStep.content;
+  const steps = content.steps || [];
+
+  return steps.map((step): ApplicationStep => {
+    let type: ApplicationStepType = 'open-ended';
+
+    // Map step type
+    switch (step.type) {
+      case 'welcome':
+        type = 'welcome';
+        break;
+      case 'question':
+        // Determine question type
+        switch (step.settings?.questionType) {
+          case 'multiple-choice': type = 'single-choice'; break;
+          case 'text': type = 'open-ended'; break;
+          case 'scale': type = 'scale'; break;
+          case 'yes-no': type = 'yes-no'; break;
+          default: type = 'single-choice';
+        }
+        break;
+      case 'capture':
+        const { collectEmail, collectPhone, collectName } = step.settings || {};
+        const fieldCount = [collectEmail, collectPhone, collectName].filter(Boolean).length;
+        if (fieldCount === 1) {
+          if (collectEmail) type = 'email';
+          else if (collectPhone) type = 'phone';
+          else if (collectName) type = 'name';
+        } else {
+          type = 'full-identity';
+        }
+        break;
+      case 'ending':
+      case 'booking':
+        type = 'ending';
+        break;
+      default:
+        type = 'open-ended';
+    }
+
+    const settings = step.settings || {};
+
+    return {
+      id: step.id,
+      type,
+      fieldKey: step.type === 'capture' ? 'identity' : `q_${step.id}`,
+      settings: {
+        title: settings.title,
+        description: settings.description,
+        placeholder: settings.placeholder,
+        buttonText: settings.buttonText,
+        buttonColor: settings.buttonColor,
+        buttonStyle: settings.buttonStyle,
+        align: settings.align,
+        spacing: settings.spacing,
+        // Identity
+        collectName: settings.collectName,
+        collectEmail: settings.collectEmail,
+        collectPhone: settings.collectPhone,
+        // Choices
+        choices: settings.options?.map((opt: string, i: number) => ({
+          id: `opt_${i}`,
+          label: opt,
+        })),
+        // Scale
+        scaleMax: settings.scaleMax,
+        scaleMinLabel: settings.scaleMinLabel,
+        scaleMaxLabel: settings.scaleMaxLabel,
+      },
+      navigation: {
+        action: step.navigation?.action === 'submit' ? 'submit' : 'next',
+        targetStepId: step.navigation?.targetStepId,
+        redirectUrl: step.navigation?.redirectUrl,
+      },
+    };
+  });
+}
+
+/**
+ * Extracts application flow config from funnel step content.
+ */
+export function getApplicationFlowConfig(funnelStep: FunnelStep): {
+  displayMode: 'one-at-a-time' | 'all-at-once';
+  showProgress: boolean;
+} | null {
+  if (funnelStep.step_type !== 'application_flow' && funnelStep.step_type !== 'application-flow') {
+    return null;
+  }
+
+  return {
+    displayMode: (funnelStep.content.displayMode as 'one-at-a-time' | 'all-at-once') || 'one-at-a-time',
+    showProgress: funnelStep.content.showProgress ?? true,
+  };
+}
