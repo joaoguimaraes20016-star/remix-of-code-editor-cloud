@@ -41,17 +41,17 @@
 
     --radius: 0.75rem;
 
-    /* Builder-specific tokens - Near black with dark blue tint */
-    --builder-bg: 220 25% 4%;
-    --builder-surface: 220 22% 7%;
-    --builder-surface-hover: 220 20% 11%;
-    --builder-surface-active: 220 18% 15%;
-    --builder-border: 220 18% 14%;
-    --builder-border-subtle: 220 18% 10%;
+    /* Builder-specific tokens - True black base */
+    --builder-bg: 0 0% 4%;
+    --builder-surface: 0 0% 7%;
+    --builder-surface-hover: 0 0% 11%;
+    --builder-surface-active: 0 0% 15%;
+    --builder-border: 0 0% 14%;
+    --builder-border-subtle: 0 0% 10%;
     --builder-text: 0 0% 100%;
-    --builder-text-secondary: 220 15% 80%;
-    --builder-text-muted: 220 12% 55%;
-    --builder-text-dim: 220 10% 35%;
+    --builder-text-secondary: 0 0% 80%;
+    --builder-text-muted: 0 0% 55%;
+    --builder-text-dim: 0 0% 35%;
     
     /* Brand accent colors - Purple dominant for solid buttons */
     --builder-accent: 275 70% 55%;
@@ -73,19 +73,19 @@
     --intent-complete: 290 14% 50%;
 
     /* Canvas */
-    --canvas-bg: 220 30% 5%;
-    --canvas-grid: 220 18% 10%;
+    --canvas-bg: 0 0% 3%;
+    --canvas-grid: 0 0% 8%;
     --canvas-frame: 0 0% 100%;
-    --canvas-frame-border: 220 18% 18%;
+    --canvas-frame-border: 0 0% 14%;
 
     /* Sidebar */
-    --sidebar-background: 220 25% 5%;
-    --sidebar-foreground: 220 20% 90%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 275 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 12%;
-    --sidebar-accent-foreground: 220 20% 90%;
-    --sidebar-border: 220 18% 12%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 10%;
     --sidebar-ring: 275 70% 55%;
 
     /* Brand gradient stops - Coral → Magenta → Purple */
@@ -95,25 +95,25 @@
   }
 
   .dark {
-    /* Dark theme tokens - used by builder UI */
-    --background: 220 25% 4%;
-    --foreground: 220 20% 98%;
+    /* Dark theme tokens - used by builder UI - True black base */
+    --background: 0 0% 2%;
+    --foreground: 0 0% 98%;
 
-    --card: 220 22% 7%;
-    --card-foreground: 220 20% 98%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 98%;
 
     /* Popover uses builder surface colors for consistency */
-    --popover: 220 22% 7%;
-    --popover-foreground: 220 20% 98%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 98%;
 
     --primary: 275 70% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 12%;
-    --secondary-foreground: 220 20% 98%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 20% 12%;
-    --muted-foreground: 220 12% 55%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 55%;
 
     --accent: 275 70% 55%;
     --accent-foreground: 0 0% 100%;
@@ -121,8 +121,8 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 18% 14%;
-    --input: 220 18% 14%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
     --ring: 275 70% 55%;
   }
 
@@ -146,18 +146,18 @@
     --border: 220 14% 90%;
     --input: 220 14% 90%;
 
-    /* Builder UI tokens */
-    --builder-bg: 220 14% 96%;
-    --builder-surface: 0 0% 100%;
-    --builder-surface-hover: 220 14% 96%;
-    --builder-surface-active: 220 14% 92%;
-    --builder-border: 220 14% 86%;
-    --builder-border-subtle: 220 14% 90%;
+    /* Builder UI tokens - KEEP DARK for toolbar elements like SectionActionBar */
+    --builder-bg: 0 0% 4%;
+    --builder-surface: 0 0% 7%;
+    --builder-surface-hover: 0 0% 11%;
+    --builder-surface-active: 0 0% 15%;
+    --builder-border: 0 0% 14%;
+    --builder-border-subtle: 0 0% 10%;
 
-    --builder-text: 220 20% 10%;
-    --builder-text-secondary: 220 15% 25%;
-    --builder-text-muted: 220 10% 45%;
-    --builder-text-dim: 220 10% 60%;
+    --builder-text: 0 0% 100%;
+    --builder-text-secondary: 0 0% 75%;
+    --builder-text-muted: 0 0% 55%;
+    --builder-text-dim: 0 0% 35%;
 
     /* Canvas chrome */
     --canvas-bg: 220 14% 96%;

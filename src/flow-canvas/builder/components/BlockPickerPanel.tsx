@@ -298,9 +298,14 @@ const actionBlocks: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: true,
         transition: 'slide-up',
+        // Explicit theme-independent styling defaults
+        background: { type: 'solid', color: '#ffffff' },
+        textColor: '#000000',
+        inputBackground: '#ffffff',
+        inputBorderColor: '#e5e7eb',
         steps: [
-          { id: generateId(), name: 'Welcome', type: 'welcome', elements: [], navigation: { action: 'next' } },
-          { id: generateId(), name: 'Get Started', type: 'capture', elements: [], navigation: { action: 'submit' } },
+          { id: generateId(), name: 'Welcome', type: 'welcome', elements: [], settings: { align: 'center', spacing: 'normal' }, navigation: { action: 'next' } },
+          { id: generateId(), name: 'Get Started', type: 'capture', elements: [], settings: { align: 'center', spacing: 'normal' }, navigation: { action: 'submit' } },
         ]
       },
     }),
@@ -357,6 +362,10 @@ const captureSections: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: true,
         transition: 'slide-up',
+        background: { type: 'solid', color: '#ffffff' },
+        textColor: '#000000',
+        inputBackground: '#ffffff',
+        inputBorderColor: '#e5e7eb',
         steps: [
           {
             id: generateId(),
@@ -367,6 +376,8 @@ const captureSections: BlockTemplate[] = [
               questionType: 'multiple-choice',
               options: ['Not enough leads', 'Low conversions', "Can't scale"],
               buttonText: 'Continue',
+              align: 'center',
+              spacing: 'normal',
             },
             elements: [],
             navigation: { action: 'next' },
@@ -389,6 +400,10 @@ const captureSections: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: false,
         transition: 'fade',
+        background: { type: 'solid', color: '#ffffff' },
+        textColor: '#000000',
+        inputBackground: '#ffffff',
+        inputBorderColor: '#e5e7eb',
         steps: [
           {
             id: generateId(),
@@ -401,6 +416,8 @@ const captureSections: BlockTemplate[] = [
               collectEmail: true,
               collectPhone: false,
               buttonText: 'Get Access',
+              align: 'center',
+              spacing: 'normal',
             },
             elements: [],
             navigation: { action: 'submit' },
@@ -423,6 +440,10 @@ const captureSections: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: true,
         transition: 'slide-up',
+        background: { type: 'solid', color: '#ffffff' },
+        textColor: '#000000',
+        inputBackground: '#ffffff',
+        inputBorderColor: '#e5e7eb',
         steps: [
           {
             id: generateId(),
@@ -432,6 +453,8 @@ const captureSections: BlockTemplate[] = [
               title: 'Apply Now',
               description: 'Complete your application below.',
               buttonText: 'Start →',
+              align: 'center',
+              spacing: 'normal',
             },
             elements: [],
             navigation: { action: 'next' },
@@ -446,6 +469,8 @@ const captureSections: BlockTemplate[] = [
               collectEmail: true,
               collectPhone: true,
               buttonText: 'Submit Application',
+              align: 'center',
+              spacing: 'normal',
             },
             elements: [],
             navigation: { action: 'submit' },
@@ -457,6 +482,8 @@ const captureSections: BlockTemplate[] = [
             settings: {
               title: "Thanks — we'll be in touch!",
               description: 'We review applications within 24 hours.',
+              align: 'center',
+              spacing: 'normal',
             },
             elements: [],
             navigation: { action: 'submit' },

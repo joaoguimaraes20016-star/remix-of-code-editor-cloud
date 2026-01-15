@@ -420,7 +420,12 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               <div className="space-y-1.5">
                 {options.map((option, index) => (
                   <div key={index} className="flex items-center gap-1.5 group">
-                    <GripVertical className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab" />
+                    <div 
+                      className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0"
+                      title="Drag to reorder"
+                    >
+                      <GripVertical className="w-3 h-3" />
+                    </div>
                     <Input
                       value={option}
                       onChange={(e) => updateOption(index, e.target.value)}

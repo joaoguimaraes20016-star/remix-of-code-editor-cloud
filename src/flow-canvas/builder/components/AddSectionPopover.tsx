@@ -167,6 +167,10 @@ const interactiveBlocks: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: true,
         transition: 'fade',
+        background: { type: 'solid', color: '#ffffff' },
+        textColor: '#000000',
+        inputBackground: '#ffffff',
+        inputBorderColor: '#e5e7eb',
         steps: [
           {
             id: generateId(),
@@ -177,6 +181,8 @@ const interactiveBlocks: BlockTemplate[] = [
               questionType: 'text',
               placeholder: 'Type your answer here...',
               buttonText: 'Continue',
+              align: 'center',
+              spacing: 'normal',
             },
             elements: [],
             navigation: { action: 'next' },

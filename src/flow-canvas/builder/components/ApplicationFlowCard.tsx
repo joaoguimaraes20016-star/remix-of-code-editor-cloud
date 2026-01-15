@@ -97,7 +97,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const spacingClass = getSpacingClass(s.spacing);
 
     return (
-      <div className={cn('flex flex-col', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full px-6 py-8', alignClass, spacingClass)}>
         {/* Heading – inline editable, reads from step.settings.title */}
         <div className="block">
           <InlineTextEditor
@@ -147,7 +147,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const inputStyleClass = getInputStyleClass(s.inputStyle);
 
     return (
-      <div className={cn('flex flex-col', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full px-6 py-8', alignClass, spacingClass)}>
         <InlineTextEditor
           value={s.title || 'Your question here'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
@@ -310,7 +310,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const showPhone = s.collectPhone ?? false;
 
     return (
-      <div className={cn('flex flex-col', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full px-6 py-8', alignClass, spacingClass)}>
         <InlineTextEditor
           value={s.title || 'Where should we send your results?'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
@@ -393,7 +393,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const spacingClass = getSpacingClass(s.spacing);
 
     return (
-      <div className={cn('flex flex-col', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full px-6 py-8', alignClass, spacingClass)}>
         <InlineTextEditor
           value={s.title || 'Thanks — we\'ll be in touch!'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
