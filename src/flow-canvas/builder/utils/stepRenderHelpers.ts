@@ -44,22 +44,69 @@ export const getInputStyleClass = (style?: string): string => {
 
 export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>): string => {
   const isOutline = settings.buttonStyle === 'outline';
-  const baseClasses = 'inline-block px-6 py-3 font-medium text-sm transition-colors';
+  const isGhost = settings.buttonStyle === 'ghost';
+  const size = settings.buttonSize || 'md';
+  const radius = settings.buttonRadius || 'rounded';
   
-  if (isOutline) {
-    return cn(baseClasses, 'bg-transparent border-2 border-primary text-primary rounded-lg');
+  const sizeClasses: Record<string, string> = {
+    sm: 'px-4 py-2 text-xs',
+    md: 'px-6 py-3 text-sm',
+    lg: 'px-8 py-4 text-base',
+  };
+  
+  const radiusClasses: Record<string, string> = {
+    none: 'rounded-none',
+    rounded: 'rounded-lg',
+    full: 'rounded-full',
+  };
+  
+  const baseClasses = cn(
+    'inline-block font-medium transition-colors',
+    sizeClasses[size],
+    radiusClasses[radius],
+    settings.buttonFullWidth && 'w-full'
+  );
+  
+  if (isGhost) {
+    return cn(baseClasses, 'bg-transparent text-foreground hover:bg-muted');
   }
-  return cn(baseClasses, 'bg-primary text-primary-foreground rounded-lg');
+  if (isOutline) {
+    return cn(baseClasses, 'bg-transparent border-2');
+  }
+  return baseClasses;
+};
+
+// Helper to convert gradient to CSS
+const gradientToCSS = (gradient: { type: 'linear' | 'radial'; angle: number; stops: Array<{ color: string; position: number }> }): string => {
+  const sortedStops = [...gradient.stops].sort((a, b) => a.position - b.position);
+  const stopsStr = sortedStops.map(s => `${s.color} ${s.position}%`).join(', ');
+  
+  if (gradient.type === 'radial') {
+    return `radial-gradient(circle, ${stopsStr})`;
+  }
+  return `linear-gradient(${gradient.angle}deg, ${stopsStr})`;
 };
 
 export const getButtonStyle = (settings: Partial<ApplicationFlowStepSettings>): React.CSSProperties | undefined => {
-  if (settings.buttonColor && settings.buttonStyle !== 'outline') {
-    return { backgroundColor: settings.buttonColor };
+  const style: React.CSSProperties = {};
+  
+  // Handle gradient fill
+  if (settings.buttonFillType === 'gradient' && settings.buttonGradient) {
+    style.background = gradientToCSS(settings.buttonGradient);
+    style.border = 'none';
+  } else if (settings.buttonColor && settings.buttonStyle !== 'outline') {
+    style.backgroundColor = settings.buttonColor;
+  } else if (settings.buttonColor && settings.buttonStyle === 'outline') {
+    style.borderColor = settings.buttonColor;
+    style.color = settings.buttonColor;
   }
-  if (settings.buttonColor && settings.buttonStyle === 'outline') {
-    return { borderColor: settings.buttonColor, color: settings.buttonColor };
+  
+  // Apply text color
+  if (settings.buttonTextColor && settings.buttonStyle !== 'outline') {
+    style.color = settings.buttonTextColor;
   }
-  return undefined;
+  
+  return Object.keys(style).length > 0 ? style : undefined;
 };
 
 // ─────────────────────────────────────────────────────────

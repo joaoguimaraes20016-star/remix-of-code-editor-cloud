@@ -1,13 +1,15 @@
 /**
  * InteractiveBlockInspector
  * 
- * Inspector for standalone interactive blocks (form-field, open-question, etc.)
- * These blocks represent individual form inputs that can be placed anywhere on the canvas.
+ * Full-featured inspector for standalone interactive blocks (form-field, open-question, etc.)
+ * Provides the same styling controls as StepContentEditor for parity.
  * 
  * Provides editing controls for:
  * - Question/heading text
  * - Input type and settings
- * - Button text and styling
+ * - Button text, colors, gradients, size, corners
+ * - Background styling (solid/gradient)
+ * - Popup opt-in settings (for contact info blocks)
  * - Field validation settings
  */
 
@@ -24,8 +26,10 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  ToggleLeft,
-  MessageSquare,
+  Circle,
+  Square,
+  Maximize2,
+  Eye,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,7 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ColorPickerPopover } from '../modals';
+import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
 
 interface InteractiveBlockInspectorProps {
   block: Block;
@@ -99,6 +103,13 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
   const textElement = elements.find(el => el.type === 'text' && el.id !== headingElement?.id);
   const inputElement = elements.find(el => el.type === 'input');
   const buttonElement = elements.find(el => el.type === 'button');
+  
+  // Get block props for styling
+  const blockProps = block.props || {};
+  
+  // Check if this is a contact info block (can show as popup)
+  const isContactInfoBlock = block.label?.toLowerCase().includes('contact') || 
+    elements.filter(el => el.type === 'input').length >= 2;
 
   // Helper to update a specific element
   const updateElement = (elementId: string, updates: Partial<Element>) => {
@@ -118,11 +129,34 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
     }
   };
 
+  // Helper to update block props
+  const updateBlockProps = (propUpdates: Record<string, unknown>) => {
+    onUpdateBlock({ props: { ...blockProps, ...propUpdates } });
+  };
+
   // Get input type
-  const inputType = inputElement?.props?.inputType as string || 'text';
+  const inputType = inputElement?.props?.type as string || inputElement?.props?.inputType as string || 'text';
   const placeholder = inputElement?.props?.placeholder as string || '';
   const isRequired = inputElement?.props?.required as boolean || false;
   const fieldKey = inputElement?.props?.fieldKey as string || '';
+
+  // Get styling props
+  const buttonColor = buttonElement?.props?.buttonColor as string || blockProps.buttonColor as string || '#18181b';
+  const buttonTextColor = buttonElement?.props?.buttonTextColor as string || blockProps.buttonTextColor as string || '#ffffff';
+  const buttonFillType = blockProps.buttonFillType as 'solid' | 'gradient' || 'solid';
+  const buttonGradient = blockProps.buttonGradient as GradientValue | undefined;
+  const buttonSize = blockProps.buttonSize as 'sm' | 'md' | 'lg' || 'md';
+  const buttonRadius = blockProps.buttonRadius as 'none' | 'rounded' | 'full' || 'rounded';
+  const buttonFullWidth = blockProps.buttonFullWidth as boolean || false;
+  
+  // Background styling
+  const backgroundType = blockProps.backgroundType as 'solid' | 'gradient' || 'solid';
+  const backgroundColor = blockProps.backgroundColor as string || '#ffffff';
+  const backgroundGradient = blockProps.backgroundGradient as GradientValue | undefined;
+  
+  // Popup opt-in settings
+  const showAsPopup = blockProps.showAsPopup as boolean || false;
+  const requireCompletion = blockProps.requireCompletion as boolean || false;
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background">
@@ -141,6 +175,35 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
 
       {/* Content - Scrollable */}
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* Popup Opt-In Settings (for Contact Info blocks) */}
+        {isContactInfoBlock && (
+          <CollapsibleSection title="Popup Behavior" icon={<Eye className="w-3.5 h-3.5" />}>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-xs text-foreground">Show as Popup</Label>
+                <p className="text-[10px] text-muted-foreground">Display as modal on page load</p>
+              </div>
+              <Switch
+                checked={showAsPopup}
+                onCheckedChange={(checked) => updateBlockProps({ showAsPopup: checked })}
+              />
+            </div>
+            
+            {showAsPopup && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs text-foreground">Require Completion</Label>
+                  <p className="text-[10px] text-muted-foreground">Must submit before seeing content</p>
+                </div>
+                <Switch
+                  checked={requireCompletion}
+                  onCheckedChange={(checked) => updateBlockProps({ requireCompletion: checked })}
+                />
+              </div>
+            )}
+          </CollapsibleSection>
+        )}
+
         {/* Content Section */}
         <CollapsibleSection title="Content" icon={<Type className="w-3.5 h-3.5" />} defaultOpen>
           {/* Heading */}
@@ -188,7 +251,7 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
             <FieldGroup label="Input Type">
               <Select 
                 value={inputType}
-                onValueChange={(value) => updateElementProps(inputElement.id, { inputType: value })}
+                onValueChange={(value) => updateElementProps(inputElement.id, { type: value, inputType: value })}
               >
                 <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder="Select type" />
@@ -235,9 +298,220 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           </CollapsibleSection>
         )}
 
-        {/* Appearance Section */}
-        <CollapsibleSection title="Appearance" icon={<Palette className="w-3.5 h-3.5" />}>
-          {/* Heading alignment */}
+        {/* Button Style Section */}
+        {buttonElement && (
+          <CollapsibleSection title="Button Style" icon={<Palette className="w-3.5 h-3.5" />}>
+            {/* Button Fill Type */}
+            <FieldGroup label="Fill Type">
+              <div className="flex rounded-md overflow-hidden border border-border">
+                <button
+                  onClick={() => updateBlockProps({ buttonFillType: 'solid' })}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                    buttonFillType === 'solid'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  Solid
+                </button>
+                <button
+                  onClick={() => updateBlockProps({ buttonFillType: 'gradient' })}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                    buttonFillType === 'gradient'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  Gradient
+                </button>
+              </div>
+            </FieldGroup>
+
+            {/* Button Color (Solid) or Gradient */}
+            {buttonFillType === 'gradient' ? (
+              <FieldGroup label="Button Gradient">
+                <GradientPickerPopover
+                  value={buttonGradient || null}
+                  onChange={(gradient) => updateBlockProps({ buttonGradient: gradient })}
+                >
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                    <div 
+                      className="w-6 h-6 rounded border border-border"
+                      style={{ background: buttonGradient ? gradientToCSS(buttonGradient) : gradientToCSS(defaultGradient) }}
+                    />
+                    <span className="text-xs text-foreground">Edit Gradient</span>
+                  </button>
+                </GradientPickerPopover>
+              </FieldGroup>
+            ) : (
+              <FieldGroup label="Button Color">
+                <ColorPickerPopover
+                  color={buttonColor}
+                  onChange={(color) => updateBlockProps({ buttonColor: color })}
+                >
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                    <div 
+                      className="w-6 h-6 rounded border border-border"
+                      style={{ backgroundColor: buttonColor }}
+                    />
+                    <span className="text-xs text-foreground font-mono">{buttonColor}</span>
+                  </button>
+                </ColorPickerPopover>
+              </FieldGroup>
+            )}
+
+            {/* Button Text Color */}
+            <FieldGroup label="Button Text Color">
+              <ColorPickerPopover
+                color={buttonTextColor}
+                onChange={(color) => updateBlockProps({ buttonTextColor: color })}
+              >
+                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                  <div 
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ backgroundColor: buttonTextColor }}
+                  />
+                  <span className="text-xs text-foreground font-mono">{buttonTextColor}</span>
+                </button>
+              </ColorPickerPopover>
+            </FieldGroup>
+
+            {/* Button Size */}
+            <FieldGroup label="Button Size">
+              <div className="flex rounded-md overflow-hidden border border-border">
+                {(['sm', 'md', 'lg'] as const).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => updateBlockProps({ buttonSize: size })}
+                    className={cn(
+                      'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors uppercase',
+                      buttonSize === size
+                        ? 'bg-foreground text-background'
+                        : 'bg-background text-muted-foreground hover:bg-accent'
+                    )}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </FieldGroup>
+
+            {/* Button Corners */}
+            <FieldGroup label="Button Corners">
+              <div className="flex rounded-md overflow-hidden border border-border">
+                <button
+                  onClick={() => updateBlockProps({ buttonRadius: 'none' })}
+                  className={cn(
+                    'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
+                    buttonRadius === 'none'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  <Square className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => updateBlockProps({ buttonRadius: 'rounded' })}
+                  className={cn(
+                    'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
+                    buttonRadius === 'rounded'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  <div className="w-3.5 h-3.5 border-2 border-current rounded" />
+                </button>
+                <button
+                  onClick={() => updateBlockProps({ buttonRadius: 'full' })}
+                  className={cn(
+                    'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
+                    buttonRadius === 'full'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  <Circle className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </FieldGroup>
+
+            {/* Full Width Toggle */}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Full Width Button</Label>
+              <Switch
+                checked={buttonFullWidth}
+                onCheckedChange={(checked) => updateBlockProps({ buttonFullWidth: checked })}
+              />
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Background Section */}
+        <CollapsibleSection title="Background" icon={<Palette className="w-3.5 h-3.5" />}>
+          {/* Background Type */}
+          <FieldGroup label="Background Type">
+            <div className="flex rounded-md overflow-hidden border border-border">
+              <button
+                onClick={() => updateBlockProps({ backgroundType: 'solid' })}
+                className={cn(
+                  'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                  backgroundType === 'solid'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                Solid
+              </button>
+              <button
+                onClick={() => updateBlockProps({ backgroundType: 'gradient' })}
+                className={cn(
+                  'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                  backgroundType === 'gradient'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                Gradient
+              </button>
+            </div>
+          </FieldGroup>
+
+          {/* Background Color/Gradient */}
+          {backgroundType === 'gradient' ? (
+            <FieldGroup label="Background Gradient">
+              <GradientPickerPopover
+                value={backgroundGradient || null}
+                onChange={(gradient) => updateBlockProps({ backgroundGradient: gradient })}
+              >
+                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                  <div 
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ background: backgroundGradient ? gradientToCSS(backgroundGradient) : gradientToCSS(defaultGradient) }}
+                  />
+                  <span className="text-xs text-foreground">Edit Gradient</span>
+                </button>
+              </GradientPickerPopover>
+            </FieldGroup>
+          ) : (
+            <FieldGroup label="Background Color">
+              <ColorPickerPopover
+                color={backgroundColor}
+                onChange={(color) => updateBlockProps({ backgroundColor: color })}
+              >
+                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                  <div 
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ backgroundColor: backgroundColor }}
+                  />
+                  <span className="text-xs text-foreground font-mono">{backgroundColor}</span>
+                </button>
+              </ColorPickerPopover>
+            </FieldGroup>
+          )}
+
+          {/* Text Alignment */}
           {headingElement && (
             <FieldGroup label="Text Alignment">
               <div className="flex gap-1">
@@ -261,16 +535,6 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                 ))}
               </div>
             </FieldGroup>
-          )}
-
-          {/* Button styling hint */}
-          {buttonElement && (
-            <div className="p-2 rounded bg-muted/50 border border-border">
-              <p className="text-[10px] text-muted-foreground">
-                <MessageSquare className="w-3 h-3 inline mr-1" />
-                Click the button on the canvas to edit its styling.
-              </p>
-            </div>
           )}
         </CollapsibleSection>
       </div>

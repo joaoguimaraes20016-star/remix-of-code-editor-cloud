@@ -45,7 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ColorPickerPopover } from '../modals';
+import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
 
 const stepTypeIcons: Record<ApplicationStepType, React.ReactNode> = {
   welcome: <Sparkles className="w-4 h-4" />,
@@ -600,39 +600,69 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             </div>
           </div>
 
-          {/* Button Color */}
+          {/* Button Fill Type */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground uppercase">Button Color</Label>
-            <ColorPickerPopover
-              color={stepSettings.buttonColor || '#18181b'}
-              onChange={(color) => updateSettings({ buttonColor: color })}
-            >
-              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                <div 
-                  className="w-6 h-6 rounded border border-border"
-                  style={{ backgroundColor: stepSettings.buttonColor || '#18181b' }}
-                />
-                <span className="text-xs text-foreground font-mono">{stepSettings.buttonColor || '#18181b'}</span>
+            <Label className="text-[10px] text-muted-foreground uppercase">Button Fill</Label>
+            <div className="flex rounded-md overflow-hidden border border-border">
+              <button
+                onClick={() => updateSettings({ buttonFillType: 'solid' })}
+                className={cn(
+                  'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                  (stepSettings.buttonFillType || 'solid') === 'solid'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                Solid
               </button>
-            </ColorPickerPopover>
+              <button
+                onClick={() => updateSettings({ buttonFillType: 'gradient' })}
+                className={cn(
+                  'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                  stepSettings.buttonFillType === 'gradient'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                Gradient
+              </button>
+            </div>
           </div>
 
-          {/* Button Text Color */}
-          <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground uppercase">Button Text Color</Label>
-            <ColorPickerPopover
-              color={stepSettings.buttonTextColor || '#ffffff'}
-              onChange={(color) => updateSettings({ buttonTextColor: color })}
-            >
-              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                <div 
-                  className="w-6 h-6 rounded border border-border"
-                  style={{ backgroundColor: stepSettings.buttonTextColor || '#ffffff' }}
-                />
-                <span className="text-xs text-foreground font-mono">{stepSettings.buttonTextColor || '#ffffff'}</span>
-              </button>
-            </ColorPickerPopover>
-          </div>
+          {/* Button Color (Solid) or Gradient */}
+          {stepSettings.buttonFillType === 'gradient' ? (
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-muted-foreground uppercase">Button Gradient</Label>
+              <GradientPickerPopover
+                value={stepSettings.buttonGradient as GradientValue | null || null}
+                onChange={(gradient) => updateSettings({ buttonGradient: gradient })}
+              >
+                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                  <div 
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ background: stepSettings.buttonGradient ? gradientToCSS(stepSettings.buttonGradient as GradientValue) : gradientToCSS(defaultGradient) }}
+                  />
+                  <span className="text-xs text-foreground">Edit Gradient</span>
+                </button>
+              </GradientPickerPopover>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-muted-foreground uppercase">Button Color</Label>
+              <ColorPickerPopover
+                color={stepSettings.buttonColor || '#18181b'}
+                onChange={(color) => updateSettings({ buttonColor: color })}
+              >
+                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                  <div 
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ backgroundColor: stepSettings.buttonColor || '#18181b' }}
+                  />
+                  <span className="text-xs text-foreground font-mono">{stepSettings.buttonColor || '#18181b'}</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+          )}
 
           {/* Button Size */}
           <div className="space-y-1.5">
