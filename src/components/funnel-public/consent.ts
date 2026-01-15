@@ -21,19 +21,35 @@ export function getConsentMode(step: ConsentStep | undefined, termsUrl: string):
   return termsUrl ? "implicit" : "explicit";
 }
 
+// Step types that collect identity data and require consent
+const IDENTITY_STEP_TYPES = [
+  "opt_in",
+  "email_capture", 
+  "phone_capture",
+  "contact_capture",
+  "full_identity",
+];
+
 export function isConsentRequired(step?: ConsentStep): boolean {
   if (!step) return false;
-  // Opt-in intent implies consent by definition.
-  return step.step_type === "opt_in";
+  const stepType = step.step_type || "";
+  
+  // Check if step type collects identity data
+  if (IDENTITY_STEP_TYPES.includes(stepType)) return true;
+  
+  // Also check content for identity fields
+  const content = step.content || {};
+  const collectsEmail = content.collect_email === true || content.email_enabled === true;
+  const collectsPhone = content.collect_phone === true || content.phone_enabled === true;
+  
+  return collectsEmail || collectsPhone;
 }
 
 export function shouldShowConsentCheckbox(step?: ConsentStep, termsUrl?: string): boolean {
   if (!step || !termsUrl) return false;
 
-  const stepType = step.step_type || "";
-  const consentSteps = ["opt_in", "email_capture", "phone_capture", "contact_capture"];
-
-  if (!consentSteps.includes(stepType)) return false;
+  // Use unified identity detection
+  if (!isConsentRequired(step)) return false;
 
   const showConsentSetting = step.content?.show_consent_checkbox;
   const requiresConsent = step.content?.requires_consent === true;
