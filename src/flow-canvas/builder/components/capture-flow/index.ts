@@ -18,6 +18,7 @@ export { YesNoNode } from './nodes/YesNoNode';
 // Inspectors (Editor Panel - Phase 4)
 export { CaptureFlowInspector } from '../inspectors/CaptureFlowInspector';
 export { CaptureNodeEditor } from '../inspectors/CaptureNodeEditor';
+export { ApplicationStepInspector } from '../inspectors/ApplicationStepInspector';
 
 // Modal (Phase 7)
 export { CaptureFlowModal } from '../CaptureFlowModal';

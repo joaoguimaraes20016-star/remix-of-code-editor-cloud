@@ -26,3 +26,6 @@ export {
   funnelStepToApplicationSteps,
   getApplicationFlowConfig,
 } from './adapters/legacyAdapters';
+
+// Inspector (unified editor panel)
+export { ApplicationStepInspector } from '@/flow-canvas/builder/components/inspectors/ApplicationStepInspector';
