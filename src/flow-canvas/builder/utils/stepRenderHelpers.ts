@@ -117,25 +117,8 @@ export const getButtonStyle = (settings: Partial<ApplicationFlowStepSettings>): 
   return Object.keys(style).length > 0 ? style : undefined;
 };
 
-// ─────────────────────────────────────────────────────────
-// Interactive Block Background Helper
-// ─────────────────────────────────────────────────────────
-
-export const getInteractiveBlockBackground = (blockProps: Record<string, unknown>): React.CSSProperties => {
-  const style: React.CSSProperties = {};
-  
-  const backgroundType = blockProps.backgroundType as 'solid' | 'gradient' | undefined;
-  const backgroundColor = blockProps.backgroundColor as string | undefined;
-  const backgroundGradient = blockProps.backgroundGradient as { type: 'linear' | 'radial'; angle: number; stops: Array<{ color: string; position: number }> } | undefined;
-  
-  if (backgroundType === 'gradient' && backgroundGradient && backgroundGradient.stops?.length >= 2) {
-    style.background = gradientToCSS(backgroundGradient);
-  } else if (backgroundColor) {
-    style.backgroundColor = backgroundColor;
-  }
-  
-  return style;
-};
+// Note: Interactive block backgrounds are now read from block.styles directly
+// No special helper needed - this aligns with all other block types
 
 // ─────────────────────────────────────────────────────────
 // Get step settings with defaults

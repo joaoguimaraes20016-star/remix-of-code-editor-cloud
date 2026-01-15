@@ -2144,36 +2144,16 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   // Keep a consistent default radius while still allowing the inspector to override it.
   const effectiveBorderRadius = (block.styles?.borderRadius as string) || '12px';
 
-  // Apply interactive block background from props (for form-field, open-question, etc.)
-  const getInteractiveBlockBg = (): React.CSSProperties => {
-    // Check if block has background settings in props (set via InteractiveBlockInspector)
-    const blockProps = block.props || {};
-    const bgType = blockProps.backgroundType as 'solid' | 'gradient' | undefined;
-    const bgColor = blockProps.backgroundColor as string | undefined;
-    const bgGradient = blockProps.backgroundGradient as { type: 'linear' | 'radial'; angle: number; stops: Array<{ color: string; position: number }> } | undefined;
-    
-    if (bgType === 'gradient' && bgGradient && bgGradient.stops?.length >= 2) {
-      const sortedStops = [...bgGradient.stops].sort((a, b) => a.position - b.position);
-      const stopsStr = sortedStops.map(s => `${s.color} ${s.position}%`).join(', ');
-      const gradientCSS = bgGradient.type === 'radial' 
-        ? `radial-gradient(circle, ${stopsStr})`
-        : `linear-gradient(${bgGradient.angle}deg, ${stopsStr})`;
-      return { background: gradientCSS };
-    } else if (bgColor) {
-      return { backgroundColor: bgColor };
-    }
-    return {};
-  };
-  
-  const interactiveBgStyles = getInteractiveBlockBg();
+  // Background is now read directly from block.styles (single source of truth)
+  // No special-case needed for interactive blocks - they use the same block.styles path
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     // Apply block styles - all CSS values should be applied inline to guarantee they take effect
-    // Interactive block backgrounds take precedence over generic styles
-    backgroundColor: interactiveBgStyles.backgroundColor || block.styles?.backgroundColor,
-    background: interactiveBgStyles.background || block.styles?.background,
+    // All blocks (including interactive) use block.styles for background (single source of truth)
+    backgroundColor: block.styles?.backgroundColor,
+    background: block.styles?.background,
     // Padding - individual values override shorthand; filter undefined to avoid overriding with 'undefined' string
     ...(block.styles?.padding ? { padding: block.styles.padding } : {}),
     ...(block.styles?.paddingTop ? { paddingTop: block.styles.paddingTop } : {}),
