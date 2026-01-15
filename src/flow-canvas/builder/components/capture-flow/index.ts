@@ -15,5 +15,9 @@ export { DateNode } from './nodes/DateNode';
 export { ScaleNode } from './nodes/ScaleNode';
 export { YesNoNode } from './nodes/YesNoNode';
 
+// Inspectors (Editor Panel - Phase 4)
+export { CaptureFlowInspector } from '../inspectors/CaptureFlowInspector';
+export { CaptureNodeEditor } from '../inspectors/CaptureNodeEditor';
+
 // Utilities
 export { getInputStyleClass, getInputClasses } from './nodes/nodeStyles';
