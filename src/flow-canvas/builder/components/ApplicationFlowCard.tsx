@@ -10,6 +10,7 @@ import {
   getButtonClasses,
   getButtonStyle,
 } from '../utils/stepRenderHelpers';
+import { useFlowContainerSafe, buttonActionToIntent } from '../contexts/FlowContainerContext';
 
 // Convert ApplicationFlowBackground to CSS string
 const backgroundToCSS = (bg?: ApplicationFlowBackground): string => {
@@ -63,6 +64,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   const settings = block.props as Partial<ApplicationFlowSettings>;
   const steps = settings?.steps || [];
   
+  // Access FlowContainer for intent-based button actions (SINGLE SOURCE OF TRUTH)
+  const flowContainer = useFlowContainerSafe();
+  
   // Independent styling (not affected by global theme)
   const flowBackground = settings.background;
   const flowTextColor = settings.textColor || '#000000';
@@ -97,7 +101,8 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
   };
 
-  // Button click handler for preview mode
+  // Button click handler - EMITS INTENT to FlowContainer (single source of truth)
+  // This component does NOT know step order or validation. It ONLY emits intent.
   const handleButtonClick = (e: React.MouseEvent, stepSettings: any) => {
     if (!isPreviewMode) return;
     
@@ -105,51 +110,46 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     e.preventDefault();
     
     const action = stepSettings?.buttonAction;
-    const actionType = action?.type || 'next-step';
-    const actionValue = action?.value;
+    const intent = buttonActionToIntent(action);
     
-    switch (actionType) {
-      case 'next-step':
-        onNextStep?.();
-        break;
-      case 'go-to-step':
-        if (actionValue) {
-          onGoToStep?.(actionValue);
+    if (intent) {
+      // If FlowContainer is available, emit intent to it (PREFERRED)
+      if (flowContainer) {
+        flowContainer.emitIntent(intent);
+      } else {
+        // Fallback to legacy callbacks for backwards compatibility
+        switch (intent.type) {
+          case 'next-step':
+            onNextStep?.();
+            break;
+          case 'go-to-step':
+            onGoToStep?.(intent.stepId);
+            break;
+          case 'submit':
+            // Submit triggers next step as fallback
+            onNextStep?.();
+            break;
+          case 'url':
+            if (intent.openNewTab) {
+              window.open(intent.url, '_blank');
+            } else {
+              window.location.href = intent.url;
+            }
+            break;
+          case 'scroll':
+            document.querySelector(intent.selector)?.scrollIntoView({ behavior: 'smooth' });
+            break;
+          case 'phone':
+            window.location.href = `tel:${intent.number}`;
+            break;
+          case 'email':
+            window.location.href = `mailto:${intent.address}`;
+            break;
+          case 'download':
+            window.open(intent.url, '_blank');
+            break;
         }
-        break;
-      case 'url':
-        if (actionValue) {
-          if (action?.openNewTab) {
-            window.open(actionValue, '_blank');
-          } else {
-            window.location.href = actionValue;
-          }
-        }
-        break;
-      case 'submit':
-        // Submit form data - trigger next step as default
-        onNextStep?.();
-        break;
-      case 'scroll':
-        if (actionValue) {
-          document.querySelector(actionValue)?.scrollIntoView({ behavior: 'smooth' });
-        }
-        break;
-      case 'phone':
-        if (actionValue) {
-          window.location.href = `tel:${actionValue}`;
-        }
-        break;
-      case 'email':
-        if (actionValue) {
-          window.location.href = `mailto:${actionValue}`;
-        }
-        break;
-      case 'download':
-        if (actionValue) {
-          window.open(actionValue, '_blank');
-        }
-        break;
+      }
     }
   };
 

@@ -35,6 +35,7 @@ import { PanelLeftClose, PanelRightClose, Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { InlineEditProvider } from '../contexts/InlineEditContext';
 import { CaptureFlowProvider } from '../contexts/CaptureFlowContext';
+import { FlowContainerProvider, FlowStep } from '../contexts/FlowContainerContext';
 
 // Multi-selection state type
 interface MultiSelection {
