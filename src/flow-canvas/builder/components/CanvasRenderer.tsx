@@ -3333,6 +3333,12 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
         onMouseMove={handlePanMouseMove}
         onMouseUp={handlePanMouseUp}
         onMouseLeave={handlePanMouseUp}
+        onClick={(e) => {
+          // Click on canvas background (outside device frame) = clear selection
+          if (e.target === e.currentTarget) {
+            onSelect({ type: null, id: null, path: [] });
+          }
+        }}
       >
         {/* Grid Overlay */}
         {showGrid && (
