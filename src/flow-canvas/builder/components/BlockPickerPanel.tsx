@@ -504,6 +504,9 @@ const sectionCategories: SectionCategory[] = [
 
 // ============ COLLAPSIBLE CATEGORY COMPONENT ============
 
+// Categories that should add to Application Flow instead of standalone blocks
+const APPLICATION_FLOW_CATEGORIES = ['questions', 'capture'];
+
 interface CollapsibleCategoryProps {
   category: BlockCategory | SectionCategory;
   onAddBlock: (template: BlockTemplate, isSection: boolean, categoryId?: string) => void;
@@ -522,6 +525,9 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
   const hint = 'hint' in category ? category.hint : undefined;
   const showCaptureFlowCTA = isSection && category.id === 'capture' && onOpenCaptureFlowSelector;
 
+  // Check if this category routes to Application Flow
+  const isFlowCategory = APPLICATION_FLOW_CATEGORIES.includes(category.id);
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger className="w-full">
@@ -536,6 +542,11 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
             <span className="text-[10px] text-builder-text-dim bg-builder-surface-active px-1.5 py-0.5 rounded">
               {blocks.length}
             </span>
+            {isFlowCategory && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
+                → Flow
+              </span>
+            )}
           </div>
         </div>
       </CollapsibleTrigger>
@@ -614,8 +625,8 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
   const [showCaptureFlowSelector, setShowCaptureFlowSelector] = useState(false);
 
-  // Categories that should add to Application Flow instead of standalone blocks
-  const APPLICATION_FLOW_CATEGORIES = ['questions', 'capture'];
+  // Use the module-level constant for Application Flow categories
+  // (defined at top of file for use in CollapsibleCategory)
 
   // Convert block template to Application Flow step
   const blockTemplateToFlowStep = (
@@ -730,6 +741,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       // Convert to flow step and add to existing flow
       const step = blockTemplateToFlowStep(template.label, template.type, template.template());
       onAddApplicationFlowStep(step);
+      onClose(); // Close panel after adding
       return;
     }
     
@@ -737,6 +749,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       // Create new Application Flow with this step
       const step = blockTemplateToFlowStep(template.label, template.type, template.template());
       onCreateApplicationFlowWithStep(step);
+      onClose(); // Close panel after creating
       return;
     }
     
