@@ -253,6 +253,7 @@ const contentBlocks: BlockTemplate[] = [
 ];
 
 // ============ BUTTONS & ACTIONS ============
+// NOTE: Only non-interactive actions here. Interactive blocks (booking, flows) are in Interactive category.
 
 const actionBlocks: BlockTemplate[] = [
   {
@@ -268,6 +269,12 @@ const actionBlocks: BlockTemplate[] = [
       props: { action: 'next-step', href: '' },
     }),
   },
+];
+
+// ============ SCHEDULING & BOOKING ============
+// Moved from Actions to Interactive since it collects data
+
+const bookingBlocks: BlockTemplate[] = [
   {
     type: 'booking',
     label: 'Book a Call',
@@ -284,44 +291,17 @@ const actionBlocks: BlockTemplate[] = [
       props: { calendlyUrl: '', intent: 'schedule' },
     }),
   },
-  {
-    type: 'application-flow',
-    label: 'Application Flow',
-    icon: <Workflow size={16} />,
-    description: 'Typeform-style multi-step experience',
-    template: () => ({
-      id: generateId(),
-      type: 'application-flow',
-      label: 'Application',
-      elements: [],
-      props: {
-        displayMode: 'one-at-a-time',
-        showProgress: true,
-        transition: 'slide-up',
-        // Explicit theme-independent styling defaults
-        background: { type: 'solid', color: '#ffffff' },
-        textColor: '#000000',
-        inputBackground: '#ffffff',
-        inputBorderColor: '#e5e7eb',
-        steps: [
-          { id: generateId(), name: 'Welcome', type: 'welcome', elements: [], settings: { align: 'center', spacing: 'normal' }, navigation: { action: 'next' } },
-          { id: generateId(), name: 'Get Started', type: 'capture', elements: [], settings: { align: 'center', spacing: 'normal' }, navigation: { action: 'submit' } },
-        ]
-      },
-    }),
-  },
 ];
 
-// ============ FLOW TEMPLATES (moved before blockCategories) ============
+// ============ FLOW CONTAINER ============
+// A container for grouping multiple interactive blocks into a Typeform-style experience
 
-// Flow templates - all use application-flow block type (the unified Application Engine)
-// These are NOT separate systems - they're different presentations of the same engine
 const flowTemplates: BlockTemplate[] = [
   {
     type: 'application-flow',
-    label: 'Multi-Step Flow',
+    label: 'Flow Container',
     icon: <Workflow size={16} />,
-    description: 'Full Typeform-style experience',
+    description: 'Group questions into a Typeform-style experience',
     template: () => ({
       id: generateId(),
       type: 'application-flow',
@@ -390,17 +370,20 @@ const flowTemplates: BlockTemplate[] = [
 // ============ BLOCK CATEGORIES ============
 
 // Unified "Interactive" category - consolidates all data-collection blocks + flows
+// Order: Questions → Capture Fields → Booking → Flow Container
 const interactiveBlocks: BlockTemplate[] = [
   ...applicationQuestions,
   ...captureFields,
+  ...bookingBlocks,
+  ...flowTemplates, // Flow Container at the end - it's a grouping feature, not a primary block
 ];
 
 const blockCategories: BlockCategory[] = [
   {
     id: 'interactive',
     label: 'Interactive',
-    hint: 'Questions, lead capture & flows',
-    blocks: [...interactiveBlocks, ...flowTemplates],
+    hint: 'Questions, lead capture & scheduling',
+    blocks: interactiveBlocks,
     defaultOpen: true, // Interactive blocks are the core use case
   },
   {
@@ -719,9 +702,10 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   const allTemplates = [
     ...applicationQuestions.map(b => ({ ...b, isSection: false, categoryId: 'interactive' })),
     ...captureFields.map(b => ({ ...b, isSection: false, categoryId: 'interactive' })),
+    ...bookingBlocks.map(b => ({ ...b, isSection: false, categoryId: 'interactive' })),
     ...contentBlocks.map(b => ({ ...b, isSection: false, categoryId: 'content' })),
     ...actionBlocks.map(b => ({ ...b, isSection: false, categoryId: 'actions' })),
-    ...flowTemplates.map(t => ({ ...t, isSection: true, categoryId: 'advanced' })),
+    ...flowTemplates.map(t => ({ ...t, isSection: false, categoryId: 'interactive' })), // Flow container is a block, not a section
     ...contentSections.map(t => ({ ...t, isSection: true, categoryId: 'content-sections' })),
     ...advancedSections.map(t => ({ ...t, isSection: true, categoryId: 'advanced' })),
   ];
@@ -734,26 +718,27 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
     : [];
 
   const handleAddBlock = (template: BlockTemplate, isSection: boolean = false, categoryId?: string) => {
-    // Check if this is an application question/capture that should go into Application Flow
-    const isApplicationContent = categoryId && isApplicationFlowCategory(categoryId);
+    // Check if this is a Flow Container (application-flow) - those should be added as standalone
+    const isFlowContainer = template.type === 'application-flow';
     
+    // Check if this is an application question/capture
+    const isApplicationContent = categoryId && isApplicationFlowCategory(categoryId) && !isFlowContainer;
+    
+    // ONLY add to existing flow if:
+    // 1. A flow is actively SELECTED (not just exists on the page)
+    // 2. The block is an interactive question/capture (not a Flow Container)
+    // 3. The callback exists
     if (isApplicationContent && activeApplicationFlowBlockId && onAddApplicationFlowStep) {
-      // Convert to flow step and add to existing flow
+      // Convert to flow step and add to existing selected flow
       const step = blockTemplateToFlowStep(template.label, template.type, template.template());
       onAddApplicationFlowStep(step);
-      onClose(); // Close panel after adding
+      onClose();
       return;
     }
     
-    if (isApplicationContent && !activeApplicationFlowBlockId && onCreateApplicationFlowWithStep) {
-      // Create new Application Flow with this step
-      const step = blockTemplateToFlowStep(template.label, template.type, template.template());
-      onCreateApplicationFlowWithStep(step);
-      onClose(); // Close panel after creating
-      return;
-    }
-    
-    // Default: add as standalone block (for non-question content)
+    // DEFAULT BEHAVIOR: Add as standalone block
+    // Interactive blocks (questions, capture fields) are now first-class blocks
+    // They can be placed anywhere on the canvas just like Perspective.co
     onAddBlock(template.template(), { type: isSection ? 'section' : 'block' });
     onClose();
   };
