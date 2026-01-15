@@ -30,6 +30,11 @@ import {
   Square,
   Maximize2,
   Eye,
+  MousePointer2,
+  ArrowRight,
+  Layers,
+  Send,
+  ExternalLink,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,10 +48,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
+import type { ButtonAction, ButtonActionType } from '../modals/ButtonActionModal';
 
 interface InteractiveBlockInspectorProps {
   block: Block;
   onUpdateBlock: (updates: Partial<Block>) => void;
+  steps?: { id: string; name: string }[];
 }
 
 // Collapsible section component
@@ -94,6 +101,7 @@ const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ la
 export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps> = ({
   block,
   onUpdateBlock,
+  steps = [],
 }) => {
   // Extract elements from the block
   const elements = block.elements || [];
@@ -282,6 +290,77 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                 placeholder="Continue"
                 className="h-8 text-sm"
               />
+            </FieldGroup>
+          )}
+
+          {/* Button Action - What happens on click */}
+          {buttonElement && (
+            <FieldGroup label="Button Action">
+              {(() => {
+                const buttonAction = buttonElement.props?.buttonAction as ButtonAction | undefined;
+                const actionType = buttonAction?.type || 'next-step';
+                const actionValue = buttonAction?.value || '';
+                
+                const handleActionChange = (type: ButtonActionType, value?: string) => {
+                  updateElementProps(buttonElement.id, {
+                    buttonAction: { type, value, openNewTab: type === 'url' ? buttonAction?.openNewTab : undefined }
+                  });
+                };
+
+                return (
+                  <div className="space-y-2">
+                    {/* Action Type Selector */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { type: 'next-step' as ButtonActionType, label: 'Next Step', icon: <ArrowRight className="w-3 h-3" /> },
+                        { type: 'go-to-step' as ButtonActionType, label: 'Go to Step', icon: <Layers className="w-3 h-3" /> },
+                        { type: 'submit' as ButtonActionType, label: 'Submit', icon: <Send className="w-3 h-3" /> },
+                        { type: 'url' as ButtonActionType, label: 'Open URL', icon: <ExternalLink className="w-3 h-3" /> },
+                      ].map((action) => (
+                        <button
+                          key={action.type}
+                          onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
+                          className={cn(
+                            'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
+                            actionType === action.type
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                          )}
+                        >
+                          {action.icon}
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Step Selector for go-to-step */}
+                    {actionType === 'go-to-step' && steps.length > 0 && (
+                      <Select value={actionValue} onValueChange={(v) => handleActionChange('go-to-step', v)}>
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Select step..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {steps.map((step) => (
+                            <SelectItem key={step.id} value={step.id}>
+                              {step.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {/* URL Input for url action */}
+                    {actionType === 'url' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('url', e.target.value)}
+                        placeholder="https://example.com"
+                        className="h-8 text-sm"
+                      />
+                    )}
+                  </div>
+                );
+              })()}
             </FieldGroup>
           )}
         </CollapsibleSection>

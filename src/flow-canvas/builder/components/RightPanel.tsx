@@ -3576,6 +3576,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             <InteractiveBlockInspector 
               block={selectedNode as Block} 
               onUpdateBlock={(updates) => handleUpdate(updates)}
+              steps={page.steps?.map(s => ({ id: s.id, name: s.name })) || []}
             />
           ) : (
             <BlockInspector block={selectedNode as Block} onUpdate={handleUpdate} />
