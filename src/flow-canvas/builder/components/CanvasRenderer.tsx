@@ -574,66 +574,36 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
     );
   };
   
-  // Button click action handler - EMITS INTENT to FlowContainer (single source of truth)
+  // Button click action handler - EMITS INTENT to FlowContainer (SOLE AUTHORITY)
   // Buttons do NOT know step order, validation, or form state. They ONLY emit intent.
+  // If FlowContainer is not present, progression is BLOCKED - no fallbacks.
   const handleButtonClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    
     if (!isPreviewMode) {
-      e.stopPropagation();
+      // Edit mode: select the element, do NOT emit intent
       onSelect();
       return;
     }
     
     e.preventDefault();
-    e.stopPropagation();
     
+    // Preview mode: ALWAYS emit intent to FlowContainer
+    // FlowContainer is the SOLE AUTHORITY for progression
     const action = element.props?.buttonAction as ButtonAction | undefined;
     const intent = buttonActionToIntent(action);
     
-    if (intent) {
-      // If FlowContainer is available, emit intent to it (PREFERRED)
-      if (flowContainer) {
-        // For submit intent, include form values
-        if (intent.type === 'submit') {
-          flowContainer.emitIntent({ type: 'submit', values: formValues });
-        } else {
-          flowContainer.emitIntent(intent);
-        }
+    if (intent && flowContainer) {
+      // For submit intent, include form values
+      if (intent.type === 'submit') {
+        flowContainer.emitIntent({ type: 'submit', values: formValues });
       } else {
-        // Fallback to legacy callbacks for backwards compatibility
-        // This path will be removed once FlowContainer is fully integrated
-        switch (intent.type) {
-          case 'next-step':
-            onNextStep?.();
-            break;
-          case 'go-to-step':
-            onGoToStep?.(intent.stepId);
-            break;
-          case 'submit':
-            onFormSubmit?.(formValues);
-            break;
-          case 'url':
-            if (intent.openNewTab) {
-              window.open(intent.url, '_blank');
-            } else {
-              window.location.href = intent.url;
-            }
-            break;
-          case 'scroll':
-            document.querySelector(intent.selector)?.scrollIntoView({ behavior: 'smooth' });
-            break;
-          case 'phone':
-            window.location.href = `tel:${intent.number}`;
-            break;
-          case 'email':
-            window.location.href = `mailto:${intent.address}`;
-            break;
-          case 'download':
-            window.open(intent.url, '_blank');
-            break;
-        }
+        flowContainer.emitIntent(intent);
       }
     }
-  }, [isPreviewMode, element.props?.buttonAction, onSelect, flowContainer, formValues, onNextStep, onGoToStep, onFormSubmit]);
+    // If no FlowContainer: intent is dropped (progression blocked)
+    // This is intentional - FlowContainer is REQUIRED for progression
+  }, [isPreviewMode, element.props?.buttonAction, onSelect, flowContainer, formValues]);
 
   // Handle content + styles from InlineTextEditor
   // Only update properties that are explicitly provided (not undefined)
