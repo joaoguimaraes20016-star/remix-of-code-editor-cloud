@@ -688,9 +688,28 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       
       // For capture steps, determine which fields to collect
       if (stepType === 'capture') {
-        settings.collectName = blockLabel.toLowerCase().includes('name');
-        settings.collectEmail = blockLabel.toLowerCase().includes('email');
-        settings.collectPhone = blockLabel.toLowerCase().includes('phone');
+        const labelLower = blockLabel.toLowerCase();
+        const hasNameInput = template.elements.some(e => 
+          e.props?.fieldKey === 'name' || (typeof e.props?.placeholder === 'string' && e.props.placeholder.toLowerCase().includes('name'))
+        );
+        const hasEmailInput = template.elements.some(e => 
+          e.props?.type === 'email' || e.props?.fieldKey === 'email'
+        );
+        const hasPhoneInput = template.elements.some(e => 
+          e.props?.type === 'tel' || e.props?.fieldKey === 'phone'
+        );
+        
+        // Check both label and elements for field types
+        settings.collectName = labelLower.includes('name') || hasNameInput || labelLower.includes('full');
+        settings.collectEmail = labelLower.includes('email') || hasEmailInput || (!settings.collectName && !hasPhoneInput);
+        settings.collectPhone = labelLower.includes('phone') || hasPhoneInput;
+        
+        // Default: if a "Full Form" or generic capture, enable all fields
+        if (labelLower.includes('full') || labelLower.includes('opt-in') || labelLower.includes('application')) {
+          settings.collectName = true;
+          settings.collectEmail = true;
+          settings.collectPhone = hasPhoneInput;
+        }
       }
       
       return {
@@ -762,6 +781,19 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   };
 
   const handleAddCaptureFlow = (block: Block) => {
+    // If the block is an application-flow with steps, and we already have one,
+    // merge the steps into the existing flow
+    if (block.type === 'application-flow' && activeApplicationFlowBlockId && onAddApplicationFlowStep) {
+      const flowSettings = block.props as { steps?: ApplicationFlowStep[] };
+      const stepsToAdd = (flowSettings.steps || []).filter(
+        s => s.type !== 'welcome' && s.type !== 'ending'
+      );
+      stepsToAdd.forEach(step => onAddApplicationFlowStep(step));
+      onClose();
+      return;
+    }
+    
+    // Otherwise add as new block
     onAddBlock(block, { type: 'section' });
     onClose();
   };

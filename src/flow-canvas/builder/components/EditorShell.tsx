@@ -579,6 +579,14 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             // Select the flow block
             handleSelect({ type: 'block', id: flowBlock.id, path: ['block', flowBlock.id] });
             
+            // Scroll the flow block into view
+            setTimeout(() => {
+              const flowBlockElement = document.querySelector(`[data-block-id="${flowBlock.id}"]`);
+              if (flowBlockElement) {
+                flowBlockElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 100);
+            
             toast.success('Step added to flow');
             return;
           }
