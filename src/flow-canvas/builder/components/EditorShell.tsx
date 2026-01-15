@@ -1125,6 +1125,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   }, [page, selection, handlePageUpdate]);
 
   // Layer selection handlers
+  const handleSelectFrame = useCallback((frameId: string, path: string[]) => {
+    handleSelect({ type: 'frame', id: frameId, path });
+  }, [handleSelect]);
+
   const handleSelectBlock = useCallback((blockId: string, path: string[]) => {
     handleSelect({ type: 'block', id: blockId, path });
   }, [handleSelect]);
@@ -1398,6 +1402,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                 onDuplicateStep={handleDuplicateStep}
                 onAddBlankStep={handleAddBlankStep}
                 onReorderSteps={handleReorderSteps}
+                onSelectFrame={handleSelectFrame}
                 onSelectBlock={handleSelectBlock}
                 onSelectElement={handleSelectElement}
                 onRenameStep={handleRenameStep}
@@ -1425,6 +1430,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                 onDuplicateStep={handleDuplicateStep}
                 onAddBlankStep={handleAddBlankStep}
                 onReorderSteps={handleReorderSteps}
+                onSelectFrame={(id, path) => { handleSelectFrame(id, path); setMobileLeftOpen(false); }}
                 onSelectBlock={(id, path) => { handleSelectBlock(id, path); setMobileLeftOpen(false); }}
                 onSelectElement={(id, path) => { handleSelectElement(id, path); setMobileLeftOpen(false); }}
                 onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
