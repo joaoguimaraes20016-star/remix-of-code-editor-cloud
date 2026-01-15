@@ -6,22 +6,22 @@
 
 @layer base {
   :root {
-    --background: 220 15% 6%;
+    --background: 0 0% 2%;
     --foreground: 210 20% 96%;
 
-    --card: 220 15% 9%;
+    --card: 0 0% 4%;
     --card-foreground: 210 20% 96%;
 
-    --popover: 220 15% 9%;
+    --popover: 0 0% 4%;
     --popover-foreground: 210 20% 96%;
 
     --primary: 220 10% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 12% 14%;
+    --secondary: 0 0% 8%;
     --secondary-foreground: 210 20% 96%;
 
-    --muted: 220 12% 18%;
+    --muted: 0 0% 10%;
     --muted-foreground: 220 10% 55%;
 
     --accent: 220 10% 45%;
@@ -30,8 +30,8 @@
     --destructive: 0 72% 55%;
     --destructive-foreground: 210 20% 96%;
 
-    --border: 220 12% 16%;
-    --input: 220 12% 16%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
     --ring: 220 10% 50%;
 
     --radius: 0.75rem;
@@ -56,7 +56,7 @@
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.05));
     --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)));
-    --gradient-button: linear-gradient(135deg, hsl(220 15% 18%), hsl(220 15% 14%));
+    --gradient-button: linear-gradient(135deg, hsl(0 0% 12%), hsl(0 0% 8%));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)));
     --gradient-pending: linear-gradient(135deg, hsl(30 80% 50%), hsl(35 85% 45%));
     --gradient-confirmed: linear-gradient(135deg, hsl(142 60% 45%), hsl(155 65% 40%));
@@ -72,45 +72,45 @@
     --chart-4: 280 70% 55%;
     --chart-5: 30 80% 50%;
 
-    --sidebar-background: 220 15% 7%;
+    --sidebar-background: 0 0% 3%;
     --sidebar-foreground: 210 20% 96%;
     --sidebar-primary: 315 85% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 12% 14%;
+    --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 210 20% 96%;
-    --sidebar-border: 220 12% 16%;
+    --sidebar-border: 0 0% 12%;
     --sidebar-ring: 45 70% 50%;
     
     /* Builder-specific tokens - always dark for consistent editor UI */
-    --builder-bg: 220 15% 10%;
-    --builder-surface: 220 15% 14%;
-    --builder-surface-hover: 220 15% 18%;
-    --builder-surface-active: 220 15% 22%;
-    --builder-border: 220 12% 20%;
-    --builder-border-subtle: 220 12% 16%;
-    --builder-text: 210 20% 96%;
-    --builder-text-secondary: 220 10% 75%;
-    --builder-text-muted: 220 10% 55%;
+    --builder-bg: 0 0% 4%;
+    --builder-surface: 0 0% 7%;
+    --builder-surface-hover: 0 0% 11%;
+    --builder-surface-active: 0 0% 15%;
+    --builder-border: 0 0% 14%;
+    --builder-border-subtle: 0 0% 10%;
+    --builder-text: 0 0% 100%;
+    --builder-text-secondary: 0 0% 75%;
+    --builder-text-muted: 0 0% 55%;
     --builder-accent: 217 80% 55%;
   }
 
   .dark {
-    --background: 220 15% 6%;
+    --background: 0 0% 2%;
     --foreground: 210 20% 96%;
 
-    --card: 220 15% 9%;
+    --card: 0 0% 4%;
     --card-foreground: 210 20% 96%;
 
-    --popover: 220 15% 9%;
+    --popover: 0 0% 4%;
     --popover-foreground: 210 20% 96%;
 
     --primary: 220 10% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 12% 14%;
+    --secondary: 0 0% 8%;
     --secondary-foreground: 210 20% 96%;
 
-    --muted: 220 12% 18%;
+    --muted: 0 0% 10%;
     --muted-foreground: 220 10% 55%;
 
     --accent: 220 10% 45%;
@@ -119,8 +119,8 @@
     --destructive: 0 72% 55%;
     --destructive-foreground: 210 20% 96%;
 
-    --border: 220 12% 16%;
-    --input: 220 12% 16%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
     --ring: 220 10% 50%;
     
     --success: 142 60% 45%;
@@ -130,20 +130,20 @@
     --info-foreground: 210 20% 96%;
     
     --pending: 30 80% 50%;
-    --pending-foreground: 220 15% 6%;
+    --pending-foreground: 0 0% 2%;
     
     --confirmed: 142 60% 45%;
     --confirmed-foreground: 210 20% 96%;
     
     --rescheduled: 45 80% 60%;
-    --rescheduled-foreground: 220 15% 6%;
+    --rescheduled-foreground: 0 0% 2%;
     
     --warning: 38 80% 50%;
-    --warning-foreground: 220 15% 6%;
+    --warning-foreground: 0 0% 2%;
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.05));
     --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)));
-    --gradient-button: linear-gradient(135deg, hsl(220 15% 18%), hsl(220 15% 14%));
+    --gradient-button: linear-gradient(135deg, hsl(0 0% 12%), hsl(0 0% 8%));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)));
     --gradient-pending: linear-gradient(135deg, hsl(30 80% 50%), hsl(35 85% 45%));
     --gradient-confirmed: linear-gradient(135deg, hsl(142 60% 45%), hsl(155 65% 40%));
@@ -159,13 +159,13 @@
     --chart-4: 280 70% 55%;
     --chart-5: 30 80% 50%;
 
-    --sidebar-background: 220 15% 7%;
+    --sidebar-background: 0 0% 3%;
     --sidebar-foreground: 210 20% 96%;
     --sidebar-primary: 315 85% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 12% 14%;
+    --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 210 20% 96%;
-    --sidebar-border: 220 12% 16%;
+    --sidebar-border: 0 0% 12%;
     --sidebar-ring: 45 70% 50%;
   }
 }

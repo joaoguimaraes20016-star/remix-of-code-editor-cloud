@@ -330,11 +330,16 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
       </div>
 
       {/* Steps List */}
-      <div className="flex-1 overflow-y-auto builder-scroll p-3 space-y-1">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Steps</span>
-          <span className="text-[10px] text-muted-foreground">Click to edit</span>
+      <div className="flex-1 overflow-y-auto builder-scroll">
+        {/* Sticky Steps Header */}
+        <div className="sticky top-0 z-10 px-3 py-2 bg-background border-b border-border">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Steps ({steps.length})</span>
+            <span className="text-[10px] text-muted-foreground">Click to edit</span>
+          </div>
         </div>
+        
+        <div className="p-3 space-y-1">
 
         <DndContext
           sensors={sensors}
@@ -397,6 +402,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       {/* Appearance Settings */}
