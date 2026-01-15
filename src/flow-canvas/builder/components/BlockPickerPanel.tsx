@@ -172,9 +172,9 @@ const captureFields: BlockTemplate[] = [
   },
   {
     type: 'application-step',
-    label: 'Contact Info',
+    label: 'Contact Info Opt-In',
     icon: <UserCheck size={16} />,
-    description: 'Name + email + phone combo',
+    description: 'Collect name, email, phone — can show as popup',
     template: () => ({
       id: generateId(),
       type: 'form-field',

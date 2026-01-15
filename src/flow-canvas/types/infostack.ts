@@ -87,6 +87,26 @@ export interface ApplicationFlowStepSettings {
   answerBgColor?: string;
   answerBorderColor?: string;
   answerSelectedColor?: string;
+  // Button gradient support
+  buttonFillType?: 'solid' | 'gradient';
+  buttonGradient?: {
+    type: 'linear' | 'radial';
+    angle: number;
+    stops: Array<{ color: string; position: number }>;
+  };
+  // Background gradient support
+  backgroundType?: 'solid' | 'gradient';
+  backgroundColor?: string;
+  backgroundGradient?: {
+    type: 'linear' | 'radial';
+    angle: number;
+    stops: Array<{ color: string; position: number }>;
+  };
+  // Popup opt-in settings (for Contact Info Opt-In blocks)
+  showAsPopup?: boolean;
+  requireCompletion?: boolean;
+  popupHeadline?: string;
+  popupSubtext?: string;
 }
 
 export interface ApplicationFlowStep {
