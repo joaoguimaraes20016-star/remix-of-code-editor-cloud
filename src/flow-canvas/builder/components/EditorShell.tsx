@@ -99,8 +99,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [activeStepId, setActiveStepId] = useState<string | null>(
     page.steps[0]?.id || null
   );
-  // State for selected step within Application Flow block (for canvas step switching)
-  const [selectedApplicationStepId, setSelectedApplicationStepId] = useState<string | null>(null);
+  // State for selected step within Application Flow blocks - scoped per block ID
+  const [selectedFlowSteps, setSelectedFlowSteps] = useState<Record<string, string | null>>({});
   const [isAICopilotExpanded, setIsAICopilotExpanded] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
@@ -158,6 +158,65 @@ export const EditorShell: React.FC<EditorShellProps> = ({
 
   // Get active step
   const activeStep = page.steps.find(s => s.id === activeStepId) || null;
+
+  // Helper to get the active Application Flow block from current selection
+  const getActiveApplicationFlowBlock = useCallback((): Block | null => {
+    if (selection.type === 'block' && selection.id && activeStep) {
+      for (const frame of activeStep.frames || []) {
+        for (const stack of frame.stacks) {
+          const block = stack.blocks.find(b => b.id === selection.id);
+          if (block?.type === 'application-flow') {
+            return block;
+          }
+        }
+      }
+    }
+    return null;
+  }, [selection, activeStep]);
+  
+  // Set selected step ID for a specific Application Flow block
+  const setSelectedStepForBlock = useCallback((blockId: string, stepId: string | null) => {
+    setSelectedFlowSteps(prev => ({
+      ...prev,
+      [blockId]: stepId
+    }));
+  }, []);
+  
+  // Computed: active flow block and its selected step
+  const activeFlowBlock = getActiveApplicationFlowBlock();
+  const activeFlowBlockId = activeFlowBlock?.id || null;
+  const selectedApplicationStepId = activeFlowBlockId ? selectedFlowSteps[activeFlowBlockId] || null : null;
+  
+  // Handler for setting selected step (scoped to active flow block)
+  const handleSelectApplicationStep = useCallback((stepId: string | null) => {
+    if (activeFlowBlockId) {
+      setSelectedStepForBlock(activeFlowBlockId, stepId);
+    }
+  }, [activeFlowBlockId, setSelectedStepForBlock]);
+
+  // Auto-select first step when an Application Flow block is selected with no step selection
+  useEffect(() => {
+    if (activeFlowBlock && activeFlowBlockId) {
+      const currentSelection = selectedFlowSteps[activeFlowBlockId];
+      const steps = (activeFlowBlock.props as any)?.steps || [];
+      
+      // If no step is selected for this block, auto-select the first one
+      if (!currentSelection && steps.length > 0) {
+        setSelectedFlowSteps(prev => ({
+          ...prev,
+          [activeFlowBlockId]: steps[0].id
+        }));
+      }
+      
+      // If the selected step no longer exists, reset to first step
+      if (currentSelection && !steps.find((s: any) => s.id === currentSelection)) {
+        setSelectedFlowSteps(prev => ({
+          ...prev,
+          [activeFlowBlockId]: steps[0]?.id || null
+        }));
+      }
+    }
+  }, [activeFlowBlock, activeFlowBlockId, selectedFlowSteps]);
 
   // Handle page updates with history and action labels
   const handlePageUpdate = useCallback((updatedPage: Page, actionLabel?: string) => {
@@ -573,8 +632,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             block.props = { ...settings, steps } as unknown as Record<string, unknown>;
             handlePageUpdate(updatedPage, 'Add flow step');
             
-            // Select the new step
-            setSelectedApplicationStepId(newStep.id);
+            // Select the new step (scoped to this flow block)
+            setSelectedStepForBlock(flowBlock.id, newStep.id);
             
             // Select the flow block
             handleSelect({ type: 'block', id: flowBlock.id, path: ['block', flowBlock.id] });
@@ -637,8 +696,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     // Add as section
     handleAddBlock(newFlowBlock, undefined, { type: 'section' });
     
-    // Select the initial step
-    setSelectedApplicationStepId(initialStep.id);
+    // Select the initial step (scoped to the new flow block)
+    setSelectedStepForBlock(newFlowBlock.id, initialStep.id);
     
     toast.success('Application Flow created');
   }, [handleAddBlock]);
@@ -1397,6 +1456,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onCopy={handleCopy}
             onPaste={handlePaste}
             selectedApplicationStepId={selectedApplicationStepId}
+            activeApplicationFlowBlockId={activeFlowBlockId}
             canPaste={!!clipboardRef.current}
             pageSettings={page.settings}
             replayAnimationKey={replayAnimationKey}
@@ -1467,7 +1527,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onAddFrameAt={handleAddFrameAt}
             activeStep={activeStep}
             selectedApplicationStepId={selectedApplicationStepId}
-            onSelectApplicationStep={setSelectedApplicationStepId}
+            onSelectApplicationStep={handleSelectApplicationStep}
           />
         )}
       </div>
