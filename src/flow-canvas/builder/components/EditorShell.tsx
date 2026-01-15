@@ -101,6 +101,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   );
   // State for selected step within Application Flow blocks - scoped per block ID
   const [selectedFlowSteps, setSelectedFlowSteps] = useState<Record<string, string | null>>({});
+  // Track which blocks have been "visited" to distinguish initial selection from intentional deselection
+  const visitedFlowBlocksRef = useRef<Set<string>>(new Set());
   const [isAICopilotExpanded, setIsAICopilotExpanded] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
@@ -194,21 +196,26 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
   }, [activeFlowBlockId, setSelectedStepForBlock]);
 
-  // Auto-select first step when an Application Flow block is selected with no step selection
+  // Auto-select first step ONLY when first visiting an Application Flow block
   useEffect(() => {
     if (activeFlowBlock && activeFlowBlockId) {
       const currentSelection = selectedFlowSteps[activeFlowBlockId];
       const steps = (activeFlowBlock.props as any)?.steps || [];
+      const hasVisited = visitedFlowBlocksRef.current.has(activeFlowBlockId);
       
-      // If no step is selected for this block, auto-select the first one
-      if (!currentSelection && steps.length > 0) {
+      // Only auto-select if this is the FIRST time visiting this block
+      if (!hasVisited && !currentSelection && steps.length > 0) {
         setSelectedFlowSteps(prev => ({
           ...prev,
           [activeFlowBlockId]: steps[0].id
         }));
+        visitedFlowBlocksRef.current.add(activeFlowBlockId);
+      } else if (!hasVisited) {
+        // Mark as visited even if no steps
+        visitedFlowBlocksRef.current.add(activeFlowBlockId);
       }
       
-      // If the selected step no longer exists, reset to first step
+      // If the selected step no longer exists (was deleted), reset to first step
       if (currentSelection && !steps.find((s: any) => s.id === currentSelection)) {
         setSelectedFlowSteps(prev => ({
           ...prev,
