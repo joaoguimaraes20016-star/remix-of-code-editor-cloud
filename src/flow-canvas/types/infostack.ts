@@ -71,6 +71,10 @@ export interface ApplicationFlowStepSettings {
   spacing?: 'compact' | 'normal' | 'relaxed';
   inputStyle?: 'default' | 'minimal' | 'rounded' | 'square';
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  // Scale question type settings
+  scaleMax?: number;
+  scaleMinLabel?: string;
+  scaleMaxLabel?: string;
 }
 
 export interface ApplicationFlowStep {

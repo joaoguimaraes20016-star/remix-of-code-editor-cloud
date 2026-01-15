@@ -2,6 +2,14 @@ import React from 'react';
 import { Block, ApplicationFlowSettings, ApplicationFlowStep } from '../../types/infostack';
 import { cn } from '@/lib/utils';
 import { InlineTextEditor } from './InlineTextEditor';
+import {
+  getTitleSizeClass,
+  getAlignClass,
+  getSpacingClass,
+  getInputStyleClass,
+  getButtonClasses,
+  getButtonStyle,
+} from '../utils/stepRenderHelpers';
 
 interface ApplicationFlowCardProps {
   block: Block;
@@ -49,63 +57,6 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         : s
     );
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
-  };
-
-  // ─────────────────────────────────────────────────────────
-  // Style helpers - map settings to Tailwind classes
-  // ─────────────────────────────────────────────────────────
-  const getTitleSizeClass = (size?: string) => {
-    const sizes: Record<string, string> = {
-      sm: 'text-sm',
-      md: 'text-base',
-      lg: 'text-lg',
-      xl: 'text-xl',
-      '2xl': 'text-2xl',
-    };
-    return sizes[size || 'xl'] || 'text-xl';
-  };
-
-  const getAlignClass = (align?: string) => {
-    return align === 'left' ? 'text-left items-start' : 'text-center items-center';
-  };
-
-  const getSpacingClass = (spacing?: string) => {
-    const spacings: Record<string, string> = {
-      compact: 'py-6 px-4',
-      normal: 'py-12 px-8',
-      relaxed: 'py-16 px-12',
-    };
-    return spacings[spacing || 'normal'] || 'py-12 px-8';
-  };
-
-  const getInputStyleClass = (style?: string) => {
-    const styles: Record<string, string> = {
-      default: 'rounded-lg',
-      minimal: 'rounded-none border-t-0 border-l-0 border-r-0',
-      rounded: 'rounded-full',
-      square: 'rounded-none',
-    };
-    return styles[style || 'default'] || 'rounded-lg';
-  };
-
-  const getButtonClasses = (s: any) => {
-    const isOutline = s.buttonStyle === 'outline';
-    const baseClasses = 'inline-block px-6 py-3 font-medium text-sm transition-colors';
-    
-    if (isOutline) {
-      return cn(baseClasses, 'bg-transparent border-2 border-primary text-primary rounded-lg');
-    }
-    return cn(baseClasses, 'bg-primary text-primary-foreground rounded-lg');
-  };
-
-  const getButtonStyle = (s: any) => {
-    if (s.buttonColor && s.buttonStyle !== 'outline') {
-      return { backgroundColor: s.buttonColor };
-    }
-    if (s.buttonColor && s.buttonStyle === 'outline') {
-      return { borderColor: s.buttonColor, color: s.buttonColor };
-    }
-    return undefined;
   };
 
   // ─────────────────────────────────────────────────────────
