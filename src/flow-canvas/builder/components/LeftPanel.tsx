@@ -76,7 +76,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 
-type TabType = 'pages' | 'layers' | 'assets';
+type TabType = 'pages' | 'layers' | 'assets' | 'capture';
 
 // Asset type definition
 interface Asset {
@@ -611,6 +611,163 @@ const EnhancedLayersTree: React.FC<{
 };
 
 // Asset Library Panel
+// ============ CAPTURE FLOWS PANEL ============
+
+const CaptureFlowsPanel: React.FC = () => {
+  // Import the context hook - this is a simple implementation
+  // In production, this would use useCaptureFlow() context
+  const [captureFlows, setCaptureFlows] = useState<Array<{ id: string; name: string; nodeCount: number }>>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleCreateFlow = useCallback(() => {
+    const newFlow = {
+      id: `cf-${Date.now()}`,
+      name: `Capture Flow ${captureFlows.length + 1}`,
+      nodeCount: 0,
+    };
+    setCaptureFlows(prev => [...prev, newFlow]);
+    toast.success('CaptureFlow created');
+  }, [captureFlows.length]);
+
+  const handleDeleteFlow = useCallback((id: string) => {
+    setCaptureFlows(prev => prev.filter(f => f.id !== id));
+    toast.success('CaptureFlow deleted');
+  }, []);
+
+  const handleDuplicateFlow = useCallback((id: string) => {
+    const flow = captureFlows.find(f => f.id === id);
+    if (flow) {
+      const newFlow = {
+        id: `cf-${Date.now()}`,
+        name: `${flow.name} (copy)`,
+        nodeCount: flow.nodeCount,
+      };
+      setCaptureFlows(prev => [...prev, newFlow]);
+      toast.success('CaptureFlow duplicated');
+    }
+  }, [captureFlows]);
+
+  const filteredFlows = captureFlows.filter(f =>
+    f.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="flex-1 flex flex-col">
+      {/* Search Bar */}
+      <div className="p-3 border-b border-builder-border-subtle">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-builder-text-dim" />
+          <input
+            type="text"
+            placeholder="Search flows..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 text-sm rounded-lg bg-builder-surface-hover border border-builder-border text-builder-text placeholder-builder-text-dim focus:outline-none focus:border-builder-accent"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-builder-text-dim hover:text-builder-text"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Flows List */}
+      <div className="flex-1 overflow-y-auto builder-scroll p-3">
+        {/* Create Flow Button */}
+        <button
+          onClick={handleCreateFlow}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 mb-4 rounded-xl border-2 border-dashed border-builder-border hover:border-builder-accent hover:bg-builder-surface-hover transition-all"
+        >
+          <Plus className="w-4 h-4 text-builder-text-muted" />
+          <span className="text-sm font-medium text-builder-text-muted">
+            New CaptureFlow
+          </span>
+        </button>
+
+        {/* Flows List */}
+        {filteredFlows.length > 0 ? (
+          <div className="space-y-2">
+            {filteredFlows.map(flow => (
+              <div
+                key={flow.id}
+                className="group flex items-center gap-3 p-3 rounded-lg bg-builder-surface-hover border border-builder-border hover:border-builder-accent cursor-pointer transition-all"
+              >
+                <div className="w-8 h-8 rounded-lg bg-builder-accent/10 flex items-center justify-center">
+                  <Workflow className="w-4 h-4 text-builder-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-builder-text truncate">
+                    {flow.name}
+                  </p>
+                  <p className="text-[10px] text-builder-text-dim">
+                    {flow.nodeCount} node{flow.nodeCount !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                
+                {/* Actions */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-builder-surface-active transition-all"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreHorizontal className="w-4 h-4 text-builder-text-muted" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-builder-surface border-builder-border">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDuplicateFlow(flow.id);
+                      }}
+                      className="text-xs"
+                    >
+                      <Copy className="w-3 h-3 mr-2" />
+                      Duplicate
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFlow(flow.id);
+                      }}
+                      className="text-destructive text-xs"
+                    >
+                      <Trash2 className="w-3 h-3 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
+          </div>
+        ) : captureFlows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="w-16 h-16 rounded-2xl bg-builder-surface-hover flex items-center justify-center mb-4">
+              <Workflow className="w-8 h-8 text-builder-text-dim" />
+            </div>
+            <p className="text-sm text-builder-text-muted mb-1">No CaptureFlows yet</p>
+            <p className="text-xs text-builder-text-dim text-center max-w-[200px]">
+              Create multi-step lead capture forms with conditional logic
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8">
+            <Search className="w-8 h-8 text-builder-text-dim mb-2" />
+            <p className="text-sm text-builder-text-muted">No matches found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============ ASSETS PANEL ============
+
 const AssetsPanel: React.FC = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -880,6 +1037,12 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
             Layers
           </button>
           <button
+            onClick={() => setActiveTab('capture')}
+            className={cn('builder-tab flex-1', activeTab === 'capture' && 'builder-tab-active')}
+          >
+            Capture
+          </button>
+          <button
             onClick={() => setActiveTab('assets')}
             className={cn('builder-tab flex-1', activeTab === 'assets' && 'builder-tab-active')}
           >
@@ -987,6 +1150,8 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           )}
 
           {activeTab === 'assets' && <AssetsPanel />}
+
+          {activeTab === 'capture' && <CaptureFlowsPanel />}
 
           {/* Add Page Button */}
           <div className="p-3 border-t border-builder-border-subtle">
