@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { PanelLeftClose, PanelRightClose, Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { InlineEditProvider } from '../contexts/InlineEditContext';
+import { CaptureFlowProvider } from '../contexts/CaptureFlowContext';
 
 // Multi-selection state type
 interface MultiSelection {
@@ -1274,6 +1275,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   ]);
 
   return (
+    <CaptureFlowProvider>
     <InlineEditProvider>
     <div
       className={
@@ -1614,5 +1616,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       />
     </div>
     </InlineEditProvider>
+    </CaptureFlowProvider>
   );
 };
