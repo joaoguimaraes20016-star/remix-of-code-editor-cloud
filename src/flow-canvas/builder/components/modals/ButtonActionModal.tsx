@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MousePointer2, 
   ExternalLink, 
@@ -9,6 +9,8 @@ import {
   Phone, 
   Mail,
   Layers,
+  Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 import {
   Dialog,
@@ -27,7 +29,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useButtonContext, type ButtonContext } from '@/flow-canvas/builder/hooks/useButtonContext';
 
 export type ButtonActionType = 
   | 'next-step' 
@@ -52,6 +60,8 @@ interface ButtonActionModalProps {
   action: ButtonAction | null;
   onSave: (action: ButtonAction) => void;
   steps?: { id: string; name: string }[];
+  // Smart context props
+  buttonContext?: Partial<ButtonContext>;
 }
 
 interface ActionOption {
@@ -140,12 +150,28 @@ export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
   action,
   onSave,
   steps = [],
+  buttonContext = {},
 }) => {
-  const [selectedType, setSelectedType] = useState<ButtonActionType>(action?.type || 'next-step');
+  // Get smart recommendations based on button context
+  const { recommendedAction, allRecommendations } = useButtonContext(buttonContext);
+  
+  const [selectedType, setSelectedType] = useState<ButtonActionType>(action?.type || recommendedAction);
   const [inputValue, setInputValue] = useState(action?.value || '');
   const [openNewTab, setOpenNewTab] = useState(action?.openNewTab || false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Update default when modal opens with no existing action
+  useEffect(() => {
+    if (isOpen && !action) {
+      setSelectedType(recommendedAction);
+    }
+  }, [isOpen, action, recommendedAction]);
 
   const selectedOption = actionOptions.find(o => o.type === selectedType);
+  const recommendedOptions = allRecommendations.filter(r => r.isRecommended);
+  const otherOptions = actionOptions.filter(
+    opt => !recommendedOptions.some(r => r.action === opt.type)
+  );
 
   const handleSave = () => {
     onSave({
@@ -162,45 +188,52 @@ export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
     setOpenNewTab(false);
   };
 
-  const renderActionGrid = (options: ActionOption[], title?: string) => (
-    <>
-      {title && (
-        <div className="text-xs font-medium text-builder-text-muted uppercase tracking-wide mb-2">
-          {title}
+  const renderActionOption = (option: ActionOption, isRecommended: boolean = false) => {
+    const recommendation = allRecommendations.find(r => r.action === option.type);
+    
+    return (
+      <button
+        key={option.type}
+        onClick={() => handleTypeSelect(option.type)}
+        className={cn(
+          'p-3 rounded-lg border text-left transition-all relative',
+          selectedType === option.type
+            ? 'border-builder-accent bg-builder-accent/10'
+            : 'border-builder-border hover:border-builder-text-muted hover:bg-builder-surface-hover'
+        )}
+      >
+        {isRecommended && (
+          <div className="absolute -top-2 -right-2 flex items-center gap-1 bg-builder-accent text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+            <Sparkles className="w-3 h-3" />
+            Recommended
+          </div>
+        )}
+        <div className="flex items-center gap-2 mb-1">
+          <span className={cn(
+            selectedType === option.type ? 'text-builder-accent' : 'text-builder-text-muted'
+          )}>
+            {option.icon}
+          </span>
+          <span className={cn(
+            'text-sm font-medium',
+            selectedType === option.type ? 'text-builder-accent' : 'text-builder-text'
+          )}>
+            {option.label}
+          </span>
         </div>
-      )}
-      <div className="grid grid-cols-2 gap-2">
-        {options.map((option) => (
-          <button
-            key={option.type}
-            onClick={() => handleTypeSelect(option.type)}
-            className={cn(
-              'p-3 rounded-lg border text-left transition-all',
-              selectedType === option.type
-                ? 'border-builder-accent bg-builder-accent/10'
-                : 'border-builder-border hover:border-builder-text-muted hover:bg-builder-surface-hover'
-            )}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className={cn(
-                selectedType === option.type ? 'text-builder-accent' : 'text-builder-text-muted'
-              )}>
-                {option.icon}
-              </span>
-              <span className={cn(
-                'text-sm font-medium',
-                selectedType === option.type ? 'text-builder-accent' : 'text-builder-text'
-              )}>
-                {option.label}
-              </span>
-            </div>
-            <p className="text-xs text-builder-text-muted line-clamp-1">
-              {option.description}
-            </p>
-          </button>
-        ))}
-      </div>
-    </>
+        <p className="text-xs text-builder-text-muted line-clamp-1">
+          {recommendation?.reason || option.description}
+        </p>
+      </button>
+    );
+  };
+
+  // Get primary recommended options (show at top)
+  const primaryOptions = actionOptions.filter(opt => 
+    allRecommendations.some(r => r.action === opt.type && r.isRecommended)
+  );
+  const secondaryOptions = actionOptions.filter(opt => 
+    !allRecommendations.some(r => r.action === opt.type && r.isRecommended)
   );
 
   return (
@@ -214,8 +247,33 @@ export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Standard Action Type Grid */}
-          {renderActionGrid(actionOptions)}
+          {/* Recommended Actions */}
+          {primaryOptions.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-builder-text-muted uppercase tracking-wide">
+                Recommended
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {primaryOptions.map(opt => renderActionOption(opt, true))}
+              </div>
+            </div>
+          )}
+
+          {/* Other Actions - Collapsible */}
+          <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-builder-text-muted hover:text-builder-text transition-colors w-full">
+              <ChevronDown className={cn(
+                "w-4 h-4 transition-transform",
+                showAdvanced && "rotate-180"
+              )} />
+              {showAdvanced ? 'Hide other actions' : 'Show all actions'}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-3">
+              <div className="grid grid-cols-2 gap-2">
+                {secondaryOptions.map(opt => renderActionOption(opt, false))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Input Field for actions that need it */}
           {selectedOption?.hasInput && (
