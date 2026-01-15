@@ -327,6 +327,7 @@ const parseFontSize = (value: unknown): number => {
 const ElementInspector: React.FC<{ 
   element: Element; 
   onUpdate: (updates: Partial<Element>) => void;
+  page: Page;
   steps?: { id: string; name: string }[];
   allSteps?: Step[];
   onDuplicate?: () => void;
@@ -338,6 +339,7 @@ const ElementInspector: React.FC<{
 }> = ({ 
   element, 
   onUpdate,
+  page,
   steps = [],
   allSteps = [],
   onDuplicate,
@@ -805,22 +807,39 @@ const ElementInspector: React.FC<{
           {/* Button Appearance */}
           <CollapsibleSection title="Appearance" icon={<Palette className="w-4 h-4" />} defaultOpen sectionId="appearance" isHighlighted={highlightedSection === 'appearance'}>
             <div className="space-y-3">
-              {/* Fill Type Toggle - FIXED: Single atomic update */}
+              {/* Fill Type Toggle - 3-way: Outline / Solid / Gradient */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Fill</span>
                 <div className="flex rounded-lg overflow-hidden border border-builder-border">
                   <button
                     onClick={() => {
-                      // Single atomic update to switch to solid
-                      const bg = element.styles?.backgroundColor || '#8B5CF6';
                       onUpdate({ 
-                        props: { ...element.props, fillType: 'solid' },
-                        styles: { ...element.styles, backgroundColor: bg }
+                        props: { ...element.props, fillType: 'outline', gradient: undefined },
+                        styles: { ...element.styles, backgroundColor: 'transparent' }
                       });
                     }}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium transition-colors",
-                      element.props?.fillType !== 'gradient'
+                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                      element.props?.fillType === 'outline' || (!element.props?.fillType && !element.styles?.backgroundColor)
+                        ? 'bg-builder-accent text-white' 
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                    )}
+                  >
+                    Outline
+                  </button>
+                  <button
+                    onClick={() => {
+                      const bg = element.styles?.backgroundColor && element.styles.backgroundColor !== 'transparent' 
+                        ? element.styles.backgroundColor 
+                        : (page.settings.primary_color || '#8B5CF6');
+                      onUpdate({ 
+                        props: { ...element.props, fillType: 'solid', gradient: undefined },
+                        styles: { ...element.styles, backgroundColor: bg as string }
+                      });
+                    }}
+                    className={cn(
+                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                      element.props?.fillType === 'solid'
                         ? 'bg-builder-accent text-white' 
                         : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
                     )}
@@ -829,13 +848,12 @@ const ElementInspector: React.FC<{
                   </button>
                   <button
                     onClick={() => {
-                      // Single atomic update to switch to gradient
                       const existingGradient = element.props?.gradient as GradientValue | undefined;
                       const gradient = existingGradient || {
                         type: 'linear' as const,
                         angle: 135,
                         stops: [
-                          { color: '#8B5CF6', position: 0 },
+                          { color: page.settings.primary_color || '#8B5CF6', position: 0 },
                           { color: '#D946EF', position: 100 },
                         ],
                       };
@@ -848,7 +866,7 @@ const ElementInspector: React.FC<{
                       });
                     }}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium transition-colors",
+                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
                       element.props?.fillType === 'gradient'
                         ? 'bg-builder-accent text-white' 
                         : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
@@ -859,14 +877,14 @@ const ElementInspector: React.FC<{
                 </div>
               </div>
               
-              {/* Solid Color */}
-              {element.props?.fillType !== 'gradient' && (
+              {/* Solid Color - Only show when fillType is explicitly 'solid' */}
+              {element.props?.fillType === 'solid' && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Background</span>
-                  <ColorPickerPopover color={element.styles?.backgroundColor as string || '#8B5CF6'} onChange={(color) => handleStyleChange('backgroundColor', color)}>
+                  <ColorPickerPopover color={element.styles?.backgroundColor as string || page.settings.primary_color || '#8B5CF6'} onChange={(color) => handleStyleChange('backgroundColor', color)}>
                     <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                      <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.styles?.backgroundColor as string || '#8B5CF6' }} />
-                      <span className="text-xs text-builder-text font-mono">{element.styles?.backgroundColor || '#8B5CF6'}</span>
+                      <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.styles?.backgroundColor as string || page.settings.primary_color || '#8B5CF6' }} />
+                      <span className="text-xs text-builder-text font-mono">{element.styles?.backgroundColor || page.settings.primary_color || '#8B5CF6'}</span>
                     </button>
                   </ColorPickerPopover>
                 </div>
@@ -3610,6 +3628,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           <ElementInspector 
             element={selectedNode as Element} 
             onUpdate={handleUpdate} 
+            page={page}
             steps={steps}
             allSteps={page.steps}
             onDuplicate={selection.id ? () => onDuplicateElement?.(selection.id!) : undefined}

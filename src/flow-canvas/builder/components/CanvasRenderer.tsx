@@ -1284,8 +1284,18 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         // Only apply size class if no custom padding and not a special variant
         const useSizeClass = !element.styles?.padding && !isNavPill && !isFooterLink;
         
+        // For buttons, don't apply selection class to wrapper - apply it to button element itself
+        const wrapperClasses = cn(
+          'builder-element-selectable builder-click-target rounded-lg group/element relative',
+          stateStyleClass,
+          // Selection classes moved to button element for proper ring sizing
+          isMultiSelected && !isSelected && 'builder-multi-selected',
+          isDragging && 'opacity-50 z-50',
+          animationKey >= 0 && effectClass
+        );
+        
         return (
-          <div ref={combinedRef} data-element-id={element.id} style={wrapperStyle} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+          <div ref={combinedRef} data-element-id={element.id} style={wrapperStyle} className={wrapperClasses} {...stateHandlers}>
             {/* Inject state styles CSS */}
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {/* Visual indicator badges */}
@@ -1349,7 +1359,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 isFooterLink && 'text-left',
                 !isNavPill && !isFooterLink && "rounded-xl shadow-lg",
                 "inline-flex items-center justify-center gap-2",
-                shadowClass
+                shadowClass,
+                // Apply selection ring to the actual button element
+                isSelected && 'builder-element-selected'
               )}
               style={{
                 ...customButtonStyle,
