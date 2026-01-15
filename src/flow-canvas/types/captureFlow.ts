@@ -1,5 +1,18 @@
-// CaptureFlow Types - Unified lead capture system
-// This is the single source of truth for all capture-related logic
+/**
+ * @deprecated LEGACY SYSTEM - Use ApplicationEngine from '@/flow-canvas/shared/types/applicationEngine'
+ * 
+ * CaptureFlow was the original lead capture system. It is now deprecated in favor of the
+ * unified ApplicationEngine which provides:
+ * - One mental model for all interactive data collection
+ * - Presentation mode as a property (inline vs flow) rather than separate systems
+ * - Unified consent and automation handling
+ * 
+ * Adapters exist in '@/flow-canvas/shared/adapters/legacyAdapters' for backwards compatibility.
+ * 
+ * DO NOT add new features to this file. Extend ApplicationEngine instead.
+ */
+
+// CaptureFlow Types - DEPRECATED: Use ApplicationEngine
 
 // ============ NODE TYPES ============
 
@@ -160,10 +173,14 @@ export interface CaptureFlowEmbedBlockProps {
 
 // ============ BUTTON ACTIONS ============
 
+/**
+ * @deprecated Use ButtonActionType from '@/flow-canvas/builder/components/modals/ButtonActionModal' instead.
+ * The unified action system uses: 'next-step', 'submit', 'go-to-step', etc.
+ */
 export type CaptureFlowButtonAction = 
-  | 'advance-capture-flow'    // Move to next node
-  | 'open-capture-flow'       // Open flow as modal
-  | 'submit-capture-flow';    // Submit the flow
+  | 'advance-capture-flow'    // @deprecated → Use 'next-step'
+  | 'open-capture-flow'       // @deprecated → Use presentation mode toggle
+  | 'submit-capture-flow';    // @deprecated → Use 'submit'
 
 // ============ HELPERS ============
 

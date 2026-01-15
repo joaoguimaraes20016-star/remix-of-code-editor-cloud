@@ -109,29 +109,26 @@ function TemplatePreview({ template }: { template: SectionTemplate }) {
     );
   }
 
-  // Form templates
-  if (category === 'form') {
-    if (id.includes('multi-choice')) {
+  // Embed templates (calendar, widgets)
+  if (category === 'embed') {
+    if (id.includes('calendar')) {
       return (
-        <div className="grid grid-cols-2 gap-1.5 p-1">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-4 rounded bg-white/10 border border-white/30" />
-          ))}
+        <div className="flex flex-col items-center justify-center h-full gap-1">
+          <div className="w-10 h-8 rounded bg-white/20 border border-white/30 grid grid-cols-7 gap-[1px] p-1">
+            {[...Array(14)].map((_, i) => (
+              <div key={i} className="w-1 h-1 rounded-sm bg-white/30" />
+            ))}
+          </div>
+          <div className="h-1 w-8 bg-white/40 rounded" />
         </div>
       );
     }
+    // Empty container
     return (
-      <div className="space-y-1.5 py-2">
-        {id.includes('full') && (
-          <div className="h-3 w-full rounded bg-white/10 border border-white/20" />
-        )}
-        <div className="h-3 w-full rounded bg-white/10 border border-white/20" />
-        {id.includes('full') && (
-          <div className="h-3 w-full rounded bg-white/10 border border-white/20" />
-        )}
-        {id.includes('optin') && (
-          <div className="h-3.5 w-14 bg-blue-500 rounded-sm mt-1 mx-auto" />
-        )}
+      <div className="flex items-center justify-center h-full">
+        <div className="w-14 h-10 rounded border-2 border-dashed border-white/30 flex items-center justify-center">
+          <div className="w-4 h-4 text-white/40">+</div>
+        </div>
       </div>
     );
   }

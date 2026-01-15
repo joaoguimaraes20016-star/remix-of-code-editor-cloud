@@ -1,6 +1,18 @@
 // ============ APPLICATION ENGINE TYPES ============
-// Single source of truth for all interactive data collection
-// Unifies CaptureFlow, ApplicationFlow, and inline form concepts
+// Single source of truth for ALL interactive data collection in InfoStack
+// 
+// ARCHITECTURAL PRINCIPLE:
+// - There are only TWO concepts: Sections (layout only) and Interactive Blocks (data + logic)
+// - This file defines the UNIFIED engine for all interactive blocks
+// - Presentation mode (inline vs flow) is a PROPERTY, not a separate system
+// - CaptureFlow and legacy ApplicationFlow types are DEPRECATED adapters only
+//
+// See: docs/architecture/interactive-system.md
+
+// ============ PRESENTATION MODE ============
+// How the interactive content is rendered - NOT a separate system
+
+export type PresentationMode = 'inline' | 'flow';
 
 // ============ STEP TYPES ============
 
@@ -18,7 +30,8 @@ export type ApplicationStepType =
   | 'welcome'         // Welcome screen (no input)
   | 'ending';         // Thank you screen (no input)
 
-export type ApplicationMode = 'inline' | 'flow';
+/** @deprecated Use PresentationMode instead */
+export type ApplicationMode = PresentationMode;
 
 // ============ STEP SETTINGS ============
 
@@ -130,10 +143,22 @@ export interface ApplicationEngineSubmitBehavior {
 export interface ApplicationEngine {
   id: string;
   name: string;
-  mode: ApplicationMode;
+  /** 
+   * Presentation mode controls HOW the interactive content is rendered:
+   * - 'inline': Embedded directly in a section, looks like normal page content
+   * - 'flow': One question per screen with animated transitions
+   * Both modes use the SAME steps, data, and logic - just different UI
+   */
+  presentationMode: PresentationMode;
+  /** @deprecated Use presentationMode instead */
+  mode?: PresentationMode;
   steps: ApplicationStep[];
   appearance: ApplicationEngineAppearance;
   submitBehavior: ApplicationEngineSubmitBehavior;
+  /** For flow mode: show progress indicator */
+  showProgress?: boolean;
+  /** For flow mode: animation between steps */
+  transition?: 'slide-up' | 'slide-left' | 'fade' | 'none';
 }
 
 // ============ RUNTIME STATE ============

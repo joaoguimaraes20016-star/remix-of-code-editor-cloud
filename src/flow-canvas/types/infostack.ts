@@ -48,7 +48,10 @@ export type BlockType =
   | 'spacer'
   | 'divider';
 
-// Application Flow Step - for Typeform-style multi-step experiences
+/**
+ * @deprecated Use ApplicationStepType from '@/flow-canvas/shared/types/applicationEngine' instead
+ * This legacy type is kept for backwards compatibility only.
+ */
 export type ApplicationStepType = 'welcome' | 'question' | 'capture' | 'booking' | 'ending';
 
 // Question types for Application Flow
@@ -341,10 +344,15 @@ export interface Page {
 
 // Selection state for the builder
 export interface SelectionState {
-  type: 'page' | 'step' | 'frame' | 'stack' | 'block' | 'element' | 'capture-node' | null;
+  type: 'page' | 'step' | 'frame' | 'stack' | 'block' | 'element' | 'interactive-step' | null;
   id: string | null;
   path: string[];
-  captureFlowId?: string; // For capture-node selections
+  /** ID of the ApplicationEngine being edited */
+  applicationEngineId?: string;
+  /** Index of the currently selected step within the engine */
+  stepIndex?: number;
+  /** @deprecated Use 'interactive-step' type instead */
+  captureFlowId?: string;
 }
 
 // Builder props contract

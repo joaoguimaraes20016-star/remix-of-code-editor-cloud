@@ -15,7 +15,12 @@ export interface SectionTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'hero' | 'content' | 'cta' | 'media' | 'form' | 'social_proof' | 'features';
+  /** 
+   * Section categories - LAYOUT ONLY
+   * - 'embed' replaces 'form' for calendar/widget containers
+   * - Form inputs are now INTERACTIVE BLOCKS, not sections
+   */
+  category: 'hero' | 'content' | 'cta' | 'media' | 'embed' | 'social_proof' | 'features';
   icon: string;
   createNode: () => CanvasNode;
 }
@@ -306,19 +311,67 @@ export const mediaImage: SectionTemplate = {
 };
 
 // ============================================================================
-// FORM SECTIONS
+// EMBED SECTIONS (Layout containers for external widgets)
+// These are STRUCTURAL sections - they contain embed placeholders, NOT data collection
+// For interactive data collection, use INTERACTIVE BLOCKS via the block picker
 // ============================================================================
 
+export const embedCalendar: SectionTemplate = {
+  id: 'embed-calendar',
+  name: 'Calendar Embed',
+  description: 'Container for calendar widget',
+  category: 'embed',
+  icon: 'calendar',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'embed' },
+    children: [
+      {
+        id: genId('calendar'),
+        type: 'calendar_embed',
+        props: { url: '', placeholder: 'Paste your Calendly or Cal.com link' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const embedEmpty: SectionTemplate = {
+  id: 'embed-empty',
+  name: 'Empty Container',
+  description: 'Flexible embed container',
+  category: 'embed',
+  icon: 'square',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'embed' },
+    children: [],
+  }),
+};
+
+// ============================================================================
+// DEPRECATED FORM SECTIONS
+// These exist for backwards compatibility only. New code should use:
+// - Interactive blocks from the block picker (email, phone, name, choices)
+// - The unified ApplicationEngine for multi-step flows
+// ============================================================================
+
+/**
+ * @deprecated Use interactive blocks instead. 
+ * Add an email input via the block picker, not as a section.
+ */
 export const formEmail: SectionTemplate = {
   id: 'form-email',
-  name: 'Email Input',
-  description: 'Email capture field',
-  category: 'form',
+  name: 'Email Input (Legacy)',
+  description: 'Use Interactive Blocks instead',
+  category: 'embed',
   icon: 'mail',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form' },
+    props: { variant: 'form', deprecated: true },
     children: [
       {
         id: genId('input'),
@@ -330,16 +383,19 @@ export const formEmail: SectionTemplate = {
   }),
 };
 
+/**
+ * @deprecated Use interactive blocks instead.
+ */
 export const formPhone: SectionTemplate = {
   id: 'form-phone',
-  name: 'Phone Input',
-  description: 'Phone number field',
-  category: 'form',
+  name: 'Phone Input (Legacy)',
+  description: 'Use Interactive Blocks instead',
+  category: 'embed',
   icon: 'phone',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form' },
+    props: { variant: 'form', deprecated: true },
     children: [
       {
         id: genId('input'),
@@ -351,16 +407,19 @@ export const formPhone: SectionTemplate = {
   }),
 };
 
+/**
+ * @deprecated Use full-identity interactive step instead.
+ */
 export const formFull: SectionTemplate = {
   id: 'form-full',
-  name: 'Contact Form',
-  description: 'Name, email, phone fields',
-  category: 'form',
+  name: 'Contact Form (Legacy)',
+  description: 'Use Interactive Blocks instead',
+  category: 'embed',
   icon: 'clipboard-list',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form' },
+    props: { variant: 'form', deprecated: true },
     children: [
       {
         id: genId('input'),
@@ -384,16 +443,19 @@ export const formFull: SectionTemplate = {
   }),
 };
 
+/**
+ * @deprecated Use single-choice or multi-choice interactive step instead.
+ */
 export const formMultiChoice: SectionTemplate = {
   id: 'form-multi-choice',
-  name: 'Multiple Choice',
-  description: 'Selection options',
-  category: 'form',
+  name: 'Multiple Choice (Legacy)',
+  description: 'Use Interactive Blocks instead',
+  category: 'embed',
   icon: 'list',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'options' },
+    props: { variant: 'options', deprecated: true },
     children: [
       {
         id: genId('options'),
@@ -412,16 +474,19 @@ export const formMultiChoice: SectionTemplate = {
   }),
 };
 
+/**
+ * @deprecated Use embedCalendar instead.
+ */
 export const formCalendar: SectionTemplate = {
   id: 'form-calendar',
-  name: 'Calendar Booking',
-  description: 'Embedded calendar widget',
-  category: 'form',
+  name: 'Calendar Booking (Legacy)',
+  description: 'Use Embed → Calendar instead',
+  category: 'embed',
   icon: 'calendar',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'embed' },
+    props: { variant: 'embed', deprecated: true },
     children: [
       {
         id: genId('calendar'),
@@ -502,19 +567,26 @@ export const featuresList: SectionTemplate = {
 };
 
 // ============================================================================
-// LEGAL / CONSENT SECTIONS
+// CONSENT SECTIONS
+// NOTE: Consent is now handled as a first-class property of interactive steps.
+// The full-identity step type includes consent checkbox automatically.
+// These sections are kept for backwards compatibility only.
 // ============================================================================
 
+/**
+ * @deprecated Consent is now a property of interactive steps, not a section.
+ * Use the full-identity step type which includes consent handling.
+ */
 export const legalConsent: SectionTemplate = {
   id: 'legal-consent',
-  name: 'Privacy Consent',
-  description: 'GDPR-compliant consent checkbox',
-  category: 'form',
+  name: 'Privacy Consent (Legacy)',
+  description: 'Use Interactive Blocks with consent',
+  category: 'embed',
   icon: 'shield-check',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form' },
+    props: { variant: 'form', deprecated: true },
     children: [
       {
         id: genId('consent'),
@@ -532,16 +604,20 @@ export const legalConsent: SectionTemplate = {
   }),
 };
 
+/**
+ * @deprecated Use full-identity interactive step instead.
+ * The unified ApplicationEngine handles opt-in forms with proper consent.
+ */
 export const legalOptInForm: SectionTemplate = {
   id: 'legal-optin',
-  name: 'Opt-In Form',
-  description: 'Email + consent + CTA',
-  category: 'form',
+  name: 'Opt-In Form (Legacy)',
+  description: 'Use full-identity Interactive Block',
+  category: 'embed',
   icon: 'clipboard-list',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form' },
+    props: { variant: 'form', deprecated: true },
     children: [
       {
         id: genId('heading'),
@@ -601,7 +677,14 @@ export const allSectionTemplates: SectionTemplate[] = [
   // Media
   mediaVideo,
   mediaImage,
-  // Form
+  // Embed (structural containers for widgets)
+  embedCalendar,
+  embedEmpty,
+  // Social Proof
+  socialProofBadges,
+  // Features
+  featuresList,
+  // Legacy (deprecated - kept for backwards compatibility)
   formEmail,
   formPhone,
   formFull,
@@ -609,10 +692,6 @@ export const allSectionTemplates: SectionTemplate[] = [
   formCalendar,
   legalConsent,
   legalOptInForm,
-  // Social Proof
-  socialProofBadges,
-  // Features
-  featuresList,
 ];
 
 export const sectionTemplatesByCategory = {
@@ -620,9 +699,17 @@ export const sectionTemplatesByCategory = {
   content: [contentText, contentHeadingText],
   cta: [ctaSimple, ctaWithText],
   media: [mediaVideo, mediaImage],
-  form: [formEmail, formPhone, formFull, formMultiChoice, formCalendar, legalConsent, legalOptInForm],
+  embed: [embedCalendar, embedEmpty],
   social_proof: [socialProofBadges],
   features: [featuresList],
+};
+
+/**
+ * @deprecated Legacy form templates - for backwards compatibility only
+ * New code should use interactive blocks from the block picker
+ */
+export const legacySectionTemplates = {
+  form: [formEmail, formPhone, formFull, formMultiChoice, formCalendar, legalConsent, legalOptInForm],
 };
 
 export const categoryLabels: Record<string, string> = {
@@ -630,7 +717,7 @@ export const categoryLabels: Record<string, string> = {
   content: 'Content',
   cta: 'Call to Action',
   media: 'Media',
-  form: 'Forms & Inputs',
+  embed: 'Embed & Widgets',
   social_proof: 'Social Proof',
   features: 'Features',
 };
@@ -640,7 +727,7 @@ export const categoryIcons: Record<string, string> = {
   content: 'type',
   cta: 'mouse-pointer-click',
   media: 'play',
-  form: 'clipboard-list',
+  embed: 'code',
   social_proof: 'shield-check',
   features: 'check-circle',
 };
