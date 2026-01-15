@@ -5,6 +5,22 @@ import { ApplicationFlowStep, ApplicationFlowStepSettings } from '../../types/in
 import { cn } from '@/lib/utils';
 
 // ─────────────────────────────────────────────────────────
+// Unified Button Size Classes - SINGLE SOURCE OF TRUTH
+// ─────────────────────────────────────────────────────────
+
+export const BUTTON_SIZES = {
+  sm: { padding: 'px-4 py-2', text: 'text-xs', height: 'h-8' },
+  md: { padding: 'px-6 py-3', text: 'text-sm', height: 'h-10' },
+  lg: { padding: 'px-8 py-4', text: 'text-base', height: 'h-12' },
+} as const;
+
+export const BUTTON_RADII = {
+  none: 'rounded-none',
+  rounded: 'rounded-lg',
+  full: 'rounded-full',
+} as const;
+
+// ─────────────────────────────────────────────────────────
 // Style helpers - map settings to Tailwind classes
 // ─────────────────────────────────────────────────────────
 
@@ -48,22 +64,14 @@ export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>)
   const size = settings.buttonSize || 'md';
   const radius = settings.buttonRadius || 'rounded';
   
-  const sizeClasses: Record<string, string> = {
-    sm: 'px-4 py-2 text-xs',
-    md: 'px-6 py-3 text-sm',
-    lg: 'px-8 py-4 text-base',
-  };
-  
-  const radiusClasses: Record<string, string> = {
-    none: 'rounded-none',
-    rounded: 'rounded-lg',
-    full: 'rounded-full',
-  };
+  const sizeConfig = BUTTON_SIZES[size] || BUTTON_SIZES.md;
+  const radiusClass = BUTTON_RADII[radius] || BUTTON_RADII.rounded;
   
   const baseClasses = cn(
     'inline-block font-medium transition-colors',
-    sizeClasses[size],
-    radiusClasses[radius],
+    sizeConfig.padding,
+    sizeConfig.text,
+    radiusClass,
     settings.buttonFullWidth && 'w-full'
   );
   
@@ -107,6 +115,26 @@ export const getButtonStyle = (settings: Partial<ApplicationFlowStepSettings>): 
   }
   
   return Object.keys(style).length > 0 ? style : undefined;
+};
+
+// ─────────────────────────────────────────────────────────
+// Interactive Block Background Helper
+// ─────────────────────────────────────────────────────────
+
+export const getInteractiveBlockBackground = (blockProps: Record<string, unknown>): React.CSSProperties => {
+  const style: React.CSSProperties = {};
+  
+  const backgroundType = blockProps.backgroundType as 'solid' | 'gradient' | undefined;
+  const backgroundColor = blockProps.backgroundColor as string | undefined;
+  const backgroundGradient = blockProps.backgroundGradient as { type: 'linear' | 'radial'; angle: number; stops: Array<{ color: string; position: number }> } | undefined;
+  
+  if (backgroundType === 'gradient' && backgroundGradient && backgroundGradient.stops?.length >= 2) {
+    style.background = gradientToCSS(backgroundGradient);
+  } else if (backgroundColor) {
+    style.backgroundColor = backgroundColor;
+  }
+  
+  return style;
 };
 
 // ─────────────────────────────────────────────────────────

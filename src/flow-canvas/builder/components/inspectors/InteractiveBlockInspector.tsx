@@ -298,10 +298,11 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           </CollapsibleSection>
         )}
 
-        {/* Button Style Section */}
+        {/* Button Style Section - SIMPLIFIED: only show if no button element is selected */}
+        {/* Full button styling is handled in RightPanel when the button element is selected */}
         {buttonElement && (
           <CollapsibleSection title="Button Style" icon={<Palette className="w-3.5 h-3.5" />}>
-            {/* Button Fill Type */}
+            {/* Button Fill Type - preserves both solid color and gradient */}
             <FieldGroup label="Fill Type">
               <div className="flex rounded-md overflow-hidden border border-border">
                 <button
@@ -329,38 +330,45 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               </div>
             </FieldGroup>
 
-            {/* Button Color (Solid) or Gradient */}
-            {buttonFillType === 'gradient' ? (
-              <FieldGroup label="Button Gradient">
-                <GradientPickerPopover
-                  value={buttonGradient || null}
-                  onChange={(gradient) => updateBlockProps({ buttonGradient: gradient })}
-                >
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                    <div 
-                      className="w-6 h-6 rounded border border-border"
-                      style={{ background: buttonGradient ? gradientToCSS(buttonGradient) : gradientToCSS(defaultGradient) }}
-                    />
-                    <span className="text-xs text-foreground">Edit Gradient</span>
-                  </button>
-                </GradientPickerPopover>
-              </FieldGroup>
-            ) : (
-              <FieldGroup label="Button Color">
-                <ColorPickerPopover
-                  color={buttonColor}
-                  onChange={(color) => updateBlockProps({ buttonColor: color })}
-                >
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                    <div 
-                      className="w-6 h-6 rounded border border-border"
-                      style={{ backgroundColor: buttonColor }}
-                    />
-                    <span className="text-xs text-foreground font-mono">{buttonColor}</span>
-                  </button>
-                </ColorPickerPopover>
-              </FieldGroup>
-            )}
+            {/* Button Color (Solid) - always shown, preserved when switching to gradient */}
+            <FieldGroup label="Button Color">
+              <ColorPickerPopover
+                color={buttonColor}
+                onChange={(color) => updateBlockProps({ buttonColor: color })}
+              >
+                <button className={cn(
+                  "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
+                  buttonFillType === 'gradient' ? 'opacity-50 bg-muted/30' : 'bg-muted/50 hover:bg-muted'
+                )}>
+                  <div 
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ backgroundColor: buttonColor }}
+                  />
+                  <span className="text-xs text-foreground font-mono">{buttonColor}</span>
+                  {buttonFillType === 'gradient' && <span className="text-[10px] text-muted-foreground ml-auto">(inactive)</span>}
+                </button>
+              </ColorPickerPopover>
+            </FieldGroup>
+
+            {/* Button Gradient - always shown, preserved when switching to solid */}
+            <FieldGroup label="Button Gradient">
+              <GradientPickerPopover
+                value={buttonGradient || null}
+                onChange={(gradient) => updateBlockProps({ buttonGradient: gradient })}
+              >
+                <button className={cn(
+                  "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
+                  buttonFillType === 'solid' ? 'opacity-50 bg-muted/30' : 'bg-muted/50 hover:bg-muted'
+                )}>
+                  <div 
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ background: buttonGradient ? gradientToCSS(buttonGradient) : gradientToCSS(defaultGradient) }}
+                  />
+                  <span className="text-xs text-foreground">Edit Gradient</span>
+                  {buttonFillType === 'solid' && <span className="text-[10px] text-muted-foreground ml-auto">(inactive)</span>}
+                </button>
+              </GradientPickerPopover>
+            </FieldGroup>
 
             {/* Button Text Color */}
             <FieldGroup label="Button Text Color">
@@ -478,38 +486,45 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
             </div>
           </FieldGroup>
 
-          {/* Background Color/Gradient */}
-          {backgroundType === 'gradient' ? (
-            <FieldGroup label="Background Gradient">
-              <GradientPickerPopover
-                value={backgroundGradient || null}
-                onChange={(gradient) => updateBlockProps({ backgroundGradient: gradient })}
-              >
-                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                  <div 
-                    className="w-6 h-6 rounded border border-border"
-                    style={{ background: backgroundGradient ? gradientToCSS(backgroundGradient) : gradientToCSS(defaultGradient) }}
-                  />
-                  <span className="text-xs text-foreground">Edit Gradient</span>
-                </button>
-              </GradientPickerPopover>
-            </FieldGroup>
-          ) : (
-            <FieldGroup label="Background Color">
-              <ColorPickerPopover
-                color={backgroundColor}
-                onChange={(color) => updateBlockProps({ backgroundColor: color })}
-              >
-                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                  <div 
-                    className="w-6 h-6 rounded border border-border"
-                    style={{ backgroundColor: backgroundColor }}
-                  />
-                  <span className="text-xs text-foreground font-mono">{backgroundColor}</span>
-                </button>
-              </ColorPickerPopover>
-            </FieldGroup>
-          )}
+          {/* Background Color - always shown, preserved when switching */}
+          <FieldGroup label="Background Color">
+            <ColorPickerPopover
+              color={backgroundColor}
+              onChange={(color) => updateBlockProps({ backgroundColor: color })}
+            >
+              <button className={cn(
+                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
+                backgroundType === 'gradient' ? 'opacity-50 bg-muted/30' : 'bg-muted/50 hover:bg-muted'
+              )}>
+                <div 
+                  className="w-6 h-6 rounded border border-border"
+                  style={{ backgroundColor: backgroundColor }}
+                />
+                <span className="text-xs text-foreground font-mono">{backgroundColor}</span>
+                {backgroundType === 'gradient' && <span className="text-[10px] text-muted-foreground ml-auto">(inactive)</span>}
+              </button>
+            </ColorPickerPopover>
+          </FieldGroup>
+
+          {/* Background Gradient - always shown, preserved when switching */}
+          <FieldGroup label="Background Gradient">
+            <GradientPickerPopover
+              value={backgroundGradient || null}
+              onChange={(gradient) => updateBlockProps({ backgroundGradient: gradient })}
+            >
+              <button className={cn(
+                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
+                backgroundType === 'solid' ? 'opacity-50 bg-muted/30' : 'bg-muted/50 hover:bg-muted'
+              )}>
+                <div 
+                  className="w-6 h-6 rounded border border-border"
+                  style={{ background: backgroundGradient ? gradientToCSS(backgroundGradient) : gradientToCSS(defaultGradient) }}
+                />
+                <span className="text-xs text-foreground">Edit Gradient</span>
+                {backgroundType === 'solid' && <span className="text-[10px] text-muted-foreground ml-auto">(inactive)</span>}
+              </button>
+            </GradientPickerPopover>
+          </FieldGroup>
 
           {/* Text Alignment */}
           {headingElement && (
