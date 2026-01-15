@@ -2799,6 +2799,20 @@ const StackRenderer: React.FC<StackRendererProps> = ({
     onAddBlock?.(block, { stackId: stack.id, index: stack.blocks.length });
   };
 
+  // Extract parent frame ID and path from the received path prop
+  // path format: ['step', stepId, 'frame', frameId]
+  const frameIndex = path.indexOf('frame');
+  const parentFrameId = frameIndex !== -1 && path[frameIndex + 1] ? path[frameIndex + 1] : null;
+  const parentFramePath = frameIndex !== -1 ? path.slice(0, frameIndex + 2) : path;
+
+  // Handler for selecting the parent frame (used for empty state click)
+  const selectParentFrame = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (parentFrameId && !readOnly) {
+      onSelect({ type: 'frame', id: parentFrameId, path: parentFramePath });
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -2806,16 +2820,18 @@ const StackRenderer: React.FC<StackRendererProps> = ({
         isSelected && 'builder-section-selected',
         stack.direction === 'horizontal' ? 'flex flex-row gap-4' : 'flex flex-col gap-3'
       )}
-      onClick={(e) => {
-        // Clicking content area selects the parent frame (section), not the stack
-        // This is handled by event bubbling to the FrameRenderer
-      }}
+      // No onClick here - clicking bubbles up to FrameRenderer which handles frame selection
     >
       {/* Content area - no badge, clicking selects parent frame */}
       {stack.blocks.length === 0 ? (
         // Polished empty state - matches the original "Add Block" design
         <div 
-          onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            // First select the parent frame, then open block picker
+            selectParentFrame();
+            onOpenBlockPickerInPanel?.(stack.id);
+          }}
           className="w-full py-16 flex items-center justify-center cursor-pointer"
         >
           <div className="group flex flex-col items-center justify-center py-20 px-8 w-full max-w-2xl border-2 border-dashed border-purple-300/50 rounded-2xl bg-white hover:border-purple-400/60 transition-all duration-200">
