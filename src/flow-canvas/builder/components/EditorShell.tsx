@@ -510,20 +510,36 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
   }, [page, multiSelection, handlePageUpdate, handleClearSelection]);
 
-  // Find the first application-flow block in the active step
+  // Find the first application-flow block (check active step first, then all steps)
   const findApplicationFlowBlock = useCallback((): Block | null => {
-    const step = page.steps.find(s => s.id === activeStepId);
-    if (!step) return null;
-    
-    for (const frame of step.frames) {
-      for (const stack of frame.stacks) {
-        for (const block of stack.blocks) {
-          if (block.type === 'application-flow') {
-            return block;
+    // First check active step (most common case)
+    const activeStep = page.steps.find(s => s.id === activeStepId);
+    if (activeStep) {
+      for (const frame of activeStep.frames) {
+        for (const stack of frame.stacks) {
+          for (const block of stack.blocks) {
+            if (block.type === 'application-flow') {
+              return block;
+            }
           }
         }
       }
     }
+    
+    // Fallback: search all steps
+    for (const step of page.steps) {
+      if (step.id === activeStepId) continue; // Already checked
+      for (const frame of step.frames) {
+        for (const stack of frame.stacks) {
+          for (const block of stack.blocks) {
+            if (block.type === 'application-flow') {
+              return block;
+            }
+          }
+        }
+      }
+    }
+    
     return null;
   }, [page, activeStepId]);
 
