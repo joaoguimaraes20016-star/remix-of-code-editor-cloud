@@ -312,47 +312,7 @@ const actionBlocks: BlockTemplate[] = [
   },
 ];
 
-// ============ BLOCK CATEGORIES ============
-
-// Unified "Interactive" category - consolidates all data-collection blocks
-const interactiveBlocks: BlockTemplate[] = [
-  ...applicationQuestions,
-  ...captureFields,
-];
-
-const blockCategories: BlockCategory[] = [
-  {
-    id: 'interactive',
-    label: 'Interactive',
-    hint: 'Questions & lead capture',
-    blocks: interactiveBlocks,
-    defaultOpen: true, // Interactive blocks are the core use case
-  },
-  {
-    id: 'content',
-    label: 'Content',
-    hint: 'Text, images, and media',
-    blocks: contentBlocks,
-    defaultOpen: false,
-  },
-  {
-    id: 'actions',
-    label: 'Actions',
-    hint: 'Buttons and navigation',
-    blocks: actionBlocks,
-    defaultOpen: false,
-  },
-];
-
-// ============ SECTION TEMPLATES ============
-
-interface SectionCategory {
-  id: string;
-  label: string;
-  hint?: string;
-  sections: BlockTemplate[];
-  defaultOpen?: boolean;
-}
+// ============ FLOW TEMPLATES (moved before blockCategories) ============
 
 // Flow templates - all use application-flow block type (the unified Application Engine)
 // These are NOT separate systems - they're different presentations of the same engine
@@ -427,6 +387,48 @@ const flowTemplates: BlockTemplate[] = [
   },
 ];
 
+// ============ BLOCK CATEGORIES ============
+
+// Unified "Interactive" category - consolidates all data-collection blocks + flows
+const interactiveBlocks: BlockTemplate[] = [
+  ...applicationQuestions,
+  ...captureFields,
+];
+
+const blockCategories: BlockCategory[] = [
+  {
+    id: 'interactive',
+    label: 'Interactive',
+    hint: 'Questions, lead capture & flows',
+    blocks: [...interactiveBlocks, ...flowTemplates],
+    defaultOpen: true, // Interactive blocks are the core use case
+  },
+  {
+    id: 'content',
+    label: 'Content',
+    hint: 'Text, images, and media',
+    blocks: contentBlocks,
+    defaultOpen: false,
+  },
+  {
+    id: 'actions',
+    label: 'Actions',
+    hint: 'Buttons and navigation',
+    blocks: actionBlocks,
+    defaultOpen: false,
+  },
+];
+
+// ============ SECTION TEMPLATES ============
+
+interface SectionCategory {
+  id: string;
+  label: string;
+  hint?: string;
+  sections: BlockTemplate[];
+  defaultOpen?: boolean;
+}
+
 const contentSections: BlockTemplate[] = [
   {
     type: 'hero',
@@ -495,6 +497,7 @@ const advancedSections: BlockTemplate[] = [
   },
 ];
 
+// Sections are purely visual - no behavioral/capture logic
 const sectionCategories: SectionCategory[] = [
   {
     id: 'content',
@@ -506,8 +509,8 @@ const sectionCategories: SectionCategory[] = [
   {
     id: 'advanced',
     label: 'Advanced',
-    hint: 'Build from scratch or flow templates',
-    sections: [...advancedSections, ...flowTemplates],
+    hint: 'Build from scratch',
+    sections: advancedSections,
     defaultOpen: false,
   },
 ];
