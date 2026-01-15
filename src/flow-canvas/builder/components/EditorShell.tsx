@@ -1277,10 +1277,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     <InlineEditProvider>
     <div
       className={
-        `h-screen flex flex-col overflow-hidden bg-builder-bg ` +
+        `h-screen flex flex-col overflow-hidden ` +
         (editorTheme === 'dark'
-          ? 'dark'
-          : 'editor-light')
+          ? 'dark bg-builder-bg'
+          : 'editor-light bg-background')
       }
     >
       {/* Top Toolbar */}

@@ -146,18 +146,18 @@
     --border: 220 14% 90%;
     --input: 220 14% 90%;
 
-    /* Builder UI tokens - KEEP DARK for toolbar elements like SectionActionBar */
-    --builder-bg: 0 0% 4%;
-    --builder-surface: 0 0% 7%;
-    --builder-surface-hover: 0 0% 11%;
-    --builder-surface-active: 0 0% 15%;
-    --builder-border: 0 0% 14%;
-    --builder-border-subtle: 0 0% 10%;
+    /* Builder UI tokens - Switch to light for panels */
+    --builder-bg: 0 0% 100%;
+    --builder-surface: 220 14% 97%;
+    --builder-surface-hover: 220 14% 94%;
+    --builder-surface-active: 220 14% 90%;
+    --builder-border: 220 14% 90%;
+    --builder-border-subtle: 220 14% 93%;
 
-    --builder-text: 0 0% 100%;
-    --builder-text-secondary: 0 0% 75%;
-    --builder-text-muted: 0 0% 55%;
-    --builder-text-dim: 0 0% 35%;
+    --builder-text: 220 14% 10%;
+    --builder-text-secondary: 220 14% 30%;
+    --builder-text-muted: 220 14% 45%;
+    --builder-text-dim: 220 14% 65%;
 
     /* Canvas chrome */
     --canvas-bg: 220 14% 96%;
