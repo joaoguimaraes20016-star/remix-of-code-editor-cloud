@@ -158,9 +158,17 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
     onUpdateBlock({ elements: newElements });
   };
 
-  // Helper to update block props (for block-level settings like background)
+  // Helper to update block props (for non-styling settings like popup behavior)
   const updateBlockProps = (propUpdates: Record<string, unknown>) => {
     onUpdateBlock({ props: { ...blockProps, ...propUpdates } });
+  };
+
+  // Helper to update block styles (for background, border, etc.) - SINGLE SOURCE OF TRUTH
+  const updateBlockStyles = (styleUpdates: Record<string, string | undefined>) => {
+    const currentStyles = block.styles || {};
+    onUpdateBlock({ 
+      styles: { ...currentStyles, ...styleUpdates } as Record<string, string>
+    });
   };
 
   // Get input type
@@ -179,9 +187,13 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
   const buttonRadius = (buttonElement?.styles?.borderRadius as string) || '12px';
   const buttonFullWidth = buttonElement?.styles?.width === '100%';
   
-  // Background styling (block-level)
-  const backgroundType = blockProps.backgroundType as 'solid' | 'gradient' || 'solid';
-  const backgroundColor = blockProps.backgroundColor as string || '#ffffff';
+  // Background styling - read from block.styles (SINGLE SOURCE OF TRUTH)
+  const blockStyles = block.styles || {};
+  // Detect gradient if block.styles.background contains 'gradient'
+  const hasGradientBg = typeof blockStyles.background === 'string' && blockStyles.background.includes('gradient');
+  const backgroundType = hasGradientBg ? 'gradient' : 'solid';
+  const backgroundColor = (blockStyles.backgroundColor as string) || 'transparent';
+  // Parse gradient from CSS string or use stored object
   const backgroundGradient = blockProps.backgroundGradient as GradientValue | undefined;
   
   // Popup opt-in settings
@@ -503,13 +515,19 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           </CollapsibleSection>
         )}
 
-        {/* Background Section */}
+        {/* Background Section - writes to block.styles (single source of truth) */}
         <CollapsibleSection title="Background" icon={<Palette className="w-3.5 h-3.5" />}>
           {/* Background Type */}
           <FieldGroup label="Background Type">
             <div className="flex rounded-md overflow-hidden border border-border">
               <button
-                onClick={() => updateBlockProps({ backgroundType: 'solid' })}
+                onClick={() => {
+                  // Switch to solid: apply backgroundColor, clear background gradient
+                  updateBlockStyles({ 
+                    backgroundColor: backgroundColor || 'transparent',
+                    background: undefined 
+                  });
+                }}
                 className={cn(
                   'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
                   backgroundType === 'solid'
@@ -520,7 +538,15 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                 Solid
               </button>
               <button
-                onClick={() => updateBlockProps({ backgroundType: 'gradient' })}
+                onClick={() => {
+                  // Switch to gradient: apply gradient, keep backgroundColor preserved
+                  if (backgroundGradient) {
+                    updateBlockStyles({ background: gradientToCSS(backgroundGradient) });
+                  } else {
+                    updateBlockStyles({ background: gradientToCSS(defaultGradient) });
+                    updateBlockProps({ backgroundGradient: defaultGradient });
+                  }
+                }}
                 className={cn(
                   'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
                   backgroundType === 'gradient'
@@ -536,8 +562,11 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           {/* Background Color - always shown, preserved when switching */}
           <FieldGroup label="Background Color">
             <ColorPickerPopover
-              color={backgroundColor}
-              onChange={(color) => updateBlockProps({ backgroundColor: color })}
+              color={backgroundColor || 'transparent'}
+              onChange={(color) => {
+                updateBlockStyles({ backgroundColor: color });
+                // If currently solid, this is the active value
+              }}
             >
               <button className={cn(
                 "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
@@ -545,9 +574,9 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               )}>
                 <div 
                   className="w-6 h-6 rounded border border-border"
-                  style={{ backgroundColor: backgroundColor }}
+                  style={{ backgroundColor: backgroundColor || 'transparent' }}
                 />
-                <span className="text-xs text-foreground font-mono">{backgroundColor}</span>
+                <span className="text-xs text-foreground font-mono">{backgroundColor || 'transparent'}</span>
                 {backgroundType === 'gradient' && <span className="text-[10px] text-muted-foreground ml-auto">(inactive)</span>}
               </button>
             </ColorPickerPopover>
@@ -557,7 +586,11 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           <FieldGroup label="Background Gradient">
             <GradientPickerPopover
               value={backgroundGradient || null}
-              onChange={(gradient) => updateBlockProps({ backgroundGradient: gradient })}
+              onChange={(gradient) => {
+                // Store the gradient object in props for editing, render CSS in styles
+                updateBlockProps({ backgroundGradient: gradient });
+                updateBlockStyles({ background: gradientToCSS(gradient) });
+              }}
             >
               <button className={cn(
                 "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
