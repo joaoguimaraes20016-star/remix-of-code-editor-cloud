@@ -52,23 +52,82 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   };
 
   // ─────────────────────────────────────────────────────────
+  // Style helpers - map settings to Tailwind classes
+  // ─────────────────────────────────────────────────────────
+  const getTitleSizeClass = (size?: string) => {
+    const sizes: Record<string, string> = {
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
+      '2xl': 'text-2xl',
+    };
+    return sizes[size || 'xl'] || 'text-xl';
+  };
+
+  const getAlignClass = (align?: string) => {
+    return align === 'left' ? 'text-left items-start' : 'text-center items-center';
+  };
+
+  const getSpacingClass = (spacing?: string) => {
+    const spacings: Record<string, string> = {
+      compact: 'py-6 px-4',
+      normal: 'py-12 px-8',
+      relaxed: 'py-16 px-12',
+    };
+    return spacings[spacing || 'normal'] || 'py-12 px-8';
+  };
+
+  const getInputStyleClass = (style?: string) => {
+    const styles: Record<string, string> = {
+      default: 'rounded-lg',
+      minimal: 'rounded-none border-t-0 border-l-0 border-r-0',
+      rounded: 'rounded-full',
+      square: 'rounded-none',
+    };
+    return styles[style || 'default'] || 'rounded-lg';
+  };
+
+  const getButtonClasses = (s: any) => {
+    const isOutline = s.buttonStyle === 'outline';
+    const baseClasses = 'inline-block px-6 py-3 font-medium text-sm transition-colors';
+    
+    if (isOutline) {
+      return cn(baseClasses, 'bg-transparent border-2 border-primary text-primary rounded-lg');
+    }
+    return cn(baseClasses, 'bg-primary text-primary-foreground rounded-lg');
+  };
+
+  const getButtonStyle = (s: any) => {
+    if (s.buttonColor && s.buttonStyle !== 'outline') {
+      return { backgroundColor: s.buttonColor };
+    }
+    if (s.buttonColor && s.buttonStyle === 'outline') {
+      return { borderColor: s.buttonColor, color: s.buttonColor };
+    }
+    return undefined;
+  };
+
+  // ─────────────────────────────────────────────────────────
   // Render "welcome" step using step.settings (single source of truth)
-  // This syncs with right panel edits - no more block.elements split
   // ─────────────────────────────────────────────────────────
   const renderWelcomeStep = () => {
     const welcomeStep = steps.find(s => s.type === 'welcome');
     const s = (welcomeStep as any)?.settings || {};
     const stepId = welcomeStep?.id || '';
 
+    const alignClass = getAlignClass(s.align);
+    const spacingClass = getSpacingClass(s.spacing);
+
     return (
-      <div className="text-center py-12 px-8">
+      <div className={cn('flex flex-col', alignClass, spacingClass)}>
         {/* Heading – inline editable, reads from step.settings.title */}
         <div className="block">
           <InlineTextEditor
             value={s.title || 'Apply Now'}
             onChange={(content) => updateStepSetting(stepId, 'title', content)}
             placeholder="Apply Now"
-            className="text-2xl font-bold text-foreground inline-block"
+            className={cn(getTitleSizeClass(s.titleSize), 'font-bold text-foreground inline-block')}
             elementType="heading"
             elementId={`step-${stepId}-title`}
           />
@@ -86,14 +145,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         </div>
         {/* CTA button – inline editable */}
         <div className="block mt-6">
-          <InlineTextEditor
-            value={s.buttonText || 'Start Application →'}
-            onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
-            placeholder="Start Application →"
-            className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium text-sm"
-            elementType="text"
-            elementId={`step-${stepId}-btn`}
-          />
+          <span style={getButtonStyle(s)}>
+            <InlineTextEditor
+              value={s.buttonText || 'Start Application →'}
+              onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
+              placeholder="Start Application →"
+              className={getButtonClasses(s)}
+              elementType="text"
+              elementId={`step-${stepId}-btn`}
+            />
+          </span>
         </div>
       </div>
     );
@@ -102,13 +163,17 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   // Question step - show question text, options/input, and continue button
   const renderQuestionStep = (step: ApplicationFlowStep) => {
     const s = (step as any).settings || {};
+    const alignClass = getAlignClass(s.align);
+    const spacingClass = getSpacingClass(s.spacing);
+    const inputStyleClass = getInputStyleClass(s.inputStyle);
+
     return (
-      <div className="text-center py-12 px-8">
+      <div className={cn('flex flex-col', alignClass, spacingClass)}>
         <InlineTextEditor
           value={s.title || 'Your question here'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
           placeholder="What's your biggest challenge?"
-          className="text-xl font-bold text-foreground inline-block"
+          className={cn(getTitleSizeClass(s.titleSize), 'font-bold text-foreground inline-block')}
           elementType="heading"
           elementId={`step-${step.id}-title`}
         />
@@ -118,11 +183,14 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         
         {/* Multiple Choice Options */}
         {s.questionType === 'multiple-choice' && s.options && (
-          <div className="mt-6 space-y-2 max-w-md mx-auto">
+          <div className="mt-6 space-y-2 max-w-md w-full">
             {(s.options as string[]).map((option: string, i: number) => (
               <div 
                 key={i} 
-                className="px-4 py-3 border border-border rounded-lg text-left text-sm text-foreground hover:border-primary/50 cursor-pointer transition-colors bg-background"
+                className={cn(
+                  'px-4 py-3 border border-border text-left text-sm text-foreground hover:border-primary/50 cursor-pointer transition-colors bg-background',
+                  inputStyleClass
+                )}
               >
                 {option}
               </div>
@@ -132,18 +200,81 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         
         {/* Text Input */}
         {s.questionType === 'text' && (
-          <div className="mt-6 max-w-md mx-auto">
+          <div className="mt-6 max-w-md w-full">
             <textarea 
-              className="w-full px-4 py-3 border border-border rounded-lg text-sm bg-background text-foreground resize-none"
+              className={cn(
+                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground resize-none',
+                inputStyleClass
+              )}
               placeholder="Type your answer..."
               rows={3}
               disabled
             />
           </div>
         )}
+
+        {/* Dropdown */}
+        {s.questionType === 'dropdown' && (
+          <div className="mt-6 max-w-md w-full">
+            <div 
+              className={cn(
+                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground flex items-center justify-between',
+                inputStyleClass
+              )}
+            >
+              <span className="text-muted-foreground">
+                {s.options?.[0] || 'Select an option...'}
+              </span>
+              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* Scale (1-10 or 1-5) */}
+        {s.questionType === 'scale' && (
+          <div className="mt-6 max-w-md w-full">
+            <div className="flex gap-2 justify-center">
+              {Array.from({ length: s.scaleMax || 10 }, (_, i) => i + 1).map((num) => (
+                <div
+                  key={num}
+                  className={cn(
+                    'w-10 h-10 flex items-center justify-center border border-border text-sm font-medium cursor-pointer hover:border-primary hover:bg-primary/10 transition-colors',
+                    inputStyleClass
+                  )}
+                >
+                  {num}
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{s.scaleMinLabel || 'Not at all'}</span>
+              <span>{s.scaleMaxLabel || 'Extremely'}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Yes/No */}
+        {s.questionType === 'yes-no' && (
+          <div className="mt-6 space-y-2 max-w-md w-full">
+            {['Yes', 'No'].map((option) => (
+              <div 
+                key={option} 
+                className={cn(
+                  'px-4 py-3 border border-border text-left text-sm text-foreground hover:border-primary/50 cursor-pointer transition-colors bg-background',
+                  inputStyleClass
+                )}
+              >
+                {option}
+              </div>
+            ))}
+          </div>
+        )}
         
         <span 
-          className="inline-block mt-6 px-6 py-3 rounded-lg font-medium text-sm bg-primary text-primary-foreground"
+          className={cn(getButtonClasses(s), 'mt-6')}
+          style={getButtonStyle(s)}
         >
           {s.buttonText || 'Continue'}
         </span>
@@ -151,33 +282,66 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     );
   };
 
-  // Capture step - name/email fields + submit button
+  // Capture step - conditionally render name/email/phone fields based on settings
   const renderCaptureStep = (step: ApplicationFlowStep) => {
     const s = (step as any).settings || {};
+    const alignClass = getAlignClass(s.align);
+    const spacingClass = getSpacingClass(s.spacing);
+    const inputStyleClass = getInputStyleClass(s.inputStyle);
+
+    // Determine which fields to show - default to name + email if none specified
+    const showName = s.collectName ?? true;
+    const showEmail = s.collectEmail ?? true;
+    const showPhone = s.collectPhone ?? false;
+
     return (
-      <div className="text-center py-12 px-8">
+      <div className={cn('flex flex-col', alignClass, spacingClass)}>
         <InlineTextEditor
           value={s.title || 'Where should we send your results?'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
           placeholder="Where should we send your results?"
-          className="text-xl font-bold text-foreground inline-block"
+          className={cn(getTitleSizeClass(s.titleSize), 'font-bold text-foreground inline-block')}
           elementType="heading"
           elementId={`step-${step.id}-title`}
         />
-        <div className="mt-6 space-y-3 max-w-md mx-auto">
-          <input 
-            className="w-full px-4 py-3 border border-border rounded-lg text-sm bg-background text-foreground" 
-            placeholder="Your name" 
-            disabled
-          />
-          <input 
-            className="w-full px-4 py-3 border border-border rounded-lg text-sm bg-background text-foreground" 
-            placeholder="Your email" 
-            disabled
-          />
+        {s.description && (
+          <p className="text-sm text-muted-foreground mt-2">{s.description}</p>
+        )}
+        <div className="mt-6 space-y-3 max-w-md w-full">
+          {showName && (
+            <input 
+              className={cn(
+                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground',
+                inputStyleClass
+              )}
+              placeholder="Your name" 
+              disabled
+            />
+          )}
+          {showEmail && (
+            <input 
+              className={cn(
+                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground',
+                inputStyleClass
+              )}
+              placeholder="Your email" 
+              disabled
+            />
+          )}
+          {showPhone && (
+            <input 
+              className={cn(
+                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground',
+                inputStyleClass
+              )}
+              placeholder="Your phone" 
+              disabled
+            />
+          )}
         </div>
         <span 
-          className="inline-block mt-6 px-6 py-3 rounded-lg font-medium text-sm bg-primary text-primary-foreground"
+          className={cn(getButtonClasses(s), 'mt-6')}
+          style={getButtonStyle(s)}
         >
           {s.buttonText || 'Submit'}
         </span>
@@ -188,13 +352,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   // Ending step - thank you message
   const renderEndingStep = (step: ApplicationFlowStep) => {
     const s = (step as any).settings || {};
+    const alignClass = getAlignClass(s.align);
+    const spacingClass = getSpacingClass(s.spacing);
+
     return (
-      <div className="text-center py-12 px-8">
+      <div className={cn('flex flex-col', alignClass, spacingClass)}>
         <InlineTextEditor
           value={s.title || 'Thanks — we\'ll be in touch!'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
           placeholder="Thanks for applying!"
-          className="text-xl font-bold text-foreground inline-block"
+          className={cn(getTitleSizeClass(s.titleSize), 'font-bold text-foreground inline-block')}
           elementType="heading"
           elementId={`step-${step.id}-title`}
         />

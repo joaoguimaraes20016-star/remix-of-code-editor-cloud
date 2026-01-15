@@ -505,7 +505,7 @@ const sectionCategories: SectionCategory[] = [
 // ============ COLLAPSIBLE CATEGORY COMPONENT ============
 
 // Categories that should add to Application Flow instead of standalone blocks
-const APPLICATION_FLOW_CATEGORIES = ['questions', 'capture'];
+const APPLICATION_FLOW_CATEGORIES = ['questions', 'capture', 'capture-sections'];
 
 interface CollapsibleCategoryProps {
   category: BlockCategory | SectionCategory;
