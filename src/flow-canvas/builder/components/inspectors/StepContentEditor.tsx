@@ -16,7 +16,20 @@ import {
   ChevronDown,
   ToggleLeft,
   Scale,
+  Mail,
+  Phone,
+  User,
 } from 'lucide-react';
+import {
+  getTitleSizeClass,
+  getAlignClass,
+  getSpacingClass,
+  getInputStyleClass,
+  getButtonClasses,
+  getButtonStyle,
+  getDefaultTitle,
+  getDefaultButtonText,
+} from '../../utils/stepRenderHelpers';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -134,27 +147,34 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             className="origin-top"
             style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}
           >
-            {/* Render same content as published funnel */}
-            <div className="text-center py-12 px-8 rounded-lg bg-background">
+            {/* Unified preview - uses same style helpers as ApplicationFlowCard */}
+            <div className={cn(
+              'flex flex-col rounded-lg bg-background',
+              getAlignClass(stepSettings.align),
+              getSpacingClass(stepSettings.spacing)
+            )}>
               {/* Title */}
-              <h3 className={cn('font-bold text-foreground', step.type === 'welcome' ? 'text-2xl' : 'text-xl')}>
-                {questionTitle || (step.type === 'welcome' ? 'Apply Now' : step.type === 'question' ? 'Your question here' : step.type === 'capture' ? 'Where should we send your results?' : step.type === 'ending' ? 'Thanks — we will be in touch!' : 'Heading')}
+              <h3 className={cn(getTitleSizeClass(stepSettings.titleSize), 'font-bold text-foreground')}>
+                {questionTitle || getDefaultTitle(step.type)}
               </h3>
               
               {/* Description */}
-              {(questionDescription || step.type === 'welcome') && (
+              {questionDescription && (
                 <p className="text-sm mt-2 text-muted-foreground">
-                  {questionDescription || (step.type === 'welcome' ? 'Answer a few quick questions to see if we are a good fit.' : '')}
+                  {questionDescription}
                 </p>
               )}
               
-              {/* Question options for multiple choice */}
+              {/* Multiple Choice Options */}
               {step.type === 'question' && questionType === 'multiple-choice' && options.length > 0 && (
-                <div className="mt-6 space-y-2 max-w-md mx-auto">
+                <div className="mt-6 space-y-2 max-w-md w-full">
                   {options.slice(0, 3).map((option, i) => (
                     <div 
                       key={i}
-                      className="px-4 py-3 rounded-lg text-left text-sm border border-border text-foreground bg-background"
+                      className={cn(
+                        'px-4 py-3 border border-border text-left text-sm text-foreground bg-background',
+                        getInputStyleClass(stepSettings.inputStyle)
+                      )}
                     >
                       {option}
                     </div>
@@ -165,40 +185,117 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                 </div>
               )}
               
-              {/* Text input for text questions */}
+              {/* Text input */}
               {step.type === 'question' && questionType === 'text' && (
-                <div className="mt-6 max-w-md mx-auto">
-                  <div className="w-full px-4 py-3 rounded-lg text-sm text-left border border-border text-muted-foreground bg-background">
-                    Type your answer...
+                <div className="mt-6 max-w-md w-full">
+                  <textarea 
+                    className={cn(
+                      'w-full px-4 py-3 border border-border text-sm bg-background text-muted-foreground resize-none',
+                      getInputStyleClass(stepSettings.inputStyle)
+                    )}
+                    placeholder="Type your answer..."
+                    rows={2}
+                    disabled
+                  />
+                </div>
+              )}
+
+              {/* Dropdown */}
+              {step.type === 'question' && questionType === 'dropdown' && (
+                <div className="mt-6 max-w-md w-full">
+                  <div 
+                    className={cn(
+                      'w-full px-4 py-3 border border-border text-sm bg-background text-foreground flex items-center justify-between',
+                      getInputStyleClass(stepSettings.inputStyle)
+                    )}
+                  >
+                    <span className="text-muted-foreground">
+                      {options?.[0] || 'Select an option...'}
+                    </span>
+                    <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
                 </div>
               )}
+
+              {/* Scale (1-10 or 1-5) */}
+              {step.type === 'question' && questionType === 'scale' && (
+                <div className="mt-6 max-w-md w-full">
+                  <div className="flex gap-1 justify-center flex-wrap">
+                    {Array.from({ length: stepSettings.scaleMax || 10 }, (_, i) => i + 1).map((num) => (
+                      <div
+                        key={num}
+                        className={cn(
+                          'w-8 h-8 flex items-center justify-center border border-border text-xs font-medium cursor-pointer hover:border-primary hover:bg-primary/10 transition-colors',
+                          getInputStyleClass(stepSettings.inputStyle)
+                        )}
+                      >
+                        {num}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <span>{stepSettings.scaleMinLabel || 'Not at all'}</span>
+                    <span>{stepSettings.scaleMaxLabel || 'Extremely'}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Yes/No */}
+              {step.type === 'question' && questionType === 'yes-no' && (
+                <div className="mt-6 space-y-2 max-w-md w-full">
+                  {['Yes', 'No'].map((option) => (
+                    <div 
+                      key={option} 
+                      className={cn(
+                        'px-4 py-3 border border-border text-left text-sm text-foreground bg-background',
+                        getInputStyleClass(stepSettings.inputStyle)
+                      )}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              )}
               
-              {/* Capture fields */}
+              {/* Capture fields - renders based on collect flags */}
               {step.type === 'capture' && (
-                <div className="mt-6 space-y-3 max-w-md mx-auto">
-                  <div className="px-4 py-3 rounded-lg text-sm text-left border border-border text-muted-foreground bg-background">
-                    Your name
-                  </div>
-                  <div className="px-4 py-3 rounded-lg text-sm text-left border border-border text-muted-foreground bg-background">
-                    Your email
-                  </div>
+                <div className="mt-6 space-y-3 max-w-md w-full">
+                  {(stepSettings.collectName ?? true) && (
+                    <div className={cn(
+                      'px-4 py-3 border border-border text-sm text-muted-foreground bg-background',
+                      getInputStyleClass(stepSettings.inputStyle)
+                    )}>
+                      Your name
+                    </div>
+                  )}
+                  {(stepSettings.collectEmail ?? true) && (
+                    <div className={cn(
+                      'px-4 py-3 border border-border text-sm text-muted-foreground bg-background',
+                      getInputStyleClass(stepSettings.inputStyle)
+                    )}>
+                      Your email
+                    </div>
+                  )}
+                  {stepSettings.collectPhone && (
+                    <div className={cn(
+                      'px-4 py-3 border border-border text-sm text-muted-foreground bg-background',
+                      getInputStyleClass(stepSettings.inputStyle)
+                    )}>
+                      Your phone
+                    </div>
+                  )}
                 </div>
               )}
               
-              {/* Ending step - no button, just message */}
-              {step.type === 'ending' ? (
-                questionDescription ? null : (
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    We will be in touch shortly.
-                  </p>
-                )
-              ) : (
-                /* Button - uses brand primary color */
+              {/* Button - uses style helpers */}
+              {step.type !== 'ending' && (
                 <span 
-                  className="inline-block mt-6 px-6 py-3 rounded-lg font-medium text-sm bg-primary text-primary-foreground"
+                  className={cn(getButtonClasses(stepSettings), 'mt-6')}
+                  style={getButtonStyle(stepSettings)}
                 >
-                  {buttonText || (step.type === 'welcome' ? 'Start Application →' : step.type === 'capture' ? 'Submit' : 'Continue')}
+                  {buttonText || getDefaultButtonText(step.type)}
                 </span>
               )}
             </div>
@@ -356,6 +453,45 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                 checked={isRequired}
                 onCheckedChange={(checked) => updateSettings({ required: checked })}
               />
+            </div>
+          )}
+
+          {/* Capture Fields (for capture steps) */}
+          {step.type === 'capture' && (
+            <div className="space-y-2">
+              <Label className="text-[10px] text-muted-foreground uppercase">Fields to Collect</Label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Label className="text-xs text-foreground">Name</Label>
+                  </div>
+                  <Switch
+                    checked={stepSettings.collectName ?? true}
+                    onCheckedChange={(checked) => updateSettings({ collectName: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Label className="text-xs text-foreground">Email</Label>
+                  </div>
+                  <Switch
+                    checked={stepSettings.collectEmail ?? true}
+                    onCheckedChange={(checked) => updateSettings({ collectEmail: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Label className="text-xs text-foreground">Phone</Label>
+                  </div>
+                  <Switch
+                    checked={stepSettings.collectPhone ?? false}
+                    onCheckedChange={(checked) => updateSettings({ collectPhone: checked })}
+                  />
+                </div>
+              </div>
             </div>
           )}
 

@@ -120,11 +120,11 @@ const createFullApplicationBlock = (): Block => ({
           title: 'Where should we send your results?',
           buttonText: 'Submit Application',
           buttonColor: '#18181b',
+          collectName: true,
+          collectEmail: true,
+          collectPhone: false,
         },
-        elements: [
-          { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true, fieldKey: 'name' } },
-          { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'Your email', required: true, fieldKey: 'email' } },
-        ], 
+        elements: [], 
         navigation: { action: 'next' } 
       },
       { 
