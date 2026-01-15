@@ -171,8 +171,8 @@ export const STEP_DEFINITIONS: Record<StepType, StepDefinition> = {
 
   opt_in: {
     type: 'opt_in',
-    label: 'Opt-In Form',
-    description: 'Full contact form (name, email, phone) - primary capture step',
+    label: 'Contact Info',
+    description: 'Full contact collection (name, email, phone) - primary capture step',
     capabilities: {
       canCreateLead: true,
       canFinalizeLead: true,

@@ -283,8 +283,8 @@ export const CaptureFlowInspector: React.FC = () => {
             <Layers className="w-3 h-3 text-muted-foreground" />
           </div>
           <div>
-            <div className="text-sm font-medium text-foreground">Capture Flow</div>
-            <div className="text-[10px] text-muted-foreground">{nodes.length} nodes</div>
+            <div className="text-sm font-medium text-foreground">Application Steps</div>
+            <div className="text-[10px] text-muted-foreground">{nodes.length} steps</div>
           </div>
         </div>
       </div>

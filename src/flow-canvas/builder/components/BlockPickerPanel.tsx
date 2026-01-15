@@ -161,7 +161,7 @@ const captureFields: BlockTemplate[] = [
     template: () => ({
       id: generateId(),
       type: 'form-field',
-      label: 'Name Capture',
+      label: 'Name',
       elements: [
         { id: generateId(), type: 'heading', content: 'What is your name?', props: { level: 3 } },
         { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your full name', required: true, fieldKey: 'name', icon: 'user' } },
@@ -172,13 +172,13 @@ const captureFields: BlockTemplate[] = [
   },
   {
     type: 'application-step',
-    label: 'Full Form',
+    label: 'Contact Info',
     icon: <UserCheck size={16} />,
     description: 'Name + email + phone combo',
     template: () => ({
       id: generateId(),
       type: 'form-field',
-      label: 'Full Opt-In',
+      label: 'Contact Info',
       elements: [
         { id: generateId(), type: 'heading', content: 'Complete your application', props: { level: 2 } },
         { id: generateId(), type: 'text', content: 'Enter your details to continue.', props: { variant: 'subtext' } },

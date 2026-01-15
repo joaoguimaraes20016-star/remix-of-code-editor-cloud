@@ -13,15 +13,15 @@ const sectionTypes = new Set([
 // Block type labels - NO "Section" in content block names
 export const blockTypeLabels: Record<BlockType, string> = {
   hero: 'Hero',
-  'form-field': 'Form Field',
+  'form-field': 'Input Fields',  // Renamed from "Form Field"
   cta: 'Call to Action',
   testimonial: 'Testimonial',
   media: 'Media',
   'text-block': 'Text',
   custom: 'Empty Section',
   booking: 'Booking',
-  'application-flow': 'Application', // Unified name - no "Flow" suffix
-  'capture-flow-embed': 'Application Embed', // Renamed from Capture Flow
+  'application-flow': 'Application',  // Unified name
+  'capture-flow-embed': 'Application',  // Renamed from "Application Embed"
   // Extended types
   feature: 'Feature',
   pricing: 'Pricing',
