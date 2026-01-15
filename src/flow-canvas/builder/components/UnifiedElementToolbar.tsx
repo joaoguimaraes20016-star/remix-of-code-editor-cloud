@@ -146,9 +146,11 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
   
   useEffect(() => {
     if (isSelected) {
-      const timer = setTimeout(() => setShowDelayed(true), 40);
+      // Reduced delay from 40ms to 15ms for snappier response
+      const timer = setTimeout(() => setShowDelayed(true), 15);
       return () => clearTimeout(timer);
     } else {
+      // Immediate hide when deselected
       setShowDelayed(false);
     }
   }, [isSelected]);

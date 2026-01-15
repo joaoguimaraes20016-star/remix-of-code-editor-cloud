@@ -129,7 +129,36 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
     }
   };
 
-  // Helper to update block props
+  // Helper to update element styles
+  const updateElementStyles = (elementId: string, styleUpdates: Record<string, string | undefined>) => {
+    const element = elements.find(el => el.id === elementId);
+    if (element) {
+      updateElement(elementId, { 
+        styles: { ...element.styles, ...styleUpdates } as Record<string, string>
+      });
+    }
+  };
+
+  // Helper to update both element props and styles atomically
+  const updateButtonStyle = (updates: {
+    props?: Record<string, unknown>;
+    styles?: Record<string, string | undefined>;
+  }) => {
+    if (!buttonElement) return;
+    const newElements = elements.map(el => {
+      if (el.id === buttonElement.id) {
+        return {
+          ...el,
+          props: updates.props ? { ...el.props, ...updates.props } : el.props,
+          styles: updates.styles ? { ...el.styles, ...updates.styles } as Record<string, string> : el.styles,
+        };
+      }
+      return el;
+    });
+    onUpdateBlock({ elements: newElements });
+  };
+
+  // Helper to update block props (for block-level settings like background)
   const updateBlockProps = (propUpdates: Record<string, unknown>) => {
     onUpdateBlock({ props: { ...blockProps, ...propUpdates } });
   };
@@ -140,16 +169,17 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
   const isRequired = inputElement?.props?.required as boolean || false;
   const fieldKey = inputElement?.props?.fieldKey as string || '';
 
-  // Get styling props
-  const buttonColor = buttonElement?.props?.buttonColor as string || blockProps.buttonColor as string || '#18181b';
-  const buttonTextColor = buttonElement?.props?.buttonTextColor as string || blockProps.buttonTextColor as string || '#ffffff';
-  const buttonFillType = blockProps.buttonFillType as 'solid' | 'gradient' || 'solid';
-  const buttonGradient = blockProps.buttonGradient as GradientValue | undefined;
-  const buttonSize = blockProps.buttonSize as 'sm' | 'md' | 'lg' || 'md';
-  const buttonRadius = blockProps.buttonRadius as 'none' | 'rounded' | 'full' || 'rounded';
-  const buttonFullWidth = blockProps.buttonFullWidth as boolean || false;
+  // Get button styling from the ELEMENT (where CanvasRenderer reads from)
+  // This is the source of truth - element.props.fillType, element.props.gradient, element.styles.backgroundColor
+  const buttonFillType = (buttonElement?.props?.fillType as 'solid' | 'gradient') || 'solid';
+  const buttonColor = (buttonElement?.styles?.backgroundColor as string) || '#18181b';
+  const buttonGradient = buttonElement?.props?.gradient as GradientValue | undefined;
+  const buttonTextColor = (buttonElement?.props?.textColor as string) || '#ffffff';
+  const buttonSize = (buttonElement?.props?.buttonSize as 'sm' | 'md' | 'lg') || 'md';
+  const buttonRadius = (buttonElement?.styles?.borderRadius as string) || '12px';
+  const buttonFullWidth = buttonElement?.styles?.width === '100%';
   
-  // Background styling
+  // Background styling (block-level)
   const backgroundType = blockProps.backgroundType as 'solid' | 'gradient' || 'solid';
   const backgroundColor = blockProps.backgroundColor as string || '#ffffff';
   const backgroundGradient = blockProps.backgroundGradient as GradientValue | undefined;
@@ -298,15 +328,19 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           </CollapsibleSection>
         )}
 
-        {/* Button Style Section - SIMPLIFIED: only show if no button element is selected */}
-        {/* Full button styling is handled in RightPanel when the button element is selected */}
+        {/* Button Style Section - Updates ELEMENT props/styles directly for CanvasRenderer to read */}
         {buttonElement && (
           <CollapsibleSection title="Button Style" icon={<Palette className="w-3.5 h-3.5" />}>
-            {/* Button Fill Type - preserves both solid color and gradient */}
+            {/* Tip for advanced styling */}
+            <p className="text-[10px] text-muted-foreground pb-2">
+              Tip: Click the button on canvas for more styling options.
+            </p>
+            
+            {/* Button Fill Type - writes to element.props.fillType */}
             <FieldGroup label="Fill Type">
               <div className="flex rounded-md overflow-hidden border border-border">
                 <button
-                  onClick={() => updateBlockProps({ buttonFillType: 'solid' })}
+                  onClick={() => updateButtonStyle({ props: { fillType: 'solid' } })}
                   className={cn(
                     'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
                     buttonFillType === 'solid'
@@ -317,7 +351,18 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                   Solid
                 </button>
                 <button
-                  onClick={() => updateBlockProps({ buttonFillType: 'gradient' })}
+                  onClick={() => {
+                    // When switching to gradient, set a default gradient if none exists
+                    const gradient = buttonGradient || {
+                      type: 'linear' as const,
+                      angle: 135,
+                      stops: [
+                        { color: '#8B5CF6', position: 0 },
+                        { color: '#D946EF', position: 100 },
+                      ],
+                    };
+                    updateButtonStyle({ props: { fillType: 'gradient', gradient } });
+                  }}
                   className={cn(
                     'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
                     buttonFillType === 'gradient'
@@ -330,11 +375,11 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               </div>
             </FieldGroup>
 
-            {/* Button Color (Solid) - always shown, preserved when switching to gradient */}
+            {/* Button Color (Solid) - writes to element.styles.backgroundColor */}
             <FieldGroup label="Button Color">
               <ColorPickerPopover
                 color={buttonColor}
-                onChange={(color) => updateBlockProps({ buttonColor: color })}
+                onChange={(color) => updateButtonStyle({ styles: { backgroundColor: color } })}
               >
                 <button className={cn(
                   "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
@@ -350,11 +395,11 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               </ColorPickerPopover>
             </FieldGroup>
 
-            {/* Button Gradient - always shown, preserved when switching to solid */}
+            {/* Button Gradient - writes to element.props.gradient */}
             <FieldGroup label="Button Gradient">
               <GradientPickerPopover
                 value={buttonGradient || null}
-                onChange={(gradient) => updateBlockProps({ buttonGradient: gradient })}
+                onChange={(gradient) => updateButtonStyle({ props: { gradient } })}
               >
                 <button className={cn(
                   "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
@@ -370,11 +415,11 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               </GradientPickerPopover>
             </FieldGroup>
 
-            {/* Button Text Color */}
+            {/* Button Text Color - writes to element.props.textColor */}
             <FieldGroup label="Button Text Color">
               <ColorPickerPopover
                 color={buttonTextColor}
-                onChange={(color) => updateBlockProps({ buttonTextColor: color })}
+                onChange={(color) => updateButtonStyle({ props: { textColor: color } })}
               >
                 <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
                   <div 
@@ -386,13 +431,13 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               </ColorPickerPopover>
             </FieldGroup>
 
-            {/* Button Size */}
+            {/* Button Size - writes to element.props.buttonSize */}
             <FieldGroup label="Button Size">
               <div className="flex rounded-md overflow-hidden border border-border">
                 {(['sm', 'md', 'lg'] as const).map((size) => (
                   <button
                     key={size}
-                    onClick={() => updateBlockProps({ buttonSize: size })}
+                    onClick={() => updateButtonStyle({ props: { buttonSize: size } })}
                     className={cn(
                       'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors uppercase',
                       buttonSize === size
@@ -406,14 +451,14 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               </div>
             </FieldGroup>
 
-            {/* Button Corners */}
+            {/* Button Corners - writes to element.styles.borderRadius */}
             <FieldGroup label="Button Corners">
               <div className="flex rounded-md overflow-hidden border border-border">
                 <button
-                  onClick={() => updateBlockProps({ buttonRadius: 'none' })}
+                  onClick={() => updateButtonStyle({ styles: { borderRadius: '0px' } })}
                   className={cn(
                     'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
-                    buttonRadius === 'none'
+                    buttonRadius === '0px'
                       ? 'bg-foreground text-background'
                       : 'bg-background text-muted-foreground hover:bg-accent'
                   )}
@@ -421,10 +466,10 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                   <Square className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => updateBlockProps({ buttonRadius: 'rounded' })}
+                  onClick={() => updateButtonStyle({ styles: { borderRadius: '12px' } })}
                   className={cn(
                     'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
-                    buttonRadius === 'rounded'
+                    buttonRadius === '12px' || (!buttonRadius || buttonRadius === 'undefined')
                       ? 'bg-foreground text-background'
                       : 'bg-background text-muted-foreground hover:bg-accent'
                   )}
@@ -432,10 +477,10 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                   <div className="w-3.5 h-3.5 border-2 border-current rounded" />
                 </button>
                 <button
-                  onClick={() => updateBlockProps({ buttonRadius: 'full' })}
+                  onClick={() => updateButtonStyle({ styles: { borderRadius: '9999px' } })}
                   className={cn(
                     'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
-                    buttonRadius === 'full'
+                    buttonRadius === '9999px'
                       ? 'bg-foreground text-background'
                       : 'bg-background text-muted-foreground hover:bg-accent'
                   )}
@@ -445,12 +490,14 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               </div>
             </FieldGroup>
 
-            {/* Full Width Toggle */}
+            {/* Full Width Toggle - writes to element.styles.width */}
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">Full Width Button</Label>
               <Switch
                 checked={buttonFullWidth}
-                onCheckedChange={(checked) => updateBlockProps({ buttonFullWidth: checked })}
+                onCheckedChange={(checked) => updateButtonStyle({ 
+                  styles: { width: checked ? '100%' : undefined } 
+                })}
               />
             </div>
           </CollapsibleSection>
