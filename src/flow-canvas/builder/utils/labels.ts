@@ -20,8 +20,8 @@ export const blockTypeLabels: Record<BlockType, string> = {
   'text-block': 'Text',
   custom: 'Empty Section',
   booking: 'Booking',
-  'application-flow': 'Application',  // Unified name
-  'capture-flow-embed': 'Application',  // Renamed from "Application Embed"
+  'application-flow': 'Flow Container',  // Unified name - Typeform-style multi-step experience
+  'capture-flow-embed': 'Flow Container',  // @deprecated - use application-flow instead
   // Extended types
   feature: 'Feature',
   pricing: 'Pricing',
