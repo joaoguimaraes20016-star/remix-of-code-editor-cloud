@@ -146,52 +146,106 @@ const createFullApplicationBlock = (): Block => ({
 
 const createInlineQuestionBlock = (): Block => ({
   id: generateId(),
-  type: 'form-field',
+  type: 'application-flow',
   label: 'Question Screen',
-  elements: [
-    { id: generateId(), type: 'text', content: 'QUESTION SCREEN', props: { variant: 'tag' } },
-    { id: generateId(), type: 'heading', content: 'What is your biggest challenge?', props: { level: 2 } },
-    { id: generateId(), type: 'radio', content: 'Not enough leads', props: { name: 'challenge', value: 'leads' } },
-    { id: generateId(), type: 'radio', content: 'Low conversions', props: { name: 'challenge', value: 'conversions' } },
-    { id: generateId(), type: 'radio', content: "Can't scale", props: { name: 'challenge', value: 'scale' } },
-    { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', size: 'lg' } },
-  ],
-  props: { trackingId: '', intent: 'qualify' },
+  elements: [],
+  props: {
+    displayMode: 'one-at-a-time',
+    showProgress: false,
+    transition: 'fade',
+    steps: [
+      {
+        id: generateId(),
+        name: 'Your Challenge',
+        type: 'question',
+        settings: {
+          title: 'What is your biggest challenge?',
+          questionType: 'multiple-choice',
+          options: ['Not enough leads', 'Low conversions', "Can't scale"],
+          buttonText: 'Continue',
+          buttonColor: '#18181b',
+        },
+        elements: [],
+        navigation: { action: 'next' },
+      },
+      {
+        id: generateId(),
+        name: 'Thank You',
+        type: 'ending',
+        settings: {
+          title: "Thanks — we'll be in touch!",
+        },
+        elements: [],
+        navigation: { action: 'submit' },
+      },
+    ],
+  },
 });
 
 const createInlineOptinBlock = (): Block => ({
   id: generateId(),
-  type: 'form-field',
+  type: 'application-flow',
   label: 'Opt-In Form',
-  elements: [
-    { id: generateId(), type: 'heading', content: 'Get Instant Access', props: { level: 2 } },
-    { id: generateId(), type: 'text', content: 'Enter your details below.', props: { variant: 'subtext' } },
-    { id: generateId(), type: 'text', content: 'Name', props: { variant: 'label' } },
-    { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true, fieldKey: 'name', icon: 'user' } },
-    { id: generateId(), type: 'text', content: 'Email', props: { variant: 'label' } },
-    { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
-    { id: generateId(), type: 'button', content: 'Get Access', props: { variant: 'primary', size: 'lg' } },
-  ],
-  props: { trackingId: '', intent: 'capture' },
+  elements: [],
+  props: {
+    displayMode: 'one-at-a-time',
+    showProgress: false,
+    transition: 'fade',
+    steps: [
+      {
+        id: generateId(),
+        name: 'Get Access',
+        type: 'capture',
+        settings: {
+          title: 'Get Instant Access',
+          description: 'Enter your details below.',
+          collectName: true,
+          collectEmail: true,
+          collectPhone: false,
+          buttonText: 'Get Access',
+          buttonColor: '#18181b',
+        },
+        elements: [],
+        navigation: { action: 'submit' },
+      },
+    ],
+  },
 });
 
 const createConditionalQuestionBlock = (): Block => ({
   id: generateId(),
-  type: 'form-field',
+  type: 'application-flow',
   label: 'Conditional Question',
-  elements: [
-    { id: generateId(), type: 'heading', content: 'Tell us more...', props: { level: 2 } },
-    { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your answer...', required: true, fieldKey: 'conditional_answer' } },
-    { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', size: 'lg' } },
-  ],
-  props: { 
-    trackingId: '', 
-    intent: 'qualify',
-    visibility: {
-      conditions: [
-        { field: 'previous_field', operator: 'equals', value: '' }
-      ]
-    }
+  elements: [],
+  props: {
+    displayMode: 'one-at-a-time',
+    showProgress: false,
+    transition: 'fade',
+    steps: [
+      {
+        id: generateId(),
+        name: 'Tell Us More',
+        type: 'question',
+        settings: {
+          title: 'Tell us more...',
+          questionType: 'text',
+          buttonText: 'Continue',
+          buttonColor: '#18181b',
+        },
+        elements: [],
+        navigation: { action: 'next' },
+      },
+      {
+        id: generateId(),
+        name: 'Thank You',
+        type: 'ending',
+        settings: {
+          title: "Thanks — we'll be in touch!",
+        },
+        elements: [],
+        navigation: { action: 'submit' },
+      },
+    ],
   },
 });
 
