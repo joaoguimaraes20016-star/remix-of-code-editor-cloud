@@ -1264,15 +1264,23 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         // Border for outline mode
         const outlineBorderColor = isDarkTheme ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
         
+        // SINGLE VISUAL SURFACE RULE:
+        // - Outline mode: transparent bg + border, no shadow
+        // - Solid/Gradient mode: filled bg, NO border, optional shadow
         const customButtonStyle: React.CSSProperties = {
-          backgroundColor: buttonGradient ? undefined : buttonBg,
+          backgroundColor: isGradient ? undefined : buttonBg,
           background: buttonGradient,
           color: buttonTextColor,
-          boxShadow: buttonShadowStyle.boxShadow || defaultShadow,
-          borderWidth: isNavPill ? '1px' : (isOutlineMode ? '2px' : element.styles?.borderWidth),
-          borderColor: isNavPill ? (isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)') 
-            : (isOutlineMode ? outlineBorderColor : element.styles?.borderColor),
-          borderStyle: isNavPill || isOutlineMode ? 'solid' : (element.styles?.borderWidth ? 'solid' : undefined),
+          // Outline buttons get no shadow; filled buttons can have shadow
+          boxShadow: (isOutlineMode || isNavPill || isFooterLink || isGhostButton) 
+            ? 'none' 
+            : (buttonShadowStyle.boxShadow || defaultShadow),
+          // CRITICAL: Only outline mode gets border; filled buttons have NO border
+          borderWidth: isOutlineMode ? '2px' : (isNavPill ? '1px' : '0'),
+          borderColor: isOutlineMode 
+            ? outlineBorderColor 
+            : (isNavPill ? (isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)') : 'transparent'),
+          borderStyle: (isOutlineMode || isNavPill) ? 'solid' : 'none',
           borderRadius: isNavPill ? '9999px' : (element.styles?.borderRadius || '12px'),
           transition: `transform ${transitionDuration}ms ease, box-shadow ${transitionDuration}ms ease`,
           // Apply custom dimensions
@@ -1357,9 +1365,11 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 buttonWeightClass[buttonFontWeight],
                 isNavPill && 'rounded-full',
                 isFooterLink && 'text-left',
-                !isNavPill && !isFooterLink && "rounded-xl shadow-lg",
+                // Remove shadow-lg class - shadow is now fully controlled by inline style
+                !isNavPill && !isFooterLink && "rounded-xl",
                 "inline-flex items-center justify-center gap-2",
-                shadowClass,
+                // Only apply shadowClass if not outline mode (prevents class/style conflict)
+                !isOutlineMode && shadowClass,
                 // Apply selection ring to the actual button element
                 isSelected && 'builder-element-selected'
               )}

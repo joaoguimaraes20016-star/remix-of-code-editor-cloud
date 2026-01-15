@@ -268,37 +268,34 @@
     ring-color: hsl(var(--selection-block) / 0.5);
   }
   
-  .builder-element-selectable:hover {
-    @apply ring-1;
-    ring-color: hsl(var(--selection-element) / 0.5);
+  /* Element hover - use outline to avoid conflicting with button borders/shadows */
+  .builder-element-selectable:hover:not(.builder-element-selected) {
+    outline: 1px solid hsl(var(--selection-element) / 0.4);
+    outline-offset: 1px;
   }
 
-  /* Selected states - clearly differentiated */
+  /* Selected states - using outline to avoid conflicting with element shadows */
   .builder-selected {
-    @apply ring-2;
-    ring-color: hsl(var(--selection-element));
-    box-shadow: 0 0 0 3px hsl(var(--selection-element) / 0.12);
+    outline: 2px solid hsl(var(--selection-element));
+    outline-offset: 2px;
   }
   
   /* Section = Blue dashed outline */
   .builder-section-selected {
     outline: 2px dashed hsl(var(--selection-section));
     outline-offset: 3px;
-    box-shadow: 0 0 0 6px hsl(var(--selection-section) / 0.08);
   }
   
-  /* Block = Purple solid ring */
+  /* Block = Purple solid outline */
   .builder-block-selected {
-    @apply ring-2;
-    ring-color: hsl(var(--selection-block));
-    box-shadow: 0 0 0 3px hsl(var(--selection-block) / 0.12);
+    outline: 2px solid hsl(var(--selection-block));
+    outline-offset: 2px;
   }
   
-  /* Element = Pink solid ring */
+  /* Element = Pink solid ring - uses outline to avoid conflicting with button's boxShadow */
   .builder-element-selected {
-    @apply ring-2;
-    ring-color: hsl(var(--selection-element));
-    box-shadow: 0 0 0 3px hsl(var(--selection-element) / 0.15);
+    outline: 2px solid hsl(var(--selection-element));
+    outline-offset: 2px;
   }
   
   /* Parent hint when child selected - subtle, uses child's color */
@@ -318,11 +315,10 @@
     to { opacity: 1; }
   }
   
-  /* Multi-selection - uses element color */
+  /* Multi-selection - uses outline to avoid conflicting with button shadows */
   .builder-multi-selected {
-    @apply ring-2;
-    ring-color: hsl(var(--selection-element));
-    box-shadow: 0 0 0 3px hsl(var(--selection-element) / 0.12);
+    outline: 2px solid hsl(var(--selection-element));
+    outline-offset: 2px;
   }
   
   /* Click target */
