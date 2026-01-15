@@ -2,7 +2,11 @@ import { Block, Element, BlockType } from '../../types/infostack';
 import { generateId } from './helpers';
 
 /**
- * Lead Capture Block Templates
+ * @deprecated These utilities create standalone form-field blocks.
+ * For new code, use Application Flow blocks with settings-based steps instead.
+ * See CaptureFlowSelector.tsx and BlockPickerPanel.tsx for the unified approach.
+ * 
+ * Lead Capture Block Templates (Legacy)
  * Pre-configured blocks for common lead capture scenarios
  */
 
