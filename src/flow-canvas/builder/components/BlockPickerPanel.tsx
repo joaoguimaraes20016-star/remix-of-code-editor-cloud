@@ -512,6 +512,7 @@ interface CollapsibleCategoryProps {
   onAddBlock: (template: BlockTemplate, isSection: boolean, categoryId?: string) => void;
   isSection?: boolean;
   onOpenCaptureFlowSelector?: () => void;
+  activeApplicationFlowBlockId?: string | null;
 }
 
 const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({ 
@@ -519,14 +520,16 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
   onAddBlock,
   isSection = false,
   onOpenCaptureFlowSelector,
+  activeApplicationFlowBlockId,
 }) => {
   const [isOpen, setIsOpen] = useState(category.defaultOpen ?? false);
   const blocks = 'blocks' in category ? category.blocks : category.sections;
   const hint = 'hint' in category ? category.hint : undefined;
   const showCaptureFlowCTA = isSection && category.id === 'capture' && onOpenCaptureFlowSelector;
 
-  // Check if this category routes to Application Flow
+  // Check if this category routes to Application Flow (only show badge when flow exists)
   const isFlowCategory = APPLICATION_FLOW_CATEGORIES.includes(category.id);
+  const showFlowBadge = isFlowCategory && activeApplicationFlowBlockId;
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -542,7 +545,7 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
             <span className="text-[10px] text-builder-text-dim bg-builder-surface-active px-1.5 py-0.5 rounded">
               {blocks.length}
             </span>
-            {isFlowCategory && (
+            {showFlowBadge && (
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
                 → Flow
               </span>
@@ -861,6 +864,11 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                             Section
                           </span>
                         )}
+                        {activeApplicationFlowBlockId && template.categoryId && APPLICATION_FLOW_CATEGORIES.includes(template.categoryId) && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
+                            → Flow
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-builder-text-dim truncate">{template.description}</div>
                     </div>
@@ -878,6 +886,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 category={category}
                 onAddBlock={handleAddBlock}
                 isSection={false}
+                activeApplicationFlowBlockId={activeApplicationFlowBlockId}
               />
             ))}
           </div>
@@ -891,6 +900,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 onAddBlock={handleAddBlock}
                 isSection={true}
                 onOpenCaptureFlowSelector={() => setShowCaptureFlowSelector(true)}
+                activeApplicationFlowBlockId={activeApplicationFlowBlockId}
               />
             ))}
           </div>
