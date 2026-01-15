@@ -19,6 +19,9 @@ import {
   Mail,
   Phone,
   User,
+  Circle,
+  Square,
+  Maximize2,
 } from 'lucide-react';
 import {
   getTitleSizeClass,
@@ -34,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 import {
   Select,
   SelectContent,
@@ -41,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ColorPickerPopover } from '../modals';
 
 const stepTypeIcons: Record<ApplicationStepType, React.ReactNode> = {
   welcome: <Sparkles className="w-4 h-4" />,
@@ -568,7 +573,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                     : 'bg-background text-muted-foreground hover:bg-accent'
                 )}
               >
-                Primary
+                Filled
               </button>
               <button
                 onClick={() => updateSettings({ buttonStyle: 'outline' })}
@@ -581,58 +586,225 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               >
                 Outline
               </button>
+              <button
+                onClick={() => updateSettings({ buttonStyle: 'ghost' })}
+                className={cn(
+                  'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                  stepSettings.buttonStyle === 'ghost'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                Ghost
+              </button>
             </div>
           </div>
-
-          {/* Input Style (for question steps) */}
-          {step.type === 'question' && (
-            <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground uppercase">Input Style</Label>
-              <div className="flex rounded-md overflow-hidden border border-border">
-                <button
-                  onClick={() => updateSettings({ inputStyle: 'rounded' })}
-                  className={cn(
-                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
-                    (stepSettings.inputStyle || 'rounded') === 'rounded'
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  Rounded
-                </button>
-                <button
-                  onClick={() => updateSettings({ inputStyle: 'square' })}
-                  className={cn(
-                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
-                    stepSettings.inputStyle === 'square'
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  Square
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Button Color */}
           <div className="space-y-1.5">
             <Label className="text-[10px] text-muted-foreground uppercase">Button Color</Label>
-            <div className="flex gap-2 flex-wrap">
-              {['#18181b', '#3f3f46', '#71717a', '#0ea5e9', '#10b981', '#ef4444'].map((color) => (
-                <button
-                  key={color}
-                  onClick={() => updateSettings({ buttonColor: color })}
-                  className={cn(
-                    'w-7 h-7 rounded-md transition-all',
-                    (stepSettings.buttonColor || '#18181b') === color
-                      ? 'ring-2 ring-offset-2 ring-foreground' 
-                      : 'hover:scale-110'
-                  )}
-                  style={{ backgroundColor: color }}
+            <ColorPickerPopover
+              color={stepSettings.buttonColor || '#18181b'}
+              onChange={(color) => updateSettings({ buttonColor: color })}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                <div 
+                  className="w-6 h-6 rounded border border-border"
+                  style={{ backgroundColor: stepSettings.buttonColor || '#18181b' }}
                 />
+                <span className="text-xs text-foreground font-mono">{stepSettings.buttonColor || '#18181b'}</span>
+              </button>
+            </ColorPickerPopover>
+          </div>
+
+          {/* Button Text Color */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-muted-foreground uppercase">Button Text Color</Label>
+            <ColorPickerPopover
+              color={stepSettings.buttonTextColor || '#ffffff'}
+              onChange={(color) => updateSettings({ buttonTextColor: color })}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                <div 
+                  className="w-6 h-6 rounded border border-border"
+                  style={{ backgroundColor: stepSettings.buttonTextColor || '#ffffff' }}
+                />
+                <span className="text-xs text-foreground font-mono">{stepSettings.buttonTextColor || '#ffffff'}</span>
+              </button>
+            </ColorPickerPopover>
+          </div>
+
+          {/* Button Size */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-muted-foreground uppercase">Button Size</Label>
+            <div className="flex rounded-md overflow-hidden border border-border">
+              {(['sm', 'md', 'lg'] as const).map((size) => (
+                <button
+                  key={size}
+                  onClick={() => updateSettings({ buttonSize: size })}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors uppercase',
+                    (stepSettings.buttonSize || 'md') === size
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  {size}
+                </button>
               ))}
             </div>
+          </div>
+
+          {/* Button Border Radius */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-muted-foreground uppercase">Button Corners</Label>
+            <div className="flex rounded-md overflow-hidden border border-border">
+              <button
+                onClick={() => updateSettings({ buttonRadius: 'none' })}
+                className={cn(
+                  'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
+                  (stepSettings.buttonRadius || 'rounded') === 'none'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                <Square className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => updateSettings({ buttonRadius: 'rounded' })}
+                className={cn(
+                  'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
+                  (stepSettings.buttonRadius || 'rounded') === 'rounded'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                <div className="w-3.5 h-3.5 border-2 border-current rounded" />
+              </button>
+              <button
+                onClick={() => updateSettings({ buttonRadius: 'full' })}
+                className={cn(
+                  'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
+                  stepSettings.buttonRadius === 'full'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                <Circle className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Button Full Width */}
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] text-muted-foreground uppercase">Full Width Button</Label>
+            <Switch
+              checked={stepSettings.buttonFullWidth === true}
+              onCheckedChange={(checked) => updateSettings({ buttonFullWidth: checked })}
+            />
+          </div>
+
+          <div className="border-t border-border my-4 pt-4">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase mb-3">Answer Options</p>
+          </div>
+
+          {/* Input/Answer Style (for question steps) */}
+          {step.type === 'question' && (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] text-muted-foreground uppercase">Answer Style</Label>
+                <div className="flex rounded-md overflow-hidden border border-border">
+                  <button
+                    onClick={() => updateSettings({ inputStyle: 'rounded' })}
+                    className={cn(
+                      'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                      (stepSettings.inputStyle || 'rounded') === 'rounded'
+                        ? 'bg-foreground text-background'
+                        : 'bg-background text-muted-foreground hover:bg-accent'
+                    )}
+                  >
+                    Rounded
+                  </button>
+                  <button
+                    onClick={() => updateSettings({ inputStyle: 'square' })}
+                    className={cn(
+                      'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                      stepSettings.inputStyle === 'square'
+                        ? 'bg-foreground text-background'
+                        : 'bg-background text-muted-foreground hover:bg-accent'
+                    )}
+                  >
+                    Square
+                  </button>
+                  <button
+                    onClick={() => updateSettings({ inputStyle: 'pill' })}
+                    className={cn(
+                      'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                      stepSettings.inputStyle === 'pill'
+                        ? 'bg-foreground text-background'
+                        : 'bg-background text-muted-foreground hover:bg-accent'
+                    )}
+                  >
+                    Pill
+                  </button>
+                </div>
+              </div>
+
+              {/* Answer Background Color */}
+              <div className="space-y-1.5">
+                <Label className="text-[10px] text-muted-foreground uppercase">Answer Background</Label>
+                <ColorPickerPopover
+                  color={stepSettings.answerBgColor || '#ffffff'}
+                  onChange={(color) => updateSettings({ answerBgColor: color })}
+                >
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                    <div 
+                      className="w-6 h-6 rounded border border-border"
+                      style={{ backgroundColor: stepSettings.answerBgColor || '#ffffff' }}
+                    />
+                    <span className="text-xs text-foreground font-mono">{stepSettings.answerBgColor || '#ffffff'}</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+
+              {/* Answer Border Color */}
+              <div className="space-y-1.5">
+                <Label className="text-[10px] text-muted-foreground uppercase">Answer Border</Label>
+                <ColorPickerPopover
+                  color={stepSettings.answerBorderColor || '#e5e7eb'}
+                  onChange={(color) => updateSettings({ answerBorderColor: color })}
+                >
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                    <div 
+                      className="w-6 h-6 rounded border border-border"
+                      style={{ backgroundColor: stepSettings.answerBorderColor || '#e5e7eb' }}
+                    />
+                    <span className="text-xs text-foreground font-mono">{stepSettings.answerBorderColor || '#e5e7eb'}</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+
+              {/* Selected Answer Color */}
+              <div className="space-y-1.5">
+                <Label className="text-[10px] text-muted-foreground uppercase">Selected State Color</Label>
+                <ColorPickerPopover
+                  color={stepSettings.answerSelectedColor || '#3b82f6'}
+                  onChange={(color) => updateSettings({ answerSelectedColor: color })}
+                >
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                    <div 
+                      className="w-6 h-6 rounded border border-border"
+                      style={{ backgroundColor: stepSettings.answerSelectedColor || '#3b82f6' }}
+                    />
+                    <span className="text-xs text-foreground font-mono">{stepSettings.answerSelectedColor || '#3b82f6'}</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            </>
+          )}
+
+          <div className="border-t border-border my-4 pt-4">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase mb-3">Layout</p>
           </div>
 
           {/* Spacing */}
@@ -649,6 +821,25 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                 <SelectItem value="compact" className="text-xs">Compact</SelectItem>
                 <SelectItem value="normal" className="text-xs">Normal</SelectItem>
                 <SelectItem value="relaxed" className="text-xs">Spacious</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Title Size */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-muted-foreground uppercase">Title Size</Label>
+            <Select 
+              value={stepSettings.titleSize || 'lg'}
+              onValueChange={(value) => updateSettings({ titleSize: value as ApplicationFlowStepSettings['titleSize'] })}
+            >
+              <SelectTrigger className="h-8 text-xs bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="sm" className="text-xs">Small</SelectItem>
+                <SelectItem value="md" className="text-xs">Medium</SelectItem>
+                <SelectItem value="lg" className="text-xs">Large</SelectItem>
+                <SelectItem value="xl" className="text-xs">X-Large</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -38,6 +38,8 @@ interface ApplicationFlowCardProps {
   onUpdateBlock: (updates: Partial<Block>) => void;
   readOnly?: boolean;
   selectedStepId?: string | null;
+  /** Called when a specific step is clicked (for direct step selection) */
+  onSelectStep?: (stepId: string) => void;
 }
 
 export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
@@ -47,6 +49,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   onUpdateBlock,
   readOnly = false,
   selectedStepId,
+  onSelectStep,
 }) => {
   const settings = block.props as Partial<ApplicationFlowSettings>;
   const steps = settings?.steps || [];
@@ -435,10 +438,21 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   const blockBorder = blockStyle.border;
   const blockShadow = blockStyle.boxShadow;
 
+  // Handle step click - select that specific step for editing
+  const handleStepClick = (e: React.MouseEvent, stepId: string) => {
+    e.stopPropagation();
+    if (onSelectStep) {
+      onSelectStep(stepId);
+    } else {
+      // Fallback to selecting the entire block if no step handler
+      onSelect();
+    }
+  };
+
   return (
     <div
       className={cn(
-        'w-full rounded-lg transition-all duration-200 cursor-pointer overflow-hidden',
+        'w-full rounded-lg transition-all duration-200 overflow-hidden',
         isSelected 
           ? 'ring-2 ring-primary ring-offset-2' 
           : 'hover:ring-1 hover:ring-primary/30'
@@ -451,18 +465,41 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
       }}
       onClick={onSelect}
     >
-      {renderStepContent()}
+      {/* Clickable step wrapper for direct step selection */}
+      <div
+        className={cn(
+          'cursor-pointer transition-all',
+          activeStep && selectedStepId === activeStep.id && 'ring-1 ring-inset ring-primary/50'
+        )}
+        onClick={(e) => activeStep && handleStepClick(e, activeStep.id)}
+      >
+        {renderStepContent()}
+      </div>
       
-      {/* Step indicator - subtle, at bottom */}
-      {activeStep && steps.length > 1 && (
+      {/* Step navigation bar - shows all steps for quick switching */}
+      {steps.length > 1 && (
         <div 
-          className="px-4 py-2 text-xs text-center opacity-50"
+          className="flex items-center justify-center gap-1 px-4 py-2"
           style={{ 
             borderTop: `1px solid ${flowInputBorder}`,
-            color: flowTextColor 
           }}
         >
-          Editing: {activeStep.name}
+          {steps.map((step, index) => (
+            <button
+              key={step.id}
+              onClick={(e) => handleStepClick(e, step.id)}
+              className={cn(
+                'w-6 h-6 rounded-full text-[10px] font-medium transition-all',
+                selectedStepId === step.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted hover:bg-muted-foreground/20'
+              )}
+              style={{ color: selectedStepId === step.id ? undefined : flowTextColor }}
+              title={step.name}
+            >
+              {index + 1}
+            </button>
+          ))}
         </div>
       )}
     </div>

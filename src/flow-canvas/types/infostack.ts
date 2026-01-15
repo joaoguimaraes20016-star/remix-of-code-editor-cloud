@@ -63,7 +63,11 @@ export interface ApplicationFlowStepSettings {
   description?: string;
   buttonText?: string;
   buttonColor?: string;
-  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary';
+  buttonTextColor?: string;
+  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary' | 'ghost';
+  buttonSize?: 'sm' | 'md' | 'lg';
+  buttonRadius?: 'none' | 'rounded' | 'full';
+  buttonFullWidth?: boolean;
   questionType?: QuestionType;
   options?: string[];
   required?: boolean;
@@ -73,12 +77,16 @@ export interface ApplicationFlowStepSettings {
   collectPhone?: boolean;
   align?: 'left' | 'center' | 'right';
   spacing?: 'compact' | 'normal' | 'relaxed';
-  inputStyle?: 'default' | 'minimal' | 'rounded' | 'square';
+  inputStyle?: 'default' | 'minimal' | 'rounded' | 'square' | 'pill';
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   // Scale question type settings
   scaleMax?: number;
   scaleMinLabel?: string;
   scaleMaxLabel?: string;
+  // Answer/option styling
+  answerBgColor?: string;
+  answerBorderColor?: string;
+  answerSelectedColor?: string;
 }
 
 export interface ApplicationFlowStep {
