@@ -1175,12 +1175,22 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             handleClearSelection();
           }
         } else if (selection.type === 'block' && selection.path.length >= 2) {
-          // Step up from block to stack/section
-          const stackIndex = selection.path.findIndex((p, i) => p === 'stack' && selection.path[i + 1]);
-          if (stackIndex !== -1) {
-            const stackId = selection.path[stackIndex + 1];
-            const stackPath = selection.path.slice(0, stackIndex + 2);
-            handleSelect({ type: 'stack', id: stackId, path: stackPath });
+          // Step up from block to frame (section) - skip stack as it's not inspectable
+          const frameIndex = selection.path.findIndex((p, i) => p === 'frame' && selection.path[i + 1]);
+          if (frameIndex !== -1) {
+            const frameId = selection.path[frameIndex + 1];
+            const framePath = selection.path.slice(0, frameIndex + 2);
+            handleSelect({ type: 'frame', id: frameId, path: framePath });
+          } else {
+            handleClearSelection();
+          }
+        } else if (selection.type === 'stack' && selection.path.length >= 2) {
+          // CRITICAL: Stack is not inspectable - redirect to parent frame
+          const frameIndex = selection.path.findIndex((p, i) => p === 'frame' && selection.path[i + 1]);
+          if (frameIndex !== -1) {
+            const frameId = selection.path[frameIndex + 1];
+            const framePath = selection.path.slice(0, frameIndex + 2);
+            handleSelect({ type: 'frame', id: frameId, path: framePath });
           } else {
             handleClearSelection();
           }
