@@ -9,6 +9,7 @@ import { VideoStep } from "@/components/funnel-public/VideoStep";
 import { ThankYouStep } from "@/components/funnel-public/ThankYouStep";
 import { OptInStep } from "@/components/funnel-public/OptInStep";
 import { EmbedStep } from "@/components/funnel-public/EmbedStep";
+import { ApplicationFlowPublicStep } from "@/components/funnel-public/ApplicationFlowPublicStep";
 
 type StepContent = Record<string, any>;
 
@@ -156,6 +157,24 @@ export const STEP_REGISTRY: Record<StepType, StepRegistryEntry> = {
       <>
         {debugBadge}
         <ThankYouStep {...(commonProps as any)} />
+      </>
+    ),
+  },
+  application_flow: {
+    type: "application_flow",
+    isQuestion: true, // Contains interactive content
+    previewElementOrder: ["headline", "application_flow"],
+    renderPublic: ({ commonProps, debugBadge, consent }) => (
+      <>
+        {debugBadge}
+        <ApplicationFlowPublicStep
+          {...(commonProps as any)}
+          termsUrl={consent?.termsUrl || ""}
+          showConsentCheckbox={consent?.showConsentCheckbox || false}
+          consentChecked={consent?.consentChecked || false}
+          consentError={consent?.consentError || null}
+          onConsentChange={consent?.onConsentChange || (() => {})}
+        />
       </>
     ),
   },

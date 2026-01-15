@@ -12,7 +12,8 @@ export type StepType =
   | 'video'
   | 'thank_you'
   | 'opt_in'
-  | 'embed';
+  | 'embed'
+  | 'application_flow'; // Unified Application Engine block
 
 export type LeadStatus = 'visitor' | 'partial' | 'lead' | 'booked';
 

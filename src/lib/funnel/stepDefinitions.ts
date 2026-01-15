@@ -247,6 +247,31 @@ export const STEP_DEFINITIONS: Record<StepType, StepDefinition> = {
       defaultIntent: 'complete',
     },
   },
+
+  application_flow: {
+    type: 'application_flow',
+    label: 'Application Flow',
+    description: 'Multi-step interactive flow (Typeform-style)',
+    capabilities: {
+      canCreateLead: true,
+      canFinalizeLead: true,
+      canEmitEvents: true,
+      canSchedule: false,
+    },
+    fields: {
+      required: [], // Dynamic based on contained steps
+      optional: ['email', 'phone', 'name'],
+      extracted: ['email', 'phone', 'name'],
+    },
+    validation: {
+      requiresInput: true,
+    },
+    builder: {
+      intentLocked: false,
+      allowedIntents: ['capture', 'collect'],
+      defaultIntent: 'capture',
+    },
+  },
 };
 
 /**
