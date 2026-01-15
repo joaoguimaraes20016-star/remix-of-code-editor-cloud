@@ -77,8 +77,8 @@ const blockTemplates: BlockTemplate[] = [
   {
     id: 'form',
     type: 'application-flow' as BlockType,
-    name: 'Lead Capture Form',
-    description: 'Collect name, email & phone',
+    name: 'Flow Container', // Unified name - Typeform-style multi-step experience
+    description: 'Typeform-style multi-step form',
     icon: <FormInput className="w-5 h-5" />,
     category: 'form',
     preview: () => ({
