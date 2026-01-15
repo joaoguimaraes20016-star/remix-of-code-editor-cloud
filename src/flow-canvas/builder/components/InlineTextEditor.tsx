@@ -52,6 +52,8 @@ interface InlineTextEditorProps {
   onEditingChange?: (isEditing: boolean) => void;
   /** Unique element ID for inline edit context registration */
   elementId?: string;
+  /** Additional inline styles for the container */
+  style?: React.CSSProperties;
 }
 
 // Needs to accept refs because dnd-kit wrappers may clone children and attach a ref.
@@ -65,6 +67,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   initialStyles,
   onEditingChange,
   elementId,
+  style: externalStyle,
 }, forwardedRef) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
@@ -2286,7 +2289,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             contentRef.current?.blur();
           }
         }}
-        style={getInlineStyles()}
+        style={{ ...getInlineStyles(), ...externalStyle }}
         className={`
           outline-none transition-all duration-150
           ${getStyleClasses()}

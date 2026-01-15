@@ -311,22 +311,17 @@ const actionBlocks: BlockTemplate[] = [
 
 const blockCategories: BlockCategory[] = [
   {
-    id: 'questions',
-    label: 'Application Questions',
-    hint: 'One question per section converts 2-3x better',
-    blocks: applicationQuestions,
-    defaultOpen: true, // First category always open
-  },
-  {
-    id: 'capture',
-    label: 'Capture Fields',
-    blocks: captureFields,
-    defaultOpen: false,
-  },
-  {
     id: 'content',
-    label: 'Content',
+    label: 'Essentials',
+    hint: 'Core content blocks for your page',
     blocks: contentBlocks,
+    defaultOpen: true, // First category always open - prioritize content blocks
+  },
+  {
+    id: 'application-flow',
+    label: 'Application Flow',
+    hint: 'Build multi-step experiences',
+    blocks: [...applicationQuestions, ...captureFields],
     defaultOpen: false,
   },
   {

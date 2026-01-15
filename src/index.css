@@ -80,6 +80,18 @@
     --sidebar-accent-foreground: 210 20% 96%;
     --sidebar-border: 220 12% 16%;
     --sidebar-ring: 45 70% 50%;
+    
+    /* Builder-specific tokens - always dark for consistent editor UI */
+    --builder-bg: 220 15% 10%;
+    --builder-surface: 220 15% 14%;
+    --builder-surface-hover: 220 15% 18%;
+    --builder-surface-active: 220 15% 22%;
+    --builder-border: 220 12% 20%;
+    --builder-border-subtle: 220 12% 16%;
+    --builder-text: 210 20% 96%;
+    --builder-text-secondary: 220 10% 75%;
+    --builder-text-muted: 220 10% 55%;
+    --builder-accent: 217 80% 55%;
   }
 
   .dark {

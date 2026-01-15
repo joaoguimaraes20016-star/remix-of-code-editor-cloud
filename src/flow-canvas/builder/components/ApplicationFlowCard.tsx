@@ -1,5 +1,5 @@
 import React from 'react';
-import { Block, ApplicationFlowSettings, ApplicationFlowStep } from '../../types/infostack';
+import { Block, ApplicationFlowSettings, ApplicationFlowStep, ApplicationFlowBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
 import { InlineTextEditor } from './InlineTextEditor';
 import {
@@ -10,6 +10,26 @@ import {
   getButtonClasses,
   getButtonStyle,
 } from '../utils/stepRenderHelpers';
+
+// Convert ApplicationFlowBackground to CSS string
+const backgroundToCSS = (bg?: ApplicationFlowBackground): string => {
+  if (!bg) return '#ffffff';
+  
+  switch (bg.type) {
+    case 'solid':
+      return bg.color || '#ffffff';
+    case 'gradient':
+      if (!bg.gradient) return '#ffffff';
+      const stops = bg.gradient.stops.map(s => `${s.color} ${s.position}%`).join(', ');
+      return bg.gradient.type === 'radial' 
+        ? `radial-gradient(circle, ${stops})`
+        : `linear-gradient(${bg.gradient.angle}deg, ${stops})`;
+    case 'image':
+      return bg.imageUrl ? `url(${bg.imageUrl}) center/cover no-repeat` : '#ffffff';
+    default:
+      return '#ffffff';
+  }
+};
 
 interface ApplicationFlowCardProps {
   block: Block;
@@ -30,6 +50,12 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
 }) => {
   const settings = block.props as Partial<ApplicationFlowSettings>;
   const steps = settings?.steps || [];
+  
+  // Independent styling (not affected by global theme)
+  const flowBackground = settings.background;
+  const flowTextColor = settings.textColor || '#000000';
+  const flowInputBg = settings.inputBackground || '#ffffff';
+  const flowInputBorder = settings.inputBorderColor || '#e5e7eb';
   
   // Determine active step (default to first step / welcome)
   const activeStep = selectedStepId 
@@ -78,7 +104,8 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             value={s.title || 'Apply Now'}
             onChange={(content) => updateStepSetting(stepId, 'title', content)}
             placeholder="Apply Now"
-            className={cn(getTitleSizeClass(s.titleSize), 'font-bold text-foreground inline-block')}
+            className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
+            style={{ color: flowTextColor }}
             elementType="heading"
             elementId={`step-${stepId}-title`}
           />
@@ -89,7 +116,8 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             value={s.description || 'Answer a few quick questions to see if we are a good fit.'}
             onChange={(content) => updateStepSetting(stepId, 'description', content)}
             placeholder="Answer a few quick questions to see if we are a good fit."
-            className="text-sm text-muted-foreground inline-block"
+            className="text-sm inline-block opacity-70"
+            style={{ color: flowTextColor }}
             elementType="text"
             elementId={`step-${stepId}-desc`}
           />
@@ -124,12 +152,13 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           value={s.title || 'Your question here'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
           placeholder="What's your biggest challenge?"
-          className={cn(getTitleSizeClass(s.titleSize), 'font-bold text-foreground inline-block')}
+          className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
+          style={{ color: flowTextColor }}
           elementType="heading"
           elementId={`step-${step.id}-title`}
         />
         {s.description && (
-          <p className="text-sm text-muted-foreground mt-2">{s.description}</p>
+          <p className="text-sm mt-2 opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
         )}
         
         {/* Multiple Choice Options */}
@@ -139,9 +168,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               <div 
                 key={i} 
                 className={cn(
-                  'px-4 py-3 border border-border text-left text-sm text-foreground hover:border-primary/50 cursor-pointer transition-colors bg-background',
+                  'px-4 py-3 text-left text-sm cursor-pointer transition-colors',
                   inputStyleClass
                 )}
+                style={{ 
+                  backgroundColor: flowInputBg, 
+                  borderColor: flowInputBorder, 
+                  borderWidth: '1px', 
+                  borderStyle: 'solid',
+                  color: flowTextColor 
+                }}
               >
                 {option}
               </div>
@@ -154,9 +190,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           <div className="mt-6 max-w-md w-full">
             <textarea 
               className={cn(
-                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground resize-none',
+                'w-full px-4 py-3 text-sm resize-none',
                 inputStyleClass
               )}
+              style={{ 
+                backgroundColor: flowInputBg, 
+                borderColor: flowInputBorder, 
+                borderWidth: '1px', 
+                borderStyle: 'solid',
+                color: flowTextColor 
+              }}
               placeholder="Type your answer..."
               rows={3}
               disabled
@@ -169,14 +212,21 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           <div className="mt-6 max-w-md w-full">
             <div 
               className={cn(
-                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground flex items-center justify-between',
+                'w-full px-4 py-3 text-sm flex items-center justify-between',
                 inputStyleClass
               )}
+              style={{ 
+                backgroundColor: flowInputBg, 
+                borderColor: flowInputBorder, 
+                borderWidth: '1px', 
+                borderStyle: 'solid',
+                color: flowTextColor 
+              }}
             >
-              <span className="text-muted-foreground">
+              <span className="opacity-60">
                 {s.options?.[0] || 'Select an option...'}
               </span>
-              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
@@ -191,15 +241,22 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 <div
                   key={num}
                   className={cn(
-                    'w-10 h-10 flex items-center justify-center border border-border text-sm font-medium cursor-pointer hover:border-primary hover:bg-primary/10 transition-colors',
+                    'w-10 h-10 flex items-center justify-center text-sm font-medium cursor-pointer transition-colors',
                     inputStyleClass
                   )}
+                  style={{ 
+                    backgroundColor: flowInputBg, 
+                    borderColor: flowInputBorder, 
+                    borderWidth: '1px', 
+                    borderStyle: 'solid',
+                    color: flowTextColor 
+                  }}
                 >
                   {num}
                 </div>
               ))}
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+            <div className="flex justify-between text-xs mt-2 opacity-60" style={{ color: flowTextColor }}>
               <span>{s.scaleMinLabel || 'Not at all'}</span>
               <span>{s.scaleMaxLabel || 'Extremely'}</span>
             </div>
@@ -213,9 +270,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               <div 
                 key={option} 
                 className={cn(
-                  'px-4 py-3 border border-border text-left text-sm text-foreground hover:border-primary/50 cursor-pointer transition-colors bg-background',
+                  'px-4 py-3 text-left text-sm cursor-pointer transition-colors',
                   inputStyleClass
                 )}
+                style={{ 
+                  backgroundColor: flowInputBg, 
+                  borderColor: flowInputBorder, 
+                  borderWidth: '1px', 
+                  borderStyle: 'solid',
+                  color: flowTextColor 
+                }}
               >
                 {option}
               </div>
@@ -251,20 +315,28 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           value={s.title || 'Where should we send your results?'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
           placeholder="Where should we send your results?"
-          className={cn(getTitleSizeClass(s.titleSize), 'font-bold text-foreground inline-block')}
+          className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
+          style={{ color: flowTextColor }}
           elementType="heading"
           elementId={`step-${step.id}-title`}
         />
         {s.description && (
-          <p className="text-sm text-muted-foreground mt-2">{s.description}</p>
+          <p className="text-sm mt-2 opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
         )}
         <div className="mt-6 space-y-3 max-w-md w-full">
           {showName && (
             <input 
               className={cn(
-                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground',
+                'w-full px-4 py-3 text-sm',
                 inputStyleClass
               )}
+              style={{ 
+                backgroundColor: flowInputBg, 
+                borderColor: flowInputBorder, 
+                borderWidth: '1px', 
+                borderStyle: 'solid',
+                color: flowTextColor 
+              }}
               placeholder="Your name" 
               disabled
             />
@@ -272,9 +344,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           {showEmail && (
             <input 
               className={cn(
-                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground',
+                'w-full px-4 py-3 text-sm',
                 inputStyleClass
               )}
+              style={{ 
+                backgroundColor: flowInputBg, 
+                borderColor: flowInputBorder, 
+                borderWidth: '1px', 
+                borderStyle: 'solid',
+                color: flowTextColor 
+              }}
               placeholder="Your email" 
               disabled
             />
@@ -282,9 +361,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           {showPhone && (
             <input 
               className={cn(
-                'w-full px-4 py-3 border border-border text-sm bg-background text-foreground',
+                'w-full px-4 py-3 text-sm',
                 inputStyleClass
               )}
+              style={{ 
+                backgroundColor: flowInputBg, 
+                borderColor: flowInputBorder, 
+                borderWidth: '1px', 
+                borderStyle: 'solid',
+                color: flowTextColor 
+              }}
               placeholder="Your phone" 
               disabled
             />
@@ -312,12 +398,13 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           value={s.title || 'Thanks — we\'ll be in touch!'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
           placeholder="Thanks for applying!"
-          className={cn(getTitleSizeClass(s.titleSize), 'font-bold text-foreground inline-block')}
+          className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
+          style={{ color: flowTextColor }}
           elementType="heading"
           elementId={`step-${step.id}-title`}
         />
         {s.description && (
-          <p className="text-sm text-muted-foreground mt-2">{s.description}</p>
+          <p className="text-sm mt-2 opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
         )}
       </div>
     );
@@ -342,21 +429,39 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     }
   };
 
+  // Get block-level styling
+  const blockStyle = block.styles || {};
+  const blockBorderRadius = blockStyle.borderRadius;
+  const blockBorder = blockStyle.border;
+  const blockShadow = blockStyle.boxShadow;
+
   return (
     <div
       className={cn(
-        'w-full rounded-lg transition-all duration-200 cursor-pointer overflow-hidden bg-background',
+        'w-full rounded-lg transition-all duration-200 cursor-pointer overflow-hidden',
         isSelected 
           ? 'ring-2 ring-primary ring-offset-2' 
           : 'hover:ring-1 hover:ring-primary/30'
       )}
+      style={{
+        background: backgroundToCSS(flowBackground),
+        borderRadius: blockBorderRadius || undefined,
+        border: blockBorder || undefined,
+        boxShadow: blockShadow || undefined,
+      }}
       onClick={onSelect}
     >
       {renderStepContent()}
       
       {/* Step indicator - subtle, at bottom */}
       {activeStep && steps.length > 1 && (
-        <div className="border-t border-border/50 px-4 py-2 text-xs text-muted-foreground text-center">
+        <div 
+          className="px-4 py-2 text-xs text-center opacity-50"
+          style={{ 
+            borderTop: `1px solid ${flowInputBorder}`,
+            color: flowTextColor 
+          }}
+        >
           Editing: {activeStep.name}
         </div>
       )}

@@ -90,11 +90,28 @@ export interface ApplicationFlowStep {
   };
 }
 
+// Background value type for Application Flow (same structure as BackgroundValue)
+export interface ApplicationFlowBackground {
+  type: 'solid' | 'gradient' | 'image';
+  color?: string;
+  gradient?: {
+    type: 'linear' | 'radial';
+    angle: number;
+    stops: Array<{ color: string; position: number }>;
+  };
+  imageUrl?: string;
+}
+
 export interface ApplicationFlowSettings {
   displayMode: 'one-at-a-time' | 'all-visible';
   showProgress: boolean;
   transition: 'slide-up' | 'slide-left' | 'fade' | 'none';
   steps: ApplicationFlowStep[];
+  // Independent styling (not affected by global light/dark theme)
+  background?: ApplicationFlowBackground;
+  textColor?: string;
+  inputBackground?: string;
+  inputBorderColor?: string;
 }
 
 // Conditional visibility rule
