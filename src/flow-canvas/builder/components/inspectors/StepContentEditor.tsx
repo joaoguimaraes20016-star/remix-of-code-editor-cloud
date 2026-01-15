@@ -22,6 +22,12 @@ import {
   Circle,
   Square,
   Maximize2,
+  ArrowRight,
+  Layers,
+  Send,
+  ExternalLink,
+  Hash,
+  Download,
 } from 'lucide-react';
 import {
   getTitleSizeClass,
@@ -46,6 +52,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
+import type { ButtonActionType } from '../modals/ButtonActionModal';
 
 const stepTypeIcons: Record<ApplicationStepType, React.ReactNode> = {
   welcome: <Sparkles className="w-4 h-4" />,
@@ -515,6 +522,79 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
               className="h-8 text-xs bg-background border-border"
             />
           </div>
+          
+          {/* Button Action - What happens when button is clicked */}
+          {step.type !== 'ending' && (
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-muted-foreground uppercase">Button Action</Label>
+              {(() => {
+                const buttonAction = stepSettings.buttonAction as { type: ButtonActionType; value?: string } | undefined;
+                const actionType = buttonAction?.type || 'next-step';
+                const actionValue = buttonAction?.value || '';
+                
+                const handleActionChange = (type: ButtonActionType, value?: string) => {
+                  updateSettings({ buttonAction: { type, value } });
+                };
+                
+                // Get available steps for go-to-step action (exclude current step)
+                const availableSteps = allSteps.filter(s => s.id !== step.id);
+
+                return (
+                  <div className="space-y-2">
+                    {/* Primary Action Types */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { type: 'next-step' as ButtonActionType, label: 'Next Step', icon: <ArrowRight className="w-3 h-3" /> },
+                        { type: 'go-to-step' as ButtonActionType, label: 'Go to Step', icon: <Layers className="w-3 h-3" /> },
+                        { type: 'submit' as ButtonActionType, label: 'Submit', icon: <Send className="w-3 h-3" /> },
+                        { type: 'url' as ButtonActionType, label: 'Open URL', icon: <ExternalLink className="w-3 h-3" /> },
+                      ].map((action) => (
+                        <button
+                          key={action.type}
+                          onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
+                          className={cn(
+                            'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
+                            actionType === action.type
+                              ? 'bg-foreground text-background'
+                              : 'bg-muted text-muted-foreground hover:bg-accent'
+                          )}
+                        >
+                          {action.icon}
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Step Selector for go-to-step */}
+                    {actionType === 'go-to-step' && availableSteps.length > 0 && (
+                      <Select value={actionValue} onValueChange={(v) => handleActionChange('go-to-step', v)}>
+                        <SelectTrigger className="h-8 text-xs bg-background border-border">
+                          <SelectValue placeholder="Select step..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border-border">
+                          {availableSteps.map((s) => (
+                            <SelectItem key={s.id} value={s.id} className="text-xs">
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {/* URL Input for url action */}
+                    {actionType === 'url' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('url', e.target.value)}
+                        placeholder="https://example.com"
+                        className="h-8 text-xs bg-background border-border"
+                      />
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
       )}
 

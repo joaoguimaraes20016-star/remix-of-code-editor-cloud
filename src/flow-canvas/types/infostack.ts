@@ -107,6 +107,12 @@ export interface ApplicationFlowStepSettings {
   requireCompletion?: boolean;
   popupHeadline?: string;
   popupSubtext?: string;
+  // Button action configuration
+  buttonAction?: {
+    type: 'next-step' | 'go-to-step' | 'url' | 'scroll' | 'submit' | 'download' | 'phone' | 'email';
+    value?: string;
+    openNewTab?: boolean;
+  };
 }
 
 export interface ApplicationFlowStep {

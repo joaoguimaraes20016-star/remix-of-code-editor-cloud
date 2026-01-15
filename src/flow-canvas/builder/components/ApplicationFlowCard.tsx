@@ -40,6 +40,12 @@ interface ApplicationFlowCardProps {
   selectedStepId?: string | null;
   /** Called when a specific step is clicked (for direct step selection) */
   onSelectStep?: (stepId: string) => void;
+  /** Called when button action is "next-step" - advances to the next step */
+  onNextStep?: () => void;
+  /** Called when button action is "go-to-step" - jumps to a specific step */
+  onGoToStep?: (stepId: string) => void;
+  /** Preview mode - enables button click handling */
+  isPreviewMode?: boolean;
 }
 
 export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
@@ -50,6 +56,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   readOnly = false,
   selectedStepId,
   onSelectStep,
+  onNextStep,
+  onGoToStep,
+  isPreviewMode = false,
 }) => {
   const settings = block.props as Partial<ApplicationFlowSettings>;
   const steps = settings?.steps || [];
@@ -86,6 +95,62 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         : s
     );
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
+  };
+
+  // Button click handler for preview mode
+  const handleButtonClick = (e: React.MouseEvent, stepSettings: any) => {
+    if (!isPreviewMode) return;
+    
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const action = stepSettings?.buttonAction;
+    const actionType = action?.type || 'next-step';
+    const actionValue = action?.value;
+    
+    switch (actionType) {
+      case 'next-step':
+        onNextStep?.();
+        break;
+      case 'go-to-step':
+        if (actionValue) {
+          onGoToStep?.(actionValue);
+        }
+        break;
+      case 'url':
+        if (actionValue) {
+          if (action?.openNewTab) {
+            window.open(actionValue, '_blank');
+          } else {
+            window.location.href = actionValue;
+          }
+        }
+        break;
+      case 'submit':
+        // Submit form data - trigger next step as default
+        onNextStep?.();
+        break;
+      case 'scroll':
+        if (actionValue) {
+          document.querySelector(actionValue)?.scrollIntoView({ behavior: 'smooth' });
+        }
+        break;
+      case 'phone':
+        if (actionValue) {
+          window.location.href = `tel:${actionValue}`;
+        }
+        break;
+      case 'email':
+        if (actionValue) {
+          window.location.href = `mailto:${actionValue}`;
+        }
+        break;
+      case 'download':
+        if (actionValue) {
+          window.open(actionValue, '_blank');
+        }
+        break;
+    }
   };
 
   // ─────────────────────────────────────────────────────────
@@ -125,9 +190,13 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             elementId={`step-${stepId}-desc`}
           />
         </div>
-        {/* CTA button – inline editable */}
+        {/* CTA button – inline editable, clickable in preview mode */}
         <div className="block mt-6">
-          <span style={getButtonStyle(s)}>
+          <span 
+            style={getButtonStyle(s)}
+            onClick={(e) => handleButtonClick(e, s)}
+            className={isPreviewMode ? 'cursor-pointer' : ''}
+          >
             <InlineTextEditor
               value={s.buttonText || 'Start Application →'}
               onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
@@ -291,8 +360,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         )}
         
         <span 
-          className={cn(getButtonClasses(s), 'mt-6')}
+          className={cn(getButtonClasses(s), 'mt-6', isPreviewMode && 'cursor-pointer')}
           style={getButtonStyle(s)}
+          onClick={(e) => handleButtonClick(e, s)}
         >
           {s.buttonText || 'Continue'}
         </span>
@@ -380,8 +450,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           )}
         </div>
         <span 
-          className={cn(getButtonClasses(s), 'mt-6')}
+          className={cn(getButtonClasses(s), 'mt-6', isPreviewMode && 'cursor-pointer')}
           style={getButtonStyle(s)}
+          onClick={(e) => handleButtonClick(e, s)}
         >
           {s.buttonText || 'Submit'}
         </span>
