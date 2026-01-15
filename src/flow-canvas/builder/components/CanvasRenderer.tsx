@@ -1,4 +1,4 @@
-import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
+import React, { useState, useCallback, createContext, useContext, useEffect, useRef, useMemo } from 'react';
 import { Step, Frame, Stack, Block, Element, SelectionState, Page, VisibilitySettings, AnimationSettings, ElementStateStyles, DeviceModeType, PageBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
 import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers, LayoutGrid } from 'lucide-react';
@@ -200,7 +200,7 @@ interface CanvasRendererProps {
 
 // Button Action type
 interface ButtonAction {
-  type: 'url' | 'next-step' | 'go-to-step' | 'scroll' | 'submit' | 'download' | 'phone' | 'email';
+  type: 'url' | 'next-step' | 'prev-step' | 'go-to-step' | 'scroll' | 'submit' | 'download' | 'phone' | 'email';
   value?: string;
   openNewTab?: boolean;
 }
@@ -590,6 +590,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
     
     // Preview mode: ALWAYS emit intent to FlowContainer
     // FlowContainer is the SOLE AUTHORITY for progression
+    // Intent fires even if disabled - FlowContainer decides what to do
     const action = element.props?.buttonAction as ButtonAction | undefined;
     const intent = buttonActionToIntent(action);
     
@@ -604,6 +605,36 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
     // If no FlowContainer: intent is dropped (progression blocked)
     // This is intentional - FlowContainer is REQUIRED for progression
   }, [isPreviewMode, element.props?.buttonAction, onSelect, flowContainer, formValues]);
+
+  /**
+   * Check if this button should be disabled based on FlowContainer state.
+   * This is a READ-ONLY check - button NEVER decides progression.
+   * Button ALWAYS emits intent when clicked - FlowContainer rejects if blocked.
+   */
+  const isButtonDisabled = useMemo(() => {
+    // In edit mode, never visually disabled
+    if (!isPreviewMode) return false;
+    // If no FlowContainer, cannot progress (but don't visually disable)
+    if (!flowContainer) return false;
+    
+    const action = element.props?.buttonAction as ButtonAction | undefined;
+    const actionType = action?.type || 'next-step';
+    const canProgress = flowContainer.canProgress;
+    
+    switch (actionType) {
+      case 'next-step':
+        return !canProgress.next;
+      case 'prev-step':
+        return !canProgress.prev;
+      case 'submit':
+        return !canProgress.submit;
+      case 'go-to-step':
+        return action?.value ? canProgress.goToStep[action.value] === false : false;
+      // External actions (url, scroll, phone, email, download) are never disabled
+      default:
+        return false;
+    }
+  }, [isPreviewMode, flowContainer, element.props?.buttonAction]);
 
   // Handle content + styles from InlineTextEditor
   // Only update properties that are explicitly provided (not undefined)
@@ -1349,13 +1380,17 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 // Only apply shadowClass if not outline mode (prevents class/style conflict)
                 !isOutlineMode && shadowClass,
                 // Apply selection ring to the actual button element
-                isSelected && 'builder-element-selected'
+                isSelected && 'builder-element-selected',
+                // Disabled state styling - visual feedback from FlowContainer
+                isButtonDisabled && 'opacity-50 cursor-not-allowed'
               )}
               style={{
                 ...customButtonStyle,
                 transition: `transform ${transitionDuration}ms ease, box-shadow ${transitionDuration}ms ease, background-color ${transitionDuration}ms ease`,
               }}
               onClick={handleButtonClick}
+              disabled={isButtonDisabled}
+              aria-disabled={isButtonDisabled}
             >
               {element.props?.showIcon !== false && element.props?.iconPosition === 'left' && renderButtonIcon()}
               <InlineTextEditor

@@ -111,6 +111,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     e.preventDefault();
     
     // ALWAYS emit intent to FlowContainer - it is the SOLE AUTHORITY
+    // Intent fires even if disabled - FlowContainer decides what to do
     const action = stepSettings?.buttonAction;
     const intent = buttonActionToIntent(action);
     
@@ -119,6 +120,35 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     }
     // If no FlowContainer: intent is dropped (progression blocked)
     // This is intentional - FlowContainer is REQUIRED for progression
+  };
+
+  /**
+   * Check if a button should be disabled based on FlowContainer state.
+   * This is a READ-ONLY check - button NEVER decides progression.
+   */
+  const isButtonDisabled = (stepSettings: any): boolean => {
+    // In edit mode, never visually disabled
+    if (!isPreviewMode) return false;
+    // If no FlowContainer, cannot progress (but don't visually disable)
+    if (!flowContainer) return false;
+    
+    const action = stepSettings?.buttonAction;
+    const actionType = action?.type || 'next-step';
+    const canProgress = flowContainer.canProgress;
+    
+    switch (actionType) {
+      case 'next-step':
+        return !canProgress.next;
+      case 'prev-step':
+        return !canProgress.prev;
+      case 'submit':
+        return !canProgress.submit;
+      case 'go-to-step':
+        return action?.value ? canProgress.goToStep[action.value] === false : false;
+      // External actions are never disabled
+      default:
+        return false;
+    }
   };
 
   // ─────────────────────────────────────────────────────────
@@ -163,7 +193,11 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           <span 
             style={getButtonStyle(s)}
             onClick={(e) => handleButtonClick(e, s)}
-            className={isPreviewMode ? 'cursor-pointer' : ''}
+            className={cn(
+              isPreviewMode ? 'cursor-pointer' : '',
+              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            )}
+            aria-disabled={isButtonDisabled(s)}
           >
             <InlineTextEditor
               value={s.buttonText || 'Start Application →'}
@@ -328,9 +362,15 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         )}
         
         <span 
-          className={cn(getButtonClasses(s), 'mt-6', isPreviewMode && 'cursor-pointer')}
+          className={cn(
+            getButtonClasses(s), 
+            'mt-6', 
+            isPreviewMode && 'cursor-pointer',
+            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+          )}
           style={getButtonStyle(s)}
           onClick={(e) => handleButtonClick(e, s)}
+          aria-disabled={isButtonDisabled(s)}
         >
           {s.buttonText || 'Continue'}
         </span>
@@ -418,9 +458,15 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           )}
         </div>
         <span 
-          className={cn(getButtonClasses(s), 'mt-6', isPreviewMode && 'cursor-pointer')}
+          className={cn(
+            getButtonClasses(s), 
+            'mt-6', 
+            isPreviewMode && 'cursor-pointer',
+            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+          )}
           style={getButtonStyle(s)}
           onClick={(e) => handleButtonClick(e, s)}
+          aria-disabled={isButtonDisabled(s)}
         >
           {s.buttonText || 'Submit'}
         </span>

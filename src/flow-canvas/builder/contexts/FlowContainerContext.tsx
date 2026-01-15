@@ -54,6 +54,21 @@ export interface FlowStep {
 
 // ============ CONTEXT VALUE ============
 
+/**
+ * Progression capability state - what actions are currently allowed
+ * UI reads this to reflect disabled/enabled state (read-only)
+ */
+export interface CanProgressState {
+  /** Whether next-step is allowed */
+  next: boolean;
+  /** Whether prev-step is allowed */
+  prev: boolean;
+  /** Whether submit is allowed */
+  submit: boolean;
+  /** Map of stepId -> whether go-to-step is allowed */
+  goToStep: Record<string, boolean>;
+}
+
 interface FlowContainerContextValue {
   // Current state
   steps: FlowStep[];
@@ -68,21 +83,39 @@ interface FlowContainerContextValue {
   isLastStep: boolean;
   totalSteps: number;
   
-  // ====== RULE ENGINE STATE ======
+  // ====== RULE ENGINE STATE (READ-ONLY FOR UI) ======
   /** Current rules being evaluated */
   rules: Rule[];
   /** Full evaluation result */
   evaluation: RuleEvaluationResult;
-  /** Derived: Can progress to next step? */
-  canProgress: boolean;
-  /** Derived: Why progression is blocked */
+  
+  /** 
+   * Derived: What progression actions are allowed
+   * UI MUST read this to reflect disabled state
+   * UI MUST NOT recompute this
+   */
+  canProgress: CanProgressState;
+  
+  /** Derived: Why progression is blocked (for debugging, not displayed yet) */
   blockedReason: string | undefined;
-  /** Derived: Which steps are visible */
+  
+  /** 
+   * Derived: Which steps are visible (step IDs only)
+   * UI MUST render ONLY these steps
+   * UI MUST NOT filter steps locally
+   */
   visibleSteps: string[];
-  /** Derived: Validation errors by field */
+  
+  /** 
+   * Derived: Validation errors by field
+   * UI MAY read to show error states
+   * UI MUST NOT validate inputs
+   */
   validationErrors: Record<string, string[]>;
+  
   /** Derived: Is form valid? */
   isValid: boolean;
+  
   /** Last intent result (for debugging/feedback) */
   lastIntentResult: IntentResult | null;
   
@@ -187,8 +220,16 @@ export function FlowContainerProvider({
   
   const isValid = evaluation.validation.isValid;
   
-  // Derived progression state
-  const canProgress = evaluation.progression.canGoNext;
+  // Derived progression state - UI reads this to reflect disabled state
+  // This is a READ-ONLY value. UI MUST NOT recompute this.
+  const canProgress: CanProgressState = useMemo(() => ({
+    next: evaluation.progression.canGoNext,
+    prev: evaluation.progression.canGoPrev,
+    submit: evaluation.progression.canSubmit,
+    goToStep: evaluation.progression.canGoToStep,
+  }), [evaluation.progression]);
+  
+  // Blocked reason for debugging (not displayed yet - Phase 6)
   const blockedReason = evaluation.progression.nextBlockedReason;
   
   // Set current step with callback
