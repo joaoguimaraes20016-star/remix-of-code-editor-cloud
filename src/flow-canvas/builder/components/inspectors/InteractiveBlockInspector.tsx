@@ -35,6 +35,10 @@ import {
   Layers,
   Send,
   ExternalLink,
+  Hash,
+  Phone,
+  Mail,
+  Download,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -310,13 +314,37 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
 
                 return (
                   <div className="space-y-2">
-                    {/* Action Type Selector */}
+                    {/* Primary Action Type Selector */}
                     <div className="grid grid-cols-2 gap-1.5">
                       {[
                         { type: 'next-step' as ButtonActionType, label: 'Next Step', icon: <ArrowRight className="w-3 h-3" /> },
                         { type: 'go-to-step' as ButtonActionType, label: 'Go to Step', icon: <Layers className="w-3 h-3" /> },
                         { type: 'submit' as ButtonActionType, label: 'Submit', icon: <Send className="w-3 h-3" /> },
                         { type: 'url' as ButtonActionType, label: 'Open URL', icon: <ExternalLink className="w-3 h-3" /> },
+                      ].map((action) => (
+                        <button
+                          key={action.type}
+                          onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
+                          className={cn(
+                            'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
+                            actionType === action.type
+                              ? 'bg-builder-accent text-white'
+                              : 'bg-builder-surface-hover hover:bg-builder-surface text-builder-text-muted'
+                          )}
+                        >
+                          {action.icon}
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Secondary Action Types */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { type: 'scroll' as ButtonActionType, label: 'Scroll To', icon: <Hash className="w-3 h-3" /> },
+                        { type: 'phone' as ButtonActionType, label: 'Call Phone', icon: <Phone className="w-3 h-3" /> },
+                        { type: 'email' as ButtonActionType, label: 'Send Email', icon: <Mail className="w-3 h-3" /> },
+                        { type: 'download' as ButtonActionType, label: 'Download', icon: <Download className="w-3 h-3" /> },
                       ].map((action) => (
                         <button
                           key={action.type}
@@ -356,6 +384,46 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                         value={actionValue}
                         onChange={(e) => handleActionChange('url', e.target.value)}
                         placeholder="https://example.com"
+                        className="h-8 text-sm"
+                      />
+                    )}
+                    
+                    {/* Scroll target input */}
+                    {actionType === 'scroll' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('scroll', e.target.value)}
+                        placeholder="#section-id"
+                        className="h-8 text-sm"
+                      />
+                    )}
+                    
+                    {/* Phone number input */}
+                    {actionType === 'phone' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('phone', e.target.value)}
+                        placeholder="+1 (555) 123-4567"
+                        className="h-8 text-sm"
+                      />
+                    )}
+                    
+                    {/* Email address input */}
+                    {actionType === 'email' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('email', e.target.value)}
+                        placeholder="hello@example.com"
+                        className="h-8 text-sm"
+                      />
+                    )}
+                    
+                    {/* Download URL input */}
+                    {actionType === 'download' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('download', e.target.value)}
+                        placeholder="https://example.com/file.pdf"
                         className="h-8 text-sm"
                       />
                     )}

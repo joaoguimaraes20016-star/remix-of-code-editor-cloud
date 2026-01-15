@@ -43,7 +43,6 @@ export type ButtonActionType =
   | 'url' 
   | 'scroll' 
   | 'submit' 
-  | 'modal' 
   | 'download' 
   | 'phone' 
   | 'email';

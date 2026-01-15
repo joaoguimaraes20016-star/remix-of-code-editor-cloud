@@ -2328,6 +2328,9 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           }}
           readOnly={readOnly}
           selectedStepId={block.id === activeApplicationFlowBlockId ? selectedApplicationStepId : null}
+          isPreviewMode={readOnly}
+          onNextStep={onNextStep}
+          onGoToStep={onGoToStep}
         />
       </div>
     );
