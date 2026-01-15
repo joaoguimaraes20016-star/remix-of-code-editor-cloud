@@ -142,12 +142,18 @@ export function FlowContainerProvider({
   }, []);
   
   // CRITICAL: Intent handler - ALL progression logic lives here
+  // This is the SOLE AUTHORITY for step progression. No fallbacks exist.
   const emitIntent = useCallback((intent: FlowIntent) => {
-    // In non-preview mode, intents are ignored (buttons just select in edit mode)
-    if (!isPreviewMode) return;
+    // Intent is ALWAYS processed - never silently dropped
+    // In non-preview mode: external actions (url, scroll, etc.) still work
+    // but step progression is blocked
+    const canProgress = isPreviewMode;
     
     switch (intent.type) {
       case 'next-step': {
+        // Step progression requires preview mode
+        if (!canProgress) return;
+        
         if (!isLastStep && steps.length > 0) {
           const nextStep = steps[currentStepIndex + 1];
           if (nextStep) {
@@ -161,6 +167,9 @@ export function FlowContainerProvider({
       }
       
       case 'prev-step': {
+        // Step progression requires preview mode
+        if (!canProgress) return;
+        
         if (!isFirstStep && steps.length > 0) {
           const prevStep = steps[currentStepIndex - 1];
           if (prevStep) {
@@ -171,16 +180,23 @@ export function FlowContainerProvider({
       }
       
       case 'go-to-step': {
+        // Step progression requires preview mode
+        if (!canProgress) return;
+        
         setCurrentStepId(intent.stepId);
         break;
       }
       
       case 'submit': {
+        // Submit requires preview mode
+        if (!canProgress) return;
+        
         const allValues = { ...formValues, ...(intent.values || {}) };
         onSubmit?.(allValues);
         break;
       }
       
+      // External actions work in both edit and preview mode
       case 'url': {
         if (intent.url) {
           if (intent.openNewTab) {

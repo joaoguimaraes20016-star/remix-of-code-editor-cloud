@@ -101,56 +101,24 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
   };
 
-  // Button click handler - EMITS INTENT to FlowContainer (single source of truth)
+  // Button click handler - EMITS INTENT to FlowContainer (SOLE AUTHORITY)
   // This component does NOT know step order or validation. It ONLY emits intent.
+  // If FlowContainer is not present, progression is BLOCKED - no fallbacks.
   const handleButtonClick = (e: React.MouseEvent, stepSettings: any) => {
     if (!isPreviewMode) return;
     
     e.stopPropagation();
     e.preventDefault();
     
+    // ALWAYS emit intent to FlowContainer - it is the SOLE AUTHORITY
     const action = stepSettings?.buttonAction;
     const intent = buttonActionToIntent(action);
     
-    if (intent) {
-      // If FlowContainer is available, emit intent to it (PREFERRED)
-      if (flowContainer) {
-        flowContainer.emitIntent(intent);
-      } else {
-        // Fallback to legacy callbacks for backwards compatibility
-        switch (intent.type) {
-          case 'next-step':
-            onNextStep?.();
-            break;
-          case 'go-to-step':
-            onGoToStep?.(intent.stepId);
-            break;
-          case 'submit':
-            // Submit triggers next step as fallback
-            onNextStep?.();
-            break;
-          case 'url':
-            if (intent.openNewTab) {
-              window.open(intent.url, '_blank');
-            } else {
-              window.location.href = intent.url;
-            }
-            break;
-          case 'scroll':
-            document.querySelector(intent.selector)?.scrollIntoView({ behavior: 'smooth' });
-            break;
-          case 'phone':
-            window.location.href = `tel:${intent.number}`;
-            break;
-          case 'email':
-            window.location.href = `mailto:${intent.address}`;
-            break;
-          case 'download':
-            window.open(intent.url, '_blank');
-            break;
-        }
-      }
+    if (intent && flowContainer) {
+      flowContainer.emitIntent(intent);
     }
+    // If no FlowContainer: intent is dropped (progression blocked)
+    // This is intentional - FlowContainer is REQUIRED for progression
   };
 
   // ─────────────────────────────────────────────────────────
