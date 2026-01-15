@@ -98,6 +98,7 @@ interface LeftPanelProps {
   onDeleteStep: (stepId: string) => void;
   onDuplicateStep: (stepId: string) => void;
   onReorderSteps: (fromIndex: number, toIndex: number) => void;
+  onSelectFrame?: (frameId: string, path: string[]) => void;
   onSelectBlock?: (blockId: string, path: string[]) => void;
   onSelectElement?: (elementId: string, path: string[]) => void;
   onRenameStep?: (stepId: string, newName: string) => void;
@@ -424,9 +425,10 @@ const EnhancedLayersTree: React.FC<{
   steps: Step[];
   activeStepId: string | null;
   selection: SelectionState;
+  onSelectFrame?: (frameId: string, path: string[]) => void;
   onSelectBlock?: (blockId: string, path: string[]) => void;
   onSelectElement?: (elementId: string, path: string[]) => void;
-}> = ({ steps, activeStepId, selection, onSelectBlock, onSelectElement }) => {
+}> = ({ steps, activeStepId, selection, onSelectFrame, onSelectBlock, onSelectElement }) => {
   const [expandedFrames, setExpandedFrames] = useState<Set<string>>(new Set());
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
@@ -448,9 +450,22 @@ const EnhancedLayersTree: React.FC<{
   
   const activeStep = steps.find(s => s.id === activeStepId);
   
-  // Auto-expand to selected element and scroll into view
+  // Auto-expand to selected item and scroll into view
   React.useEffect(() => {
     if (!activeStep || !selection.id) return;
+    
+    // Handle frame selection - just scroll into view (frames are always visible)
+    if (selection.type === 'frame') {
+      for (const frame of activeStep.frames) {
+        if (frame.id === selection.id) {
+          requestAnimationFrame(() => {
+            selectedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          });
+          return;
+        }
+      }
+      return;
+    }
     
     // Find which block contains the selected element
     for (const frame of activeStep.frames) {
@@ -541,7 +556,8 @@ const EnhancedLayersTree: React.FC<{
                 hasChildren={frame.stacks.some(s => s.blocks.length > 0)}
                 isExpanded={isFrameExpanded}
                 onToggleExpand={() => toggleFrame(frame.id)}
-                onClick={() => onSelectBlock?.(frame.id, framePath)}
+                onClick={() => onSelectFrame?.(frame.id, framePath)}
+                forwardedRef={isFrameSelected ? selectedRef : undefined}
               />
             )}
             
@@ -827,6 +843,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onDeleteStep,
   onDuplicateStep,
   onReorderSteps,
+  onSelectFrame,
   onSelectBlock,
   onSelectElement,
   onRenameStep,
@@ -984,6 +1001,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
               steps={steps}
               activeStepId={activeStepId}
               selection={selection}
+              onSelectFrame={onSelectFrame}
               onSelectBlock={onSelectBlock}
               onSelectElement={onSelectElement}
             />
