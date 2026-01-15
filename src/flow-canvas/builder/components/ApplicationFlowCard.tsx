@@ -479,7 +479,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
       {/* Step navigation bar - shows all steps for quick switching */}
       {steps.length > 1 && (
         <div 
-          className="flex items-center justify-center gap-1 px-4 py-2"
+          className="flex items-center justify-center gap-1 px-4 py-2 flex-wrap"
           style={{ 
             borderTop: `1px solid ${flowInputBorder}`,
           }}
@@ -487,7 +487,10 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           {steps.map((step, index) => (
             <button
               key={step.id}
-              onClick={(e) => handleStepClick(e, step.id)}
+              onClick={(e) => {
+                handleStepClick(e, step.id);
+              }}
+              title={step.name}
               className={cn(
                 'w-6 h-6 rounded-full text-[10px] font-medium transition-all',
                 selectedStepId === step.id
@@ -495,7 +498,6 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   : 'bg-muted hover:bg-muted-foreground/20'
               )}
               style={{ color: selectedStepId === step.id ? undefined : flowTextColor }}
-              title={step.name}
             >
               {index + 1}
             </button>
