@@ -9,11 +9,15 @@
  * - Decide when "Submit" fires
  * - Own step order
  * - Own form state submission
+ * - OWN AND EVALUATE RULES
  * 
  * Buttons and blocks ONLY emit intent. They do NOT execute logic.
+ * Components RENDER. FlowContainer DECIDES. Rules EVALUATE.
  */
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import type { Rule, RuleEvaluationResult, VisibilityState, ValidationState, ProgressionState } from '../engine/rules';
+import { evaluateRules, evaluateEmptyRules } from '../engine/ruleEvaluator';
 
 // ============ INTENT TYPES ============
 // Buttons emit these. FlowContainer decides what to do.
@@ -28,6 +32,18 @@ export type FlowIntent =
   | { type: 'phone'; number: string }
   | { type: 'email'; address: string }
   | { type: 'download'; url: string };
+
+// ============ INTENT RESULT ============
+// Result of emitting an intent - never silent
+
+export interface IntentResult {
+  /** Whether the intent was executed */
+  executed: boolean;
+  /** Reason if blocked */
+  blockedReason?: string;
+  /** The intent that was processed */
+  intent: FlowIntent;
+}
 
 // ============ STEP TYPE ============
 
@@ -52,12 +68,33 @@ interface FlowContainerContextValue {
   isLastStep: boolean;
   totalSteps: number;
   
+  // ====== RULE ENGINE STATE ======
+  /** Current rules being evaluated */
+  rules: Rule[];
+  /** Full evaluation result */
+  evaluation: RuleEvaluationResult;
+  /** Derived: Can progress to next step? */
+  canProgress: boolean;
+  /** Derived: Why progression is blocked */
+  blockedReason: string | undefined;
+  /** Derived: Which steps are visible */
+  visibleSteps: string[];
+  /** Derived: Validation errors by field */
+  validationErrors: Record<string, string[]>;
+  /** Derived: Is form valid? */
+  isValid: boolean;
+  /** Last intent result (for debugging/feedback) */
+  lastIntentResult: IntentResult | null;
+  
   // Intent handler - ONLY way to trigger progression
-  emitIntent: (intent: FlowIntent) => void;
+  emitIntent: (intent: FlowIntent) => IntentResult;
   
   // Direct step control (for builder step navigation, not buttons)
   setCurrentStepId: (stepId: string) => void;
   setSteps: (steps: FlowStep[]) => void;
+  
+  // Rule management
+  setRules: (rules: Rule[]) => void;
   
   // Form value collection
   setFormValue: (key: string, value: unknown) => void;
@@ -74,12 +111,16 @@ interface FlowContainerProviderProps {
   initialSteps?: FlowStep[];
   /** Initial step ID (defaults to first step) */
   initialStepId?: string;
+  /** Initial rules (defaults to empty - all allowed) */
+  initialRules?: Rule[];
   /** Called when submit intent is emitted */
   onSubmit?: (values: Record<string, unknown>) => void;
   /** Called when step changes */
   onStepChange?: (stepId: string, index: number) => void;
   /** Whether this is preview mode (enables progression) */
   isPreviewMode?: boolean;
+  /** Called when intent is rejected (for debugging/logging) */
+  onIntentRejected?: (intent: FlowIntent, reason: string) => void;
 }
 
 // ============ PROVIDER ============
@@ -88,15 +129,19 @@ export function FlowContainerProvider({
   children,
   initialSteps = [],
   initialStepId,
+  initialRules = [],
   onSubmit,
   onStepChange,
   isPreviewMode = false,
+  onIntentRejected,
 }: FlowContainerProviderProps) {
   const [steps, setStepsState] = useState<FlowStep[]>(initialSteps);
   const [currentStepId, setCurrentStepIdState] = useState<string | null>(
     initialStepId || initialSteps[0]?.id || null
   );
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  const [rules, setRulesState] = useState<Rule[]>(initialRules);
+  const [lastIntentResult, setLastIntentResult] = useState<IntentResult | null>(null);
   
   // Derived state
   const currentStepIndex = useMemo(() => {
@@ -108,6 +153,43 @@ export function FlowContainerProvider({
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === steps.length - 1;
   const totalSteps = steps.length;
+  
+  // ====== RULE EVALUATION ======
+  // Re-evaluate rules whenever form values, rules, or steps change
+  const evaluation = useMemo<RuleEvaluationResult>(() => {
+    if (rules.length === 0) {
+      // No rules = default permissive behavior (backward compatibility)
+      return evaluateEmptyRules();
+    }
+    
+    return evaluateRules(rules, {
+      values: formValues,
+      allStepIds: steps.map(s => s.id),
+      allElementIds: [], // TODO: pass element IDs when available
+    });
+  }, [rules, formValues, steps]);
+  
+  // Derived visibility state
+  const visibleSteps = useMemo(() => {
+    return steps
+      .filter(s => evaluation.visibility.steps[s.id] !== false) // undefined = visible
+      .map(s => s.id);
+  }, [steps, evaluation.visibility.steps]);
+  
+  // Derived validation state
+  const validationErrors = useMemo(() => {
+    const errors: Record<string, string[]> = {};
+    for (const [key, fieldErrors] of Object.entries(evaluation.validation.errors)) {
+      errors[key] = fieldErrors.map(e => e.message);
+    }
+    return errors;
+  }, [evaluation.validation.errors]);
+  
+  const isValid = evaluation.validation.isValid;
+  
+  // Derived progression state
+  const canProgress = evaluation.progression.canGoNext;
+  const blockedReason = evaluation.progression.nextBlockedReason;
   
   // Set current step with callback
   const setCurrentStepId = useCallback((stepId: string) => {
@@ -132,6 +214,11 @@ export function FlowContainerProvider({
     }
   }, [currentStepId, onStepChange]);
   
+  // Set rules
+  const setRules = useCallback((newRules: Rule[]) => {
+    setRulesState(newRules);
+  }, []);
+  
   // Form value management
   const setFormValue = useCallback((key: string, value: unknown) => {
     setFormValues(prev => ({ ...prev, [key]: value }));
@@ -143,57 +230,108 @@ export function FlowContainerProvider({
   
   // CRITICAL: Intent handler - ALL progression logic lives here
   // This is the SOLE AUTHORITY for step progression. No fallbacks exist.
-  const emitIntent = useCallback((intent: FlowIntent) => {
-    // Intent is ALWAYS processed - never silently dropped
-    // In non-preview mode: external actions (url, scroll, etc.) still work
-    // but step progression is blocked
-    const canProgress = isPreviewMode;
+  // NEVER returns void - always returns IntentResult
+  const emitIntent = useCallback((intent: FlowIntent): IntentResult => {
+    const createResult = (executed: boolean, blockedReason?: string): IntentResult => {
+      const result: IntentResult = { executed, blockedReason, intent };
+      setLastIntentResult(result);
+      if (!executed && blockedReason) {
+        onIntentRejected?.(intent, blockedReason);
+      }
+      return result;
+    };
+    
+    // In non-preview mode: external actions still work, step progression blocked
+    const modeCanProgress = isPreviewMode;
     
     switch (intent.type) {
       case 'next-step': {
-        // Step progression requires preview mode
-        if (!canProgress) return;
+        // Check mode
+        if (!modeCanProgress) {
+          return createResult(false, 'Edit mode - progression disabled');
+        }
         
+        // Check rule-based progression
+        if (!evaluation.progression.canGoNext) {
+          return createResult(false, evaluation.progression.nextBlockedReason || 'Progression blocked by rule');
+        }
+        
+        // Check validation
+        if (!evaluation.validation.isValid) {
+          return createResult(false, 'Please fix validation errors');
+        }
+        
+        // Execute
         if (!isLastStep && steps.length > 0) {
           const nextStep = steps[currentStepIndex + 1];
           if (nextStep) {
             setCurrentStepId(nextStep.id);
+            return createResult(true);
           }
         } else if (isLastStep) {
           // Last step - treat as submit
           onSubmit?.(formValues);
+          return createResult(true);
         }
-        break;
+        
+        return createResult(false, 'No next step available');
       }
       
       case 'prev-step': {
-        // Step progression requires preview mode
-        if (!canProgress) return;
+        if (!modeCanProgress) {
+          return createResult(false, 'Edit mode - progression disabled');
+        }
+        
+        if (!evaluation.progression.canGoPrev) {
+          return createResult(false, evaluation.progression.prevBlockedReason || 'Cannot go back');
+        }
         
         if (!isFirstStep && steps.length > 0) {
           const prevStep = steps[currentStepIndex - 1];
           if (prevStep) {
             setCurrentStepId(prevStep.id);
+            return createResult(true);
           }
         }
-        break;
+        
+        return createResult(false, 'No previous step available');
       }
       
       case 'go-to-step': {
-        // Step progression requires preview mode
-        if (!canProgress) return;
+        if (!modeCanProgress) {
+          return createResult(false, 'Edit mode - progression disabled');
+        }
+        
+        // Check if go-to-step is allowed for this target
+        if (evaluation.progression.canGoToStep[intent.stepId] === false) {
+          return createResult(false, `Cannot navigate to step ${intent.stepId}`);
+        }
+        
+        // Check if step is visible
+        if (!visibleSteps.includes(intent.stepId)) {
+          return createResult(false, 'Target step is not visible');
+        }
         
         setCurrentStepId(intent.stepId);
-        break;
+        return createResult(true);
       }
       
       case 'submit': {
-        // Submit requires preview mode
-        if (!canProgress) return;
+        if (!modeCanProgress) {
+          return createResult(false, 'Edit mode - submit disabled');
+        }
+        
+        if (!evaluation.progression.canSubmit) {
+          return createResult(false, evaluation.progression.submitBlockedReason || 'Submit not allowed');
+        }
+        
+        if (!evaluation.validation.isValid) {
+          return createResult(false, 'Please fix validation errors before submitting');
+        }
         
         const allValues = { ...formValues, ...(intent.values || {}) };
         onSubmit?.(allValues);
-        break;
+        return createResult(true);
       }
       
       // External actions work in both edit and preview mode
@@ -204,42 +342,63 @@ export function FlowContainerProvider({
           } else {
             window.location.href = intent.url;
           }
+          return createResult(true);
         }
-        break;
+        return createResult(false, 'No URL provided');
       }
       
       case 'scroll': {
         if (intent.selector) {
           document.querySelector(intent.selector)?.scrollIntoView({ behavior: 'smooth' });
+          return createResult(true);
         }
-        break;
+        return createResult(false, 'No selector provided');
       }
       
       case 'phone': {
         if (intent.number) {
           window.location.href = `tel:${intent.number}`;
+          return createResult(true);
         }
-        break;
+        return createResult(false, 'No phone number provided');
       }
       
       case 'email': {
         if (intent.address) {
           window.location.href = `mailto:${intent.address}`;
+          return createResult(true);
         }
-        break;
+        return createResult(false, 'No email address provided');
       }
       
       case 'download': {
         if (intent.url) {
           window.open(intent.url, '_blank');
+          return createResult(true);
         }
-        break;
+        return createResult(false, 'No download URL provided');
       }
+      
+      default:
+        return createResult(false, 'Unknown intent type');
     }
-  }, [isPreviewMode, isLastStep, isFirstStep, steps, currentStepIndex, formValues, setCurrentStepId, onSubmit]);
+  }, [
+    isPreviewMode,
+    evaluation,
+    isLastStep,
+    isFirstStep,
+    steps,
+    currentStepIndex,
+    formValues,
+    visibleSteps,
+    setCurrentStepId,
+    onSubmit,
+    onIntentRejected,
+  ]);
   
   // Memoized context value
   const value = useMemo<FlowContainerContextValue>(() => ({
+    // State
     steps,
     currentStepId,
     currentStepIndex,
@@ -247,9 +406,22 @@ export function FlowContainerProvider({
     isFirstStep,
     isLastStep,
     totalSteps,
+    
+    // Rule engine state
+    rules,
+    evaluation,
+    canProgress,
+    blockedReason,
+    visibleSteps,
+    validationErrors,
+    isValid,
+    lastIntentResult,
+    
+    // Actions
     emitIntent,
     setCurrentStepId,
     setSteps,
+    setRules,
     setFormValue,
     clearFormValues,
   }), [
@@ -260,9 +432,18 @@ export function FlowContainerProvider({
     isFirstStep,
     isLastStep,
     totalSteps,
+    rules,
+    evaluation,
+    canProgress,
+    blockedReason,
+    visibleSteps,
+    validationErrors,
+    isValid,
+    lastIntentResult,
     emitIntent,
     setCurrentStepId,
     setSteps,
+    setRules,
     setFormValue,
     clearFormValues,
   ]);
