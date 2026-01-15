@@ -307,7 +307,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
               onClick={onOpenBlockPalette}
               disabled={isAddBlockDisabled}
               disabledReason={addBlockDisabledReason}
-              tooltip="Add Block (B)"
+              tooltip="Add Content (B)"
             >
               <Plus className="w-4 h-4" />
             </ToolbarButton>

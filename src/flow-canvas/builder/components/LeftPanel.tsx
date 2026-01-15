@@ -459,9 +459,10 @@ const EnhancedLayersTree: React.FC<{
           // If block is selected, just ensure frame is expanded
           if (selection.type === 'block' && selection.id === block.id) {
             setExpandedFrames(prev => new Set([...prev, frame.id]));
-            setTimeout(() => {
+            // Use requestAnimationFrame for smoother scroll without artificial delay
+            requestAnimationFrame(() => {
               selectedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 100);
+            });
             return;
           }
           // If element is selected, expand both frame and block
@@ -470,9 +471,10 @@ const EnhancedLayersTree: React.FC<{
             if (hasElement) {
               setExpandedFrames(prev => new Set([...prev, frame.id]));
               setExpandedBlocks(prev => new Set([...prev, block.id]));
-              setTimeout(() => {
+              // Use requestAnimationFrame for smoother scroll without artificial delay
+              requestAnimationFrame(() => {
                 selectedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }, 100);
+              });
               return;
             }
           }

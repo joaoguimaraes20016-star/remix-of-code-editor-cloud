@@ -1,8 +1,7 @@
 // ApplicationStepInspector - Unified inspector for ALL interactive step types
 // Works with the unified ApplicationStep type for consistent UX across:
-// - Application Flow steps
-// - Capture Flow nodes
-// - Inline interactive blocks
+// - Flow Container steps (Typeform-style multi-step experience)
+// - Inline interactive blocks (standalone questions/capture fields)
 
 import React, { useState, useCallback } from 'react';
 import {
@@ -437,22 +436,22 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
           </div>
         </CollapsibleSection>
 
-        {/* Logic Section */}
-        <CollapsibleSection title="Logic" icon={<Workflow className="w-4 h-4" />} defaultOpen={false}>
+        {/* Logic Section - Uses unified action system matching ButtonActionModal */}
+        <CollapsibleSection title="Action" icon={<Workflow className="w-4 h-4" />} defaultOpen={false}>
           <div className="space-y-4">
-            <FieldGroup label="On Submit">
+            <FieldGroup label="On Continue">
               <Select
                 value={step.navigation.action}
-                onValueChange={(value) => updateNavigation('action', value)}
+                onValueChange={(value) => updateNavigation('action', value as 'next' | 'go-to-step' | 'submit' | 'redirect')}
               >
                 <SelectTrigger className="builder-input">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="next">Go to Next Step</SelectItem>
-                  <SelectItem value="go-to-step">Go to Specific Step</SelectItem>
-                  <SelectItem value="submit">Submit Form</SelectItem>
-                  <SelectItem value="redirect">Redirect to URL</SelectItem>
+                  <SelectItem value="next">Next Step</SelectItem>
+                  <SelectItem value="go-to-step">Go to Step</SelectItem>
+                  <SelectItem value="submit">Submit</SelectItem>
+                  <SelectItem value="redirect">Open URL</SelectItem>
                 </SelectContent>
               </Select>
             </FieldGroup>
@@ -478,11 +477,11 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
             )}
 
             {step.navigation.action === 'redirect' && (
-              <FieldGroup label="Redirect URL">
+              <FieldGroup label="URL">
                 <Input
                   value={step.navigation.redirectUrl || ''}
                   onChange={(e) => updateNavigation('redirectUrl', e.target.value)}
-                  placeholder="https://..."
+                  placeholder="https://example.com"
                   className="builder-input"
                 />
               </FieldGroup>

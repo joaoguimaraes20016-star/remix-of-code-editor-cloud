@@ -1,18 +1,24 @@
 /**
  * @deprecated LEGACY SYSTEM - Use ApplicationEngine from '@/flow-canvas/shared/types/applicationEngine'
  * 
- * CaptureFlow was the original lead capture system. It is now deprecated in favor of the
- * unified ApplicationEngine which provides:
- * - One mental model for all interactive data collection
- * - Presentation mode as a property (inline vs flow) rather than separate systems
- * - Unified consent and automation handling
+ * CaptureFlow was the original lead capture system. It has been DEPRECATED in favor of the
+ * unified ApplicationEngine system which provides:
+ * 
+ * UNIFIED MENTAL MODEL:
+ * - There are only THREE concepts: Sections (layout), Interactive Blocks (data + logic), Flow Containers
+ * - "Flow Container" is the single Typeform-style multi-step experience (replaces CaptureFlow)
+ * - Presentation mode (inline vs flow) is a PROPERTY of Interactive Blocks, not a separate system
+ * 
+ * MIGRATION PATH:
+ * - CaptureFlow → ApplicationEngine (use Flow Container block)
+ * - CaptureNode → ApplicationStep 
+ * - CaptureFlowAppearance → ApplicationEngineAppearance
  * 
  * Adapters exist in '@/flow-canvas/shared/adapters/legacyAdapters' for backwards compatibility.
- * 
  * DO NOT add new features to this file. Extend ApplicationEngine instead.
  */
 
-// CaptureFlow Types - DEPRECATED: Use ApplicationEngine
+// @deprecated CaptureFlow Types - Use ApplicationEngine instead
 
 // ============ NODE TYPES ============
 
