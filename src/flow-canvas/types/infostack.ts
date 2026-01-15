@@ -67,7 +67,6 @@ export interface ApplicationFlowStepSettings {
   collectName?: boolean;
   collectEmail?: boolean;
   collectPhone?: boolean;
-  alignment?: 'left' | 'center' | 'right';
   align?: 'left' | 'center' | 'right';
   spacing?: 'compact' | 'normal' | 'relaxed';
   inputStyle?: 'default' | 'minimal' | 'rounded' | 'square';
