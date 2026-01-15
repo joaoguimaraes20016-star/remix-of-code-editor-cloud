@@ -99,7 +99,8 @@ import {
   Info,
   Monitor,
   Tablet,
-  Smartphone
+  Smartphone,
+  ArrowRight,
 } from 'lucide-react';
 import { 
   EffectsPickerPopover, 
@@ -744,16 +745,16 @@ const ElementInspector: React.FC<{
         <>
           {/* Click Action - Enhanced with quick action selector */}
           <CollapsibleSection title="After Click" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen sectionId="action" isHighlighted={highlightedSection === 'action'}>
-            <div className="pt-3 space-y-3">
+            <div className="space-y-3">
               {/* Quick Action Selector */}
               <div className="space-y-2">
                 <span className="text-[10px] text-builder-text-dim uppercase tracking-wide">What happens after click?</span>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
-                    { type: 'next-step', label: 'Next Step', icon: '→' },
-                    { type: 'go-to-step', label: 'Go to Step', icon: '↗' },
-                    { type: 'submit', label: 'Submit Form', icon: '✓' },
-                    { type: 'url', label: 'Open URL', icon: '↗' },
+                    { type: 'next-step', label: 'Next Step', icon: <ArrowRight className="w-3.5 h-3.5" /> },
+                    { type: 'go-to-step', label: 'Go to Step', icon: <Layers className="w-3.5 h-3.5" /> },
+                    { type: 'submit', label: 'Submit', icon: <Check className="w-3.5 h-3.5" /> },
+                    { type: 'url', label: 'Open URL', icon: <ExternalLink className="w-3.5 h-3.5" /> },
                   ].map((action) => (
                     <button
                       key={action.type}
@@ -766,13 +767,13 @@ const ElementInspector: React.FC<{
                         }
                       }}
                       className={cn(
-                        "flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all border",
+                        "flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all",
                         buttonAction?.type === action.type
-                          ? "border-builder-accent bg-builder-accent/10 text-builder-accent"
-                          : "border-builder-border bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:border-builder-text-muted"
+                          ? "bg-builder-accent text-white"
+                          : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface"
                       )}
                     >
-                      <span>{action.icon}</span>
+                      {action.icon}
                       <span>{action.label}</span>
                     </button>
                   ))}
@@ -781,7 +782,7 @@ const ElementInspector: React.FC<{
 
               {/* Current Action Summary */}
               {buttonAction?.type && (buttonAction.type === 'go-to-step' || buttonAction.type === 'url') && buttonAction.value && (
-                <div className="p-2.5 rounded-lg border border-builder-border bg-builder-surface-hover/50">
+                <div className="p-2.5 rounded-lg bg-builder-surface-hover/50">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-builder-text-muted">
                       {buttonAction.type === 'go-to-step' ? 'Target Step:' : 'URL:'}
@@ -803,30 +804,32 @@ const ElementInspector: React.FC<{
 
           {/* Button Appearance */}
           <CollapsibleSection title="Appearance" icon={<Palette className="w-4 h-4" />} defaultOpen sectionId="appearance" isHighlighted={highlightedSection === 'appearance'}>
-            <div className="pt-3 space-y-3">
-              {/* Fill Type Toggle - ATOMIC UPDATES */}
+            <div className="space-y-3">
+              {/* Fill Type Toggle - FIXED: Single atomic update */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Fill</span>
                 <div className="flex rounded-lg overflow-hidden border border-builder-border">
                   <button
                     onClick={() => {
-                      // Atomic update: set fillType and ensure backgroundColor exists
+                      // Single atomic update to switch to solid
                       const bg = element.styles?.backgroundColor || '#8B5CF6';
-                      handleMultiPropsChange({ fillType: 'solid' });
-                      handleStyleChange('backgroundColor', bg);
+                      onUpdate({ 
+                        props: { ...element.props, fillType: 'solid' },
+                        styles: { ...element.styles, backgroundColor: bg }
+                      });
                     }}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium transition-colors",
                       element.props?.fillType !== 'gradient'
                         ? 'bg-builder-accent text-white' 
-                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
                     )}
                   >
                     Solid
                   </button>
                   <button
                     onClick={() => {
-                      // Atomic update: set fillType and ensure gradient exists
+                      // Single atomic update to switch to gradient
                       const existingGradient = element.props?.gradient as GradientValue | undefined;
                       const gradient = existingGradient || {
                         type: 'linear' as const,
@@ -836,16 +839,19 @@ const ElementInspector: React.FC<{
                           { color: '#D946EF', position: 100 },
                         ],
                       };
-                      handleMultiPropsChange({ 
-                        fillType: 'gradient',
-                        gradient: cloneGradient(gradient),
+                      onUpdate({ 
+                        props: { 
+                          ...element.props, 
+                          fillType: 'gradient',
+                          gradient: cloneGradient(gradient),
+                        }
                       });
                     }}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium transition-colors",
                       element.props?.fillType === 'gradient'
                         ? 'bg-builder-accent text-white' 
-                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
                     )}
                   >
                     Gradient
