@@ -250,7 +250,7 @@ export const STEP_DEFINITIONS: Record<StepType, StepDefinition> = {
 
   application_flow: {
     type: 'application_flow',
-    label: 'Application Flow',
+    label: 'Flow Container', // Unified name for Typeform-style experiences
     description: 'Multi-step interactive flow (Typeform-style)',
     capabilities: {
       canCreateLead: true,
