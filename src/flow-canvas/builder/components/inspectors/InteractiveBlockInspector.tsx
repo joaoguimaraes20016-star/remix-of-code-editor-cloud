@@ -305,10 +305,11 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                 const buttonAction = buttonElement.props?.buttonAction as ButtonAction | undefined;
                 const actionType = buttonAction?.type || 'next-step';
                 const actionValue = buttonAction?.value || '';
+                const openNewTab = buttonAction?.openNewTab ?? false;
                 
-                const handleActionChange = (type: ButtonActionType, value?: string) => {
+                const handleActionChange = (type: ButtonActionType, value?: string, newTab?: boolean) => {
                   updateElementProps(buttonElement.id, {
-                    buttonAction: { type, value, openNewTab: type === 'url' ? buttonAction?.openNewTab : undefined }
+                    buttonAction: { type, value, openNewTab: type === 'url' ? (newTab ?? openNewTab) : undefined }
                   });
                 };
 
@@ -380,12 +381,21 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
 
                     {/* URL Input for url action */}
                     {actionType === 'url' && (
-                      <Input
-                        value={actionValue}
-                        onChange={(e) => handleActionChange('url', e.target.value)}
-                        placeholder="https://example.com"
-                        className="h-8 text-sm"
-                      />
+                      <>
+                        <Input
+                          value={actionValue}
+                          onChange={(e) => handleActionChange('url', e.target.value)}
+                          placeholder="https://example.com"
+                          className="h-8 text-sm"
+                        />
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-builder-text-muted">Open in new tab</Label>
+                          <Switch
+                            checked={openNewTab}
+                            onCheckedChange={(checked) => handleActionChange('url', actionValue, checked)}
+                          />
+                        </div>
+                      </>
                     )}
                     
                     {/* Scroll target input */}
@@ -464,7 +474,7 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                 placeholder="email, phone, name..."
                 className="h-8 text-sm font-mono"
               />
-              <p className="text-[10px] text-muted-foreground">Used to identify this field in form data</p>
+              <p className="text-[10px] text-builder-text-dim">Used to identify this field in form data</p>
             </FieldGroup>
 
             {/* Placeholder */}
@@ -479,7 +489,7 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
 
             {/* Required Toggle */}
             <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Required</Label>
+              <Label className="text-xs text-builder-text-muted">Required</Label>
               <Switch
                 checked={isRequired}
                 onCheckedChange={(checked) => updateElementProps(inputElement.id, { required: checked })}

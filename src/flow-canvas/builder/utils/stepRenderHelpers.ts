@@ -3,6 +3,8 @@
 
 import { ApplicationFlowStep, ApplicationFlowStepSettings } from '../../types/infostack';
 import { cn } from '@/lib/utils';
+// Import gradientToCSS from modals to avoid duplication
+import { gradientToCSS } from '../components/modals';
 
 // ─────────────────────────────────────────────────────────
 // Unified Button Size Classes - SINGLE SOURCE OF TRUTH
@@ -82,17 +84,6 @@ export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>)
     return cn(baseClasses, 'bg-transparent border-2');
   }
   return baseClasses;
-};
-
-// Helper to convert gradient to CSS
-const gradientToCSS = (gradient: { type: 'linear' | 'radial'; angle: number; stops: Array<{ color: string; position: number }> }): string => {
-  const sortedStops = [...gradient.stops].sort((a, b) => a.position - b.position);
-  const stopsStr = sortedStops.map(s => `${s.color} ${s.position}%`).join(', ');
-  
-  if (gradient.type === 'radial') {
-    return `radial-gradient(circle, ${stopsStr})`;
-  }
-  return `linear-gradient(${gradient.angle}deg, ${stopsStr})`;
 };
 
 export const getButtonStyle = (settings: Partial<ApplicationFlowStepSettings>): React.CSSProperties | undefined => {

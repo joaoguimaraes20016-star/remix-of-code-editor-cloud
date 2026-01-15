@@ -64,7 +64,7 @@ export interface ApplicationFlowStepSettings {
   buttonText?: string;
   buttonColor?: string;
   buttonTextColor?: string;
-  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary' | 'ghost';
+  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary' | 'ghost';  // 'primary' maps to 'solid' in getButtonClasses
   buttonSize?: 'sm' | 'md' | 'lg';
   buttonRadius?: 'none' | 'rounded' | 'full';
   buttonFullWidth?: boolean;
@@ -121,6 +121,10 @@ export interface ApplicationFlowStep {
   type: ApplicationStepType;
   elements: Element[];
   settings?: ApplicationFlowStepSettings;
+  /**
+   * @deprecated Use settings.buttonAction instead for button navigation.
+   * This property is kept for backwards compatibility.
+   */
   navigation: {
     action: 'next' | 'go-to-step' | 'submit' | 'redirect';
     targetStepId?: string;
