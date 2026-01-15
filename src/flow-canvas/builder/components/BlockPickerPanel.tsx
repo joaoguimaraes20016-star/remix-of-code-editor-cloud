@@ -305,7 +305,7 @@ const flowTemplates: BlockTemplate[] = [
     template: () => ({
       id: generateId(),
       type: 'application-flow',
-      label: 'Application',
+      label: 'Flow Container', // Single name for Typeform-style experiences
       elements: [],
       props: {
         displayMode: 'one-at-a-time',

@@ -33,8 +33,8 @@ export type BlockType =
   | 'text-block'
   | 'custom'
   | 'booking'
-  | 'application-flow'  // Typeform-style multi-step experience
-  | 'capture-flow-embed' // CaptureFlow embed block
+  | 'application-flow'  // Flow Container: Typeform-style multi-step experience (SINGLE SOURCE OF TRUTH)
+  | 'capture-flow-embed' // @deprecated - Use 'application-flow' instead. Kept for backwards compatibility only.
   // Extended types for section templates
   | 'feature'
   | 'pricing'
@@ -49,12 +49,17 @@ export type BlockType =
   | 'divider';
 
 /**
- * @deprecated Use ApplicationStepType from '@/flow-canvas/shared/types/applicationEngine' instead
- * This legacy type is kept for backwards compatibility only.
+ * @deprecated Use ApplicationStepType from '@/flow-canvas/shared/types/applicationEngine' instead.
+ * 
+ * MIGRATION: The unified Flow Container system uses ApplicationEngine.
+ * Import { ApplicationStepType } from '@/flow-canvas/shared/types/applicationEngine';
  */
 export type ApplicationStepType = 'welcome' | 'question' | 'capture' | 'booking' | 'ending';
 
-// Question types for Application Flow
+/**
+ * @deprecated Use choice types from ApplicationEngine instead.
+ * MIGRATION: See ApplicationStepChoice in '@/flow-canvas/shared/types/applicationEngine'.
+ */
 export type QuestionType = 'multiple-choice' | 'text' | 'dropdown' | 'scale' | 'yes-no';
 
 // Settings for individual Application Flow steps
@@ -450,9 +455,22 @@ export interface BlockAction {
   stackId?: string;
 }
 
-// ============ LEGACY APPLICATION FLOW TYPES (deprecated - use ApplicationFlowSettings) ============
-// Kept for backwards compatibility with existing content
+// ============================================================================
+// LEGACY APPLICATION FLOW TYPES
+// ============================================================================
+// @deprecated - These types are DEPRECATED and kept ONLY for backwards compatibility.
+// 
+// MIGRATION GUIDE:
+// ────────────────
+// 1. Use ApplicationEngine from '@/flow-canvas/shared/types/applicationEngine'
+// 2. The unified system is called "Flow Container" in the UI
+// 3. All interactive blocks (inputs, choices, buttons) share ONE styling system
+// 4. Actions are: 'next', 'go-to-step', 'submit', 'redirect'
+//
+// DO NOT use these types for new code.
+// ============================================================================
 
+/** @deprecated Use ApplicationStepNavigation from applicationEngine.ts */
 export interface StepNavigation {
   action: 'next' | 'go-to-step' | 'submit' | 'redirect';
   targetStepId?: string;
@@ -460,6 +478,7 @@ export interface StepNavigation {
   submitAndContinue?: boolean;
 }
 
+/** @deprecated Use ApplicationStep from applicationEngine.ts */
 export interface ApplicationStep {
   id: string;
   type: ApplicationStepType;
@@ -470,6 +489,7 @@ export interface ApplicationStep {
   skipCondition?: ConditionalRule[];
 }
 
+/** @deprecated Use ApplicationEngine from applicationEngine.ts */
 export interface ApplicationFlow {
   id: string;
   type: 'application-flow';
@@ -480,7 +500,7 @@ export interface ApplicationFlow {
   progressStyle?: 'bar' | 'dots' | 'fraction' | 'none';
 }
 
-// Helper to get step type label
+/** @deprecated Step type labels are now handled by the unified label system */
 export const applicationStepTypeLabels: Record<ApplicationStepType, string> = {
   welcome: 'Welcome Screen',
   question: 'Question',
