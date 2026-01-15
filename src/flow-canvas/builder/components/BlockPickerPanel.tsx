@@ -69,7 +69,7 @@ const applicationQuestions: BlockTemplate[] = [
       elements: [
         { id: generateId(), type: 'heading', content: 'What is your biggest challenge right now?', props: { level: 3 } },
         { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Type your answer...', required: true, fieldKey: 'challenge' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
       ],
       props: { trackingId: '', intent: 'qualify' },
     }),
@@ -88,7 +88,7 @@ const applicationQuestions: BlockTemplate[] = [
         { id: generateId(), type: 'radio', content: 'Just getting started', props: { name: 'stage', value: 'beginner' } },
         { id: generateId(), type: 'radio', content: 'Growing my business', props: { name: 'stage', value: 'growing' } },
         { id: generateId(), type: 'radio', content: 'Scaling to 7+ figures', props: { name: 'stage', value: 'scaling' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
       ],
       props: { trackingId: '', intent: 'qualify' },
     }),
@@ -107,7 +107,7 @@ const applicationQuestions: BlockTemplate[] = [
         { id: generateId(), type: 'checkbox', content: 'More leads', props: { name: 'goals', value: 'leads' } },
         { id: generateId(), type: 'checkbox', content: 'Higher conversions', props: { name: 'goals', value: 'conversions' } },
         { id: generateId(), type: 'checkbox', content: 'Better retention', props: { name: 'goals', value: 'retention' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
       ],
       props: { trackingId: '', intent: 'qualify' },
     }),
@@ -130,7 +130,7 @@ const captureFields: BlockTemplate[] = [
         { id: generateId(), type: 'heading', content: 'What is your email?', props: { level: 3 } },
         { id: generateId(), type: 'text', content: 'We\'ll send your results here.', props: { variant: 'subtext' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
       ],
       props: { trackingId: '', intent: 'capture' },
     }),
@@ -148,7 +148,7 @@ const captureFields: BlockTemplate[] = [
         { id: generateId(), type: 'heading', content: 'What is your phone number?', props: { level: 3 } },
         { id: generateId(), type: 'text', content: 'For important updates only.', props: { variant: 'subtext' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: '+1 (555) 000-0000', required: true, fieldKey: 'phone', icon: 'phone' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
       ],
       props: { trackingId: '', intent: 'capture' },
     }),
@@ -165,7 +165,7 @@ const captureFields: BlockTemplate[] = [
       elements: [
         { id: generateId(), type: 'heading', content: 'What is your name?', props: { level: 3 } },
         { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your full name', required: true, fieldKey: 'name', icon: 'user' } },
-        { id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary', action: 'next-step' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
       ],
       props: { trackingId: '', intent: 'capture' },
     }),
@@ -188,7 +188,7 @@ const captureFields: BlockTemplate[] = [
         { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'you@example.com', required: true, fieldKey: 'email', icon: 'mail' } },
         { id: generateId(), type: 'text', content: 'Phone', props: { variant: 'label' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: '+1 (555) 000-0000', required: false, fieldKey: 'phone', icon: 'phone' } },
-        { id: generateId(), type: 'button', content: 'Submit Application', props: { variant: 'primary', size: 'lg', action: 'submit' } },
+        { id: generateId(), type: 'button', content: 'Submit Application', props: { size: 'lg', buttonAction: { type: 'submit' } } },
       ],
       props: { trackingId: '', intent: 'capture' },
     }),
@@ -265,8 +265,8 @@ const actionBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'cta',
       label: 'Button',
-      elements: [{ id: generateId(), type: 'button', content: 'Continue', props: { variant: 'primary' } }],
-      props: { action: 'next-step', href: '' },
+      elements: [{ id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } }],
+      props: { href: '' },
     }),
   },
 ];
@@ -425,7 +425,7 @@ const contentSections: BlockTemplate[] = [
       elements: [
         { id: generateId(), type: 'heading', content: 'Welcome! Let\'s Get Started', props: { level: 1 } },
         { id: generateId(), type: 'text', content: 'Answer a few quick questions to see if we\'re a good fit.', props: { variant: 'subtext' } },
-        { id: generateId(), type: 'button', content: 'Start Application', props: { variant: 'primary', size: 'lg' } },
+        { id: generateId(), type: 'button', content: 'Start Application', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
       ],
       props: { intent: 'collect' },
     }),
@@ -636,12 +636,11 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       const buttonEl = template.elements.find(e => e.type === 'button');
       const buttonText = buttonEl?.content || 'Continue';
       
-      // Build settings based on step type
+      // Build settings based on step type - no buttonColor to use neutral default
       const settings: ApplicationFlowStepSettings = {
         title,
         description: description || undefined,
         buttonText,
-        buttonColor: '#18181b',
         questionType,
         options: options.length > 0 ? options : undefined,
         required: true,
