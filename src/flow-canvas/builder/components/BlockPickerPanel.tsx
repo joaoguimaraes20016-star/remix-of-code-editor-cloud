@@ -354,90 +354,14 @@ interface SectionCategory {
   defaultOpen?: boolean;
 }
 
-const captureSections: BlockTemplate[] = [
+// Flow templates - all use application-flow block type (the unified Application Engine)
+// These are NOT separate systems - they're different presentations of the same engine
+const flowTemplates: BlockTemplate[] = [
   {
     type: 'application-flow',
-    label: 'One Question Screen',
-    icon: <HelpCircle size={16} />,
-    description: 'Best for one-question-per-page flows',
-    template: () => ({
-      id: generateId(),
-      type: 'application-flow',
-      label: 'Question Flow',
-      elements: [],
-      props: {
-        displayMode: 'one-at-a-time',
-        showProgress: true,
-        transition: 'slide-up',
-        background: { type: 'solid', color: '#ffffff' },
-        textColor: '#000000',
-        inputBackground: '#ffffff',
-        inputBorderColor: '#e5e7eb',
-        steps: [
-          {
-            id: generateId(),
-            name: 'Question',
-            type: 'question',
-            settings: {
-              title: 'What is your biggest challenge?',
-              questionType: 'multiple-choice',
-              options: ['Not enough leads', 'Low conversions', "Can't scale"],
-              buttonText: 'Continue',
-              align: 'center',
-              spacing: 'normal',
-            },
-            elements: [],
-            navigation: { action: 'next' },
-          },
-        ],
-      },
-    }),
-  },
-  {
-    type: 'application-flow',
-    label: 'Opt-In Form',
-    icon: <UserCheck size={16} />,
-    description: 'Name, email & phone capture',
-    template: () => ({
-      id: generateId(),
-      type: 'application-flow',
-      label: 'Opt-In',
-      elements: [],
-      props: {
-        displayMode: 'one-at-a-time',
-        showProgress: false,
-        transition: 'fade',
-        background: { type: 'solid', color: '#ffffff' },
-        textColor: '#000000',
-        inputBackground: '#ffffff',
-        inputBorderColor: '#e5e7eb',
-        steps: [
-          {
-            id: generateId(),
-            name: 'Get Access',
-            type: 'capture',
-            settings: {
-              title: 'Get Instant Access',
-              description: 'Enter your details below.',
-              collectName: true,
-              collectEmail: true,
-              collectPhone: false,
-              buttonText: 'Get Access',
-              align: 'center',
-              spacing: 'normal',
-            },
-            elements: [],
-            navigation: { action: 'submit' },
-          },
-        ],
-      },
-    }),
-  },
-  {
-    type: 'application-flow',
-    label: 'Application Form',
-    icon: <FileText size={16} />,
-    description: 'Multi-field qualification',
+    label: 'Multi-Step Flow',
+    icon: <Workflow size={16} />,
+    description: 'Full Typeform-style experience',
     template: () => ({
       id: generateId(),
       type: 'application-flow',
@@ -468,27 +392,29 @@ const captureSections: BlockTemplate[] = [
           },
           {
             id: generateId(),
-            name: 'Your Info',
-            type: 'capture',
+            name: 'Question',
+            type: 'question',
             settings: {
-              title: 'Complete your application',
-              collectName: true,
-              collectEmail: true,
-              collectPhone: true,
-              buttonText: 'Submit Application',
+              title: 'What is your biggest challenge?',
+              questionType: 'multiple-choice',
+              options: ['Not enough leads', 'Low conversions', "Can't scale"],
+              buttonText: 'Continue',
               align: 'center',
               spacing: 'normal',
             },
             elements: [],
-            navigation: { action: 'submit' },
+            navigation: { action: 'next' },
           },
           {
             id: generateId(),
-            name: 'Thank You',
-            type: 'ending',
+            name: 'Your Info',
+            type: 'capture',
             settings: {
-              title: "Thanks — we'll be in touch!",
-              description: 'We review applications within 24 hours.',
+              title: 'Where should we send your results?',
+              collectName: true,
+              collectEmail: true,
+              collectPhone: false,
+              buttonText: 'Submit',
               align: 'center',
               spacing: 'normal',
             },
@@ -580,16 +506,16 @@ const sectionCategories: SectionCategory[] = [
   {
     id: 'advanced',
     label: 'Advanced',
-    hint: 'Build from scratch or embed flows',
-    sections: [...advancedSections, ...captureSections],
+    hint: 'Build from scratch or flow templates',
+    sections: [...advancedSections, ...flowTemplates],
     defaultOpen: false,
   },
 ];
 
 // ============ COLLAPSIBLE CATEGORY COMPONENT ============
 
-// Categories that should add to Application Flow instead of standalone blocks
-const APPLICATION_FLOW_CATEGORIES = ['questions', 'capture', 'capture-sections'];
+// Categories that should add to Application Engine instead of standalone blocks
+const APPLICATION_ENGINE_CATEGORIES = ['interactive'];
 
 interface CollapsibleCategoryProps {
   category: BlockCategory | SectionCategory;
@@ -608,8 +534,8 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
   const blocks = 'blocks' in category ? category.blocks : category.sections;
   const hint = 'hint' in category ? category.hint : undefined;
 
-  // Check if this category routes to Application Flow (only show badge when flow exists)
-  const isFlowCategory = APPLICATION_FLOW_CATEGORIES.includes(category.id);
+  // Check if this category routes to Application Engine (only show badge when flow exists)
+  const isFlowCategory = APPLICATION_ENGINE_CATEGORIES.includes(category.id);
   const showFlowBadge = isFlowCategory && activeApplicationFlowBlockId;
 
   return (
@@ -781,20 +707,20 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
     };
   };
 
-  // Check if a template belongs to Application Flow categories
+  // Check if a template belongs to Application Engine categories
   const isApplicationFlowCategory = (categoryId: string) => {
-    return APPLICATION_FLOW_CATEGORIES.includes(categoryId);
+    return APPLICATION_ENGINE_CATEGORIES.includes(categoryId);
   };
 
   // All templates for search
   const allTemplates = [
-    ...applicationQuestions.map(b => ({ ...b, isSection: false, categoryId: 'questions' })),
-    ...captureFields.map(b => ({ ...b, isSection: false, categoryId: 'capture' })),
+    ...applicationQuestions.map(b => ({ ...b, isSection: false, categoryId: 'interactive' })),
+    ...captureFields.map(b => ({ ...b, isSection: false, categoryId: 'interactive' })),
     ...contentBlocks.map(b => ({ ...b, isSection: false, categoryId: 'content' })),
     ...actionBlocks.map(b => ({ ...b, isSection: false, categoryId: 'actions' })),
-    ...captureSections.map(t => ({ ...t, isSection: true, categoryId: 'capture-sections' })),
+    ...flowTemplates.map(t => ({ ...t, isSection: true, categoryId: 'advanced' })),
     ...contentSections.map(t => ({ ...t, isSection: true, categoryId: 'content-sections' })),
-    ...advancedSections.map(t => ({ ...t, isSection: true, categoryId: 'advanced-sections' })),
+    ...advancedSections.map(t => ({ ...t, isSection: true, categoryId: 'advanced' })),
   ];
 
   const filteredResults = searchQuery.length > 0
@@ -921,7 +847,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                             Section
                           </span>
                         )}
-                        {activeApplicationFlowBlockId && template.categoryId && APPLICATION_FLOW_CATEGORIES.includes(template.categoryId) && (
+                        {activeApplicationFlowBlockId && template.categoryId && APPLICATION_ENGINE_CATEGORIES.includes(template.categoryId) && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
                             → Flow
                           </span>

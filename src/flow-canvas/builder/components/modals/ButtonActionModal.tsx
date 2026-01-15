@@ -9,10 +9,6 @@ import {
   Phone, 
   Mail,
   Layers,
-  X,
-  Play,
-  Maximize2,
-  CheckCircle2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -42,17 +38,12 @@ export type ButtonActionType =
   | 'modal' 
   | 'download' 
   | 'phone' 
-  | 'email'
-  // CaptureFlow actions (Phase 5)
-  | 'advance-capture-flow'
-  | 'open-capture-flow'
-  | 'submit-capture-flow';
+  | 'email';
 
 export interface ButtonAction {
   type: ButtonActionType;
   value?: string;
   openNewTab?: boolean;
-  captureFlowId?: string; // For open-capture-flow action
 }
 
 interface ButtonActionModalProps {
@@ -61,8 +52,6 @@ interface ButtonActionModalProps {
   action: ButtonAction | null;
   onSave: (action: ButtonAction) => void;
   steps?: { id: string; name: string }[];
-  captureFlows?: { id: string; name: string }[]; // Available CaptureFlows
-  isInsideCaptureFlow?: boolean; // Context: is button inside a CaptureFlow?
 }
 
 interface ActionOption {
@@ -74,8 +63,6 @@ interface ActionOption {
   inputLabel?: string;
   inputPlaceholder?: string;
   hasNewTab?: boolean;
-  isCaptureFlowAction?: boolean; // Mark as CaptureFlow-specific
-  hasCaptureFlowSelect?: boolean; // Needs CaptureFlow selection
 }
 
 const actionOptions: ActionOption[] = [
@@ -145,29 +132,6 @@ const actionOptions: ActionOption[] = [
     inputLabel: 'Email Address',
     inputPlaceholder: 'hello@example.com'
   },
-  // CaptureFlow Actions
-  { 
-    type: 'advance-capture-flow', 
-    label: 'Next Node', 
-    icon: <Play className="w-4 h-4" />, 
-    description: 'Move to next capture node',
-    isCaptureFlowAction: true,
-  },
-  { 
-    type: 'open-capture-flow', 
-    label: 'Open Flow', 
-    icon: <Maximize2 className="w-4 h-4" />, 
-    description: 'Open CaptureFlow as modal',
-    isCaptureFlowAction: true,
-    hasCaptureFlowSelect: true,
-  },
-  { 
-    type: 'submit-capture-flow', 
-    label: 'Submit Flow', 
-    icon: <CheckCircle2 className="w-4 h-4" />, 
-    description: 'Submit the CaptureFlow',
-    isCaptureFlowAction: true,
-  },
 ];
 
 export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
@@ -176,40 +140,18 @@ export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
   action,
   onSave,
   steps = [],
-  captureFlows = [],
-  isInsideCaptureFlow = false,
 }) => {
-  // Set default based on context - if inside CaptureFlow, default to advance
-  const defaultType = isInsideCaptureFlow ? 'advance-capture-flow' : 'next-step';
-  const [selectedType, setSelectedType] = useState<ButtonActionType>(action?.type || defaultType);
+  const [selectedType, setSelectedType] = useState<ButtonActionType>(action?.type || 'next-step');
   const [inputValue, setInputValue] = useState(action?.value || '');
   const [openNewTab, setOpenNewTab] = useState(action?.openNewTab || false);
-  const [captureFlowId, setCaptureFlowId] = useState(action?.captureFlowId || '');
 
   const selectedOption = actionOptions.find(o => o.type === selectedType);
-
-  // Filter options based on context
-  const filteredOptions = actionOptions.filter(option => {
-    // If inside CaptureFlow, show CaptureFlow actions prominently
-    if (isInsideCaptureFlow) {
-      // Hide standard flow actions that don't make sense inside CaptureFlow
-      if (option.type === 'next-step' || option.type === 'go-to-step') {
-        return false;
-      }
-    }
-    return true;
-  });
-
-  // Separate CaptureFlow actions for grouped display
-  const standardActions = filteredOptions.filter(o => !o.isCaptureFlowAction);
-  const captureFlowActions = filteredOptions.filter(o => o.isCaptureFlowAction);
 
   const handleSave = () => {
     onSave({
       type: selectedType,
       value: inputValue || undefined,
       openNewTab: openNewTab || undefined,
-      captureFlowId: captureFlowId || undefined,
     });
     onClose();
   };
@@ -218,7 +160,6 @@ export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
     setSelectedType(type);
     setInputValue('');
     setOpenNewTab(false);
-    setCaptureFlowId('');
   };
 
   const renderActionGrid = (options: ActionOption[], title?: string) => (
@@ -273,27 +214,10 @@ export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* CaptureFlow Actions - show first if inside CaptureFlow */}
-          {isInsideCaptureFlow && captureFlowActions.length > 0 && (
-            <div className="pb-3 border-b border-builder-border">
-              {renderActionGrid(captureFlowActions, 'Capture Flow')}
-            </div>
-          )}
-
           {/* Standard Action Type Grid */}
-          {renderActionGrid(
-            standardActions, 
-            isInsideCaptureFlow ? 'Other Actions' : undefined
-          )}
+          {renderActionGrid(actionOptions)}
 
-          {/* CaptureFlow Actions - show at bottom if NOT inside CaptureFlow */}
-          {!isInsideCaptureFlow && captureFlowActions.length > 0 && (
-            <div className="pt-3 border-t border-builder-border">
-              {renderActionGrid(captureFlowActions, 'Capture Flow')}
-            </div>
-          )}
-
-          {/* Input Field for standard actions */}
+          {/* Input Field for actions that need it */}
           {selectedOption?.hasInput && (
             <div className="space-y-2">
               <Label className="text-sm text-builder-text-muted">
@@ -320,33 +244,6 @@ export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
                   className="builder-input"
                 />
               )}
-            </div>
-          )}
-
-          {/* CaptureFlow Selection for open-capture-flow action */}
-          {selectedOption?.hasCaptureFlowSelect && (
-            <div className="space-y-2">
-              <Label className="text-sm text-builder-text-muted">
-                Select CaptureFlow
-              </Label>
-              <Select value={captureFlowId} onValueChange={setCaptureFlowId}>
-                <SelectTrigger className="builder-input">
-                  <SelectValue placeholder="Choose a CaptureFlow..." />
-                </SelectTrigger>
-                <SelectContent className="bg-builder-surface border-builder-border">
-                  {captureFlows.length > 0 ? (
-                    captureFlows.map((flow) => (
-                      <SelectItem key={flow.id} value={flow.id}>
-                        {flow.name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="p-2 text-xs text-builder-text-muted text-center">
-                      No CaptureFlows available
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
             </div>
           )}
 
