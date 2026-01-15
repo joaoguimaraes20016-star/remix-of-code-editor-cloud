@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Plus, Search, Type, Image, MousePointer, 
   Mail, Phone, User, UserCheck, ChevronRight, ChevronDown,
-  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow, Sparkles
+  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '@/flow-canvas/types/infostack';
@@ -12,7 +12,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { CaptureFlowSelector } from './CaptureFlowSelector';
+
 
 const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -314,24 +314,31 @@ const actionBlocks: BlockTemplate[] = [
 
 // ============ BLOCK CATEGORIES ============
 
+// Unified "Interactive" category - consolidates all data-collection blocks
+const interactiveBlocks: BlockTemplate[] = [
+  ...applicationQuestions,
+  ...captureFields,
+];
+
 const blockCategories: BlockCategory[] = [
   {
-    id: 'content',
-    label: 'Essentials',
-    hint: 'Core content blocks for your page',
-    blocks: contentBlocks,
-    defaultOpen: true, // First category always open - prioritize content blocks
+    id: 'interactive',
+    label: 'Interactive',
+    hint: 'Questions & lead capture',
+    blocks: interactiveBlocks,
+    defaultOpen: true, // Interactive blocks are the core use case
   },
   {
-    id: 'application-flow',
-    label: 'Application Flow',
-    hint: 'Build multi-step experiences',
-    blocks: [...applicationQuestions, ...captureFields],
+    id: 'content',
+    label: 'Content',
+    hint: 'Text, images, and media',
+    blocks: contentBlocks,
     defaultOpen: false,
   },
   {
     id: 'actions',
     label: 'Actions',
+    hint: 'Buttons and navigation',
     blocks: actionBlocks,
     defaultOpen: false,
   },
@@ -564,22 +571,17 @@ const advancedSections: BlockTemplate[] = [
 
 const sectionCategories: SectionCategory[] = [
   {
-    id: 'capture',
-    label: 'Capture Sections',
-    hint: 'Typical flow: Qualify → Capture → Book → Thank You',
-    sections: captureSections,
-    defaultOpen: true,
-  },
-  {
     id: 'content',
     label: 'Content Sections',
+    hint: 'Pre-designed layouts for your page',
     sections: contentSections,
-    defaultOpen: false,
+    defaultOpen: true,
   },
   {
     id: 'advanced',
     label: 'Advanced',
-    sections: advancedSections,
+    hint: 'Build from scratch or embed flows',
+    sections: [...advancedSections, ...captureSections],
     defaultOpen: false,
   },
 ];
@@ -593,7 +595,6 @@ interface CollapsibleCategoryProps {
   category: BlockCategory | SectionCategory;
   onAddBlock: (template: BlockTemplate, isSection: boolean, categoryId?: string) => void;
   isSection?: boolean;
-  onOpenCaptureFlowSelector?: () => void;
   activeApplicationFlowBlockId?: string | null;
 }
 
@@ -601,13 +602,11 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
   category, 
   onAddBlock,
   isSection = false,
-  onOpenCaptureFlowSelector,
   activeApplicationFlowBlockId,
 }) => {
   const [isOpen, setIsOpen] = useState(category.defaultOpen ?? false);
   const blocks = 'blocks' in category ? category.blocks : category.sections;
   const hint = 'hint' in category ? category.hint : undefined;
-  const showCaptureFlowCTA = isSection && category.id === 'capture' && onOpenCaptureFlowSelector;
 
   // Check if this category routes to Application Flow (only show badge when flow exists)
   const isFlowCategory = APPLICATION_FLOW_CATEGORIES.includes(category.id);
@@ -637,57 +636,26 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="pl-4 pr-1 pb-2">
-          {/* Capture Flow CTA - appears at top of Capture Sections */}
-          {showCaptureFlowCTA && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenCaptureFlowSelector();
-              }}
-              className="w-full mb-3 flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-builder-accent/10 to-purple-500/10 border border-builder-accent/30 hover:border-builder-accent/50 transition-all text-left group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-builder-accent/20 flex items-center justify-center text-builder-accent group-hover:scale-105 transition-transform">
-                <Sparkles size={18} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-builder-text group-hover:text-builder-accent transition-colors flex items-center gap-1.5">
-                  Add Capture Flow
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-builder-accent/20 text-builder-accent font-medium">
-                    NEW
-                  </span>
-                </div>
-                <div className="text-[10px] text-builder-text-muted">
-                  Build lead capture with guided templates
-                </div>
-              </div>
-          </button>
+          {hint && (
+            <p className="text-[10px] text-builder-accent mb-2 ml-2">{hint}</p>
           )}
-          
-          {/* Only show individual templates if NOT showing Capture Flow CTA */}
-          {!showCaptureFlowCTA && (
-            <>
-              {hint && (
-                <p className="text-[10px] text-builder-accent mb-2 ml-2">{hint}</p>
-              )}
-              <div className="space-y-0.5">
-                {blocks.map((block, idx) => (
-                  <button
-                    key={`${block.label}-${idx}`}
-                    onClick={() => onAddBlock(block, isSection, category.id)}
-                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
-                  >
-                    <div className="w-7 h-7 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
-                      {block.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-builder-text">{block.label}</div>
-                      <div className="text-[10px] text-builder-text-dim">{block.description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          <div className="space-y-0.5">
+            {blocks.map((block, idx) => (
+              <button
+                key={`${block.label}-${idx}`}
+                onClick={() => onAddBlock(block, isSection, category.id)}
+                className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
+              >
+                <div className="w-7 h-7 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
+                  {block.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-builder-text">{block.label}</div>
+                  <div className="text-[10px] text-builder-text-dim">{block.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -708,7 +676,6 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
-  const [showCaptureFlowSelector, setShowCaptureFlowSelector] = useState(false);
 
   // Use the module-level constant for Application Flow categories
   // (defined at top of file for use in CollapsibleCategory)
@@ -862,31 +829,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
     onClose();
   };
 
-  const handleAddCaptureFlow = (block: Block) => {
-    // If the block is an application-flow with steps, and we already have one,
-    // merge the steps into the existing flow
-    if (block.type === 'application-flow' && activeApplicationFlowBlockId && onAddApplicationFlowStep) {
-      const flowSettings = block.props as { steps?: ApplicationFlowStep[] };
-      const stepsToAdd = (flowSettings.steps || []).filter(
-        s => s.type !== 'welcome' && s.type !== 'ending'
-      );
-      stepsToAdd.forEach(step => onAddApplicationFlowStep(step));
-      onClose();
-      return;
-    }
-    
-    // Otherwise add as new block
-    onAddBlock(block, { type: 'section' });
-    onClose();
-  };
-
   return (
-    <>
-      <CaptureFlowSelector
-        isOpen={showCaptureFlowSelector}
-        onClose={() => setShowCaptureFlowSelector(false)}
-        onSelectFlow={handleAddCaptureFlow}
-      />
     <div className="flex flex-col h-full min-h-0 bg-builder-surface">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-builder-border">
@@ -1013,7 +956,6 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 category={category}
                 onAddBlock={handleAddBlock}
                 isSection={true}
-                onOpenCaptureFlowSelector={() => setShowCaptureFlowSelector(true)}
                 activeApplicationFlowBlockId={activeApplicationFlowBlockId}
               />
             ))}
@@ -1021,7 +963,6 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
         )}
       </div>
     </div>
-    </>
   );
 };
 

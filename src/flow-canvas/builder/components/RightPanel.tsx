@@ -3588,9 +3588,20 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             currentDeviceMode={currentDeviceMode}
           />
         ) : resolvedType === 'stack' ? (
-          /* Stack selections should select parent frame instead - show frame inspector if we can find parent */
-          <div className="p-4 text-center text-builder-text-muted text-sm">
-            <p>Click the section header above to edit section settings.</p>
+          /* Stack selections - provide helpful context instead of empty state */
+          <div className="p-4 space-y-4">
+            <div className="text-center">
+              <Layers className="w-8 h-8 mx-auto mb-2 text-builder-text-dim" />
+              <p className="text-sm font-medium text-builder-text">Content Container</p>
+              <p className="text-xs text-builder-text-muted mt-1">
+                This container holds the blocks within a section.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-builder-surface-hover border border-builder-border">
+              <p className="text-xs text-builder-text-muted">
+                <strong className="text-builder-text">Tip:</strong> Click the section header in the breadcrumb above to edit layout and background settings.
+              </p>
+            </div>
           </div>
         ) : (
           <PageInspector page={page} onUpdate={handleUpdate} onPublish={onPublish} />

@@ -76,7 +76,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 
-type TabType = 'pages' | 'layers' | 'assets' | 'capture';
+type TabType = 'pages' | 'layers' | 'assets';
 
 // Asset type definition
 interface Asset {
@@ -1022,7 +1022,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex flex-col h-full bg-builder-surface border-r border-builder-border">
-        {/* Tab Bar */}
+        {/* Tab Bar - Simplified: Pages, Layers, Assets */}
         <div className="flex items-center border-b border-builder-border">
           <button
             onClick={() => setActiveTab('pages')}
@@ -1035,12 +1035,6 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
             className={cn('builder-tab flex-1', activeTab === 'layers' && 'builder-tab-active')}
           >
             Layers
-          </button>
-          <button
-            onClick={() => setActiveTab('capture')}
-            className={cn('builder-tab flex-1', activeTab === 'capture' && 'builder-tab-active')}
-          >
-            Capture
           </button>
           <button
             onClick={() => setActiveTab('assets')}
@@ -1150,8 +1144,6 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           )}
 
           {activeTab === 'assets' && <AssetsPanel />}
-
-          {activeTab === 'capture' && <CaptureFlowsPanel />}
 
           {/* Add Page Button */}
           <div className="p-3 border-t border-builder-border-subtle">
