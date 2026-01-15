@@ -13,6 +13,7 @@ import { evaluateVisibility } from '../hooks/useScrollAnimation';
 import { gradientToCSS, cloneGradient, GradientValue } from './modals';
 import { BuilderContextMenu } from './ContextMenu';
 import { ApplicationFlowCard } from './ApplicationFlowCard';
+import { useFlowContainerSafe, buttonActionToIntent, FlowIntent } from '../contexts/FlowContainerContext';
 import {
   DndContext,
   closestCenter,
@@ -326,6 +327,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   // Access theme context for button colors
   const { isDarkTheme, primaryColor } = useContext(ThemeContext);
   
+  // Access FlowContainer for intent-based button actions (SINGLE SOURCE OF TRUTH for step progression)
+  const flowContainer = useFlowContainerSafe();
+  
   // State for hover/active interactions
   const [currentInteractionState, setCurrentInteractionState] = useState<'base' | 'hover' | 'active'>('base');
   
@@ -570,7 +574,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
     );
   };
   
-  // Button click action handler
+  // Button click action handler - EMITS INTENT to FlowContainer (single source of truth)
+  // Buttons do NOT know step order, validation, or form state. They ONLY emit intent.
   const handleButtonClick = useCallback((e: React.MouseEvent) => {
     if (!isPreviewMode) {
       e.stopPropagation();
@@ -582,51 +587,53 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
     e.stopPropagation();
     
     const action = element.props?.buttonAction as ButtonAction | undefined;
-    if (!action || !action.type) return;
+    const intent = buttonActionToIntent(action);
     
-    switch (action.type) {
-      case 'url':
-        if (action.value) {
-          if (action.openNewTab) {
-            window.open(action.value, '_blank');
-          } else {
-            window.location.href = action.value;
-          }
+    if (intent) {
+      // If FlowContainer is available, emit intent to it (PREFERRED)
+      if (flowContainer) {
+        // For submit intent, include form values
+        if (intent.type === 'submit') {
+          flowContainer.emitIntent({ type: 'submit', values: formValues });
+        } else {
+          flowContainer.emitIntent(intent);
         }
-        break;
-      case 'next-step':
-        onNextStep?.();
-        break;
-      case 'go-to-step':
-        if (action.value) {
-          onGoToStep?.(action.value);
+      } else {
+        // Fallback to legacy callbacks for backwards compatibility
+        // This path will be removed once FlowContainer is fully integrated
+        switch (intent.type) {
+          case 'next-step':
+            onNextStep?.();
+            break;
+          case 'go-to-step':
+            onGoToStep?.(intent.stepId);
+            break;
+          case 'submit':
+            onFormSubmit?.(formValues);
+            break;
+          case 'url':
+            if (intent.openNewTab) {
+              window.open(intent.url, '_blank');
+            } else {
+              window.location.href = intent.url;
+            }
+            break;
+          case 'scroll':
+            document.querySelector(intent.selector)?.scrollIntoView({ behavior: 'smooth' });
+            break;
+          case 'phone':
+            window.location.href = `tel:${intent.number}`;
+            break;
+          case 'email':
+            window.location.href = `mailto:${intent.address}`;
+            break;
+          case 'download':
+            window.open(intent.url, '_blank');
+            break;
         }
-        break;
-      case 'scroll':
-        if (action.value) {
-          document.querySelector(action.value)?.scrollIntoView({ behavior: 'smooth' });
-        }
-        break;
-      case 'phone':
-        if (action.value) {
-          window.location.href = `tel:${action.value}`;
-        }
-        break;
-      case 'email':
-        if (action.value) {
-          window.location.href = `mailto:${action.value}`;
-        }
-        break;
-      case 'download':
-        if (action.value) {
-          window.open(action.value, '_blank');
-        }
-        break;
-      case 'submit':
-        onFormSubmit?.(formValues);
-        break;
+      }
     }
-  }, [isPreviewMode, element.props?.buttonAction, onSelect, onNextStep, onGoToStep, onFormSubmit, formValues]);
+  }, [isPreviewMode, element.props?.buttonAction, onSelect, flowContainer, formValues, onNextStep, onGoToStep, onFormSubmit]);
 
   // Handle content + styles from InlineTextEditor
   // Only update properties that are explicitly provided (not undefined)
