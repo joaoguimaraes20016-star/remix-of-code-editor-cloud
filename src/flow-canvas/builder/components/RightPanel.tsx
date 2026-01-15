@@ -118,6 +118,7 @@ import { toast } from 'sonner';
 import { useInlineEdit } from '../contexts/InlineEditContext';
 import { ButtonIconPicker } from './ButtonIconPicker';
 import { ApplicationFlowInspector } from './inspectors/ApplicationFlowInspector';
+import { InteractiveBlockInspector } from './inspectors/InteractiveBlockInspector';
 
 interface RightPanelProps {
   page: Page;
@@ -3570,6 +3571,11 @@ export const RightPanel: React.FC<RightPanelProps> = ({
               onUpdateBlock={(updates) => handleUpdate(updates)}
               selectedStepId={selectedApplicationStepId}
               onSelectStep={onSelectApplicationStep}
+            />
+          ) : (selectedNode as Block).type === 'form-field' ? (
+            <InteractiveBlockInspector 
+              block={selectedNode as Block} 
+              onUpdateBlock={(updates) => handleUpdate(updates)}
             />
           ) : (
             <BlockInspector block={selectedNode as Block} onUpdate={handleUpdate} />

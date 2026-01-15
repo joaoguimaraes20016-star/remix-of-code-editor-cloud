@@ -383,9 +383,9 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   }
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Header */}
-      <div className="px-3 py-2.5 border-b border-border">
+    <div className="flex flex-col h-full min-h-0 bg-background">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 px-3 py-2.5 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded bg-muted flex items-center justify-center">
             <FileText className="w-3 h-3 text-muted-foreground" />
@@ -397,8 +397,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
       </div>
 
-      {/* Steps List */}
-      <div className="flex-1 overflow-y-auto builder-scroll">
+      {/* Steps List - Scrollable area with proper constraints */}
+      <div className="flex-1 min-h-0 overflow-y-auto builder-scroll">
         {/* Sticky Steps Header */}
         <div className="sticky top-0 z-10 px-3 py-2 bg-background border-b border-border">
           <div className="flex items-center justify-between">
@@ -408,73 +408,72 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
         
         <div className="p-3 space-y-1">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={steps.map(s => s.id)} strategy={verticalListSortingStrategy}>
+              {steps.map((step, index) => (
+                <StepListItem
+                  key={step.id}
+                  step={step}
+                  index={index}
+                  isActive={step.id === selectedStepId}
+                  totalSteps={steps.length}
+                  onSelect={() => handleSelectStep(step.id)}
+                  onDuplicate={() => duplicateStep(step.id)}
+                  onDelete={() => deleteStep(step.id)}
+                />
+              ))}
+            </SortableContext>
+            <DragOverlay>
+              {activeStep ? (
+                <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-background text-foreground shadow-xl border border-border">
+                  <GripVertical className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs font-medium">{activeStep.name}</span>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={steps.map(s => s.id)} strategy={verticalListSortingStrategy}>
-            {steps.map((step, index) => (
-              <StepListItem
-                key={step.id}
-                step={step}
-                index={index}
-                isActive={step.id === selectedStepId}
-                totalSteps={steps.length}
-                onSelect={() => handleSelectStep(step.id)}
-                onDuplicate={() => duplicateStep(step.id)}
-                onDelete={() => deleteStep(step.id)}
-              />
-            ))}
-          </SortableContext>
-          <DragOverlay>
-            {activeStep ? (
-              <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-background text-foreground shadow-xl border border-border">
-                <GripVertical className="w-3 h-3 text-muted-foreground" />
-                <span className="text-xs font-medium">{activeStep.name}</span>
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-
-        {/* Add Step Button */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="w-full flex items-center justify-center gap-1 py-2 mt-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-foreground/30 rounded-md transition-colors">
-              <Plus className="w-3 h-3" />
-              Add Step
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-40 bg-background border-border">
-            <DropdownMenuItem onClick={() => addStep('welcome')} className="text-xs">
-              <Sparkles className="w-3 h-3 mr-2 text-muted-foreground" />
-              Welcome Screen
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('question')} className="text-xs">
-              <HelpCircle className="w-3 h-3 mr-2 text-muted-foreground" />
-              Question
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('capture')} className="text-xs">
-              <UserPlus className="w-3 h-3 mr-2 text-muted-foreground" />
-              Capture Info
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('booking')} className="text-xs">
-              <Calendar className="w-3 h-3 mr-2 text-muted-foreground" />
-              Book a Call
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addStep('ending')} className="text-xs">
-              <CheckCircle2 className="w-3 h-3 mr-2 text-muted-foreground" />
-              Thank You
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {/* Add Step Button */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center justify-center gap-1 py-2 mt-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-foreground/30 rounded-md transition-colors">
+                <Plus className="w-3 h-3" />
+                Add Step
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-40 bg-background border-border">
+              <DropdownMenuItem onClick={() => addStep('welcome')} className="text-xs">
+                <Sparkles className="w-3 h-3 mr-2 text-muted-foreground" />
+                Welcome Screen
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addStep('question')} className="text-xs">
+                <HelpCircle className="w-3 h-3 mr-2 text-muted-foreground" />
+                Question
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addStep('capture')} className="text-xs">
+                <UserPlus className="w-3 h-3 mr-2 text-muted-foreground" />
+                Capture Info
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addStep('booking')} className="text-xs">
+                <Calendar className="w-3 h-3 mr-2 text-muted-foreground" />
+                Book a Call
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addStep('ending')} className="text-xs">
+                <CheckCircle2 className="w-3 h-3 mr-2 text-muted-foreground" />
+                Thank You
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Appearance Settings */}
-      <div className="border-t border-border p-3 space-y-3">
+      {/* Appearance Settings - Fixed at bottom */}
+      <div className="flex-shrink-0 border-t border-border p-3 space-y-3">
         <div className="flex items-center gap-2 mb-2">
           <Palette className="w-3 h-3 text-muted-foreground" />
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Appearance</span>
