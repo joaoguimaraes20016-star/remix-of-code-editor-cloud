@@ -193,6 +193,8 @@ interface CanvasRendererProps {
   onOpenSectionPicker?: () => void;
   // Application Flow step selection (for canvas step switching)
   selectedApplicationStepId?: string | null;
+  // Active Application Flow block ID (for scoped step selection)
+  activeApplicationFlowBlockId?: string | null;
 }
 
 // Button Action type
@@ -2025,6 +2027,7 @@ interface SortableBlockRendererProps {
   onGoToStep?: (stepId: string) => void;
   onFormSubmit?: (values: Record<string, string>) => void;
   selectedApplicationStepId?: string | null;
+  activeApplicationFlowBlockId?: string | null;
 }
 
 const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({ 
@@ -2054,6 +2057,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   onGoToStep,
   onFormSubmit,
   selectedApplicationStepId,
+  activeApplicationFlowBlockId,
 }) => {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const isSelected = selection.type === 'block' && selection.id === block.id;
@@ -2310,7 +2314,7 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
             }
           }}
           readOnly={readOnly}
-          selectedStepId={selectedApplicationStepId}
+          selectedStepId={block.id === activeApplicationFlowBlockId ? selectedApplicationStepId : null}
         />
       </div>
     );
@@ -2687,6 +2691,7 @@ interface StackRendererProps {
   onFormSubmit?: (values: Record<string, string>) => void;
   onOpenBlockPickerInPanel?: (stackId: string) => void;
   selectedApplicationStepId?: string | null;
+  activeApplicationFlowBlockId?: string | null;
 }
 
 const StackRenderer: React.FC<StackRendererProps> = ({ 
@@ -2715,6 +2720,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   onFormSubmit,
   onOpenBlockPickerInPanel,
   selectedApplicationStepId,
+  activeApplicationFlowBlockId,
 }) => {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const isSelected = selection.type === 'stack' && selection.id === stack.id;
@@ -2845,6 +2851,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
                     onGoToStep={onGoToStep}
                     onFormSubmit={onFormSubmit}
                     selectedApplicationStepId={selectedApplicationStepId}
+                    activeApplicationFlowBlockId={activeApplicationFlowBlockId}
                   />
                 ))}
             </SortableContext>
@@ -2912,6 +2919,7 @@ interface FrameRendererProps {
   dragHandleAttributes?: React.HTMLAttributes<HTMLButtonElement>;
   onOpenBlockPickerInPanel?: (stackId: string) => void;
   selectedApplicationStepId?: string | null;
+  activeApplicationFlowBlockId?: string | null;
 }
 
 const FrameRenderer: React.FC<FrameRendererProps> = ({ 
@@ -2954,6 +2962,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   dragHandleAttributes,
   onOpenBlockPickerInPanel,
   selectedApplicationStepId,
+  activeApplicationFlowBlockId,
 }) => {
   const isSelected = selection.type === 'frame' && selection.id === frame.id;
   const framePath = [...path, 'frame', frame.id];
@@ -3086,6 +3095,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
               onFormSubmit={onFormSubmit}
               onOpenBlockPickerInPanel={onOpenBlockPickerInPanel}
               selectedApplicationStepId={selectedApplicationStepId}
+              activeApplicationFlowBlockId={activeApplicationFlowBlockId}
             />
           ))}
         </div>
@@ -3168,6 +3178,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   onOpenSectionPicker,
   // Application Flow step selection
   selectedApplicationStepId,
+  activeApplicationFlowBlockId,
 }) => {
   // Form state for preview mode
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -3409,6 +3420,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                         onAddAbove={() => onAddFrameAt?.('above', frame.id)}
                         onAddBelow={() => onAddFrameAt?.('below', frame.id)}
                         onRename={(newName) => onRenameFrame?.(frame.id, newName)}
+                        selectedApplicationStepId={selectedApplicationStepId}
+                        activeApplicationFlowBlockId={activeApplicationFlowBlockId}
                       />
                     </React.Fragment>
                   ))}
