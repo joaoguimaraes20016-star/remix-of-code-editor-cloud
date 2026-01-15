@@ -19,5 +19,8 @@ export { YesNoNode } from './nodes/YesNoNode';
 export { CaptureFlowInspector } from '../inspectors/CaptureFlowInspector';
 export { CaptureNodeEditor } from '../inspectors/CaptureNodeEditor';
 
+// Modal (Phase 7)
+export { CaptureFlowModal } from '../CaptureFlowModal';
+
 // Utilities
 export { getInputStyleClass, getInputClasses } from './nodes/nodeStyles';
