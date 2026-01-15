@@ -58,7 +58,7 @@ type ActiveTab = 'blocks' | 'sections';
 
 const applicationQuestions: BlockTemplate[] = [
   {
-    type: 'form-field',
+    type: 'application-step',
     label: 'Open-Ended Question',
     icon: <Type size={16} />,
     description: 'Free text answer',
@@ -75,7 +75,7 @@ const applicationQuestions: BlockTemplate[] = [
     }),
   },
   {
-    type: 'form-field',
+    type: 'application-step',
     label: 'Single Choice',
     icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
     description: 'Radio — pick one',
@@ -94,7 +94,7 @@ const applicationQuestions: BlockTemplate[] = [
     }),
   },
   {
-    type: 'form-field',
+    type: 'application-step',
     label: 'Multiple Choice',
     icon: <ListChecks size={16} />,
     description: 'Checkboxes — pick many',
@@ -118,7 +118,7 @@ const applicationQuestions: BlockTemplate[] = [
 
 const captureFields: BlockTemplate[] = [
   {
-    type: 'form-field',
+    type: 'application-step',
     label: 'Email Field',
     icon: <Mail size={16} />,
     description: 'Email with validation',
@@ -136,7 +136,7 @@ const captureFields: BlockTemplate[] = [
     }),
   },
   {
-    type: 'form-field',
+    type: 'application-step',
     label: 'Phone Field',
     icon: <Phone size={16} />,
     description: 'Phone with formatting',
@@ -154,7 +154,7 @@ const captureFields: BlockTemplate[] = [
     }),
   },
   {
-    type: 'form-field',
+    type: 'application-step',
     label: 'Name Field',
     icon: <User size={16} />,
     description: 'Full name input',
@@ -171,7 +171,7 @@ const captureFields: BlockTemplate[] = [
     }),
   },
   {
-    type: 'form-field',
+    type: 'application-step',
     label: 'Full Form',
     icon: <UserCheck size={16} />,
     description: 'Name + email + phone combo',
