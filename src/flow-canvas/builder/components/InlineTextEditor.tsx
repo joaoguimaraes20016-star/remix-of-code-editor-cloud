@@ -2293,9 +2293,14 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         className={`
           outline-none transition-all duration-150
           ${getStyleClasses()}
-          ${isEditing
-            ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-[hsl(var(--builder-accent)/0.1)]'
-            : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
+          ${elementType === 'button'
+            ? // BUTTON MODE: Pure layout container - NO visual styles
+              // Buttons handle their own surface; inner content must be transparent
+              'bg-transparent'
+            : // TEXT/HEADING MODE: Show editing indicators
+              isEditing
+                ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-[hsl(var(--builder-accent)/0.1)]'
+                : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
           }
           ${!value && !isEditing ? 'text-gray-400' : ''}
           ${className}
