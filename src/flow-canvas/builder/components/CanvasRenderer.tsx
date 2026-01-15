@@ -1197,15 +1197,14 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         };
         
         // Determine button background - gradient takes precedence
-        // Use direct color fallback instead of CSS variable to avoid white button issue
-        // Handle empty string properly - trim and check for truthy value
+        // Phase 4: Buttons default to neutral/outline unless explicitly customized
+        // No more forced primaryColor injection - buttons start clean
         const isGradient = element.props?.fillType === 'gradient';
         const elementBg = element.styles?.backgroundColor?.trim();
+        const hasExplicitFill = element.props?.fillType === 'solid' || (elementBg && elementBg !== '' && elementBg !== 'transparent');
         
-        // Default template color - buttons created from templates use this
-        // When primary color changes, buttons still using this default should auto-update
-        const DEFAULT_TEMPLATE_COLOR = '#8B5CF6';
-        const isDefaultTemplateColor = elementBg?.toUpperCase() === DEFAULT_TEMPLATE_COLOR.toUpperCase();
+        // Determine button style mode
+        const isOutlineMode = element.props?.buttonStyle === 'outline' || (!hasExplicitFill && !isGradient);
         
         // Special styling for nav-pill and footer-link variants
         let buttonBg: string | undefined;
@@ -1215,19 +1214,22 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           buttonBg = 'transparent';
         } else if (isGradient) {
           buttonBg = undefined;
-        } else if (isDefaultTemplateColor || !elementBg || elementBg === '') {
-          // Use theme primary color for: default template buttons, empty bg, or no bg set
-          buttonBg = primaryColor;
-        } else {
+        } else if (isOutlineMode) {
+          // Phase 4: Default to transparent/outline when no fill customized
+          buttonBg = 'transparent';
+        } else if (elementBg) {
           // Custom color set by user - keep it
           buttonBg = elementBg;
+        } else {
+          // Fallback for explicitly solid but no color set - use theme primary
+          buttonBg = primaryColor;
         }
         
         // Compute gradient CSS from props.gradient object (not from styles.background)
         const buttonGradientValue = element.props?.gradient as GradientValue | undefined;
         const buttonGradient = isGradient && buttonGradientValue
           ? gradientToCSS(buttonGradientValue)
-          : (isGradient ? 'linear-gradient(135deg, #8B5CF6, #D946EF)' : undefined);
+          : undefined; // No default gradient - user must set one
         
         // Determine wrapper styles for alignment using textAlign
         // Default to center alignment for better UX
@@ -1242,28 +1244,35 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                           buttonAlignment === 'right' ? 'flex-end' : 'flex-start',
         };
         
-        // Custom button styles - ensure visible background
-        const effectiveBg = buttonBg || '#8B5CF6'; // Guarantee a visible color
+        // For outline mode, use foreground color; for filled, use the actual bg
+        const effectiveBgForContrast = isOutlineMode ? (isDarkTheme ? '#1f2937' : '#ffffff') : (buttonBg || primaryColor);
         const buttonShadowStyle = getButtonShadowStyle();
-        const defaultShadow = (isNavPill || isFooterLink || isGhostButton) 
+        // Outline buttons get no shadow; filled buttons get shadow
+        const defaultShadow = (isNavPill || isFooterLink || isGhostButton || isOutlineMode) 
           ? 'none' 
           : (isDarkTheme ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.2)');
         
-        // Text color based on variant - auto-contrast for visibility
+        // Text color: outline uses foreground, filled uses contrast or user-set
         const buttonTextColor = isNavPill 
           ? (isDarkTheme ? '#ffffff' : '#1f2937')
           : isFooterLink 
             ? (isDarkTheme ? '#9ca3af' : '#6b7280')
-            : (element.props?.textColor as string || getContrastTextColor(effectiveBg));
+            : isOutlineMode
+              ? (isDarkTheme ? '#ffffff' : '#18181b') // Foreground for outline
+              : (element.props?.textColor as string || getContrastTextColor(effectiveBgForContrast));
+        
+        // Border for outline mode
+        const outlineBorderColor = isDarkTheme ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
         
         const customButtonStyle: React.CSSProperties = {
-          backgroundColor: buttonGradient ? undefined : effectiveBg,
+          backgroundColor: buttonGradient ? undefined : buttonBg,
           background: buttonGradient,
           color: buttonTextColor,
           boxShadow: buttonShadowStyle.boxShadow || defaultShadow,
-          borderWidth: isNavPill ? '1px' : element.styles?.borderWidth,
-          borderColor: isNavPill ? (isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)') : element.styles?.borderColor,
-          borderStyle: isNavPill ? 'solid' : (element.styles?.borderWidth ? 'solid' : undefined),
+          borderWidth: isNavPill ? '1px' : (isOutlineMode ? '2px' : element.styles?.borderWidth),
+          borderColor: isNavPill ? (isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)') 
+            : (isOutlineMode ? outlineBorderColor : element.styles?.borderColor),
+          borderStyle: isNavPill || isOutlineMode ? 'solid' : (element.styles?.borderWidth ? 'solid' : undefined),
           borderRadius: isNavPill ? '9999px' : (element.styles?.borderRadius || '12px'),
           transition: `transform ${transitionDuration}ms ease, box-shadow ${transitionDuration}ms ease`,
           // Apply custom dimensions
@@ -1293,7 +1302,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
                 dragHandleProps={{ attributes, listeners }}
                 styles={{
                   textAlign: buttonAlignment,
-                  backgroundColor: effectiveBg,
+                  backgroundColor: buttonBg || 'transparent',
                   fillType: element.props?.fillType as 'solid' | 'gradient',
                   gradient: element.props?.gradient as GradientValue,
                 }}
