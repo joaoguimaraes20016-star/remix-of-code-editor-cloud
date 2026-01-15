@@ -345,7 +345,7 @@ export const ApplicationFlowEditorModal: React.FC<ApplicationFlowEditorModalProp
               </div>
               <div>
                 <DialogTitle className="text-lg font-semibold">
-                  {block.label || 'Application Flow'}
+                  {block.label || 'Flow Container'}
                 </DialogTitle>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {steps.length} steps · Typeform-style experience

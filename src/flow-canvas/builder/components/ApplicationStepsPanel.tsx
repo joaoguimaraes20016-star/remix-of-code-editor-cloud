@@ -345,7 +345,7 @@ export const ApplicationStepsPanel: React.FC<ApplicationStepsPanelProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-builder-border-subtle">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-builder-text">Application Flow</span>
+          <span className="text-sm font-semibold text-builder-text">Flow Container</span>
           <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-builder-accent/10 text-builder-accent">
             {steps.length} steps
           </span>

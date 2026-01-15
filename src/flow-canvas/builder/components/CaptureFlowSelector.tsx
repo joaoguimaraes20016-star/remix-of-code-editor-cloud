@@ -290,10 +290,10 @@ export const CaptureFlowSelector: React.FC<CaptureFlowSelectorProps> = ({
         <DialogHeader className="pb-2">
           <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Workflow size={20} className="text-muted-foreground" />
-            Add Capture Flow
+            Add Flow Container
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Choose how you want to capture leads
+            Choose a Typeform-style multi-step experience
           </p>
         </DialogHeader>
 
