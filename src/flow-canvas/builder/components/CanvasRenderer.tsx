@@ -1292,11 +1292,12 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         // Only apply size class if no custom padding and not a special variant
         const useSizeClass = !element.styles?.padding && !isNavPill && !isFooterLink;
         
-        // For buttons, don't apply selection class to wrapper - apply it to button element itself
+        // SINGLE SURFACE: Wrapper is for layout/selection ONLY - no visual styles
+        // The button element is the ONLY visual surface
         const wrapperClasses = cn(
-          'builder-element-selectable builder-click-target rounded-lg group/element relative',
+          'builder-element-selectable builder-click-target group/element relative',
+          // NO rounded-lg, NO background, NO border on wrapper
           stateStyleClass,
-          // Selection classes moved to button element for proper ring sizing
           isMultiSelected && !isSelected && 'builder-multi-selected',
           isDragging && 'opacity-50 z-50',
           animationKey >= 0 && effectClass
