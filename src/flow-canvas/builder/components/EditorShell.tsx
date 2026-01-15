@@ -26,6 +26,8 @@ import {
   KeyboardShortcutsModal,
   ImagePickerModal,
 } from './modals';
+import { CaptureFlowModal } from './CaptureFlowModal';
+import type { CaptureFlow } from '../../types/captureFlow';
 import type { TextPreset } from './modals';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -152,6 +154,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [isAIGenerateOpen, setIsAIGenerateOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isSocialImagePickerOpen, setIsSocialImagePickerOpen] = useState(false);
+  
+  // CaptureFlow modal state (Phase 7)
+  const [openCaptureFlowId, setOpenCaptureFlowId] = useState<string | null>(null);
+  const [openCaptureFlow, setOpenCaptureFlow] = useState<CaptureFlow | null>(null);
   
   // Design mode state (select vs pan)
   const [designMode, setDesignMode] = useState<'select' | 'pan'>('select');
@@ -1614,6 +1620,21 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         }}
         currentImage={page.settings.meta?.og_image}
       />
+      {/* CaptureFlow Modal - Phase 7 */}
+      {openCaptureFlow && (
+        <CaptureFlowModal
+          isOpen={!!openCaptureFlowId}
+          onClose={() => {
+            setOpenCaptureFlowId(null);
+            setOpenCaptureFlow(null);
+          }}
+          captureFlow={openCaptureFlow}
+          onComplete={(answers) => {
+            console.log('CaptureFlow completed:', answers);
+            toast.success('Response submitted successfully!');
+          }}
+        />
+      )}
     </div>
     </InlineEditProvider>
     </CaptureFlowProvider>
