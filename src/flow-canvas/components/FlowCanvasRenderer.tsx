@@ -353,9 +353,14 @@ export function FlowCanvasRenderer({
 
   // Handle button click
   const handleButtonClick = useCallback(async (element: FlowCanvasElement) => {
-    const action = (element.props.action as string) || 'next-step';
-    const redirectUrl = element.props.redirectUrl as string;
-    const targetStepId = element.props.targetStepId as string;
+    // Support both unified buttonAction object (new) and legacy individual props (old)
+    const buttonAction = element.props.buttonAction as { type?: string; value?: string; openNewTab?: boolean } | undefined;
+    const action = buttonAction?.type || (element.props.action as string) || 'next-step';
+    const actionValue = buttonAction?.value;
+    const openNewTab = buttonAction?.openNewTab;
+    // Legacy fallbacks
+    const redirectUrl = actionValue || (element.props.redirectUrl as string);
+    const targetStepId = actionValue || (element.props.targetStepId as string);
 
     switch (action) {
       case 'next-step':
@@ -381,9 +386,14 @@ export function FlowCanvasRenderer({
         }
         break;
         
+      case 'url':
       case 'redirect':
         if (redirectUrl) {
-          window.location.href = redirectUrl;
+          if (openNewTab) {
+            window.open(redirectUrl, '_blank');
+          } else {
+            window.location.href = redirectUrl;
+          }
         }
         break;
         
@@ -393,6 +403,30 @@ export function FlowCanvasRenderer({
           if (stepIndex !== -1) {
             setCurrentStepIndex(stepIndex);
           }
+        }
+        break;
+
+      case 'scroll':
+        if (actionValue) {
+          document.querySelector(actionValue)?.scrollIntoView({ behavior: 'smooth' });
+        }
+        break;
+
+      case 'phone':
+        if (actionValue) {
+          window.location.href = `tel:${actionValue}`;
+        }
+        break;
+
+      case 'email':
+        if (actionValue) {
+          window.location.href = `mailto:${actionValue}`;
+        }
+        break;
+
+      case 'download':
+        if (actionValue) {
+          window.open(actionValue, '_blank');
         }
         break;
         
