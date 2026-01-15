@@ -56,7 +56,7 @@ interface InteractiveBlockInspectorProps {
   steps?: { id: string; name: string }[];
 }
 
-// Collapsible section component
+// Collapsible section component - uses builder tokens for consistency
 const CollapsibleSection: React.FC<{
   title: string;
   icon?: React.ReactNode;
@@ -66,19 +66,19 @@ const CollapsibleSection: React.FC<{
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-border">
+    <div className="border-b border-builder-border">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-accent/30 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
       >
         <div className="flex items-center gap-2">
-          {icon && <span className="text-muted-foreground">{icon}</span>}
-          <span className="text-xs font-medium text-foreground">{title}</span>
+          {icon && <span className="text-builder-text-muted">{icon}</span>}
+          <span className="text-xs font-medium text-builder-text">{title}</span>
         </div>
         {isOpen ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+          <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
         )}
       </button>
       {isOpen && (
@@ -90,11 +90,12 @@ const CollapsibleSection: React.FC<{
   );
 };
 
-// Field group with label
-const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+// Field group with label - uses builder tokens
+const FieldGroup: React.FC<{ label: string; children: React.ReactNode; hint?: string }> = ({ label, children, hint }) => (
   <div className="space-y-1.5">
-    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</Label>
+    <Label className="text-xs text-builder-text-muted">{label}</Label>
     {children}
+    {hint && <p className="text-[10px] text-builder-text-dim">{hint}</p>}
   </div>
 );
 
@@ -209,29 +210,29 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
   const requireCompletion = blockProps.requireCompletion as boolean || false;
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-background">
-      {/* Header */}
-      <div className="flex-shrink-0 px-3 py-2.5 border-b border-border bg-gradient-to-r from-primary/10 to-transparent">
+    <div className="flex flex-col h-full min-h-0 bg-builder-bg">
+      {/* Header - Uses builder accent (purple) for block-level consistency */}
+      <div className="flex-shrink-0 px-3 py-2.5 border-b border-builder-border bg-gradient-to-r from-[hsl(280,75%,55%,0.12)] to-transparent">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center">
-            <HelpCircle className="w-3 h-3 text-primary" />
+          <div className="w-6 h-6 rounded bg-[hsl(280,75%,55%,0.2)] flex items-center justify-center">
+            <HelpCircle className="w-3 h-3 text-[hsl(280,75%,70%)]" />
           </div>
           <div>
-            <div className="text-sm font-medium text-foreground">{block.label || 'Input Field'}</div>
-            <div className="text-[10px] text-muted-foreground">Interactive Block</div>
+            <div className="text-sm font-medium text-builder-text">{block.label || 'Input Field'}</div>
+            <div className="text-[10px] text-builder-text-muted">Interactive Block</div>
           </div>
         </div>
       </div>
 
       {/* Content - Scrollable */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto builder-scroll">
         {/* Popup Opt-In Settings (for Contact Info blocks) */}
         {isContactInfoBlock && (
           <CollapsibleSection title="Popup Behavior" icon={<Eye className="w-3.5 h-3.5" />}>
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-xs text-foreground">Show as Popup</Label>
-                <p className="text-[10px] text-muted-foreground">Display as modal on page load</p>
+                <Label className="text-xs text-builder-text">Show as Popup</Label>
+                <p className="text-[10px] text-builder-text-dim">Display as modal on page load</p>
               </div>
               <Switch
                 checked={showAsPopup}
@@ -242,8 +243,8 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
             {showAsPopup && (
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-xs text-foreground">Require Completion</Label>
-                  <p className="text-[10px] text-muted-foreground">Must submit before seeing content</p>
+                  <Label className="text-xs text-builder-text">Require Completion</Label>
+                  <p className="text-[10px] text-builder-text-dim">Must submit before seeing content</p>
                 </div>
                 <Switch
                   checked={requireCompletion}
@@ -323,8 +324,8 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                           className={cn(
                             'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
                             actionType === action.type
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                              ? 'bg-builder-accent text-white'
+                              : 'bg-builder-surface-hover hover:bg-builder-surface text-builder-text-muted'
                           )}
                         >
                           {action.icon}

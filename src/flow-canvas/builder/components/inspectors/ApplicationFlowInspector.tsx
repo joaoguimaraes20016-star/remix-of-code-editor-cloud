@@ -383,16 +383,16 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-background">
-      {/* Header - Fixed */}
-      <div className="flex-shrink-0 px-3 py-2.5 border-b border-border">
+    <div className="flex flex-col h-full min-h-0 bg-builder-bg">
+      {/* Header - Uses builder accent (purple) for block-level consistency */}
+      <div className="flex-shrink-0 px-3 py-2.5 border-b border-builder-border bg-gradient-to-r from-[hsl(280,75%,55%,0.12)] to-transparent">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-muted flex items-center justify-center">
-            <FileText className="w-3 h-3 text-muted-foreground" />
+          <div className="w-6 h-6 rounded bg-[hsl(280,75%,55%,0.2)] flex items-center justify-center">
+            <FileText className="w-3 h-3 text-[hsl(280,75%,70%)]" />
           </div>
           <div>
-            <div className="text-sm font-medium text-foreground">Application Flow</div>
-            <div className="text-[10px] text-muted-foreground">{steps.length} steps</div>
+            <div className="text-sm font-medium text-builder-text">Application Flow</div>
+            <div className="text-[10px] text-builder-text-muted">{steps.length} steps</div>
           </div>
         </div>
       </div>
@@ -400,10 +400,10 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
       {/* Steps List - Scrollable area with proper constraints */}
       <div className="flex-1 min-h-0 overflow-y-auto builder-scroll">
         {/* Sticky Steps Header */}
-        <div className="sticky top-0 z-10 px-3 py-2 bg-background border-b border-border">
+        <div className="sticky top-0 z-10 px-3 py-2 bg-builder-bg border-b border-builder-border">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Steps ({steps.length})</span>
-            <span className="text-[10px] text-muted-foreground">Click to edit</span>
+            <span className="text-[10px] font-medium text-builder-text-muted uppercase tracking-wide">Steps ({steps.length})</span>
+            <span className="text-[10px] text-builder-text-dim">Click to edit</span>
           </div>
         </div>
         
