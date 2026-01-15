@@ -526,14 +526,15 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           {/* Button Action - What happens when button is clicked */}
           {step.type !== 'ending' && (
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground uppercase">Button Action</Label>
+              <Label className="text-[10px] text-builder-text-muted uppercase">Button Action</Label>
               {(() => {
-                const buttonAction = stepSettings.buttonAction as { type: ButtonActionType; value?: string } | undefined;
+                const buttonAction = stepSettings.buttonAction as { type: ButtonActionType; value?: string; openNewTab?: boolean } | undefined;
                 const actionType = buttonAction?.type || 'next-step';
                 const actionValue = buttonAction?.value || '';
+                const openNewTab = buttonAction?.openNewTab ?? false;
                 
-                const handleActionChange = (type: ButtonActionType, value?: string) => {
-                  updateSettings({ buttonAction: { type, value } });
+                const handleActionChange = (type: ButtonActionType, value?: string, newTab?: boolean) => {
+                  updateSettings({ buttonAction: { type, value, openNewTab: type === 'url' ? (newTab ?? openNewTab) : undefined } });
                 };
                 
                 // Get available steps for go-to-step action (exclude current step)
@@ -555,8 +556,32 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                           className={cn(
                             'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
                             actionType === action.type
-                              ? 'bg-foreground text-background'
-                              : 'bg-muted text-muted-foreground hover:bg-accent'
+                              ? 'bg-builder-accent text-white'
+                              : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                          )}
+                        >
+                          {action.icon}
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Secondary Action Types */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { type: 'scroll' as ButtonActionType, label: 'Scroll To', icon: <Hash className="w-3 h-3" /> },
+                        { type: 'phone' as ButtonActionType, label: 'Call Phone', icon: <Phone className="w-3 h-3" /> },
+                        { type: 'email' as ButtonActionType, label: 'Send Email', icon: <Mail className="w-3 h-3" /> },
+                        { type: 'download' as ButtonActionType, label: 'Download', icon: <Download className="w-3 h-3" /> },
+                      ].map((action) => (
+                        <button
+                          key={action.type}
+                          onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
+                          className={cn(
+                            'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
+                            actionType === action.type
+                              ? 'bg-builder-accent text-white'
+                              : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
                           )}
                         >
                           {action.icon}
@@ -568,10 +593,10 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                     {/* Step Selector for go-to-step */}
                     {actionType === 'go-to-step' && availableSteps.length > 0 && (
                       <Select value={actionValue} onValueChange={(v) => handleActionChange('go-to-step', v)}>
-                        <SelectTrigger className="h-8 text-xs bg-background border-border">
+                        <SelectTrigger className="h-8 text-xs bg-builder-bg border-builder-border">
                           <SelectValue placeholder="Select step..." />
                         </SelectTrigger>
-                        <SelectContent className="bg-background border-border">
+                        <SelectContent className="bg-builder-bg border-builder-border">
                           {availableSteps.map((s) => (
                             <SelectItem key={s.id} value={s.id} className="text-xs">
                               {s.name}
@@ -583,11 +608,60 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
                     {/* URL Input for url action */}
                     {actionType === 'url' && (
+                      <>
+                        <Input
+                          value={actionValue}
+                          onChange={(e) => handleActionChange('url', e.target.value)}
+                          placeholder="https://example.com"
+                          className="h-8 text-xs bg-builder-bg border-builder-border"
+                        />
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-builder-text-muted">Open in new tab</Label>
+                          <Switch
+                            checked={openNewTab}
+                            onCheckedChange={(checked) => handleActionChange('url', actionValue, checked)}
+                          />
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Scroll target input */}
+                    {actionType === 'scroll' && (
                       <Input
                         value={actionValue}
-                        onChange={(e) => handleActionChange('url', e.target.value)}
-                        placeholder="https://example.com"
-                        className="h-8 text-xs bg-background border-border"
+                        onChange={(e) => handleActionChange('scroll', e.target.value)}
+                        placeholder="#section-id"
+                        className="h-8 text-xs bg-builder-bg border-builder-border"
+                      />
+                    )}
+                    
+                    {/* Phone number input */}
+                    {actionType === 'phone' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('phone', e.target.value)}
+                        placeholder="+1 (555) 123-4567"
+                        className="h-8 text-xs bg-builder-bg border-builder-border"
+                      />
+                    )}
+                    
+                    {/* Email address input */}
+                    {actionType === 'email' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('email', e.target.value)}
+                        placeholder="hello@example.com"
+                        className="h-8 text-xs bg-builder-bg border-builder-border"
+                      />
+                    )}
+                    
+                    {/* Download URL input */}
+                    {actionType === 'download' && (
+                      <Input
+                        value={actionValue}
+                        onChange={(e) => handleActionChange('download', e.target.value)}
+                        placeholder="https://example.com/file.pdf"
+                        className="h-8 text-xs bg-builder-bg border-builder-border"
                       />
                     )}
                   </div>
