@@ -36,7 +36,7 @@ const captureFlowOptions: CaptureFlowOption[] = [
   },
   {
     id: 'inline-optin',
-    label: 'Inline Opt-In',
+    label: 'Contact Fields',
     description: 'Quick name + email capture',
     icon: <UserCheck size={20} />,
   },
@@ -185,7 +185,7 @@ const createInlineQuestionBlock = (): Block => ({
 const createInlineOptinBlock = (): Block => ({
   id: generateId(),
   type: 'application-flow',
-  label: 'Opt-In Form',
+  label: 'Contact Fields',
   elements: [],
   props: {
     displayMode: 'one-at-a-time',

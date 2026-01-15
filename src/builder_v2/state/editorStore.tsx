@@ -62,12 +62,13 @@ function getStepLabel(stepType: string): string {
     welcome: 'Welcome',
     text_question: 'Question',
     multi_choice: 'Multi Choice',
-    email_capture: 'Email Capture',
-    phone_capture: 'Phone Capture',
-    opt_in: 'Opt-In Form',
+    email_capture: 'Email',
+    phone_capture: 'Phone',
+    opt_in: 'Contact Info',
     video: 'Video',
     embed: 'Calendar',
     thank_you: 'Thank You',
+    application_flow: 'Application',
   };
   return labels[stepType] || 'Step';
 }
