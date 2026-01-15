@@ -21,6 +21,7 @@ export const blockTypeLabels: Record<BlockType, string> = {
   custom: 'Empty Section',
   booking: 'Booking',
   'application-flow': 'Application Flow',
+  'capture-flow-embed': 'Capture Flow',
   // Extended types
   feature: 'Feature',
   pricing: 'Pricing',

@@ -34,6 +34,7 @@ export type BlockType =
   | 'custom'
   | 'booking'
   | 'application-flow'  // Typeform-style multi-step experience
+  | 'capture-flow-embed' // CaptureFlow embed block
   // Extended types for section templates
   | 'feature'
   | 'pricing'
@@ -340,9 +341,10 @@ export interface Page {
 
 // Selection state for the builder
 export interface SelectionState {
-  type: 'page' | 'step' | 'frame' | 'stack' | 'block' | 'element' | null;
+  type: 'page' | 'step' | 'frame' | 'stack' | 'block' | 'element' | 'capture-node' | null;
   id: string | null;
   path: string[];
+  captureFlowId?: string; // For capture-node selections
 }
 
 // Builder props contract
