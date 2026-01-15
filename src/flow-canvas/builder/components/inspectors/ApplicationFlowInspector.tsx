@@ -15,6 +15,8 @@ import {
   Copy,
   Settings2,
   Palette,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -302,15 +304,81 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
 
   const activeStep = activeId ? steps.find(s => s.id === activeId) : null;
 
-  // Two-panel layout: Step List View vs Step Editor View
+  // Find the current step index for navigation
+  const currentStepIndex = selectedStep ? steps.findIndex(s => s.id === selectedStep.id) : -1;
+  const canGoPrev = currentStepIndex > 0;
+  const canGoNext = currentStepIndex < steps.length - 1;
+
+  const goToPrevStep = () => {
+    if (canGoPrev) {
+      const prevStep = steps[currentStepIndex - 1];
+      handleSelectStep(prevStep.id);
+    }
+  };
+
+  const goToNextStep = () => {
+    if (canGoNext) {
+      const nextStep = steps[currentStepIndex + 1];
+      handleSelectStep(nextStep.id);
+    }
+  };
+
+  // If a step is selected, show the step editor directly (no list-first approach)
   if (selectedStep) {
     return (
-      <StepContentEditor
-        step={selectedStep}
-        allSteps={steps}
-        onUpdate={(updates) => updateStep(selectedStep.id, updates)}
-        onBack={handleBackToList}
-      />
+      <div className="flex flex-col h-full bg-background">
+        {/* Step Navigation Header */}
+        <div className="px-3 py-2.5 border-b border-border">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={handleBackToList}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" />
+              All Steps
+            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={goToPrevStep}
+                disabled={!canGoPrev}
+                className={cn(
+                  "p-1 rounded transition-colors",
+                  canGoPrev ? "text-muted-foreground hover:text-foreground hover:bg-accent" : "text-muted-foreground/30 cursor-not-allowed"
+                )}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-muted-foreground px-1">
+                {currentStepIndex + 1} / {steps.length}
+              </span>
+              <button
+                onClick={goToNextStep}
+                disabled={!canGoNext}
+                className={cn(
+                  "p-1 rounded transition-colors",
+                  canGoNext ? "text-muted-foreground hover:text-foreground hover:bg-accent" : "text-muted-foreground/30 cursor-not-allowed"
+                )}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-muted-foreground">
+              {stepTypeIcons[selectedStep.type]}
+            </div>
+            <span className="text-sm font-medium text-foreground truncate">{selectedStep.name}</span>
+          </div>
+        </div>
+        
+        {/* Step Content Editor - embedded directly */}
+        <StepContentEditor
+          step={selectedStep}
+          allSteps={steps}
+          onUpdate={(updates) => updateStep(selectedStep.id, updates)}
+          onBack={handleBackToList}
+        />
+      </div>
     );
   }
 

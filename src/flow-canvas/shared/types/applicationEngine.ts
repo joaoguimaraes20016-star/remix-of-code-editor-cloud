@@ -83,10 +83,18 @@ export interface ApplicationStepSettings {
   // Appearance
   align?: 'left' | 'center' | 'right';
   spacing?: 'compact' | 'normal' | 'relaxed';
-  inputStyle?: 'default' | 'minimal' | 'rounded' | 'square';
+  inputStyle?: 'default' | 'minimal' | 'rounded' | 'square' | 'pill';
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary';
+  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary' | 'ghost';
   buttonColor?: string;
+  buttonTextColor?: string;
+  buttonSize?: 'sm' | 'md' | 'lg';
+  buttonRadius?: 'none' | 'rounded' | 'full';
+  buttonFullWidth?: boolean;
+  // Answer/option styling
+  answerBgColor?: string;
+  answerBorderColor?: string;
+  answerSelectedColor?: string;
 }
 
 export interface ApplicationStepNavigation {

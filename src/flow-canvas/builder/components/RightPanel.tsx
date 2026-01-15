@@ -3574,6 +3574,25 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           ) : (
             <BlockInspector block={selectedNode as Block} onUpdate={handleUpdate} />
           )
+        ) : resolvedType === 'interactive-step' && selection.applicationEngineId ? (
+          // Interactive step selection - find the parent block and show step inspector
+          (() => {
+            const { node: parentBlock } = findNodeById(page, selection.applicationEngineId);
+            if (parentBlock && (parentBlock as Block).type === 'application-flow') {
+              return (
+                <ApplicationFlowInspector 
+                  block={parentBlock as Block} 
+                  onUpdateBlock={(updates) => {
+                    // Update via the parent block's path
+                    onUpdateNode([], updates);
+                  }}
+                  selectedStepId={selection.id}
+                  onSelectStep={onSelectApplicationStep}
+                />
+              );
+            }
+            return <PageInspector page={page} onUpdate={handleUpdate} onPublish={onPublish} />;
+          })()
         ) : resolvedType === 'element' && selectedNode ? (
           <ElementInspector 
             element={selectedNode as Element} 
