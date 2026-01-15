@@ -97,7 +97,7 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
         <button
           className={cn(
             "p-1.5 rounded-md transition-colors cursor-grab active:cursor-grabbing touch-none",
-            isSelected ? "text-white/80 hover:text-white hover:bg-white/10" : "text-white/50 hover:text-white hover:bg-white/10"
+            "text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-hover))]"
           )}
           title="Drag to reorder"
           {...dragHandleListeners}
@@ -111,7 +111,7 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
           className="flex items-center gap-1.5 px-2 cursor-pointer"
           onClick={onSelect}
         >
-          <Layout className="w-3.5 h-3.5 text-white/70" />
+          <Layout className="w-3.5 h-3.5 text-[hsl(var(--builder-text-muted))]" />
           {isEditing ? (
             <input
               type="text"
@@ -119,17 +119,17 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleFinishEdit}
               onKeyDown={handleKeyDown}
-              className="bg-transparent border-none outline-none text-white text-xs font-medium w-20"
+              className="bg-transparent border-none outline-none text-[hsl(var(--builder-text))] text-xs font-medium w-20"
               autoFocus
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <span className="font-semibold text-xs text-white">{sectionLabel || 'Section'}</span>
+            <span className="font-semibold text-xs text-[hsl(var(--builder-text))]">{sectionLabel || 'Section'}</span>
           )}
         </div>
         
         {/* Divider */}
-        <div className="w-px h-4 bg-white/20" />
+        <div className="w-px h-4 bg-[hsl(var(--builder-border-subtle))]" />
         
         {/* Move Up */}
         <button
@@ -138,8 +138,8 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
           className={cn(
             "p-1.5 rounded-md transition-colors",
             canMoveUp 
-              ? isSelected ? "text-white/80 hover:text-white hover:bg-white/10" : "text-white/50 hover:text-white hover:bg-white/10"
-              : "text-white/20 cursor-not-allowed"
+              ? "text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-hover))]"
+              : "text-[hsl(var(--builder-text-muted))] opacity-30 cursor-not-allowed"
           )}
           title="Move section up"
         >
@@ -153,8 +153,8 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
           className={cn(
             "p-1.5 rounded-md transition-colors",
             canMoveDown 
-              ? isSelected ? "text-white/80 hover:text-white hover:bg-white/10" : "text-white/50 hover:text-white hover:bg-white/10"
-              : "text-white/20 cursor-not-allowed"
+              ? "text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-hover))]"
+              : "text-[hsl(var(--builder-text-muted))] opacity-30 cursor-not-allowed"
           )}
           title="Move section down"
         >
@@ -165,10 +165,7 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className={cn(
-                "p-1.5 rounded-md transition-colors",
-                isSelected ? "text-white/80 hover:text-white hover:bg-white/10" : "text-white/50 hover:text-white hover:bg-white/10"
-              )}
+              className="p-1.5 rounded-md transition-colors text-[hsl(var(--builder-text))] opacity-80 hover:opacity-100 hover:bg-[hsl(var(--builder-surface-hover))]"
               title="More options"
             >
               <MoreHorizontal className="w-3.5 h-3.5" />
@@ -177,27 +174,27 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
           <DropdownMenuContent 
             side="right" 
             align="start"
-            className="w-48 bg-[hsl(220,22%,7%)] border-[hsl(220,18%,14%)]"
+            className="w-48 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
           >
-            <DropdownMenuItem onClick={handleStartEdit} className="text-white/90">
+            <DropdownMenuItem onClick={handleStartEdit} className="text-[hsl(var(--builder-text))]">
               <Layout className="w-4 h-4 mr-2" />
               Rename Section
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem onClick={onAddAbove} className="text-white/90">
+            <DropdownMenuSeparator className="bg-[hsl(var(--builder-border-subtle))]" />
+            <DropdownMenuItem onClick={onAddAbove} className="text-[hsl(var(--builder-text))]">
               <Plus className="w-4 h-4 mr-2" />
               Add Section Above
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onAddBelow} className="text-white/90">
+            <DropdownMenuItem onClick={onAddBelow} className="text-[hsl(var(--builder-text))]">
               <Plus className="w-4 h-4 mr-2" />
               Add Section Below
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem onClick={onDuplicate} className="text-white/90">
+            <DropdownMenuSeparator className="bg-[hsl(var(--builder-border-subtle))]" />
+            <DropdownMenuItem onClick={onDuplicate} className="text-[hsl(var(--builder-text))]">
               <Copy className="w-4 h-4 mr-2" />
               Duplicate Section
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuSeparator className="bg-[hsl(var(--builder-border-subtle))]" />
             <DropdownMenuItem 
               onClick={onDelete} 
               className="text-red-400 focus:text-red-400 focus:bg-red-500/10"

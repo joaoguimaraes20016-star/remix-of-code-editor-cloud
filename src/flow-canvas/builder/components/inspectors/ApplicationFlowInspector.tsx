@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowSettings } from '../../../types/infostack';
+import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowSettings, ApplicationFlowBackground } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import {
   Plus,
@@ -14,6 +14,7 @@ import {
   Trash2,
   Copy,
   Settings2,
+  Palette,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -50,6 +51,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { StepContentEditor } from './StepContentEditor';
+import { BackgroundEditor, BackgroundValue } from '../BackgroundEditor';
+import { ColorPickerPopover } from '../modals';
 
 const stepTypeIcons: Record<ApplicationStepType, React.ReactNode> = {
   welcome: <Sparkles className="w-3.5 h-3.5" />,
@@ -394,6 +397,84 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+
+      {/* Appearance Settings */}
+      <div className="border-t border-border p-3 space-y-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Palette className="w-3 h-3 text-muted-foreground" />
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Appearance</span>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[10px] text-muted-foreground">Background</Label>
+          <BackgroundEditor
+            value={{
+              type: settings.background?.type || 'solid',
+              color: settings.background?.color || '#ffffff',
+              gradient: settings.background?.gradient,
+              imageUrl: settings.background?.imageUrl,
+            } as BackgroundValue}
+            onChange={(value) => {
+              const bg: ApplicationFlowBackground = {
+                type: value.type,
+                color: value.color,
+                gradient: value.gradient,
+                imageUrl: value.imageUrl,
+              };
+              onUpdateBlock({ props: { ...settings, background: bg } });
+            }}
+            showImageOption={true}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">Text Color</Label>
+          <ColorPickerPopover
+            color={settings.textColor || '#000000'}
+            onChange={(color) => onUpdateBlock({ props: { ...settings, textColor: color } })}
+          >
+            <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+              <div 
+                className="w-5 h-5 rounded border border-border"
+                style={{ backgroundColor: settings.textColor || '#000000' }}
+              />
+              <span className="text-xs text-foreground font-mono">{settings.textColor || '#000000'}</span>
+            </button>
+          </ColorPickerPopover>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">Input Background</Label>
+          <ColorPickerPopover
+            color={settings.inputBackground || '#ffffff'}
+            onChange={(color) => onUpdateBlock({ props: { ...settings, inputBackground: color } })}
+          >
+            <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+              <div 
+                className="w-5 h-5 rounded border border-border"
+                style={{ backgroundColor: settings.inputBackground || '#ffffff' }}
+              />
+              <span className="text-xs text-foreground font-mono">{settings.inputBackground || '#ffffff'}</span>
+            </button>
+          </ColorPickerPopover>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">Input Border</Label>
+          <ColorPickerPopover
+            color={settings.inputBorderColor || '#e5e7eb'}
+            onChange={(color) => onUpdateBlock({ props: { ...settings, inputBorderColor: color } })}
+          >
+            <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+              <div 
+                className="w-5 h-5 rounded border border-border"
+                style={{ backgroundColor: settings.inputBorderColor || '#e5e7eb' }}
+              />
+              <span className="text-xs text-foreground font-mono">{settings.inputBorderColor || '#e5e7eb'}</span>
+            </button>
+          </ColorPickerPopover>
+        </div>
       </div>
 
       {/* Flow Settings */}
