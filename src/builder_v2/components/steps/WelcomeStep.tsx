@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { StepComponentProps } from './types';
-import { FONT_SIZE_MAP, DEFAULT_DESIGN } from './types';
+import { FONT_SIZE_MAP, DEFAULT_DESIGN, getButtonStyle } from './types';
 
 export function WelcomeStep({
   content,
@@ -42,11 +42,7 @@ export function WelcomeStep({
         )}
         <button
           className={cn("step-button", sizes.button)}
-          style={{
-            backgroundColor: d.buttonColor,
-            color: d.buttonTextColor,
-            borderRadius: `${d.borderRadius}px`,
-          }}
+          style={getButtonStyle(d)}
         >
           {content.button_text || 'Get Started'}
         </button>
