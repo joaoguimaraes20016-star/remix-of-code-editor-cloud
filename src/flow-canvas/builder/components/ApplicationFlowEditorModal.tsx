@@ -491,10 +491,10 @@ export const ApplicationFlowEditorModal: React.FC<ApplicationFlowEditorModalProp
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="next">Go to Next Step</SelectItem>
-                          <SelectItem value="go-to-step">Jump to Specific Step</SelectItem>
-                          <SelectItem value="submit">Submit & Complete</SelectItem>
-                          <SelectItem value="redirect">Redirect to URL</SelectItem>
+                          <SelectItem value="next">Continue</SelectItem>
+                          <SelectItem value="go-to-step">Go to Step</SelectItem>
+                          <SelectItem value="submit">Submit</SelectItem>
+                          <SelectItem value="redirect">Open URL</SelectItem>
                         </SelectContent>
                       </Select>
 

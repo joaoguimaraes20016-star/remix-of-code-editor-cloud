@@ -307,8 +307,15 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
         </CollapsibleSection>
         
         <CollapsibleSection title="Action" icon={<MousePointer2 className="w-3.5 h-3.5" />} defaultOpen>
+          {/* Display current action */}
+          <p className="text-xs text-builder-text-muted mb-2">
+            On Click: {actionType === 'next-step' ? 'Continue to next step' : 
+                       actionType === 'go-to-step' ? 'Go to specific step' :
+                       actionType === 'submit' ? 'Submit form' :
+                       actionType === 'url' ? 'Open URL' : 'Custom action'}
+          </p>
           <div className="space-y-2">
-            {/* Primary Action - Continue Flow (default) */}
+            {/* Primary Action - Continue (default) */}
             <button
               onClick={() => handleActionChange('next-step', '')}
               className={cn(
@@ -319,14 +326,14 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
               )}
             >
               <ArrowRight className="w-3.5 h-3.5" />
-              Continue Flow
+              Continue
               {actionType === 'next-step' && <span className="text-[9px] opacity-70 ml-1">(default)</span>}
             </button>
 
             {/* Secondary Actions - Explicit navigation */}
             <div className="grid grid-cols-3 gap-1.5">
               {[
-                { type: 'go-to-step' as ButtonActionType, label: 'Step', icon: <Layers className="w-3 h-3" /> },
+                { type: 'go-to-step' as ButtonActionType, label: 'Go to Step', icon: <Layers className="w-3 h-3" /> },
                 { type: 'submit' as ButtonActionType, label: 'Submit', icon: <Send className="w-3 h-3" /> },
                 { type: 'url' as ButtonActionType, label: 'URL', icon: <ExternalLink className="w-3 h-3" /> },
               ].map((action) => (

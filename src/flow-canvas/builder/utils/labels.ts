@@ -106,9 +106,9 @@ export const stepTypeLabels: Record<StepType, string> = {
 
 // Submit mode labels
 export const submitModeLabels: Record<SubmitMode, string> = {
-  next: 'Go to Next Step',
-  submit: 'Submit Form',
-  redirect: 'Redirect to URL',
+  next: 'Continue',
+  submit: 'Submit',
+  redirect: 'Open URL',
   custom: 'Custom Action',
 };
 
