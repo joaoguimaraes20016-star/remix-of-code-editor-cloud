@@ -57,11 +57,16 @@ export const DEFAULT_DESIGN: StepDesign = {
   borderRadius: 12,
 };
 
-// UNIFIED BUTTON STYLE HELPER - All step buttons use this
-export function getButtonStyle(design: StepDesign): React.CSSProperties {
+// ─────────────────────────────────────────────────────────
+// UNIFIED BUTTON WIDTH SYSTEM - SINGLE SOURCE OF TRUTH
+// Width is controlled by the BUTTON ITSELF, not containers
+// ─────────────────────────────────────────────────────────
+export function getButtonStyle(design: StepDesign & { buttonFullWidth?: boolean }): React.CSSProperties {
   return {
     backgroundColor: design.buttonColor,
     color: design.buttonTextColor,
     borderRadius: `${design.borderRadius}px`,
+    // Width control: button is the layout unit
+    width: design.buttonFullWidth ? '100%' : 'fit-content',
   };
 }

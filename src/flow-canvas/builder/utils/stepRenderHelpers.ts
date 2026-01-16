@@ -60,6 +60,11 @@ export const getInputStyleClass = (style?: string): string => {
   return styles[style || 'default'] || 'rounded-lg';
 };
 
+// ─────────────────────────────────────────────────────────
+// UNIFIED BUTTON WIDTH SYSTEM - SINGLE SOURCE OF TRUTH
+// Width is controlled by the BUTTON ITSELF, not containers
+// ─────────────────────────────────────────────────────────
+
 export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>): string => {
   const isOutline = settings.buttonStyle === 'outline';
   const isGhost = settings.buttonStyle === 'ghost';
@@ -69,8 +74,9 @@ export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>)
   const sizeConfig = BUTTON_SIZES[size] || BUTTON_SIZES.md;
   const radiusClass = BUTTON_RADII[radius] || BUTTON_RADII.rounded;
   
-  // Use 'block' when full-width to prevent inline-block width conflicts
-  const displayClass = settings.buttonFullWidth ? 'block w-full' : 'inline-block';
+  // Width is controlled via inline style in getButtonStyle
+  // Display class ensures proper block/inline behavior
+  const displayClass = settings.buttonFullWidth ? 'block' : 'inline-block';
   
   const baseClasses = cn(
     displayClass,
@@ -89,8 +95,20 @@ export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>)
   return baseClasses;
 };
 
-export const getButtonStyle = (settings: Partial<ApplicationFlowStepSettings>): React.CSSProperties | undefined => {
+export const getButtonStyle = (settings: Partial<ApplicationFlowStepSettings>): React.CSSProperties => {
   const style: React.CSSProperties = {};
+  
+  // ─────────────────────────────────────────────────────────
+  // WIDTH CONTROL - Button is the layout unit
+  // Full Width = 100%, Auto Width = fit-content
+  // No containers may control button width
+  // ─────────────────────────────────────────────────────────
+  if (settings.buttonFullWidth) {
+    style.width = '100%';
+  } else {
+    // Auto width: button sizes to its content
+    style.width = 'fit-content';
+  }
   
   // Handle gradient fill
   if (settings.buttonFillType === 'gradient' && settings.buttonGradient) {
@@ -108,7 +126,7 @@ export const getButtonStyle = (settings: Partial<ApplicationFlowStepSettings>): 
     style.color = settings.buttonTextColor;
   }
   
-  return Object.keys(style).length > 0 ? style : undefined;
+  return style;
 };
 
 // Note: Interactive block backgrounds are now read from block.styles directly

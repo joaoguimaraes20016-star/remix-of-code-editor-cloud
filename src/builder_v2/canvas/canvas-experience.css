@@ -137,6 +137,7 @@
 }
 
 /* Button zone - action element with clear affordance */
+/* WIDTH CONTROLLED BY INLINE STYLE - not CSS class */
 .step-button {
   position: relative;
   display: inline-flex;
@@ -147,8 +148,8 @@
   border: none;
   cursor: pointer;
   margin-top: 8px;
-  width: 100%;
-  max-width: 280px;
+  /* Width is controlled via inline style from getButtonStyle() */
+  /* Default to fit-content, full-width applied via style prop */
   
   /* Button feels "pickable" */
   transition: 
