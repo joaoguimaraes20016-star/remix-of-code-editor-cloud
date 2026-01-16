@@ -178,30 +178,23 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
 
       {/* Gradient Picker */}
       {bgType === 'gradient' && (
-        <div
-          onPointerDown={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
+        <GradientPickerPopover
+          value={value.gradient || defaultGradient}
+          onChange={handleGradientChange}
         >
-          <GradientPickerPopover
-            value={value.gradient || defaultGradient}
-            onChange={handleGradientChange}
+          <button 
+            className="w-full h-12 rounded-lg border border-builder-border hover:ring-2 hover:ring-builder-accent transition-all cursor-pointer"
+            style={{ 
+              background: value.gradient 
+                ? gradientToCSS(value.gradient) 
+                : 'linear-gradient(135deg, #667eea, #764ba2)' 
+            }}
           >
-            <button 
-              className="w-full h-12 rounded-lg border border-builder-border hover:ring-2 hover:ring-builder-accent transition-all"
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              style={{ 
-                background: value.gradient 
-                  ? gradientToCSS(value.gradient) 
-                  : 'linear-gradient(135deg, #667eea, #764ba2)' 
-              }}
-            >
-              <span className="text-xs text-white font-medium drop-shadow-sm">
-                Click to edit gradient
-              </span>
-            </button>
-          </GradientPickerPopover>
-        </div>
+            <span className="text-xs text-white font-medium drop-shadow-sm">
+              Click to edit gradient
+            </span>
+          </button>
+        </GradientPickerPopover>
       )}
 
       {/* Image URL Input */}
