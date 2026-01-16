@@ -243,13 +243,13 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const spacingClass = getSpacingClass(s.spacing);
 
     return (
-      <div className={cn('flex flex-col w-full px-5 py-6', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full px-4 py-5', alignClass, spacingClass)}>
         {/* Heading – inline editable, selectable for inspector */}
         <div 
           className={cn(
-            'block cursor-pointer rounded-sm transition-all',
-            !isPreviewMode && 'hover:bg-primary/5',
-            isElementSelected(stepId, 'title') && 'bg-primary/10'
+            'cursor-pointer transition-colors duration-150',
+            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
+            isElementSelected(stepId, 'title') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
           )}
           onClick={(e) => handleElementSelect(e, stepId, 'title')}
         >
@@ -266,9 +266,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {/* Subline – inline editable, selectable for inspector */}
         <div 
           className={cn(
-            'block mt-2 cursor-pointer rounded-sm transition-all',
-            !isPreviewMode && 'hover:bg-primary/5',
-            isElementSelected(stepId, 'description') && 'bg-primary/10'
+            'mt-2 cursor-pointer transition-colors duration-150',
+            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
+            isElementSelected(stepId, 'description') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
           )}
           onClick={(e) => handleElementSelect(e, stepId, 'description')}
         >
@@ -285,9 +285,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {/* CTA button – UNIFIED FlowButton component */}
         <div
           className={cn(
-            'mt-5 inline-flex cursor-pointer rounded-sm transition-all',
-            !isPreviewMode && 'hover:bg-primary/5',
-            isElementSelected(stepId, 'button') && 'bg-primary/10'
+            'mt-4 inline-flex cursor-pointer transition-colors duration-150',
+            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
+            isElementSelected(stepId, 'button') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
           )}
           onClick={(e) => {
             if (!isPreviewMode) {
@@ -315,7 +315,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         </div>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-          <p className="text-xs mt-2 text-destructive/80" role="alert" aria-live="polite">
+          <p className="text-xs mt-2 text-destructive/70" role="alert" aria-live="polite">
             {getBlockedReasonDisplay()}
           </p>
         )}
@@ -331,13 +331,13 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const inputStyleClass = getInputStyleClass(s.inputStyle);
 
     return (
-      <div className={cn('flex flex-col w-full px-5 py-6', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full px-4 py-5', alignClass, spacingClass)}>
         {/* Title - selectable */}
         <div 
           className={cn(
-            'cursor-pointer rounded-sm transition-all',
-            !isPreviewMode && 'hover:bg-primary/5',
-            isElementSelected(step.id, 'title') && 'bg-primary/10'
+            'cursor-pointer transition-colors duration-150',
+            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
+            isElementSelected(step.id, 'title') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
           )}
           onClick={(e) => handleElementSelect(e, step.id, 'title')}
         >
@@ -354,9 +354,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {s.description && (
           <div 
             className={cn(
-              'mt-2 cursor-pointer rounded-sm transition-all',
-              !isPreviewMode && 'hover:bg-primary/5',
-              isElementSelected(step.id, 'description') && 'bg-primary/10'
+              'mt-2 cursor-pointer transition-colors duration-150',
+              !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
+              isElementSelected(step.id, 'description') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
             )}
             onClick={(e) => handleElementSelect(e, step.id, 'description')}
           >
@@ -366,19 +366,19 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         
         {/* Multiple Choice Options - each option selectable */}
         {s.questionType === 'multiple-choice' && s.options && (
-          <div className="mt-5 space-y-2 max-w-md w-full">
+          <div className="mt-4 space-y-1.5 max-w-md w-full">
             {(s.options as string[]).map((option: string, i: number) => (
               <div 
                 key={i} 
                 className={cn(
-                  'px-4 py-3 text-left text-sm cursor-pointer transition-all rounded-md',
+                  'px-3.5 py-2.5 text-left text-sm cursor-pointer transition-colors duration-150',
                   inputStyleClass,
-                  !isPreviewMode && 'hover:bg-primary/5',
-                  isElementSelected(step.id, 'option', i) && 'bg-primary/10'
+                  !isPreviewMode && 'hover:bg-foreground/[0.03]',
+                  isElementSelected(step.id, 'option', i) && 'bg-foreground/[0.06]'
                 )}
                 style={{ 
                   backgroundColor: flowInputBg, 
-                  border: `1px solid ${flowInputBorder}`,
+                  borderColor: flowInputBorder,
                   color: flowTextColor 
                 }}
                 onClick={(e) => handleElementSelect(e, step.id, 'option', i)}
@@ -393,20 +393,20 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {s.questionType === 'text' && (
           <div 
             className={cn(
-              'mt-5 max-w-md w-full cursor-pointer rounded-sm transition-all',
-              !isPreviewMode && 'hover:bg-primary/5',
-              isElementSelected(step.id, 'input') && 'bg-primary/10'
+              'mt-4 max-w-md w-full cursor-pointer transition-colors duration-150',
+              !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
+              isElementSelected(step.id, 'input') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
             )}
             onClick={(e) => handleElementSelect(e, step.id, 'input')}
           >
             <textarea 
               className={cn(
-                'w-full px-4 py-3 text-sm resize-none pointer-events-none rounded-md',
+                'w-full px-3.5 py-2.5 text-sm resize-none pointer-events-none',
                 inputStyleClass
               )}
               style={{ 
                 backgroundColor: flowInputBg, 
-                border: `1px solid ${flowInputBorder}`,
+                borderColor: flowInputBorder,
                 color: flowTextColor 
               }}
               placeholder="Type your answer..."
@@ -420,27 +420,27 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {s.questionType === 'dropdown' && (
           <div 
             className={cn(
-              'mt-5 max-w-md w-full cursor-pointer rounded-sm transition-all',
-              !isPreviewMode && 'hover:bg-primary/5',
-              isElementSelected(step.id, 'input') && 'bg-primary/10'
+              'mt-4 max-w-md w-full cursor-pointer transition-colors duration-150',
+              !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
+              isElementSelected(step.id, 'input') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
             )}
             onClick={(e) => handleElementSelect(e, step.id, 'input')}
           >
             <div 
               className={cn(
-                'w-full px-4 py-3 text-sm flex items-center justify-between rounded-md',
+                'w-full px-3.5 py-2.5 text-sm flex items-center justify-between',
                 inputStyleClass
               )}
               style={{ 
                 backgroundColor: flowInputBg, 
-                border: `1px solid ${flowInputBorder}`,
+                borderColor: flowInputBorder,
                 color: flowTextColor 
               }}
             >
               <span className="opacity-60">
                 {s.options?.[0] || 'Select an option...'}
               </span>
-              <svg className="w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
@@ -451,23 +451,23 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {s.questionType === 'scale' && (
           <div 
             className={cn(
-              'mt-5 max-w-md w-full cursor-pointer rounded-sm transition-all',
-              !isPreviewMode && 'hover:bg-primary/5',
-              isElementSelected(step.id, 'input') && 'bg-primary/10'
+              'mt-4 max-w-md w-full cursor-pointer transition-colors duration-150',
+              !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
+              isElementSelected(step.id, 'input') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
             )}
             onClick={(e) => handleElementSelect(e, step.id, 'input')}
           >
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-1.5 justify-center">
               {Array.from({ length: s.scaleMax || 10 }, (_, i) => i + 1).map((num) => (
                 <div
                   key={num}
                   className={cn(
-                    'w-10 h-10 flex items-center justify-center text-sm font-medium pointer-events-none rounded-md',
+                    'w-9 h-9 flex items-center justify-center text-sm font-medium pointer-events-none',
                     inputStyleClass
                   )}
                   style={{ 
                     backgroundColor: flowInputBg, 
-                    border: `1px solid ${flowInputBorder}`,
+                    borderColor: flowInputBorder,
                     color: flowTextColor 
                   }}
                 >
@@ -475,7 +475,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 </div>
               ))}
             </div>
-            <div className="flex justify-between text-xs mt-2 opacity-60" style={{ color: flowTextColor }}>
+            <div className="flex justify-between text-xs mt-1.5 opacity-50" style={{ color: flowTextColor }}>
               <span>{s.scaleMinLabel || 'Not at all'}</span>
               <span>{s.scaleMaxLabel || 'Extremely'}</span>
             </div>
@@ -484,19 +484,19 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
 
         {/* Yes/No */}
         {s.questionType === 'yes-no' && (
-          <div className="mt-5 space-y-2 max-w-md w-full">
+          <div className="mt-4 space-y-1.5 max-w-md w-full">
             {['Yes', 'No'].map((option, i) => (
               <div 
                 key={option} 
                 className={cn(
-                  'px-4 py-3 text-left text-sm cursor-pointer transition-all rounded-md',
+                  'px-3.5 py-2.5 text-left text-sm cursor-pointer transition-colors duration-150',
                   inputStyleClass,
-                  !isPreviewMode && 'hover:bg-primary/5',
-                  isElementSelected(step.id, 'option', i) && 'bg-primary/10'
+                  !isPreviewMode && 'hover:bg-foreground/[0.03]',
+                  isElementSelected(step.id, 'option', i) && 'bg-foreground/[0.06]'
                 )}
                 style={{ 
                   backgroundColor: flowInputBg, 
-                  border: `1px solid ${flowInputBorder}`,
+                  borderColor: flowInputBorder,
                   color: flowTextColor 
                 }}
                 onClick={(e) => handleElementSelect(e, step.id, 'option', i)}
@@ -510,9 +510,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {/* Button - UNIFIED FlowButton component */}
         <div
           className={cn(
-            'mt-5 inline-flex cursor-pointer rounded-sm transition-all',
-            !isPreviewMode && 'hover:bg-primary/5',
-            isElementSelected(step.id, 'button') && 'bg-primary/10'
+            'mt-4 inline-flex cursor-pointer transition-colors duration-150',
+            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
+            isElementSelected(step.id, 'button') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
           )}
           onClick={(e) => {
             if (!isPreviewMode) {
@@ -540,7 +540,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         </div>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-          <p className="text-xs mt-2 text-destructive/80 text-center" role="alert" aria-live="polite">
+          <p className="text-xs mt-2 text-destructive/70 text-center" role="alert" aria-live="polite">
             {getBlockedReasonDisplay()}
           </p>
         )}
@@ -567,13 +567,13 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     if (showPhone) fields.push({ type: 'phone', placeholder: 'Your phone' });
 
     return (
-      <div className={cn('flex flex-col w-full px-5 py-6', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full px-4 py-5', alignClass, spacingClass)}>
         {/* Title - selectable */}
         <div 
           className={cn(
-            'cursor-pointer rounded-sm transition-all',
-            !isPreviewMode && 'hover:bg-primary/5',
-            isElementSelected(step.id, 'title') && 'bg-primary/10'
+            'cursor-pointer transition-colors duration-150',
+            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
+            isElementSelected(step.id, 'title') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
           )}
           onClick={(e) => handleElementSelect(e, step.id, 'title')}
         >
@@ -590,34 +590,34 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {s.description && (
           <div 
             className={cn(
-              'mt-2 cursor-pointer rounded-sm transition-all',
-              !isPreviewMode && 'hover:bg-primary/5',
-              isElementSelected(step.id, 'description') && 'bg-primary/10'
+              'mt-2 cursor-pointer transition-colors duration-150',
+              !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
+              isElementSelected(step.id, 'description') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
             )}
             onClick={(e) => handleElementSelect(e, step.id, 'description')}
           >
             <p className="text-sm opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
           </div>
         )}
-        <div className="mt-5 space-y-2.5 max-w-md w-full">
+        <div className="mt-4 space-y-2 max-w-md w-full">
           {fields.map((field, index) => (
             <div
               key={field.type}
               className={cn(
-                'cursor-pointer rounded-sm transition-all',
-                !isPreviewMode && 'hover:bg-primary/5',
-                isElementSelected(step.id, 'input', index) && 'bg-primary/10'
+                'cursor-pointer transition-colors duration-150',
+                !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
+                isElementSelected(step.id, 'input', index) && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
               )}
               onClick={(e) => handleElementSelect(e, step.id, 'input', index)}
             >
               <input 
                 className={cn(
-                  'w-full px-4 py-3 text-sm pointer-events-none rounded-md',
+                  'w-full px-3.5 py-2.5 text-sm pointer-events-none',
                   inputStyleClass
                 )}
                 style={{ 
                   backgroundColor: flowInputBg, 
-                  border: `1px solid ${flowInputBorder}`,
+                  borderColor: flowInputBorder,
                   color: flowTextColor 
                 }}
                 placeholder={field.placeholder} 
@@ -629,9 +629,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {/* Button - UNIFIED FlowButton component */}
         <div
           className={cn(
-            'mt-5 inline-flex cursor-pointer rounded-sm transition-all',
-            !isPreviewMode && 'hover:bg-primary/5',
-            isElementSelected(step.id, 'button') && 'bg-primary/10'
+            'mt-4 inline-flex cursor-pointer transition-colors duration-150',
+            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
+            isElementSelected(step.id, 'button') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
           )}
           onClick={(e) => {
             if (!isPreviewMode) {
@@ -659,7 +659,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         </div>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-          <p className="text-xs mt-2 text-destructive/80 text-center" role="alert" aria-live="polite">
+          <p className="text-xs mt-2 text-destructive/70 text-center" role="alert" aria-live="polite">
             {getBlockedReasonDisplay()}
           </p>
         )}
@@ -674,7 +674,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const spacingClass = getSpacingClass(s.spacing);
 
     return (
-      <div className={cn('flex flex-col w-full px-5 py-6', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full px-4 py-5', alignClass, spacingClass)}>
         <InlineTextEditor
           value={s.title || 'Thanks — we\'ll be in touch!'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
@@ -685,7 +685,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           elementId={`step-${step.id}-title`}
         />
         {s.description && (
-          <p className="text-sm mt-2 opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
+          <p className="text-sm mt-2 opacity-60" style={{ color: flowTextColor }}>{s.description}</p>
         )}
       </div>
     );
@@ -730,19 +730,19 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   return (
     <div
       className={cn(
-        'w-full transition-all duration-200 overflow-hidden',
-        // Subtle selection - no heavy borders
-        isSelected && 'ring-1 ring-primary/40'
+        'w-full transition-colors duration-200 overflow-hidden',
+        // Very subtle selection indicator - almost invisible border
+        isSelected && 'ring-1 ring-primary/30'
       )}
       style={{
         background: backgroundToCSS(flowBackground),
-        borderRadius: blockBorderRadius || '8px',
+        borderRadius: blockBorderRadius || '6px',
         border: blockBorder || undefined,
         boxShadow: blockShadow || undefined,
       }}
       onClick={onSelect}
     >
-      {/* Step content - no extra wrapper rings */}
+      {/* Step content */}
       <div
         className="cursor-pointer"
         onClick={(e) => activeStep && handleStepClick(e, activeStep.id)}
@@ -750,16 +750,14 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {renderStepContent()}
       </div>
       
-      {/* Step navigation bar - shows ONLY visible steps for quick switching */}
+      {/* Step navigation - minimal dots */}
       {(() => {
         const visibleNavSteps = getVisibleStepsForNav();
         if (visibleNavSteps.length <= 1) return null;
         
         return (
-          <div 
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 flex-wrap bg-black/[0.02]"
-          >
-            {visibleNavSteps.map((step, index) => {
+          <div className="flex items-center justify-center gap-1.5 px-3 py-2">
+            {visibleNavSteps.map((step) => {
               const isDisabled = isStepNavDisabled(step.id);
               const isCurrent = selectedStepId === step.id;
               
@@ -776,17 +774,14 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   aria-current={isCurrent ? 'step' : undefined}
                   title={step.name}
                   className={cn(
-                    'w-2 h-2 rounded-full transition-all',
+                    'w-1.5 h-1.5 rounded-full transition-all duration-150',
                     isCurrent
-                      ? 'bg-primary scale-125'
+                      ? 'bg-foreground/60 w-3'
                       : isDisabled
-                        ? 'bg-black/10 cursor-not-allowed'
-                        : 'bg-black/20 hover:bg-black/30 cursor-pointer'
+                        ? 'bg-foreground/10 cursor-not-allowed'
+                        : 'bg-foreground/20 hover:bg-foreground/30 cursor-pointer'
                   )}
-                  style={{ color: isCurrent ? undefined : flowTextColor }}
-                >
-                  {index + 1}
-                </button>
+                />
               );
             })}
           </div>
