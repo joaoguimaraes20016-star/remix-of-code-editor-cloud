@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { InlineTextEditor } from './InlineTextEditor';
 import {
   getTitleSizeClass,
+  getDescriptionSizeClass,
   getAlignClass,
   getSpacingClass,
   getInputStyleClass,
@@ -412,7 +413,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             value={s.description || 'Answer a few quick questions to see if we are a good fit.'}
             onChange={(content) => updateStepSetting(stepId, 'description', content)}
             placeholder="Answer a few quick questions to see if we are a good fit."
-            className="text-sm inline-block opacity-70"
+            className={cn(getDescriptionSizeClass(s.descriptionSize), 'inline-block opacity-70')}
             style={{ color: getElementColor(s, 'descriptionColor') }}
             elementType="text"
             elementId={`step-${stepId}-desc`}
@@ -494,7 +495,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             )}
             onClick={(e) => handleElementClick(e, step.id, 'description')}
           >
-            <p className="text-sm opacity-70" style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
+            <p className={cn(getDescriptionSizeClass(s.descriptionSize), 'opacity-70')} style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
           </div>
         )}
         
