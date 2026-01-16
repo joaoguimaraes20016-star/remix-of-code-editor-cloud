@@ -141,7 +141,6 @@ export interface ApplicationFlowBackground {
 export interface ApplicationFlowSettings {
   displayMode: 'one-at-a-time' | 'all-visible';
   showProgress: boolean;
-  transition: 'slide-up' | 'slide-left' | 'fade' | 'none';
   steps: ApplicationFlowStep[];
   // Independent styling (not affected by global light/dark theme)
   background?: ApplicationFlowBackground;

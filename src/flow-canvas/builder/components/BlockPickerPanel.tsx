@@ -310,7 +310,6 @@ const flowTemplates: BlockTemplate[] = [
       props: {
         displayMode: 'one-at-a-time',
         showProgress: true,
-        transition: 'slide-up',
         background: { type: 'solid', color: '#ffffff' },
         textColor: '#000000',
         inputBackground: '#ffffff',
