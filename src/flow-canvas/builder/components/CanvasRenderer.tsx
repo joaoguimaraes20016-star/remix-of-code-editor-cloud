@@ -1252,14 +1252,23 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         // Determine wrapper styles for alignment using textAlign
         // Default to center alignment for better UX
         const buttonAlignment = (element.styles?.textAlign as 'left' | 'center' | 'right' | undefined) || 'center';
+        // SINGLE SURFACE FIX: Wrapper is for LAYOUT ONLY - strip ALL visual styles
+        // Only keep margin/layout properties, NOT background/gradient/border/shadow
         const wrapperStyle: React.CSSProperties = {
-          ...style,
-          ...layoutStyles,
+          // Layout properties only - NO visual styles from element.styles
+          margin: style.margin,
+          marginTop: style.marginTop,
+          marginRight: style.marginRight,
+          marginBottom: style.marginBottom,
+          marginLeft: style.marginLeft,
           // Use flexbox for reliable alignment
           display: 'flex',
           width: isNavPill || isFooterLink ? 'auto' : '100%',
           justifyContent: buttonAlignment === 'center' ? 'center' : 
                           buttonAlignment === 'right' ? 'flex-end' : 'flex-start',
+          // CRITICAL: Explicitly NO background on wrapper - button is the ONLY visual surface
+          backgroundColor: 'transparent',
+          background: 'none',
         };
         
         // For outline mode, use foreground color; for filled, use the actual bg
