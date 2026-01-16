@@ -94,11 +94,44 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   // Access FlowContainer for intent-based button actions (SINGLE SOURCE OF TRUTH)
   const flowContainer = useFlowContainerSafe();
   
-  // Independent styling (not affected by global theme)
+  // ═══════════════════════════════════════════════════════════════
+  // CONTAINER STYLING - All settings from inspector must render here
+  // ═══════════════════════════════════════════════════════════════
+  
+  // Background (solid, gradient, or image)
   const flowBackground = settings.background;
   const flowTextColor = settings.textColor || '#000000';
   const flowInputBg = settings.inputBackground || '#ffffff';
   const flowInputBorder = settings.inputBorderColor || '#e5e7eb';
+  
+  // Container dimensions & styling
+  const containerPadding = settings.containerPadding ?? 32;
+  const containerRadius = settings.containerRadius ?? 12;
+  const containerBorderColor = settings.containerBorderColor;
+  const containerShadow = settings.containerShadow || 'none';
+  const contentWidth = settings.contentWidth || 'md';
+  const contentAlign = settings.contentAlign || 'center';
+  
+  // Flow behavior settings
+  const displayMode = settings.displayMode || 'one-at-a-time';
+  const showProgress = settings.showProgress ?? false;
+  
+  // Map shadow setting to CSS
+  const shadowMap: Record<string, string> = {
+    'none': 'none',
+    'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  };
+  
+  // Map width setting to CSS
+  const widthMap: Record<string, string> = {
+    'sm': '400px',
+    'md': '600px', 
+    'lg': '800px',
+    'full': '100%',
+  };
   
   // Determine active step (default to first step / welcome)
   const activeStep = selectedStepId 
@@ -106,6 +139,10 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     : steps[0];
   
   const stepSettings = (activeStep as any)?.settings || {};
+  
+  // Calculate progress
+  const currentStepIndex = activeStep ? steps.findIndex(s => s.id === activeStep.id) : 0;
+  const progressPercent = steps.length > 1 ? ((currentStepIndex) / (steps.length - 1)) * 100 : 0;
 
   // Helper to update an element's content (for Welcome step via block.elements)
   const updateElementContent = (elementId: string, newContent: string) => {
@@ -255,8 +292,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const spacingClass = getSpacingClass(s.spacing);
 
     return (
-      <div className={cn('flex flex-col w-full px-4 py-5', alignClass, spacingClass)}>
-        {/* Heading – inline editable, selectable for inspector */}
+      <div className={cn('flex flex-col w-full', alignClass, spacingClass)}>
         <div 
           className={cn(
             'cursor-pointer transition-colors duration-150',
@@ -342,7 +378,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const inputStyleClass = getInputStyleClass(s.inputStyle);
 
     return (
-      <div className={cn('flex flex-col w-full px-4 py-5', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full', alignClass, spacingClass)}>
         {/* Title - selectable */}
         <div 
           className={cn(
@@ -577,7 +613,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     if (showPhone) fields.push({ type: 'phone', placeholder: 'Your phone' });
 
     return (
-      <div className={cn('flex flex-col w-full px-4 py-5', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full', alignClass, spacingClass)}>
         {/* Title - selectable */}
         <div 
           className={cn(
@@ -683,7 +719,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const spacingClass = getSpacingClass(s.spacing);
 
     return (
-      <div className={cn('flex flex-col w-full px-4 py-5', alignClass, spacingClass)}>
+      <div className={cn('flex flex-col w-full', alignClass, spacingClass)}>
         <InlineTextEditor
           value={s.title || 'Thanks — we\'ll be in touch!'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
@@ -719,12 +755,6 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     }
   };
 
-  // Get block-level styling
-  const blockStyle = block.styles || {};
-  const blockBorderRadius = blockStyle.borderRadius;
-  const blockBorder = blockStyle.border;
-  const blockShadow = blockStyle.boxShadow;
-
   /**
    * Step navigation click - ONLY used by nav dots
    * Content elements handle their own selection via handleElementClick
@@ -741,67 +771,136 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
    * Elements inside stop propagation to handle their own selection
    */
   const handleBlockClick = (e: React.MouseEvent) => {
-    // Only select block if click wasn't handled by an element
     onSelect();
   };
+
+  // Build container border style
+  const containerBorderStyle = containerBorderColor && containerBorderColor !== 'transparent'
+    ? `1px solid ${containerBorderColor}`
+    : undefined;
 
   return (
     <div
       className={cn(
-        'w-full transition-colors duration-200 overflow-hidden',
-        // Very subtle selection indicator
-        isSelected && 'ring-1 ring-primary/30'
+        'w-full transition-all duration-200 overflow-hidden',
+        // Selection indicator
+        isSelected && 'ring-1 ring-primary/30',
+        // Content alignment
+        contentAlign === 'left' && 'flex justify-start',
+        contentAlign === 'center' && 'flex justify-center',
+        contentAlign === 'right' && 'flex justify-end'
       )}
-      style={{
-        background: backgroundToCSS(flowBackground),
-        borderRadius: blockBorderRadius || '6px',
-        border: blockBorder || undefined,
-        boxShadow: blockShadow || undefined,
-      }}
       onClick={handleBlockClick}
     >
-      {/* Step content - elements inside are directly editable */}
-      <div>
-        {renderStepContent()}
-      </div>
-      
-      {/* Step navigation - minimal dots */}
-      {(() => {
-        const visibleNavSteps = getVisibleStepsForNav();
-        if (visibleNavSteps.length <= 1) return null;
-        
-        return (
-          <div className="flex items-center justify-center gap-1.5 px-3 py-2">
-            {visibleNavSteps.map((step) => {
-              const isDisabled = isStepNavDisabled(step.id);
-              const isCurrent = selectedStepId === step.id;
-              
-              return (
-                <button
-                  key={step.id}
-                  onClick={(e) => {
-                    if (!isDisabled) {
-                      handleStepNavClick(e, step.id);
-                    }
-                  }}
-                  disabled={isDisabled}
-                  aria-disabled={isDisabled}
-                  aria-current={isCurrent ? 'step' : undefined}
-                  title={step.name}
-                  className={cn(
-                    'w-1.5 h-1.5 rounded-full transition-all duration-150',
-                    isCurrent
-                      ? 'bg-foreground/60 w-3'
-                      : isDisabled
-                        ? 'bg-foreground/10 cursor-not-allowed'
-                        : 'bg-foreground/20 hover:bg-foreground/30 cursor-pointer'
-                  )}
-                />
-              );
-            })}
+      {/* Inner container with all styling applied */}
+      <div
+        style={{
+          background: backgroundToCSS(flowBackground),
+          borderRadius: `${containerRadius}px`,
+          border: containerBorderStyle,
+          boxShadow: shadowMap[containerShadow],
+          padding: `${containerPadding}px`,
+          maxWidth: widthMap[contentWidth],
+          width: '100%',
+        }}
+      >
+        {/* Progress bar - shown when enabled */}
+        {showProgress && steps.length > 1 && (
+          <div className="mb-4">
+            <div 
+              className="h-1 rounded-full overflow-hidden"
+              style={{ backgroundColor: `${flowTextColor}15` }}
+            >
+              <div 
+                className="h-full rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${progressPercent}%`,
+                  backgroundColor: flowTextColor,
+                }}
+              />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[10px] opacity-50" style={{ color: flowTextColor }}>
+                Step {currentStepIndex + 1} of {steps.length}
+              </span>
+            </div>
           </div>
-        );
-      })()}
+        )}
+
+        {/* Step content - display mode determines rendering */}
+        {displayMode === 'all-visible' ? (
+          // All steps visible mode - render all steps stacked
+          <div className="space-y-6">
+            {steps.map((step, index) => (
+              <div 
+                key={step.id}
+                className={cn(
+                  'transition-all duration-200',
+                  selectedStepId === step.id && !isPreviewMode && 'ring-1 ring-primary/20 rounded-lg -m-2 p-2'
+                )}
+                onClick={(e) => {
+                  if (!isPreviewMode) {
+                    e.stopPropagation();
+                    handleStepNavClick(e, step.id);
+                  }
+                }}
+              >
+                {step.type === 'welcome' && renderWelcomeStep()}
+                {step.type === 'question' && renderQuestionStep(step)}
+                {step.type === 'capture' && renderCaptureStep(step)}
+                {step.type === 'ending' && renderEndingStep(step)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          // One at a time mode - render only active step
+          renderStepContent()
+        )}
+        
+        {/* Step navigation - shown only in one-at-a-time mode */}
+        {displayMode === 'one-at-a-time' && (() => {
+          const visibleNavSteps = getVisibleStepsForNav();
+          if (visibleNavSteps.length <= 1) return null;
+          
+          return (
+            <div 
+              className="flex items-center justify-center gap-1.5 mt-4 pt-3"
+              style={{ borderTop: `1px solid ${flowInputBorder}` }}
+            >
+              {visibleNavSteps.map((step) => {
+                const isDisabled = isStepNavDisabled(step.id);
+                const isCurrent = selectedStepId === step.id;
+                
+                return (
+                  <button
+                    key={step.id}
+                    onClick={(e) => {
+                      if (!isDisabled) {
+                        handleStepNavClick(e, step.id);
+                      }
+                    }}
+                    disabled={isDisabled}
+                    aria-disabled={isDisabled}
+                    aria-current={isCurrent ? 'step' : undefined}
+                    title={step.name}
+                    className={cn(
+                      'w-1.5 h-1.5 rounded-full transition-all duration-150',
+                      isCurrent
+                        ? 'w-3'
+                        : isDisabled
+                          ? 'opacity-30 cursor-not-allowed'
+                          : 'hover:opacity-70 cursor-pointer'
+                    )}
+                    style={{
+                      backgroundColor: isCurrent ? flowTextColor : `${flowTextColor}40`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 };
