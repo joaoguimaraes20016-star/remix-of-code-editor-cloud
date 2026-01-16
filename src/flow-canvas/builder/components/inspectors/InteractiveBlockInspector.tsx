@@ -275,11 +275,25 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
 
                 return (
                   <div className="space-y-2">
-                    {/* Primary Action Type Selector */}
-                    <div className="grid grid-cols-2 gap-1.5">
+                    {/* Primary Action - Continue Flow (default) */}
+                    <button
+                      onClick={() => handleActionChange('next-step', '')}
+                      className={cn(
+                        'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all col-span-2',
+                        actionType === 'next-step'
+                          ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
+                          : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface border border-transparent hover:border-border'
+                      )}
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                      Continue Flow
+                      {actionType === 'next-step' && <span className="text-[9px] opacity-70 ml-1">(auto)</span>}
+                    </button>
+
+                    {/* Secondary Actions - Explicit navigation */}
+                    <div className="grid grid-cols-3 gap-1.5 col-span-2">
                       {[
-                        { type: 'next-step' as ButtonActionType, label: 'Next Step', icon: <ArrowRight className="w-3 h-3" /> },
-                        { type: 'go-to-step' as ButtonActionType, label: 'Go to Step', icon: <Layers className="w-3 h-3" /> },
+                        { type: 'go-to-step' as ButtonActionType, label: 'Specific Step', icon: <Layers className="w-3 h-3" /> },
                         { type: 'submit' as ButtonActionType, label: 'Submit', icon: <Send className="w-3 h-3" /> },
                         { type: 'url' as ButtonActionType, label: 'Open URL', icon: <ExternalLink className="w-3 h-3" /> },
                       ].map((action) => (
@@ -287,10 +301,10 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                           key={action.type}
                           onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
                           className={cn(
-                            'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
+                            'flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[10px] transition-colors',
                             actionType === action.type
                               ? 'bg-builder-accent text-white'
-                              : 'bg-builder-surface-hover hover:bg-builder-surface text-builder-text-muted'
+                              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                           )}
                         >
                           {action.icon}

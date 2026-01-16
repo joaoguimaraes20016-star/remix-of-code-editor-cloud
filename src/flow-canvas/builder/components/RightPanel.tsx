@@ -753,10 +753,26 @@ const ElementInspector: React.FC<{
               {/* Quick Action Selector */}
               <div className="space-y-2">
                 <span className="text-[10px] text-builder-text-dim uppercase tracking-wide">What happens after click?</span>
-                <div className="grid grid-cols-2 gap-1.5">
+                
+                {/* Primary Action - Continue Flow */}
+                <button
+                  onClick={() => handlePropsChange('buttonAction', { type: 'next-step' })}
+                  className={cn(
+                    "flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                    buttonAction?.type === 'next-step' || !buttonAction?.type
+                      ? "bg-primary text-primary-foreground ring-2 ring-primary/20"
+                      : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface border border-transparent hover:border-border"
+                  )}
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  Continue Flow
+                  {(buttonAction?.type === 'next-step' || !buttonAction?.type) && <span className="text-[10px] opacity-70">(auto)</span>}
+                </button>
+
+                {/* Secondary Actions */}
+                <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { type: 'next-step', label: 'Next Step', icon: <ArrowRight className="w-3.5 h-3.5" /> },
-                    { type: 'go-to-step', label: 'Go to Step', icon: <Layers className="w-3.5 h-3.5" /> },
+                    { type: 'go-to-step', label: 'Specific Step', icon: <Layers className="w-3.5 h-3.5" /> },
                     { type: 'submit', label: 'Submit', icon: <Check className="w-3.5 h-3.5" /> },
                     { type: 'url', label: 'Open URL', icon: <ExternalLink className="w-3.5 h-3.5" /> },
                   ].map((action) => (
@@ -764,17 +780,16 @@ const ElementInspector: React.FC<{
                       key={action.type}
                       onClick={() => {
                         if (action.type === 'go-to-step' || action.type === 'url') {
-                          // Open modal for these since they need additional input
                           setIsButtonActionOpen(true);
                         } else {
                           handlePropsChange('buttonAction', { type: action.type });
                         }
                       }}
                       className={cn(
-                        "flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all",
+                        "flex items-center justify-center gap-1 px-2 py-2 rounded-md text-[10px] font-medium transition-all",
                         buttonAction?.type === action.type
                           ? "bg-builder-accent text-white"
-                          : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface"
+                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
                       )}
                     >
                       {action.icon}
