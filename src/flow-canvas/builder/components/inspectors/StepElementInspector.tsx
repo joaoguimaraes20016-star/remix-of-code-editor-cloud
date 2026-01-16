@@ -18,14 +18,6 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  ArrowRight,
-  Layers,
-  Send,
-  ExternalLink,
-  Hash,
-  Phone,
-  Mail,
-  Download,
   TextCursor,
 } from 'lucide-react';
 import {
@@ -36,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ColorPickerPopover } from '../modals';
-import type { ButtonActionType } from '../modals/ButtonActionModal';
+import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
 
 // Local type definitions (matches ApplicationFlowCard)
 export type StepElementType = 'title' | 'description' | 'button' | 'option' | 'input';
@@ -280,18 +272,12 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   );
 
   const renderButtonEditor = () => {
-    const buttonAction = stepSettings.buttonAction || { type: 'next-step' };
-    const actionType = buttonAction.type || 'next-step';
-    const actionValue = buttonAction.value || '';
-    const openNewTab = buttonAction.openNewTab ?? false;
-
-    const handleActionChange = (type: ButtonActionType, value?: string, newTab?: boolean) => {
-      updateStepSetting('buttonAction', { 
-        type, 
-        value, 
-        openNewTab: type === 'url' ? (newTab ?? openNewTab) : undefined 
-      });
-    };
+    const buttonAction = stepSettings.buttonAction as ButtonAction | undefined;
+    
+    // Get available steps for "Go To Step" action (exclude current step)
+    const availableSteps = steps
+      .filter(s => s.id !== step.id)
+      .map(s => ({ id: s.id, name: s.name }));
 
     return (
       <div className="flex flex-col h-full min-h-0 bg-builder-bg">
@@ -307,149 +293,11 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
         </CollapsibleSection>
         
         <CollapsibleSection title="Action" icon={<MousePointer2 className="w-3.5 h-3.5" />} defaultOpen>
-          {/* Display current action */}
-          <p className="text-xs text-builder-text-muted mb-2">
-            On Click: {actionType === 'next-step' ? 'Continue to next step' : 
-                       actionType === 'go-to-step' ? 'Go to specific step' :
-                       actionType === 'submit' ? 'Submit form' :
-                       actionType === 'url' ? 'Open URL' : 'Custom action'}
-          </p>
-          <div className="space-y-2">
-            {/* Primary Action - Continue (default) */}
-            <button
-              onClick={() => handleActionChange('next-step', '')}
-              className={cn(
-                'w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all',
-                actionType === 'next-step'
-                  ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
-                  : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface border border-transparent hover:border-border'
-              )}
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-              Continue
-              {actionType === 'next-step' && <span className="text-[9px] opacity-70 ml-1">(default)</span>}
-            </button>
-
-            {/* Secondary Actions - Explicit navigation */}
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
-                { type: 'go-to-step' as ButtonActionType, label: 'Go to Step', icon: <Layers className="w-3 h-3" /> },
-                { type: 'submit' as ButtonActionType, label: 'Submit', icon: <Send className="w-3 h-3" /> },
-                { type: 'url' as ButtonActionType, label: 'URL', icon: <ExternalLink className="w-3 h-3" /> },
-              ].map((action) => (
-                <button
-                  key={action.type}
-                  onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
-                  className={cn(
-                    'flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[10px] transition-colors',
-                    actionType === action.type
-                      ? 'bg-builder-accent text-white'
-                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                  )}
-                >
-                  {action.icon}
-                  {action.label}
-                </button>
-              ))}
-            </div>
-            
-            {/* More Action Types */}
-            <div className="grid grid-cols-2 gap-1.5">
-              {[
-                { type: 'scroll' as ButtonActionType, label: 'Scroll To', icon: <Hash className="w-3 h-3" /> },
-                { type: 'phone' as ButtonActionType, label: 'Call', icon: <Phone className="w-3 h-3" /> },
-                { type: 'email' as ButtonActionType, label: 'Email', icon: <Mail className="w-3 h-3" /> },
-                { type: 'download' as ButtonActionType, label: 'Download', icon: <Download className="w-3 h-3" /> },
-              ].map((action) => (
-                <button
-                  key={action.type}
-                  onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
-                    actionType === action.type
-                      ? 'bg-builder-accent text-white'
-                      : 'bg-builder-surface-hover hover:bg-builder-surface text-builder-text-muted'
-                  )}
-                >
-                  {action.icon}
-                  {action.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Step Selector for go-to-step */}
-            {actionType === 'go-to-step' && (
-              <Select value={actionValue} onValueChange={(v) => handleActionChange('go-to-step', v)}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Select step..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {steps.filter(s => s.id !== step.id).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            {/* URL Input */}
-            {actionType === 'url' && (
-              <>
-                <Input
-                  value={actionValue}
-                  onChange={(e) => handleActionChange('url', e.target.value)}
-                  placeholder="https://example.com"
-                  className="h-8 text-sm"
-                />
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-builder-text-muted">Open in new tab</Label>
-                  <Switch
-                    checked={openNewTab}
-                    onCheckedChange={(checked) => handleActionChange('url', actionValue, checked)}
-                  />
-                </div>
-              </>
-            )}
-            
-            {/* Scroll target */}
-            {actionType === 'scroll' && (
-              <Input
-                value={actionValue}
-                onChange={(e) => handleActionChange('scroll', e.target.value)}
-                placeholder="#section-id"
-                className="h-8 text-sm"
-              />
-            )}
-            
-            {/* Phone */}
-            {actionType === 'phone' && (
-              <Input
-                value={actionValue}
-                onChange={(e) => handleActionChange('phone', e.target.value)}
-                placeholder="+1 (555) 123-4567"
-                className="h-8 text-sm"
-              />
-            )}
-            
-            {/* Email */}
-            {actionType === 'email' && (
-              <Input
-                value={actionValue}
-                onChange={(e) => handleActionChange('email', e.target.value)}
-                placeholder="hello@example.com"
-                className="h-8 text-sm"
-              />
-            )}
-            
-            {/* Download */}
-            {actionType === 'download' && (
-              <Input
-                value={actionValue}
-                onChange={(e) => handleActionChange('download', e.target.value)}
-                placeholder="https://example.com/file.pdf"
-                className="h-8 text-sm"
-              />
-            )}
-          </div>
+          <ButtonActionSelector
+            action={buttonAction}
+            onChange={(action) => updateStepSetting('buttonAction', action)}
+            availableSteps={availableSteps}
+          />
         </CollapsibleSection>
         
         <CollapsibleSection title="Preset" icon={<Palette className="w-3.5 h-3.5" />}>

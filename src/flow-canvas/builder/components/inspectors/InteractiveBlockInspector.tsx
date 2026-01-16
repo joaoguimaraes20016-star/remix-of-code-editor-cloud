@@ -30,14 +30,6 @@ import {
   AlignCenter,
   AlignRight,
   Eye,
-  ArrowRight,
-  Layers,
-  Send,
-  ExternalLink,
-  Hash,
-  Phone,
-  Mail,
-  Download,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,7 +43,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
-import type { ButtonAction, ButtonActionType } from '../modals/ButtonActionModal';
+import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
 
 interface InteractiveBlockInspectorProps {
   block: Block;
@@ -261,159 +253,12 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           {/* Button Action - What happens on click */}
           {buttonElement && (
             <FieldGroup label="Button Action">
-              {(() => {
-                const buttonAction = buttonElement.props?.buttonAction as ButtonAction | undefined;
-                const actionType = buttonAction?.type || 'next-step';
-                const actionValue = buttonAction?.value || '';
-                const openNewTab = buttonAction?.openNewTab ?? false;
-                
-                const handleActionChange = (type: ButtonActionType, value?: string, newTab?: boolean) => {
-                  updateElementProps(buttonElement.id, {
-                    buttonAction: { type, value, openNewTab: type === 'url' ? (newTab ?? openNewTab) : undefined }
-                  });
-                };
-
-                return (
-                  <div className="space-y-2">
-                    {/* Primary Action - Continue Flow (default) */}
-                    <button
-                      onClick={() => handleActionChange('next-step', '')}
-                      className={cn(
-                        'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all col-span-2',
-                        actionType === 'next-step'
-                          ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
-                          : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface border border-transparent hover:border-border'
-                      )}
-                    >
-                      <ArrowRight className="w-3.5 h-3.5" />
-                      Continue Flow
-                      {actionType === 'next-step' && <span className="text-[9px] opacity-70 ml-1">(auto)</span>}
-                    </button>
-
-                    {/* Secondary Actions - Explicit navigation */}
-                    <div className="grid grid-cols-3 gap-1.5 col-span-2">
-                      {[
-                        { type: 'go-to-step' as ButtonActionType, label: 'Specific Step', icon: <Layers className="w-3 h-3" /> },
-                        { type: 'submit' as ButtonActionType, label: 'Submit', icon: <Send className="w-3 h-3" /> },
-                        { type: 'url' as ButtonActionType, label: 'Open URL', icon: <ExternalLink className="w-3 h-3" /> },
-                      ].map((action) => (
-                        <button
-                          key={action.type}
-                          onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
-                          className={cn(
-                            'flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[10px] transition-colors',
-                            actionType === action.type
-                              ? 'bg-builder-accent text-white'
-                              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                          )}
-                        >
-                          {action.icon}
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    {/* Secondary Action Types */}
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {[
-                        { type: 'scroll' as ButtonActionType, label: 'Scroll To', icon: <Hash className="w-3 h-3" /> },
-                        { type: 'phone' as ButtonActionType, label: 'Call Phone', icon: <Phone className="w-3 h-3" /> },
-                        { type: 'email' as ButtonActionType, label: 'Send Email', icon: <Mail className="w-3 h-3" /> },
-                        { type: 'download' as ButtonActionType, label: 'Download', icon: <Download className="w-3 h-3" /> },
-                      ].map((action) => (
-                        <button
-                          key={action.type}
-                          onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
-                          className={cn(
-                            'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
-                            actionType === action.type
-                              ? 'bg-builder-accent text-white'
-                              : 'bg-builder-surface-hover hover:bg-builder-surface text-builder-text-muted'
-                          )}
-                        >
-                          {action.icon}
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Step Selector for go-to-step */}
-                    {actionType === 'go-to-step' && steps.length > 0 && (
-                      <Select value={actionValue} onValueChange={(v) => handleActionChange('go-to-step', v)}>
-                        <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="Select step..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {steps.map((step) => (
-                            <SelectItem key={step.id} value={step.id}>
-                              {step.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-
-                    {/* URL Input for url action */}
-                    {actionType === 'url' && (
-                      <>
-                        <Input
-                          value={actionValue}
-                          onChange={(e) => handleActionChange('url', e.target.value)}
-                          placeholder="https://example.com"
-                          className="h-8 text-sm"
-                        />
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-builder-text-muted">Open in new tab</Label>
-                          <Switch
-                            checked={openNewTab}
-                            onCheckedChange={(checked) => handleActionChange('url', actionValue, checked)}
-                          />
-                        </div>
-                      </>
-                    )}
-                    
-                    {/* Scroll target input */}
-                    {actionType === 'scroll' && (
-                      <Input
-                        value={actionValue}
-                        onChange={(e) => handleActionChange('scroll', e.target.value)}
-                        placeholder="#section-id"
-                        className="h-8 text-sm"
-                      />
-                    )}
-                    
-                    {/* Phone number input */}
-                    {actionType === 'phone' && (
-                      <Input
-                        value={actionValue}
-                        onChange={(e) => handleActionChange('phone', e.target.value)}
-                        placeholder="+1 (555) 123-4567"
-                        className="h-8 text-sm"
-                      />
-                    )}
-                    
-                    {/* Email address input */}
-                    {actionType === 'email' && (
-                      <Input
-                        value={actionValue}
-                        onChange={(e) => handleActionChange('email', e.target.value)}
-                        placeholder="hello@example.com"
-                        className="h-8 text-sm"
-                      />
-                    )}
-                    
-                    {/* Download URL input */}
-                    {actionType === 'download' && (
-                      <Input
-                        value={actionValue}
-                        onChange={(e) => handleActionChange('download', e.target.value)}
-                        placeholder="https://example.com/file.pdf"
-                        className="h-8 text-sm"
-                      />
-                    )}
-                  </div>
-                );
-              })()}
+              <ButtonActionSelector
+                action={buttonElement.props?.buttonAction as ButtonAction | undefined}
+                onChange={(action) => updateElementProps(buttonElement.id, { buttonAction: action })}
+                availableSteps={steps}
+                compact
+              />
             </FieldGroup>
           )}
         </CollapsibleSection>
