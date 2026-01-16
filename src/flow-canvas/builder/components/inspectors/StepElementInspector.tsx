@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { ColorPickerPopover } from '../modals';
 import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
+import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
 
 // Local type definitions (matches ApplicationFlowCard)
 export type StepElementType = 'title' | 'description' | 'button' | 'option' | 'input';
@@ -279,6 +280,30 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
       .filter(s => s.id !== step.id)
       .map(s => ({ id: s.id, name: s.name }));
 
+    // Extract button style settings from step settings
+    const buttonStyleSettings: ButtonStyleSettings = {
+      preset: stepSettings.buttonPreset || 'primary',
+      backgroundColor: stepSettings.buttonColor,
+      textColor: stepSettings.buttonTextColor,
+      gradient: stepSettings.buttonGradient,
+      size: stepSettings.buttonSize || 'md',
+      borderRadius: stepSettings.buttonRadius ?? 12,
+      shadow: stepSettings.buttonShadow || 'none',
+      fullWidth: stepSettings.buttonFullWidth ?? false,
+    };
+
+    // Handle button style updates
+    const handleButtonStyleChange = (updates: Partial<ButtonStyleSettings>) => {
+      if (updates.preset !== undefined) updateStepSetting('buttonPreset', updates.preset);
+      if (updates.backgroundColor !== undefined) updateStepSetting('buttonColor', updates.backgroundColor);
+      if (updates.textColor !== undefined) updateStepSetting('buttonTextColor', updates.textColor);
+      if (updates.gradient !== undefined) updateStepSetting('buttonGradient', updates.gradient);
+      if (updates.size !== undefined) updateStepSetting('buttonSize', updates.size);
+      if (updates.borderRadius !== undefined) updateStepSetting('buttonRadius', updates.borderRadius);
+      if (updates.shadow !== undefined) updateStepSetting('buttonShadow', updates.shadow);
+      if (updates.fullWidth !== undefined) updateStepSetting('buttonFullWidth', updates.fullWidth);
+    };
+
     return (
       <div className="flex flex-col h-full min-h-0 bg-builder-bg">
         <CollapsibleSection title="Content" icon={<Type className="w-3.5 h-3.5" />} defaultOpen>
@@ -301,24 +326,13 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           />
         </CollapsibleSection>
         
-        <CollapsibleSection title="Preset" icon={<Palette className="w-3.5 h-3.5" />}>
-          <FieldGroup label="Button Preset" hint="Button styling is controlled by the shared Button system">
-            <Select
-              value={stepSettings.buttonPreset || 'primary'}
-              onValueChange={(value) => updateStepSetting('buttonPreset', value)}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="primary">Primary</SelectItem>
-                <SelectItem value="secondary">Secondary</SelectItem>
-                <SelectItem value="outline">Outline</SelectItem>
-                <SelectItem value="ghost">Ghost</SelectItem>
-              </SelectContent>
-            </Select>
-          </FieldGroup>
-        </CollapsibleSection>
+        {/* Shared Button Style Inspector - same controls for ALL buttons */}
+        <ButtonStyleInspector
+          settings={buttonStyleSettings}
+          onChange={handleButtonStyleChange}
+          showPreset
+          showFullWidth
+        />
       </div>
     );
   };
