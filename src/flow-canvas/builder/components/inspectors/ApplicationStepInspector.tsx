@@ -448,9 +448,9 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="next">Next Step</SelectItem>
-                  <SelectItem value="go-to-step">Go to Step</SelectItem>
-                  <SelectItem value="submit">Submit</SelectItem>
+                  <SelectItem value="next">Continue Flow (auto)</SelectItem>
+                  <SelectItem value="go-to-step">Go to Specific Step</SelectItem>
+                  <SelectItem value="submit">Submit Form</SelectItem>
                   <SelectItem value="redirect">Open URL</SelectItem>
                 </SelectContent>
               </Select>

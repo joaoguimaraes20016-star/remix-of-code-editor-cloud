@@ -77,15 +77,15 @@ interface ActionOption {
 const actionOptions: ActionOption[] = [
   { 
     type: 'next-step', 
-    label: 'Next Step', 
+    label: 'Continue Flow', 
     icon: <ArrowRight className="w-4 h-4" />, 
-    description: 'Go to the next step in the funnel' 
+    description: 'Automatically go to the next step' 
   },
   { 
     type: 'go-to-step', 
-    label: 'Go to Step', 
+    label: 'Go to Specific Step', 
     icon: <Layers className="w-4 h-4" />, 
-    description: 'Jump to a specific step',
+    description: 'Jump to a specific step you choose',
     hasInput: true,
     inputLabel: 'Select Step'
   },
