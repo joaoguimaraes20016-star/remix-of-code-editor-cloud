@@ -56,3 +56,12 @@ export const DEFAULT_DESIGN: StepDesign = {
   fontSize: 'medium',
   borderRadius: 12,
 };
+
+// UNIFIED BUTTON STYLE HELPER - All step buttons use this
+export function getButtonStyle(design: StepDesign): React.CSSProperties {
+  return {
+    backgroundColor: design.buttonColor,
+    color: design.buttonTextColor,
+    borderRadius: `${design.borderRadius}px`,
+  };
+}
