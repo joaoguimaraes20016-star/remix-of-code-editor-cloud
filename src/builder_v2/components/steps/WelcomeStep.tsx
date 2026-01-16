@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import type { StepComponentProps } from './types';
-import { FONT_SIZE_MAP, DEFAULT_DESIGN, getButtonStyle } from './types';
+import { FONT_SIZE_MAP, DEFAULT_DESIGN } from './types';
+import { UnifiedButton } from '@/components/builder/UnifiedButton';
 
 export function WelcomeStep({
   content,
@@ -40,12 +41,17 @@ export function WelcomeStep({
             {content.subtext}
           </p>
         )}
-        <button
-          className={cn("step-button builder-element-selectable", sizes.button)}
-          style={getButtonStyle(d)}
+        {/* UNIFIED BUTTON - no wrapper, no fake backgrounds */}
+        <UnifiedButton
+          backgroundColor={d.buttonColor}
+          textColor={d.buttonTextColor}
+          borderRadiusPx={d.borderRadius}
+          fullWidth={(d as any).buttonFullWidth ?? false}
+          size={sizes.button === 'text-sm' ? 'sm' : sizes.button === 'text-lg' ? 'lg' : 'md'}
+          className="mt-4 builder-element-selectable"
         >
           {content.button_text || 'Get Started'}
-        </button>
+        </UnifiedButton>
       </div>
     </div>
   );

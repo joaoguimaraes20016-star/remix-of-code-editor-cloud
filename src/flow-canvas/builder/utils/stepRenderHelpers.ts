@@ -2,54 +2,32 @@
 // This ensures consistent rendering between canvas and inspector preview
 
 import { ApplicationFlowStep, ApplicationFlowStepSettings } from '../../types/infostack';
-import { cn } from '@/lib/utils';
 
 // ─────────────────────────────────────────────────────────
-// BUTTON SYSTEM - Now uses FlowButton component
-// These helpers are DEPRECATED - use FlowButton directly
-// Kept for backwards compatibility during migration
+// BUTTON SYSTEM - DEPRECATED
+// All button rendering now uses UnifiedButton from @/components/builder/UnifiedButton
+// These legacy helpers are kept only for backwards compatibility
+// DO NOT USE IN NEW CODE
 // ─────────────────────────────────────────────────────────
 
+/** @deprecated Use UnifiedButton component from @/components/builder/UnifiedButton */
 export type ButtonPreset = 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient';
 
-/**
- * @deprecated Use FlowButton component with variant prop instead
- * Maps button preset to Tailwind classes - matches FlowButton variants
- */
-export const getButtonPresetClasses = (preset: ButtonPreset = 'primary'): string => {
-  const baseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-6 text-sm rounded-lg';
-  
-  switch (preset) {
-    case 'primary':
-      return cn(baseClasses, 'bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-primary/20');
-    case 'secondary':
-      return cn(baseClasses, 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80');
-    case 'outline':
-      return cn(baseClasses, 'border-2 border-input bg-transparent hover:bg-accent hover:text-accent-foreground');
-    case 'ghost':
-      return cn(baseClasses, 'hover:bg-accent hover:text-accent-foreground');
-    case 'gradient':
-      return cn(baseClasses, 'text-white shadow-lg hover:shadow-xl');
-    default:
-      return cn(baseClasses, 'bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-primary/20');
-  }
+/** @deprecated Use UnifiedButton component - this function returns empty */
+export const getButtonPresetClasses = (_preset: ButtonPreset = 'primary'): string => {
+  console.warn('getButtonPresetClasses is deprecated. Use UnifiedButton component instead.');
+  return '';
 };
 
-/**
- * @deprecated Use FlowButton component with variant prop instead
- * Gets button classes for a step, using the preset system.
- */
-export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>): string => {
-  const preset = settings.buttonPreset || 'primary';
-  return getButtonPresetClasses(preset as ButtonPreset);
+/** @deprecated Use UnifiedButton component - this function returns empty */
+export const getButtonClasses = (_settings: Partial<ApplicationFlowStepSettings>): string => {
+  console.warn('getButtonClasses is deprecated. Use UnifiedButton component instead.');
+  return '';
 };
 
-/**
- * @deprecated Use FlowButton component - no inline styles needed
- * Button style is now handled entirely by FlowButton component.
- */
+/** @deprecated Use UnifiedButton component - this function returns empty */
 export const getButtonStyle = (_settings: Partial<ApplicationFlowStepSettings>): React.CSSProperties => {
-  // All styling is handled by FlowButton - no inline styles needed
+  console.warn('getButtonStyle is deprecated. Use UnifiedButton component instead.');
   return {};
 };
 
