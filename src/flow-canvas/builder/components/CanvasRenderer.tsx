@@ -636,6 +636,16 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
     }
   }, [isPreviewMode, flowContainer, element.props?.buttonAction]);
 
+  /**
+   * Get the blocked reason to display near this button.
+   * Only shown when there's a recent blocked intent and button is disabled.
+   */
+  const getButtonBlockedReason = useMemo((): string | null => {
+    if (!isPreviewMode || !flowContainer) return null;
+    if (!isButtonDisabled) return null;
+    return flowContainer.lastBlockedReason || null;
+  }, [isPreviewMode, flowContainer, isButtonDisabled]);
+
   // Handle content + styles from InlineTextEditor
   // Only update properties that are explicitly provided (not undefined)
   const handleContentChange = useCallback((newContent: string, textStyles?: Partial<TextStyles>) => {
@@ -1403,6 +1413,16 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
               />
               {element.props?.showIcon !== false && element.props?.iconPosition !== 'left' && renderButtonIcon()}
             </button>
+            {/* Blocked reason display - shown when intent was rejected */}
+            {getButtonBlockedReason && (
+              <p 
+                className="text-xs mt-2 text-destructive/80 text-center"
+                role="alert"
+                aria-live="polite"
+              >
+                {getButtonBlockedReason}
+              </p>
+            )}
           </div>
         );
         
