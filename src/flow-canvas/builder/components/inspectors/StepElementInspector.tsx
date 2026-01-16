@@ -1,12 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Block, ApplicationFlowSettings } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Type, MousePointer2, Palette } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ChevronDown,
+  ChevronRight,
+  Type, 
+  MousePointer2, 
+  Palette,
+  Settings2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  ArrowRight,
+  Layers,
+  Send,
+  ExternalLink,
+  Hash,
+  Phone,
+  Mail,
+  Download,
+  TextCursor,
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -15,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ColorPickerPopover } from '../modals';
+import type { ButtonActionType } from '../modals/ButtonActionModal';
 
 // Local type definitions (matches ApplicationFlowCard)
 export type StepElementType = 'title' | 'description' | 'button' | 'option' | 'input';
@@ -39,6 +61,49 @@ const elementTypeLabels: Record<StepElementType, string> = {
   option: 'Option',
   input: 'Input Field',
 };
+
+// Collapsible section component
+const CollapsibleSection: React.FC<{
+  title: string;
+  icon?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}> = ({ title, icon, defaultOpen = false, children }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border-b border-builder-border">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {icon && <span className="text-builder-text-muted">{icon}</span>}
+          <span className="text-xs font-medium text-builder-text">{title}</span>
+        </div>
+        {isOpen ? (
+          <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="px-3 pb-3 space-y-3">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Field group with label
+const FieldGroup: React.FC<{ label: string; children: React.ReactNode; hint?: string }> = ({ label, children, hint }) => (
+  <div className="space-y-1.5">
+    <Label className="text-xs text-builder-text-muted">{label}</Label>
+    {children}
+    {hint && <p className="text-[10px] text-builder-text-dim">{hint}</p>}
+  </div>
+);
 
 export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   block,
@@ -76,161 +141,374 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
     updateStepSetting('options', options);
   };
 
+  // Update capture field
+  const updateCaptureField = (fieldIndex: number, updates: Record<string, any>) => {
+    const fields = [...(stepSettings.captureFields || [])];
+    fields[fieldIndex] = { ...fields[fieldIndex], ...updates };
+    updateStepSetting('captureFields', fields);
+  };
+
   const renderTitleEditor = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Title Text</Label>
-        <Input
-          value={stepSettings.title || ''}
-          onChange={(e) => updateStepSetting('title', e.target.value)}
-          placeholder="Enter title..."
-          className="text-sm"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Title Size</Label>
-        <Select
-          value={stepSettings.titleSize || 'xl'}
-          onValueChange={(value) => updateStepSetting('titleSize', value)}
-        >
-          <SelectTrigger className="text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sm">Small</SelectItem>
-            <SelectItem value="md">Medium</SelectItem>
-            <SelectItem value="lg">Large</SelectItem>
-            <SelectItem value="xl">Extra Large</SelectItem>
-            <SelectItem value="2xl">2XL</SelectItem>
-            <SelectItem value="3xl">3XL</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="flex flex-col h-full min-h-0 bg-builder-bg">
+      <CollapsibleSection title="Content" icon={<Type className="w-3.5 h-3.5" />} defaultOpen>
+        <FieldGroup label="Title Text">
+          <Input
+            value={stepSettings.title || ''}
+            onChange={(e) => updateStepSetting('title', e.target.value)}
+            placeholder="Enter title..."
+            className="text-sm"
+          />
+        </FieldGroup>
+      </CollapsibleSection>
+      
+      <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />} defaultOpen>
+        <FieldGroup label="Size">
+          <Select
+            value={stepSettings.titleSize || 'xl'}
+            onValueChange={(value) => updateStepSetting('titleSize', value)}
+          >
+            <SelectTrigger className="text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sm">Small</SelectItem>
+              <SelectItem value="md">Medium</SelectItem>
+              <SelectItem value="lg">Large</SelectItem>
+              <SelectItem value="xl">Extra Large</SelectItem>
+              <SelectItem value="2xl">2XL</SelectItem>
+              <SelectItem value="3xl">3XL</SelectItem>
+            </SelectContent>
+          </Select>
+        </FieldGroup>
+        
+        <FieldGroup label="Alignment">
+          <div className="flex rounded-md overflow-hidden border border-builder-border">
+            {[
+              { value: 'left', icon: <AlignLeft className="w-3.5 h-3.5" /> },
+              { value: 'center', icon: <AlignCenter className="w-3.5 h-3.5" /> },
+              { value: 'right', icon: <AlignRight className="w-3.5 h-3.5" /> },
+            ].map((align) => (
+              <button
+                key={align.value}
+                type="button"
+                onClick={() => updateStepSetting('titleAlign', align.value)}
+                className={cn(
+                  'flex-1 px-2 py-1.5 transition-colors',
+                  (stepSettings.titleAlign || 'center') === align.value
+                    ? 'bg-foreground text-background' 
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                {align.icon}
+              </button>
+            ))}
+          </div>
+        </FieldGroup>
+
+        <FieldGroup label="Color">
+          <ColorPickerPopover
+            color={stepSettings.titleColor || '#000000'}
+            onChange={(color) => updateStepSetting('titleColor', color)}
+          >
+            <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+              <div 
+                className="w-5 h-5 rounded border border-border"
+                style={{ backgroundColor: stepSettings.titleColor || '#000000' }}
+              />
+              <span className="text-xs text-foreground font-mono">{stepSettings.titleColor || '#000000'}</span>
+            </button>
+          </ColorPickerPopover>
+        </FieldGroup>
+      </CollapsibleSection>
     </div>
   );
 
   const renderDescriptionEditor = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Description Text</Label>
-        <Textarea
-          value={stepSettings.description || ''}
-          onChange={(e) => updateStepSetting('description', e.target.value)}
-          placeholder="Enter description..."
-          className="text-sm min-h-[80px]"
-        />
-      </div>
+    <div className="flex flex-col h-full min-h-0 bg-builder-bg">
+      <CollapsibleSection title="Content" icon={<Type className="w-3.5 h-3.5" />} defaultOpen>
+        <FieldGroup label="Description Text">
+          <Textarea
+            value={stepSettings.description || ''}
+            onChange={(e) => updateStepSetting('description', e.target.value)}
+            placeholder="Enter description..."
+            className="text-sm min-h-[80px]"
+          />
+        </FieldGroup>
+      </CollapsibleSection>
+      
+      <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />} defaultOpen>
+        <FieldGroup label="Alignment">
+          <div className="flex rounded-md overflow-hidden border border-builder-border">
+            {[
+              { value: 'left', icon: <AlignLeft className="w-3.5 h-3.5" /> },
+              { value: 'center', icon: <AlignCenter className="w-3.5 h-3.5" /> },
+              { value: 'right', icon: <AlignRight className="w-3.5 h-3.5" /> },
+            ].map((align) => (
+              <button
+                key={align.value}
+                type="button"
+                onClick={() => updateStepSetting('descriptionAlign', align.value)}
+                className={cn(
+                  'flex-1 px-2 py-1.5 transition-colors',
+                  (stepSettings.descriptionAlign || 'center') === align.value
+                    ? 'bg-foreground text-background' 
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                {align.icon}
+              </button>
+            ))}
+          </div>
+        </FieldGroup>
+
+        <FieldGroup label="Color">
+          <ColorPickerPopover
+            color={stepSettings.descriptionColor || '#666666'}
+            onChange={(color) => updateStepSetting('descriptionColor', color)}
+          >
+            <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+              <div 
+                className="w-5 h-5 rounded border border-border"
+                style={{ backgroundColor: stepSettings.descriptionColor || '#666666' }}
+              />
+              <span className="text-xs text-foreground font-mono">{stepSettings.descriptionColor || '#666666'}</span>
+            </button>
+          </ColorPickerPopover>
+        </FieldGroup>
+      </CollapsibleSection>
     </div>
   );
 
-  const renderButtonEditor = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Button Text</Label>
-        <Input
-          value={stepSettings.buttonText || 'Continue'}
-          onChange={(e) => updateStepSetting('buttonText', e.target.value)}
-          placeholder="Continue"
-          className="text-sm"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Button Color</Label>
-        <ColorPickerPopover
-          color={stepSettings.buttonBg || '#000000'}
-          onChange={(color) => updateStepSetting('buttonBg', color)}
-        >
-          <button 
-            className="w-full h-8 rounded border border-builder-border flex items-center gap-2 px-2"
-            style={{ backgroundColor: stepSettings.buttonBg || '#000000' }}
-          >
-            <span className="text-xs text-white/80">{stepSettings.buttonBg || '#000000'}</span>
-          </button>
-        </ColorPickerPopover>
-      </div>
-      
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Text Color</Label>
-        <ColorPickerPopover
-          color={stepSettings.buttonTextColor || '#ffffff'}
-          onChange={(color) => updateStepSetting('buttonTextColor', color)}
-        >
-          <button 
-            className="w-full h-8 rounded border border-builder-border flex items-center gap-2 px-2"
-            style={{ backgroundColor: stepSettings.buttonTextColor || '#ffffff' }}
-          >
-            <span className="text-xs" style={{ color: stepSettings.buttonBg || '#000000' }}>{stepSettings.buttonTextColor || '#ffffff'}</span>
-          </button>
-        </ColorPickerPopover>
-      </div>
-      
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Border Radius</Label>
-        <div className="flex items-center gap-3">
-          <Slider
-            value={[stepSettings.buttonRadius || 8]}
-            onValueChange={([value]) => updateStepSetting('buttonRadius', value)}
-            min={0}
-            max={24}
-            step={2}
-            className="flex-1"
-          />
-          <span className="text-xs text-builder-text-muted w-8">{stepSettings.buttonRadius || 8}px</span>
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Button Action</Label>
-        <Select
-          value={stepSettings.buttonAction?.type || 'next-step'}
-          onValueChange={(value) => updateStepSetting('buttonAction', { ...stepSettings.buttonAction, type: value })}
-        >
-          <SelectTrigger className="text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="next-step">Go to Next Step</SelectItem>
-            <SelectItem value="prev-step">Go to Previous Step</SelectItem>
-            <SelectItem value="submit">Submit Form</SelectItem>
-            <SelectItem value="go-to-step">Go to Specific Step</SelectItem>
-            <SelectItem value="open-url">Open URL</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      {stepSettings.buttonAction?.type === 'go-to-step' && (
-        <div className="space-y-2">
-          <Label className="text-xs text-builder-text-muted">Target Step</Label>
-          <Select
-            value={stepSettings.buttonAction?.value || ''}
-            onValueChange={(value) => updateStepSetting('buttonAction', { ...stepSettings.buttonAction, value })}
-          >
-            <SelectTrigger className="text-sm">
-              <SelectValue placeholder="Select step..." />
-            </SelectTrigger>
-            <SelectContent>
-              {steps.filter(s => s.id !== step.id).map((s) => (
-                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+  const renderButtonEditor = () => {
+    const buttonAction = stepSettings.buttonAction || { type: 'next-step' };
+    const actionType = buttonAction.type || 'next-step';
+    const actionValue = buttonAction.value || '';
+    const openNewTab = buttonAction.openNewTab ?? false;
+
+    const handleActionChange = (type: ButtonActionType, value?: string, newTab?: boolean) => {
+      updateStepSetting('buttonAction', { 
+        type, 
+        value, 
+        openNewTab: type === 'url' ? (newTab ?? openNewTab) : undefined 
+      });
+    };
+
+    return (
+      <div className="flex flex-col h-full min-h-0 bg-builder-bg">
+        <CollapsibleSection title="Content" icon={<Type className="w-3.5 h-3.5" />} defaultOpen>
+          <FieldGroup label="Button Text">
+            <Input
+              value={stepSettings.buttonText || 'Continue'}
+              onChange={(e) => updateStepSetting('buttonText', e.target.value)}
+              placeholder="Continue"
+              className="text-sm"
+            />
+          </FieldGroup>
+        </CollapsibleSection>
+        
+        <CollapsibleSection title="Action" icon={<MousePointer2 className="w-3.5 h-3.5" />} defaultOpen>
+          <div className="space-y-2">
+            {/* Primary Action - Continue Flow (default) */}
+            <button
+              onClick={() => handleActionChange('next-step', '')}
+              className={cn(
+                'w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all',
+                actionType === 'next-step'
+                  ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
+                  : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface border border-transparent hover:border-border'
+              )}
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              Continue Flow
+              {actionType === 'next-step' && <span className="text-[9px] opacity-70 ml-1">(default)</span>}
+            </button>
+
+            {/* Secondary Actions - Explicit navigation */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { type: 'go-to-step' as ButtonActionType, label: 'Step', icon: <Layers className="w-3 h-3" /> },
+                { type: 'submit' as ButtonActionType, label: 'Submit', icon: <Send className="w-3 h-3" /> },
+                { type: 'url' as ButtonActionType, label: 'URL', icon: <ExternalLink className="w-3 h-3" /> },
+              ].map((action) => (
+                <button
+                  key={action.type}
+                  onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
+                  className={cn(
+                    'flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[10px] transition-colors',
+                    actionType === action.type
+                      ? 'bg-builder-accent text-white'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  {action.icon}
+                  {action.label}
+                </button>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      
-      {stepSettings.buttonAction?.type === 'open-url' && (
-        <div className="space-y-2">
-          <Label className="text-xs text-builder-text-muted">URL</Label>
-          <Input
-            value={stepSettings.buttonAction?.value || ''}
-            onChange={(e) => updateStepSetting('buttonAction', { ...stepSettings.buttonAction, value: e.target.value })}
-            placeholder="https://example.com"
-            className="text-sm"
-          />
-        </div>
-      )}
-    </div>
-  );
+            </div>
+            
+            {/* More Action Types */}
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { type: 'scroll' as ButtonActionType, label: 'Scroll To', icon: <Hash className="w-3 h-3" /> },
+                { type: 'phone' as ButtonActionType, label: 'Call', icon: <Phone className="w-3 h-3" /> },
+                { type: 'email' as ButtonActionType, label: 'Email', icon: <Mail className="w-3 h-3" /> },
+                { type: 'download' as ButtonActionType, label: 'Download', icon: <Download className="w-3 h-3" /> },
+              ].map((action) => (
+                <button
+                  key={action.type}
+                  onClick={() => handleActionChange(action.type, action.type === actionType ? actionValue : '')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors',
+                    actionType === action.type
+                      ? 'bg-builder-accent text-white'
+                      : 'bg-builder-surface-hover hover:bg-builder-surface text-builder-text-muted'
+                  )}
+                >
+                  {action.icon}
+                  {action.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Step Selector for go-to-step */}
+            {actionType === 'go-to-step' && (
+              <Select value={actionValue} onValueChange={(v) => handleActionChange('go-to-step', v)}>
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="Select step..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {steps.filter(s => s.id !== step.id).map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* URL Input */}
+            {actionType === 'url' && (
+              <>
+                <Input
+                  value={actionValue}
+                  onChange={(e) => handleActionChange('url', e.target.value)}
+                  placeholder="https://example.com"
+                  className="h-8 text-sm"
+                />
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-builder-text-muted">Open in new tab</Label>
+                  <Switch
+                    checked={openNewTab}
+                    onCheckedChange={(checked) => handleActionChange('url', actionValue, checked)}
+                  />
+                </div>
+              </>
+            )}
+            
+            {/* Scroll target */}
+            {actionType === 'scroll' && (
+              <Input
+                value={actionValue}
+                onChange={(e) => handleActionChange('scroll', e.target.value)}
+                placeholder="#section-id"
+                className="h-8 text-sm"
+              />
+            )}
+            
+            {/* Phone */}
+            {actionType === 'phone' && (
+              <Input
+                value={actionValue}
+                onChange={(e) => handleActionChange('phone', e.target.value)}
+                placeholder="+1 (555) 123-4567"
+                className="h-8 text-sm"
+              />
+            )}
+            
+            {/* Email */}
+            {actionType === 'email' && (
+              <Input
+                value={actionValue}
+                onChange={(e) => handleActionChange('email', e.target.value)}
+                placeholder="hello@example.com"
+                className="h-8 text-sm"
+              />
+            )}
+            
+            {/* Download */}
+            {actionType === 'download' && (
+              <Input
+                value={actionValue}
+                onChange={(e) => handleActionChange('download', e.target.value)}
+                placeholder="https://example.com/file.pdf"
+                className="h-8 text-sm"
+              />
+            )}
+          </div>
+        </CollapsibleSection>
+        
+        <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />}>
+          <FieldGroup label="Button Color">
+            <ColorPickerPopover
+              color={stepSettings.buttonBg || '#000000'}
+              onChange={(color) => updateStepSetting('buttonBg', color)}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: stepSettings.buttonBg || '#000000' }}
+                />
+                <span className="text-xs text-foreground font-mono">{stepSettings.buttonBg || '#000000'}</span>
+              </button>
+            </ColorPickerPopover>
+          </FieldGroup>
+          
+          <FieldGroup label="Text Color">
+            <ColorPickerPopover
+              color={stepSettings.buttonTextColor || '#ffffff'}
+              onChange={(color) => updateStepSetting('buttonTextColor', color)}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: stepSettings.buttonTextColor || '#ffffff' }}
+                />
+                <span className="text-xs text-foreground font-mono">{stepSettings.buttonTextColor || '#ffffff'}</span>
+              </button>
+            </ColorPickerPopover>
+          </FieldGroup>
+          
+          <FieldGroup label="Border Radius">
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[stepSettings.buttonRadius || 8]}
+                onValueChange={([value]) => updateStepSetting('buttonRadius', value)}
+                min={0}
+                max={24}
+                step={2}
+                className="flex-1"
+              />
+              <span className="text-xs text-builder-text-muted w-10 text-right">{stepSettings.buttonRadius || 8}px</span>
+            </div>
+          </FieldGroup>
+          
+          <FieldGroup label="Width">
+            <Select
+              value={stepSettings.buttonWidth || 'auto'}
+              onValueChange={(value) => updateStepSetting('buttonWidth', value)}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto</SelectItem>
+                <SelectItem value="full">Full Width</SelectItem>
+                <SelectItem value="half">Half Width</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+        </CollapsibleSection>
+      </div>
+    );
+  };
 
   const renderOptionEditor = () => {
     const optionIndex = selection.optionIndex ?? 0;
@@ -238,69 +516,232 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
     const optionValue = options[optionIndex] || '';
     
     return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label className="text-xs text-builder-text-muted">Option {optionIndex + 1} Text</Label>
-          <Input
-            value={optionValue}
-            onChange={(e) => updateOption(optionIndex, e.target.value)}
-            placeholder="Option text..."
-            className="text-sm"
-          />
-        </div>
-        
-        <div className="pt-2 border-t border-builder-border">
-          <p className="text-xs text-builder-text-dim mb-2">All Options</p>
-          <div className="space-y-1.5">
-            {options.map((opt: string, i: number) => (
-              <div 
-                key={i}
-                className={cn(
-                  "px-2 py-1.5 text-xs rounded",
-                  i === optionIndex 
-                    ? "bg-primary/10 text-primary border border-primary/20" 
-                    : "bg-builder-surface text-builder-text-muted"
-                )}
-              >
-                {opt || `Option ${i + 1}`}
-              </div>
-            ))}
+      <div className="flex flex-col h-full min-h-0 bg-builder-bg">
+        <CollapsibleSection title="Content" icon={<Type className="w-3.5 h-3.5" />} defaultOpen>
+          <FieldGroup label={`Option ${optionIndex + 1} Text`}>
+            <Input
+              value={optionValue}
+              onChange={(e) => updateOption(optionIndex, e.target.value)}
+              placeholder="Option text..."
+              className="text-sm"
+            />
+          </FieldGroup>
+          
+          <div className="pt-2 border-t border-builder-border">
+            <Label className="text-xs text-builder-text-dim mb-2 block">All Options</Label>
+            <div className="space-y-1.5">
+              {options.map((opt: string, i: number) => (
+                <div 
+                  key={i}
+                  className={cn(
+                    "px-2 py-1.5 text-xs rounded cursor-pointer transition-colors",
+                    i === optionIndex 
+                      ? "bg-primary/10 text-primary border border-primary/20" 
+                      : "bg-builder-surface text-builder-text-muted hover:bg-builder-surface-hover"
+                  )}
+                  onClick={() => onBack()}
+                >
+                  {opt || `Option ${i + 1}`}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
+        
+        <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />}>
+          <FieldGroup label="Option Style">
+            <Select
+              value={stepSettings.optionStyle || 'outlined'}
+              onValueChange={(value) => updateStepSetting('optionStyle', value)}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="outlined">Outlined</SelectItem>
+                <SelectItem value="filled">Filled</SelectItem>
+                <SelectItem value="minimal">Minimal</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Border Radius">
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[stepSettings.optionRadius || 8]}
+                onValueChange={([value]) => updateStepSetting('optionRadius', value)}
+                min={0}
+                max={24}
+                step={2}
+                className="flex-1"
+              />
+              <span className="text-xs text-builder-text-muted w-10 text-right">{stepSettings.optionRadius || 8}px</span>
+            </div>
+          </FieldGroup>
+          
+          <FieldGroup label="Selected Color">
+            <ColorPickerPopover
+              color={stepSettings.optionSelectedBg || '#000000'}
+              onChange={(color) => updateStepSetting('optionSelectedBg', color)}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: stepSettings.optionSelectedBg || '#000000' }}
+                />
+                <span className="text-xs text-foreground font-mono">{stepSettings.optionSelectedBg || '#000000'}</span>
+              </button>
+            </ColorPickerPopover>
+          </FieldGroup>
+        </CollapsibleSection>
+        
+        <CollapsibleSection title="Settings" icon={<Settings2 className="w-3.5 h-3.5" />}>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-xs text-builder-text">Allow Multiple</Label>
+              <p className="text-[10px] text-builder-text-dim">Let users select multiple options</p>
+            </div>
+            <Switch
+              checked={stepSettings.multiSelect || false}
+              onCheckedChange={(checked) => updateStepSetting('multiSelect', checked)}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-xs text-builder-text">Required</Label>
+              <p className="text-[10px] text-builder-text-dim">Must select to continue</p>
+            </div>
+            <Switch
+              checked={stepSettings.required ?? true}
+              onCheckedChange={(checked) => updateStepSetting('required', checked)}
+            />
+          </div>
+        </CollapsibleSection>
       </div>
     );
   };
 
-  const renderInputEditor = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Placeholder</Label>
-        <Input
-          value={stepSettings.placeholder || ''}
-          onChange={(e) => updateStepSetting('placeholder', e.target.value)}
-          placeholder="Type your answer..."
-          className="text-sm"
-        />
+  const renderInputEditor = () => {
+    // For capture steps, we may have multiple fields - get the specific field
+    const captureFields = stepSettings.captureFields || [];
+    const fieldIndex = selection.optionIndex ?? 0; // Reuse optionIndex for field index
+    const field = captureFields[fieldIndex] || {};
+    
+    return (
+      <div className="flex flex-col h-full min-h-0 bg-builder-bg">
+        <CollapsibleSection title="Content" icon={<Type className="w-3.5 h-3.5" />} defaultOpen>
+          <FieldGroup label="Label">
+            <Input
+              value={field.label || stepSettings.placeholder || ''}
+              onChange={(e) => {
+                if (captureFields.length > 0) {
+                  updateCaptureField(fieldIndex, { label: e.target.value });
+                } else {
+                  updateStepSetting('placeholder', e.target.value);
+                }
+              }}
+              placeholder="Field label..."
+              className="text-sm"
+            />
+          </FieldGroup>
+          
+          <FieldGroup label="Placeholder">
+            <Input
+              value={field.placeholder || stepSettings.inputPlaceholder || ''}
+              onChange={(e) => {
+                if (captureFields.length > 0) {
+                  updateCaptureField(fieldIndex, { placeholder: e.target.value });
+                } else {
+                  updateStepSetting('inputPlaceholder', e.target.value);
+                }
+              }}
+              placeholder="Type your answer..."
+              className="text-sm"
+            />
+          </FieldGroup>
+        </CollapsibleSection>
+        
+        <CollapsibleSection title="Input Type" icon={<TextCursor className="w-3.5 h-3.5" />} defaultOpen>
+          <FieldGroup label="Type">
+            <Select
+              value={field.type || stepSettings.inputType || 'text'}
+              onValueChange={(value) => {
+                if (captureFields.length > 0) {
+                  updateCaptureField(fieldIndex, { type: value });
+                } else {
+                  updateStepSetting('inputType', value);
+                }
+              }}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Text</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="phone">Phone</SelectItem>
+                <SelectItem value="number">Number</SelectItem>
+                <SelectItem value="textarea">Long Text</SelectItem>
+                <SelectItem value="url">URL</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+        </CollapsibleSection>
+        
+        <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />}>
+          <FieldGroup label="Input Style">
+            <Select
+              value={stepSettings.inputStyle || 'outlined'}
+              onValueChange={(value) => updateStepSetting('inputStyle', value)}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="outlined">Outlined</SelectItem>
+                <SelectItem value="filled">Filled</SelectItem>
+                <SelectItem value="underline">Underline</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Border Radius">
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[stepSettings.inputRadius || 8]}
+                onValueChange={([value]) => updateStepSetting('inputRadius', value)}
+                min={0}
+                max={24}
+                step={2}
+                className="flex-1"
+              />
+              <span className="text-xs text-builder-text-muted w-10 text-right">{stepSettings.inputRadius || 8}px</span>
+            </div>
+          </FieldGroup>
+        </CollapsibleSection>
+        
+        <CollapsibleSection title="Validation" icon={<Settings2 className="w-3.5 h-3.5" />}>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-xs text-builder-text">Required</Label>
+              <p className="text-[10px] text-builder-text-dim">Must fill to continue</p>
+            </div>
+            <Switch
+              checked={field.required ?? stepSettings.inputRequired ?? true}
+              onCheckedChange={(checked) => {
+                if (captureFields.length > 0) {
+                  updateCaptureField(fieldIndex, { required: checked });
+                } else {
+                  updateStepSetting('inputRequired', checked);
+                }
+              }}
+            />
+          </div>
+        </CollapsibleSection>
       </div>
-      
-      <div className="space-y-2">
-        <Label className="text-xs text-builder-text-muted">Input Style</Label>
-        <Select
-          value={stepSettings.inputStyle || 'outlined'}
-          onValueChange={(value) => updateStepSetting('inputStyle', value)}
-        >
-          <SelectTrigger className="text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="outlined">Outlined</SelectItem>
-            <SelectItem value="filled">Filled</SelectItem>
-            <SelectItem value="underline">Underline</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderElementContent = () => {
     switch (selection.elementType) {
@@ -328,7 +769,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
       case 'option':
         return <MousePointer2 className="w-4 h-4" />;
       case 'input':
-        return <Palette className="w-4 h-4" />;
+        return <TextCursor className="w-4 h-4" />;
       default:
         return null;
     }
@@ -337,7 +778,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header with back button */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-builder-border">
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-builder-border bg-gradient-to-r from-primary/10 to-transparent">
         <Button
           variant="ghost"
           size="sm"
@@ -347,18 +788,23 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           <ChevronLeft className="w-4 h-4" />
         </Button>
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-builder-text-muted">{getIcon()}</span>
-          <span className="text-sm font-medium text-builder-text truncate">
-            {elementTypeLabels[selection.elementType]}
-            {selection.elementType === 'option' && selection.optionIndex !== undefined && (
-              <span className="text-builder-text-muted ml-1">#{selection.optionIndex + 1}</span>
-            )}
-          </span>
+          <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center">
+            <span className="text-primary">{getIcon()}</span>
+          </div>
+          <div>
+            <span className="text-sm font-medium text-builder-text truncate block">
+              {elementTypeLabels[selection.elementType]}
+              {selection.elementType === 'option' && selection.optionIndex !== undefined && (
+                <span className="text-builder-text-muted ml-1">#{selection.optionIndex + 1}</span>
+              )}
+            </span>
+            <span className="text-[10px] text-builder-text-muted">{step.name}</span>
+          </div>
         </div>
       </div>
       
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto builder-scroll">
         {renderElementContent()}
       </div>
     </div>

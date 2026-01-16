@@ -18,7 +18,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Box,
 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -480,12 +485,132 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
       </div>
 
+      {/* Container Styling - Collapsible */}
+      <Collapsible>
+        <CollapsibleTrigger className="flex-shrink-0 w-full border-t border-border px-3 py-2.5 flex items-center justify-between hover:bg-accent/30 transition-colors">
+          <div className="flex items-center gap-2">
+            <Box className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Container</span>
+          </div>
+          <ChevronDown className="w-3 h-3 text-muted-foreground transition-transform ui-open:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-3 pb-3 space-y-3">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Content Width</Label>
+            <Select 
+              value={settings.contentWidth || 'md'}
+              onValueChange={(value) => onUpdateBlock({ props: { ...settings, contentWidth: value } })}
+            >
+              <SelectTrigger className="h-7 text-xs bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="sm" className="text-xs">Small (400px)</SelectItem>
+                <SelectItem value="md" className="text-xs">Medium (600px)</SelectItem>
+                <SelectItem value="lg" className="text-xs">Large (800px)</SelectItem>
+                <SelectItem value="full" className="text-xs">Full Width</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Content Alignment</Label>
+            <div className="flex rounded-md overflow-hidden border border-border">
+              {[
+                { value: 'left', icon: <AlignLeft className="w-3.5 h-3.5" /> },
+                { value: 'center', icon: <AlignCenter className="w-3.5 h-3.5" /> },
+                { value: 'right', icon: <AlignRight className="w-3.5 h-3.5" /> },
+              ].map((align) => (
+                <button
+                  key={align.value}
+                  type="button"
+                  onClick={() => onUpdateBlock({ props: { ...settings, contentAlign: align.value } })}
+                  className={cn(
+                    'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
+                    (settings.contentAlign || 'center') === align.value
+                      ? 'bg-foreground text-background' 
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  {align.icon}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] text-muted-foreground">Padding</Label>
+              <span className="text-[10px] text-muted-foreground">{settings.containerPadding || 32}px</span>
+            </div>
+            <Slider
+              value={[settings.containerPadding || 32]}
+              onValueChange={([value]) => onUpdateBlock({ props: { ...settings, containerPadding: value } })}
+              min={0}
+              max={80}
+              step={4}
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] text-muted-foreground">Border Radius</Label>
+              <span className="text-[10px] text-muted-foreground">{settings.containerRadius || 12}px</span>
+            </div>
+            <Slider
+              value={[settings.containerRadius || 12]}
+              onValueChange={([value]) => onUpdateBlock({ props: { ...settings, containerRadius: value } })}
+              min={0}
+              max={32}
+              step={2}
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Border Color</Label>
+            <ColorPickerPopover
+              color={settings.containerBorderColor || 'transparent'}
+              onChange={(color) => onUpdateBlock({ props: { ...settings, containerBorderColor: color } })}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: settings.containerBorderColor || 'transparent' }}
+                />
+                <span className="text-xs text-foreground font-mono">{settings.containerBorderColor || 'none'}</span>
+              </button>
+            </ColorPickerPopover>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Shadow</Label>
+            <Select 
+              value={settings.containerShadow || 'none'}
+              onValueChange={(value) => onUpdateBlock({ props: { ...settings, containerShadow: value } })}
+            >
+              <SelectTrigger className="h-7 text-xs bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="none" className="text-xs">None</SelectItem>
+                <SelectItem value="sm" className="text-xs">Small</SelectItem>
+                <SelectItem value="md" className="text-xs">Medium</SelectItem>
+                <SelectItem value="lg" className="text-xs">Large</SelectItem>
+                <SelectItem value="xl" className="text-xs">Extra Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
       {/* Appearance Settings - Collapsible */}
       <Collapsible open={appearanceOpen} onOpenChange={setAppearanceOpen}>
         <CollapsibleTrigger className="flex-shrink-0 w-full border-t border-border px-3 py-2.5 flex items-center justify-between hover:bg-accent/30 transition-colors">
           <div className="flex items-center gap-2">
             <Palette className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Appearance</span>
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Colors</span>
           </div>
           <ChevronDown className={cn("w-3 h-3 text-muted-foreground transition-transform", appearanceOpen && "rotate-180")} />
         </CollapsibleTrigger>

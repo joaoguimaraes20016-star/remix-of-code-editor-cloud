@@ -159,6 +159,13 @@ export interface ApplicationFlowSettings {
   textColor?: string;
   inputBackground?: string;
   inputBorderColor?: string;
+  // Container styling
+  contentWidth?: 'sm' | 'md' | 'lg' | 'full';
+  contentAlign?: 'left' | 'center' | 'right';
+  containerPadding?: number;
+  containerRadius?: number;
+  containerBorderColor?: string;
+  containerShadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
 }
 
 // Conditional visibility rule
