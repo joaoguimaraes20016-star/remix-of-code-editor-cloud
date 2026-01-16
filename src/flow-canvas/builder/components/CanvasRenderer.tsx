@@ -196,6 +196,9 @@ interface CanvasRendererProps {
   selectedApplicationStepId?: string | null;
   // Active Application Flow block ID (for scoped step selection)
   activeApplicationFlowBlockId?: string | null;
+  // Element selection within flow steps
+  selectedStepElement?: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null;
+  onSelectStepElement?: (element: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null) => void;
 }
 
 // Button Action type
@@ -2111,6 +2114,8 @@ interface SortableBlockRendererProps {
   onFormSubmit?: (values: Record<string, string>) => void;
   selectedApplicationStepId?: string | null;
   activeApplicationFlowBlockId?: string | null;
+  selectedStepElement?: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null;
+  onSelectStepElement?: (element: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null) => void;
 }
 
 const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({ 
@@ -2141,6 +2146,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   onFormSubmit,
   selectedApplicationStepId,
   activeApplicationFlowBlockId,
+  selectedStepElement,
+  onSelectStepElement,
 }) => {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const isSelected = selection.type === 'block' && selection.id === block.id;
@@ -2402,6 +2409,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           }}
           readOnly={readOnly}
           selectedStepId={block.id === activeApplicationFlowBlockId ? selectedApplicationStepId : null}
+          selectedStepElement={block.id === activeApplicationFlowBlockId ? selectedStepElement : null}
+          onSelectStepElement={onSelectStepElement}
           isPreviewMode={readOnly}
           onNextStep={onNextStep}
           onGoToStep={onGoToStep}

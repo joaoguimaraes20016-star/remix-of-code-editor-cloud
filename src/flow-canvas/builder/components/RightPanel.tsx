@@ -149,6 +149,9 @@ interface RightPanelProps {
   // Application Flow step selection (for canvas step switching)
   selectedApplicationStepId?: string | null;
   onSelectApplicationStep?: (stepId: string | null) => void;
+  // Element selection within flow steps
+  selectedStepElement?: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null;
+  onClearStepElement?: () => void;
 }
 
 interface CollapsibleSectionProps {
