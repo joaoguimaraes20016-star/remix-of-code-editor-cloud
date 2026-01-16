@@ -3411,6 +3411,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                 selection={selectedStepElement}
                 onUpdateBlock={(updates) => handleUpdate(updates)}
                 onBack={() => onClearStepElement?.()}
+                themePrimaryColor={page.settings?.primary_color || '#EC4899'}
               />
             ) : (
               <ApplicationFlowInspector 
