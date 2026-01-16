@@ -1,17 +1,35 @@
 /**
- * ButtonActionSelector - UNIFIED action selector for ALL buttons
+ * ButtonActionSelector - Unified action selector for ALL buttons
  * 
- * DESIGN PHILOSOPHY:
- * - "Continue to next step" is the DEFAULT behavior, NOT a selectable action
- * - Users only see EXPLICIT actions they can choose
- * - No internal flow mechanics exposed to users
+ * UX MODEL:
+ * ═══════════════════════════════════════════════════════════════
+ * PRIMARY ACTIONS (Flow):
+ * - Next Step → goes to next visible step (DEFAULT)
+ * - Go to Step → jumps to specific step
+ * - Submit → submits form (only on Capture/Final steps)
  * 
- * Internally: unset action → intent: NEXT_VISIBLE_STEP (automatic)
+ * SECONDARY ACTIONS (External):
+ * - Open URL
+ * - Scroll To
+ * - Call, Email, Download
+ * 
+ * RULES:
+ * - "Next Step" ALWAYS means next visible step
+ * - No user-facing concept of "auto"
+ * - Default action for step buttons = Next Step
+ * - No hidden defaults - everything is explicit
+ * ═══════════════════════════════════════════════════════════════
+ * 
+ * INTERNAL MAPPING:
+ * - "Next Step" → FlowContainer intent: next-step
+ * - "Go to Step" → FlowContainer intent: go-to-step
+ * - "Submit" → FlowContainer intent: submit
  */
 
 import React from 'react';
 import { cn } from '@/lib/utils';
 import {
+  ArrowRight,
   Layers,
   Send,
   ExternalLink,
@@ -19,8 +37,7 @@ import {
   Phone,
   Mail,
   Download,
-  ArrowRight,
-  X,
+  ChevronRight,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -32,21 +49,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 
 // ═══════════════════════════════════════════════════════════════
-// ACTION TYPES - Internal representation
+// ACTION TYPES - Internal representation (not exposed to users)
 // ═══════════════════════════════════════════════════════════════
 
 export type ButtonActionType = 
-  | 'next-step'      // Internal default - NOT shown in UI
-  | 'go-to-step'
-  | 'submit'
-  | 'url'
-  | 'scroll'
-  | 'phone'
-  | 'email'
-  | 'download';
+  | 'next-step'      // Primary: "Next Step"
+  | 'go-to-step'     // Secondary: "Go to Step"
+  | 'submit'         // Final: "Submit" (only on capture/final)
+  | 'url'            // External: "Open URL"
+  | 'scroll'         // External: "Scroll To"
+  | 'phone'          // External: "Call"
+  | 'email'          // External: "Email"
+  | 'download';      // External: "Download"
 
 export interface ButtonAction {
   type: ButtonActionType;
@@ -55,31 +71,97 @@ export interface ButtonAction {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// VISIBLE ACTION DEFINITIONS - Only what users can explicitly choose
+// ACTION DEFINITIONS - User-facing labels
 // ═══════════════════════════════════════════════════════════════
 
 interface ActionDefinition {
   type: ButtonActionType;
   label: string;
+  description: string;
   icon: React.ReactNode;
-  category: 'flow' | 'external';
+  category: 'primary' | 'secondary' | 'external';
   requiresValue?: boolean;
   valueLabel?: string;
   valuePlaceholder?: string;
 }
 
-// Only EXPLICIT actions - "next-step" is NOT listed (it's the default)
-const VISIBLE_ACTIONS: ActionDefinition[] = [
-  // Flow actions - explicit navigation
-  { type: 'go-to-step', label: 'Go to step', icon: <Layers className="w-3.5 h-3.5" />, category: 'flow', requiresValue: true, valueLabel: 'Target Step' },
-  { type: 'submit', label: 'Submit form', icon: <Send className="w-3.5 h-3.5" />, category: 'flow' },
+const ALL_ACTIONS: ActionDefinition[] = [
+  // PRIMARY - Flow navigation
+  { 
+    type: 'next-step', 
+    label: 'Next Step', 
+    description: 'Go to the next visible step',
+    icon: <ArrowRight className="w-4 h-4" />, 
+    category: 'primary' 
+  },
+  { 
+    type: 'go-to-step', 
+    label: 'Go to Step', 
+    description: 'Jump to a specific step',
+    icon: <Layers className="w-4 h-4" />, 
+    category: 'secondary', 
+    requiresValue: true, 
+    valueLabel: 'Target Step' 
+  },
+  { 
+    type: 'submit', 
+    label: 'Submit', 
+    description: 'Submit the form',
+    icon: <Send className="w-4 h-4" />, 
+    category: 'secondary' 
+  },
   
-  // External actions
-  { type: 'url', label: 'Open link', icon: <ExternalLink className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'URL', valuePlaceholder: 'https://...' },
-  { type: 'scroll', label: 'Scroll to', icon: <Hash className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Section ID', valuePlaceholder: '#section' },
-  { type: 'phone', label: 'Call', icon: <Phone className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Phone', valuePlaceholder: '+1234567890' },
-  { type: 'email', label: 'Email', icon: <Mail className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Email', valuePlaceholder: 'hello@example.com' },
-  { type: 'download', label: 'Download', icon: <Download className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'File URL', valuePlaceholder: 'https://...' },
+  // EXTERNAL - Opens links, triggers external actions
+  { 
+    type: 'url', 
+    label: 'Open URL', 
+    description: 'Open a link',
+    icon: <ExternalLink className="w-3.5 h-3.5" />, 
+    category: 'external', 
+    requiresValue: true, 
+    valueLabel: 'URL', 
+    valuePlaceholder: 'https://...' 
+  },
+  { 
+    type: 'scroll', 
+    label: 'Scroll To', 
+    description: 'Scroll to section',
+    icon: <Hash className="w-3.5 h-3.5" />, 
+    category: 'external', 
+    requiresValue: true, 
+    valueLabel: 'Section ID', 
+    valuePlaceholder: '#section-id' 
+  },
+  { 
+    type: 'phone', 
+    label: 'Call', 
+    description: 'Start phone call',
+    icon: <Phone className="w-3.5 h-3.5" />, 
+    category: 'external', 
+    requiresValue: true, 
+    valueLabel: 'Phone Number', 
+    valuePlaceholder: '+1234567890' 
+  },
+  { 
+    type: 'email', 
+    label: 'Email', 
+    description: 'Open email client',
+    icon: <Mail className="w-3.5 h-3.5" />, 
+    category: 'external', 
+    requiresValue: true, 
+    valueLabel: 'Email Address', 
+    valuePlaceholder: 'hello@example.com' 
+  },
+  { 
+    type: 'download', 
+    label: 'Download', 
+    description: 'Download a file',
+    icon: <Download className="w-3.5 h-3.5" />, 
+    category: 'external', 
+    requiresValue: true, 
+    valueLabel: 'File URL', 
+    valuePlaceholder: 'https://...' 
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -87,15 +169,17 @@ const VISIBLE_ACTIONS: ActionDefinition[] = [
 // ═══════════════════════════════════════════════════════════════
 
 interface ButtonActionSelectorProps {
-  /** Current action - undefined means "continue flow" (default) */
+  /** Current action - undefined defaults to "Next Step" */
   action: ButtonAction | undefined;
   /** Called when action changes */
   onChange: (action: ButtonAction | undefined) => void;
   /** Available steps for "Go To Step" action */
   availableSteps?: { id: string; name: string }[];
+  /** Step type - affects which actions are shown */
+  stepType?: 'welcome' | 'question' | 'capture' | 'ending';
   /** Compact mode for smaller UI */
   compact?: boolean;
-  /** Show only flow actions (hide external) */
+  /** Hide external actions */
   flowOnly?: boolean;
 }
 
@@ -107,76 +191,104 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
   action,
   onChange,
   availableSteps = [],
+  stepType,
   compact = false,
   flowOnly = false,
 }) => {
-  // Check if user has an explicit action set (anything other than next-step)
-  const hasExplicitAction = action && action.type !== 'next-step';
-  const currentType = action?.type;
+  // Normalize: undefined or 'next-step' are both "Next Step"
+  const currentType = action?.type || 'next-step';
   const currentValue = action?.value || '';
   const openNewTab = action?.openNewTab ?? false;
 
-  const handleSelectAction = (type: ButtonActionType) => {
-    onChange({ type, value: '', openNewTab: type === 'url' ? false : undefined });
+  // Determine which actions to show based on step type
+  const getVisibleActions = (): ActionDefinition[] => {
+    const primary = ALL_ACTIONS.filter(a => a.category === 'primary');
+    const secondary = ALL_ACTIONS.filter(a => a.category === 'secondary');
+    const external = flowOnly ? [] : ALL_ACTIONS.filter(a => a.category === 'external');
+    
+    // Filter actions based on step type
+    let flowActions = [...primary];
+    
+    // "Go to Step" only if there are other steps
+    if (availableSteps.length > 0) {
+      const goToStep = secondary.find(a => a.type === 'go-to-step');
+      if (goToStep) flowActions.push(goToStep);
+    }
+    
+    // "Submit" only on capture/ending steps
+    if (stepType === 'capture' || stepType === 'ending') {
+      const submit = secondary.find(a => a.type === 'submit');
+      if (submit) flowActions.push(submit);
+    }
+    
+    return [...flowActions, ...external];
   };
 
-  const handleClearAction = () => {
-    // Clear to undefined = default "continue flow" behavior
-    onChange(undefined);
+  const visibleActions = getVisibleActions();
+  const flowActions = visibleActions.filter(a => a.category === 'primary' || a.category === 'secondary');
+  const externalActions = visibleActions.filter(a => a.category === 'external');
+  const currentDefinition = ALL_ACTIONS.find(a => a.type === currentType);
+
+  const handleSelectAction = (type: ButtonActionType) => {
+    // "Next Step" is stored as undefined internally (cleaner data)
+    if (type === 'next-step') {
+      onChange(undefined);
+    } else {
+      onChange({ 
+        type, 
+        value: '', 
+        openNewTab: type === 'url' ? false : undefined 
+      });
+    }
   };
 
   const handleValueChange = (value: string) => {
-    if (currentType) {
-      onChange({ type: currentType, value, openNewTab: currentType === 'url' ? openNewTab : undefined });
+    if (currentType && currentType !== 'next-step') {
+      onChange({ 
+        type: currentType, 
+        value, 
+        openNewTab: currentType === 'url' ? openNewTab : undefined 
+      });
     }
   };
 
   const handleNewTabChange = (checked: boolean) => {
     if (currentType) {
-      onChange({ type: currentType, value: currentValue, openNewTab: checked });
+      onChange({ 
+        type: currentType, 
+        value: currentValue, 
+        openNewTab: checked 
+      });
     }
   };
 
-  const flowActions = VISIBLE_ACTIONS.filter(a => a.category === 'flow');
-  const externalActions = VISIBLE_ACTIONS.filter(a => a.category === 'external');
-  const currentDefinition = VISIBLE_ACTIONS.find(a => a.type === currentType);
-
   return (
     <div className="space-y-3">
-      {/* Default State - No explicit action */}
-      {!hasExplicitAction && (
-        <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/40 border border-border/40">
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Continues to next step</span>
+      {/* Current Selection Display */}
+      <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+        <div className="flex items-center gap-2 flex-1">
+          {currentDefinition?.icon}
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-foreground">
+              {currentDefinition?.label || 'Next Step'}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {currentDefinition?.description || 'Go to the next visible step'}
+            </span>
+          </div>
         </div>
-      )}
+        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+      </div>
 
-      {/* Explicit Action Display */}
-      {hasExplicitAction && currentDefinition && (
-        <div className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-md bg-primary/10 border border-primary/20">
-          <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
-            {currentDefinition.icon}
-            {currentDefinition.label}
-          </span>
-          <button
-            type="button"
-            onClick={handleClearAction}
-            className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-            title="Reset to default"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Action Selector Grid */}
-      <div className="space-y-2">
+      {/* Flow Actions - Primary selection */}
+      <div className="space-y-1.5">
         <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-          {hasExplicitAction ? 'Change action' : 'Add action'}
+          On Click
         </Label>
-        
-        {/* Flow Actions */}
-        <div className={cn("grid gap-1.5", compact ? "grid-cols-2" : "grid-cols-2")}>
+        <div className={cn(
+          "grid gap-1.5",
+          flowActions.length <= 2 ? "grid-cols-2" : "grid-cols-3"
+        )}>
           {flowActions.map((actionDef) => (
             <button
               key={actionDef.type}
@@ -185,7 +297,7 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
               className={cn(
                 "flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all",
                 currentType === actionDef.type
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
@@ -194,9 +306,14 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
             </button>
           ))}
         </div>
+      </div>
 
-        {/* External Actions */}
-        {!flowOnly && externalActions.length > 0 && (
+      {/* External Actions */}
+      {externalActions.length > 0 && (
+        <div className="space-y-1.5 pt-2 border-t border-border/30">
+          <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
+            External
+          </Label>
           <div className={cn("grid gap-1", compact ? "grid-cols-3" : "grid-cols-5")}>
             {externalActions.map((actionDef) => (
               <button
@@ -215,15 +332,17 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Value Input - For actions that require configuration */}
+      {/* Value Configuration - For actions that need input */}
       {currentDefinition?.requiresValue && (
-        <div className="space-y-2 pt-2 border-t border-border/40">
+        <div className="space-y-2 pt-2 border-t border-border/30">
           {currentType === 'go-to-step' ? (
             <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">Target Step</Label>
+              <Label className="text-[10px] text-muted-foreground">
+                {currentDefinition.valueLabel}
+              </Label>
               <Select value={currentValue} onValueChange={handleValueChange}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Select step..." />
@@ -239,7 +358,9 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
             </div>
           ) : (
             <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">{currentDefinition.valueLabel}</Label>
+              <Label className="text-[10px] text-muted-foreground">
+                {currentDefinition.valueLabel}
+              </Label>
               <Input
                 value={currentValue}
                 onChange={(e) => handleValueChange(e.target.value)}

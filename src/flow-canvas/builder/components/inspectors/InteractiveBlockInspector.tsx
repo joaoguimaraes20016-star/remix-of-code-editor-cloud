@@ -252,7 +252,7 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
 
           {/* Button Action - What happens on click */}
           {buttonElement && (
-            <FieldGroup label="Button Action">
+            <FieldGroup label="On Click">
               <ButtonActionSelector
                 action={buttonElement.props?.buttonAction as ButtonAction | undefined}
                 onChange={(action) => updateElementProps(buttonElement.id, { buttonAction: action })}

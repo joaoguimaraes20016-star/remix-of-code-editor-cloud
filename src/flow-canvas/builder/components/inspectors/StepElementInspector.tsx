@@ -292,11 +292,12 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           </FieldGroup>
         </CollapsibleSection>
         
-        <CollapsibleSection title="Action" icon={<MousePointer2 className="w-3.5 h-3.5" />} defaultOpen>
+        <CollapsibleSection title="On Click" icon={<MousePointer2 className="w-3.5 h-3.5" />} defaultOpen>
           <ButtonActionSelector
             action={buttonAction}
             onChange={(action) => updateStepSetting('buttonAction', action)}
             availableSteps={availableSteps}
+            stepType={step.type as 'welcome' | 'question' | 'capture' | 'ending'}
           />
         </CollapsibleSection>
         

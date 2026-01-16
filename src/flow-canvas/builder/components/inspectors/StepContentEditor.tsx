@@ -332,11 +332,12 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           {/* Button Action - What happens when button is clicked */}
           {step.type !== 'ending' && (
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-builder-text-muted uppercase">Button Action</Label>
+              <Label className="text-[10px] text-builder-text-muted uppercase">On Click</Label>
               <ButtonActionSelector
                 action={stepSettings.buttonAction as ButtonAction | undefined}
                 onChange={(action) => updateSettings({ buttonAction: action })}
                 availableSteps={allSteps.filter(s => s.id !== step.id).map(s => ({ id: s.id, name: s.name }))}
+                stepType={step.type as 'welcome' | 'question' | 'capture' | 'ending'}
                 compact
               />
             </div>
