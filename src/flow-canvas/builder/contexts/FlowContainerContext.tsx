@@ -611,23 +611,34 @@ interface ButtonAction {
 }
 
 /**
- * Convert a button's action props to a FlowIntent.
- * Buttons should call this and emit the result.
+ * Convert a button's action configuration to a FlowIntent.
+ * 
+ * DESIGN: "Continue to next step" is the DEFAULT, not a selectable action.
+ * - undefined action → next-step intent (automatic behavior)
+ * - Explicit actions (go-to-step, submit, url, etc.) map to their intents
+ * 
+ * Users never see "next-step" in the UI - it just happens when no action is set.
  */
 export function buttonActionToIntent(action: ButtonAction | undefined): FlowIntent | null {
+  // No action = continue flow (default behavior, not exposed in UI)
   if (!action || !action.type) {
-    return { type: 'next-step' }; // Default action
+    return { type: 'next-step' };
   }
   
   switch (action.type) {
+    // Internal default - still handle if set programmatically
     case 'next-step':
       return { type: 'next-step' };
     case 'prev-step':
       return { type: 'prev-step' };
+    
+    // Explicit flow actions
     case 'go-to-step':
       return action.value ? { type: 'go-to-step', stepId: action.value } : null;
     case 'submit':
       return { type: 'submit' };
+    
+    // External actions
     case 'url':
     case 'redirect':
       return action.value ? { type: 'url', url: action.value, openNewTab: action.openNewTab } : null;
@@ -639,6 +650,7 @@ export function buttonActionToIntent(action: ButtonAction | undefined): FlowInte
       return action.value ? { type: 'email', address: action.value } : null;
     case 'download':
       return action.value ? { type: 'download', url: action.value } : null;
+    
     default:
       return null;
   }
