@@ -41,7 +41,7 @@ import {
   getDefaultCapturePlaceholder,
   type CaptureIconType 
 } from '../../utils/stepRenderHelpers';
-
+import { DEFAULT_FLOW_BUTTON_COLOR } from '../ApplicationFlowCard';
 // Local type definitions (matches ApplicationFlowCard)
 export type StepElementType = 'title' | 'description' | 'button' | 'option' | 'input';
 
@@ -130,8 +130,8 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   selection,
   onUpdateBlock,
   onBack,
-  // Default matches flow-canvas/index.css --primary: 315 85% 58% (converted to hex)
-  themePrimaryColor = '#EC4899', // Pink/magenta default
+  // Use the same default as ApplicationFlowCard for consistency
+  themePrimaryColor = DEFAULT_FLOW_BUTTON_COLOR,
 }) => {
   const settings = block.props as Partial<ApplicationFlowSettings>;
   const steps = settings?.steps || [];

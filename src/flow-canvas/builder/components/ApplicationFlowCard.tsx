@@ -41,6 +41,10 @@ import { StepLayout, FlowShell, type StepLayoutStyle } from './StepLayout';
 import { gradientToCSS } from '../utils/gradientHelpers';
 import { getButtonIconComponent } from './ButtonIconPicker';
 
+// Default button color for flow steps - matches the brand magenta/pink
+// This is used when no explicit buttonColor is set on a step
+export const DEFAULT_FLOW_BUTTON_COLOR = '#EC4899';
+
 // Convert ApplicationFlowBackground to CSS string
 // Returns 'transparent' when no background is set (respects user intent)
 const backgroundToCSS = (bg?: ApplicationFlowBackground): string | undefined => {
@@ -446,7 +450,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           size={s.buttonSize || 'md'}
           radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
-          backgroundColor={s.buttonColor}
+          backgroundColor={s.buttonColor || DEFAULT_FLOW_BUTTON_COLOR}
           textColor={s.buttonTextColor}
           gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}
@@ -686,7 +690,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           size={s.buttonSize || 'md'}
           radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
-          backgroundColor={s.buttonColor}
+          backgroundColor={s.buttonColor || DEFAULT_FLOW_BUTTON_COLOR}
           textColor={s.buttonTextColor}
           gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}
@@ -864,7 +868,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           size={s.buttonSize || 'md'}
           radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
-          backgroundColor={s.buttonColor}
+          backgroundColor={s.buttonColor || DEFAULT_FLOW_BUTTON_COLOR}
           textColor={s.buttonTextColor}
           gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}

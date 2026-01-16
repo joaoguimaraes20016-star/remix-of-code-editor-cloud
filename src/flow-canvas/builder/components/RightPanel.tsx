@@ -123,6 +123,7 @@ import { InteractiveBlockInspector } from './inspectors/InteractiveBlockInspecto
 import { StepElementInspector } from './inspectors/StepElementInspector';
 import { ButtonActionSelector, type ButtonAction as ActionSelectorAction } from './ButtonActionSelector';
 import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
+import { DEFAULT_FLOW_BUTTON_COLOR } from './ApplicationFlowCard';
 
 interface RightPanelProps {
   page: Page;
@@ -3411,7 +3412,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                 selection={selectedStepElement}
                 onUpdateBlock={(updates) => handleUpdate(updates)}
                 onBack={() => onClearStepElement?.()}
-                themePrimaryColor={page.settings?.primary_color || '#EC4899'}
+                themePrimaryColor={page.settings?.primary_color || DEFAULT_FLOW_BUTTON_COLOR}
               />
             ) : (
               <ApplicationFlowInspector 
