@@ -128,9 +128,21 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
   };
 
-  // Helper to select an element within a step
-  const handleElementSelect = (e: React.MouseEvent, stepId: string, elementType: StepElementType, optionIndex?: number) => {
+  /**
+   * EDITING BEHAVIOR (Layout Preset Pattern):
+   * - Elements inside steps are DIRECTLY editable (like regular canvas content)
+   * - Clicking text → edits text (not selects step)
+   * - Clicking button → selects button (not selects step)
+   * - Step selection ONLY happens via step navigation dots or explicit step wrapper click
+   * 
+   * Steps provide STRUCTURE (spacing, alignment, order) but NEVER limit styling.
+   */
+
+  // Helper to select an element within a step - allows direct editing
+  const handleElementClick = (e: React.MouseEvent, stepId: string, elementType: StepElementType, optionIndex?: number) => {
     if (readOnly || isPreviewMode) return;
+    
+    // Stop propagation to prevent step selection - element takes priority
     e.stopPropagation();
     
     if (onSelectStepElement) {
@@ -251,7 +263,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
             isElementSelected(stepId, 'title') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
           )}
-          onClick={(e) => handleElementSelect(e, stepId, 'title')}
+          onClick={(e) => handleElementClick(e, stepId, 'title')}
         >
           <InlineTextEditor
             value={s.title || 'Apply Now'}
@@ -270,7 +282,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
             isElementSelected(stepId, 'description') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
           )}
-          onClick={(e) => handleElementSelect(e, stepId, 'description')}
+          onClick={(e) => handleElementClick(e, stepId, 'description')}
         >
           <InlineTextEditor
             value={s.description || 'Answer a few quick questions to see if we are a good fit.'}
@@ -291,8 +303,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           )}
           onClick={(e) => {
             if (!isPreviewMode) {
-              e.stopPropagation();
-              handleElementSelect(e, stepId, 'button');
+              handleElementClick(e, stepId, 'button');
             }
           }}
           onPointerDown={(e) => {
@@ -339,7 +350,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
             isElementSelected(step.id, 'title') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
           )}
-          onClick={(e) => handleElementSelect(e, step.id, 'title')}
+          onClick={(e) => handleElementClick(e, step.id, 'title')}
         >
           <InlineTextEditor
             value={s.title || 'Your question here'}
@@ -358,7 +369,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
               isElementSelected(step.id, 'description') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
             )}
-            onClick={(e) => handleElementSelect(e, step.id, 'description')}
+            onClick={(e) => handleElementClick(e, step.id, 'description')}
           >
             <p className="text-sm opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
           </div>
@@ -381,7 +392,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   borderColor: flowInputBorder,
                   color: flowTextColor 
                 }}
-                onClick={(e) => handleElementSelect(e, step.id, 'option', i)}
+                onClick={(e) => handleElementClick(e, step.id, 'option', i)}
               >
                 {option}
               </div>
@@ -397,7 +408,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
               isElementSelected(step.id, 'input') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
             )}
-            onClick={(e) => handleElementSelect(e, step.id, 'input')}
+            onClick={(e) => handleElementClick(e, step.id, 'input')}
           >
             <textarea 
               className={cn(
@@ -424,7 +435,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
               isElementSelected(step.id, 'input') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
             )}
-            onClick={(e) => handleElementSelect(e, step.id, 'input')}
+            onClick={(e) => handleElementClick(e, step.id, 'input')}
           >
             <div 
               className={cn(
@@ -455,7 +466,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
               isElementSelected(step.id, 'input') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
             )}
-            onClick={(e) => handleElementSelect(e, step.id, 'input')}
+            onClick={(e) => handleElementClick(e, step.id, 'input')}
           >
             <div className="flex gap-1.5 justify-center">
               {Array.from({ length: s.scaleMax || 10 }, (_, i) => i + 1).map((num) => (
@@ -499,7 +510,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   borderColor: flowInputBorder,
                   color: flowTextColor 
                 }}
-                onClick={(e) => handleElementSelect(e, step.id, 'option', i)}
+                onClick={(e) => handleElementClick(e, step.id, 'option', i)}
               >
                 {option}
               </div>
@@ -516,8 +527,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           )}
           onClick={(e) => {
             if (!isPreviewMode) {
-              e.stopPropagation();
-              handleElementSelect(e, step.id, 'button');
+              handleElementClick(e, step.id, 'button');
             }
           }}
           onPointerDown={(e) => {
@@ -575,7 +585,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
             isElementSelected(step.id, 'title') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
           )}
-          onClick={(e) => handleElementSelect(e, step.id, 'title')}
+          onClick={(e) => handleElementClick(e, step.id, 'title')}
         >
           <InlineTextEditor
             value={s.title || 'Where should we send your results?'}
@@ -594,7 +604,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
               isElementSelected(step.id, 'description') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
             )}
-            onClick={(e) => handleElementSelect(e, step.id, 'description')}
+            onClick={(e) => handleElementClick(e, step.id, 'description')}
           >
             <p className="text-sm opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
           </div>
@@ -608,7 +618,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
                 isElementSelected(step.id, 'input', index) && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
               )}
-              onClick={(e) => handleElementSelect(e, step.id, 'input', index)}
+              onClick={(e) => handleElementClick(e, step.id, 'input', index)}
             >
               <input 
                 className={cn(
@@ -635,8 +645,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           )}
           onClick={(e) => {
             if (!isPreviewMode) {
-              e.stopPropagation();
-              handleElementSelect(e, step.id, 'button');
+              handleElementClick(e, step.id, 'button');
             }
           }}
           onPointerDown={(e) => {
@@ -716,22 +725,31 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   const blockBorder = blockStyle.border;
   const blockShadow = blockStyle.boxShadow;
 
-  // Handle step click - select that specific step for editing
-  const handleStepClick = (e: React.MouseEvent, stepId: string) => {
+  /**
+   * Step navigation click - ONLY used by nav dots
+   * Content elements handle their own selection via handleElementClick
+   */
+  const handleStepNavClick = (e: React.MouseEvent, stepId: string) => {
     e.stopPropagation();
     if (onSelectStep) {
       onSelectStep(stepId);
-    } else {
-      // Fallback to selecting the entire block if no step handler
-      onSelect();
     }
+  };
+
+  /**
+   * Block-level click - selects the flow block itself
+   * Elements inside stop propagation to handle their own selection
+   */
+  const handleBlockClick = (e: React.MouseEvent) => {
+    // Only select block if click wasn't handled by an element
+    onSelect();
   };
 
   return (
     <div
       className={cn(
         'w-full transition-colors duration-200 overflow-hidden',
-        // Very subtle selection indicator - almost invisible border
+        // Very subtle selection indicator
         isSelected && 'ring-1 ring-primary/30'
       )}
       style={{
@@ -740,13 +758,10 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         border: blockBorder || undefined,
         boxShadow: blockShadow || undefined,
       }}
-      onClick={onSelect}
+      onClick={handleBlockClick}
     >
-      {/* Step content */}
-      <div
-        className="cursor-pointer"
-        onClick={(e) => activeStep && handleStepClick(e, activeStep.id)}
-      >
+      {/* Step content - elements inside are directly editable */}
+      <div>
         {renderStepContent()}
       </div>
       
@@ -766,7 +781,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   key={step.id}
                   onClick={(e) => {
                     if (!isDisabled) {
-                      handleStepClick(e, step.id);
+                      handleStepNavClick(e, step.id);
                     }
                   }}
                   disabled={isDisabled}
