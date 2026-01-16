@@ -457,8 +457,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const s = (step as any).settings || {};
     const alignClass = getAlignClass(s.align);
     const spacingClass = getSpacingClass(s.spacing);
-    const inputStyleClass = getInputStyleClass(s.inputStyle);
-
+    const inputRadius = s.inputRadius as number | undefined;
+    const inputStyleClass = getInputStyleClass(s.inputStyle, inputRadius);
+    const inputRadiusStyle = inputRadius !== undefined ? { borderRadius: `${inputRadius}px` } : {};
     return (
       <div className={cn('flex flex-col w-full', alignClass, spacingClass)}>
         {/* Title - selectable */}
@@ -534,7 +535,8 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               style={{ 
                 backgroundColor: flowInputBg, 
                 borderColor: flowInputBorder,
-                color: flowTextColor 
+                color: flowTextColor,
+                ...inputRadiusStyle
               }}
               placeholder="Type your answer..."
               rows={3}
@@ -561,7 +563,8 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               style={{ 
                 backgroundColor: flowInputBg, 
                 borderColor: flowInputBorder,
-                color: flowTextColor 
+                color: flowTextColor,
+                ...inputRadiusStyle
               }}
             >
               <span className="opacity-60">
@@ -595,7 +598,8 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   style={{ 
                     backgroundColor: flowInputBg, 
                     borderColor: flowInputBorder,
-                    color: flowTextColor 
+                    color: flowTextColor,
+                    ...inputRadiusStyle
                   }}
                 >
                   {num}

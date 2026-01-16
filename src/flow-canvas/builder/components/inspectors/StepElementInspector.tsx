@@ -174,25 +174,25 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           </Select>
         </FieldGroup>
         
-        <FieldGroup label="Alignment">
+        <FieldGroup label="Alignment" hint="Aligns all step content">
           <div className="flex rounded-md overflow-hidden border border-builder-border">
             {[
               { value: 'left', icon: <AlignLeft className="w-3.5 h-3.5" /> },
               { value: 'center', icon: <AlignCenter className="w-3.5 h-3.5" /> },
               { value: 'right', icon: <AlignRight className="w-3.5 h-3.5" /> },
-            ].map((align) => (
+            ].map((alignOpt) => (
               <button
-                key={align.value}
+                key={alignOpt.value}
                 type="button"
-                onClick={() => updateStepSetting('titleAlign', align.value)}
+                onClick={() => updateStepSetting('align', alignOpt.value)}
                 className={cn(
                   'flex-1 px-2 py-1.5 transition-colors',
-                  (stepSettings.titleAlign || 'center') === align.value
+                  (stepSettings.align || 'center') === alignOpt.value
                     ? 'bg-foreground text-background' 
                     : 'bg-background text-muted-foreground hover:bg-accent'
                 )}
               >
-                {align.icon}
+                {alignOpt.icon}
               </button>
             ))}
           </div>
@@ -230,30 +230,6 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
       </CollapsibleSection>
       
       <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />} defaultOpen>
-        <FieldGroup label="Alignment">
-          <div className="flex rounded-md overflow-hidden border border-builder-border">
-            {[
-              { value: 'left', icon: <AlignLeft className="w-3.5 h-3.5" /> },
-              { value: 'center', icon: <AlignCenter className="w-3.5 h-3.5" /> },
-              { value: 'right', icon: <AlignRight className="w-3.5 h-3.5" /> },
-            ].map((align) => (
-              <button
-                key={align.value}
-                type="button"
-                onClick={() => updateStepSetting('descriptionAlign', align.value)}
-                className={cn(
-                  'flex-1 px-2 py-1.5 transition-colors',
-                  (stepSettings.descriptionAlign || 'center') === align.value
-                    ? 'bg-foreground text-background' 
-                    : 'bg-background text-muted-foreground hover:bg-accent'
-                )}
-              >
-                {align.icon}
-              </button>
-            ))}
-          </div>
-        </FieldGroup>
-
         <FieldGroup label="Color">
           <ColorPickerPopover
             color={stepSettings.descriptionColor || '#666666'}
