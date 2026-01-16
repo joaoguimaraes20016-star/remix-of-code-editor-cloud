@@ -308,6 +308,7 @@ export const ApplicationStepRenderer: React.FC<ApplicationStepRendererProps> = (
             step.settings.titleSize === 'lg' && 'text-2xl',
             step.settings.titleSize === 'xl' && 'text-3xl',
             step.settings.titleSize === '2xl' && 'text-4xl',
+            step.settings.titleSize === '3xl' && 'text-5xl',
             !step.settings.titleSize && 'text-2xl',
             step.settings.align === 'left' && 'text-left',
             step.settings.align === 'center' && 'text-center',
