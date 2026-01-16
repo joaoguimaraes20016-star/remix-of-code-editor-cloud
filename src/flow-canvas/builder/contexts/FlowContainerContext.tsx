@@ -1,37 +1,45 @@
 /**
- * FlowContainer Context
- * 
- * ARCHITECTURE: "Flow is behavior, not structure"
+ * FlowContainer Context - LOGIC ONLY
  * 
  * ═══════════════════════════════════════════════════════════════
- * FLOW CONTAINER OWNS (runtime behavior):
+ * STRICT ARCHITECTURE: "FlowContainer is INVISIBLE"
  * ═══════════════════════════════════════════════════════════════
- * ✓ Step order and progression
- * ✓ Validation rules
- * ✓ Form state collection
- * ✓ Current step tracking
- * ✓ Rule evaluation
+ * 
+ * FlowContainer provides BEHAVIOR ONLY. It is completely invisible.
+ * All visual styling is handled by StepLayout component.
  * 
  * ═══════════════════════════════════════════════════════════════
- * FLOW CONTAINER DOES NOT OWN (visual/editing):
+ * FLOW CONTAINER MAY CONTROL (logic):
  * ═══════════════════════════════════════════════════════════════
- * ✗ Layout and spacing
- * ✗ Button appearance (uses shared FlowButton)
- * ✗ Text styling (uses shared InlineTextEditor)
- * ✗ Colors, fonts, backgrounds
+ * ✓ currentStep - which step is active
+ * ✓ visibleSteps - which steps are shown (via rules)
+ * ✓ canProgress - whether progression is allowed
+ * ✓ validationErrors - current validation state
+ * ✓ blockedReason - why an action was blocked
+ * ✓ formValues - collected form data
  * 
  * ═══════════════════════════════════════════════════════════════
- * MODE BEHAVIOR:
+ * FLOW CONTAINER MUST NOT (visual):
  * ═══════════════════════════════════════════════════════════════
- * EDITOR MODE (isPreviewMode=false):
- *   - All elements remain editable
- *   - Flow progression is visually indicated but not enforced
- *   - Selection/editing takes precedence over flow actions
+ * ✗ Apply padding, margin, or spacing
+ * ✗ Apply background, border, radius, shadow
+ * ✗ Apply layout decisions for buttons or inputs
+ * ✗ Inject visual wrappers around content
+ * ✗ Set colors, fonts, or any visual styles
  * 
- * RUNTIME MODE (isPreviewMode=true):
- *   - Flow rules are enforced
- *   - Buttons trigger real progression
- *   - Validation gates are active
+ * ═══════════════════════════════════════════════════════════════
+ * COMPONENT RESPONSIBILITY:
+ * ═══════════════════════════════════════════════════════════════
+ * - FlowContainerContext → Logic (this file)
+ * - StepLayout → Visual (padding, background, shadow, etc.)
+ * - UnifiedButton → Button rendering (consistent everywhere)
+ * 
+ * ═══════════════════════════════════════════════════════════════
+ * EDITING BEHAVIOR:
+ * ═══════════════════════════════════════════════════════════════
+ * - Clicking button → selects BUTTON (not step, not container)
+ * - Clicking text → selects TEXT
+ * - Clicking empty space → selects STEP
  * 
  * ═══════════════════════════════════════════════════════════════
  * INTENT PATTERN:
