@@ -1380,6 +1380,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
             <button
               className={cn(
                 `btn-${element.id}`,
+                'builder-element-selectable',
                 useSizeClass && buttonSizeClasses[buttonSize],
                 buttonWeightClass[buttonFontWeight],
                 isNavPill && 'rounded-full',

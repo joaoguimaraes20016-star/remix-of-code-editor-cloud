@@ -79,7 +79,7 @@ export function OptInStep({
           </div>
         </div>
         <button
-          className={cn("step-button", sizes.button)}
+          className={cn("step-button builder-element-selectable", sizes.button)}
           style={getButtonStyle(d)}
         >
           {content.button_text || 'Submit'}

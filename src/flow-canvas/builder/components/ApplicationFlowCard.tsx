@@ -230,7 +230,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           aria-disabled={isButtonDisabled(s)}
           className={cn(
             getButtonClasses(s),
-            'mt-6',
+            'mt-6 builder-element-selectable',
             isPreviewMode ? 'cursor-pointer' : '',
             isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
           )}
@@ -411,7 +411,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           type="button"
           className={cn(
             getButtonClasses(s), 
-            'mt-6', 
+            'mt-6 builder-element-selectable', 
             isPreviewMode && 'cursor-pointer',
             isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
           )}
@@ -520,7 +520,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           type="button"
           className={cn(
             getButtonClasses(s), 
-            'mt-6', 
+            'mt-6 builder-element-selectable', 
             isPreviewMode && 'cursor-pointer',
             isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
           )}
