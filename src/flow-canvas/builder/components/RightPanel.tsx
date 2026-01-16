@@ -121,6 +121,8 @@ import { ButtonIconPicker } from './ButtonIconPicker';
 import { ApplicationFlowInspector } from './inspectors/ApplicationFlowInspector';
 import { InteractiveBlockInspector } from './inspectors/InteractiveBlockInspector';
 import { StepElementInspector } from './inspectors/StepElementInspector';
+import { ButtonActionSelector, type ButtonAction as ActionSelectorAction } from './ButtonActionSelector';
+import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
 
 interface RightPanelProps {
   page: Page;
@@ -748,309 +750,82 @@ const ElementInspector: React.FC<{
         </div>
       )}
 
-      {/* ========== BUTTON SECTIONS ========== */}
+      {/* ========== BUTTON SECTIONS (UNIFIED) ========== */}
       {element.type === 'button' && (
         <>
-          {/* Click Action - Enhanced with quick action selector */}
-          <CollapsibleSection title="After Click" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen sectionId="action" isHighlighted={highlightedSection === 'action'}>
-            <div className="space-y-3">
-              {/* Quick Action Selector */}
-              <div className="space-y-2">
-                <span className="text-[10px] text-builder-text-dim uppercase tracking-wide">What happens after click?</span>
-                
-                {/* Primary Action - Continue Flow */}
-                <button
-                  onClick={() => handlePropsChange('buttonAction', { type: 'next-step' })}
-                  className={cn(
-                    "flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all",
-                    buttonAction?.type === 'next-step' || !buttonAction?.type
-                      ? "bg-primary text-primary-foreground ring-2 ring-primary/20"
-                      : "bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface border border-transparent hover:border-border"
-                  )}
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Continue Flow
-                  {(buttonAction?.type === 'next-step' || !buttonAction?.type) && <span className="text-[10px] opacity-70">(auto)</span>}
-                </button>
-
-                {/* Secondary Actions */}
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[
-                    { type: 'go-to-step', label: 'Specific Step', icon: <Layers className="w-3.5 h-3.5" /> },
-                    { type: 'submit', label: 'Submit', icon: <Check className="w-3.5 h-3.5" /> },
-                    { type: 'url', label: 'Open URL', icon: <ExternalLink className="w-3.5 h-3.5" /> },
-                  ].map((action) => (
-                    <button
-                      key={action.type}
-                      onClick={() => {
-                        if (action.type === 'go-to-step' || action.type === 'url') {
-                          setIsButtonActionOpen(true);
-                        } else {
-                          handlePropsChange('buttonAction', { type: action.type });
-                        }
-                      }}
-                      className={cn(
-                        "flex items-center justify-center gap-1 px-2 py-2 rounded-md text-[10px] font-medium transition-all",
-                        buttonAction?.type === action.type
-                          ? "bg-builder-accent text-white"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      {action.icon}
-                      <span>{action.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Current Action Summary */}
-              {buttonAction?.type && (buttonAction.type === 'go-to-step' || buttonAction.type === 'url') && buttonAction.value && (
-                <div className="p-2.5 rounded-lg bg-builder-surface-hover/50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-builder-text-muted">
-                      {buttonAction.type === 'go-to-step' ? 'Target Step:' : 'URL:'}
-                    </span>
-                    <span className="text-xs text-builder-text font-medium truncate max-w-[120px]">
-                      {buttonAction.value}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Advanced Config Button */}
-              <Button variant="ghost" size="sm" onClick={() => setIsButtonActionOpen(true)} className="w-full text-xs text-builder-text-muted hover:text-builder-text h-7">
-                <Settings2 className="w-3 h-3 mr-1.5" />
-                More Actions...
-              </Button>
+          {/* On Click Action - Using shared ButtonActionSelector */}
+          <CollapsibleSection title="On Click" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen sectionId="action" isHighlighted={highlightedSection === 'action'}>
+            <div className="pt-2">
+              <ButtonActionSelector
+                action={buttonAction as ActionSelectorAction | undefined}
+                onChange={(action) => handlePropsChange('buttonAction', action)}
+                availableSteps={[]} // TODO: Pass available steps from flow context if needed
+                stepType={undefined} // Not in a flow step, show all actions
+              />
             </div>
           </CollapsibleSection>
 
-          {/* Button Appearance */}
+          {/* Button Appearance - Using shared ButtonStyleInspector */}
           <CollapsibleSection title="Appearance" icon={<Palette className="w-4 h-4" />} defaultOpen sectionId="appearance" isHighlighted={highlightedSection === 'appearance'}>
-            <div className="space-y-3">
-              {/* Fill Type Toggle - 3-way: Outline / Solid / Gradient */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Fill</span>
-                <div className="flex rounded-lg overflow-hidden border border-builder-border">
-                  <button
-                    onClick={() => {
-                      onUpdate({ 
-                        props: { ...element.props, fillType: 'outline', gradient: undefined },
-                        styles: { ...element.styles, backgroundColor: 'transparent' }
-                      });
-                    }}
-                    className={cn(
-                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
-                      element.props?.fillType === 'outline' || (!element.props?.fillType && !element.styles?.backgroundColor)
-                        ? 'bg-builder-accent text-white' 
-                        : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
-                    )}
-                  >
-                    Outline
-                  </button>
-                  <button
-                    onClick={() => {
-                      const bg = element.styles?.backgroundColor && element.styles.backgroundColor !== 'transparent' 
-                        ? element.styles.backgroundColor 
-                        : (page.settings.primary_color || '#8B5CF6');
-                      onUpdate({ 
-                        props: { ...element.props, fillType: 'solid', gradient: undefined },
-                        styles: { ...element.styles, backgroundColor: bg as string }
-                      });
-                    }}
-                    className={cn(
-                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
-                      element.props?.fillType === 'solid'
-                        ? 'bg-builder-accent text-white' 
-                        : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
-                    )}
-                  >
-                    Solid
-                  </button>
-                  <button
-                    onClick={() => {
-                      const existingGradient = element.props?.gradient as GradientValue | undefined;
-                      const gradient = existingGradient || {
-                        type: 'linear' as const,
-                        angle: 135,
-                        stops: [
-                          { color: page.settings.primary_color || '#8B5CF6', position: 0 },
-                          { color: '#D946EF', position: 100 },
-                        ],
-                      };
-                      onUpdate({ 
-                        props: { 
-                          ...element.props, 
-                          fillType: 'gradient',
-                          gradient: cloneGradient(gradient),
-                        }
-                      });
-                    }}
-                    className={cn(
-                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
-                      element.props?.fillType === 'gradient'
-                        ? 'bg-builder-accent text-white' 
-                        : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
-                    )}
-                  >
-                    Gradient
-                  </button>
-                </div>
-              </div>
-              
-              {/* Solid Color - Only show when fillType is explicitly 'solid' */}
-              {element.props?.fillType === 'solid' && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Background</span>
-                  <ColorPickerPopover color={element.styles?.backgroundColor as string || page.settings.primary_color || '#8B5CF6'} onChange={(color) => handleStyleChange('backgroundColor', color)}>
-                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                      <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.styles?.backgroundColor as string || page.settings.primary_color || '#8B5CF6' }} />
-                      <span className="text-xs text-builder-text font-mono">{element.styles?.backgroundColor || page.settings.primary_color || '#8B5CF6'}</span>
-                    </button>
-                  </ColorPickerPopover>
-                </div>
-              )}
-              
-              {/* Gradient */}
-              {element.props?.fillType === 'gradient' && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Gradient</span>
-                  <GradientPickerPopover
-                    value={element.props?.gradient as GradientValue | undefined}
-                    onChange={(gradient) => {
-                      // Clone gradient and store it - CanvasRenderer will convert to CSS
-                      handlePropsChange('gradient', cloneGradient(gradient));
-                    }}
-                  >
-                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                      <div 
-                        className="w-12 h-6 rounded-md border border-builder-border" 
-                        style={{ 
-                          background: element.props?.gradient 
-                            ? gradientToCSS(element.props.gradient as GradientValue) 
-                            : 'linear-gradient(135deg, #8B5CF6, #D946EF)' 
-                        }} 
-                      />
-                      <span className="text-xs text-builder-text-muted">Edit</span>
-                    </button>
-                  </GradientPickerPopover>
-                </div>
-              )}
-              
-              {/* Text Color */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Text Color</span>
-                <ColorPickerPopover color={element.props?.textColor as string || '#ffffff'} onChange={(color) => handlePropsChange('textColor', color)}>
-                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.textColor as string || '#ffffff' }} />
-                    <span className="text-xs text-builder-text font-mono">{(element.props?.textColor as string) || '#ffffff'}</span>
-                  </button>
-                </ColorPickerPopover>
-              </div>
-              
-              {/* Border Radius */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Radius</span>
-                <div className="flex items-center gap-2">
-                  <Slider 
-                    value={[parseInt(element.styles?.borderRadius as string || '12')]}
-                    onValueChange={(v) => handleStyleChange('borderRadius', `${v[0]}px`)}
-                    min={0} max={50} step={2} className="w-20"
-                  />
-                  <span className="text-xs text-builder-text w-10">{element.styles?.borderRadius || '12px'}</span>
-                </div>
-              </div>
-              
-              {/* Icon */}
-              {element.props?.showIcon !== false && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Icon</span>
-                  <ButtonIconPicker 
-                    value={element.props?.iconType as string || 'ArrowRight'} 
-                    onChange={(value) => handlePropsChange('iconType', value)}
-                  />
-                </div>
-              )}
-              
-              {/* Size Preset */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Size</span>
-                <Select value={element.props?.buttonSize as string || 'md'} onValueChange={(value) => handlePropsChange('buttonSize', value)}>
-                  <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Medium" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sm">Small</SelectItem>
-                    <SelectItem value="md">Medium</SelectItem>
-                    <SelectItem value="lg">Large</SelectItem>
-                    <SelectItem value="xl">X-Large</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Width (UNIFIED): Auto / Fixed / Full */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Width</span>
-                <div className="flex items-center gap-1">
-                  <Select 
-                    value={
-                      element.props?.fullWidth === true
-                        ? 'full'
-                        : element.props?.customWidth
-                          ? 'fixed'
-                          : 'auto'
+            <div className="pt-2">
+              <ButtonStyleInspector
+                settings={{
+                  preset: element.props?.buttonPreset as string || 'primary',
+                  fillType: element.props?.fillType as 'outline' | 'solid' | 'gradient' || 'solid',
+                  backgroundColor: element.styles?.backgroundColor as string,
+                  textColor: element.props?.textColor as string,
+                  gradient: element.props?.gradient as GradientValue | undefined,
+                  size: element.props?.buttonSize as string || 'md',
+                  borderRadius: parseInt(element.styles?.borderRadius as string || '12'),
+                  shadow: element.props?.shadow as string || 'lg',
+                  fullWidth: element.props?.fullWidth as boolean ?? false,
+                  customWidth: element.props?.customWidth as number | undefined,
+                  icon: element.props?.iconType as string || 'ArrowRight',
+                  showIcon: element.props?.showIcon as boolean ?? true,
+                }}
+                onChange={(updates) => {
+                  const newProps: Record<string, unknown> = { ...element.props };
+                  const newStyles: Record<string, string> = { ...(element.styles as Record<string, string> || {}) };
+                  
+                  // Map updates to element props/styles
+                  if (updates.preset !== undefined) newProps.buttonPreset = updates.preset;
+                  if (updates.fillType !== undefined) {
+                    newProps.fillType = updates.fillType;
+                    if (updates.fillType === 'outline') {
+                      newStyles.backgroundColor = 'transparent';
+                      newProps.gradient = undefined;
                     }
-                    onValueChange={(value) => {
-                      if (value === 'full') {
-                        onUpdate({
-                          props: { ...element.props, fullWidth: true, customWidth: undefined },
-                          styles: { ...element.styles, width: undefined },
-                        });
-                      } else if (value === 'fixed') {
-                        onUpdate({
-                          props: { ...element.props, fullWidth: false, customWidth: 200 },
-                          styles: { ...element.styles, width: undefined },
-                        });
-                      } else {
-                        onUpdate({
-                          props: { ...element.props, fullWidth: false, customWidth: undefined },
-                          styles: { ...element.styles, width: undefined },
-                        });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="builder-input w-16"><SelectValue placeholder="Auto" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto</SelectItem>
-                      <SelectItem value="fixed">Fixed</SelectItem>
-                      <SelectItem value="full">Full</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {element.props?.customWidth && (
-                    <Input
-                      type="number"
-                      value={element.props.customWidth as number}
-                      onChange={(e) => handlePropsChange('customWidth', parseInt(e.target.value) || 200)}
-                      className="builder-input w-16 text-xs"
-                      min={50}
-                      max={800}
-                    />
-                  )}
-                </div>
-              </div>
-              
-              {/* Shadow */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-builder-text-muted">Shadow</span>
-                <Select value={element.props?.shadow as string || 'lg'} onValueChange={(value) => handlePropsChange('shadow', value)}>
-                  <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Large" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="sm">Subtle</SelectItem>
-                    <SelectItem value="md">Medium</SelectItem>
-                    <SelectItem value="lg">Large</SelectItem>
-                    <SelectItem value="glow">Glow</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  }
+                  if (updates.backgroundColor !== undefined) newStyles.backgroundColor = updates.backgroundColor;
+                  if (updates.textColor !== undefined) newProps.textColor = updates.textColor;
+                  if (updates.gradient !== undefined) newProps.gradient = updates.gradient;
+                  if (updates.size !== undefined) newProps.buttonSize = updates.size;
+                  if (updates.borderRadius !== undefined) newStyles.borderRadius = `${updates.borderRadius}px`;
+                  if (updates.shadow !== undefined) newProps.shadow = updates.shadow;
+                  if (updates.fullWidth !== undefined) newProps.fullWidth = updates.fullWidth;
+                  if (updates.customWidth !== undefined) newProps.customWidth = updates.customWidth;
+                  if (updates.widthMode !== undefined) {
+                    if (updates.widthMode === 'full') {
+                      newProps.fullWidth = true;
+                      newProps.customWidth = undefined;
+                    } else if (updates.widthMode === 'fixed') {
+                      newProps.fullWidth = false;
+                      newProps.customWidth = updates.customWidth || 200;
+                    } else {
+                      newProps.fullWidth = false;
+                      newProps.customWidth = undefined;
+                    }
+                  }
+                  if (updates.icon !== undefined) newProps.iconType = updates.icon;
+                  if (updates.showIcon !== undefined) newProps.showIcon = updates.showIcon;
+                  
+                  onUpdate({ props: newProps, styles: newStyles });
+                }}
+                showPreset
+                showFullWidth
+                showIcon
+                primaryColor={page.settings.primary_color || '#8B5CF6'}
+              />
             </div>
           </CollapsibleSection>
 
