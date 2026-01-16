@@ -751,7 +751,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             )}
             onClick={(e) => handleElementClick(e, step.id, 'description')}
           >
-            <p className="text-sm opacity-70" style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
+            <p className={cn(getDescriptionSizeClass(s.descriptionSize), 'opacity-70')} style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
           </div>
         )}
         <div className="mt-4 space-y-2.5 max-w-md w-full">
@@ -873,7 +873,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           elementId={`step-${step.id}-title`}
         />
         {s.description && (
-          <p className="text-sm mt-2 opacity-60" style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
+          <div 
+            className={cn(
+              'mt-2 cursor-pointer transition-colors duration-150',
+              !isPreviewMode && 'hover:bg-foreground/[0.03] rounded px-1 -mx-1',
+              isElementSelected(step.id, 'description') && 'bg-foreground/[0.06] rounded px-1 -mx-1'
+            )}
+            onClick={(e) => handleElementClick(e, step.id, 'description')}
+          >
+            <p className={cn(getDescriptionSizeClass(s.descriptionSize), 'opacity-60')} style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
+          </div>
         )}
       </div>
     );
