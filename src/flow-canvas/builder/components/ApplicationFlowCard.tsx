@@ -22,7 +22,7 @@ import {
   getInputStyleClass,
 } from '../utils/stepRenderHelpers';
 import { useFlowContainerSafe, buttonActionToIntent } from '../contexts/FlowContainerContext';
-import { FlowButton, presetToVariant } from './FlowButton';
+import { UnifiedButton, presetToVariant } from '@/components/builder/UnifiedButton';
 
 // Convert ApplicationFlowBackground to CSS string
 // Returns 'transparent' when no background is set (respects user intent)
@@ -344,36 +344,31 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             elementId={`step-${stepId}-desc`}
           />
         </div>
-        {/* CTA button – UNIFIED FlowButton component */}
-        <div
-          className={cn(
-            'mt-4 inline-flex cursor-pointer transition-colors duration-150',
-            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
-            isElementSelected(stepId, 'button') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
-          )}
+        {/* CTA button – UNIFIED Button component - NO WRAPPER STYLING */}
+        <UnifiedButton
+          variant={presetToVariant(s.buttonPreset)}
+          fullWidth={s.buttonFullWidth ?? false}
+          size={s.buttonSize || 'md'}
+          radius={s.buttonRadius || 'lg'}
+          backgroundColor={s.buttonColor}
+          textColor={s.buttonTextColor}
           onClick={(e) => {
             if (!isPreviewMode) {
+              e.stopPropagation();
               handleElementClick(e, stepId, 'button');
+            } else {
+              handleButtonClick(e, s);
             }
           }}
-          onPointerDown={(e) => {
-            if (!isPreviewMode) e.stopPropagation();
-          }}
+          isDisabled={isButtonDisabled(s)}
+          className={cn(
+            'mt-4 builder-element-selectable',
+            !isPreviewMode && 'cursor-pointer',
+            isElementSelected(stepId, 'button') && 'ring-2 ring-primary ring-offset-2'
+          )}
         >
-          <FlowButton
-            variant={presetToVariant(s.buttonPreset)}
-            onClick={(e) => {
-              if (isPreviewMode) handleButtonClick(e, s);
-            }}
-            isDisabled={isButtonDisabled(s)}
-            className={cn(
-              'builder-element-selectable',
-              !isPreviewMode && 'pointer-events-none'
-            )}
-          >
-            {s.buttonText || 'Start Application →'}
-          </FlowButton>
-        </div>
+          {s.buttonText || 'Start Application →'}
+        </UnifiedButton>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
           <p className="text-xs mt-2 text-destructive/70" role="alert" aria-live="polite">
@@ -568,36 +563,31 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           </div>
         )}
         
-        {/* Button - UNIFIED FlowButton component */}
-        <div
-          className={cn(
-            'mt-4 inline-flex cursor-pointer transition-colors duration-150',
-            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
-            isElementSelected(step.id, 'button') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
-          )}
+        {/* Button - UNIFIED Button component - NO WRAPPER STYLING */}
+        <UnifiedButton
+          variant={presetToVariant(s.buttonPreset)}
+          fullWidth={s.buttonFullWidth ?? false}
+          size={s.buttonSize || 'md'}
+          radius={s.buttonRadius || 'lg'}
+          backgroundColor={s.buttonColor}
+          textColor={s.buttonTextColor}
           onClick={(e) => {
             if (!isPreviewMode) {
+              e.stopPropagation();
               handleElementClick(e, step.id, 'button');
+            } else {
+              handleButtonClick(e, s);
             }
           }}
-          onPointerDown={(e) => {
-            if (!isPreviewMode) e.stopPropagation();
-          }}
+          isDisabled={isButtonDisabled(s)}
+          className={cn(
+            'mt-4 builder-element-selectable',
+            !isPreviewMode && 'cursor-pointer',
+            isElementSelected(step.id, 'button') && 'ring-2 ring-primary ring-offset-2'
+          )}
         >
-          <FlowButton
-            variant={presetToVariant(s.buttonPreset)}
-            onClick={(e) => {
-              if (isPreviewMode) handleButtonClick(e, s);
-            }}
-            isDisabled={isButtonDisabled(s)}
-            className={cn(
-              'builder-element-selectable',
-              !isPreviewMode && 'pointer-events-none'
-            )}
-          >
-            {s.buttonText || 'Continue'}
-          </FlowButton>
-        </div>
+          {s.buttonText || 'Continue'}
+        </UnifiedButton>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
           <p className="text-xs mt-2 text-destructive/70 text-center" role="alert" aria-live="polite">
@@ -686,36 +676,31 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             </div>
           ))}
         </div>
-        {/* Button - UNIFIED FlowButton component */}
-        <div
-          className={cn(
-            'mt-4 inline-flex cursor-pointer transition-colors duration-150',
-            !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
-            isElementSelected(step.id, 'button') && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
-          )}
+        {/* Button - UNIFIED Button component - NO WRAPPER STYLING */}
+        <UnifiedButton
+          variant={presetToVariant(s.buttonPreset)}
+          fullWidth={s.buttonFullWidth ?? false}
+          size={s.buttonSize || 'md'}
+          radius={s.buttonRadius || 'lg'}
+          backgroundColor={s.buttonColor}
+          textColor={s.buttonTextColor}
           onClick={(e) => {
             if (!isPreviewMode) {
+              e.stopPropagation();
               handleElementClick(e, step.id, 'button');
+            } else {
+              handleButtonClick(e, s);
             }
           }}
-          onPointerDown={(e) => {
-            if (!isPreviewMode) e.stopPropagation();
-          }}
+          isDisabled={isButtonDisabled(s)}
+          className={cn(
+            'mt-4 builder-element-selectable',
+            !isPreviewMode && 'cursor-pointer',
+            isElementSelected(step.id, 'button') && 'ring-2 ring-primary ring-offset-2'
+          )}
         >
-          <FlowButton
-            variant={presetToVariant(s.buttonPreset)}
-            onClick={(e) => {
-              if (isPreviewMode) handleButtonClick(e, s);
-            }}
-            isDisabled={isButtonDisabled(s)}
-            className={cn(
-              'builder-element-selectable',
-              !isPreviewMode && 'pointer-events-none'
-            )}
-          >
-            {s.buttonText || 'Submit'}
-          </FlowButton>
-        </div>
+          {s.buttonText || 'Submit'}
+        </UnifiedButton>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
           <p className="text-xs mt-2 text-destructive/70 text-center" role="alert" aria-live="polite">

@@ -58,15 +58,12 @@ export const DEFAULT_DESIGN: StepDesign = {
 };
 
 // ─────────────────────────────────────────────────────────
-// UNIFIED BUTTON WIDTH SYSTEM - SINGLE SOURCE OF TRUTH
-// Width is controlled by the BUTTON ITSELF, not containers
+// DEPRECATED - Use UnifiedButton component instead
+// This function is kept only for legacy compatibility
+// All new code should import UnifiedButton from @/components/builder/UnifiedButton
 // ─────────────────────────────────────────────────────────
-export function getButtonStyle(design: StepDesign & { buttonFullWidth?: boolean }): React.CSSProperties {
-  return {
-    backgroundColor: design.buttonColor,
-    color: design.buttonTextColor,
-    borderRadius: `${design.borderRadius}px`,
-    // Width control: button is the layout unit
-    width: design.buttonFullWidth ? '100%' : 'fit-content',
-  };
+/** @deprecated Use UnifiedButton component instead */
+export function getButtonStyle(_design: StepDesign & { buttonFullWidth?: boolean }): React.CSSProperties {
+  console.warn('getButtonStyle is deprecated. Use UnifiedButton component instead.');
+  return {};
 }

@@ -227,8 +227,10 @@ export function Paragraph({
 }
 
 // ============================================================================
-// CTA BUTTON - Primary action button with full styling
+// CTA BUTTON - Uses UnifiedButton for consistent rendering
 // ============================================================================
+
+import { UnifiedButton, presetToVariant, sizeToVariant } from '@/components/builder/UnifiedButton';
 
 interface CtaButtonProps {
   label?: string;
@@ -254,32 +256,19 @@ export function CtaButton({
   borderRadius,
   shadow,
 }: CtaButtonProps) {
-  const style: CSSProperties = {};
-  if (backgroundColor && backgroundColor !== 'transparent') style.background = backgroundColor;
-  if (color) style.color = color;
-  if (borderRadius !== undefined) style.borderRadius = `${borderRadius}px`;
-
-  const sizeClasses = {
-    sm: 'py-2.5 px-4 text-sm',
-    default: 'py-3.5 px-6 text-base',
-    lg: 'py-4 px-8 text-lg',
-  };
-
   return (
-    <button
-      type="button"
-      className={cn(
-        'builder-cta-button',
-        `builder-cta-button--${variant}`,
-        sizeClasses[size],
-        fullWidth ? 'w-full' : 'w-auto',
-        getShadowClass(shadow),
-        className
-      )}
-      style={style}
+    <UnifiedButton
+      variant={presetToVariant(variant)}
+      size={sizeToVariant(size)}
+      fullWidth={fullWidth}
+      backgroundColor={backgroundColor}
+      textColor={color}
+      borderRadiusPx={borderRadius}
+      shadow={shadow as any}
+      className={cn('builder-cta-button', className)}
     >
       {label}
-    </button>
+    </UnifiedButton>
   );
 }
 
