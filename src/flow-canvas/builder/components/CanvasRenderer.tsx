@@ -1279,11 +1279,13 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           ? 'none' 
           : (isDarkTheme ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.2)');
 
-        // UNIFIED WIDTH: boolean fullWidth only
+        // UNIFIED WIDTH: fullWidth (boolean) or customWidth (number px)
         // - Full Width = 100%
+        // - Custom Width = Npx
         // - Auto Width = fit-content
-        // Legacy element.styles.width is ignored (and cleared by inspector)
-        const isFullWidth = element.props?.fullWidth === true || element.styles?.width?.toString() === '100%';
+        const isFullWidth = element.props?.fullWidth === true;
+        const customWidth = element.props?.customWidth as number | undefined;
+        const buttonWidth = isFullWidth ? '100%' : customWidth ? `${customWidth}px` : 'fit-content';
         
         // Text color: outline uses foreground, filled uses contrast or user-set
         const buttonTextColor = isNavPill 
@@ -1304,8 +1306,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           backgroundColor: isGradient ? undefined : buttonBg,
           background: buttonGradient,
           color: buttonTextColor,
-          // Width is controlled by the button element itself
-          width: isFullWidth ? '100%' : 'fit-content',
+          // Width is controlled by the button element itself (unified: fullWidth or customWidth)
+          width: buttonWidth,
           // Outline buttons get no shadow; filled buttons can have shadow
           boxShadow: (isOutlineMode || isNavPill || isFooterLink || isGhostButton) 
             ? 'none' 
