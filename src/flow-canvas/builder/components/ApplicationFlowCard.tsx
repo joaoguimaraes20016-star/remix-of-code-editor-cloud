@@ -167,6 +167,42 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   const flowInputBg = settings.inputBackground || '#ffffff';
   const flowInputBorder = settings.inputBorderColor || '#e5e7eb';
   
+  // Helper to get step-level element colors (falls back to flow-level)
+  const getElementColor = (stepSettings: any, key: 'titleColor' | 'descriptionColor') => {
+    return stepSettings[key] || flowTextColor;
+  };
+  
+  // Helper to get option style settings from step
+  const getOptionStyles = (stepSettings: any) => {
+    const style = stepSettings.optionStyle || 'outlined';
+    const radius = stepSettings.optionRadius ?? 8;
+    const selectedBg = stepSettings.optionSelectedBg || '#000000';
+    
+    return {
+      borderRadius: `${radius}px`,
+      // For outlined style: transparent bg, visible border
+      // For filled style: subtle bg, no border
+      // For minimal style: no bg, no border
+      ...(style === 'outlined' && {
+        backgroundColor: flowInputBg,
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: flowInputBorder,
+      }),
+      ...(style === 'filled' && {
+        backgroundColor: flowInputBg,
+        borderWidth: '0',
+      }),
+      ...(style === 'minimal' && {
+        backgroundColor: 'transparent',
+        borderWidth: '0',
+        borderBottom: `1px solid ${flowInputBorder}`,
+      }),
+      // Selected state color is used for hover/active states
+      '--option-selected-bg': selectedBg,
+    } as React.CSSProperties;
+  };
+  
   // Flow behavior settings (logic, not visual)
   const displayMode = settings.displayMode || 'one-at-a-time';
   const showProgress = settings.showProgress ?? false;
@@ -354,7 +390,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             onChange={(content) => updateStepSetting(stepId, 'title', content)}
             placeholder="Apply Now"
             className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
-            style={{ color: flowTextColor }}
+            style={{ color: getElementColor(s, 'titleColor') }}
             elementType="heading"
             elementId={`step-${stepId}-title`}
           />
@@ -373,7 +409,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             onChange={(content) => updateStepSetting(stepId, 'description', content)}
             placeholder="Answer a few quick questions to see if we are a good fit."
             className="text-sm inline-block opacity-70"
-            style={{ color: flowTextColor }}
+            style={{ color: getElementColor(s, 'descriptionColor') }}
             elementType="text"
             elementId={`step-${stepId}-desc`}
           />
@@ -439,7 +475,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             onChange={(content) => updateStepSetting(step.id, 'title', content)}
             placeholder="What's your biggest challenge?"
             className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
-            style={{ color: flowTextColor }}
+            style={{ color: getElementColor(s, 'titleColor') }}
             elementType="heading"
             elementId={`step-${step.id}-title`}
           />
@@ -453,7 +489,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             )}
             onClick={(e) => handleElementClick(e, step.id, 'description')}
           >
-            <p className="text-sm opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
+            <p className="text-sm opacity-70" style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
           </div>
         )}
         
@@ -465,13 +501,11 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 key={i} 
                 className={cn(
                   'px-3.5 py-2.5 text-left text-sm cursor-pointer transition-colors duration-150',
-                  inputStyleClass,
-                  !isPreviewMode && 'hover:bg-foreground/[0.03]',
-                  isElementSelected(step.id, 'option', i) && 'bg-foreground/[0.06]'
+                  !isPreviewMode && 'hover:opacity-80',
+                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-1'
                 )}
                 style={{ 
-                  backgroundColor: flowInputBg, 
-                  borderColor: flowInputBorder,
+                  ...getOptionStyles(s),
                   color: flowTextColor 
                 }}
                 onClick={(e) => handleElementClick(e, step.id, 'option', i)}
@@ -583,13 +617,11 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 key={option} 
                 className={cn(
                   'px-3.5 py-2.5 text-left text-sm cursor-pointer transition-colors duration-150',
-                  inputStyleClass,
-                  !isPreviewMode && 'hover:bg-foreground/[0.03]',
-                  isElementSelected(step.id, 'option', i) && 'bg-foreground/[0.06]'
+                  !isPreviewMode && 'hover:opacity-80',
+                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-1'
                 )}
                 style={{ 
-                  backgroundColor: flowInputBg, 
-                  borderColor: flowInputBorder,
+                  ...getOptionStyles(s),
                   color: flowTextColor 
                 }}
                 onClick={(e) => handleElementClick(e, step.id, 'option', i)}
@@ -672,7 +704,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             onChange={(content) => updateStepSetting(step.id, 'title', content)}
             placeholder="Where should we send your results?"
             className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
-            style={{ color: flowTextColor }}
+            style={{ color: getElementColor(s, 'titleColor') }}
             elementType="heading"
             elementId={`step-${step.id}-title`}
           />
@@ -686,7 +718,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             )}
             onClick={(e) => handleElementClick(e, step.id, 'description')}
           >
-            <p className="text-sm opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
+            <p className="text-sm opacity-70" style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
           </div>
         )}
         <div className="mt-4 space-y-2 max-w-md w-full">
@@ -767,12 +799,12 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
           placeholder="Thanks for applying!"
           className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
-          style={{ color: flowTextColor }}
+          style={{ color: getElementColor(s, 'titleColor') }}
           elementType="heading"
           elementId={`step-${step.id}-title`}
         />
         {s.description && (
-          <p className="text-sm mt-2 opacity-60" style={{ color: flowTextColor }}>{s.description}</p>
+          <p className="text-sm mt-2 opacity-60" style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
         )}
       </div>
     );

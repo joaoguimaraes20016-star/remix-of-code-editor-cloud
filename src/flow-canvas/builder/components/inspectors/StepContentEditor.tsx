@@ -28,8 +28,6 @@ import {
   getAlignClass,
   getSpacingClass,
   getInputStyleClass,
-  getButtonClasses,
-  getButtonStyle,
   getDefaultTitle,
   getDefaultButtonText,
 } from '../../utils/stepRenderHelpers';

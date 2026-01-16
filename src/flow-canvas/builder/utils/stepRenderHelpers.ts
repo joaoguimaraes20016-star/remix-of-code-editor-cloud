@@ -4,32 +4,9 @@
 import { ApplicationFlowStep, ApplicationFlowStepSettings } from '../../types/infostack';
 
 // ─────────────────────────────────────────────────────────
-// BUTTON SYSTEM - DEPRECATED
-// All button rendering now uses UnifiedButton from @/components/builder/UnifiedButton
-// These legacy helpers are kept only for backwards compatibility
-// DO NOT USE IN NEW CODE
+// BUTTON SYSTEM - All button rendering uses UnifiedButton
+// See: @/components/builder/UnifiedButton
 // ─────────────────────────────────────────────────────────
-
-/** @deprecated Use UnifiedButton component from @/components/builder/UnifiedButton */
-export type ButtonPreset = 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient';
-
-/** @deprecated Use UnifiedButton component - this function returns empty */
-export const getButtonPresetClasses = (_preset: ButtonPreset = 'primary'): string => {
-  console.warn('getButtonPresetClasses is deprecated. Use UnifiedButton component instead.');
-  return '';
-};
-
-/** @deprecated Use UnifiedButton component - this function returns empty */
-export const getButtonClasses = (_settings: Partial<ApplicationFlowStepSettings>): string => {
-  console.warn('getButtonClasses is deprecated. Use UnifiedButton component instead.');
-  return '';
-};
-
-/** @deprecated Use UnifiedButton component - this function returns empty */
-export const getButtonStyle = (_settings: Partial<ApplicationFlowStepSettings>): React.CSSProperties => {
-  console.warn('getButtonStyle is deprecated. Use UnifiedButton component instead.');
-  return {};
-};
 
 // ─────────────────────────────────────────────────────────
 // Style helpers - map settings to Tailwind classes
@@ -42,6 +19,7 @@ export const getTitleSizeClass = (size?: string): string => {
     lg: 'text-lg',
     xl: 'text-xl',
     '2xl': 'text-2xl',
+    '3xl': 'text-3xl',
   };
   return sizes[size || 'xl'] || 'text-xl';
 };

@@ -58,12 +58,6 @@ export const DEFAULT_DESIGN: StepDesign = {
 };
 
 // ─────────────────────────────────────────────────────────
-// DEPRECATED - Use UnifiedButton component instead
-// This function is kept only for legacy compatibility
-// All new code should import UnifiedButton from @/components/builder/UnifiedButton
+// NOTE: getButtonStyle has been removed
+// All button rendering now uses UnifiedButton from @/components/builder/UnifiedButton
 // ─────────────────────────────────────────────────────────
-/** @deprecated Use UnifiedButton component instead */
-export function getButtonStyle(_design: StepDesign & { buttonFullWidth?: boolean }): React.CSSProperties {
-  console.warn('getButtonStyle is deprecated. Use UnifiedButton component instead.');
-  return {};
-}
