@@ -30,6 +30,10 @@ import {
   AlignCenter,
   AlignRight,
   Eye,
+  ListChecks,
+  Plus,
+  Trash2,
+  GripVertical,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -123,6 +127,9 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
   const textElement = elements.find(el => el.type === 'text' && el.id !== headingElement?.id);
   const inputElement = elements.find(el => el.type === 'input');
   const buttonElement = elements.find(el => el.type === 'button');
+  // Find all checkbox elements (for multi-choice blocks)
+  const checkboxElements = elements.filter(el => el.type === 'checkbox');
+  const isMultiChoiceBlock = checkboxElements.length > 0;
   
   // Get block props for styling
   const blockProps = block.props || {};
@@ -160,6 +167,35 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
     onUpdateBlock({ 
       styles: { ...currentStyles, ...styleUpdates } as Record<string, string>
     });
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // MULTI-CHOICE OPTION MANAGEMENT (matches StepContentEditor pattern)
+  // ═══════════════════════════════════════════════════════════════
+  
+  const addCheckboxOption = () => {
+    const newCheckbox: Element = {
+      id: `checkbox-${Date.now()}`,
+      type: 'checkbox',
+      content: `Option ${checkboxElements.length + 1}`,
+      props: {},
+      styles: {},
+    };
+    onUpdateBlock({ elements: [...elements, newCheckbox] });
+  };
+
+  const updateCheckboxContent = (elementId: string, content: string) => {
+    const newElements = elements.map(el =>
+      el.id === elementId ? { ...el, content } : el
+    );
+    onUpdateBlock({ elements: newElements });
+  };
+
+  const removeCheckboxOption = (elementId: string) => {
+    if (checkboxElements.length > 1) {
+      const newElements = elements.filter(el => el.id !== elementId);
+      onUpdateBlock({ elements: newElements });
+    }
   };
 
   // Get input type and properties
@@ -278,6 +314,49 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
             </FieldGroup>
           )}
         </CollapsibleSection>
+
+        {/* Options Section - for multi-choice blocks with checkbox elements */}
+        {isMultiChoiceBlock && (
+          <CollapsibleSection title="Options" icon={<ListChecks className="w-3.5 h-3.5" />} defaultOpen>
+            <div className="space-y-1.5">
+              {checkboxElements.map((checkbox, index) => (
+                <div key={checkbox.id} className="flex items-center gap-1.5 group">
+                  <div 
+                    className="w-3 h-3 text-builder-text-dim opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0"
+                    title="Drag to reorder"
+                  >
+                    <GripVertical className="w-3 h-3" />
+                  </div>
+                  <Input
+                    value={checkbox.content || ''}
+                    onChange={(e) => updateCheckboxContent(checkbox.id, e.target.value)}
+                    className="h-7 text-xs bg-background border-border flex-1"
+                    placeholder={`Option ${index + 1}`}
+                  />
+                  <button
+                    onClick={() => removeCheckboxOption(checkbox.id)}
+                    disabled={checkboxElements.length <= 1}
+                    className={cn(
+                      "p-1 rounded transition-all",
+                      checkboxElements.length <= 1 
+                        ? "opacity-30 cursor-not-allowed"
+                        : "hover:bg-destructive/10 text-builder-text-dim hover:text-destructive opacity-0 group-hover:opacity-100"
+                    )}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={addCheckboxOption}
+              className="flex items-center gap-1.5 text-[10px] text-builder-text-muted hover:text-builder-text mt-2"
+            >
+              <Plus className="w-3 h-3" />
+              Add Option
+            </button>
+          </CollapsibleSection>
+        )}
 
         {/* Input Settings Section */}
         {inputElement && (
