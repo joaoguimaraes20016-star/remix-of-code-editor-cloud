@@ -96,8 +96,15 @@ interface FlowContainerContextValue {
    */
   canProgress: CanProgressState;
   
-  /** Derived: Why progression is blocked (for debugging, not displayed yet) */
+  /** Derived: Why progression is blocked (current computed reason) */
   blockedReason: string | undefined;
+  
+  /**
+   * Last blocked reason from a rejected intent.
+   * UI MAY display this to explain why an action was rejected.
+   * Cleared when a successful intent is executed.
+   */
+  lastBlockedReason: string | null;
   
   /** 
    * Derived: Which steps are visible (step IDs only)
@@ -132,6 +139,9 @@ interface FlowContainerContextValue {
   // Form value collection
   setFormValue: (key: string, value: unknown) => void;
   clearFormValues: () => void;
+  
+  /** Clear the last blocked reason (for UI cleanup) */
+  clearLastBlockedReason: () => void;
 }
 
 const FlowContainerContext = createContext<FlowContainerContextValue | null>(null);
@@ -175,6 +185,7 @@ export function FlowContainerProvider({
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [rules, setRulesState] = useState<Rule[]>(initialRules);
   const [lastIntentResult, setLastIntentResult] = useState<IntentResult | null>(null);
+  const [lastBlockedReason, setLastBlockedReason] = useState<string | null>(null);
   
   // Derived state
   const currentStepIndex = useMemo(() => {
@@ -229,8 +240,41 @@ export function FlowContainerProvider({
     goToStep: evaluation.progression.canGoToStep,
   }), [evaluation.progression]);
   
-  // Blocked reason for debugging (not displayed yet - Phase 6)
+  // Blocked reason for UI feedback
   const blockedReason = evaluation.progression.nextBlockedReason;
+  
+  // ====== AUTO-CORRECTION: Current step becomes invisible ======
+  // If the current step is no longer visible, auto-correct to the next/prev visible step.
+  // FlowContainer handles this - UI never decides.
+  useEffect(() => {
+    if (!currentStepId || visibleSteps.length === 0) return;
+    
+    // Check if current step is still visible
+    if (visibleSteps.includes(currentStepId)) return;
+    
+    // Current step is invisible - find the next visible step
+    const currentIndex = steps.findIndex(s => s.id === currentStepId);
+    
+    // Try forward first
+    for (let i = currentIndex + 1; i < steps.length; i++) {
+      if (visibleSteps.includes(steps[i].id)) {
+        setCurrentStepIdState(steps[i].id);
+        onStepChange?.(steps[i].id, visibleSteps.indexOf(steps[i].id));
+        return;
+      }
+    }
+    
+    // Try backward
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (visibleSteps.includes(steps[i].id)) {
+        setCurrentStepIdState(steps[i].id);
+        onStepChange?.(steps[i].id, visibleSteps.indexOf(steps[i].id));
+        return;
+      }
+    }
+    
+    // No visible steps found - stay on current (edge case)
+  }, [currentStepId, visibleSteps, steps, onStepChange]);
   
   // Set current step with callback
   const setCurrentStepId = useCallback((stepId: string) => {
@@ -269,6 +313,11 @@ export function FlowContainerProvider({
     setFormValues({});
   }, []);
   
+  // Clear last blocked reason (for UI cleanup)
+  const clearLastBlockedReason = useCallback(() => {
+    setLastBlockedReason(null);
+  }, []);
+  
   // CRITICAL: Intent handler - ALL progression logic lives here
   // This is the SOLE AUTHORITY for step progression. No fallbacks exist.
   // NEVER returns void - always returns IntentResult
@@ -276,9 +325,16 @@ export function FlowContainerProvider({
     const createResult = (executed: boolean, blockedReason?: string): IntentResult => {
       const result: IntentResult = { executed, blockedReason, intent };
       setLastIntentResult(result);
+      
+      // Track blocked reason for UI feedback
       if (!executed && blockedReason) {
+        setLastBlockedReason(blockedReason);
         onIntentRejected?.(intent, blockedReason);
+      } else if (executed) {
+        // Clear blocked reason on successful intent
+        setLastBlockedReason(null);
       }
+      
       return result;
     };
     
@@ -453,6 +509,7 @@ export function FlowContainerProvider({
     evaluation,
     canProgress,
     blockedReason,
+    lastBlockedReason,
     visibleSteps,
     validationErrors,
     isValid,
@@ -465,6 +522,7 @@ export function FlowContainerProvider({
     setRules,
     setFormValue,
     clearFormValues,
+    clearLastBlockedReason,
   }), [
     steps,
     currentStepId,
@@ -477,6 +535,7 @@ export function FlowContainerProvider({
     evaluation,
     canProgress,
     blockedReason,
+    lastBlockedReason,
     visibleSteps,
     validationErrors,
     isValid,
@@ -487,6 +546,7 @@ export function FlowContainerProvider({
     setRules,
     setFormValue,
     clearFormValues,
+    clearLastBlockedReason,
   ]);
   
   return (

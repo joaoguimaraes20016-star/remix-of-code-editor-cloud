@@ -151,6 +151,39 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     }
   };
 
+  /**
+   * Get the blocked reason to display near buttons.
+   * Only shown when there's a recent blocked intent.
+   */
+  const getBlockedReasonDisplay = (): string | null => {
+    if (!isPreviewMode || !flowContainer) return null;
+    return flowContainer.lastBlockedReason || null;
+  };
+
+  /**
+   * Check if a step navigation dot should be disabled.
+   * Uses FlowContainer's canProgress.goToStep state.
+   */
+  const isStepNavDisabled = (stepId: string): boolean => {
+    if (!isPreviewMode || !flowContainer) return false;
+    // Check if step is in visible steps
+    if (!flowContainer.visibleSteps.includes(stepId)) return true;
+    // Check if go-to-step is allowed
+    return flowContainer.canProgress.goToStep[stepId] === false;
+  };
+
+  /**
+   * Get filtered visible steps for navigation.
+   * Only render steps that are in FlowContainer's visibleSteps.
+   */
+  const getVisibleStepsForNav = () => {
+    if (!flowContainer || !isPreviewMode) {
+      // In edit mode, show all steps
+      return steps;
+    }
+    return steps.filter(step => flowContainer.visibleSteps.includes(step.id));
+  };
+
   // ─────────────────────────────────────────────────────────
   // Render "welcome" step using step.settings (single source of truth)
   // ─────────────────────────────────────────────────────────
@@ -208,6 +241,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               elementId={`step-${stepId}-btn`}
             />
           </span>
+          {/* Blocked reason display - only shown when there's a recent blocked intent */}
+          {isButtonDisabled(s) && getBlockedReasonDisplay() && (
+            <p 
+              className="text-xs mt-2 text-destructive/80"
+              role="alert"
+              aria-live="polite"
+            >
+              {getBlockedReasonDisplay()}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -361,19 +404,31 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           </div>
         )}
         
-        <span 
-          className={cn(
-            getButtonClasses(s), 
-            'mt-6', 
-            isPreviewMode && 'cursor-pointer',
-            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+        <div className="flex flex-col items-center">
+          <span 
+            className={cn(
+              getButtonClasses(s), 
+              'mt-6', 
+              isPreviewMode && 'cursor-pointer',
+              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            )}
+            style={getButtonStyle(s)}
+            onClick={(e) => handleButtonClick(e, s)}
+            aria-disabled={isButtonDisabled(s)}
+          >
+            {s.buttonText || 'Continue'}
+          </span>
+          {/* Blocked reason display */}
+          {isButtonDisabled(s) && getBlockedReasonDisplay() && (
+            <p 
+              className="text-xs mt-2 text-destructive/80"
+              role="alert"
+              aria-live="polite"
+            >
+              {getBlockedReasonDisplay()}
+            </p>
           )}
-          style={getButtonStyle(s)}
-          onClick={(e) => handleButtonClick(e, s)}
-          aria-disabled={isButtonDisabled(s)}
-        >
-          {s.buttonText || 'Continue'}
-        </span>
+        </div>
       </div>
     );
   };
@@ -457,19 +512,31 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             />
           )}
         </div>
-        <span 
-          className={cn(
-            getButtonClasses(s), 
-            'mt-6', 
-            isPreviewMode && 'cursor-pointer',
-            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+        <div className="flex flex-col items-center">
+          <span 
+            className={cn(
+              getButtonClasses(s), 
+              'mt-6', 
+              isPreviewMode && 'cursor-pointer',
+              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            )}
+            style={getButtonStyle(s)}
+            onClick={(e) => handleButtonClick(e, s)}
+            aria-disabled={isButtonDisabled(s)}
+          >
+            {s.buttonText || 'Submit'}
+          </span>
+          {/* Blocked reason display */}
+          {isButtonDisabled(s) && getBlockedReasonDisplay() && (
+            <p 
+              className="text-xs mt-2 text-destructive/80"
+              role="alert"
+              aria-live="polite"
+            >
+              {getBlockedReasonDisplay()}
+            </p>
           )}
-          style={getButtonStyle(s)}
-          onClick={(e) => handleButtonClick(e, s)}
-          aria-disabled={isButtonDisabled(s)}
-        >
-          {s.buttonText || 'Submit'}
-        </span>
+        </div>
       </div>
     );
   };
@@ -561,34 +628,51 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {renderStepContent()}
       </div>
       
-      {/* Step navigation bar - shows all steps for quick switching */}
-      {steps.length > 1 && (
-        <div 
-          className="flex items-center justify-center gap-1 px-4 py-2 flex-wrap"
-          style={{ 
-            borderTop: `1px solid ${flowInputBorder}`,
-          }}
-        >
-          {steps.map((step, index) => (
-            <button
-              key={step.id}
-              onClick={(e) => {
-                handleStepClick(e, step.id);
-              }}
-              title={step.name}
-              className={cn(
-                'w-6 h-6 rounded-full text-[10px] font-medium transition-all',
-                selectedStepId === step.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted hover:bg-muted-foreground/20'
-              )}
-              style={{ color: selectedStepId === step.id ? undefined : flowTextColor }}
-            >
-              {index + 1}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Step navigation bar - shows ONLY visible steps for quick switching */}
+      {(() => {
+        const visibleNavSteps = getVisibleStepsForNav();
+        if (visibleNavSteps.length <= 1) return null;
+        
+        return (
+          <div 
+            className="flex items-center justify-center gap-1 px-4 py-2 flex-wrap"
+            style={{ 
+              borderTop: `1px solid ${flowInputBorder}`,
+            }}
+          >
+            {visibleNavSteps.map((step, index) => {
+              const isDisabled = isStepNavDisabled(step.id);
+              const isCurrent = selectedStepId === step.id;
+              
+              return (
+                <button
+                  key={step.id}
+                  onClick={(e) => {
+                    if (!isDisabled) {
+                      handleStepClick(e, step.id);
+                    }
+                  }}
+                  disabled={isDisabled}
+                  aria-disabled={isDisabled}
+                  aria-current={isCurrent ? 'step' : undefined}
+                  title={step.name}
+                  className={cn(
+                    'w-6 h-6 rounded-full text-[10px] font-medium transition-all',
+                    isCurrent
+                      ? 'bg-primary text-primary-foreground'
+                      : isDisabled
+                        ? 'bg-muted/50 cursor-not-allowed opacity-50'
+                        : 'bg-muted hover:bg-muted-foreground/20 cursor-pointer'
+                  )}
+                  style={{ color: isCurrent ? undefined : flowTextColor }}
+                >
+                  {index + 1}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 };
