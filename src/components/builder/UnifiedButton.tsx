@@ -133,8 +133,10 @@ export const UnifiedButton = React.forwardRef<HTMLButtonElement, UnifiedButtonPr
     // Build custom inline styles - these override variant defaults
     const customStyle: React.CSSProperties = {
       ...style,
-      // Width control: EXPLICIT - no implicit logic
-      width: fullWidth ? '100%' : 'auto',
+      // Width control: EXPLICIT
+      // - fullWidth=true  -> 100%
+      // - fullWidth=false -> respect an explicit style.width if provided, otherwise auto
+      width: fullWidth ? '100%' : (style?.width ?? 'auto'),
       // Custom background (solid or gradient)
       ...(gradient ? { background: gradient } : {}),
       ...(backgroundColor && !gradient ? { backgroundColor } : {}),

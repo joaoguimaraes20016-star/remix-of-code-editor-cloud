@@ -38,26 +38,46 @@ import {
 import { useFlowContainerSafe, buttonActionToIntent } from '../contexts/FlowContainerContext';
 import { UnifiedButton, presetToVariant } from '@/components/builder/UnifiedButton';
 import { StepLayout, FlowShell, type StepLayoutStyle } from './StepLayout';
+import { gradientToCSS } from '../utils/gradientHelpers';
+import { getButtonIconComponent } from './ButtonIconPicker';
 
 // Convert ApplicationFlowBackground to CSS string
 // Returns 'transparent' when no background is set (respects user intent)
 const backgroundToCSS = (bg?: ApplicationFlowBackground): string | undefined => {
   if (!bg) return undefined; // No default - let preset or user decide
-  
+
   switch (bg.type) {
     case 'solid':
       return bg.color || undefined;
     case 'gradient':
-      if (!bg.gradient) return undefined;
-      const stops = bg.gradient.stops.map(s => `${s.color} ${s.position}%`).join(', ');
-      return bg.gradient.type === 'radial' 
-        ? `radial-gradient(circle, ${stops})`
-        : `linear-gradient(${bg.gradient.angle}deg, ${stops})`;
+      return bg.gradient ? gradientToCSS(bg.gradient as any) : undefined;
     case 'image':
       return bg.imageUrl ? `url(${bg.imageUrl}) center/cover no-repeat` : undefined;
     default:
       return undefined;
   }
+};
+
+// Flow button settings currently store gradients as GradientValue objects (from the editor UI)
+// but UnifiedButton expects a CSS gradient string. Normalize here.
+const buttonGradientToCSS = (value: unknown): string | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    const g = value as any;
+    if (g?.stops && Array.isArray(g.stops)) return gradientToCSS(g);
+  }
+  return undefined;
+};
+
+const buttonWidthStyle = (s: any): React.CSSProperties | undefined => {
+  const w = s?.buttonCustomWidth;
+  const full = s?.buttonFullWidth ?? false;
+  if (full) return undefined;
+  if (typeof w === 'number' && Number.isFinite(w) && w > 0) {
+    return { width: `${w}px` };
+  }
+  return undefined;
 };
 
 // Step element types that can be selected
@@ -428,8 +448,10 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
           backgroundColor={s.buttonColor}
           textColor={s.buttonTextColor}
-          gradient={s.buttonGradient}
+          gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}
+          icon={s.buttonIcon ? getButtonIconComponent(s.buttonIcon) : undefined}
+          style={buttonWidthStyle(s)}
           onClick={(e) => {
             if (!isPreviewMode) {
               e.stopPropagation();
@@ -666,8 +688,10 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
           backgroundColor={s.buttonColor}
           textColor={s.buttonTextColor}
-          gradient={s.buttonGradient}
+          gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}
+          icon={s.buttonIcon ? getButtonIconComponent(s.buttonIcon) : undefined}
+          style={buttonWidthStyle(s)}
           onClick={(e) => {
             if (!isPreviewMode) {
               e.stopPropagation();
@@ -842,8 +866,10 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
           backgroundColor={s.buttonColor}
           textColor={s.buttonTextColor}
-          gradient={s.buttonGradient}
+          gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}
+          icon={s.buttonIcon ? getButtonIconComponent(s.buttonIcon) : undefined}
+          style={buttonWidthStyle(s)}
           onClick={(e) => {
             if (!isPreviewMode) {
               e.stopPropagation();
