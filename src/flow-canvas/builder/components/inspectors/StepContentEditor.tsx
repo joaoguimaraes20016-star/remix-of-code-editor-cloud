@@ -126,28 +126,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Header with Back Button */}
-      <div className="px-3 py-2.5 border-b border-border">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          Back to Steps
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-muted-foreground">
-            {stepTypeIcons[step.type]}
-          </div>
-          <Input
-            value={step.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            className="h-7 text-sm font-medium bg-transparent border-transparent hover:border-border focus:border-border px-1"
-          />
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-border">
         {(['content', 'style', 'logic'] as const).map((tab) => (
