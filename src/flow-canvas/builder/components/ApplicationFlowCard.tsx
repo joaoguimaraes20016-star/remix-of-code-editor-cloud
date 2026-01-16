@@ -1,3 +1,16 @@
+/**
+ * ApplicationFlowCard - Visual renderer for flow steps
+ * 
+ * ARCHITECTURE: This component ONLY handles rendering.
+ * It uses SHARED components (FlowButton, InlineTextEditor) - no flow-specific UI.
+ * 
+ * FlowContainer (context) owns all behavioral decisions.
+ * This component reads state from FlowContainer and renders accordingly.
+ * 
+ * EDITOR MODE: All elements are editable, flow restrictions are visual only
+ * RUNTIME MODE: Flow rules enforced, real progression enabled
+ */
+
 import React from 'react';
 import { Block, ApplicationFlowSettings, ApplicationFlowStep, ApplicationFlowBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';

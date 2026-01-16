@@ -1,17 +1,42 @@
 /**
  * FlowContainer Context
  * 
- * SINGLE SOURCE OF TRUTH for all step/flow progression in the builder.
+ * ARCHITECTURE: "Flow is behavior, not structure"
  * 
- * This context ALONE may:
- * - Track current step index
- * - Decide when "Next Step" is allowed
- * - Decide when "Submit" fires
- * - Own step order
- * - Own form state submission
- * - OWN AND EVALUATE RULES
+ * ═══════════════════════════════════════════════════════════════
+ * FLOW CONTAINER OWNS (runtime behavior):
+ * ═══════════════════════════════════════════════════════════════
+ * ✓ Step order and progression
+ * ✓ Validation rules
+ * ✓ Form state collection
+ * ✓ Current step tracking
+ * ✓ Rule evaluation
  * 
- * Buttons and blocks ONLY emit intent. They do NOT execute logic.
+ * ═══════════════════════════════════════════════════════════════
+ * FLOW CONTAINER DOES NOT OWN (visual/editing):
+ * ═══════════════════════════════════════════════════════════════
+ * ✗ Layout and spacing
+ * ✗ Button appearance (uses shared FlowButton)
+ * ✗ Text styling (uses shared InlineTextEditor)
+ * ✗ Colors, fonts, backgrounds
+ * 
+ * ═══════════════════════════════════════════════════════════════
+ * MODE BEHAVIOR:
+ * ═══════════════════════════════════════════════════════════════
+ * EDITOR MODE (isPreviewMode=false):
+ *   - All elements remain editable
+ *   - Flow progression is visually indicated but not enforced
+ *   - Selection/editing takes precedence over flow actions
+ * 
+ * RUNTIME MODE (isPreviewMode=true):
+ *   - Flow rules are enforced
+ *   - Buttons trigger real progression
+ *   - Validation gates are active
+ * 
+ * ═══════════════════════════════════════════════════════════════
+ * INTENT PATTERN:
+ * ═══════════════════════════════════════════════════════════════
+ * Buttons EMIT intent → FlowContainer DECIDES → Result returned
  * Components RENDER. FlowContainer DECIDES. Rules EVALUATE.
  */
 
