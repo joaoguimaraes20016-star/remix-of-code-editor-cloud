@@ -25,22 +25,23 @@ import { useFlowContainerSafe, buttonActionToIntent } from '../contexts/FlowCont
 import { FlowButton, presetToVariant } from './FlowButton';
 
 // Convert ApplicationFlowBackground to CSS string
-const backgroundToCSS = (bg?: ApplicationFlowBackground): string => {
-  if (!bg) return '#ffffff';
+// Returns 'transparent' when no background is set (respects user intent)
+const backgroundToCSS = (bg?: ApplicationFlowBackground): string | undefined => {
+  if (!bg) return undefined; // No default - let preset or user decide
   
   switch (bg.type) {
     case 'solid':
-      return bg.color || '#ffffff';
+      return bg.color || undefined;
     case 'gradient':
-      if (!bg.gradient) return '#ffffff';
+      if (!bg.gradient) return undefined;
       const stops = bg.gradient.stops.map(s => `${s.color} ${s.position}%`).join(', ');
       return bg.gradient.type === 'radial' 
         ? `radial-gradient(circle, ${stops})`
         : `linear-gradient(${bg.gradient.angle}deg, ${stops})`;
     case 'image':
-      return bg.imageUrl ? `url(${bg.imageUrl}) center/cover no-repeat` : '#ffffff';
+      return bg.imageUrl ? `url(${bg.imageUrl}) center/cover no-repeat` : undefined;
     default:
-      return '#ffffff';
+      return undefined;
   }
 };
 

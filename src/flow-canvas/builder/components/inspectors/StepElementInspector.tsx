@@ -166,9 +166,9 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
               <SelectItem value="sm">Small</SelectItem>
               <SelectItem value="md">Medium</SelectItem>
               <SelectItem value="lg">Large</SelectItem>
-              <SelectItem value="xl">Extra Large</SelectItem>
-              <SelectItem value="2xl">2XL</SelectItem>
-              <SelectItem value="3xl">3XL</SelectItem>
+              <SelectItem value="xl">X-Large</SelectItem>
+              <SelectItem value="2xl">Huge</SelectItem>
+              <SelectItem value="3xl">Giant</SelectItem>
             </SelectContent>
           </Select>
         </FieldGroup>
@@ -474,8 +474,8 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           </FieldGroup>
         </CollapsibleSection>
         
-        <CollapsibleSection title="Input Type" icon={<TextCursor className="w-3.5 h-3.5" />} defaultOpen>
-          <FieldGroup label="Type">
+        <CollapsibleSection title="Field" icon={<TextCursor className="w-3.5 h-3.5" />} defaultOpen>
+          <FieldGroup label="Accepts">
             <Select
               value={field.type || stepSettings.inputType || 'text'}
               onValueChange={(value) => {
@@ -490,12 +490,12 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="phone">Phone</SelectItem>
+                <SelectItem value="text">Short Text</SelectItem>
+                <SelectItem value="email">Email Address</SelectItem>
+                <SelectItem value="phone">Phone Number</SelectItem>
                 <SelectItem value="number">Number</SelectItem>
-                <SelectItem value="textarea">Long Text</SelectItem>
-                <SelectItem value="url">URL</SelectItem>
+                <SelectItem value="textarea">Paragraph</SelectItem>
+                <SelectItem value="url">Website</SelectItem>
               </SelectContent>
             </Select>
           </FieldGroup>
