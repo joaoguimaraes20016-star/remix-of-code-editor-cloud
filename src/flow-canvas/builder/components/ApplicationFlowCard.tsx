@@ -1,14 +1,23 @@
 /**
  * ApplicationFlowCard - Visual renderer for flow steps
  * 
- * ARCHITECTURE: This component ONLY handles rendering.
- * It uses SHARED components (FlowButton, InlineTextEditor) - no flow-specific UI.
+ * ARCHITECTURE REFACTORED:
+ * ═══════════════════════════════════════════════════════════════
+ * FLOW CONTAINER IS INVISIBLE
+ * ═══════════════════════════════════════════════════════════════
+ * - FlowContainer provides BEHAVIOR ONLY (via context)
+ * - This component renders through StepLayout (VISUAL ONLY)
+ * - No visual styling exists at the FlowContainer level
  * 
- * FlowContainer (context) owns all behavioral decisions.
- * This component reads state from FlowContainer and renders accordingly.
+ * SEPARATION OF CONCERNS:
+ * - FlowContainerContext → logic (currentStep, validation, progression)
+ * - StepLayout → visual (padding, background, shadow, spacing)
+ * - UnifiedButton → button rendering (consistent everywhere)
  * 
- * EDITOR MODE: All elements are editable, flow restrictions are visual only
- * RUNTIME MODE: Flow rules enforced, real progression enabled
+ * EDITING BEHAVIOR:
+ * - Clicking button → selects BUTTON (not step, not container)
+ * - Clicking text → selects TEXT
+ * - Clicking empty space → selects STEP
  */
 
 import React from 'react';
@@ -23,6 +32,7 @@ import {
 } from '../utils/stepRenderHelpers';
 import { useFlowContainerSafe, buttonActionToIntent } from '../contexts/FlowContainerContext';
 import { UnifiedButton, presetToVariant } from '@/components/builder/UnifiedButton';
+import { StepLayout, FlowShell, type StepLayoutStyle } from './StepLayout';
 
 // Convert ApplicationFlowBackground to CSS string
 // Returns 'transparent' when no background is set (respects user intent)
@@ -96,50 +106,74 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   const flowContainer = useFlowContainerSafe();
   
   // ═══════════════════════════════════════════════════════════════
-  // CONTAINER STYLING - Preset-based with full user override support
+  // STEP LAYOUT STYLING - Owned by StepLayout, NOT FlowContainer
+  // FlowContainer is INVISIBLE - only provides behavior
   // ═══════════════════════════════════════════════════════════════
   
   // Design preset determines default styling (user can override everything)
-  const designPreset = settings.designPreset || 'minimal';
+  const designPreset = settings.designPreset || 'none'; // Default to invisible
   
-  // Background (solid, gradient, or image)
-  const flowBackground = settings.background;
+  // Build StepLayoutStyle from settings - this is passed to StepLayout
+  // FlowContainer itself applies NO styling
+  const stepLayoutStyle: StepLayoutStyle = {
+    // Background - only if user explicitly sets it
+    background: settings.background ? backgroundToCSS(settings.background) : undefined,
+    
+    // Text color
+    textColor: settings.textColor,
+    
+    // Dimensions - only apply if user sets them OR preset requires
+    padding: settings.containerPadding ?? (
+      designPreset === 'card' ? 32 : 
+      designPreset === 'glass' ? 24 : 
+      designPreset === 'full-bleed' ? 48 :
+      undefined // No padding by default - invisible
+    ),
+    maxWidth: settings.contentWidth ? ({
+      'sm': '400px',
+      'md': '600px', 
+      'lg': '800px',
+      'full': '100%',
+    }[settings.contentWidth]) : undefined,
+    
+    // Border - only if preset or user sets it
+    borderRadius: settings.containerRadius ?? (
+      designPreset === 'card' ? 16 : 
+      designPreset === 'glass' ? 20 : 
+      undefined
+    ),
+    borderColor: settings.containerBorderColor ?? (
+      designPreset === 'card' ? 'rgba(0,0,0,0.08)' : 
+      designPreset === 'glass' ? 'rgba(255,255,255,0.2)' : 
+      undefined
+    ),
+    
+    // Shadow - only if preset or user sets it
+    shadow: (settings.containerShadow ?? (
+      designPreset === 'card' ? 'lg' : 
+      designPreset === 'glass' ? 'md' : 
+      'none'
+    )) as StepLayoutStyle['shadow'],
+    
+    // Glass effect
+    backdropBlur: settings.backdropBlur ?? (designPreset === 'glass' ? 12 : undefined),
+    
+    // Content alignment
+    contentAlign: settings.contentAlign || 'center',
+  };
+  
+  // Input styling (passed to individual inputs, not container)
   const flowTextColor = settings.textColor || '#000000';
   const flowInputBg = settings.inputBackground || '#ffffff';
   const flowInputBorder = settings.inputBorderColor || '#e5e7eb';
   
-  // Container dimensions & styling - use preset defaults if not explicitly set
-  // Minimal preset = no visible container (clean, invisible)
-  const containerPadding = settings.containerPadding ?? (designPreset === 'none' ? 0 : 32);
-  const containerRadius = settings.containerRadius ?? (designPreset === 'card' ? 16 : designPreset === 'glass' ? 20 : 0);
-  const containerBorderColor = settings.containerBorderColor ?? (
-    designPreset === 'card' ? 'rgba(0,0,0,0.08)' : 
-    designPreset === 'glass' ? 'rgba(255,255,255,0.2)' : 
-    null
-  );
-  const containerShadow = settings.containerShadow ?? (
-    designPreset === 'card' ? 'lg' : 
-    designPreset === 'glass' ? 'md' : 
-    'none'
-  );
-  const backdropBlur = settings.backdropBlur ?? (designPreset === 'glass' ? 12 : 0);
+  // Flow behavior settings (logic, not visual)
+  const displayMode = settings.displayMode || 'one-at-a-time';
+  const showProgress = settings.showProgress ?? false;
   const contentWidth = settings.contentWidth || 'md';
   const contentAlign = settings.contentAlign || 'center';
   
-  // Flow behavior settings
-  const displayMode = settings.displayMode || 'one-at-a-time';
-  const showProgress = settings.showProgress ?? false;
-  
-  // Map shadow setting to CSS
-  const shadowMap: Record<string, string> = {
-    'none': 'none',
-    'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-    'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-    'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-    'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-  };
-  
-  // Map width setting to CSS
+  // Width map for FlowShell (the invisible alignment wrapper)
   const widthMap: Record<string, string> = {
     'sm': '400px',
     'md': '600px', 
@@ -773,48 +807,28 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     onSelect();
   };
 
-  // Build container border style
-  const containerBorderStyle = containerBorderColor && containerBorderColor !== 'transparent'
-    ? `1px solid ${containerBorderColor}`
-    : undefined;
+  // ═══════════════════════════════════════════════════════════════
+  // RENDER - FlowContainer is INVISIBLE
+  // All visual styling is delegated to StepLayout
+  // ═══════════════════════════════════════════════════════════════
 
   return (
-    <div
+    <FlowShell
+      maxWidth={widthMap[contentWidth]}
+      align={contentAlign}
       className={cn(
-        'w-full transition-all duration-200 overflow-hidden',
-        // Selection indicator
-        isSelected && 'ring-1 ring-primary/30',
-        // Content alignment
-        contentAlign === 'left' && 'flex justify-start',
-        contentAlign === 'center' && 'flex justify-center',
-        contentAlign === 'right' && 'flex justify-end'
+        'transition-all duration-200',
+        isSelected && 'ring-1 ring-primary/30 rounded-lg'
       )}
-      onClick={handleBlockClick}
     >
-      {/* Inner container with preset-based styling */}
-      <div
-        style={{
-          // Background - only if explicitly set or preset provides one
-          background: flowBackground ? backgroundToCSS(flowBackground) : 
-            (designPreset === 'card' ? '#ffffff' : 
-             designPreset === 'glass' ? 'rgba(255,255,255,0.1)' : 
-             'transparent'),
-          borderRadius: `${containerRadius}px`,
-          border: containerBorderStyle,
-          boxShadow: shadowMap[containerShadow] || 'none',
-          padding: `${containerPadding}px`,
-          maxWidth: widthMap[contentWidth],
-          width: '100%',
-          // Glass effect
-          ...(backdropBlur > 0 && {
-            backdropFilter: `blur(${backdropBlur}px)`,
-            WebkitBackdropFilter: `blur(${backdropBlur}px)`,
-          }),
-        }}
+      {/* StepLayout handles ALL visual styling */}
+      <StepLayout
+        style={stepLayoutStyle}
+        onClick={handleBlockClick}
       >
         {/* Progress bar - shown when enabled */}
         {showProgress && steps.length > 1 && (
-          <div className="mb-4">
+          <div className="w-full mb-4">
             <div 
               className="h-1 rounded-full overflow-hidden"
               style={{ backgroundColor: `${flowTextColor}15` }}
@@ -838,8 +852,8 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {/* Step content - display mode determines rendering */}
         {displayMode === 'all-visible' ? (
           // All steps visible mode - render all steps stacked
-          <div className="space-y-6">
-            {steps.map((step, index) => (
+          <div className="space-y-6 w-full">
+            {steps.map((step) => (
               <div 
                 key={step.id}
                 className={cn(
@@ -872,7 +886,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           
           return (
             <div 
-              className="flex items-center justify-center gap-1.5 mt-4 pt-3"
+              className="flex items-center justify-center gap-1.5 mt-4 pt-3 w-full"
               style={{ borderTop: `1px solid ${flowInputBorder}` }}
             >
               {visibleNavSteps.map((step) => {
@@ -908,7 +922,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             </div>
           );
         })()}
-      </div>
-    </div>
+      </StepLayout>
+    </FlowShell>
   );
 };
