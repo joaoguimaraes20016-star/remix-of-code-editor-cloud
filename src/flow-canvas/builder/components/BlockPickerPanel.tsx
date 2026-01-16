@@ -182,8 +182,7 @@ const captureFields: BlockTemplate[] = [
       type: 'form-field',
       label: 'Contact Info',
       elements: [
-        { id: generateId(), type: 'heading', content: 'Your info', props: { level: 2 } },
-        { id: generateId(), type: 'text', content: 'Enter your details to continue.', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'heading', content: 'Where can we reach you?', props: { level: 2 } },
         { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your name', required: true, fieldKey: 'name', icon: 'user' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'Your email address', required: true, fieldKey: 'email', icon: 'mail' } },
         { id: generateId(), type: 'input', content: '', props: { type: 'tel', placeholder: 'Your phone number', required: false, fieldKey: 'phone', icon: 'phone' } },
