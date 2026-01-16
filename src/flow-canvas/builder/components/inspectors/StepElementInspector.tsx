@@ -301,9 +301,17 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
       .filter(s => s.id !== step.id)
       .map(s => ({ id: s.id, name: s.name }));
 
+    const currentFillType: ButtonStyleSettings['fillType'] =
+      stepSettings.buttonPreset === 'outline'
+        ? 'outline'
+        : stepSettings.buttonPreset === 'gradient' || stepSettings.buttonGradient
+          ? 'gradient'
+          : 'solid';
+
     // Extract button style settings from step settings
     const buttonStyleSettings: ButtonStyleSettings = {
       preset: stepSettings.buttonPreset || 'primary',
+      fillType: currentFillType,
       backgroundColor: stepSettings.buttonColor,
       textColor: stepSettings.buttonTextColor,
       gradient: stepSettings.buttonGradient,
@@ -320,10 +328,46 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
     const handleButtonStyleChange = (updates: Partial<ButtonStyleSettings>) => {
       const mapped: Record<string, any> = {};
 
-      if (updates.preset !== undefined) mapped.buttonPreset = updates.preset;
-      if (updates.backgroundColor !== undefined) mapped.buttonColor = updates.backgroundColor;
+      // Preset: ignore 'custom' as a stored preset (it's just a UI mode)
+      if (updates.preset !== undefined && updates.preset !== 'custom') {
+        mapped.buttonPreset = updates.preset;
+      }
+
+      // Fill mode: map to stored preset + supporting fields
+      if (updates.fillType !== undefined) {
+        if (updates.fillType === 'outline') {
+          mapped.buttonPreset = 'outline';
+          mapped.buttonGradient = undefined;
+          mapped.buttonColor = 'transparent';
+        }
+        if (updates.fillType === 'solid') {
+          // If we were outline/gradient, reset to primary for proper variant rendering
+          if (stepSettings.buttonPreset === 'outline' || stepSettings.buttonPreset === 'gradient') {
+            mapped.buttonPreset = 'primary';
+          }
+          mapped.buttonGradient = undefined;
+        }
+        if (updates.fillType === 'gradient') {
+          mapped.buttonPreset = 'gradient';
+          // buttonGradient will be set below from updates.gradient
+        }
+      }
+
+      if (updates.backgroundColor !== undefined) {
+        mapped.buttonColor = updates.backgroundColor;
+        // If user chooses a solid background while in outline, ensure we render as filled
+        if (stepSettings.buttonPreset === 'outline') {
+          mapped.buttonPreset = 'primary';
+        }
+      }
+
       if (updates.textColor !== undefined) mapped.buttonTextColor = updates.textColor;
-      if (updates.gradient !== undefined) mapped.buttonGradient = updates.gradient;
+
+      if (updates.gradient !== undefined) {
+        mapped.buttonGradient = updates.gradient;
+        mapped.buttonPreset = 'gradient';
+      }
+
       if (updates.size !== undefined) mapped.buttonSize = updates.size;
       if (updates.borderRadius !== undefined) mapped.buttonRadius = updates.borderRadius;
       if (updates.shadow !== undefined) mapped.buttonShadow = updates.shadow;
