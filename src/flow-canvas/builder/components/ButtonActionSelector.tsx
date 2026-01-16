@@ -1,18 +1,17 @@
 /**
  * ButtonActionSelector - UNIFIED action selector for ALL buttons
  * 
- * ONE component, ONE action model, used everywhere.
- * No "(auto)" labels - all actions are explicitly visible.
+ * DESIGN PHILOSOPHY:
+ * - "Continue to next step" is the DEFAULT behavior, NOT a selectable action
+ * - Users only see EXPLICIT actions they can choose
+ * - No internal flow mechanics exposed to users
  * 
- * DEFAULT BEHAVIOR:
- * - If action is unset and button is inside a flow → defaults to "Next Step"
- * - But this is ALWAYS shown explicitly in the UI
+ * Internally: unset action → intent: NEXT_VISIBLE_STEP (automatic)
  */
 
 import React from 'react';
 import { cn } from '@/lib/utils';
 import {
-  ArrowRight,
   Layers,
   Send,
   ExternalLink,
@@ -20,6 +19,8 @@ import {
   Phone,
   Mail,
   Download,
+  ArrowRight,
+  X,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -31,13 +32,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 // ═══════════════════════════════════════════════════════════════
-// ACTION TYPES - Single source of truth
+// ACTION TYPES - Internal representation
 // ═══════════════════════════════════════════════════════════════
 
 export type ButtonActionType = 
-  | 'next-step'
+  | 'next-step'      // Internal default - NOT shown in UI
   | 'go-to-step'
   | 'submit'
   | 'url'
@@ -53,30 +55,30 @@ export interface ButtonAction {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ACTION DEFINITIONS - Labels and icons
+// VISIBLE ACTION DEFINITIONS - Only what users can explicitly choose
 // ═══════════════════════════════════════════════════════════════
 
 interface ActionDefinition {
   type: ButtonActionType;
   label: string;
   icon: React.ReactNode;
-  category: 'primary' | 'navigation' | 'external';
+  category: 'flow' | 'external';
   requiresValue?: boolean;
   valueLabel?: string;
   valuePlaceholder?: string;
 }
 
-const ACTION_DEFINITIONS: ActionDefinition[] = [
-  // Primary flow actions
-  { type: 'next-step', label: 'Next Step', icon: <ArrowRight className="w-3.5 h-3.5" />, category: 'primary' },
-  { type: 'go-to-step', label: 'Go To Step', icon: <Layers className="w-3.5 h-3.5" />, category: 'navigation', requiresValue: true, valueLabel: 'Target Step' },
-  { type: 'submit', label: 'Submit', icon: <Send className="w-3.5 h-3.5" />, category: 'primary' },
+// Only EXPLICIT actions - "next-step" is NOT listed (it's the default)
+const VISIBLE_ACTIONS: ActionDefinition[] = [
+  // Flow actions - explicit navigation
+  { type: 'go-to-step', label: 'Go to step', icon: <Layers className="w-3.5 h-3.5" />, category: 'flow', requiresValue: true, valueLabel: 'Target Step' },
+  { type: 'submit', label: 'Submit form', icon: <Send className="w-3.5 h-3.5" />, category: 'flow' },
   
   // External actions
-  { type: 'url', label: 'Open URL', icon: <ExternalLink className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'URL', valuePlaceholder: 'https://...' },
-  { type: 'scroll', label: 'Scroll To', icon: <Hash className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Element ID', valuePlaceholder: '#section-id' },
-  { type: 'phone', label: 'Call', icon: <Phone className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Phone Number', valuePlaceholder: '+1234567890' },
-  { type: 'email', label: 'Email', icon: <Mail className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Email Address', valuePlaceholder: 'hello@example.com' },
+  { type: 'url', label: 'Open link', icon: <ExternalLink className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'URL', valuePlaceholder: 'https://...' },
+  { type: 'scroll', label: 'Scroll to', icon: <Hash className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Section ID', valuePlaceholder: '#section' },
+  { type: 'phone', label: 'Call', icon: <Phone className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Phone', valuePlaceholder: '+1234567890' },
+  { type: 'email', label: 'Email', icon: <Mail className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'Email', valuePlaceholder: 'hello@example.com' },
   { type: 'download', label: 'Download', icon: <Download className="w-3.5 h-3.5" />, category: 'external', requiresValue: true, valueLabel: 'File URL', valuePlaceholder: 'https://...' },
 ];
 
@@ -85,16 +87,16 @@ const ACTION_DEFINITIONS: ActionDefinition[] = [
 // ═══════════════════════════════════════════════════════════════
 
 interface ButtonActionSelectorProps {
-  /** Current action */
+  /** Current action - undefined means "continue flow" (default) */
   action: ButtonAction | undefined;
   /** Called when action changes */
-  onChange: (action: ButtonAction) => void;
+  onChange: (action: ButtonAction | undefined) => void;
   /** Available steps for "Go To Step" action */
   availableSteps?: { id: string; name: string }[];
   /** Compact mode for smaller UI */
   compact?: boolean;
-  /** Show only primary actions (Next Step, Submit) */
-  primaryOnly?: boolean;
+  /** Show only flow actions (hide external) */
+  flowOnly?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -106,79 +108,84 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
   onChange,
   availableSteps = [],
   compact = false,
-  primaryOnly = false,
+  flowOnly = false,
 }) => {
-  // Default to 'next-step' if unset - but this is ALWAYS shown explicitly
-  const currentType: ButtonActionType = action?.type || 'next-step';
+  // Check if user has an explicit action set (anything other than next-step)
+  const hasExplicitAction = action && action.type !== 'next-step';
+  const currentType = action?.type;
   const currentValue = action?.value || '';
   const openNewTab = action?.openNewTab ?? false;
 
-  const handleTypeChange = (type: ButtonActionType, value?: string) => {
-    onChange({ type, value, openNewTab: type === 'url' ? openNewTab : undefined });
+  const handleSelectAction = (type: ButtonActionType) => {
+    onChange({ type, value: '', openNewTab: type === 'url' ? false : undefined });
+  };
+
+  const handleClearAction = () => {
+    // Clear to undefined = default "continue flow" behavior
+    onChange(undefined);
   };
 
   const handleValueChange = (value: string) => {
-    onChange({ type: currentType, value, openNewTab: currentType === 'url' ? openNewTab : undefined });
+    if (currentType) {
+      onChange({ type: currentType, value, openNewTab: currentType === 'url' ? openNewTab : undefined });
+    }
   };
 
   const handleNewTabChange = (checked: boolean) => {
-    onChange({ type: currentType, value: currentValue, openNewTab: checked });
+    if (currentType) {
+      onChange({ type: currentType, value: currentValue, openNewTab: checked });
+    }
   };
 
-  const primaryActions = ACTION_DEFINITIONS.filter(a => a.category === 'primary');
-  const navigationActions = ACTION_DEFINITIONS.filter(a => a.category === 'navigation');
-  const externalActions = ACTION_DEFINITIONS.filter(a => a.category === 'external');
-  
-  const currentDefinition = ACTION_DEFINITIONS.find(a => a.type === currentType);
-
-  // Filter actions based on primaryOnly prop
-  const visiblePrimaryActions = primaryActions;
-  const visibleNavigationActions = primaryOnly ? [] : navigationActions;
-  const visibleExternalActions = primaryOnly ? [] : externalActions;
+  const flowActions = VISIBLE_ACTIONS.filter(a => a.category === 'flow');
+  const externalActions = VISIBLE_ACTIONS.filter(a => a.category === 'external');
+  const currentDefinition = VISIBLE_ACTIONS.find(a => a.type === currentType);
 
   return (
     <div className="space-y-3">
-      {/* Current Action Display - Always visible */}
-      <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-muted/30 border border-border/50">
-        <span className="text-[10px] text-muted-foreground">On Click:</span>
-        <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
-          {currentDefinition?.icon}
-          {currentDefinition?.label || 'Next Step'}
-        </span>
-      </div>
+      {/* Default State - No explicit action */}
+      {!hasExplicitAction && (
+        <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-muted/40 border border-border/40">
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Continues to next step</span>
+        </div>
+      )}
 
-      {/* Primary Actions - Always shown */}
-      <div className={cn("grid gap-1.5", compact ? "grid-cols-2" : "grid-cols-3")}>
-        {visiblePrimaryActions.map((actionDef) => (
+      {/* Explicit Action Display */}
+      {hasExplicitAction && currentDefinition && (
+        <div className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-md bg-primary/10 border border-primary/20">
+          <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+            {currentDefinition.icon}
+            {currentDefinition.label}
+          </span>
           <button
-            key={actionDef.type}
             type="button"
-            onClick={() => handleTypeChange(actionDef.type)}
-            className={cn(
-              "flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all",
-              currentType === actionDef.type
-                ? "bg-primary text-primary-foreground ring-2 ring-primary/20"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
+            onClick={handleClearAction}
+            className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            title="Reset to default"
           >
-            {actionDef.icon}
-            {actionDef.label}
+            <X className="w-3.5 h-3.5" />
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Navigation Actions */}
-      {visibleNavigationActions.length > 0 && (
-        <div className="grid grid-cols-1 gap-1.5">
-          {visibleNavigationActions.map((actionDef) => (
+      {/* Action Selector Grid */}
+      <div className="space-y-2">
+        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          {hasExplicitAction ? 'Change action' : 'Add action'}
+        </Label>
+        
+        {/* Flow Actions */}
+        <div className={cn("grid gap-1.5", compact ? "grid-cols-2" : "grid-cols-2")}>
+          {flowActions.map((actionDef) => (
             <button
               key={actionDef.type}
               type="button"
-              onClick={() => handleTypeChange(actionDef.type, currentType === actionDef.type ? currentValue : '')}
+              onClick={() => handleSelectAction(actionDef.type)}
               className={cn(
                 "flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all",
                 currentType === actionDef.type
-                  ? "bg-builder-accent text-white"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
@@ -187,33 +194,33 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
             </button>
           ))}
         </div>
-      )}
 
-      {/* External Actions */}
-      {visibleExternalActions.length > 0 && (
-        <div className={cn("grid gap-1.5", compact ? "grid-cols-2" : "grid-cols-4")}>
-          {visibleExternalActions.map((actionDef) => (
-            <button
-              key={actionDef.type}
-              type="button"
-              onClick={() => handleTypeChange(actionDef.type, currentType === actionDef.type ? currentValue : '')}
-              className={cn(
-                "flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[10px] transition-colors",
-                currentType === actionDef.type
-                  ? "bg-builder-accent text-white"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              )}
-            >
-              {actionDef.icon}
-              {actionDef.label}
-            </button>
-          ))}
-        </div>
-      )}
+        {/* External Actions */}
+        {!flowOnly && externalActions.length > 0 && (
+          <div className={cn("grid gap-1", compact ? "grid-cols-3" : "grid-cols-5")}>
+            {externalActions.map((actionDef) => (
+              <button
+                key={actionDef.type}
+                type="button"
+                onClick={() => handleSelectAction(actionDef.type)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded text-[10px] transition-colors",
+                  currentType === actionDef.type
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {actionDef.icon}
+                <span className="truncate">{actionDef.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Value Input - For actions that require a value */}
+      {/* Value Input - For actions that require configuration */}
       {currentDefinition?.requiresValue && (
-        <div className="space-y-2 pt-2 border-t border-border/50">
+        <div className="space-y-2 pt-2 border-t border-border/40">
           {currentType === 'go-to-step' ? (
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground">Target Step</Label>
