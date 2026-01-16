@@ -288,6 +288,13 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       setBlockPickerMode('blocks');
     }
     
+    // Clear step element selection when selecting something different
+    // This ensures inspector updates correctly when clicking away from flow elements
+    const isSelectingDifferentBlock = newSelection.id !== selection.id;
+    if (isSelectingDifferentBlock) {
+      setSelectedStepElement(null);
+    }
+    
     if (isShiftHeld && newSelection.id && (newSelection.type === 'element' || newSelection.type === 'block')) {
       // Multi-select mode
       setMultiSelection(prev => {
@@ -316,14 +323,30 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       setSelection(newSelection);
       onSelect(newSelection);
     }
-  }, [onSelect, blockPickerOpen]);
+  }, [onSelect, blockPickerOpen, selection.id]);
 
   // Clear selection
   const handleClearSelection = useCallback(() => {
     setSelection({ type: null, id: null, path: [] });
     setMultiSelection(null);
+    setSelectedStepElement(null); // Also clear step element selection
     onSelect({ type: null, id: null, path: [] });
   }, [onSelect]);
+  
+  // Escape key to close block picker
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && blockPickerOpen) {
+        e.preventDefault();
+        setBlockPickerOpen(false);
+        setBlockPickerTargetStackId(null);
+        setBlockPickerMode('blocks');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [blockPickerOpen]);
 
   // Step operations
   const handleStepSelect = useCallback((stepId: string) => {

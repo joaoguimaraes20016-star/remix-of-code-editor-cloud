@@ -180,7 +180,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
       </CollapsibleSection>
       
       <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />} defaultOpen>
-        <FieldGroup label="Size">
+        <FieldGroup label="Text Size">
           <Select
             value={stepSettings.titleSize || 'xl'}
             onValueChange={(value) => updateStepSetting('titleSize', value)}
@@ -255,6 +255,22 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
       </CollapsibleSection>
       
       <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />} defaultOpen>
+        <FieldGroup label="Text Size">
+          <Select
+            value={stepSettings.descriptionSize || 'sm'}
+            onValueChange={(value) => updateStepSetting('descriptionSize', value)}
+          >
+            <SelectTrigger className="text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="xs">Extra Small</SelectItem>
+              <SelectItem value="sm">Small</SelectItem>
+              <SelectItem value="base">Normal</SelectItem>
+              <SelectItem value="lg">Large</SelectItem>
+            </SelectContent>
+          </Select>
+        </FieldGroup>
         <FieldGroup label="Color">
           <ColorPickerPopover
             color={stepSettings.descriptionColor || '#666666'}

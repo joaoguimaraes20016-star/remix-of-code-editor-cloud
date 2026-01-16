@@ -25,6 +25,16 @@ export const getTitleSizeClass = (size?: string): string => {
   return sizes[size || 'xl'] || 'text-xl';
 };
 
+export const getDescriptionSizeClass = (size?: string): string => {
+  const sizes: Record<string, string> = {
+    xs: 'text-xs',
+    sm: 'text-sm',
+    base: 'text-base',
+    lg: 'text-lg',
+  };
+  return sizes[size || 'sm'] || 'text-sm';
+};
+
 export const getAlignClass = (align?: string): string => {
   switch (align) {
     case 'left':
