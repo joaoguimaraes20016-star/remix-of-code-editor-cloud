@@ -77,13 +77,13 @@ interface ActionOption {
 const actionOptions: ActionOption[] = [
   { 
     type: 'next-step', 
-    label: 'Continue Flow', 
+    label: 'Continue', 
     icon: <ArrowRight className="w-4 h-4" />, 
-    description: 'Automatically go to the next step' 
+    description: 'Continue to next step' 
   },
   { 
     type: 'go-to-step', 
-    label: 'Go to Specific Step', 
+    label: 'Go to Step', 
     icon: <Layers className="w-4 h-4" />, 
     description: 'Jump to a specific step you choose',
     hasInput: true,

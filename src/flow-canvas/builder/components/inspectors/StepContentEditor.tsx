@@ -646,10 +646,10 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background border-border">
-                <SelectItem value="next" className="text-xs">Next Step</SelectItem>
-                <SelectItem value="go-to-step" className="text-xs">Go to Funnel Page</SelectItem>
-                <SelectItem value="submit" className="text-xs">Submit & Complete</SelectItem>
-                <SelectItem value="redirect" className="text-xs">Redirect to URL</SelectItem>
+                <SelectItem value="next" className="text-xs">Continue</SelectItem>
+                <SelectItem value="go-to-step" className="text-xs">Go to Step</SelectItem>
+                <SelectItem value="submit" className="text-xs">Submit</SelectItem>
+                <SelectItem value="redirect" className="text-xs">Open URL</SelectItem>
               </SelectContent>
             </Select>
           </div>
