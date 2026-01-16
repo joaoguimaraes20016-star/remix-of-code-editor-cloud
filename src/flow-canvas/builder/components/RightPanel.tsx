@@ -982,38 +982,54 @@ const ElementInspector: React.FC<{
                 </Select>
               </div>
               
-              {/* Width (UNIFIED): Auto vs Full Width (no fixed widths) */}
+              {/* Width (UNIFIED): Auto / Fixed / Full */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Width</span>
                 <div className="flex items-center gap-1">
                   <Select 
                     value={
-                      (element.props?.fullWidth === true || element.styles?.width?.toString() === '100%')
+                      element.props?.fullWidth === true
                         ? 'full'
-                        : 'auto'
+                        : element.props?.customWidth
+                          ? 'fixed'
+                          : 'auto'
                     }
                     onValueChange={(value) => {
-                      // Single width mechanism: boolean on the button (props.fullWidth)
-                      // Also clear any legacy element.styles.width to avoid conflicts.
                       if (value === 'full') {
                         onUpdate({
-                          props: { ...element.props, fullWidth: true },
+                          props: { ...element.props, fullWidth: true, customWidth: undefined },
+                          styles: { ...element.styles, width: undefined },
+                        });
+                      } else if (value === 'fixed') {
+                        onUpdate({
+                          props: { ...element.props, fullWidth: false, customWidth: 200 },
                           styles: { ...element.styles, width: undefined },
                         });
                       } else {
                         onUpdate({
-                          props: { ...element.props, fullWidth: false },
+                          props: { ...element.props, fullWidth: false, customWidth: undefined },
                           styles: { ...element.styles, width: undefined },
                         });
                       }
                     }}
                   >
-                    <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Auto" /></SelectTrigger>
+                    <SelectTrigger className="builder-input w-16"><SelectValue placeholder="Auto" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">Auto</SelectItem>
+                      <SelectItem value="fixed">Fixed</SelectItem>
                       <SelectItem value="full">Full</SelectItem>
                     </SelectContent>
                   </Select>
+                  {element.props?.customWidth && (
+                    <Input
+                      type="number"
+                      value={element.props.customWidth as number}
+                      onChange={(e) => handlePropsChange('customWidth', parseInt(e.target.value) || 200)}
+                      className="builder-input w-16 text-xs"
+                      min={50}
+                      max={800}
+                    />
+                  )}
                 </div>
               </div>
               
