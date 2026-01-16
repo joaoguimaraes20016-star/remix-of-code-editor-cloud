@@ -901,97 +901,44 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Input/Answer Style (for question steps) */}
           {step.type === 'question' && (
-            <>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase">Answer Style</Label>
-                <div className="flex rounded-md overflow-hidden border border-border">
-                  <button
-                    onClick={() => updateSettings({ inputStyle: 'rounded' })}
-                    className={cn(
-                      'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
-                      (stepSettings.inputStyle || 'rounded') === 'rounded'
-                        ? 'bg-foreground text-background'
-                        : 'bg-background text-muted-foreground hover:bg-accent'
-                    )}
-                  >
-                    Rounded
-                  </button>
-                  <button
-                    onClick={() => updateSettings({ inputStyle: 'square' })}
-                    className={cn(
-                      'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
-                      stepSettings.inputStyle === 'square'
-                        ? 'bg-foreground text-background'
-                        : 'bg-background text-muted-foreground hover:bg-accent'
-                    )}
-                  >
-                    Square
-                  </button>
-                  <button
-                    onClick={() => updateSettings({ inputStyle: 'pill' })}
-                    className={cn(
-                      'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
-                      stepSettings.inputStyle === 'pill'
-                        ? 'bg-foreground text-background'
-                        : 'bg-background text-muted-foreground hover:bg-accent'
-                    )}
-                  >
-                    Pill
-                  </button>
-                </div>
-              </div>
-
-              {/* Answer Background Color */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase">Answer Background</Label>
-                <ColorPickerPopover
-                  color={stepSettings.answerBgColor || '#ffffff'}
-                  onChange={(color) => updateSettings({ answerBgColor: color })}
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-muted-foreground uppercase">Answer Style</Label>
+              <div className="flex rounded-md overflow-hidden border border-border">
+                <button
+                  onClick={() => updateSettings({ inputStyle: 'default' })}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                    (stepSettings.inputStyle || 'default') === 'default'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
                 >
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                    <div 
-                      className="w-6 h-6 rounded border border-border"
-                      style={{ backgroundColor: stepSettings.answerBgColor || '#ffffff' }}
-                    />
-                    <span className="text-xs text-foreground font-mono">{stepSettings.answerBgColor || '#ffffff'}</span>
-                  </button>
-                </ColorPickerPopover>
-              </div>
-
-              {/* Answer Border Color */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase">Answer Border</Label>
-                <ColorPickerPopover
-                  color={stepSettings.answerBorderColor || '#e5e7eb'}
-                  onChange={(color) => updateSettings({ answerBorderColor: color })}
+                  Rounded
+                </button>
+                <button
+                  onClick={() => updateSettings({ inputStyle: 'square' })}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                    stepSettings.inputStyle === 'square'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
                 >
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                    <div 
-                      className="w-6 h-6 rounded border border-border"
-                      style={{ backgroundColor: stepSettings.answerBorderColor || '#e5e7eb' }}
-                    />
-                    <span className="text-xs text-foreground font-mono">{stepSettings.answerBorderColor || '#e5e7eb'}</span>
-                  </button>
-                </ColorPickerPopover>
-              </div>
-
-              {/* Selected Answer Color */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase">Selected State Color</Label>
-                <ColorPickerPopover
-                  color={stepSettings.answerSelectedColor || '#3b82f6'}
-                  onChange={(color) => updateSettings({ answerSelectedColor: color })}
+                  Square
+                </button>
+                <button
+                  onClick={() => updateSettings({ inputStyle: 'rounded' })}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
+                    stepSettings.inputStyle === 'rounded'
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-muted-foreground hover:bg-accent'
+                  )}
                 >
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                    <div 
-                      className="w-6 h-6 rounded border border-border"
-                      style={{ backgroundColor: stepSettings.answerSelectedColor || '#3b82f6' }}
-                    />
-                    <span className="text-xs text-foreground font-mono">{stepSettings.answerSelectedColor || '#3b82f6'}</span>
-                  </button>
-                </ColorPickerPopover>
+                  Pill
+                </button>
               </div>
-            </>
+            </div>
           )}
 
           <div className="border-t border-border my-4 pt-4">
@@ -1093,11 +1040,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             </div>
           )}
 
-          {/* Conditional Logic Placeholder */}
-          <div className="mt-6 p-4 rounded-lg border border-dashed border-border text-center">
-            <p className="text-xs text-muted-foreground">Conditional logic coming soon</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Show/hide this step based on previous answers</p>
-          </div>
+          {/* Future: Conditional logic will be added here when rule engine UI is built */}
         </div>
       )}
     </div>
