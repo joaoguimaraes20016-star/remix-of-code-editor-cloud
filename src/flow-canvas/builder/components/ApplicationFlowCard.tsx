@@ -32,6 +32,7 @@ import {
   getCaptureInputIcon,
   getDefaultCaptureIcon,
   getDefaultCapturePlaceholder,
+  getDefaultButtonText,
 } from '../utils/stepRenderHelpers';
 import { useFlowContainerSafe, buttonActionToIntent } from '../contexts/FlowContainerContext';
 import { UnifiedButton, presetToVariant } from '@/components/builder/UnifiedButton';
@@ -682,8 +683,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const s = (step as any).settings || {};
     const alignClass = getAlignClass(s.align);
     const spacingClass = getSpacingClass(s.spacing);
-    const inputStyleClass = getInputStyleClass(s.inputStyle);
-
+    const inputRadius = s.inputRadius as number | undefined;
+    const inputStyleClass = getInputStyleClass(s.inputStyle, inputRadius);
+    const inputRadiusStyle = inputRadius !== undefined ? { borderRadius: `${inputRadius}px` } : {};
     // Determine which fields to show - default to name + email if none specified
     const showName = s.collectName ?? true;
     const showEmail = s.collectEmail ?? true;
@@ -782,7 +784,8 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                     style={{ 
                       backgroundColor: flowInputBg, 
                       borderColor: flowInputBorder,
-                      color: flowTextColor 
+                      color: flowTextColor,
+                      ...inputRadiusStyle
                     }}
                     placeholder={field.placeholder} 
                     disabled
@@ -839,7 +842,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             isElementSelected(step.id, 'button') && 'ring-2 ring-primary ring-offset-2'
           )}
         >
-          {s.buttonText || 'Submit'}
+          {s.buttonText || getDefaultButtonText('capture')}
         </UnifiedButton>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
