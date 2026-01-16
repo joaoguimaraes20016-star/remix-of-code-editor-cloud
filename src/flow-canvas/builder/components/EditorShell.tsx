@@ -281,6 +281,13 @@ export const EditorShell: React.FC<EditorShellProps> = ({
 
   // Handle selection with shift for multi-select
   const handleSelect = useCallback((newSelection: SelectionState, isShiftHeld = false) => {
+    // Auto-close block picker when user selects content on canvas
+    if (newSelection.id && blockPickerOpen) {
+      setBlockPickerOpen(false);
+      setBlockPickerTargetStackId(null);
+      setBlockPickerMode('blocks');
+    }
+    
     if (isShiftHeld && newSelection.id && (newSelection.type === 'element' || newSelection.type === 'block')) {
       // Multi-select mode
       setMultiSelection(prev => {
@@ -309,7 +316,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       setSelection(newSelection);
       onSelect(newSelection);
     }
-  }, [onSelect]);
+  }, [onSelect, blockPickerOpen]);
 
   // Clear selection
   const handleClearSelection = useCallback(() => {
