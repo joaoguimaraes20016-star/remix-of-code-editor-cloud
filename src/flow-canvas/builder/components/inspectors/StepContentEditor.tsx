@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '../../../types/infostack';
+import { ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType, CaptureIconType } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -19,9 +19,14 @@ import {
   Mail,
   Phone,
   User,
+  UserCircle,
+  AtSign,
+  Smartphone,
   Circle,
   Square,
   Maximize2,
+  Shield,
+  Link,
 } from 'lucide-react';
 import {
   getTitleSizeClass,
@@ -45,6 +50,17 @@ import {
 } from '@/components/ui/select';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
 import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
+
+// Icon options for capture fields
+const CAPTURE_ICON_OPTIONS: { value: CaptureIconType; label: string; icon: React.ReactNode }[] = [
+  { value: 'user', label: 'User', icon: <User className="w-4 h-4" /> },
+  { value: 'user-circle', label: 'User Circle', icon: <UserCircle className="w-4 h-4" /> },
+  { value: 'mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
+  { value: 'at-sign', label: 'At Sign', icon: <AtSign className="w-4 h-4" /> },
+  { value: 'phone', label: 'Phone', icon: <Phone className="w-4 h-4" /> },
+  { value: 'smartphone', label: 'Smartphone', icon: <Smartphone className="w-4 h-4" /> },
+  { value: 'none', label: 'None', icon: <Circle className="w-4 h-4 opacity-30" /> },
+];
 
 const stepTypeIcons: Record<ApplicationStepType, React.ReactNode> = {
   welcome: <Sparkles className="w-4 h-4" />,
@@ -279,10 +295,12 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
           {/* Capture Fields (for capture steps) */}
           {step.type === 'capture' && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="text-[10px] text-muted-foreground uppercase">Fields to Collect</Label>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+              
+              {/* Name Field */}
+              <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <User className="w-3.5 h-3.5 text-muted-foreground" />
                     <Label className="text-xs text-foreground">Name</Label>
@@ -292,7 +310,43 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                     onCheckedChange={(checked) => updateSettings({ collectName: checked })}
                   />
                 </div>
-                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+                {(stepSettings.collectName ?? true) && (
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          value={stepSettings.captureNamePlaceholder || ''}
+                          onChange={(e) => updateSettings({ captureNamePlaceholder: e.target.value })}
+                          placeholder="Your name"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <Select
+                        value={stepSettings.captureNameIcon || 'user'}
+                        onValueChange={(value) => updateSettings({ captureNameIcon: value as CaptureIconType })}
+                      >
+                        <SelectTrigger className="w-24 h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CAPTURE_ICON_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              <div className="flex items-center gap-2">
+                                {opt.icon}
+                                {opt.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Email Field */}
+              <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                     <Label className="text-xs text-foreground">Email</Label>
@@ -302,7 +356,43 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                     onCheckedChange={(checked) => updateSettings({ collectEmail: checked })}
                   />
                 </div>
-                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+                {(stepSettings.collectEmail ?? true) && (
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          value={stepSettings.captureEmailPlaceholder || ''}
+                          onChange={(e) => updateSettings({ captureEmailPlaceholder: e.target.value })}
+                          placeholder="Your email"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <Select
+                        value={stepSettings.captureEmailIcon || 'mail'}
+                        onValueChange={(value) => updateSettings({ captureEmailIcon: value as CaptureIconType })}
+                      >
+                        <SelectTrigger className="w-24 h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CAPTURE_ICON_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              <div className="flex items-center gap-2">
+                                {opt.icon}
+                                {opt.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Phone Field */}
+              <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Phone className="w-3.5 h-3.5 text-muted-foreground" />
                     <Label className="text-xs text-foreground">Phone</Label>
@@ -312,6 +402,71 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                     onCheckedChange={(checked) => updateSettings({ collectPhone: checked })}
                   />
                 </div>
+                {stepSettings.collectPhone && (
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          value={stepSettings.capturePhonePlaceholder || ''}
+                          onChange={(e) => updateSettings({ capturePhonePlaceholder: e.target.value })}
+                          placeholder="Your phone"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <Select
+                        value={stepSettings.capturePhoneIcon || 'phone'}
+                        onValueChange={(value) => updateSettings({ capturePhoneIcon: value as CaptureIconType })}
+                      >
+                        <SelectTrigger className="w-24 h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CAPTURE_ICON_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              <div className="flex items-center gap-2">
+                                {opt.icon}
+                                {opt.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Privacy Checkbox */}
+              <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Label className="text-xs text-foreground">Privacy Checkbox</Label>
+                  </div>
+                  <Switch
+                    checked={stepSettings.showPrivacyCheckbox ?? false}
+                    onCheckedChange={(checked) => updateSettings({ showPrivacyCheckbox: checked })}
+                  />
+                </div>
+                {stepSettings.showPrivacyCheckbox && (
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <Input
+                      value={stepSettings.privacyText || ''}
+                      onChange={(e) => updateSettings({ privacyText: e.target.value })}
+                      placeholder="I have read and accept the"
+                      className="h-7 text-xs"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Link className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <Input
+                        value={stepSettings.privacyUrl || ''}
+                        onChange={(e) => updateSettings({ privacyUrl: e.target.value })}
+                        placeholder="https://example.com/privacy"
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

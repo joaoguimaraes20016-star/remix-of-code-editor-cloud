@@ -62,6 +62,9 @@ export type ApplicationStepType = 'welcome' | 'question' | 'capture' | 'booking'
  */
 export type QuestionType = 'multiple-choice' | 'text' | 'dropdown' | 'scale' | 'yes-no';
 
+// Capture field icon types - Lucide icons
+export type CaptureIconType = 'user' | 'user-circle' | 'mail' | 'at-sign' | 'phone' | 'smartphone' | 'none';
+
 // Settings for individual Application Flow steps
 export interface ApplicationFlowStepSettings {
   title?: string;
@@ -107,6 +110,17 @@ export interface ApplicationFlowStepSettings {
     value?: string;
     openNewTab?: boolean;
   };
+  // Capture step per-field customization
+  captureNamePlaceholder?: string;
+  captureEmailPlaceholder?: string;
+  capturePhonePlaceholder?: string;
+  captureNameIcon?: CaptureIconType;
+  captureEmailIcon?: CaptureIconType;
+  capturePhoneIcon?: CaptureIconType;
+  // Privacy checkbox settings
+  showPrivacyCheckbox?: boolean;
+  privacyText?: string;
+  privacyUrl?: string;
 }
 
 export interface ApplicationFlowStep {

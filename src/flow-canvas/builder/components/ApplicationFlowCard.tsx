@@ -29,6 +29,9 @@ import {
   getAlignClass,
   getSpacingClass,
   getInputStyleClass,
+  getCaptureInputIcon,
+  getDefaultCaptureIcon,
+  getDefaultCapturePlaceholder,
 } from '../utils/stepRenderHelpers';
 import { useFlowContainerSafe, buttonActionToIntent } from '../contexts/FlowContainerContext';
 import { UnifiedButton, presetToVariant } from '@/components/builder/UnifiedButton';
@@ -686,11 +689,34 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const showEmail = s.collectEmail ?? true;
     const showPhone = s.collectPhone ?? false;
 
-    // Build field list for input selection indexing
-    const fields: Array<{type: 'name' | 'email' | 'phone', placeholder: string}> = [];
-    if (showName) fields.push({ type: 'name', placeholder: 'Your name' });
-    if (showEmail) fields.push({ type: 'email', placeholder: 'Your email' });
-    if (showPhone) fields.push({ type: 'phone', placeholder: 'Your phone' });
+    // Build field list with customizable icons and placeholders
+    const fields: Array<{
+      type: 'name' | 'email' | 'phone';
+      placeholder: string;
+      iconName: string;
+    }> = [];
+    
+    if (showName) {
+      fields.push({
+        type: 'name',
+        placeholder: s.captureNamePlaceholder || getDefaultCapturePlaceholder('name'),
+        iconName: s.captureNameIcon || getDefaultCaptureIcon('name'),
+      });
+    }
+    if (showEmail) {
+      fields.push({
+        type: 'email',
+        placeholder: s.captureEmailPlaceholder || getDefaultCapturePlaceholder('email'),
+        iconName: s.captureEmailIcon || getDefaultCaptureIcon('email'),
+      });
+    }
+    if (showPhone) {
+      fields.push({
+        type: 'phone',
+        placeholder: s.capturePhonePlaceholder || getDefaultCapturePlaceholder('phone'),
+        iconName: s.capturePhoneIcon || getDefaultCaptureIcon('phone'),
+      });
+    }
 
     return (
       <div className={cn('flex flex-col w-full', alignClass, spacingClass)}>
@@ -704,9 +730,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           onClick={(e) => handleElementClick(e, step.id, 'title')}
         >
           <InlineTextEditor
-            value={s.title || 'Where should we send your results?'}
+            value={s.title || 'What\'s the best way to reach you?'}
             onChange={(content) => updateStepSetting(step.id, 'title', content)}
-            placeholder="Where should we send your results?"
+            placeholder="What's the best way to reach you?"
             className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
             style={{ color: getElementColor(s, 'titleColor') }}
             elementType="heading"
@@ -725,33 +751,68 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             <p className="text-sm opacity-70" style={{ color: getElementColor(s, 'descriptionColor') }}>{s.description}</p>
           </div>
         )}
-        <div className="mt-4 space-y-2 max-w-md w-full">
-          {fields.map((field, index) => (
-            <div
-              key={field.type}
-              className={cn(
-                'cursor-pointer transition-colors duration-150',
-                !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
-                isElementSelected(step.id, 'input', index) && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
-              )}
-              onClick={(e) => handleElementClick(e, step.id, 'input', index)}
-            >
-              <input 
+        <div className="mt-4 space-y-2.5 max-w-md w-full">
+          {fields.map((field, index) => {
+            const IconComponent = getCaptureInputIcon(field.iconName);
+            const hasIcon = IconComponent !== null;
+            
+            return (
+              <div
+                key={field.type}
                 className={cn(
-                  'w-full px-3.5 py-2.5 text-sm pointer-events-none',
-                  inputStyleClass
+                  'cursor-pointer transition-colors duration-150',
+                  !isPreviewMode && 'hover:bg-foreground/[0.03] rounded p-0.5 -m-0.5',
+                  isElementSelected(step.id, 'input', index) && 'bg-foreground/[0.06] rounded p-0.5 -m-0.5'
                 )}
-                style={{ 
-                  backgroundColor: flowInputBg, 
-                  borderColor: flowInputBorder,
-                  color: flowTextColor 
-                }}
-                placeholder={field.placeholder} 
+                onClick={(e) => handleElementClick(e, step.id, 'input', index)}
+              >
+                <div className="relative">
+                  {hasIcon && IconComponent && (
+                    <IconComponent
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                      size={18}
+                    />
+                  )}
+                  <input 
+                    className={cn(
+                      'w-full py-3 text-sm pointer-events-none',
+                      hasIcon ? 'pl-11 pr-4' : 'px-4',
+                      inputStyleClass
+                    )}
+                    style={{ 
+                      backgroundColor: flowInputBg, 
+                      borderColor: flowInputBorder,
+                      color: flowTextColor 
+                    }}
+                    placeholder={field.placeholder} 
+                    disabled
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Privacy checkbox - shown when enabled */}
+        {s.showPrivacyCheckbox && (
+          <div className="mt-4 max-w-md w-full">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 w-4 h-4 rounded border-muted-foreground/30 pointer-events-none"
                 disabled
               />
-            </div>
-          ))}
-        </div>
+              <span className="text-xs opacity-70" style={{ color: flowTextColor }}>
+                {s.privacyText || 'I have read and accept the'}{' '}
+                {s.privacyUrl ? (
+                  <span className="underline">privacy policy</span>
+                ) : (
+                  'privacy policy'
+                )}
+              </span>
+            </label>
+          </div>
+        )}
         {/* Button - UNIFIED Button component - NO WRAPPER STYLING */}
         <UnifiedButton
           variant={presetToVariant(s.buttonPreset)}
