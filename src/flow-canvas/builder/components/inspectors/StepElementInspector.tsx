@@ -1,5 +1,5 @@
 import React from 'react';
-import { Block, ApplicationFlowStep, ApplicationFlowSettings } from '../../../types/infostack';
+import { Block, ApplicationFlowSettings } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ColorPickerPopover } from '../modals';
-import type { StepElementSelection, StepElementType } from '../ApplicationFlowCard';
+
+// Local type definitions (matches ApplicationFlowCard)
+export type StepElementType = 'title' | 'description' | 'button' | 'option' | 'input';
+
+export interface StepElementSelection {
+  stepId: string;
+  elementType: StepElementType;
+  optionIndex?: number;
+}
 
 interface StepElementInspectorProps {
   block: Block;
