@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   Trash2,
   Copy,
-  Settings2,
   Palette,
   ChevronLeft,
   ChevronRight,
@@ -221,7 +220,6 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   const [activeId, setActiveId] = useState<string | null>(null);
   const [containerOpen, setContainerOpen] = useState(true);
   const [appearanceOpen, setAppearanceOpen] = useState(true);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   // Use controlled state from props, or fallback to local state
   const [localStepId, setLocalStepId] = useState<string | null>(null);
   const selectedStepId = controlledStepId !== undefined ? controlledStepId : localStepId;
@@ -688,95 +686,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Flow Settings - Collapsible */}
-      <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <CollapsibleTrigger className="flex-shrink-0 w-full border-t border-border px-3 py-2.5 flex items-center justify-between hover:bg-accent/30 transition-colors">
-          <div className="flex items-center gap-2">
-            <Settings2 className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Flow Settings</span>
-          </div>
-          <ChevronDown className={cn("w-3 h-3 text-muted-foreground transition-transform", settingsOpen && "rotate-180")} />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="px-3 pb-3 space-y-3">
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Display Mode</Label>
-            <div className="flex rounded-md overflow-hidden border border-border">
-              <button
-                type="button"
-                onClick={() => onUpdateBlock({ props: { ...settings, displayMode: 'one-at-a-time' } })}
-                className={cn(
-                  'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
-                  settings.displayMode === 'one-at-a-time' 
-                    ? 'bg-foreground text-background' 
-                    : 'bg-background text-muted-foreground hover:bg-accent'
-                )}
-              >
-                One at a Time
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdateBlock({ props: { ...settings, displayMode: 'all-visible' } })}
-                className={cn(
-                  'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
-                  settings.displayMode === 'all-visible' 
-                    ? 'bg-foreground text-background' 
-                    : 'bg-background text-muted-foreground hover:bg-accent'
-                )}
-              >
-                All Visible
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Progress Bar</Label>
-            <div className="flex rounded-md overflow-hidden border border-border">
-              <button
-                type="button"
-                onClick={() => onUpdateBlock({ props: { ...settings, showProgress: true } })}
-                className={cn(
-                  'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
-                  settings.showProgress 
-                    ? 'bg-foreground text-background' 
-                    : 'bg-background text-muted-foreground hover:bg-accent'
-                )}
-              >
-                Show
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdateBlock({ props: { ...settings, showProgress: false } })}
-                className={cn(
-                  'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
-                  !settings.showProgress 
-                    ? 'bg-foreground text-background' 
-                    : 'bg-background text-muted-foreground hover:bg-accent'
-                )}
-              >
-                Hide
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Transition</Label>
-            <Select 
-              value={settings.transition || 'slide-up'}
-              onValueChange={(value) => onUpdateBlock({ props: { ...settings, transition: value } })}
-            >
-              <SelectTrigger className="h-7 text-xs bg-background border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                <SelectItem value="slide-up" className="text-xs">Slide Up</SelectItem>
-                <SelectItem value="slide-left" className="text-xs">Slide Left</SelectItem>
-                <SelectItem value="fade" className="text-xs">Fade</SelectItem>
-                <SelectItem value="none" className="text-xs">None</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+      {/* Flow Settings section removed - Display Mode, Progress Bar, and Transition controls
+          were non-functional (props not used in renderer). Re-add when implemented. */}
     </div>
   );
 };
