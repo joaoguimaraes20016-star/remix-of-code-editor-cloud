@@ -309,10 +309,17 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           : 'solid';
 
     // Extract button style settings from step settings
+    // Use a consistent default color for buttons
+    const defaultButtonColor = '#3B82F6';
+    const effectiveButtonColor = stepSettings.buttonColor && stepSettings.buttonColor !== 'transparent' 
+      ? stepSettings.buttonColor 
+      : defaultButtonColor;
+    
     const buttonStyleSettings: ButtonStyleSettings = {
       preset: stepSettings.buttonPreset || 'primary',
       fillType: currentFillType,
-      backgroundColor: stepSettings.buttonColor,
+      // For solid mode, always provide the actual color; for outline, it's transparent
+      backgroundColor: currentFillType === 'outline' ? 'transparent' : effectiveButtonColor,
       textColor: stepSettings.buttonTextColor,
       gradient: stepSettings.buttonGradient,
       size: stepSettings.buttonSize || 'md',
@@ -338,7 +345,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
         if (updates.fillType === 'outline') {
           mapped.buttonPreset = 'outline';
           mapped.buttonGradient = undefined;
-          mapped.buttonColor = 'transparent';
+          // Don't overwrite buttonColor when switching to outline - keep it for when user switches back
         }
         if (updates.fillType === 'solid') {
           // If we were outline/gradient, reset to primary for proper variant rendering
@@ -346,6 +353,10 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
             mapped.buttonPreset = 'primary';
           }
           mapped.buttonGradient = undefined;
+          // Restore proper color when switching to solid
+          if (!stepSettings.buttonColor || stepSettings.buttonColor === 'transparent') {
+            mapped.buttonColor = '#3B82F6';
+          }
         }
         if (updates.fillType === 'gradient') {
           mapped.buttonPreset = 'gradient';
@@ -431,7 +442,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           onChange={handleButtonStyleChange}
           showPreset
           showFullWidth
-          primaryColor={stepSettings.buttonColor || '#3B82F6'}
+          primaryColor={effectiveButtonColor}
         />
       </div>
     );

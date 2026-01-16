@@ -230,15 +230,34 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
   }, [activeFlowBlock]);
 
+  // Track whether step was explicitly set to null (user clicked "All Steps")
+  const [explicitNullStep, setExplicitNullStep] = useState<Record<string, boolean>>({});
+  
+  // Modified handler to track explicit null selections
+  const handleSelectApplicationStepWithTracking = useCallback((stepId: string | null) => {
+    if (activeFlowBlockId) {
+      // Track if user explicitly selected null (clicked "All Steps")
+      if (stepId === null) {
+        setExplicitNullStep(prev => ({ ...prev, [activeFlowBlockId]: true }));
+      } else {
+        setExplicitNullStep(prev => ({ ...prev, [activeFlowBlockId]: false }));
+      }
+      handleSelectApplicationStep(stepId);
+    }
+  }, [activeFlowBlockId, handleSelectApplicationStep]);
+  
   // Auto-select first step when clicking an Application Flow block
-  // ALWAYS default to first step if none is selected
+  // Only auto-select if user hasn't explicitly clicked "All Steps"
   useEffect(() => {
     if (activeFlowBlock && activeFlowBlockId) {
       const currentSelection = selectedFlowSteps[activeFlowBlockId];
       const steps = (activeFlowBlock.props as any)?.steps || [];
+      const wasExplicitlyNull = explicitNullStep[activeFlowBlockId];
       
-      // If no step is currently selected for this block, select the first one
-      if (!currentSelection && steps.length > 0) {
+      // Only auto-select first step if:
+      // 1. No step is selected AND user didn't explicitly click "All Steps"
+      // 2. OR the selected step no longer exists (was deleted)
+      if (!currentSelection && steps.length > 0 && !wasExplicitlyNull) {
         setSelectedFlowSteps(prev => ({
           ...prev,
           [activeFlowBlockId]: steps[0].id
@@ -251,9 +270,11 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           ...prev,
           [activeFlowBlockId]: steps[0]?.id || null
         }));
+        // Clear explicit null since we're auto-selecting due to deletion
+        setExplicitNullStep(prev => ({ ...prev, [activeFlowBlockId]: false }));
       }
     }
-  }, [activeFlowBlock, activeFlowBlockId, selectedFlowSteps]);
+  }, [activeFlowBlock, activeFlowBlockId, selectedFlowSteps, explicitNullStep]);
 
   // Handle page updates with history and action labels
   const handlePageUpdate = useCallback((updatedPage: Page, actionLabel?: string) => {
@@ -1615,7 +1636,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onAddFrameAt={handleAddFrameAt}
             activeStep={activeStep}
             selectedApplicationStepId={selectedApplicationStepId}
-            onSelectApplicationStep={handleSelectApplicationStep}
+            onSelectApplicationStep={handleSelectApplicationStepWithTracking}
             selectedStepElement={selectedStepElement}
             onClearStepElement={() => setSelectedStepElement(null)}
           />
