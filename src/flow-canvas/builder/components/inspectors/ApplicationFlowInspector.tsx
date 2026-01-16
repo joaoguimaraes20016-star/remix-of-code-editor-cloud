@@ -17,6 +17,7 @@ import {
   Palette,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,6 +34,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   DndContext,
   closestCenter,
@@ -208,6 +214,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   onSelectStep,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // Use controlled state from props, or fallback to local state
   const [localStepId, setLocalStepId] = useState<string | null>(null);
   const selectedStepId = controlledStepId !== undefined ? controlledStepId : localStepId;
@@ -472,165 +480,177 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
       </div>
 
-      {/* Appearance Settings - Fixed at bottom */}
-      <div className="flex-shrink-0 border-t border-border p-3 space-y-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Palette className="w-3 h-3 text-muted-foreground" />
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Appearance</span>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-[10px] text-muted-foreground">Background</Label>
-          <BackgroundEditor
-            value={{
-              type: settings.background?.type || 'solid',
-              color: settings.background?.color || '#ffffff',
-              gradient: settings.background?.gradient,
-              imageUrl: settings.background?.imageUrl,
-            } as BackgroundValue}
-            onChange={(value) => {
-              const bg: ApplicationFlowBackground = {
-                type: value.type,
-                color: value.color,
-                gradient: value.gradient,
-                imageUrl: value.imageUrl,
-              };
-              onUpdateBlock({ props: { ...settings, background: bg } });
-            }}
-            showImageOption={true}
-          />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground">Text Color</Label>
-          <ColorPickerPopover
-            color={settings.textColor || '#000000'}
-            onChange={(color) => onUpdateBlock({ props: { ...settings, textColor: color } })}
-          >
-            <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
-              <div 
-                className="w-5 h-5 rounded border border-border"
-                style={{ backgroundColor: settings.textColor || '#000000' }}
-              />
-              <span className="text-xs text-foreground font-mono">{settings.textColor || '#000000'}</span>
-            </button>
-          </ColorPickerPopover>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground">Input Background</Label>
-          <ColorPickerPopover
-            color={settings.inputBackground || '#ffffff'}
-            onChange={(color) => onUpdateBlock({ props: { ...settings, inputBackground: color } })}
-          >
-            <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
-              <div 
-                className="w-5 h-5 rounded border border-border"
-                style={{ backgroundColor: settings.inputBackground || '#ffffff' }}
-              />
-              <span className="text-xs text-foreground font-mono">{settings.inputBackground || '#ffffff'}</span>
-            </button>
-          </ColorPickerPopover>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground">Input Border</Label>
-          <ColorPickerPopover
-            color={settings.inputBorderColor || '#e5e7eb'}
-            onChange={(color) => onUpdateBlock({ props: { ...settings, inputBorderColor: color } })}
-          >
-            <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
-              <div 
-                className="w-5 h-5 rounded border border-border"
-                style={{ backgroundColor: settings.inputBorderColor || '#e5e7eb' }}
-              />
-              <span className="text-xs text-foreground font-mono">{settings.inputBorderColor || '#e5e7eb'}</span>
-            </button>
-          </ColorPickerPopover>
-        </div>
-      </div>
-
-      {/* Flow Settings */}
-      <div className="border-t border-border p-3 space-y-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Settings2 className="w-3 h-3 text-muted-foreground" />
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Flow Settings</span>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground">Display Mode</Label>
-          <div className="flex rounded-md overflow-hidden border border-border">
-            <button
-              onClick={() => onUpdateBlock({ props: { ...settings, displayMode: 'one-at-a-time' } })}
-              className={cn(
-                'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
-                settings.displayMode === 'one-at-a-time' 
-                  ? 'bg-foreground text-background' 
-                  : 'bg-background text-muted-foreground hover:bg-accent'
-              )}
-            >
-              One at a Time
-            </button>
-            <button
-              onClick={() => onUpdateBlock({ props: { ...settings, displayMode: 'all-visible' } })}
-              className={cn(
-                'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
-                settings.displayMode === 'all-visible' 
-                  ? 'bg-foreground text-background' 
-                  : 'bg-background text-muted-foreground hover:bg-accent'
-              )}
-            >
-              All Visible
-            </button>
+      {/* Appearance Settings - Collapsible */}
+      <Collapsible open={appearanceOpen} onOpenChange={setAppearanceOpen}>
+        <CollapsibleTrigger className="flex-shrink-0 w-full border-t border-border px-3 py-2.5 flex items-center justify-between hover:bg-accent/30 transition-colors">
+          <div className="flex items-center gap-2">
+            <Palette className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Appearance</span>
           </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground">Progress Bar</Label>
-          <div className="flex rounded-md overflow-hidden border border-border">
-            <button
-              onClick={() => onUpdateBlock({ props: { ...settings, showProgress: true } })}
-              className={cn(
-                'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
-                settings.showProgress 
-                  ? 'bg-foreground text-background' 
-                  : 'bg-background text-muted-foreground hover:bg-accent'
-              )}
-            >
-              Show
-            </button>
-            <button
-              onClick={() => onUpdateBlock({ props: { ...settings, showProgress: false } })}
-              className={cn(
-                'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
-                !settings.showProgress 
-                  ? 'bg-foreground text-background' 
-                  : 'bg-background text-muted-foreground hover:bg-accent'
-              )}
-            >
-              Hide
-            </button>
+          <ChevronDown className={cn("w-3 h-3 text-muted-foreground transition-transform", appearanceOpen && "rotate-180")} />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-3 pb-3 space-y-3">
+          <div className="space-y-2">
+            <Label className="text-[10px] text-muted-foreground">Background</Label>
+            <BackgroundEditor
+              value={{
+                type: settings.background?.type || 'solid',
+                color: settings.background?.color || '#ffffff',
+                gradient: settings.background?.gradient,
+                imageUrl: settings.background?.imageUrl,
+              } as BackgroundValue}
+              onChange={(value) => {
+                const bg: ApplicationFlowBackground = {
+                  type: value.type,
+                  color: value.color,
+                  gradient: value.gradient,
+                  imageUrl: value.imageUrl,
+                };
+                onUpdateBlock({ props: { ...settings, background: bg } });
+              }}
+              showImageOption={true}
+            />
           </div>
-        </div>
 
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground">Transition</Label>
-          <Select 
-            value={settings.transition || 'slide-up'}
-            onValueChange={(value) => onUpdateBlock({ props: { ...settings, transition: value } })}
-          >
-            <SelectTrigger className="h-7 text-xs bg-background border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-background border-border">
-              <SelectItem value="slide-up" className="text-xs">Slide Up</SelectItem>
-              <SelectItem value="slide-left" className="text-xs">Slide Left</SelectItem>
-              <SelectItem value="fade" className="text-xs">Fade</SelectItem>
-              <SelectItem value="none" className="text-xs">None</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Text Color</Label>
+            <ColorPickerPopover
+              color={settings.textColor || '#000000'}
+              onChange={(color) => onUpdateBlock({ props: { ...settings, textColor: color } })}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: settings.textColor || '#000000' }}
+                />
+                <span className="text-xs text-foreground font-mono">{settings.textColor || '#000000'}</span>
+              </button>
+            </ColorPickerPopover>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Input Background</Label>
+            <ColorPickerPopover
+              color={settings.inputBackground || '#ffffff'}
+              onChange={(color) => onUpdateBlock({ props: { ...settings, inputBackground: color } })}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: settings.inputBackground || '#ffffff' }}
+                />
+                <span className="text-xs text-foreground font-mono">{settings.inputBackground || '#ffffff'}</span>
+              </button>
+            </ColorPickerPopover>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Input Border</Label>
+            <ColorPickerPopover
+              color={settings.inputBorderColor || '#e5e7eb'}
+              onChange={(color) => onUpdateBlock({ props: { ...settings, inputBorderColor: color } })}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: settings.inputBorderColor || '#e5e7eb' }}
+                />
+                <span className="text-xs text-foreground font-mono">{settings.inputBorderColor || '#e5e7eb'}</span>
+              </button>
+            </ColorPickerPopover>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Flow Settings - Collapsible */}
+      <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <CollapsibleTrigger className="flex-shrink-0 w-full border-t border-border px-3 py-2.5 flex items-center justify-between hover:bg-accent/30 transition-colors">
+          <div className="flex items-center gap-2">
+            <Settings2 className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Flow Settings</span>
+          </div>
+          <ChevronDown className={cn("w-3 h-3 text-muted-foreground transition-transform", settingsOpen && "rotate-180")} />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-3 pb-3 space-y-3">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Display Mode</Label>
+            <div className="flex rounded-md overflow-hidden border border-border">
+              <button
+                type="button"
+                onClick={() => onUpdateBlock({ props: { ...settings, displayMode: 'one-at-a-time' } })}
+                className={cn(
+                  'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
+                  settings.displayMode === 'one-at-a-time' 
+                    ? 'bg-foreground text-background' 
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                One at a Time
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateBlock({ props: { ...settings, displayMode: 'all-visible' } })}
+                className={cn(
+                  'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
+                  settings.displayMode === 'all-visible' 
+                    ? 'bg-foreground text-background' 
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                All Visible
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Progress Bar</Label>
+            <div className="flex rounded-md overflow-hidden border border-border">
+              <button
+                type="button"
+                onClick={() => onUpdateBlock({ props: { ...settings, showProgress: true } })}
+                className={cn(
+                  'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
+                  settings.showProgress 
+                    ? 'bg-foreground text-background' 
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                Show
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateBlock({ props: { ...settings, showProgress: false } })}
+                className={cn(
+                  'flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors',
+                  !settings.showProgress 
+                    ? 'bg-foreground text-background' 
+                    : 'bg-background text-muted-foreground hover:bg-accent'
+                )}
+              >
+                Hide
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Transition</Label>
+            <Select 
+              value={settings.transition || 'slide-up'}
+              onValueChange={(value) => onUpdateBlock({ props: { ...settings, transition: value } })}
+            >
+              <SelectTrigger className="h-7 text-xs bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="slide-up" className="text-xs">Slide Up</SelectItem>
+                <SelectItem value="slide-left" className="text-xs">Slide Left</SelectItem>
+                <SelectItem value="fade" className="text-xs">Fade</SelectItem>
+                <SelectItem value="none" className="text-xs">None</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
