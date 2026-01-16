@@ -326,6 +326,9 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
 
     // Handle button style updates (BATCHED to avoid lost updates)
     const handleButtonStyleChange = (updates: Partial<ButtonStyleSettings>) => {
+      console.log('[ButtonStyle] Received updates:', updates);
+      console.log('[ButtonStyle] Current stepSettings.buttonPreset:', stepSettings.buttonPreset);
+      
       const mapped: Record<string, any> = {};
 
       // Preset: ignore 'custom' as a stored preset (it's just a UI mode)
@@ -398,6 +401,8 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
         mapped.buttonFullWidth = false;
       }
 
+      console.log('[ButtonStyle] Final mapped values:', mapped);
+      
       if (Object.keys(mapped).length > 0) {
         updateStepSettings(mapped);
       }
@@ -431,6 +436,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           onChange={handleButtonStyleChange}
           showPreset
           showFullWidth
+          primaryColor={stepSettings.buttonColor || '#3B82F6'}
         />
       </div>
     );
