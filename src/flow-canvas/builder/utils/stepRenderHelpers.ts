@@ -2,6 +2,7 @@
 // This ensures consistent rendering between canvas and inspector preview
 
 import { ApplicationFlowStep, ApplicationFlowStepSettings } from '../../types/infostack';
+import { User, UserCircle, Mail, AtSign, Phone, Smartphone, type LucideIcon } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────
 // BUTTON SYSTEM - All button rendering uses UnifiedButton
@@ -89,7 +90,7 @@ export const getDefaultTitle = (stepType: string): string => {
     case 'question':
       return 'Your question here';
     case 'capture':
-      return 'Where should we send your results?';
+      return 'What\'s the best way to reach you?';
     case 'ending':
       return 'Thanks — we will be in touch!';
     default:
@@ -113,10 +114,58 @@ export const getDefaultButtonText = (stepType: string): string => {
     case 'welcome':
       return 'Start Application →';
     case 'capture':
-      return 'Submit';
+      return 'Submit and proceed';
     case 'ending':
       return 'Done';
     default:
       return 'Continue';
+  }
+};
+
+// ─────────────────────────────────────────────────────────
+// Capture step icons - Lucide icons for input fields
+// ─────────────────────────────────────────────────────────
+
+export type CaptureIconType = 'user' | 'user-circle' | 'mail' | 'at-sign' | 'phone' | 'smartphone' | 'none';
+
+const CAPTURE_ICONS: Record<string, LucideIcon> = {
+  'user': User,
+  'user-circle': UserCircle,
+  'mail': Mail,
+  'at-sign': AtSign,
+  'phone': Phone,
+  'smartphone': Smartphone,
+};
+
+export const getCaptureInputIcon = (iconName?: string): LucideIcon | null => {
+  if (!iconName || iconName === 'none') return null;
+  return CAPTURE_ICONS[iconName] || null;
+};
+
+// Default icons for each capture field type
+export const getDefaultCaptureIcon = (fieldType: 'name' | 'email' | 'phone'): CaptureIconType => {
+  switch (fieldType) {
+    case 'name':
+      return 'user';
+    case 'email':
+      return 'mail';
+    case 'phone':
+      return 'phone';
+    default:
+      return 'none';
+  }
+};
+
+// Default placeholders for capture fields
+export const getDefaultCapturePlaceholder = (fieldType: 'name' | 'email' | 'phone'): string => {
+  switch (fieldType) {
+    case 'name':
+      return 'Your name';
+    case 'email':
+      return 'Your email';
+    case 'phone':
+      return 'Your phone';
+    default:
+      return '';
   }
 };

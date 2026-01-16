@@ -52,47 +52,63 @@ interface InteractiveBlockInspectorProps {
 }
 
 // Collapsible section component - uses builder tokens for consistency
-const CollapsibleSection: React.FC<{
+// Using forwardRef to support Radix UI components that use asChild
+interface CollapsibleSectionProps {
   title: string;
   icon?: React.ReactNode;
   defaultOpen?: boolean;
   children: React.ReactNode;
-}> = ({ title, icon, defaultOpen = false, children }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+}
 
-  return (
-    <div className="border-b border-builder-border">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          {icon && <span className="text-builder-text-muted">{icon}</span>}
-          <span className="text-xs font-medium text-builder-text">{title}</span>
-        </div>
-        {isOpen ? (
-          <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
+const CollapsibleSection = React.forwardRef<HTMLDivElement, CollapsibleSectionProps>(
+  ({ title, icon, defaultOpen = false, children }, ref) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
+
+    return (
+      <div ref={ref} className="border-b border-builder-border">
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            {icon && <span className="text-builder-text-muted">{icon}</span>}
+            <span className="text-xs font-medium text-builder-text">{title}</span>
+          </div>
+          {isOpen ? (
+            <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
+          )}
+        </button>
+        {isOpen && (
+          <div className="px-3 pb-3 space-y-3">
+            {children}
+          </div>
         )}
-      </button>
-      {isOpen && (
-        <div className="px-3 pb-3 space-y-3">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
+      </div>
+    );
+  }
+);
+CollapsibleSection.displayName = 'CollapsibleSection';
 
 // Field group with label - uses builder tokens
-const FieldGroup: React.FC<{ label: string; children: React.ReactNode; hint?: string }> = ({ label, children, hint }) => (
-  <div className="space-y-1.5">
-    <Label className="text-xs text-builder-text-muted">{label}</Label>
-    {children}
-    {hint && <p className="text-[10px] text-builder-text-dim">{hint}</p>}
-  </div>
+// Using forwardRef to support Radix UI components
+interface FieldGroupProps {
+  label: string;
+  children: React.ReactNode;
+  hint?: string;
+}
+
+const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
+  ({ label, children, hint }, ref) => (
+    <div ref={ref} className="space-y-1.5">
+      <Label className="text-xs text-builder-text-muted">{label}</Label>
+      {children}
+      {hint && <p className="text-[10px] text-builder-text-dim">{hint}</p>}
+    </div>
+  )
 );
+FieldGroup.displayName = 'FieldGroup';
 
 export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps> = ({
   block,
