@@ -527,23 +527,7 @@ export const CaptureNodeEditor: React.FC<CaptureNodeEditorProps> = ({
               </Select>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground uppercase">Button Style</Label>
-              <Select
-                value={settings.buttonStyle || 'solid'}
-                onValueChange={(value) => updateSettings({ buttonStyle: value as 'solid' | 'outline' | 'minimal' | 'primary' })}
-              >
-                <SelectTrigger className="h-8 text-xs bg-background border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background border-border">
-                  <SelectItem value="solid" className="text-xs">Solid</SelectItem>
-                  <SelectItem value="outline" className="text-xs">Outline</SelectItem>
-                  <SelectItem value="minimal" className="text-xs">Minimal</SelectItem>
-                  <SelectItem value="primary" className="text-xs">Primary</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Note: Button styling removed - click the button for styling via unified button inspector */}
           </>
         )}
 

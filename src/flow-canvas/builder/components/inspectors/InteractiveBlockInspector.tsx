@@ -1,16 +1,19 @@
 /**
  * InteractiveBlockInspector
  * 
- * Full-featured inspector for standalone interactive blocks (form-field, open-question, etc.)
- * Provides the same styling controls as StepContentEditor for parity.
+ * Inspector for standalone interactive blocks (form-field, open-question, etc.)
  * 
  * Provides editing controls for:
  * - Question/heading text
  * - Input type and settings
- * - Button text, colors, gradients, size, corners
+ * - Button TEXT only (styling handled by unified button inspector)
  * - Background styling (solid/gradient)
  * - Popup opt-in settings (for contact info blocks)
  * - Field validation settings
+ * 
+ * NOTE: Button styling is NOT controlled here - click the button on canvas
+ * to access the unified button inspector. This ensures all buttons use
+ * the same styling system.
  */
 
 import React, { useState } from 'react';
@@ -26,11 +29,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Circle,
-  Square,
-  Maximize2,
   Eye,
-  MousePointer2,
   ArrowRight,
   Layers,
   Send,
@@ -142,35 +141,6 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
     }
   };
 
-  // Helper to update element styles
-  const updateElementStyles = (elementId: string, styleUpdates: Record<string, string | undefined>) => {
-    const element = elements.find(el => el.id === elementId);
-    if (element) {
-      updateElement(elementId, { 
-        styles: { ...element.styles, ...styleUpdates } as Record<string, string>
-      });
-    }
-  };
-
-  // Helper to update both element props and styles atomically
-  const updateButtonStyle = (updates: {
-    props?: Record<string, unknown>;
-    styles?: Record<string, string | undefined>;
-  }) => {
-    if (!buttonElement) return;
-    const newElements = elements.map(el => {
-      if (el.id === buttonElement.id) {
-        return {
-          ...el,
-          props: updates.props ? { ...el.props, ...updates.props } : el.props,
-          styles: updates.styles ? { ...el.styles, ...updates.styles } as Record<string, string> : el.styles,
-        };
-      }
-      return el;
-    });
-    onUpdateBlock({ elements: newElements });
-  };
-
   // Helper to update block props (for non-styling settings like popup behavior)
   const updateBlockProps = (propUpdates: Record<string, unknown>) => {
     onUpdateBlock({ props: { ...blockProps, ...propUpdates } });
@@ -184,21 +154,11 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
     });
   };
 
-  // Get input type
+  // Get input type and properties
   const inputType = inputElement?.props?.type as string || inputElement?.props?.inputType as string || 'text';
   const placeholder = inputElement?.props?.placeholder as string || '';
   const isRequired = inputElement?.props?.required as boolean || false;
   const fieldKey = inputElement?.props?.fieldKey as string || '';
-
-  // Get button styling from the ELEMENT (where CanvasRenderer reads from)
-  // This is the source of truth - element.props.fillType, element.props.gradient, element.styles.backgroundColor
-  const buttonFillType = (buttonElement?.props?.fillType as 'solid' | 'gradient') || 'solid';
-  const buttonColor = (buttonElement?.styles?.backgroundColor as string) || '#18181b';
-  const buttonGradient = buttonElement?.props?.gradient as GradientValue | undefined;
-  const buttonTextColor = (buttonElement?.props?.textColor as string) || '#ffffff';
-  const buttonSize = (buttonElement?.props?.buttonSize as 'sm' | 'md' | 'lg') || 'md';
-  const buttonRadius = (buttonElement?.styles?.borderRadius as string) || '12px';
-  const buttonFullWidth = buttonElement?.styles?.width === '100%';
   
   // Background styling - read from block.styles (SINGLE SOURCE OF TRUTH)
   const blockStyles = block.styles || {};
@@ -498,180 +458,7 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           </CollapsibleSection>
         )}
 
-        {/* Button Style Section - Updates ELEMENT props/styles directly for CanvasRenderer to read */}
-        {buttonElement && (
-          <CollapsibleSection title="Button Style" icon={<Palette className="w-3.5 h-3.5" />}>
-            {/* Tip for advanced styling */}
-            <p className="text-[10px] text-muted-foreground pb-2">
-              Tip: Click the button on canvas for more styling options.
-            </p>
-            
-            {/* Button Fill Type - writes to element.props.fillType */}
-            <FieldGroup label="Fill Type">
-              <div className="flex rounded-md overflow-hidden border border-border">
-                <button
-                  onClick={() => updateButtonStyle({ props: { fillType: 'solid' } })}
-                  className={cn(
-                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
-                    buttonFillType === 'solid'
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  Solid
-                </button>
-                <button
-                  onClick={() => {
-                    // When switching to gradient, set a default gradient if none exists
-                    const gradient = buttonGradient || {
-                      type: 'linear' as const,
-                      angle: 135,
-                      stops: [
-                        { color: '#8B5CF6', position: 0 },
-                        { color: '#D946EF', position: 100 },
-                      ],
-                    };
-                    updateButtonStyle({ props: { fillType: 'gradient', gradient } });
-                  }}
-                  className={cn(
-                    'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors',
-                    buttonFillType === 'gradient'
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  Gradient
-                </button>
-              </div>
-            </FieldGroup>
-
-            {/* Button Color (Solid) - writes to element.styles.backgroundColor */}
-            <FieldGroup label="Button Color">
-              <ColorPickerPopover
-                color={buttonColor}
-                onChange={(color) => updateButtonStyle({ styles: { backgroundColor: color } })}
-              >
-                <button className={cn(
-                  "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
-                  buttonFillType === 'gradient' ? 'opacity-50 bg-muted/30' : 'bg-muted/50 hover:bg-muted'
-                )}>
-                  <div 
-                    className="w-6 h-6 rounded border border-border"
-                    style={{ backgroundColor: buttonColor }}
-                  />
-                  <span className="text-xs text-foreground font-mono">{buttonColor}</span>
-                  {buttonFillType === 'gradient' && <span className="text-[10px] text-muted-foreground ml-auto">(inactive)</span>}
-                </button>
-              </ColorPickerPopover>
-            </FieldGroup>
-
-            {/* Button Gradient - writes to element.props.gradient */}
-            <FieldGroup label="Button Gradient">
-              <GradientPickerPopover
-                value={buttonGradient || null}
-                onChange={(gradient) => updateButtonStyle({ props: { gradient } })}
-              >
-                <button className={cn(
-                  "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",
-                  buttonFillType === 'solid' ? 'opacity-50 bg-muted/30' : 'bg-muted/50 hover:bg-muted'
-                )}>
-                  <div 
-                    className="w-6 h-6 rounded border border-border"
-                    style={{ background: buttonGradient ? gradientToCSS(buttonGradient) : gradientToCSS(defaultGradient) }}
-                  />
-                  <span className="text-xs text-foreground">Edit Gradient</span>
-                  {buttonFillType === 'solid' && <span className="text-[10px] text-muted-foreground ml-auto">(inactive)</span>}
-                </button>
-              </GradientPickerPopover>
-            </FieldGroup>
-
-            {/* Button Text Color - writes to element.props.textColor */}
-            <FieldGroup label="Button Text Color">
-              <ColorPickerPopover
-                color={buttonTextColor}
-                onChange={(color) => updateButtonStyle({ props: { textColor: color } })}
-              >
-                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                  <div 
-                    className="w-6 h-6 rounded border border-border"
-                    style={{ backgroundColor: buttonTextColor }}
-                  />
-                  <span className="text-xs text-foreground font-mono">{buttonTextColor}</span>
-                </button>
-              </ColorPickerPopover>
-            </FieldGroup>
-
-            {/* Button Size - writes to element.props.buttonSize */}
-            <FieldGroup label="Button Size">
-              <div className="flex rounded-md overflow-hidden border border-border">
-                {(['sm', 'md', 'lg'] as const).map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => updateButtonStyle({ props: { buttonSize: size } })}
-                    className={cn(
-                      'flex-1 px-3 py-1.5 text-[10px] font-medium transition-colors uppercase',
-                      buttonSize === size
-                        ? 'bg-foreground text-background'
-                        : 'bg-background text-muted-foreground hover:bg-accent'
-                    )}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </FieldGroup>
-
-            {/* Button Corners - writes to element.styles.borderRadius */}
-            <FieldGroup label="Button Corners">
-              <div className="flex rounded-md overflow-hidden border border-border">
-                <button
-                  onClick={() => updateButtonStyle({ styles: { borderRadius: '0px' } })}
-                  className={cn(
-                    'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
-                    buttonRadius === '0px'
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  <Square className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => updateButtonStyle({ styles: { borderRadius: '12px' } })}
-                  className={cn(
-                    'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
-                    buttonRadius === '12px' || (!buttonRadius || buttonRadius === 'undefined')
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  <div className="w-3.5 h-3.5 border-2 border-current rounded" />
-                </button>
-                <button
-                  onClick={() => updateButtonStyle({ styles: { borderRadius: '9999px' } })}
-                  className={cn(
-                    'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
-                    buttonRadius === '9999px'
-                      ? 'bg-foreground text-background'
-                      : 'bg-background text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  <Circle className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </FieldGroup>
-
-            {/* Full Width Toggle - writes to element.styles.width */}
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Full Width Button</Label>
-              <Switch
-                checked={buttonFullWidth}
-                onCheckedChange={(checked) => updateButtonStyle({ 
-                  styles: { width: checked ? '100%' : undefined } 
-                })}
-              />
-            </div>
-          </CollapsibleSection>
-        )}
+        {/* Note: Button styling removed - click the button on canvas for styling via unified button inspector */}
 
         {/* Background Section - writes to block.styles (single source of truth) */}
         <CollapsibleSection title="Background" icon={<Palette className="w-3.5 h-3.5" />}>
