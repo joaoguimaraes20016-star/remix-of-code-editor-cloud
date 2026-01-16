@@ -292,20 +292,18 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         >
           <button
             type="button"
-            style={getButtonStyle(s)}
-            onClick={(e) => {
-              if (isPreviewMode) {
-                handleButtonClick(e, s);
-              }
-            }}
-            disabled={isButtonDisabled(s)}
-            aria-disabled={isButtonDisabled(s)}
             className={cn(
               getButtonClasses(s),
               'builder-element-selectable',
               isPreviewMode ? 'cursor-pointer' : 'pointer-events-none',
               isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
             )}
+            style={getButtonStyle(s)}
+            onClick={(e) => {
+              if (isPreviewMode) handleButtonClick(e, s);
+            }}
+            disabled={isButtonDisabled(s)}
+            aria-disabled={isButtonDisabled(s)}
           >
             {s.buttonText || 'Start Application →'}
           </button>
