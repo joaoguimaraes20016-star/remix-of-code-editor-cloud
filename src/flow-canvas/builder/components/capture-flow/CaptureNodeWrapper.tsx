@@ -1,9 +1,17 @@
 // CaptureNodeWrapper - Shared layout wrapper for all node types
 // Handles title, description, alignment, spacing, and button rendering
+// USES UNIFIED BUTTON RENDERING from stepRenderHelpers - NO SPECIAL CASING
 
 import React from 'react';
 import { CaptureNode } from '@/flow-canvas/types/captureFlow';
 import { cn } from '@/lib/utils';
+import {
+  getTitleSizeClass,
+  getAlignClass,
+  getSpacingClass,
+  getButtonClasses,
+  getButtonStyle,
+} from '../../utils/stepRenderHelpers';
 
 interface CaptureNodeWrapperProps {
   node: CaptureNode;
@@ -15,50 +23,6 @@ interface CaptureNodeWrapperProps {
   onSelect?: () => void;
   hideButton?: boolean;
 }
-
-// Style helpers
-const getTitleSizeClass = (size?: string): string => {
-  const sizes: Record<string, string> = {
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg',
-    xl: 'text-xl',
-    '2xl': 'text-2xl',
-  };
-  return sizes[size || 'lg'] || 'text-lg';
-};
-
-const getAlignClass = (align?: string): string => {
-  switch (align) {
-    case 'left':
-      return 'text-left items-start';
-    case 'right':
-      return 'text-right items-end';
-    default:
-      return 'text-center items-center';
-  }
-};
-
-const getSpacingClass = (spacing?: string): string => {
-  const spacings: Record<string, string> = {
-    compact: 'py-4 px-4 gap-3',
-    normal: 'py-8 px-6 gap-5',
-    relaxed: 'py-12 px-8 gap-7',
-  };
-  return spacings[spacing || 'normal'] || 'py-8 px-6 gap-5';
-};
-
-const getButtonClasses = (style?: string): string => {
-  const base = 'px-6 py-3 font-medium text-sm transition-all rounded-lg';
-  switch (style) {
-    case 'outline':
-      return cn(base, 'bg-transparent border-2 border-primary text-primary hover:bg-primary/10');
-    case 'minimal':
-      return cn(base, 'bg-transparent text-primary hover:bg-primary/10 underline-offset-2 hover:underline');
-    default:
-      return cn(base, 'bg-primary text-primary-foreground hover:opacity-90');
-  }
-};
 
 export const CaptureNodeWrapper: React.FC<CaptureNodeWrapperProps> = ({
   node,
@@ -82,6 +46,15 @@ export const CaptureNodeWrapper: React.FC<CaptureNodeWrapperProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit();
+  };
+
+  // Map CaptureNode settings to unified button settings format
+  // Only map properties that exist on CaptureNodeSettings
+  const buttonSettings = {
+    buttonStyle: settings.buttonStyle === 'solid' || settings.buttonStyle === 'primary' 
+      ? undefined  // default filled style
+      : settings.buttonStyle, // 'outline' or 'minimal' -> maps to 'outline' or 'ghost'
+    buttonColor: settings.buttonColor,
   };
 
   return (
@@ -125,20 +98,12 @@ export const CaptureNodeWrapper: React.FC<CaptureNodeWrapperProps> = ({
         </p>
       )}
 
-      {/* Continue button */}
+      {/* Continue button - USES UNIFIED BUTTON RENDERING */}
       {!hideButton && (
         <button
           type="submit"
-          className={getButtonClasses(settings.buttonStyle)}
-          style={settings.buttonColor ? { 
-            backgroundColor: settings.buttonStyle === 'outline' || settings.buttonStyle === 'minimal' 
-              ? undefined 
-              : settings.buttonColor,
-            borderColor: settings.buttonStyle === 'outline' ? settings.buttonColor : undefined,
-            color: settings.buttonStyle === 'outline' || settings.buttonStyle === 'minimal' 
-              ? settings.buttonColor 
-              : undefined,
-          } : undefined}
+          className={getButtonClasses(buttonSettings)}
+          style={getButtonStyle(buttonSettings)}
         >
           {settings.buttonText || 'Continue'}
         </button>
