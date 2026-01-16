@@ -105,8 +105,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   );
   // State for selected step within Application Flow blocks - scoped per block ID
   const [selectedFlowSteps, setSelectedFlowSteps] = useState<Record<string, string | null>>({});
-  // Track which blocks have been "visited" to distinguish initial selection from intentional deselection
-  const visitedFlowBlocksRef = useRef<Set<string>>(new Set());
   // State for selected element within a flow step (for element-level editing)
   const [selectedStepElement, setSelectedStepElement] = useState<{
     stepId: string;
@@ -224,23 +222,19 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
   }, [activeFlowBlock]);
 
-  // Auto-select first step ONLY when first visiting an Application Flow block
+  // Auto-select first step when clicking an Application Flow block
+  // ALWAYS default to first step if none is selected
   useEffect(() => {
     if (activeFlowBlock && activeFlowBlockId) {
       const currentSelection = selectedFlowSteps[activeFlowBlockId];
       const steps = (activeFlowBlock.props as any)?.steps || [];
-      const hasVisited = visitedFlowBlocksRef.current.has(activeFlowBlockId);
       
-      // Only auto-select if this is the FIRST time visiting this block
-      if (!hasVisited && !currentSelection && steps.length > 0) {
+      // If no step is currently selected for this block, select the first one
+      if (!currentSelection && steps.length > 0) {
         setSelectedFlowSteps(prev => ({
           ...prev,
           [activeFlowBlockId]: steps[0].id
         }));
-        visitedFlowBlocksRef.current.add(activeFlowBlockId);
-      } else if (!hasVisited) {
-        // Mark as visited even if no steps
-        visitedFlowBlocksRef.current.add(activeFlowBlockId);
       }
       
       // If the selected step no longer exists (was deleted), reset to first step

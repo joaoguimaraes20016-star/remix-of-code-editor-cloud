@@ -177,10 +177,10 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     return stepSettings[key] || flowTextColor;
   };
   
-  // Helper to get option style settings from step
+  // Helper to get option style settings from step - enhanced with checkbox indicator styling
   const getOptionStyles = (stepSettings: any) => {
     const style = stepSettings.optionStyle || 'outlined';
-    const radius = stepSettings.optionRadius ?? 8;
+    const radius = stepSettings.optionRadius ?? 12;
     const selectedBg = stepSettings.optionSelectedBg || '#000000';
     
     return {
@@ -190,7 +190,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
       // For minimal style: no bg, no border
       ...(style === 'outlined' && {
         backgroundColor: flowInputBg,
-        borderWidth: '1px',
+        borderWidth: '2px',
         borderStyle: 'solid',
         borderColor: flowInputBorder,
       }),
@@ -499,16 +499,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           </div>
         )}
         
-        {/* Multiple Choice Options - each option selectable */}
+        {/* Multiple Choice Options - enhanced with checkbox indicator */}
         {s.questionType === 'multiple-choice' && s.options && (
-          <div className="mt-4 space-y-1.5 max-w-md w-full">
+          <div className="mt-4 space-y-2 max-w-md w-full">
             {(s.options as string[]).map((option: string, i: number) => (
               <div 
                 key={i} 
                 className={cn(
-                  'px-3.5 py-2.5 text-left text-sm cursor-pointer transition-colors duration-150',
-                  !isPreviewMode && 'hover:opacity-80',
-                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-1'
+                  'flex items-center gap-3 px-4 py-3 text-left text-sm cursor-pointer transition-all duration-150',
+                  !isPreviewMode && 'hover:opacity-80 hover:scale-[1.01]',
+                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-2'
                 )}
                 style={{ 
                   ...getOptionStyles(s),
@@ -516,7 +516,15 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 }}
                 onClick={(e) => handleElementClick(e, step.id, 'option', i)}
               >
-                {option}
+                {/* Checkbox indicator */}
+                <div 
+                  className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                  style={{ 
+                    borderColor: flowInputBorder,
+                    backgroundColor: 'transparent',
+                  }}
+                />
+                <span className="flex-1">{option}</span>
               </div>
             ))}
           </div>
@@ -618,16 +626,16 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           </div>
         )}
 
-        {/* Yes/No */}
+        {/* Yes/No - enhanced with radio indicator */}
         {s.questionType === 'yes-no' && (
-          <div className="mt-4 space-y-1.5 max-w-md w-full">
+          <div className="mt-4 space-y-2 max-w-md w-full">
             {['Yes', 'No'].map((option, i) => (
               <div 
                 key={option} 
                 className={cn(
-                  'px-3.5 py-2.5 text-left text-sm cursor-pointer transition-colors duration-150',
-                  !isPreviewMode && 'hover:opacity-80',
-                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-1'
+                  'flex items-center gap-3 px-4 py-3 text-left text-sm cursor-pointer transition-all duration-150',
+                  !isPreviewMode && 'hover:opacity-80 hover:scale-[1.01]',
+                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-2'
                 )}
                 style={{ 
                   ...getOptionStyles(s),
@@ -635,7 +643,15 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 }}
                 onClick={(e) => handleElementClick(e, step.id, 'option', i)}
               >
-                {option}
+                {/* Radio indicator */}
+                <div 
+                  className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                  style={{ 
+                    borderColor: flowInputBorder,
+                    backgroundColor: 'transparent',
+                  }}
+                />
+                <span className="flex-1">{option}</span>
               </div>
             ))}
           </div>
