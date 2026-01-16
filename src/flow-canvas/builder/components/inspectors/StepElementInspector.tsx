@@ -445,63 +445,20 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           </div>
         </CollapsibleSection>
         
-        <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />}>
-          <FieldGroup label="Button Color">
-            <ColorPickerPopover
-              color={stepSettings.buttonBg || '#000000'}
-              onChange={(color) => updateStepSetting('buttonBg', color)}
-            >
-              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
-                <div 
-                  className="w-5 h-5 rounded border border-border"
-                  style={{ backgroundColor: stepSettings.buttonBg || '#000000' }}
-                />
-                <span className="text-xs text-foreground font-mono">{stepSettings.buttonBg || '#000000'}</span>
-              </button>
-            </ColorPickerPopover>
-          </FieldGroup>
-          
-          <FieldGroup label="Text Color">
-            <ColorPickerPopover
-              color={stepSettings.buttonTextColor || '#ffffff'}
-              onChange={(color) => updateStepSetting('buttonTextColor', color)}
-            >
-              <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
-                <div 
-                  className="w-5 h-5 rounded border border-border"
-                  style={{ backgroundColor: stepSettings.buttonTextColor || '#ffffff' }}
-                />
-                <span className="text-xs text-foreground font-mono">{stepSettings.buttonTextColor || '#ffffff'}</span>
-              </button>
-            </ColorPickerPopover>
-          </FieldGroup>
-          
-          <FieldGroup label="Border Radius">
-            <div className="flex items-center gap-3">
-              <Slider
-                value={[stepSettings.buttonRadius || 8]}
-                onValueChange={([value]) => updateStepSetting('buttonRadius', value)}
-                min={0}
-                max={24}
-                step={2}
-                className="flex-1"
-              />
-              <span className="text-xs text-builder-text-muted w-10 text-right">{stepSettings.buttonRadius || 8}px</span>
-            </div>
-          </FieldGroup>
-          
-          <FieldGroup label="Width">
+        <CollapsibleSection title="Preset" icon={<Palette className="w-3.5 h-3.5" />}>
+          <FieldGroup label="Button Preset" hint="Button styling is controlled by the shared Button system">
             <Select
-              value={stepSettings.buttonWidth || 'auto'}
-              onValueChange={(value) => updateStepSetting('buttonWidth', value)}
+              value={stepSettings.buttonPreset || 'primary'}
+              onValueChange={(value) => updateStepSetting('buttonPreset', value)}
             >
               <SelectTrigger className="text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">Auto</SelectItem>
-                <SelectItem value="full">Full Width</SelectItem>
-                <SelectItem value="half">Half Width</SelectItem>
+                <SelectItem value="primary">Primary</SelectItem>
+                <SelectItem value="secondary">Secondary</SelectItem>
+                <SelectItem value="outline">Outline</SelectItem>
+                <SelectItem value="ghost">Ghost</SelectItem>
               </SelectContent>
             </Select>
           </FieldGroup>

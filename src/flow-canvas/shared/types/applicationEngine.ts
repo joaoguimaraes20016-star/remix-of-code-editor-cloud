@@ -85,12 +85,8 @@ export interface ApplicationStepSettings {
   spacing?: 'compact' | 'normal' | 'relaxed';
   inputStyle?: 'default' | 'minimal' | 'rounded' | 'square' | 'pill';
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary' | 'ghost';
-  buttonColor?: string;
-  buttonTextColor?: string;
-  buttonSize?: 'sm' | 'md' | 'lg';
-  buttonRadius?: 'none' | 'rounded' | 'full';
-  buttonFullWidth?: boolean;
+  // Button preset - references shared Button system
+  buttonPreset?: 'primary' | 'secondary' | 'outline' | 'ghost';
   // Answer/option styling
   answerBgColor?: string;
   answerBorderColor?: string;
@@ -250,7 +246,7 @@ export function createApplicationStep(
       spacing: 'normal',
       inputStyle: 'default',
       titleSize: 'lg',
-      buttonStyle: 'primary',
+      buttonPreset: 'primary',
     },
     navigation: {
       action: 'next',

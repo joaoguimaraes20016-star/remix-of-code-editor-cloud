@@ -83,8 +83,8 @@ export interface CaptureNodeSettings {
   spacing?: 'compact' | 'normal' | 'relaxed';
   inputStyle?: 'default' | 'minimal' | 'rounded' | 'square';
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary';
-  buttonColor?: string;
+  // Button preset - references shared Button system
+  buttonPreset?: 'primary' | 'secondary' | 'outline' | 'ghost';
 }
 
 export interface CaptureNodeNavigation {
@@ -227,7 +227,7 @@ export function createCaptureNode(type: CaptureNodeType, overrides?: Partial<Cap
       spacing: 'normal',
       inputStyle: 'default',
       titleSize: 'lg',
-      buttonStyle: 'primary',
+      buttonPreset: 'primary',
     },
     navigation: {
       action: 'next',
