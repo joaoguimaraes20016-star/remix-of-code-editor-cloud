@@ -84,7 +84,10 @@ export interface ApplicationStepSettings {
   align?: 'left' | 'center' | 'right';
   spacing?: 'compact' | 'normal' | 'relaxed';
   inputStyle?: 'default' | 'minimal' | 'rounded' | 'square' | 'pill';
-  titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  titleColor?: string;
+  descriptionSize?: 'xs' | 'sm' | 'base' | 'lg';
+  descriptionColor?: string;
   // Button preset - references shared Button system
   buttonPreset?: 'primary' | 'secondary' | 'outline' | 'ghost';
   // Answer/option styling

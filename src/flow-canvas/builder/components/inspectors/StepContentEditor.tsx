@@ -503,7 +503,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
         <div className="flex-1 overflow-y-auto builder-scroll p-4 space-y-4">
           {/* Title Size */}
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground uppercase">Text Size</Label>
+            <Label className="text-[10px] text-muted-foreground uppercase">Title Size</Label>
             <Select 
               value={stepSettings.titleSize || 'xl'}
               onValueChange={(value) => updateSettings({ titleSize: value as ApplicationFlowStepSettings['titleSize'] })}
@@ -512,11 +512,67 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background border-border">
-                <SelectItem value="lg" className="text-xs">Small</SelectItem>
-                <SelectItem value="xl" className="text-xs">Medium</SelectItem>
-                <SelectItem value="2xl" className="text-xs">Large</SelectItem>
+                <SelectItem value="sm" className="text-xs">Small</SelectItem>
+                <SelectItem value="md" className="text-xs">Medium</SelectItem>
+                <SelectItem value="lg" className="text-xs">Large</SelectItem>
+                <SelectItem value="xl" className="text-xs">X-Large</SelectItem>
+                <SelectItem value="2xl" className="text-xs">Huge</SelectItem>
+                <SelectItem value="3xl" className="text-xs">Giant</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Title Color */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-muted-foreground uppercase">Title Color</Label>
+            <ColorPickerPopover
+              color={stepSettings.titleColor || '#000000'}
+              onChange={(color) => updateSettings({ titleColor: color })}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: stepSettings.titleColor || '#000000' }}
+                />
+                <span className="text-xs text-foreground font-mono">{stepSettings.titleColor || '#000000'}</span>
+              </button>
+            </ColorPickerPopover>
+          </div>
+
+          {/* Description Size */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-muted-foreground uppercase">Description Size</Label>
+            <Select 
+              value={stepSettings.descriptionSize || 'sm'}
+              onValueChange={(value) => updateSettings({ descriptionSize: value as ApplicationFlowStepSettings['descriptionSize'] })}
+            >
+              <SelectTrigger className="h-8 text-xs bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="xs" className="text-xs">Extra Small</SelectItem>
+                <SelectItem value="sm" className="text-xs">Small</SelectItem>
+                <SelectItem value="base" className="text-xs">Normal</SelectItem>
+                <SelectItem value="lg" className="text-xs">Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Description Color */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-muted-foreground uppercase">Description Color</Label>
+            <ColorPickerPopover
+              color={stepSettings.descriptionColor || '#666666'}
+              onChange={(color) => updateSettings({ descriptionColor: color })}
+            >
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
+                <div 
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: stepSettings.descriptionColor || '#666666' }}
+                />
+                <span className="text-xs text-foreground font-mono">{stepSettings.descriptionColor || '#666666'}</span>
+              </button>
+            </ColorPickerPopover>
           </div>
 
           {/* Text Alignment */}

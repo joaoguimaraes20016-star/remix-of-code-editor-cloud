@@ -494,7 +494,7 @@ export const CaptureNodeEditor: React.FC<CaptureNodeEditorProps> = ({
               <Label className="text-[10px] text-muted-foreground uppercase">Title Size</Label>
               <Select
                 value={settings.titleSize || 'xl'}
-                onValueChange={(value) => updateSettings({ titleSize: value as 'sm' | 'md' | 'lg' | 'xl' | '2xl' })}
+                onValueChange={(value) => updateSettings({ titleSize: value as 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' })}
               >
                 <SelectTrigger className="h-8 text-xs bg-background border-border">
                   <SelectValue />
@@ -503,8 +503,9 @@ export const CaptureNodeEditor: React.FC<CaptureNodeEditorProps> = ({
                   <SelectItem value="sm" className="text-xs">Small</SelectItem>
                   <SelectItem value="md" className="text-xs">Medium</SelectItem>
                   <SelectItem value="lg" className="text-xs">Large</SelectItem>
-                  <SelectItem value="xl" className="text-xs">Extra Large</SelectItem>
-                  <SelectItem value="2xl" className="text-xs">2X Large</SelectItem>
+                  <SelectItem value="xl" className="text-xs">X-Large</SelectItem>
+                  <SelectItem value="2xl" className="text-xs">Huge</SelectItem>
+                  <SelectItem value="3xl" className="text-xs">Giant</SelectItem>
                 </SelectContent>
               </Select>
             </div>
