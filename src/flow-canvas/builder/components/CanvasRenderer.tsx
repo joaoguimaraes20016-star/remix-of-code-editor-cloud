@@ -210,12 +210,12 @@ interface ButtonAction {
 }
 
 // Theme context for passing dark mode state and primary color down
-interface ThemeContextValue {
+export interface ThemeContextValue {
   isDarkTheme: boolean;
   primaryColor: string;
 }
 
-const ThemeContext = createContext<ThemeContextValue>({
+export const ThemeContext = createContext<ThemeContextValue>({
   isDarkTheme: false,
   primaryColor: '#8B5CF6',
 });
