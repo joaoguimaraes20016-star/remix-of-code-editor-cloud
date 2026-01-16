@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils';
 import { User, Mail, Phone } from 'lucide-react';
 import type { StepComponentProps } from './types';
-import { FONT_SIZE_MAP, DEFAULT_DESIGN, getButtonStyle } from './types';
+import { FONT_SIZE_MAP, DEFAULT_DESIGN } from './types';
+import { UnifiedButton, presetToVariant, sizeToVariant } from '@/components/builder/UnifiedButton';
 
 export function OptInStep({
   content,
@@ -78,12 +79,17 @@ export function OptInStep({
             />
           </div>
         </div>
-        <button
-          className={cn("step-button builder-element-selectable", sizes.button)}
-          style={getButtonStyle(d)}
+        <UnifiedButton
+          variant={presetToVariant((d as any).buttonPreset)}
+          size={sizeToVariant(sizes.button === 'text-sm' ? 'sm' : sizes.button === 'text-lg' ? 'lg' : 'md')}
+          backgroundColor={d.buttonColor}
+          textColor={d.buttonTextColor}
+          borderRadiusPx={d.borderRadius}
+          fullWidth={(d as any).buttonFullWidth ?? false}
+          className="mt-4 builder-element-selectable"
         >
           {content.button_text || 'Submit'}
-        </button>
+        </UnifiedButton>
       </div>
     </div>
   );

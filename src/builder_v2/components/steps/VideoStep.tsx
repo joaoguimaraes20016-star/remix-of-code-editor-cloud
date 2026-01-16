@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { Play } from 'lucide-react';
 import type { StepComponentProps } from './types';
 import { FONT_SIZE_MAP, DEFAULT_DESIGN } from './types';
+import { UnifiedButton, presetToVariant, sizeToVariant } from '@/components/builder/UnifiedButton';
 
 function getVideoEmbedUrl(url?: string): string | null {
   if (!url) return null;
@@ -73,16 +74,17 @@ export function VideoStep({
           )}
         </div>
         {content.button_text && (
-          <button
-            className={cn("step-button", sizes.button)}
-            style={{
-              backgroundColor: d.buttonColor,
-              color: d.buttonTextColor,
-              borderRadius: `${d.borderRadius}px`,
-            }}
+          <UnifiedButton
+            variant={presetToVariant((d as any).buttonPreset)}
+            size={sizeToVariant(sizes.button === 'text-sm' ? 'sm' : sizes.button === 'text-lg' ? 'lg' : 'md')}
+            backgroundColor={d.buttonColor}
+            textColor={d.buttonTextColor}
+            borderRadiusPx={d.borderRadius}
+            fullWidth={(d as any).buttonFullWidth ?? false}
+            className="mt-4 builder-element-selectable"
           >
             {content.button_text}
-          </button>
+          </UnifiedButton>
         )}
       </div>
     </div>
