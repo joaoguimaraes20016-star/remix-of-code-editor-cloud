@@ -37,7 +37,6 @@ import {
   Phone,
   Mail,
   Download,
-  ChevronRight,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -264,27 +263,8 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Current Selection Display */}
-      <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
-        <div className="flex items-center gap-2 flex-1">
-          {currentDefinition?.icon}
-          <div className="flex flex-col">
-            <span className="text-xs font-medium text-foreground">
-              {currentDefinition?.label || 'Next Step'}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              {currentDefinition?.description || 'Go to the next visible step'}
-            </span>
-          </div>
-        </div>
-        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-      </div>
-
       {/* Flow Actions - Primary selection */}
       <div className="space-y-1.5">
-        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-          On Click
-        </Label>
         <div className={cn(
           "grid gap-1.5",
           flowActions.length <= 2 ? "grid-cols-2" : "grid-cols-3"
@@ -306,6 +286,13 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
             </button>
           ))}
         </div>
+        
+        {/* Show description of selected action */}
+        {currentDefinition && (
+          <p className="text-[10px] text-muted-foreground px-1">
+            {currentDefinition.description}
+          </p>
+        )}
       </div>
 
       {/* External Actions */}
