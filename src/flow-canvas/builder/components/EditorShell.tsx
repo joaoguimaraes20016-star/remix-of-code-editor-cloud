@@ -205,8 +205,16 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const handleSelectApplicationStep = useCallback((stepId: string | null) => {
     if (activeFlowBlockId) {
       setSelectedStepForBlock(activeFlowBlockId, stepId);
-      // Clear element selection when changing steps
-      setSelectedStepElement(null);
+
+      // UX: keep the element-level inspector open when navigating between steps,
+      // so "Button" editing doesn't disappear when you click step toggles.
+      setSelectedStepElement((prev) => {
+        if (!prev) return null;
+        if (!stepId) return null;
+        // Option editing is step-specific; clear it on step change.
+        if (prev.elementType === 'option') return null;
+        return { ...prev, stepId, optionIndex: undefined };
+      });
     }
   }, [activeFlowBlockId, setSelectedStepForBlock]);
 
