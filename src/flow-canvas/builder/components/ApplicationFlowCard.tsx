@@ -279,14 +279,25 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           )}
           onClick={(e) => {
             if (!isPreviewMode) {
+              e.stopPropagation();
               handleElementSelect(e, stepId, 'button');
+            }
+          }}
+          onPointerDown={(e) => {
+            // Prevent InlineTextEditor from capturing the pointer event
+            if (!isPreviewMode) {
+              e.stopPropagation();
             }
           }}
         >
           <button
             type="button"
             style={getButtonStyle(s)}
-            onClick={(e) => handleButtonClick(e, s)}
+            onClick={(e) => {
+              if (isPreviewMode) {
+                handleButtonClick(e, s);
+              }
+            }}
             disabled={isButtonDisabled(s)}
             aria-disabled={isButtonDisabled(s)}
             className={cn(
@@ -296,14 +307,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
               isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
             )}
           >
-            <InlineTextEditor
-              value={s.buttonText || 'Start Application →'}
-              onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
-              placeholder="Start Application →"
-              className="text-inherit bg-transparent"
-              elementType="text"
-              elementId={`step-${stepId}-btn`}
-            />
+            {s.buttonText || 'Start Application →'}
           </button>
         </div>
         {/* Blocked reason display - only shown when there's a recent blocked intent */}
@@ -523,8 +527,12 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           )}
           onClick={(e) => {
             if (!isPreviewMode) {
+              e.stopPropagation();
               handleElementSelect(e, step.id, 'button');
             }
+          }}
+          onPointerDown={(e) => {
+            if (!isPreviewMode) e.stopPropagation();
           }}
         >
           <button
@@ -532,12 +540,13 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             className={cn(
               getButtonClasses(s), 
               'builder-element-selectable', 
-              isPreviewMode && 'cursor-pointer',
-              !isPreviewMode && 'pointer-events-none',
+              isPreviewMode ? 'cursor-pointer' : 'pointer-events-none',
               isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
             )}
             style={getButtonStyle(s)}
-            onClick={(e) => handleButtonClick(e, s)}
+            onClick={(e) => {
+              if (isPreviewMode) handleButtonClick(e, s);
+            }}
             disabled={isButtonDisabled(s)}
             aria-disabled={isButtonDisabled(s)}
           >
@@ -570,89 +579,109 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     const showEmail = s.collectEmail ?? true;
     const showPhone = s.collectPhone ?? false;
 
+    // Build field list for input selection indexing
+    const fields: Array<{type: 'name' | 'email' | 'phone', placeholder: string}> = [];
+    if (showName) fields.push({ type: 'name', placeholder: 'Your name' });
+    if (showEmail) fields.push({ type: 'email', placeholder: 'Your email' });
+    if (showPhone) fields.push({ type: 'phone', placeholder: 'Your phone' });
+
     return (
       <div className={cn('flex flex-col w-full px-6 py-8', alignClass, spacingClass)}>
-        <InlineTextEditor
-          value={s.title || 'Where should we send your results?'}
-          onChange={(content) => updateStepSetting(step.id, 'title', content)}
-          placeholder="Where should we send your results?"
-          className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
-          style={{ color: flowTextColor }}
-          elementType="heading"
-          elementId={`step-${step.id}-title`}
-        />
+        {/* Title - selectable */}
+        <div 
+          className={cn(
+            'cursor-pointer rounded transition-all',
+            !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+            isElementSelected(step.id, 'title') && 'ring-2 ring-primary'
+          )}
+          onClick={(e) => handleElementSelect(e, step.id, 'title')}
+        >
+          <InlineTextEditor
+            value={s.title || 'Where should we send your results?'}
+            onChange={(content) => updateStepSetting(step.id, 'title', content)}
+            placeholder="Where should we send your results?"
+            className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
+            style={{ color: flowTextColor }}
+            elementType="heading"
+            elementId={`step-${step.id}-title`}
+          />
+        </div>
         {s.description && (
-          <p className="text-sm mt-2 opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
+          <div 
+            className={cn(
+              'mt-2 cursor-pointer rounded transition-all',
+              !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+              isElementSelected(step.id, 'description') && 'ring-2 ring-primary'
+            )}
+            onClick={(e) => handleElementSelect(e, step.id, 'description')}
+          >
+            <p className="text-sm opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
+          </div>
         )}
         <div className="mt-6 space-y-3 max-w-md w-full">
-          {showName && (
-            <input 
+          {fields.map((field, index) => (
+            <div
+              key={field.type}
               className={cn(
-                'w-full px-4 py-3 text-sm',
-                inputStyleClass
+                'cursor-pointer rounded transition-all',
+                !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+                isElementSelected(step.id, 'input', index) && 'ring-2 ring-primary'
               )}
-              style={{ 
-                backgroundColor: flowInputBg, 
-                borderColor: flowInputBorder, 
-                borderWidth: '1px', 
-                borderStyle: 'solid',
-                color: flowTextColor 
-              }}
-              placeholder="Your name" 
-              disabled
-            />
-          )}
-          {showEmail && (
-            <input 
-              className={cn(
-                'w-full px-4 py-3 text-sm',
-                inputStyleClass
-              )}
-              style={{ 
-                backgroundColor: flowInputBg, 
-                borderColor: flowInputBorder, 
-                borderWidth: '1px', 
-                borderStyle: 'solid',
-                color: flowTextColor 
-              }}
-              placeholder="Your email" 
-              disabled
-            />
-          )}
-          {showPhone && (
-            <input 
-              className={cn(
-                'w-full px-4 py-3 text-sm',
-                inputStyleClass
-              )}
-              style={{ 
-                backgroundColor: flowInputBg, 
-                borderColor: flowInputBorder, 
-                borderWidth: '1px', 
-                borderStyle: 'solid',
-                color: flowTextColor 
-              }}
-              placeholder="Your phone" 
-              disabled
-            />
-          )}
+              onClick={(e) => handleElementSelect(e, step.id, 'input', index)}
+            >
+              <input 
+                className={cn(
+                  'w-full px-4 py-3 text-sm pointer-events-none',
+                  inputStyleClass
+                )}
+                style={{ 
+                  backgroundColor: flowInputBg, 
+                  borderColor: flowInputBorder, 
+                  borderWidth: '1px', 
+                  borderStyle: 'solid',
+                  color: flowTextColor 
+                }}
+                placeholder={field.placeholder} 
+                disabled
+              />
+            </div>
+          ))}
         </div>
-        {/* SINGLE SURFACE: button element is the only styled surface */}
-        <button
-          type="button"
+        {/* Button - selectable */}
+        <div
           className={cn(
-            getButtonClasses(s), 
-            'mt-6 builder-element-selectable', 
-            isPreviewMode && 'cursor-pointer',
-            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            'mt-6 inline-flex cursor-pointer rounded transition-all',
+            !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+            isElementSelected(step.id, 'button') && 'ring-2 ring-primary'
           )}
-          style={getButtonStyle(s)}
-          onClick={(e) => handleButtonClick(e, s)}
-          disabled={isButtonDisabled(s)}
-          aria-disabled={isButtonDisabled(s)}
+          onClick={(e) => {
+            if (!isPreviewMode) {
+              e.stopPropagation();
+              handleElementSelect(e, step.id, 'button');
+            }
+          }}
+          onPointerDown={(e) => {
+            if (!isPreviewMode) e.stopPropagation();
+          }}
         >
-          {s.buttonText || 'Submit'}
-        </button>
+          <button
+            type="button"
+            className={cn(
+              getButtonClasses(s), 
+              'builder-element-selectable', 
+              isPreviewMode ? 'cursor-pointer' : 'pointer-events-none',
+              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            )}
+            style={getButtonStyle(s)}
+            onClick={(e) => {
+              if (isPreviewMode) handleButtonClick(e, s);
+            }}
+            disabled={isButtonDisabled(s)}
+            aria-disabled={isButtonDisabled(s)}
+          >
+            {s.buttonText || 'Submit'}
+          </button>
+        </div>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
           <p 

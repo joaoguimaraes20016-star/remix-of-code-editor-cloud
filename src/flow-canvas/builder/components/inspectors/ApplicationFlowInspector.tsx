@@ -219,7 +219,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   onSelectStep,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [containerOpen, setContainerOpen] = useState(true);
+  const [appearanceOpen, setAppearanceOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Use controlled state from props, or fallback to local state
   const [localStepId, setLocalStepId] = useState<string | null>(null);
@@ -486,13 +487,13 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
       </div>
 
       {/* Container Styling - Collapsible */}
-      <Collapsible>
+      <Collapsible open={containerOpen} onOpenChange={setContainerOpen}>
         <CollapsibleTrigger className="flex-shrink-0 w-full border-t border-border px-3 py-2.5 flex items-center justify-between hover:bg-accent/30 transition-colors">
           <div className="flex items-center gap-2">
             <Box className="w-3 h-3 text-muted-foreground" />
             <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Container</span>
           </div>
-          <ChevronDown className="w-3 h-3 text-muted-foreground transition-transform ui-open:rotate-180" />
+          <ChevronDown className={cn("w-3 h-3 text-muted-foreground transition-transform", containerOpen && "rotate-180")} />
         </CollapsibleTrigger>
         <CollapsibleContent className="px-3 pb-3 space-y-3">
           <div className="space-y-1">
