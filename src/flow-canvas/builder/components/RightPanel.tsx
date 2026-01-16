@@ -120,6 +120,7 @@ import { useInlineEdit } from '../contexts/InlineEditContext';
 import { ButtonIconPicker } from './ButtonIconPicker';
 import { ApplicationFlowInspector } from './inspectors/ApplicationFlowInspector';
 import { InteractiveBlockInspector } from './inspectors/InteractiveBlockInspector';
+import { StepElementInspector } from './inspectors/StepElementInspector';
 
 interface RightPanelProps {
   page: Page;
@@ -3481,6 +3482,8 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   activeStep,
   selectedApplicationStepId,
   onSelectApplicationStep,
+  selectedStepElement,
+  onClearStepElement,
 }) => {
   // Try to find node by path first, then fallback to ID search
   let selectedNode = selection.id ? findNodeByPath(page, selection.path) : null;
@@ -3626,12 +3629,22 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           />
         ) : resolvedType === 'block' && selectedNode ? (
           (selectedNode as Block).type === 'application-flow' ? (
-            <ApplicationFlowInspector 
-              block={selectedNode as Block} 
-              onUpdateBlock={(updates) => handleUpdate(updates)}
-              selectedStepId={selectedApplicationStepId}
-              onSelectStep={onSelectApplicationStep}
-            />
+            // Check if an element within a step is selected
+            selectedStepElement ? (
+              <StepElementInspector
+                block={selectedNode as Block}
+                selection={selectedStepElement}
+                onUpdateBlock={(updates) => handleUpdate(updates)}
+                onBack={() => onClearStepElement?.()}
+              />
+            ) : (
+              <ApplicationFlowInspector 
+                block={selectedNode as Block} 
+                onUpdateBlock={(updates) => handleUpdate(updates)}
+                selectedStepId={selectedApplicationStepId}
+                onSelectStep={onSelectApplicationStep}
+              />
+            )
           ) : (selectedNode as Block).type === 'form-field' ? (
             <InteractiveBlockInspector 
               block={selectedNode as Block} 
