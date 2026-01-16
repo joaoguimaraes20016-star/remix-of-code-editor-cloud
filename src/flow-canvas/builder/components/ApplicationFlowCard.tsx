@@ -20,7 +20,7 @@
  * - Clicking empty space → selects STEP
  */
 
-import React from 'react';
+import React, { useContext } from 'react';
 import { Block, ApplicationFlowSettings, ApplicationFlowStep, ApplicationFlowBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
 import { InlineTextEditor } from './InlineTextEditor';
@@ -40,9 +40,10 @@ import { UnifiedButton, presetToVariant } from '@/components/builder/UnifiedButt
 import { StepLayout, FlowShell, type StepLayoutStyle } from './StepLayout';
 import { gradientToCSS } from '../utils/gradientHelpers';
 import { getButtonIconComponent } from './ButtonIconPicker';
+import { ThemeContext } from './CanvasRenderer';
 
 // Default button color for flow steps - matches the brand magenta/pink
-// This is used when no explicit buttonColor is set on a step
+// This is used when no explicit buttonColor is set on a step AND no theme primary is available
 export const DEFAULT_FLOW_BUTTON_COLOR = '#EC4899';
 
 // Convert ApplicationFlowBackground to CSS string
@@ -130,6 +131,12 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
 }) => {
   const settings = block.props as Partial<ApplicationFlowSettings>;
   const steps = settings?.steps || [];
+  
+  // Access theme context for the primary color (set by page settings)
+  const { primaryColor: themePrimaryColor } = useContext(ThemeContext);
+  
+  // The effective default button color - use theme primary, fallback to hardcoded default
+  const defaultButtonColor = themePrimaryColor || DEFAULT_FLOW_BUTTON_COLOR;
   
   // Access FlowContainer for intent-based button actions (SINGLE SOURCE OF TRUTH)
   const flowContainer = useFlowContainerSafe();
@@ -450,7 +457,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           size={s.buttonSize || 'md'}
           radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
-          backgroundColor={s.buttonColor || DEFAULT_FLOW_BUTTON_COLOR}
+          backgroundColor={s.buttonColor || defaultButtonColor}
           textColor={s.buttonTextColor}
           gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}
@@ -690,7 +697,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           size={s.buttonSize || 'md'}
           radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
-          backgroundColor={s.buttonColor || DEFAULT_FLOW_BUTTON_COLOR}
+          backgroundColor={s.buttonColor || defaultButtonColor}
           textColor={s.buttonTextColor}
           gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}
@@ -868,7 +875,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           size={s.buttonSize || 'md'}
           radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
           borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
-          backgroundColor={s.buttonColor || DEFAULT_FLOW_BUTTON_COLOR}
+          backgroundColor={s.buttonColor || defaultButtonColor}
           textColor={s.buttonTextColor}
           gradient={buttonGradientToCSS(s.buttonGradient)}
           shadow={s.buttonShadow || 'none'}
