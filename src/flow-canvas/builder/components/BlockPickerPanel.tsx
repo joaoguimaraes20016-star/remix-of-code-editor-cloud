@@ -50,6 +50,8 @@ interface BlockPickerPanelProps {
   onAddApplicationFlowStep?: (step: ApplicationFlowStep) => void;
   /** Callback to create a new Application Flow with an initial step */
   onCreateApplicationFlowWithStep?: (step: ApplicationFlowStep) => void;
+  /** Target stack ID - when set, the picker was opened for a specific section (Add Content button) */
+  targetStackId?: string | null;
 }
 
 type ActiveTab = 'blocks' | 'sections';
@@ -584,6 +586,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   activeApplicationFlowBlockId,
   onAddApplicationFlowStep,
   onCreateApplicationFlowWithStep,
+  targetStackId,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
@@ -722,11 +725,16 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
     // Check if this is an application question/capture
     const isApplicationContent = categoryId && isApplicationFlowCategory(categoryId) && !isFlowContainer;
     
+    // Check if the picker was opened for a specific stack (via "Add Content" button)
+    // When targeting a specific stack, we should NOT route to the flow
+    const wasOpenedForSpecificStack = !!targetStackId;
+    
     // ONLY add to existing flow if:
     // 1. A flow is actively SELECTED (not just exists on the page)
     // 2. The block is an interactive question/capture (not a Flow Container)
     // 3. The callback exists
-    if (isApplicationContent && activeApplicationFlowBlockId && onAddApplicationFlowStep) {
+    // 4. The picker was NOT opened for a specific stack (Add Content button)
+    if (isApplicationContent && activeApplicationFlowBlockId && onAddApplicationFlowStep && !wasOpenedForSpecificStack) {
       // Convert to flow step and add to existing selected flow
       const step = blockTemplateToFlowStep(template.label, template.type, template.template());
       onAddApplicationFlowStep(step);
