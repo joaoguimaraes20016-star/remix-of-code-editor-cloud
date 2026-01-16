@@ -2799,6 +2799,8 @@ interface StackRendererProps {
   onOpenBlockPickerInPanel?: (stackId: string) => void;
   selectedApplicationStepId?: string | null;
   activeApplicationFlowBlockId?: string | null;
+  selectedStepElement?: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null;
+  onSelectStepElement?: (element: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null) => void;
 }
 
 const StackRenderer: React.FC<StackRendererProps> = ({ 
@@ -2828,6 +2830,8 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   onOpenBlockPickerInPanel,
   selectedApplicationStepId,
   activeApplicationFlowBlockId,
+  selectedStepElement,
+  onSelectStepElement,
 }) => {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const isSelected = selection.type === 'stack' && selection.id === stack.id;
@@ -2970,11 +2974,13 @@ const StackRenderer: React.FC<StackRendererProps> = ({
                   readOnly={readOnly}
                   replayAnimationKey={replayAnimationKey}
                   deviceMode={deviceMode}
-                    onNextStep={onNextStep}
-                    onGoToStep={onGoToStep}
-                    onFormSubmit={onFormSubmit}
-                    selectedApplicationStepId={selectedApplicationStepId}
-                    activeApplicationFlowBlockId={activeApplicationFlowBlockId}
+                  onNextStep={onNextStep}
+                  onGoToStep={onGoToStep}
+                  onFormSubmit={onFormSubmit}
+                  selectedApplicationStepId={selectedApplicationStepId}
+                  activeApplicationFlowBlockId={activeApplicationFlowBlockId}
+                  selectedStepElement={selectedStepElement}
+                  onSelectStepElement={onSelectStepElement}
                   />
                 ))}
             </SortableContext>
@@ -3043,6 +3049,8 @@ interface FrameRendererProps {
   onOpenBlockPickerInPanel?: (stackId: string) => void;
   selectedApplicationStepId?: string | null;
   activeApplicationFlowBlockId?: string | null;
+  selectedStepElement?: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null;
+  onSelectStepElement?: (element: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null) => void;
 }
 
 const FrameRenderer: React.FC<FrameRendererProps> = ({ 
@@ -3086,6 +3094,8 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   onOpenBlockPickerInPanel,
   selectedApplicationStepId,
   activeApplicationFlowBlockId,
+  selectedStepElement,
+  onSelectStepElement,
 }) => {
   const isSelected = selection.type === 'frame' && selection.id === frame.id;
   const framePath = [...path, 'frame', frame.id];
@@ -3219,6 +3229,8 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
               onOpenBlockPickerInPanel={onOpenBlockPickerInPanel}
               selectedApplicationStepId={selectedApplicationStepId}
               activeApplicationFlowBlockId={activeApplicationFlowBlockId}
+              selectedStepElement={selectedStepElement}
+              onSelectStepElement={onSelectStepElement}
             />
           ))}
         </div>
@@ -3302,6 +3314,9 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   // Application Flow step selection
   selectedApplicationStepId,
   activeApplicationFlowBlockId,
+  // Element selection within flow steps
+  selectedStepElement,
+  onSelectStepElement,
 }) => {
   // Form state for preview mode
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -3551,6 +3566,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                         onRename={(newName) => onRenameFrame?.(frame.id, newName)}
                         selectedApplicationStepId={selectedApplicationStepId}
                         activeApplicationFlowBlockId={activeApplicationFlowBlockId}
+                        selectedStepElement={selectedStepElement}
+                        onSelectStepElement={onSelectStepElement}
                       />
                     </React.Fragment>
                   ))}

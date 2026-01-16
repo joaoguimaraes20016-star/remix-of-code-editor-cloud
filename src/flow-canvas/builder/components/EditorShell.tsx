@@ -1451,6 +1451,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                   setBlockPickerTargetStackId(null);
                   setBlockPickerMode('blocks');
                 }}
+                targetStackId={blockPickerTargetStackId}
               />
             ) : (
               <LeftPanel
