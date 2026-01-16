@@ -148,6 +148,8 @@ export interface ApplicationFlowSettings {
   textColor?: string;
   inputBackground?: string;
   inputBorderColor?: string;
+  // Design preset - provides default styling (user can override everything)
+  designPreset?: 'none' | 'minimal' | 'card' | 'glass' | 'full-bleed';
   // Container styling
   contentWidth?: 'sm' | 'md' | 'lg' | 'full';
   contentAlign?: 'left' | 'center' | 'right';
@@ -155,6 +157,8 @@ export interface ApplicationFlowSettings {
   containerRadius?: number;
   containerBorderColor?: string;
   containerShadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  // Glass-specific
+  backdropBlur?: number;
 }
 
 // Conditional visibility rule

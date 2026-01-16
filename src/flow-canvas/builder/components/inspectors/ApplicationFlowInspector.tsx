@@ -21,6 +21,10 @@ import {
   AlignCenter,
   AlignRight,
   Box,
+  Layers,
+  Square,
+  RectangleHorizontal,
+  Maximize,
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import {
@@ -65,6 +69,13 @@ import { CSS } from '@dnd-kit/utilities';
 import { StepContentEditor } from './StepContentEditor';
 import { BackgroundEditor, BackgroundValue } from '../BackgroundEditor';
 import { ColorPickerPopover } from '../modals';
+import { 
+  StepDesignPreset, 
+  stepDesignPresets, 
+  presetLabels, 
+  presetDescriptions,
+  applyPreset 
+} from '../../utils/stepDesignPresets';
 
 const stepTypeIcons: Record<ApplicationStepType, React.ReactNode> = {
   welcome: <Sparkles className="w-3.5 h-3.5" />,
@@ -484,16 +495,68 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </div>
       </div>
 
-      {/* Container Styling - Collapsible */}
+      {/* Design Preset - Primary control */}
       <Collapsible open={containerOpen} onOpenChange={setContainerOpen}>
         <CollapsibleTrigger className="flex-shrink-0 w-full border-t border-border px-3 py-2.5 flex items-center justify-between hover:bg-accent/30 transition-colors">
           <div className="flex items-center gap-2">
-            <Box className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Container</span>
+            <Layers className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Style</span>
           </div>
           <ChevronDown className={cn("w-3 h-3 text-muted-foreground transition-transform", containerOpen && "rotate-180")} />
         </CollapsibleTrigger>
         <CollapsibleContent className="px-3 pb-3 space-y-3">
+          {/* Preset Selector */}
+          <div className="space-y-2">
+            <Label className="text-[10px] text-muted-foreground">Preset</Label>
+            <div className="grid grid-cols-5 gap-1">
+              {(['none', 'minimal', 'card', 'glass', 'full-bleed'] as StepDesignPreset[]).map((preset) => {
+                const isActive = (settings.designPreset || 'minimal') === preset;
+                return (
+                  <button
+                    key={preset}
+                    onClick={() => {
+                      const presetSettings = applyPreset(preset);
+                      onUpdateBlock({ 
+                        props: { 
+                          ...settings, 
+                          designPreset: preset,
+                          containerPadding: presetSettings.containerPadding,
+                          containerRadius: presetSettings.containerRadius,
+                          containerBorderColor: presetSettings.containerBorderColor,
+                          containerShadow: presetSettings.containerShadow,
+                          backdropBlur: presetSettings.backdropBlur,
+                        } 
+                      });
+                    }}
+                    className={cn(
+                      'flex flex-col items-center gap-1 p-1.5 rounded-md transition-all text-center',
+                      isActive 
+                        ? 'bg-primary/10 ring-1 ring-primary/40' 
+                        : 'hover:bg-accent/50'
+                    )}
+                    title={presetDescriptions[preset]}
+                  >
+                    <div className={cn(
+                      'w-6 h-4 rounded-sm border transition-all',
+                      preset === 'none' && 'border-dashed border-muted-foreground/30',
+                      preset === 'minimal' && 'border-transparent',
+                      preset === 'card' && 'bg-background border-border shadow-sm',
+                      preset === 'glass' && 'bg-gradient-to-br from-white/20 to-white/5 border-white/20 backdrop-blur-sm',
+                      preset === 'full-bleed' && 'border-transparent bg-muted/30 w-full rounded-none',
+                    )} />
+                    <span className="text-[9px] text-muted-foreground leading-tight">
+                      {presetLabels[preset]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border/50" />
+
+          {/* Layout Controls */}
           <div className="space-y-1">
             <Label className="text-[10px] text-muted-foreground">Content Width</Label>
             <Select 
@@ -513,7 +576,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Content Alignment</Label>
+            <Label className="text-[10px] text-muted-foreground">Alignment</Label>
             <div className="flex rounded-md overflow-hidden border border-border">
               {[
                 { value: 'left', icon: <AlignLeft className="w-3.5 h-3.5" /> },
@@ -537,13 +600,17 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
             </div>
           </div>
 
+          {/* Divider */}
+          <div className="border-t border-border/50" />
+
+          {/* Fine-tune controls - Always available */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label className="text-[10px] text-muted-foreground">Padding</Label>
-              <span className="text-[10px] text-muted-foreground">{settings.containerPadding || 32}px</span>
+              <span className="text-[10px] text-muted-foreground">{settings.containerPadding ?? 32}px</span>
             </div>
             <Slider
-              value={[settings.containerPadding || 32]}
+              value={[settings.containerPadding ?? 32]}
               onValueChange={([value]) => onUpdateBlock({ props: { ...settings, containerPadding: value } })}
               min={0}
               max={80}
@@ -554,21 +621,21 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
 
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] text-muted-foreground">Border Radius</Label>
-              <span className="text-[10px] text-muted-foreground">{settings.containerRadius || 12}px</span>
+              <Label className="text-[10px] text-muted-foreground">Radius</Label>
+              <span className="text-[10px] text-muted-foreground">{settings.containerRadius ?? 0}px</span>
             </div>
             <Slider
-              value={[settings.containerRadius || 12]}
+              value={[settings.containerRadius ?? 0]}
               onValueChange={([value]) => onUpdateBlock({ props: { ...settings, containerRadius: value } })}
               min={0}
-              max={32}
+              max={40}
               step={2}
               className="w-full"
             />
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Border Color</Label>
+            <Label className="text-[10px] text-muted-foreground">Border</Label>
             <ColorPickerPopover
               color={settings.containerBorderColor || 'transparent'}
               onChange={(color) => onUpdateBlock({ props: { ...settings, containerBorderColor: color } })}
@@ -594,13 +661,31 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               </SelectTrigger>
               <SelectContent className="bg-background border-border">
                 <SelectItem value="none" className="text-xs">None</SelectItem>
-                <SelectItem value="sm" className="text-xs">Small</SelectItem>
+                <SelectItem value="sm" className="text-xs">Subtle</SelectItem>
                 <SelectItem value="md" className="text-xs">Medium</SelectItem>
                 <SelectItem value="lg" className="text-xs">Large</SelectItem>
-                <SelectItem value="xl" className="text-xs">Extra Large</SelectItem>
+                <SelectItem value="xl" className="text-xs">Dramatic</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Backdrop blur for glass preset */}
+          {(settings.designPreset === 'glass' || (settings.backdropBlur && settings.backdropBlur > 0)) && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] text-muted-foreground">Blur</Label>
+                <span className="text-[10px] text-muted-foreground">{settings.backdropBlur ?? 0}px</span>
+              </div>
+              <Slider
+                value={[settings.backdropBlur ?? 0]}
+                onValueChange={([value]) => onUpdateBlock({ props: { ...settings, backdropBlur: value } })}
+                min={0}
+                max={24}
+                step={2}
+                className="w-full"
+              />
+            </div>
+          )}
         </CollapsibleContent>
       </Collapsible>
 

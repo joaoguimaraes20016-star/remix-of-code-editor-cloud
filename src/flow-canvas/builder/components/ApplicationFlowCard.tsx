@@ -95,8 +95,11 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   const flowContainer = useFlowContainerSafe();
   
   // ═══════════════════════════════════════════════════════════════
-  // CONTAINER STYLING - All settings from inspector must render here
+  // CONTAINER STYLING - Preset-based with full user override support
   // ═══════════════════════════════════════════════════════════════
+  
+  // Design preset determines default styling (user can override everything)
+  const designPreset = settings.designPreset || 'minimal';
   
   // Background (solid, gradient, or image)
   const flowBackground = settings.background;
@@ -104,11 +107,21 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   const flowInputBg = settings.inputBackground || '#ffffff';
   const flowInputBorder = settings.inputBorderColor || '#e5e7eb';
   
-  // Container dimensions & styling
-  const containerPadding = settings.containerPadding ?? 32;
-  const containerRadius = settings.containerRadius ?? 12;
-  const containerBorderColor = settings.containerBorderColor;
-  const containerShadow = settings.containerShadow || 'none';
+  // Container dimensions & styling - use preset defaults if not explicitly set
+  // Minimal preset = no visible container (clean, invisible)
+  const containerPadding = settings.containerPadding ?? (designPreset === 'none' ? 0 : 32);
+  const containerRadius = settings.containerRadius ?? (designPreset === 'card' ? 16 : designPreset === 'glass' ? 20 : 0);
+  const containerBorderColor = settings.containerBorderColor ?? (
+    designPreset === 'card' ? 'rgba(0,0,0,0.08)' : 
+    designPreset === 'glass' ? 'rgba(255,255,255,0.2)' : 
+    null
+  );
+  const containerShadow = settings.containerShadow ?? (
+    designPreset === 'card' ? 'lg' : 
+    designPreset === 'glass' ? 'md' : 
+    'none'
+  );
+  const backdropBlur = settings.backdropBlur ?? (designPreset === 'glass' ? 12 : 0);
   const contentWidth = settings.contentWidth || 'md';
   const contentAlign = settings.contentAlign || 'center';
   
@@ -792,16 +805,25 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
       )}
       onClick={handleBlockClick}
     >
-      {/* Inner container with all styling applied */}
+      {/* Inner container with preset-based styling */}
       <div
         style={{
-          background: backgroundToCSS(flowBackground),
+          // Background - only if explicitly set or preset provides one
+          background: flowBackground ? backgroundToCSS(flowBackground) : 
+            (designPreset === 'card' ? '#ffffff' : 
+             designPreset === 'glass' ? 'rgba(255,255,255,0.1)' : 
+             'transparent'),
           borderRadius: `${containerRadius}px`,
           border: containerBorderStyle,
-          boxShadow: shadowMap[containerShadow],
+          boxShadow: shadowMap[containerShadow] || 'none',
           padding: `${containerPadding}px`,
           maxWidth: widthMap[contentWidth],
           width: '100%',
+          // Glass effect
+          ...(backdropBlur > 0 && {
+            backdropFilter: `blur(${backdropBlur}px)`,
+            WebkitBackdropFilter: `blur(${backdropBlur}px)`,
+          }),
         }}
       >
         {/* Progress bar - shown when enabled */}
