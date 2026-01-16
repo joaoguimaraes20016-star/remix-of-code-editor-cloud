@@ -32,6 +32,15 @@ const backgroundToCSS = (bg?: ApplicationFlowBackground): string => {
   }
 };
 
+// Step element types that can be selected
+export type StepElementType = 'title' | 'description' | 'button' | 'option' | 'input';
+
+export interface StepElementSelection {
+  stepId: string;
+  elementType: StepElementType;
+  optionIndex?: number; // For option elements
+}
+
 interface ApplicationFlowCardProps {
   block: Block;
   isSelected: boolean;
@@ -39,8 +48,12 @@ interface ApplicationFlowCardProps {
   onUpdateBlock: (updates: Partial<Block>) => void;
   readOnly?: boolean;
   selectedStepId?: string | null;
+  /** Currently selected element within a step */
+  selectedStepElement?: StepElementSelection | null;
   /** Called when a specific step is clicked (for direct step selection) */
   onSelectStep?: (stepId: string) => void;
+  /** Called when an element within a step is clicked for editing */
+  onSelectStepElement?: (selection: StepElementSelection) => void;
   /** Called when button action is "next-step" - advances to the next step */
   onNextStep?: () => void;
   /** Called when button action is "go-to-step" - jumps to a specific step */
@@ -56,7 +69,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   onUpdateBlock,
   readOnly = false,
   selectedStepId,
+  selectedStepElement,
   onSelectStep,
+  onSelectStepElement,
   onNextStep,
   onGoToStep,
   isPreviewMode = false,
@@ -99,6 +114,26 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         : s
     );
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
+  };
+
+  // Helper to select an element within a step
+  const handleElementSelect = (e: React.MouseEvent, stepId: string, elementType: StepElementType, optionIndex?: number) => {
+    if (readOnly || isPreviewMode) return;
+    e.stopPropagation();
+    
+    if (onSelectStepElement) {
+      onSelectStepElement({ stepId, elementType, optionIndex });
+    }
+  };
+
+  // Check if an element is currently selected
+  const isElementSelected = (stepId: string, elementType: StepElementType, optionIndex?: number): boolean => {
+    if (!selectedStepElement) return false;
+    return (
+      selectedStepElement.stepId === stepId &&
+      selectedStepElement.elementType === elementType &&
+      (optionIndex === undefined || selectedStepElement.optionIndex === optionIndex)
+    );
   };
 
   // Button click handler - EMITS INTENT to FlowContainer (SOLE AUTHORITY)
@@ -197,8 +232,15 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
 
     return (
       <div className={cn('flex flex-col w-full px-6 py-8', alignClass, spacingClass)}>
-        {/* Heading – inline editable, reads from step.settings.title */}
-        <div className="block">
+        {/* Heading – inline editable, selectable for inspector */}
+        <div 
+          className={cn(
+            'block cursor-pointer rounded transition-all',
+            !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+            isElementSelected(stepId, 'title') && 'ring-2 ring-primary'
+          )}
+          onClick={(e) => handleElementSelect(e, stepId, 'title')}
+        >
           <InlineTextEditor
             value={s.title || 'Apply Now'}
             onChange={(content) => updateStepSetting(stepId, 'title', content)}
@@ -209,8 +251,15 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             elementId={`step-${stepId}-title`}
           />
         </div>
-        {/* Subline – inline editable, reads from step.settings.description */}
-        <div className="block mt-2">
+        {/* Subline – inline editable, selectable for inspector */}
+        <div 
+          className={cn(
+            'block mt-2 cursor-pointer rounded transition-all',
+            !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+            isElementSelected(stepId, 'description') && 'ring-2 ring-primary'
+          )}
+          onClick={(e) => handleElementSelect(e, stepId, 'description')}
+        >
           <InlineTextEditor
             value={s.description || 'Answer a few quick questions to see if we are a good fit.'}
             onChange={(content) => updateStepSetting(stepId, 'description', content)}
@@ -221,29 +270,42 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             elementId={`step-${stepId}-desc`}
           />
         </div>
-        {/* CTA button – SINGLE SURFACE: button element is the only styled surface */}
-        <button
-          type="button"
-          style={getButtonStyle(s)}
-          onClick={(e) => handleButtonClick(e, s)}
-          disabled={isButtonDisabled(s)}
-          aria-disabled={isButtonDisabled(s)}
+        {/* CTA button – selectable for button inspector */}
+        <div
           className={cn(
-            getButtonClasses(s),
-            'mt-6 builder-element-selectable',
-            isPreviewMode ? 'cursor-pointer' : '',
-            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            'mt-6 inline-flex cursor-pointer rounded transition-all',
+            !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+            isElementSelected(stepId, 'button') && 'ring-2 ring-primary'
           )}
+          onClick={(e) => {
+            if (!isPreviewMode) {
+              handleElementSelect(e, stepId, 'button');
+            }
+          }}
         >
-          <InlineTextEditor
-            value={s.buttonText || 'Start Application →'}
-            onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
-            placeholder="Start Application →"
-            className="text-inherit bg-transparent"
-            elementType="text"
-            elementId={`step-${stepId}-btn`}
-          />
-        </button>
+          <button
+            type="button"
+            style={getButtonStyle(s)}
+            onClick={(e) => handleButtonClick(e, s)}
+            disabled={isButtonDisabled(s)}
+            aria-disabled={isButtonDisabled(s)}
+            className={cn(
+              getButtonClasses(s),
+              'builder-element-selectable',
+              isPreviewMode ? 'cursor-pointer' : 'pointer-events-none',
+              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            )}
+          >
+            <InlineTextEditor
+              value={s.buttonText || 'Start Application →'}
+              onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
+              placeholder="Start Application →"
+              className="text-inherit bg-transparent"
+              elementType="text"
+              elementId={`step-${stepId}-btn`}
+            />
+          </button>
+        </div>
         {/* Blocked reason display - only shown when there's a recent blocked intent */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
           <p 
@@ -267,28 +329,49 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
 
     return (
       <div className={cn('flex flex-col w-full px-6 py-8', alignClass, spacingClass)}>
-        <InlineTextEditor
-          value={s.title || 'Your question here'}
-          onChange={(content) => updateStepSetting(step.id, 'title', content)}
-          placeholder="What's your biggest challenge?"
-          className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
-          style={{ color: flowTextColor }}
-          elementType="heading"
-          elementId={`step-${step.id}-title`}
-        />
+        {/* Title - selectable */}
+        <div 
+          className={cn(
+            'cursor-pointer rounded transition-all',
+            !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+            isElementSelected(step.id, 'title') && 'ring-2 ring-primary'
+          )}
+          onClick={(e) => handleElementSelect(e, step.id, 'title')}
+        >
+          <InlineTextEditor
+            value={s.title || 'Your question here'}
+            onChange={(content) => updateStepSetting(step.id, 'title', content)}
+            placeholder="What's your biggest challenge?"
+            className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
+            style={{ color: flowTextColor }}
+            elementType="heading"
+            elementId={`step-${step.id}-title`}
+          />
+        </div>
         {s.description && (
-          <p className="text-sm mt-2 opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
+          <div 
+            className={cn(
+              'mt-2 cursor-pointer rounded transition-all',
+              !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+              isElementSelected(step.id, 'description') && 'ring-2 ring-primary'
+            )}
+            onClick={(e) => handleElementSelect(e, step.id, 'description')}
+          >
+            <p className="text-sm opacity-70" style={{ color: flowTextColor }}>{s.description}</p>
+          </div>
         )}
         
-        {/* Multiple Choice Options */}
+        {/* Multiple Choice Options - each option selectable */}
         {s.questionType === 'multiple-choice' && s.options && (
           <div className="mt-6 space-y-2 max-w-md w-full">
             {(s.options as string[]).map((option: string, i: number) => (
               <div 
                 key={i} 
                 className={cn(
-                  'px-4 py-3 text-left text-sm cursor-pointer transition-colors',
-                  inputStyleClass
+                  'px-4 py-3 text-left text-sm cursor-pointer transition-all',
+                  inputStyleClass,
+                  !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary'
                 )}
                 style={{ 
                   backgroundColor: flowInputBg, 
@@ -297,6 +380,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   borderStyle: 'solid',
                   color: flowTextColor 
                 }}
+                onClick={(e) => handleElementSelect(e, step.id, 'option', i)}
               >
                 {option}
               </div>
@@ -306,10 +390,17 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         
         {/* Text Input */}
         {s.questionType === 'text' && (
-          <div className="mt-6 max-w-md w-full">
+          <div 
+            className={cn(
+              'mt-6 max-w-md w-full cursor-pointer rounded transition-all',
+              !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+              isElementSelected(step.id, 'input') && 'ring-2 ring-primary'
+            )}
+            onClick={(e) => handleElementSelect(e, step.id, 'input')}
+          >
             <textarea 
               className={cn(
-                'w-full px-4 py-3 text-sm resize-none',
+                'w-full px-4 py-3 text-sm resize-none pointer-events-none',
                 inputStyleClass
               )}
               style={{ 
@@ -328,7 +419,14 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
 
         {/* Dropdown */}
         {s.questionType === 'dropdown' && (
-          <div className="mt-6 max-w-md w-full">
+          <div 
+            className={cn(
+              'mt-6 max-w-md w-full cursor-pointer rounded transition-all',
+              !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+              isElementSelected(step.id, 'input') && 'ring-2 ring-primary'
+            )}
+            onClick={(e) => handleElementSelect(e, step.id, 'input')}
+          >
             <div 
               className={cn(
                 'w-full px-4 py-3 text-sm flex items-center justify-between',
@@ -354,13 +452,20 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
 
         {/* Scale (1-10 or 1-5) */}
         {s.questionType === 'scale' && (
-          <div className="mt-6 max-w-md w-full">
+          <div 
+            className={cn(
+              'mt-6 max-w-md w-full cursor-pointer rounded transition-all',
+              !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+              isElementSelected(step.id, 'input') && 'ring-2 ring-primary'
+            )}
+            onClick={(e) => handleElementSelect(e, step.id, 'input')}
+          >
             <div className="flex gap-2 justify-center">
               {Array.from({ length: s.scaleMax || 10 }, (_, i) => i + 1).map((num) => (
                 <div
                   key={num}
                   className={cn(
-                    'w-10 h-10 flex items-center justify-center text-sm font-medium cursor-pointer transition-colors',
+                    'w-10 h-10 flex items-center justify-center text-sm font-medium pointer-events-none',
                     inputStyleClass
                   )}
                   style={{ 
@@ -385,12 +490,14 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {/* Yes/No */}
         {s.questionType === 'yes-no' && (
           <div className="mt-6 space-y-2 max-w-md w-full">
-            {['Yes', 'No'].map((option) => (
+            {['Yes', 'No'].map((option, i) => (
               <div 
                 key={option} 
                 className={cn(
-                  'px-4 py-3 text-left text-sm cursor-pointer transition-colors',
-                  inputStyleClass
+                  'px-4 py-3 text-left text-sm cursor-pointer transition-all',
+                  inputStyleClass,
+                  !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary'
                 )}
                 style={{ 
                   backgroundColor: flowInputBg, 
@@ -399,6 +506,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   borderStyle: 'solid',
                   color: flowTextColor 
                 }}
+                onClick={(e) => handleElementSelect(e, step.id, 'option', i)}
               >
                 {option}
               </div>
@@ -406,22 +514,36 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           </div>
         )}
         
-        {/* SINGLE SURFACE: button element is the only styled surface */}
-        <button
-          type="button"
+        {/* Button - selectable */}
+        <div
           className={cn(
-            getButtonClasses(s), 
-            'mt-6 builder-element-selectable', 
-            isPreviewMode && 'cursor-pointer',
-            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            'mt-6 inline-flex cursor-pointer rounded transition-all',
+            !isPreviewMode && 'hover:ring-2 hover:ring-primary/30',
+            isElementSelected(step.id, 'button') && 'ring-2 ring-primary'
           )}
-          style={getButtonStyle(s)}
-          onClick={(e) => handleButtonClick(e, s)}
-          disabled={isButtonDisabled(s)}
-          aria-disabled={isButtonDisabled(s)}
+          onClick={(e) => {
+            if (!isPreviewMode) {
+              handleElementSelect(e, step.id, 'button');
+            }
+          }}
         >
-          {s.buttonText || 'Continue'}
-        </button>
+          <button
+            type="button"
+            className={cn(
+              getButtonClasses(s), 
+              'builder-element-selectable', 
+              isPreviewMode && 'cursor-pointer',
+              !isPreviewMode && 'pointer-events-none',
+              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
+            )}
+            style={getButtonStyle(s)}
+            onClick={(e) => handleButtonClick(e, s)}
+            disabled={isButtonDisabled(s)}
+            aria-disabled={isButtonDisabled(s)}
+          >
+            {s.buttonText || 'Continue'}
+          </button>
+        </div>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
           <p 
