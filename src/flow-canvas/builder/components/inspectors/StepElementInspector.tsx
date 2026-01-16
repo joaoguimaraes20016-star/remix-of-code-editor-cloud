@@ -56,6 +56,8 @@ interface StepElementInspectorProps {
   selection: StepElementSelection;
   onUpdateBlock: (updates: Partial<Block>) => void;
   onBack: () => void;
+  /** Theme primary color from page settings - used as the default button color */
+  themePrimaryColor?: string;
 }
 
 const elementTypeLabels: Record<StepElementType, string> = {
@@ -128,6 +130,8 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   selection,
   onUpdateBlock,
   onBack,
+  // Default matches flow-canvas/index.css --primary: 315 85% 58% (converted to hex)
+  themePrimaryColor = '#EC4899', // Pink/magenta default
 }) => {
   const settings = block.props as Partial<ApplicationFlowSettings>;
   const steps = settings?.steps || [];
@@ -309,11 +313,10 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           : 'solid';
 
     // Extract button style settings from step settings
-    // Use a consistent default color for buttons
-    const defaultButtonColor = '#3B82F6';
+    // Use the theme primary color as the default for buttons
     const effectiveButtonColor = stepSettings.buttonColor && stepSettings.buttonColor !== 'transparent' 
       ? stepSettings.buttonColor 
-      : defaultButtonColor;
+      : themePrimaryColor;
     
     const buttonStyleSettings: ButtonStyleSettings = {
       preset: stepSettings.buttonPreset || 'primary',
@@ -353,9 +356,9 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
             mapped.buttonPreset = 'primary';
           }
           mapped.buttonGradient = undefined;
-          // Restore proper color when switching to solid
+          // Restore proper color when switching to solid - use the theme color
           if (!stepSettings.buttonColor || stepSettings.buttonColor === 'transparent') {
-            mapped.buttonColor = '#3B82F6';
+            mapped.buttonColor = themePrimaryColor;
           }
         }
         if (updates.fillType === 'gradient') {
