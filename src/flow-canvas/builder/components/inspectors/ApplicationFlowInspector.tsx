@@ -686,8 +686,52 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Flow Settings section removed - Display Mode, Progress Bar, and Transition controls
-          were non-functional (props not used in renderer). Re-add when implemented. */}
+      {/* Flow Settings - Display Mode & Progress */}
+      <Collapsible>
+        <CollapsibleTrigger className="flex-shrink-0 w-full border-t border-border px-3 py-2.5 flex items-center justify-between hover:bg-accent/30 transition-colors">
+          <div className="flex items-center gap-2">
+            <FileText className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Flow</span>
+          </div>
+          <ChevronDown className="w-3 h-3 text-muted-foreground" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-3 pb-3 space-y-3">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Display Mode</Label>
+            <Select 
+              value={settings.displayMode || 'one-at-a-time'}
+              onValueChange={(value: 'one-at-a-time' | 'all-visible') => onUpdateBlock({ props: { ...settings, displayMode: value } })}
+            >
+              <SelectTrigger className="h-7 text-xs bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="one-at-a-time" className="text-xs">One at a time</SelectItem>
+                <SelectItem value="all-visible" className="text-xs">All steps visible</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] text-muted-foreground">Show Progress Bar</Label>
+            <button
+              type="button"
+              onClick={() => onUpdateBlock({ props: { ...settings, showProgress: !settings.showProgress } })}
+              className={cn(
+                'w-8 h-4 rounded-full transition-colors relative',
+                settings.showProgress ? 'bg-primary' : 'bg-muted'
+              )}
+            >
+              <div 
+                className={cn(
+                  'w-3 h-3 bg-white rounded-full absolute top-0.5 transition-transform shadow-sm',
+                  settings.showProgress ? 'translate-x-4' : 'translate-x-0.5'
+                )}
+              />
+            </button>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
