@@ -221,37 +221,39 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             elementId={`step-${stepId}-desc`}
           />
         </div>
-        {/* CTA button – inline editable, clickable in preview mode */}
-        <div className="block mt-6">
-          <span 
-            style={getButtonStyle(s)}
-            onClick={(e) => handleButtonClick(e, s)}
-            className={cn(
-              isPreviewMode ? 'cursor-pointer' : '',
-              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
-            )}
-            aria-disabled={isButtonDisabled(s)}
-          >
-            <InlineTextEditor
-              value={s.buttonText || 'Start Application →'}
-              onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
-              placeholder="Start Application →"
-              className={getButtonClasses(s)}
-              elementType="text"
-              elementId={`step-${stepId}-btn`}
-            />
-          </span>
-          {/* Blocked reason display - only shown when there's a recent blocked intent */}
-          {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-            <p 
-              className="text-xs mt-2 text-destructive/80"
-              role="alert"
-              aria-live="polite"
-            >
-              {getBlockedReasonDisplay()}
-            </p>
+        {/* CTA button – SINGLE SURFACE: button element is the only styled surface */}
+        <button
+          type="button"
+          style={getButtonStyle(s)}
+          onClick={(e) => handleButtonClick(e, s)}
+          disabled={isButtonDisabled(s)}
+          aria-disabled={isButtonDisabled(s)}
+          className={cn(
+            getButtonClasses(s),
+            'mt-6',
+            isPreviewMode ? 'cursor-pointer' : '',
+            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
           )}
-        </div>
+        >
+          <InlineTextEditor
+            value={s.buttonText || 'Start Application →'}
+            onChange={(content) => updateStepSetting(stepId, 'buttonText', content)}
+            placeholder="Start Application →"
+            className="text-inherit bg-transparent"
+            elementType="text"
+            elementId={`step-${stepId}-btn`}
+          />
+        </button>
+        {/* Blocked reason display - only shown when there's a recent blocked intent */}
+        {isButtonDisabled(s) && getBlockedReasonDisplay() && (
+          <p 
+            className="text-xs mt-2 text-destructive/80"
+            role="alert"
+            aria-live="polite"
+          >
+            {getBlockedReasonDisplay()}
+          </p>
+        )}
       </div>
     );
   };
@@ -404,31 +406,32 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           </div>
         )}
         
-        <div className="flex flex-col items-center">
-          <span 
-            className={cn(
-              getButtonClasses(s), 
-              'mt-6', 
-              isPreviewMode && 'cursor-pointer',
-              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
-            )}
-            style={getButtonStyle(s)}
-            onClick={(e) => handleButtonClick(e, s)}
-            aria-disabled={isButtonDisabled(s)}
-          >
-            {s.buttonText || 'Continue'}
-          </span>
-          {/* Blocked reason display */}
-          {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-            <p 
-              className="text-xs mt-2 text-destructive/80"
-              role="alert"
-              aria-live="polite"
-            >
-              {getBlockedReasonDisplay()}
-            </p>
+        {/* SINGLE SURFACE: button element is the only styled surface */}
+        <button
+          type="button"
+          className={cn(
+            getButtonClasses(s), 
+            'mt-6', 
+            isPreviewMode && 'cursor-pointer',
+            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
           )}
-        </div>
+          style={getButtonStyle(s)}
+          onClick={(e) => handleButtonClick(e, s)}
+          disabled={isButtonDisabled(s)}
+          aria-disabled={isButtonDisabled(s)}
+        >
+          {s.buttonText || 'Continue'}
+        </button>
+        {/* Blocked reason display */}
+        {isButtonDisabled(s) && getBlockedReasonDisplay() && (
+          <p 
+            className="text-xs mt-2 text-destructive/80 text-center"
+            role="alert"
+            aria-live="polite"
+          >
+            {getBlockedReasonDisplay()}
+          </p>
+        )}
       </div>
     );
   };
@@ -512,31 +515,32 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             />
           )}
         </div>
-        <div className="flex flex-col items-center">
-          <span 
-            className={cn(
-              getButtonClasses(s), 
-              'mt-6', 
-              isPreviewMode && 'cursor-pointer',
-              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
-            )}
-            style={getButtonStyle(s)}
-            onClick={(e) => handleButtonClick(e, s)}
-            aria-disabled={isButtonDisabled(s)}
-          >
-            {s.buttonText || 'Submit'}
-          </span>
-          {/* Blocked reason display */}
-          {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-            <p 
-              className="text-xs mt-2 text-destructive/80"
-              role="alert"
-              aria-live="polite"
-            >
-              {getBlockedReasonDisplay()}
-            </p>
+        {/* SINGLE SURFACE: button element is the only styled surface */}
+        <button
+          type="button"
+          className={cn(
+            getButtonClasses(s), 
+            'mt-6', 
+            isPreviewMode && 'cursor-pointer',
+            isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
           )}
-        </div>
+          style={getButtonStyle(s)}
+          onClick={(e) => handleButtonClick(e, s)}
+          disabled={isButtonDisabled(s)}
+          aria-disabled={isButtonDisabled(s)}
+        >
+          {s.buttonText || 'Submit'}
+        </button>
+        {/* Blocked reason display */}
+        {isButtonDisabled(s) && getBlockedReasonDisplay() && (
+          <p 
+            className="text-xs mt-2 text-destructive/80 text-center"
+            role="alert"
+            aria-live="polite"
+          >
+            {getBlockedReasonDisplay()}
+          </p>
+        )}
       </div>
     );
   };
