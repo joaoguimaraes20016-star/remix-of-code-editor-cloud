@@ -143,13 +143,17 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   }
 
   // Update step settings helper
-  const updateStepSetting = (key: string, value: any) => {
-    const newSteps = steps.map(s => 
-      s.id === step.id 
-        ? { ...s, settings: { ...((s as any).settings || {}), [key]: value } }
+  const updateStepSettings = (updates: Record<string, any>) => {
+    const newSteps = steps.map((s) =>
+      s.id === step.id
+        ? { ...s, settings: { ...((s as any).settings || {}), ...updates } }
         : s
     );
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
+  };
+
+  const updateStepSetting = (key: string, value: any) => {
+    updateStepSettings({ [key]: value });
   };
 
   // Update specific option
@@ -307,18 +311,52 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
       borderRadius: stepSettings.buttonRadius ?? 12,
       shadow: stepSettings.buttonShadow || 'none',
       fullWidth: stepSettings.buttonFullWidth ?? false,
+      customWidth: stepSettings.buttonCustomWidth,
+      icon: stepSettings.buttonIcon || 'ArrowRight',
+      showIcon: stepSettings.buttonShowIcon,
     };
 
-    // Handle button style updates
+    // Handle button style updates (BATCHED to avoid lost updates)
     const handleButtonStyleChange = (updates: Partial<ButtonStyleSettings>) => {
-      if (updates.preset !== undefined) updateStepSetting('buttonPreset', updates.preset);
-      if (updates.backgroundColor !== undefined) updateStepSetting('buttonColor', updates.backgroundColor);
-      if (updates.textColor !== undefined) updateStepSetting('buttonTextColor', updates.textColor);
-      if (updates.gradient !== undefined) updateStepSetting('buttonGradient', updates.gradient);
-      if (updates.size !== undefined) updateStepSetting('buttonSize', updates.size);
-      if (updates.borderRadius !== undefined) updateStepSetting('buttonRadius', updates.borderRadius);
-      if (updates.shadow !== undefined) updateStepSetting('buttonShadow', updates.shadow);
-      if (updates.fullWidth !== undefined) updateStepSetting('buttonFullWidth', updates.fullWidth);
+      const mapped: Record<string, any> = {};
+
+      if (updates.preset !== undefined) mapped.buttonPreset = updates.preset;
+      if (updates.backgroundColor !== undefined) mapped.buttonColor = updates.backgroundColor;
+      if (updates.textColor !== undefined) mapped.buttonTextColor = updates.textColor;
+      if (updates.gradient !== undefined) mapped.buttonGradient = updates.gradient;
+      if (updates.size !== undefined) mapped.buttonSize = updates.size;
+      if (updates.borderRadius !== undefined) mapped.buttonRadius = updates.borderRadius;
+      if (updates.shadow !== undefined) mapped.buttonShadow = updates.shadow;
+      if (updates.icon !== undefined) mapped.buttonIcon = updates.icon;
+      if (updates.showIcon !== undefined) mapped.buttonShowIcon = updates.showIcon;
+
+      // Width handling
+      if (updates.widthMode !== undefined) {
+        if (updates.widthMode === 'full') {
+          mapped.buttonFullWidth = true;
+          mapped.buttonCustomWidth = undefined;
+        } else if (updates.widthMode === 'fixed') {
+          mapped.buttonFullWidth = false;
+          mapped.buttonCustomWidth = updates.customWidth ?? stepSettings.buttonCustomWidth ?? 200;
+        } else {
+          mapped.buttonFullWidth = false;
+          mapped.buttonCustomWidth = undefined;
+        }
+      }
+
+      // Direct updates (e.g. numeric input)
+      if (updates.fullWidth !== undefined) {
+        mapped.buttonFullWidth = updates.fullWidth;
+        if (updates.fullWidth) mapped.buttonCustomWidth = undefined;
+      }
+      if (updates.customWidth !== undefined) {
+        mapped.buttonCustomWidth = updates.customWidth;
+        mapped.buttonFullWidth = false;
+      }
+
+      if (Object.keys(mapped).length > 0) {
+        updateStepSettings(mapped);
+      }
     };
 
     return (

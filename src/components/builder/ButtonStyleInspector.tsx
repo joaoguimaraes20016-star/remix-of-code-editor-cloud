@@ -187,18 +187,19 @@ export const ButtonStyleInspector: React.FC<ButtonStyleInspectorProps> = ({
   );
 
   const handlePresetChange = (preset: string) => {
-    onChange({ preset });
-    
-    // Reset custom values when switching away from custom
+    // IMPORTANT: single onChange call (avoid lost updates in parents that persist via one-shot merges)
     if (preset !== 'custom' && preset !== 'gradient') {
-      onChange({ 
+      onChange({
         preset,
         backgroundColor: undefined,
         textColor: undefined,
         gradient: undefined,
         fillType: preset === 'outline' ? 'outline' : 'solid',
       });
+      return;
     }
+
+    onChange({ preset });
   };
 
   const handleFillTypeChange = (newFillType: 'outline' | 'solid' | 'gradient') => {
