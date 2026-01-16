@@ -1,7 +1,8 @@
 import React, { useState, useCallback, createContext, useContext, useEffect, useRef, useMemo } from 'react';
 import { Step, Frame, Stack, Block, Element, SelectionState, Page, VisibilitySettings, AnimationSettings, ElementStateStyles, DeviceModeType, PageBackground } from '../../types/infostack';
 import { cn } from '@/lib/utils';
-import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers, LayoutGrid } from 'lucide-react';
+import { Type, Image, Video, Minus, ArrowRight, Plus, GripVertical, Check, Circle, Play, Eye, Sparkles, Smartphone, MousePointer2, Layout, Menu, Layers, LayoutGrid, User, Mail, Phone } from 'lucide-react';
+import { getCaptureInputIcon } from '../utils/stepRenderHelpers';
 import { getButtonIconComponent } from './ButtonIconPicker';
 import { DeviceMode } from './TopToolbar';
 import { BlockActionBar } from './BlockActionBar';
@@ -1466,11 +1467,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const fieldKey = element.props?.fieldKey as string || element.id;
         const inputValue = isPreviewMode ? (formValues[fieldKey] || '') : '';
         
-        // Input styling props
+        // Get icon for input field (Perspective-style)
+        const inputIconName = element.props?.icon as string;
+        const InputIconComponent = getCaptureInputIcon(inputIconName);
+        const hasInputIcon = InputIconComponent !== null;
+        
+        // Input styling props - Perspective-inspired defaults
         const inputIsGradient = element.props?.fillType === 'gradient';
         const inputBg = inputIsGradient 
           ? undefined 
-          : (element.styles?.backgroundColor || (isDarkTheme ? '#1f2937' : '#ffffff'));
+          : (element.styles?.backgroundColor || (isDarkTheme ? '#1f2937' : '#f9fafb'));
         const inputGradient = inputIsGradient 
           ? (element.styles?.background as string || 'linear-gradient(135deg, #8B5CF6, #D946EF)')
           : undefined;
@@ -1479,7 +1485,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const inputBorderColor = element.styles?.borderColor || (isDarkTheme ? '#374151' : '#e5e7eb');
         const inputBorderRadius = element.styles?.borderRadius || '12px';
         const inputBorderWidth = element.styles?.borderWidth || '1px';
-        const inputPadding = element.styles?.padding || '16px 20px';
+        const inputPadding = hasInputIcon ? '14px 16px 14px 44px' : (element.styles?.padding || '14px 16px');
         const inputWidth = element.styles?.width || '100%';
         const inputMargin = element.styles?.margin || '';
         
@@ -1550,25 +1556,34 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   background-color: ${element.props?.hoverBg as string || inputBg || 'transparent'};
                 }
               `}</style>
-              <input
-                type={(element.props?.type as string) || 'text'}
-                placeholder={(element.props?.placeholder as string) || 'Enter text...'}
-                className={cn(`input-${element.id}`)}
-                style={{
-                  ...inputCustomStyle,
-                  transition: `all ${element.props?.transitionDuration || 200}ms ease`,
-                }}
-                readOnly={!isPreviewMode}
-                value={inputValue}
-                onChange={(e) => {
-                  if (isPreviewMode) {
-                    setValue(fieldKey, e.target.value);
-                  }
-                }}
-                onClick={(e) => {
-                  if (isPreviewMode) e.stopPropagation();
-                }}
-              />
+              {/* Input with optional icon - Perspective style */}
+              <div className="relative">
+                {hasInputIcon && InputIconComponent && (
+                  <InputIconComponent
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                    size={18}
+                  />
+                )}
+                <input
+                  type={(element.props?.type as string) || 'text'}
+                  placeholder={(element.props?.placeholder as string) || 'Enter text...'}
+                  className={cn(`input-${element.id}`, 'w-full')}
+                  style={{
+                    ...inputCustomStyle,
+                    transition: `all ${element.props?.transitionDuration || 200}ms ease`,
+                  }}
+                  readOnly={!isPreviewMode}
+                  value={inputValue}
+                  onChange={(e) => {
+                    if (isPreviewMode) {
+                      setValue(fieldKey, e.target.value);
+                    }
+                  }}
+                  onClick={(e) => {
+                    if (isPreviewMode) e.stopPropagation();
+                  }}
+                />
+              </div>
             </div>
           </div>
         );
