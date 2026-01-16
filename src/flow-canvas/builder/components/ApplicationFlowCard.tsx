@@ -383,9 +383,12 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           variant={presetToVariant(s.buttonPreset)}
           fullWidth={s.buttonFullWidth ?? false}
           size={s.buttonSize || 'md'}
-          radius={s.buttonRadius || 'lg'}
+          radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
+          borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
           backgroundColor={s.buttonColor}
           textColor={s.buttonTextColor}
+          gradient={s.buttonGradient}
+          shadow={s.buttonShadow || 'none'}
           onClick={(e) => {
             if (!isPreviewMode) {
               e.stopPropagation();
@@ -602,9 +605,12 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           variant={presetToVariant(s.buttonPreset)}
           fullWidth={s.buttonFullWidth ?? false}
           size={s.buttonSize || 'md'}
-          radius={s.buttonRadius || 'lg'}
+          radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
+          borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
           backgroundColor={s.buttonColor}
           textColor={s.buttonTextColor}
+          gradient={s.buttonGradient}
+          shadow={s.buttonShadow || 'none'}
           onClick={(e) => {
             if (!isPreviewMode) {
               e.stopPropagation();
@@ -715,9 +721,12 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           variant={presetToVariant(s.buttonPreset)}
           fullWidth={s.buttonFullWidth ?? false}
           size={s.buttonSize || 'md'}
-          radius={s.buttonRadius || 'lg'}
+          radius={typeof s.buttonRadius === 'number' ? undefined : (s.buttonRadius || 'lg')}
+          borderRadiusPx={typeof s.buttonRadius === 'number' ? s.buttonRadius : undefined}
           backgroundColor={s.buttonColor}
           textColor={s.buttonTextColor}
+          gradient={s.buttonGradient}
+          shadow={s.buttonShadow || 'none'}
           onClick={(e) => {
             if (!isPreviewMode) {
               e.stopPropagation();

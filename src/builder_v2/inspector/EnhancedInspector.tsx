@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { useEditorStore } from '../state/editorStore';
 import { ComponentRegistry, fallbackComponent } from '../registry/componentRegistry';
 import type { CanvasNode, LayoutPersonality } from '../types';
+import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
 import './enhanced-inspector.css';
 
 type InspectorTab = 'content' | 'design' | 'blocks' | 'settings';
@@ -823,27 +824,33 @@ export function EnhancedInspector() {
               />
             </InspectorSection>
 
-            {/* Button Styling */}
+            {/* Button Styling - uses shared ButtonStyleInspector */}
             {(nodeType === 'button' || nodeProps.buttonText !== undefined) && (
               <InspectorSection title="Button Style" icon={<Palette size={14} />}>
-                <ColorPicker
-                  value={nodeProps.buttonColor || '#6366f1'}
-                  onChange={(v) => handlePropChange('buttonColor', v)}
-                  label="Button Background"
-                  showGradients
-                />
-                <ColorPicker
-                  value={nodeProps.buttonTextColor || '#ffffff'}
-                  onChange={(v) => handlePropChange('buttonTextColor', v)}
-                  label="Button Text"
-                />
-                <SliderField
-                  value={nodeProps.buttonRadius || 12}
-                  onChange={(v) => handlePropChange('buttonRadius', v)}
-                  label="Corner Radius"
-                  min={0}
-                  max={32}
-                  unit="px"
+                <ButtonStyleInspector
+                  settings={{
+                    preset: nodeProps.buttonPreset || 'custom',
+                    backgroundColor: nodeProps.buttonColor || '#6366f1',
+                    textColor: nodeProps.buttonTextColor || '#ffffff',
+                    gradient: nodeProps.buttonGradient,
+                    size: nodeProps.buttonSize || 'md',
+                    borderRadius: nodeProps.buttonRadius ?? 12,
+                    shadow: nodeProps.buttonShadow || 'none',
+                    fullWidth: nodeProps.buttonFullWidth ?? false,
+                  }}
+                  onChange={(updates) => {
+                    if (updates.preset !== undefined) handlePropChange('buttonPreset', updates.preset);
+                    if (updates.backgroundColor !== undefined) handlePropChange('buttonColor', updates.backgroundColor);
+                    if (updates.textColor !== undefined) handlePropChange('buttonTextColor', updates.textColor);
+                    if (updates.gradient !== undefined) handlePropChange('buttonGradient', updates.gradient);
+                    if (updates.size !== undefined) handlePropChange('buttonSize', updates.size);
+                    if (updates.borderRadius !== undefined) handlePropChange('buttonRadius', updates.borderRadius);
+                    if (updates.shadow !== undefined) handlePropChange('buttonShadow', updates.shadow);
+                    if (updates.fullWidth !== undefined) handlePropChange('buttonFullWidth', updates.fullWidth);
+                  }}
+                  showPreset
+                  showFullWidth
+                  compact
                 />
               </InspectorSection>
             )}
