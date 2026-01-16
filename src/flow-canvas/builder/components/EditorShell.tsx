@@ -107,6 +107,12 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [selectedFlowSteps, setSelectedFlowSteps] = useState<Record<string, string | null>>({});
   // Track which blocks have been "visited" to distinguish initial selection from intentional deselection
   const visitedFlowBlocksRef = useRef<Set<string>>(new Set());
+  // State for selected element within a flow step (for element-level editing)
+  const [selectedStepElement, setSelectedStepElement] = useState<{
+    stepId: string;
+    elementType: 'title' | 'description' | 'button' | 'option' | 'input';
+    optionIndex?: number;
+  } | null>(null);
   const [isAICopilotExpanded, setIsAICopilotExpanded] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
@@ -201,8 +207,22 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const handleSelectApplicationStep = useCallback((stepId: string | null) => {
     if (activeFlowBlockId) {
       setSelectedStepForBlock(activeFlowBlockId, stepId);
+      // Clear element selection when changing steps
+      setSelectedStepElement(null);
     }
   }, [activeFlowBlockId, setSelectedStepForBlock]);
+
+  // Handler for selecting an element within a step
+  const handleSelectStepElement = useCallback((element: typeof selectedStepElement) => {
+    setSelectedStepElement(element);
+  }, []);
+
+  // Clear step element selection when flow block is deselected
+  useEffect(() => {
+    if (!activeFlowBlock) {
+      setSelectedStepElement(null);
+    }
+  }, [activeFlowBlock]);
 
   // Auto-select first step ONLY when first visiting an Application Flow block
   useEffect(() => {
@@ -1489,6 +1509,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onPaste={handlePaste}
             selectedApplicationStepId={selectedApplicationStepId}
             activeApplicationFlowBlockId={activeFlowBlockId}
+            selectedStepElement={selectedStepElement}
+            onSelectStepElement={handleSelectStepElement}
             canPaste={!!clipboardRef.current}
             pageSettings={page.settings}
             replayAnimationKey={replayAnimationKey}
@@ -1561,6 +1583,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             activeStep={activeStep}
             selectedApplicationStepId={selectedApplicationStepId}
             onSelectApplicationStep={handleSelectApplicationStep}
+            selectedStepElement={selectedStepElement}
+            onClearStepElement={() => setSelectedStepElement(null)}
           />
         )}
       </div>
