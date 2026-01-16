@@ -238,7 +238,6 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
   const defaultSettings: ApplicationFlowSettings = {
     displayMode: 'one-at-a-time',
     showProgress: true,
-    transition: 'slide-up',
     steps: [],
   };
   

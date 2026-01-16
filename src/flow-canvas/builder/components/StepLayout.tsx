@@ -44,10 +44,6 @@ export interface StepLayoutStyle {
   // Content
   textColor?: string;
   contentAlign?: 'left' | 'center' | 'right';
-  
-  // Spacing between elements
-  elementSpacing?: number;
-  buttonMarginTop?: number;
 }
 
 interface StepLayoutProps {
