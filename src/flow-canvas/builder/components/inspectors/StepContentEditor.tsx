@@ -523,7 +523,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           <div className="space-y-1.5">
             <Label className="text-[10px] text-muted-foreground uppercase">Alignment</Label>
             <div className="flex rounded-md overflow-hidden border border-border">
-              {(['left', 'center'] as const).map((align) => (
+              {(['left', 'center', 'right'] as const).map((align) => (
                 <button
                   key={align}
                   onClick={() => updateSettings({ align })}
@@ -607,25 +607,6 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                 <SelectItem value="compact" className="text-xs">Compact</SelectItem>
                 <SelectItem value="normal" className="text-xs">Normal</SelectItem>
                 <SelectItem value="relaxed" className="text-xs">Spacious</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Title Size */}
-          <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground uppercase">Title Size</Label>
-            <Select 
-              value={stepSettings.titleSize || 'lg'}
-              onValueChange={(value) => updateSettings({ titleSize: value as ApplicationFlowStepSettings['titleSize'] })}
-            >
-              <SelectTrigger className="h-8 text-xs bg-background border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                <SelectItem value="sm" className="text-xs">Small</SelectItem>
-                <SelectItem value="md" className="text-xs">Medium</SelectItem>
-                <SelectItem value="lg" className="text-xs">Large</SelectItem>
-                <SelectItem value="xl" className="text-xs">X-Large</SelectItem>
               </SelectContent>
             </Select>
           </div>
