@@ -3,24 +3,51 @@
 
 import { ApplicationFlowStep, ApplicationFlowStepSettings } from '../../types/infostack';
 import { cn } from '@/lib/utils';
-// Import gradientToCSS from modals to avoid duplication
-import { gradientToCSS } from '../components/modals';
 
 // ─────────────────────────────────────────────────────────
-// Unified Button Size Classes - SINGLE SOURCE OF TRUTH
+// BUTTON PRESET SYSTEM - Forms reference shared Button styles
 // ─────────────────────────────────────────────────────────
 
-export const BUTTON_SIZES = {
-  sm: { padding: 'px-4 py-2', text: 'text-xs', height: 'h-8' },
-  md: { padding: 'px-6 py-3', text: 'text-sm', height: 'h-10' },
-  lg: { padding: 'px-8 py-4', text: 'text-base', height: 'h-12' },
-} as const;
+export type ButtonPreset = 'primary' | 'secondary' | 'outline' | 'ghost';
 
-export const BUTTON_RADII = {
-  none: 'rounded-none',
-  rounded: 'rounded-lg',
-  full: 'rounded-full',
-} as const;
+/**
+ * Maps button preset to Tailwind classes matching the shared Button component.
+ * Forms may NOT define custom button styles - they select a preset.
+ */
+export const getButtonPresetClasses = (preset: ButtonPreset = 'primary'): string => {
+  const baseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 px-6 py-3';
+  
+  switch (preset) {
+    case 'primary':
+      return cn(baseClasses, 'bg-primary text-primary-foreground shadow hover:bg-primary/90');
+    case 'secondary':
+      return cn(baseClasses, 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80');
+    case 'outline':
+      return cn(baseClasses, 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground');
+    case 'ghost':
+      return cn(baseClasses, 'hover:bg-accent hover:text-accent-foreground');
+    default:
+      return cn(baseClasses, 'bg-primary text-primary-foreground shadow hover:bg-primary/90');
+  }
+};
+
+/**
+ * Gets button classes for a step, using the preset system.
+ * This is the ONLY way forms render buttons - via presets.
+ */
+export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>): string => {
+  const preset = settings.buttonPreset || 'primary';
+  return getButtonPresetClasses(preset as ButtonPreset);
+};
+
+/**
+ * Button style is now handled entirely by presets.
+ * This returns an empty object since presets handle all styling.
+ */
+export const getButtonStyle = (_settings: Partial<ApplicationFlowStepSettings>): React.CSSProperties => {
+  // All styling is handled by presets - no inline styles needed
+  return {};
+};
 
 // ─────────────────────────────────────────────────────────
 // Style helpers - map settings to Tailwind classes
@@ -59,78 +86,6 @@ export const getInputStyleClass = (style?: string): string => {
   };
   return styles[style || 'default'] || 'rounded-lg';
 };
-
-// ─────────────────────────────────────────────────────────
-// UNIFIED BUTTON WIDTH SYSTEM - SINGLE SOURCE OF TRUTH
-// Width is controlled by the BUTTON ITSELF, not containers
-// ─────────────────────────────────────────────────────────
-
-export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>): string => {
-  const isOutline = settings.buttonStyle === 'outline';
-  const isGhost = settings.buttonStyle === 'ghost';
-  const size = settings.buttonSize || 'md';
-  const radius = settings.buttonRadius || 'rounded';
-  
-  const sizeConfig = BUTTON_SIZES[size] || BUTTON_SIZES.md;
-  const radiusClass = BUTTON_RADII[radius] || BUTTON_RADII.rounded;
-  
-  // Width is controlled via inline style in getButtonStyle
-  // Display class ensures proper block/inline behavior
-  const displayClass = settings.buttonFullWidth ? 'block' : 'inline-block';
-  
-  const baseClasses = cn(
-    displayClass,
-    'font-medium transition-colors',
-    sizeConfig.padding,
-    sizeConfig.text,
-    radiusClass
-  );
-  
-  if (isGhost) {
-    return cn(baseClasses, 'bg-transparent text-foreground hover:bg-muted');
-  }
-  if (isOutline) {
-    return cn(baseClasses, 'bg-transparent border-2');
-  }
-  return baseClasses;
-};
-
-export const getButtonStyle = (settings: Partial<ApplicationFlowStepSettings>): React.CSSProperties => {
-  const style: React.CSSProperties = {};
-  
-  // ─────────────────────────────────────────────────────────
-  // WIDTH CONTROL - Button is the layout unit
-  // Full Width = 100%, Auto Width = fit-content
-  // No containers may control button width
-  // ─────────────────────────────────────────────────────────
-  if (settings.buttonFullWidth) {
-    style.width = '100%';
-  } else {
-    // Auto width: button sizes to its content
-    style.width = 'fit-content';
-  }
-  
-  // Handle gradient fill
-  if (settings.buttonFillType === 'gradient' && settings.buttonGradient) {
-    style.background = gradientToCSS(settings.buttonGradient);
-    style.border = 'none';
-  } else if (settings.buttonColor && settings.buttonStyle !== 'outline') {
-    style.backgroundColor = settings.buttonColor;
-  } else if (settings.buttonColor && settings.buttonStyle === 'outline') {
-    style.borderColor = settings.buttonColor;
-    style.color = settings.buttonColor;
-  }
-  
-  // Apply text color
-  if (settings.buttonTextColor && settings.buttonStyle !== 'outline') {
-    style.color = settings.buttonTextColor;
-  }
-  
-  return style;
-};
-
-// Note: Interactive block backgrounds are now read from block.styles directly
-// No special helper needed - this aligns with all other block types
 
 // ─────────────────────────────────────────────────────────
 // Get step settings with defaults

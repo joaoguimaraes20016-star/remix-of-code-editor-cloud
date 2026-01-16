@@ -67,12 +67,8 @@ export interface ApplicationFlowStepSettings {
   title?: string;
   description?: string;
   buttonText?: string;
-  buttonColor?: string;
-  buttonTextColor?: string;
-  buttonStyle?: 'solid' | 'outline' | 'minimal' | 'primary' | 'ghost';  // 'primary' maps to 'solid' in getButtonClasses
-  buttonSize?: 'sm' | 'md' | 'lg';
-  buttonRadius?: 'none' | 'rounded' | 'full';
-  buttonFullWidth?: boolean;
+  // Button preset - references shared Button system (primary, secondary, outline, ghost)
+  buttonPreset?: 'primary' | 'secondary' | 'outline' | 'ghost';
   questionType?: QuestionType;
   options?: string[];
   required?: boolean;
@@ -92,13 +88,6 @@ export interface ApplicationFlowStepSettings {
   answerBgColor?: string;
   answerBorderColor?: string;
   answerSelectedColor?: string;
-  // Button gradient support
-  buttonFillType?: 'solid' | 'gradient';
-  buttonGradient?: {
-    type: 'linear' | 'radial';
-    angle: number;
-    stops: Array<{ color: string; position: number }>;
-  };
   // Background gradient support
   backgroundType?: 'solid' | 'gradient';
   backgroundColor?: string;

@@ -48,13 +48,10 @@ export const CaptureNodeWrapper: React.FC<CaptureNodeWrapperProps> = ({
     onSubmit();
   };
 
-  // Map CaptureNode settings to unified button settings format
-  // Only map properties that exist on CaptureNodeSettings
+  // Map CaptureNode settings to button preset
+  // Forms now use presets instead of custom styling
   const buttonSettings = {
-    buttonStyle: settings.buttonStyle === 'solid' || settings.buttonStyle === 'primary' 
-      ? undefined  // default filled style
-      : settings.buttonStyle, // 'outline' or 'minimal' -> maps to 'outline' or 'ghost'
-    buttonColor: settings.buttonColor,
+    buttonPreset: settings.buttonPreset || 'primary',
   };
 
   return (
