@@ -20,8 +20,8 @@ export const blockTypeLabels: Record<BlockType, string> = {
   'text-block': 'Text',
   custom: 'Empty Section',
   booking: 'Booking',
-  'application-flow': 'Flow Container',  // Unified name - Typeform-style multi-step experience
-  'capture-flow-embed': 'Flow Container',  // @deprecated - use application-flow instead
+  'application-flow': 'Multi-Step',  // User-friendly name - just a layout with steps
+  'capture-flow-embed': 'Multi-Step',  // @deprecated - use application-flow instead
   // Extended types
   feature: 'Feature',
   pricing: 'Pricing',
@@ -76,22 +76,22 @@ export const elementTypeLabels: Record<ElementType, string> = {
   'single-choice': 'Single Choice',
 };
 
-// Step intent labels
+// Step intent labels - User-friendly, not system terminology
 export const stepIntentLabels: Record<StepIntent, string> = {
-  capture: 'Capture Info',
-  qualify: 'Qualify Lead',
-  schedule: 'Schedule',
-  convert: 'Convert',
-  complete: 'Complete',
+  capture: 'Collect Info',
+  qualify: 'Questions',
+  schedule: 'Booking',
+  convert: 'Checkout',
+  complete: 'Thank You',
 };
 
-// Step intent descriptions
+// Step intent descriptions - Explain what users see, not system behavior
 export const stepIntentDescriptions: Record<StepIntent, string> = {
-  capture: 'Collect user information like email or phone',
-  qualify: 'Ask questions to understand user needs',
-  schedule: 'Let users book a time with you',
-  convert: 'Handle payment or final conversion',
-  complete: 'Show success message and next steps',
+  capture: 'Fields to collect contact details',
+  qualify: 'Questions to learn about visitors',
+  schedule: 'Calendar to book appointments',
+  convert: 'Payment or signup form',
+  complete: 'Confirmation message',
 };
 
 // Step type labels

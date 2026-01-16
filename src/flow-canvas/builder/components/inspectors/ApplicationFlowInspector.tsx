@@ -414,7 +414,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
             <FileText className="w-3 h-3 text-[hsl(280,75%,70%)]" />
           </div>
           <div>
-            <div className="text-sm font-medium text-builder-text">Flow Container</div>
+            <div className="text-sm font-medium text-builder-text">Multi-Step</div>
             <div className="text-[10px] text-builder-text-muted">{steps.length} steps</div>
           </div>
         </div>

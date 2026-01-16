@@ -436,10 +436,10 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
           </div>
         </CollapsibleSection>
 
-        {/* Logic Section - Uses unified action system matching ButtonActionModal */}
-        <CollapsibleSection title="Action" icon={<Workflow className="w-4 h-4" />} defaultOpen={false}>
+        {/* Button behavior - hidden as "Action" since it's just what the button does */}
+        <CollapsibleSection title="Button" icon={<Workflow className="w-4 h-4" />} defaultOpen={false}>
           <div className="space-y-4">
-            <FieldGroup label="On Continue">
+            <FieldGroup label="On Click">
               <Select
                 value={step.navigation.action}
                 onValueChange={(value) => updateNavigation('action', value as 'next' | 'go-to-step' | 'submit' | 'redirect')}
@@ -448,10 +448,10 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="next">Continue</SelectItem>
-                  <SelectItem value="go-to-step">Go to Step</SelectItem>
+                  <SelectItem value="next">Next Step</SelectItem>
+                  <SelectItem value="go-to-step">Go to Specific Step</SelectItem>
                   <SelectItem value="submit">Submit</SelectItem>
-                  <SelectItem value="redirect">Open URL</SelectItem>
+                  <SelectItem value="redirect">Open Link</SelectItem>
                 </SelectContent>
               </Select>
             </FieldGroup>

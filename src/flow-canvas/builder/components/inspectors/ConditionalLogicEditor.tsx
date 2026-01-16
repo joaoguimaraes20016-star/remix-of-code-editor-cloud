@@ -69,7 +69,7 @@ export const ConditionalLogicEditor: React.FC<ConditionalLogicEditorProps> = ({
         <div className="flex items-center gap-2">
           <Eye className="w-4 h-4 text-builder-text-muted" />
           <Label className="text-xs font-medium text-builder-text">
-            Conditional Logic
+            Visibility
           </Label>
         </div>
       </div>
@@ -77,7 +77,7 @@ export const ConditionalLogicEditor: React.FC<ConditionalLogicEditorProps> = ({
       {/* Info text */}
       <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
         <p className="text-[10px] text-amber-700 dark:text-amber-300">
-          Show this element only when conditions are met
+          Show or hide based on answers
         </p>
       </div>
 

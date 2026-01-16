@@ -63,23 +63,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
             </p>
           </div>
 
-          {/* Connect Analytics */}
-          <div className="space-y-3">
-            <p className="text-xs text-builder-text-muted text-center">
-              Want more detailed analytics?
-            </p>
-            <Button
-              variant="outline"
-              disabled
-              className="w-full border-builder-border text-builder-text-muted cursor-not-allowed opacity-60"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Google Analytics Integration Coming Soon
-            </Button>
-            <p className="text-[10px] text-builder-text-dim text-center">
-              We're working on built-in analytics. Stay tuned!
-            </p>
-          </div>
+          {/* Future integrations - hidden until ready */}
         </div>
       </DialogContent>
     </Dialog>
