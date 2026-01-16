@@ -126,6 +126,8 @@ interface RightPanelProps {
   selection: SelectionState;
   onUpdateNode: (path: string[], updates: Record<string, unknown>) => void;
   onClearSelection: () => void;
+  /** Callback to change selection - used for stack-to-frame redirection */
+  onSelect?: (selection: SelectionState) => void;
   onPublish?: () => void;
   // Element action callbacks
   onDuplicateElement?: (elementId: string) => void;
@@ -3431,6 +3433,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   selection,
   onUpdateNode,
   onClearSelection,
+  onSelect,
   onPublish,
   onDuplicateElement,
   onDeleteElement,
@@ -3622,7 +3625,28 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                 />
               );
             }
-            return <PageInspector page={page} onUpdate={handleUpdate} onPublish={onPublish} />;
+            // STRICT CONTRACT: Parent block not found - show error, not silent fallback
+            return (
+              <div className="p-4 space-y-3">
+                <div className="text-center">
+                  <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <X className="w-5 h-5 text-destructive" />
+                  </div>
+                  <p className="text-sm font-medium text-builder-text">Flow Step Not Found</p>
+                  <p className="text-xs text-builder-text-muted mt-1">
+                    The parent flow block could not be found.
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => onClearSelection()}
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            );
           })()
         ) : resolvedType === 'element' && selectedNode ? (
           <ElementInspector 
@@ -3638,21 +3662,42 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             onReplayAnimation={selection.id ? () => onReplayAnimation?.(selection.id!) : undefined}
             currentDeviceMode={currentDeviceMode}
           />
-        ) : resolvedType === 'stack' ? (
-          /* Stack selections - provide helpful context instead of empty state */
-          <div className="p-4 space-y-4">
+        ) : resolvedType === 'stack' && selection.id && selection.path.length >= 2 ? (
+          // Stack is not directly inspectable - redirect to parent frame
+          (() => {
+            const frameIdx = selection.path.findIndex((p, i) => p === 'frame' && selection.path[i + 1]);
+            if (frameIdx !== -1 && onSelect) {
+              const frameId = selection.path[frameIdx + 1];
+              const framePath = selection.path.slice(0, frameIdx + 2);
+              // Use effect-style redirect via setTimeout to avoid render-during-render
+              setTimeout(() => onSelect({ type: 'frame', id: frameId, path: framePath }), 0);
+            }
+            return (
+              <div className="p-4 flex items-center justify-center">
+                <p className="text-xs text-builder-text-muted">Selecting section...</p>
+              </div>
+            );
+          })()
+        ) : selection.id && !selectedNode ? (
+          // STRICT CONTRACT: Selection exists but node not found - show error, not fallback
+          <div className="p-4 space-y-3">
             <div className="text-center">
-              <Layers className="w-8 h-8 mx-auto mb-2 text-builder-text-dim" />
-              <p className="text-sm font-medium text-builder-text">Content Container</p>
+              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-destructive/10 flex items-center justify-center">
+                <X className="w-5 h-5 text-destructive" />
+              </div>
+              <p className="text-sm font-medium text-builder-text">Selection Not Found</p>
               <p className="text-xs text-builder-text-muted mt-1">
-                This container holds the blocks within a section.
+                The selected {resolvedType || 'item'} could not be found.
               </p>
             </div>
-            <div className="p-3 rounded-lg bg-builder-surface-hover border border-builder-border">
-              <p className="text-xs text-builder-text-muted">
-                <strong className="text-builder-text">Tip:</strong> Click the section header in the breadcrumb above to edit layout and background settings.
-              </p>
-            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={() => onClearSelection()}
+            >
+              Clear Selection
+            </Button>
           </div>
         ) : (
           <PageInspector page={page} onUpdate={handleUpdate} onPublish={onPublish} />

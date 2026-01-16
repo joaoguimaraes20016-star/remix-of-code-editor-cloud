@@ -1538,6 +1538,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             selection={selection}
             onUpdateNode={handleUpdateNode}
             onClearSelection={handleClearSelection}
+            onSelect={handleSelect}
             onPublish={handlePublish}
             onDuplicateElement={handleDuplicateElement}
             onDeleteElement={handleDeleteElement}
