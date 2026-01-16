@@ -1,6 +1,6 @@
 // CaptureNodeWrapper - Shared layout wrapper for all node types
 // Handles title, description, alignment, spacing, and button rendering
-// USES UNIFIED BUTTON RENDERING from stepRenderHelpers - NO SPECIAL CASING
+// USES UNIFIED FlowButton component - NO SPECIAL CASING
 
 import React from 'react';
 import { CaptureNode } from '@/flow-canvas/types/captureFlow';
@@ -9,9 +9,8 @@ import {
   getTitleSizeClass,
   getAlignClass,
   getSpacingClass,
-  getButtonClasses,
-  getButtonStyle,
 } from '../../utils/stepRenderHelpers';
+import { FlowButton, presetToVariant } from '../FlowButton';
 
 interface CaptureNodeWrapperProps {
   node: CaptureNode;
@@ -46,12 +45,6 @@ export const CaptureNodeWrapper: React.FC<CaptureNodeWrapperProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit();
-  };
-
-  // Map CaptureNode settings to button preset
-  // Forms now use presets instead of custom styling
-  const buttonSettings = {
-    buttonPreset: settings.buttonPreset || 'primary',
   };
 
   return (
@@ -95,15 +88,17 @@ export const CaptureNodeWrapper: React.FC<CaptureNodeWrapperProps> = ({
         </p>
       )}
 
-      {/* Continue button - USES UNIFIED BUTTON RENDERING */}
+      {/* Continue button - UNIFIED FlowButton component */}
       {!hideButton && (
-        <button
-          type="submit"
-          className={getButtonClasses(buttonSettings)}
-          style={getButtonStyle(buttonSettings)}
+        <FlowButton
+          variant={presetToVariant(settings.buttonPreset)}
+          onClick={(e) => {
+            // Form submission is handled by the form onSubmit
+            // This onClick is for non-form contexts
+          }}
         >
           {settings.buttonText || 'Continue'}
-        </button>
+        </FlowButton>
       )}
     </form>
   );

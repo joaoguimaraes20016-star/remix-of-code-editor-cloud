@@ -7,10 +7,9 @@ import {
   getAlignClass,
   getSpacingClass,
   getInputStyleClass,
-  getButtonClasses,
-  getButtonStyle,
 } from '../utils/stepRenderHelpers';
 import { useFlowContainerSafe, buttonActionToIntent } from '../contexts/FlowContainerContext';
+import { FlowButton, presetToVariant } from './FlowButton';
 
 // Convert ApplicationFlowBackground to CSS string
 const backgroundToCSS = (bg?: ApplicationFlowBackground): string => {
@@ -270,7 +269,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             elementId={`step-${stepId}-desc`}
           />
         </div>
-        {/* CTA button – selectable for button inspector */}
+        {/* CTA button – UNIFIED FlowButton component */}
         <div
           className={cn(
             'mt-6 inline-flex cursor-pointer rounded transition-all',
@@ -284,37 +283,26 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             }
           }}
           onPointerDown={(e) => {
-            // Prevent InlineTextEditor from capturing the pointer event
-            if (!isPreviewMode) {
-              e.stopPropagation();
-            }
+            if (!isPreviewMode) e.stopPropagation();
           }}
         >
-          <button
-            type="button"
-            className={cn(
-              getButtonClasses(s),
-              'builder-element-selectable',
-              isPreviewMode ? 'cursor-pointer' : 'pointer-events-none',
-              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
-            )}
-            style={getButtonStyle(s)}
+          <FlowButton
+            variant={presetToVariant(s.buttonPreset)}
             onClick={(e) => {
               if (isPreviewMode) handleButtonClick(e, s);
             }}
-            disabled={isButtonDisabled(s)}
-            aria-disabled={isButtonDisabled(s)}
+            isDisabled={isButtonDisabled(s)}
+            className={cn(
+              'builder-element-selectable',
+              !isPreviewMode && 'pointer-events-none'
+            )}
           >
             {s.buttonText || 'Start Application →'}
-          </button>
+          </FlowButton>
         </div>
-        {/* Blocked reason display - only shown when there's a recent blocked intent */}
+        {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-          <p 
-            className="text-xs mt-2 text-destructive/80"
-            role="alert"
-            aria-live="polite"
-          >
+          <p className="text-xs mt-2 text-destructive/80" role="alert" aria-live="polite">
             {getBlockedReasonDisplay()}
           </p>
         )}
@@ -517,6 +505,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         )}
         
         {/* Button - selectable */}
+        {/* Button - UNIFIED FlowButton component */}
         <div
           className={cn(
             'mt-6 inline-flex cursor-pointer rounded transition-all',
@@ -533,31 +522,23 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             if (!isPreviewMode) e.stopPropagation();
           }}
         >
-          <button
-            type="button"
-            className={cn(
-              getButtonClasses(s), 
-              'builder-element-selectable', 
-              isPreviewMode ? 'cursor-pointer' : 'pointer-events-none',
-              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
-            )}
-            style={getButtonStyle(s)}
+          <FlowButton
+            variant={presetToVariant(s.buttonPreset)}
             onClick={(e) => {
               if (isPreviewMode) handleButtonClick(e, s);
             }}
-            disabled={isButtonDisabled(s)}
-            aria-disabled={isButtonDisabled(s)}
+            isDisabled={isButtonDisabled(s)}
+            className={cn(
+              'builder-element-selectable',
+              !isPreviewMode && 'pointer-events-none'
+            )}
           >
             {s.buttonText || 'Continue'}
-          </button>
+          </FlowButton>
         </div>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-          <p 
-            className="text-xs mt-2 text-destructive/80 text-center"
-            role="alert"
-            aria-live="polite"
-          >
+          <p className="text-xs mt-2 text-destructive/80 text-center" role="alert" aria-live="polite">
             {getBlockedReasonDisplay()}
           </p>
         )}
@@ -645,7 +626,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             </div>
           ))}
         </div>
-        {/* Button - selectable */}
+        {/* Button - UNIFIED FlowButton component */}
         <div
           className={cn(
             'mt-6 inline-flex cursor-pointer rounded transition-all',
@@ -662,31 +643,23 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             if (!isPreviewMode) e.stopPropagation();
           }}
         >
-          <button
-            type="button"
-            className={cn(
-              getButtonClasses(s), 
-              'builder-element-selectable', 
-              isPreviewMode ? 'cursor-pointer' : 'pointer-events-none',
-              isButtonDisabled(s) && 'opacity-50 cursor-not-allowed'
-            )}
-            style={getButtonStyle(s)}
+          <FlowButton
+            variant={presetToVariant(s.buttonPreset)}
             onClick={(e) => {
               if (isPreviewMode) handleButtonClick(e, s);
             }}
-            disabled={isButtonDisabled(s)}
-            aria-disabled={isButtonDisabled(s)}
+            isDisabled={isButtonDisabled(s)}
+            className={cn(
+              'builder-element-selectable',
+              !isPreviewMode && 'pointer-events-none'
+            )}
           >
             {s.buttonText || 'Submit'}
-          </button>
+          </FlowButton>
         </div>
         {/* Blocked reason display */}
         {isButtonDisabled(s) && getBlockedReasonDisplay() && (
-          <p 
-            className="text-xs mt-2 text-destructive/80 text-center"
-            role="alert"
-            aria-live="polite"
-          >
+          <p className="text-xs mt-2 text-destructive/80 text-center" role="alert" aria-live="polite">
             {getBlockedReasonDisplay()}
           </p>
         )}
