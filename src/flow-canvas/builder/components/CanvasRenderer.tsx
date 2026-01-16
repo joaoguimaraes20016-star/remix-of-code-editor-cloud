@@ -1278,6 +1278,12 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
         const defaultShadow = (isNavPill || isFooterLink || isGhostButton || isOutlineMode) 
           ? 'none' 
           : (isDarkTheme ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.2)');
+
+        // UNIFIED WIDTH: boolean fullWidth only
+        // - Full Width = 100%
+        // - Auto Width = fit-content
+        // Legacy element.styles.width is ignored (and cleared by inspector)
+        const isFullWidth = element.props?.fullWidth === true || element.styles?.width?.toString() === '100%';
         
         // Text color: outline uses foreground, filled uses contrast or user-set
         const buttonTextColor = isNavPill 
@@ -1298,6 +1304,8 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           backgroundColor: isGradient ? undefined : buttonBg,
           background: buttonGradient,
           color: buttonTextColor,
+          // Width is controlled by the button element itself
+          width: isFullWidth ? '100%' : 'fit-content',
           // Outline buttons get no shadow; filled buttons can have shadow
           boxShadow: (isOutlineMode || isNavPill || isFooterLink || isGhostButton) 
             ? 'none' 
@@ -1310,8 +1318,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
           borderStyle: (isOutlineMode || isNavPill) ? 'solid' : 'none',
           borderRadius: isNavPill ? '9999px' : (element.styles?.borderRadius || '12px'),
           transition: `transform ${transitionDuration}ms ease, box-shadow ${transitionDuration}ms ease`,
-          // Apply custom dimensions
-          width: element.styles?.width || undefined,
+          // Apply custom dimensions (height only; width is unified above)
           height: element.styles?.height || undefined,
           padding: isNavPill ? '8px 16px' : (isFooterLink ? '4px 0' : element.styles?.padding),
         };
