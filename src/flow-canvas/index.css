@@ -264,8 +264,8 @@
   }
   
   .builder-block-selectable:hover {
-    @apply ring-1;
-    ring-color: hsl(var(--selection-block) / 0.5);
+    outline: 1px solid hsl(var(--selection-block) / 0.5);
+    outline-offset: 1px;
   }
   
   /* Element hover - use outline to avoid conflicting with button borders/shadows */

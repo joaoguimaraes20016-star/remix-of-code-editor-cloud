@@ -69,12 +69,15 @@ export const getButtonClasses = (settings: Partial<ApplicationFlowStepSettings>)
   const sizeConfig = BUTTON_SIZES[size] || BUTTON_SIZES.md;
   const radiusClass = BUTTON_RADII[radius] || BUTTON_RADII.rounded;
   
+  // Use 'block' when full-width to prevent inline-block width conflicts
+  const displayClass = settings.buttonFullWidth ? 'block w-full' : 'inline-block';
+  
   const baseClasses = cn(
-    'inline-block font-medium transition-colors',
+    displayClass,
+    'font-medium transition-colors',
     sizeConfig.padding,
     sizeConfig.text,
-    radiusClass,
-    settings.buttonFullWidth && 'w-full'
+    radiusClass
   );
   
   if (isGhost) {
