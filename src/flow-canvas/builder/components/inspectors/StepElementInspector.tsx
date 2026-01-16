@@ -19,6 +19,12 @@ import {
   AlignCenter,
   AlignRight,
   TextCursor,
+  User,
+  UserCircle,
+  Mail,
+  AtSign,
+  Phone,
+  Smartphone,
 } from 'lucide-react';
 import {
   Select,
@@ -30,6 +36,11 @@ import {
 import { ColorPickerPopover } from '../modals';
 import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
 import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
+import { 
+  getDefaultCaptureIcon, 
+  getDefaultCapturePlaceholder,
+  type CaptureIconType 
+} from '../../utils/stepRenderHelpers';
 
 // Local type definitions (matches ApplicationFlowCard)
 export type StepElementType = 'title' | 'description' | 'button' | 'option' | 'input';
@@ -440,71 +451,129 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   };
 
   const renderInputEditor = () => {
-    // For capture steps, we may have multiple fields - get the specific field
-    const captureFields = stepSettings.captureFields || [];
-    const fieldIndex = selection.optionIndex ?? 0; // Reuse optionIndex for field index
-    const field = captureFields[fieldIndex] || {};
+    const isCaptureStep = step.type === 'capture';
+    const fieldIndex = selection.optionIndex ?? 0;
+    
+    // For capture steps, map index to field type (name=0, email=1, phone=2)
+    const captureFieldTypes: Array<'name' | 'email' | 'phone'> = ['name', 'email', 'phone'];
+    const fieldType = isCaptureStep ? captureFieldTypes[fieldIndex] : null;
+    
+    // Icon options for capture fields
+    const CAPTURE_ICON_OPTIONS: Array<{ value: CaptureIconType; label: string; icon: React.ReactNode }> = [
+      { value: 'none', label: 'None', icon: null },
+      { value: 'user', label: 'User', icon: <User className="w-4 h-4" /> },
+      { value: 'user-circle', label: 'User Circle', icon: <UserCircle className="w-4 h-4" /> },
+      { value: 'mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
+      { value: 'at-sign', label: 'At Sign', icon: <AtSign className="w-4 h-4" /> },
+      { value: 'phone', label: 'Phone', icon: <Phone className="w-4 h-4" /> },
+      { value: 'smartphone', label: 'Smartphone', icon: <Smartphone className="w-4 h-4" /> },
+    ];
+    
+    // Helpers to get/set field-specific values for capture steps
+    const getPlaceholder = (): string => {
+      if (isCaptureStep && fieldType) {
+        const key = `capture${fieldType.charAt(0).toUpperCase() + fieldType.slice(1)}Placeholder` as keyof typeof stepSettings;
+        return (stepSettings[key] as string) || getDefaultCapturePlaceholder(fieldType);
+      }
+      return stepSettings.inputPlaceholder || '';
+    };
+    
+    const setPlaceholder = (value: string) => {
+      if (isCaptureStep && fieldType) {
+        const key = `capture${fieldType.charAt(0).toUpperCase() + fieldType.slice(1)}Placeholder`;
+        updateStepSetting(key, value);
+      } else {
+        updateStepSetting('inputPlaceholder', value);
+      }
+    };
+    
+    const getIcon = (): CaptureIconType => {
+      if (isCaptureStep && fieldType) {
+        const key = `capture${fieldType.charAt(0).toUpperCase() + fieldType.slice(1)}Icon` as keyof typeof stepSettings;
+        return (stepSettings[key] as CaptureIconType) || getDefaultCaptureIcon(fieldType);
+      }
+      return 'none';
+    };
+    
+    const setIcon = (value: CaptureIconType) => {
+      if (isCaptureStep && fieldType) {
+        const key = `capture${fieldType.charAt(0).toUpperCase() + fieldType.slice(1)}Icon`;
+        updateStepSetting(key, value);
+      }
+    };
+    
+    // Get field label for display
+    const getFieldLabel = (): string => {
+      if (fieldType) {
+        return fieldType.charAt(0).toUpperCase() + fieldType.slice(1);
+      }
+      return 'Input';
+    };
     
     return (
       <div className="flex flex-col h-full min-h-0 bg-builder-bg">
         <CollapsibleSection title="Content" icon={<Type className="w-3.5 h-3.5" />} defaultOpen>
-          <FieldGroup label="Label">
-            <Input
-              value={field.label || stepSettings.placeholder || ''}
-              onChange={(e) => {
-                if (captureFields.length > 0) {
-                  updateCaptureField(fieldIndex, { label: e.target.value });
-                } else {
-                  updateStepSetting('placeholder', e.target.value);
-                }
-              }}
-              placeholder="Field label..."
-              className="text-sm"
-            />
-          </FieldGroup>
+          {isCaptureStep && (
+            <div className="mb-2 px-2 py-1.5 bg-primary/10 rounded text-xs text-primary">
+              Editing: {getFieldLabel()} Field
+            </div>
+          )}
           
           <FieldGroup label="Placeholder">
             <Input
-              value={field.placeholder || stepSettings.inputPlaceholder || ''}
-              onChange={(e) => {
-                if (captureFields.length > 0) {
-                  updateCaptureField(fieldIndex, { placeholder: e.target.value });
-                } else {
-                  updateStepSetting('inputPlaceholder', e.target.value);
-                }
-              }}
+              value={getPlaceholder()}
+              onChange={(e) => setPlaceholder(e.target.value)}
               placeholder="Type your answer..."
               className="text-sm"
             />
           </FieldGroup>
+          
+          {isCaptureStep && fieldType && (
+            <FieldGroup label="Icon">
+              <Select
+                value={getIcon()}
+                onValueChange={(value) => setIcon(value as CaptureIconType)}
+              >
+                <SelectTrigger className="text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CAPTURE_ICON_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <div className="flex items-center gap-2">
+                        {opt.icon}
+                        <span>{opt.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+          )}
         </CollapsibleSection>
         
-        <CollapsibleSection title="Field" icon={<TextCursor className="w-3.5 h-3.5" />} defaultOpen>
-          <FieldGroup label="Accepts">
-            <Select
-              value={field.type || stepSettings.inputType || 'text'}
-              onValueChange={(value) => {
-                if (captureFields.length > 0) {
-                  updateCaptureField(fieldIndex, { type: value });
-                } else {
-                  updateStepSetting('inputType', value);
-                }
-              }}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">Short Text</SelectItem>
-                <SelectItem value="email">Email Address</SelectItem>
-                <SelectItem value="phone">Phone Number</SelectItem>
-                <SelectItem value="number">Number</SelectItem>
-                <SelectItem value="textarea">Paragraph</SelectItem>
-                <SelectItem value="url">Website</SelectItem>
-              </SelectContent>
-            </Select>
-          </FieldGroup>
-        </CollapsibleSection>
+        {!isCaptureStep && (
+          <CollapsibleSection title="Field" icon={<TextCursor className="w-3.5 h-3.5" />} defaultOpen>
+            <FieldGroup label="Accepts">
+              <Select
+                value={stepSettings.inputType || 'text'}
+                onValueChange={(value) => updateStepSetting('inputType', value)}
+              >
+                <SelectTrigger className="text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">Short Text</SelectItem>
+                  <SelectItem value="email">Email Address</SelectItem>
+                  <SelectItem value="phone">Phone Number</SelectItem>
+                  <SelectItem value="number">Number</SelectItem>
+                  <SelectItem value="textarea">Paragraph</SelectItem>
+                  <SelectItem value="url">Website</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+          </CollapsibleSection>
+        )}
         
         <CollapsibleSection title="Style" icon={<Palette className="w-3.5 h-3.5" />}>
           <FieldGroup label="Input Style">
@@ -545,14 +614,8 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
               <p className="text-[10px] text-builder-text-dim">Must fill to continue</p>
             </div>
             <Switch
-              checked={field.required ?? stepSettings.inputRequired ?? true}
-              onCheckedChange={(checked) => {
-                if (captureFields.length > 0) {
-                  updateCaptureField(fieldIndex, { required: checked });
-                } else {
-                  updateStepSetting('inputRequired', checked);
-                }
-              }}
+              checked={stepSettings.inputRequired ?? true}
+              onCheckedChange={(checked) => updateStepSetting('inputRequired', checked)}
             />
           </div>
         </CollapsibleSection>
