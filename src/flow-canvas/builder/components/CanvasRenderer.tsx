@@ -296,7 +296,7 @@ interface SortableElementRendererProps {
   onFormSubmit?: (values: Record<string, string>) => void;
 }
 
-const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({ 
+const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElementRendererProps>(({ 
   element, 
   isSelected,
   isMultiSelected = false,
@@ -314,7 +314,7 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   onNextStep,
   onGoToStep,
   onFormSubmit,
-}) => {
+}, forwardedRef) => {
   const {
     attributes,
     listeners,
@@ -342,12 +342,18 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   // Animation replay ref for forcing reflow
   const elementRef = React.useRef<HTMLDivElement>(null);
   
-  // Wrapper ref for toolbar positioning - combines with dnd-kit's setNodeRef
+  // Wrapper ref for toolbar positioning - combines with dnd-kit's setNodeRef and forwardedRef
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const combinedRef = React.useCallback((node: HTMLDivElement | null) => {
     wrapperRef.current = node;
     setNodeRef(node);
-  }, [setNodeRef]);
+    // Also set forwarded ref if provided
+    if (typeof forwardedRef === 'function') {
+      forwardedRef(node);
+    } else if (forwardedRef) {
+      forwardedRef.current = node;
+    }
+  }, [setNodeRef, forwardedRef]);
   
   // Easing presets map
   const easingMap: Record<string, string> = {
@@ -2073,7 +2079,9 @@ const SortableElementRenderer: React.FC<SortableElementRendererProps> = ({
   };
 
   return renderElement();
-};
+});
+
+SortableElementRenderer.displayName = 'SortableElementRenderer';
 
 // Element Drag Overlay
 const ElementDragOverlay: React.FC<{ element: Element }> = ({ element }) => (

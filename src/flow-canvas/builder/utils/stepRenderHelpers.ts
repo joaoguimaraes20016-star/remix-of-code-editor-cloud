@@ -25,7 +25,15 @@ export const getTitleSizeClass = (size?: string): string => {
 };
 
 export const getAlignClass = (align?: string): string => {
-  return align === 'left' ? 'text-left items-start' : 'text-center items-center';
+  switch (align) {
+    case 'left':
+      return 'text-left items-start';
+    case 'right':
+      return 'text-right items-end';
+    case 'center':
+    default:
+      return 'text-center items-center';
+  }
 };
 
 export const getSpacingClass = (spacing?: string): string => {
@@ -37,9 +45,24 @@ export const getSpacingClass = (spacing?: string): string => {
   return spacings[spacing || 'normal'] || 'py-12 px-8';
 };
 
-export const getInputStyleClass = (style?: string): string => {
+export const getInputStyleClass = (style?: string, radiusPx?: number): string => {
+  // If custom radius is provided, just return base styles (radius applied via inline style)
+  if (radiusPx !== undefined) {
+    const baseStyles: Record<string, string> = {
+      default: '',
+      outlined: 'border',
+      filled: '',
+      underline: 'border-t-0 border-l-0 border-r-0 border-b',
+    };
+    return baseStyles[style || 'default'] || '';
+  }
+  
+  // Legacy: style-based radius
   const styles: Record<string, string> = {
     default: 'rounded-lg',
+    outlined: 'rounded-lg border',
+    filled: 'rounded-lg',
+    underline: 'rounded-none border-t-0 border-l-0 border-r-0 border-b',
     minimal: 'rounded-none border-t-0 border-l-0 border-r-0',
     rounded: 'rounded-full',
     square: 'rounded-none',
