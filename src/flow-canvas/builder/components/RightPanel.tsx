@@ -982,39 +982,38 @@ const ElementInspector: React.FC<{
                 </Select>
               </div>
               
-              {/* Custom Width */}
+              {/* Width (UNIFIED): Auto vs Full Width (no fixed widths) */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Width</span>
                 <div className="flex items-center gap-1">
                   <Select 
-                    value={element.styles?.width ? (element.styles.width.toString().endsWith('%') ? 'percent' : 'fixed') : 'auto'} 
+                    value={
+                      (element.props?.fullWidth === true || element.styles?.width?.toString() === '100%')
+                        ? 'full'
+                        : 'auto'
+                    }
                     onValueChange={(value) => {
-                      if (value === 'auto') {
-                        handleStyleChange('width', undefined as any);
-                      } else if (value === 'fixed') {
-                        handleStyleChange('width', '200px');
-                      } else if (value === 'percent') {
-                        handleStyleChange('width', '100%');
+                      // Single width mechanism: boolean on the button (props.fullWidth)
+                      // Also clear any legacy element.styles.width to avoid conflicts.
+                      if (value === 'full') {
+                        onUpdate({
+                          props: { ...element.props, fullWidth: true },
+                          styles: { ...element.styles, width: undefined },
+                        });
+                      } else {
+                        onUpdate({
+                          props: { ...element.props, fullWidth: false },
+                          styles: { ...element.styles, width: undefined },
+                        });
                       }
                     }}
                   >
-                    <SelectTrigger className="builder-input w-16"><SelectValue placeholder="Auto" /></SelectTrigger>
+                    <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Auto" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">Auto</SelectItem>
-                      <SelectItem value="fixed">Fixed</SelectItem>
-                      <SelectItem value="percent">100%</SelectItem>
+                      <SelectItem value="full">Full</SelectItem>
                     </SelectContent>
                   </Select>
-                  {element.styles?.width && !element.styles.width.toString().endsWith('%') && (
-                    <Input
-                      type="number"
-                      value={parseInt(element.styles.width.toString()) || 200}
-                      onChange={(e) => handleStyleChange('width', `${e.target.value}px`)}
-                      className="builder-input w-16 text-xs"
-                      min={50}
-                      max={600}
-                    />
-                  )}
                 </div>
               </div>
               
