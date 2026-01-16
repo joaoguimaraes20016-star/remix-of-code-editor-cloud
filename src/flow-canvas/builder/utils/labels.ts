@@ -104,12 +104,12 @@ export const stepTypeLabels: Record<StepType, string> = {
   thankyou: 'Thank You',
 };
 
-// Submit mode labels
+// Button action labels - user-facing, no internal terminology
 export const submitModeLabels: Record<SubmitMode, string> = {
-  next: 'Continue',
+  next: 'Next Step',
   submit: 'Submit',
   redirect: 'Open URL',
-  custom: 'Custom Action',
+  custom: 'Custom',
 };
 
 // Device mode labels

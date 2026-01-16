@@ -628,19 +628,14 @@ interface ButtonAction {
  * Users never see "next-step" in the UI - it just happens when no action is set.
  */
 export function buttonActionToIntent(action: ButtonAction | undefined): FlowIntent | null {
-  // No action = continue flow (default behavior, not exposed in UI)
-  if (!action || !action.type) {
+  // No action or 'next-step' = go to next visible step (default)
+  // UI shows this as "Next Step" - no hidden "auto" concept
+  if (!action || !action.type || action.type === 'next-step') {
     return { type: 'next-step' };
   }
   
   switch (action.type) {
-    // Internal default - still handle if set programmatically
-    case 'next-step':
-      return { type: 'next-step' };
-    case 'prev-step':
-      return { type: 'prev-step' };
-    
-    // Explicit flow actions
+    // Flow navigation
     case 'go-to-step':
       return action.value ? { type: 'go-to-step', stepId: action.value } : null;
     case 'submit':
