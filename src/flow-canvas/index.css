@@ -1087,3 +1087,272 @@
     background: linear-gradient(135deg, #f97316 0%, #ef4444 50%, #ec4899 100%);
   }
 }
+
+/* ============================================ */
+/* PREMIUM ELEMENT ANIMATIONS                  */
+/* ============================================ */
+
+/* Ticker infinite scroll animation */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-ticker-scroll {
+  animation: ticker-scroll var(--ticker-speed, 30s) linear infinite;
+  will-change: transform;
+}
+
+.ticker-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-content {
+  display: inline-block;
+  animation: ticker-scroll var(--ticker-speed, 30s) linear infinite;
+}
+
+/* Pause ticker on hover */
+.ticker-container:hover .ticker-content {
+  animation-play-state: paused;
+}
+
+/* Gradient underline for accent text */
+.underline-gradient {
+  position: relative;
+  display: inline;
+}
+
+.underline-gradient::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--underline-from, #8B5CF6), var(--underline-to, #EC4899));
+  border-radius: 999px;
+}
+
+/* Stat number styling - tabular numbers for counters */
+.stat-number {
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Counter animation */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-number-animate {
+  animation: count-up 0.6s ease-out forwards;
+}
+
+/* Avatar group overlapping */
+.avatar-group {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.avatar-group > * {
+  margin-left: -12px;
+  border: 2px solid var(--avatar-border, #0a0a0f);
+  border-radius: 9999px;
+}
+
+.avatar-group > *:last-child {
+  margin-left: 0;
+}
+
+/* Premium background patterns */
+.bg-pattern-grid {
+  background-image: 
+    linear-gradient(var(--pattern-color, rgba(139,92,246,0.05)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pattern-color, rgba(139,92,246,0.05)) 1px, transparent 1px);
+  background-size: var(--pattern-size, 40px) var(--pattern-size, 40px);
+}
+
+.bg-pattern-dots {
+  background-image: radial-gradient(var(--pattern-color, rgba(139,92,246,0.1)) 1px, transparent 1px);
+  background-size: var(--pattern-size, 20px) var(--pattern-size, 20px);
+}
+
+.bg-pattern-lines {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--pattern-color, rgba(139,92,246,0.05)),
+    var(--pattern-color, rgba(139,92,246,0.05)) 1px,
+    transparent 1px,
+    transparent var(--pattern-size, 40px)
+  );
+}
+
+/* Noise texture overlay */
+.bg-pattern-noise {
+  position: relative;
+}
+
+.bg-pattern-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: var(--noise-opacity, 0.03);
+  pointer-events: none;
+}
+
+/* Process step connector line */
+.process-step-connector {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--connector-color, #8B5CF6), transparent);
+}
+
+.process-step-connector::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid var(--connector-color, #8B5CF6);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+/* Video thumbnail overlay */
+.video-thumbnail-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 100%);
+  transition: all 0.3s ease;
+}
+
+.video-thumbnail-overlay:hover {
+  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
+}
+
+.video-play-button {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.video-play-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+}
+
+/* Badge styling */
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.premium-badge-primary {
+  background: linear-gradient(135deg, var(--primary-color, #8B5CF6), var(--accent-color, #EC4899));
+  color: white;
+}
+
+.premium-badge-warning {
+  background: linear-gradient(135deg, #F59E0B, #EF4444);
+  color: white;
+}
+
+.premium-badge-success {
+  background: linear-gradient(135deg, #10B981, #06B6D4);
+  color: white;
+}
+
+/* Glow effects for premium buttons */
+.glow-primary {
+  box-shadow: 0 0 20px var(--glow-color, rgba(139, 92, 246, 0.4));
+}
+
+.glow-accent {
+  box-shadow: 0 0 30px var(--glow-color, rgba(236, 72, 153, 0.4));
+}
+
+/* Shimmer animation for premium elements */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer-effect {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Credibility bar styling */
+.credibility-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+}
+
+/* Stats row layout */
+.stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+/* Process flow horizontal layout */
+.process-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.process-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  position: relative;
+}

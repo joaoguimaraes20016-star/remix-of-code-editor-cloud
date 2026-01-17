@@ -61,6 +61,61 @@ function convertAIElement(aiElement: AIElement, brandKit: BrandKit): Element {
     element.props.textColor = element.props.textColor || '#ffffff';
   }
   
+  // Handle gradient-text
+  if (aiElement.type === 'gradient-text') {
+    element.type = 'gradient-text';
+    element.props.gradient = aiElement.props?.gradient || [brandKit.primaryColor || '#8B5CF6', brandKit.accentColor || '#EC4899'];
+  }
+  
+  // Handle stat-number
+  if (aiElement.type === 'stat-number') {
+    element.type = 'stat-number';
+    element.props.suffix = aiElement.props?.suffix || '+';
+    element.props.label = aiElement.props?.label || '';
+  }
+  
+  // Handle avatar-group
+  if (aiElement.type === 'avatar-group') {
+    element.type = 'avatar-group';
+    element.props.count = aiElement.props?.count || 3;
+    element.props.placeholder = true;
+  }
+  
+  // Handle ticker
+  if (aiElement.type === 'ticker') {
+    element.type = 'ticker';
+    element.props.items = aiElement.props?.items || [];
+    element.props.separator = aiElement.props?.separator || '  •  ';
+    element.props.speed = aiElement.props?.speed || 30;
+  }
+  
+  // Handle badge
+  if (aiElement.type === 'badge') {
+    element.type = 'badge';
+    element.props.variant = aiElement.props?.variant || 'primary';
+    element.props.icon = aiElement.props?.icon;
+  }
+  
+  // Handle process-step
+  if (aiElement.type === 'process-step') {
+    element.type = 'process-step';
+    element.props.icon = aiElement.props?.icon || 'check';
+    element.props.step = aiElement.props?.step || 1;
+  }
+  
+  // Handle video-thumbnail
+  if (aiElement.type === 'video-thumbnail') {
+    element.type = 'video-thumbnail';
+    element.props.placeholder = true;
+    element.props.overlayStyle = aiElement.props?.overlayStyle || 'gradient';
+  }
+  
+  // Handle underline-text
+  if (aiElement.type === 'underline-text') {
+    element.type = 'underline-text';
+    element.props.underlineColor = aiElement.props?.underlineColor || brandKit.accentColor || '#EC4899';
+  }
+  
   return element;
 }
 
@@ -88,11 +143,14 @@ function normalizeElementType(type: string): ElementType {
   
   const normalized = typeMap[type.toLowerCase()] || type.toLowerCase();
   
-  // Validate against known types
+  // Validate against known types - including premium types
   const validTypes: ElementType[] = [
     'text', 'heading', 'button', 'input', 'select', 'checkbox', 
     'radio', 'image', 'video', 'divider', 'spacer', 'icon', 'link',
-    'multiple-choice', 'single-choice'
+    'multiple-choice', 'single-choice',
+    // Premium element types
+    'gradient-text', 'underline-text', 'stat-number', 'avatar-group',
+    'ticker', 'badge', 'icon-text', 'process-step', 'video-thumbnail'
   ];
   
   return validTypes.includes(normalized as ElementType) ? normalized as ElementType : 'text';
@@ -137,6 +195,17 @@ function normalizeBlockType(type: string): BlockType {
     'offer': 'pricing',
     'logos': 'trust',
     'badges': 'trust',
+    // Premium block aliases
+    'credibility': 'credibility-bar',
+    'stats': 'stats-row',
+    'process': 'process-flow',
+    'steps': 'process-flow',
+    'urgency': 'urgency-banner',
+    'marquee': 'ticker-bar',
+    'scroll-text': 'ticker-bar',
+    'video-section': 'video-hero',
+    'split': 'split-hero',
+    'risk-reversal': 'guarantee',
   };
   
   const normalized = typeMap[type.toLowerCase()] || type.toLowerCase();
@@ -145,7 +214,10 @@ function normalizeBlockType(type: string): BlockType {
     'hero', 'form-field', 'cta', 'testimonial', 'media', 'text-block',
     'custom', 'booking', 'application-flow', 'capture-flow-embed',
     'feature', 'pricing', 'faq', 'about', 'team', 'trust', 'logo-bar',
-    'footer', 'contact', 'spacer', 'divider'
+    'footer', 'contact', 'spacer', 'divider',
+    // Premium block types
+    'credibility-bar', 'stats-row', 'process-flow', 'urgency-banner',
+    'ticker-bar', 'video-hero', 'split-hero', 'guarantee'
   ];
   
   return validTypes.includes(normalized as BlockType) ? normalized as BlockType : 'text-block';
