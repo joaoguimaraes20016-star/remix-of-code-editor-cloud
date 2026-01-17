@@ -580,12 +580,14 @@ const ElementInspector: React.FC<{
             <ConditionalLogicEditor
               conditions={element.visibility?.conditions?.map(c => {
                 // Map from ConditionalRule operators to ConditionalLogicEditor operators
-                const operatorMap: Record<string, 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than'> = {
+                const operatorMap: Record<string, 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty'> = {
                   equals: 'equals',
                   notEquals: 'not_equals',
                   contains: 'contains',
-                  notEmpty: 'not_equals', // Approximate mapping
-                  isEmpty: 'equals', // Approximate mapping
+                  notEmpty: 'is_not_empty',
+                  isEmpty: 'is_empty',
+                  greater_than: 'greater_than',
+                  less_than: 'less_than',
                 };
                 return {
                   id: c.field,
@@ -600,8 +602,10 @@ const ElementInspector: React.FC<{
                   equals: 'equals',
                   not_equals: 'notEquals',
                   contains: 'contains',
-                  greater_than: 'notEquals', // Approximate
-                  less_than: 'notEquals', // Approximate
+                  greater_than: 'notEquals',
+                  less_than: 'notEquals',
+                  is_empty: 'isEmpty',
+                  is_not_empty: 'notEmpty',
                 };
                 const mapped = conditions.map(c => ({
                   field: c.fieldKey,
@@ -1269,6 +1273,74 @@ const ElementInspector: React.FC<{
                     <SelectItem value="depth">3D Depth</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              
+              {/* Letter Spacing */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Letter Spacing</span>
+                  <span className="text-xs font-mono text-builder-text-dim">
+                    {(element.props?.letterSpacing as number) ?? 0}px
+                  </span>
+                </div>
+                <Slider 
+                  value={[(element.props?.letterSpacing as number) ?? 0]}
+                  onValueChange={(v) => handlePropsChange('letterSpacing', v[0])}
+                  min={-2} max={10} step={0.5}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[9px] text-builder-text-dim">
+                  <span>Tight</span>
+                  <span>Wide</span>
+                </div>
+              </div>
+              
+              {/* Line Height */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Line Height</span>
+                  <span className="text-xs font-mono text-builder-text-dim">
+                    {((element.props?.lineHeight as number) ?? 1.5).toFixed(1)}
+                  </span>
+                </div>
+                <Slider 
+                  value={[(element.props?.lineHeight as number) ?? 1.5]}
+                  onValueChange={(v) => handlePropsChange('lineHeight', v[0])}
+                  min={1} max={2.5} step={0.1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[9px] text-builder-text-dim">
+                  <span>Tight</span>
+                  <span>Loose</span>
+                </div>
+              </div>
+              
+              {/* Text Transform */}
+              <div className="space-y-1.5">
+                <span className="text-xs text-builder-text-muted">Transform</span>
+                <div className="flex gap-1">
+                  {[
+                    { value: 'none', label: 'Aa' },
+                    { value: 'uppercase', label: 'AA' },
+                    { value: 'lowercase', label: 'aa' },
+                    { value: 'capitalize', label: 'Aa' },
+                  ].map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => handlePropsChange('textTransform', t.value)}
+                      className={cn(
+                        'flex-1 py-1.5 rounded text-xs transition-colors',
+                        element.props?.textTransform === t.value 
+                          ? 'bg-[hsl(315,85%,58%)] text-white' 
+                          : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface-active'
+                      )}
+                      style={{ textTransform: t.value as any }}
+                      title={t.value}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </CollapsibleSection>

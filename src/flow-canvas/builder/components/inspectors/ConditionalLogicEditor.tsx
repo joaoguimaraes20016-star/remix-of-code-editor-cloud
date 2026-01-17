@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 export interface VisibilityCondition {
   id: string;
   fieldKey: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+  operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';
   value: string;
 }
 
@@ -31,7 +31,12 @@ const operatorLabels: Record<VisibilityCondition['operator'], string> = {
   contains: 'contains',
   greater_than: 'is greater than',
   less_than: 'is less than',
+  is_empty: 'is empty',
+  is_not_empty: 'is not empty',
 };
+
+// Operators that don't need a value input
+const noValueOperators: VisibilityCondition['operator'][] = ['is_empty', 'is_not_empty'];
 
 const generateId = () => `cond-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -147,17 +152,19 @@ export const ConditionalLogicEditor: React.FC<ConditionalLogicEditorProps> = ({
                 </Select>
               </div>
 
-              {/* Value */}
-              <div className="space-y-1">
-                <Label className="text-[10px] text-builder-text-muted">Value</Label>
-                <Input
-                  type="text"
-                  value={condition.value}
-                  onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
-                  placeholder="Enter value"
-                  className="h-7 text-xs bg-builder-surface border-builder-border"
-                />
-              </div>
+              {/* Value - Only show if operator requires a value */}
+              {!noValueOperators.includes(condition.operator) && (
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-builder-text-muted">Value</Label>
+                  <Input
+                    type="text"
+                    value={condition.value}
+                    onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
+                    placeholder="Enter value"
+                    className="h-7 text-xs bg-builder-surface border-builder-border"
+                  />
+                </div>
+              )}
 
               {/* Delete button */}
               <button
