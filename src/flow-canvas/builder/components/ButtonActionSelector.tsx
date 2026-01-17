@@ -50,24 +50,11 @@ import {
 } from '@/components/ui/select';
 
 // ═══════════════════════════════════════════════════════════════
-// ACTION TYPES - Internal representation (not exposed to users)
+// ACTION TYPES - Import from shared types
 // ═══════════════════════════════════════════════════════════════
 
-export type ButtonActionType = 
-  | 'next-step'      // Primary: "Next Step"
-  | 'go-to-step'     // Secondary: "Go to Step"
-  | 'submit'         // Final: "Submit" (only on capture/final)
-  | 'url'            // External: "Open URL"
-  | 'scroll'         // External: "Scroll To"
-  | 'phone'          // External: "Call"
-  | 'email'          // External: "Email"
-  | 'download';      // External: "Download"
-
-export interface ButtonAction {
-  type: ButtonActionType;
-  value?: string;
-  openNewTab?: boolean;
-}
+import type { ButtonActionType, ButtonAction } from '@/flow-canvas/shared/types/buttonAction';
+export type { ButtonActionType, ButtonAction } from '@/flow-canvas/shared/types/buttonAction';
 
 // ═══════════════════════════════════════════════════════════════
 // ACTION DEFINITIONS - User-facing labels

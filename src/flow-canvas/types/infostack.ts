@@ -1,5 +1,8 @@
 // InfoStack Data Contract - The single source of truth for the builder
 
+// Import shared types
+import type { ButtonAction } from '@/flow-canvas/shared/types/buttonAction';
+
 export type StepIntent = 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete';
 export type StepType = 'form' | 'content' | 'quiz' | 'booking' | 'checkout' | 'thankyou';
 export type SubmitMode = 'next' | 'submit' | 'redirect' | 'custom';
@@ -107,12 +110,8 @@ export interface ApplicationFlowStepSettings {
   requireCompletion?: boolean;
   popupHeadline?: string;
   popupSubtext?: string;
-  // Button action configuration
-  buttonAction?: {
-    type: 'next-step' | 'go-to-step' | 'url' | 'scroll' | 'submit' | 'download' | 'phone' | 'email';
-    value?: string;
-    openNewTab?: boolean;
-  };
+  // Button action configuration - uses shared ButtonAction type
+  buttonAction?: ButtonAction;
   // Capture step per-field customization
   captureNamePlaceholder?: string;
   captureEmailPlaceholder?: string;

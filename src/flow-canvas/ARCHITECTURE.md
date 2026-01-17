@@ -46,7 +46,12 @@ The Flow Canvas Builder is a modular, component-based system for creating funnel
 - Added missing type exports in builder components index
 - Confirmed no TypeScript errors or runtime issues
 
-## Directory Structure
+### Phase 8: Final Cleanup & Consolidation
+- Created shared `ButtonAction` type in `shared/types/buttonAction.ts`
+- Removed duplicate utility functions from CanvasRenderer
+- Updated `infostack.ts` to use shared ButtonAction type
+- Added `ButtonActionSelector` export to builder index
+- Consolidated type definitions across 4 files
 
 ```
 src/flow-canvas/

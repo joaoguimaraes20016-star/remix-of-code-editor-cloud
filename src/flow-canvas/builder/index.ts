@@ -52,6 +52,11 @@ export { InlineTextEditor } from './components/InlineTextEditor';
 export { RichTextToolbar } from './components/RichTextToolbar';
 
 // ─────────────────────────────────────────────────────────
+// BUTTON ACTION SELECTOR (Phase 8)
+// ─────────────────────────────────────────────────────────
+export { ButtonActionSelector } from './components/ButtonActionSelector';
+export type { ButtonAction, ButtonActionType } from '../shared/types/buttonAction';
+// ─────────────────────────────────────────────────────────
 // MODULAR RENDERERS (Phase 3)
 // ─────────────────────────────────────────────────────────
 export {

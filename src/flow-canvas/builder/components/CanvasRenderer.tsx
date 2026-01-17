@@ -41,39 +41,9 @@ interface MultiSelection {
   ids: Set<string>;
 }
 
-// Helper to get contrasting text color based on background luminance
-function getContrastTextColor(backgroundColor: string): string {
-  try {
-    const hex = backgroundColor.replace('#', '');
-    if (hex.length !== 6) return '#ffffff';
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.5 ? '#1f2937' : '#ffffff';
-  } catch {
-    return '#ffffff';
-  }
-}
-
-// Tiny helper: derive a lighter shade from a hex color (used for theme-aware gradient fallbacks)
-function lightenHex(hex: string, mixWithWhite = 0.28): string {
-  try {
-    const h = hex.replace('#', '').trim();
-    if (h.length !== 6) return hex;
-
-    const r = parseInt(h.slice(0, 2), 16);
-    const g = parseInt(h.slice(2, 4), 16);
-    const b = parseInt(h.slice(4, 6), 16);
-
-    const mix = (c: number) => Math.round(c + (255 - c) * mixWithWhite);
-    const toHex = (n: number) => n.toString(16).padStart(2, '0');
-
-    return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
-  } catch {
-    return hex;
-  }
-}
+// Import shared utilities from CanvasUtilities (Phase 8: consolidated)
+import { CanvasUtilities } from './renderers/CanvasUtilities';
+const { getContrastTextColor, lightenHex } = CanvasUtilities;
 
 // Helper to generate page background styles
 const getPageBackgroundStyles = (bg: PageBackground | undefined, isDarkTheme: boolean): React.CSSProperties => {
@@ -202,12 +172,8 @@ interface CanvasRendererProps {
   onSelectStepElement?: (element: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null) => void;
 }
 
-// Button Action type
-interface ButtonAction {
-  type: 'url' | 'next-step' | 'prev-step' | 'go-to-step' | 'scroll' | 'submit' | 'download' | 'phone' | 'email';
-  value?: string;
-  openNewTab?: boolean;
-}
+// Button Action type - use shared type
+import type { ButtonAction } from '@/flow-canvas/shared/types/buttonAction';
 
 // Theme context for passing dark mode state and primary color down
 export interface ThemeContextValue {
