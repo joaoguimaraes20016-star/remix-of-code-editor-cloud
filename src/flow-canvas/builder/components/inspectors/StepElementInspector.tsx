@@ -196,7 +196,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
             <SelectTrigger className="text-sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border-border">
               <SelectItem value="sm">Small</SelectItem>
               <SelectItem value="md">Medium</SelectItem>
               <SelectItem value="lg">Large</SelectItem>
@@ -271,7 +271,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
             <SelectTrigger className="text-sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border-border">
               <SelectItem value="xs">Extra Small</SelectItem>
               <SelectItem value="sm">Small</SelectItem>
               <SelectItem value="base">Normal</SelectItem>
@@ -650,7 +650,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
                 <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border-border">
                   {CAPTURE_ICON_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       <div className="flex items-center gap-2">
@@ -675,7 +675,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
                 <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border-border">
                   <SelectItem value="text">Short Text</SelectItem>
                   <SelectItem value="email">Email Address</SelectItem>
                   <SelectItem value="phone">Phone Number</SelectItem>
@@ -697,7 +697,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
               <SelectTrigger className="text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border-border">
                 <SelectItem value="outlined">Outlined</SelectItem>
                 <SelectItem value="filled">Filled</SelectItem>
                 <SelectItem value="underline">Underline</SelectItem>

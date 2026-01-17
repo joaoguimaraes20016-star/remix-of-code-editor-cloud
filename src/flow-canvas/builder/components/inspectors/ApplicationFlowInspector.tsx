@@ -76,6 +76,7 @@ import {
   presetDescriptions,
   applyPreset 
 } from '../../utils/stepDesignPresets';
+import { createDefaultStepSettings } from '../../utils/stepDefaults';
 
 const stepTypeIcons: Record<ApplicationStepType, React.ReactNode> = {
   welcome: <Sparkles className="w-3.5 h-3.5" />,
@@ -103,7 +104,7 @@ interface ApplicationFlowInspectorProps {
 // Generate unique ID
 const generateId = () => `step-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-// Default step templates
+// Default step templates - uses centralized defaults for consistent creation
 const createDefaultStep = (type: ApplicationStepType, index: number): ApplicationFlowStep => ({
   id: generateId(),
   name: type === 'welcome' ? 'Welcome' : type === 'ending' ? 'Thank You' : `Step ${index + 1}`,
@@ -112,6 +113,8 @@ const createDefaultStep = (type: ApplicationStepType, index: number): Applicatio
   navigation: {
     action: type === 'ending' ? 'submit' : 'next',
   },
+  // Include default settings so new steps render properly on canvas
+  settings: createDefaultStepSettings(type),
 });
 
 // Minimal Step Item for the list
@@ -357,7 +360,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronLeft className="w-3 h-3" />
-              All Steps
+              Flow Settings
             </button>
             <div className="flex items-center gap-1">
               <button

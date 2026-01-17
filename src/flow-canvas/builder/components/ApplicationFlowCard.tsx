@@ -998,7 +998,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         style={stepLayoutStyle}
         onClick={handleBlockClick}
       >
-        {/* Progress bar - shown when enabled */}
+        {/* Progress bar - shown when enabled, uses theme primary color */}
         {showProgress && steps.length > 1 && (
           <div className="w-full mb-4">
             <div 
@@ -1009,7 +1009,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 className="h-full rounded-full transition-all duration-300"
                 style={{ 
                   width: `${progressPercent}%`,
-                  backgroundColor: flowTextColor,
+                  backgroundColor: defaultButtonColor, // Use theme primary for progress bar
                 }}
               />
             </div>
@@ -1065,31 +1065,34 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 const isDisabled = isStepNavDisabled(step.id);
                 const isCurrent = selectedStepId === step.id;
                 
-                return (
-                  <button
-                    key={step.id}
-                    onClick={(e) => {
-                      if (!isDisabled) {
-                        handleStepNavClick(e, step.id);
-                      }
-                    }}
-                    disabled={isDisabled}
-                    aria-disabled={isDisabled}
-                    aria-current={isCurrent ? 'step' : undefined}
-                    title={step.name}
-                    className={cn(
-                      'w-1.5 h-1.5 rounded-full transition-all duration-150',
-                      isCurrent
-                        ? 'w-3'
-                        : isDisabled
-                          ? 'opacity-30 cursor-not-allowed'
-                          : 'hover:opacity-70 cursor-pointer'
-                    )}
-                    style={{
-                      backgroundColor: isCurrent ? flowTextColor : `${flowTextColor}40`,
-                    }}
-                  />
-                );
+                  return (
+                    <button
+                      key={step.id}
+                      onClick={(e) => {
+                        if (!isDisabled) {
+                          handleStepNavClick(e, step.id);
+                        }
+                      }}
+                      disabled={isDisabled}
+                      aria-disabled={isDisabled}
+                      aria-current={isCurrent ? 'step' : undefined}
+                      title={step.name}
+                      className={cn(
+                        'w-1.5 h-1.5 rounded-full transition-all duration-150',
+                        isCurrent
+                          ? 'w-3'
+                          : isDisabled
+                            ? 'opacity-30 cursor-not-allowed'
+                            : 'hover:opacity-70 cursor-pointer'
+                      )}
+                      style={{
+                        // Active dot uses theme primary color for visibility
+                        // Inactive dots have border for visibility on any background
+                        backgroundColor: isCurrent ? defaultButtonColor : `${flowTextColor}30`,
+                        boxShadow: !isCurrent ? `0 0 0 1px ${flowTextColor}20` : undefined,
+                      }}
+                    />
+                  );
               })}
             </div>
           );
