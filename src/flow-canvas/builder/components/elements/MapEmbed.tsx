@@ -29,20 +29,26 @@ export const MapEmbed: React.FC<MapEmbedProps> = ({
   className,
   isBuilder = false,
 }) => {
+  // Use environment variable for API key - fallback to OpenStreetMap if not configured
+  const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+
   const embedUrl = useMemo(() => {
+    // Only use Google Maps if API key is configured
+    if (!MAPS_API_KEY) return null;
+    
     // If we have coordinates, use them
     if (latitude !== undefined && longitude !== undefined) {
-      return `https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${latitude},${longitude}&zoom=${zoom}&maptype=${mapType}`;
+      return `https://www.google.com/maps/embed/v1/view?key=${MAPS_API_KEY}&center=${latitude},${longitude}&zoom=${zoom}&maptype=${mapType}`;
     }
     
     // If we have an address, geocode it
     if (address) {
       const encodedAddress = encodeURIComponent(address);
-      return `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedAddress}&zoom=${zoom}&maptype=${mapType}`;
+      return `https://www.google.com/maps/embed/v1/place?key=${MAPS_API_KEY}&q=${encodedAddress}&zoom=${zoom}&maptype=${mapType}`;
     }
     
     return null;
-  }, [address, latitude, longitude, zoom, mapType]);
+  }, [address, latitude, longitude, zoom, mapType, MAPS_API_KEY]);
 
   // Empty state
   if (!address && latitude === undefined) {
@@ -73,11 +79,17 @@ export const MapEmbed: React.FC<MapEmbedProps> = ({
   // Use OpenStreetMap as fallback (no API key required)
   const fallbackUrl = useMemo(() => {
     if (latitude !== undefined && longitude !== undefined) {
-      return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01},${latitude - 0.01},${longitude + 0.01},${latitude + 0.01}&layer=mapnik&marker=${latitude},${longitude}`;
+      // Adjust bounding box based on zoom level
+      const delta = 0.1 / (zoom / 10);
+      return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - delta},${latitude - delta},${longitude + delta},${latitude + delta}&layer=mapnik&marker=${latitude},${longitude}`;
     }
-    // For address-based, we'll show a static placeholder and link
+    // For address without coordinates, use Nominatim search with OpenStreetMap
+    if (address) {
+      const encodedAddress = encodeURIComponent(address);
+      return `https://www.openstreetmap.org/export/embed.html?bbox=-180,-85,180,85&layer=mapnik&query=${encodedAddress}`;
+    }
     return null;
-  }, [latitude, longitude]);
+  }, [latitude, longitude, address, zoom]);
 
   return (
     <div 
