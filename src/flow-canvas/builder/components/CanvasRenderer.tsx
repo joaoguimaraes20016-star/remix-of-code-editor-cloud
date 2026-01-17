@@ -2868,8 +2868,16 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
               flexWrap: block.props?.wrap ? 'wrap' : (isFooter ? 'wrap' : 'nowrap'),
               width: '100%',
               gap: (block.styles?.gap as string) || (block.props?.gap as string) || (isFooter ? '48px' : '16px'),
+              // Ensure minimum height for empty blocks so they're visible
+              minHeight: block.elements.length === 0 ? '60px' : undefined,
             }}
           >
+            {/* Empty block state - show placeholder when no elements */}
+            {block.elements.length === 0 && !readOnly && (
+              <div className="flex items-center justify-center w-full py-4 text-gray-400 text-sm">
+                <span>Click to select this section, then add content</span>
+              </div>
+            )}
             {block.elements.map((element, elementIndex) => {
               const elementPath = [...blockPath, 'element', element.id];
               const isElementSelected = selection.type === 'element' && selection.id === element.id;
