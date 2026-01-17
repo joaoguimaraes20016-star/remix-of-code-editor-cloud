@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Page, SelectionState, StepIntent, AIsuggestion, AICopilotProps } from '../../types/infostack';
+import React, { useState, useEffect } from 'react';
+import { Page, SelectionState, AIsuggestion, AICopilotProps } from '../../types/infostack';
 import { cn } from '@/lib/utils';
 import { 
   Sparkles, 
@@ -12,69 +12,17 @@ import {
   Zap,
   FileText,
   Layout,
-  X
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { getSuggestions, streamAICopilot, PageContext } from '@/lib/ai/aiCopilotService';
 
 interface AIBuilderCopilotPanelProps extends AICopilotProps {
   isExpanded: boolean;
   onToggle: () => void;
 }
-
-// Mock suggestions based on context
-const generateMockSuggestions = (page: Page, selection: SelectionState): AIsuggestion[] => {
-  const suggestions: AIsuggestion[] = [];
-
-  const stepIntents = page.steps.map(s => s.step_intent);
-  if (!stepIntents.includes('qualify')) {
-    suggestions.push({
-      id: 'add-qualify',
-      type: 'step',
-      title: 'Add Qualification Step',
-      description: 'Help filter leads with a quick quiz or question',
-      confidence: 0.92,
-    });
-  }
-  if (!stepIntents.includes('schedule') && stepIntents.includes('qualify')) {
-    suggestions.push({
-      id: 'add-schedule',
-      type: 'step',
-      title: 'Add Booking Step',
-      description: 'Let qualified leads schedule a call',
-      confidence: 0.88,
-    });
-  }
-
-  if (selection.type === 'element') {
-    suggestions.push({
-      id: 'improve-copy',
-      type: 'copy',
-      title: 'Improve This Copy',
-      description: 'Make it more engaging and conversion-focused',
-      confidence: 0.85,
-    });
-  }
-
-  if (selection.type === 'block' || selection.type === 'stack') {
-    suggestions.push({
-      id: 'optimize-layout',
-      type: 'layout',
-      title: 'Optimize Layout',
-      description: 'Improve visual hierarchy and spacing',
-      confidence: 0.78,
-    });
-  }
-
-  suggestions.push({
-    id: 'analyze-funnel',
-    type: 'next-action',
-    title: 'Analyze Funnel Flow',
-    description: 'Get recommendations to improve conversion',
-    confidence: 0.75,
-  });
-
-  return suggestions.slice(0, 3);
-};
 
 const suggestionIcons: Record<string, React.ReactNode> = {
   step: <Layout className="w-4 h-4" />,
@@ -82,6 +30,22 @@ const suggestionIcons: Record<string, React.ReactNode> = {
   layout: <Zap className="w-4 h-4" />,
   'next-action': <ArrowRight className="w-4 h-4" />,
 };
+
+// Build context from current page state
+function buildPageContext(page: Page, selection: SelectionState): PageContext {
+  return {
+    pageName: page.name,
+    stepIntents: page.steps.map(s => s.step_intent),
+    currentStep: page.steps.find(s => 
+      s.frames.some(f => 
+        f.stacks.some(st => 
+          st.blocks.some(b => b.id === selection.id)
+        )
+      )
+    )?.step_intent,
+    elementType: selection.type || undefined,
+  };
+}
 
 export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   currentPage,
@@ -92,24 +56,93 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
 }) => {
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [suggestions, setSuggestions] = useState<AIsuggestion[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [streamedResponse, setStreamedResponse] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const suggestions = generateMockSuggestions(currentPage, selection);
+  // Fetch suggestions when panel expands or context changes
+  useEffect(() => {
+    if (isExpanded && !isLoadingSuggestions && suggestions.length === 0) {
+      fetchSuggestions();
+    }
+  }, [isExpanded]);
+
+  const fetchSuggestions = async () => {
+    setIsLoadingSuggestions(true);
+    setError(null);
+    
+    try {
+      const context = buildPageContext(currentPage, selection);
+      const newSuggestions = await getSuggestions(context);
+      
+      // Map to expected format with unique IDs
+      const mappedSuggestions: AIsuggestion[] = newSuggestions.map((s, i) => ({
+        id: s.id || `suggestion-${i}`,
+        type: s.type,
+        title: s.title,
+        description: s.description,
+        confidence: s.confidence,
+      }));
+      
+      setSuggestions(mappedSuggestions);
+    } catch (err) {
+      console.error('Failed to fetch suggestions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load suggestions');
+      // Don't show toast for initial load failures - just show inline error
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
 
   const handleSubmitPrompt = async () => {
     if (!prompt.trim()) return;
     
     setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsProcessing(false);
-    setPrompt('');
+    setStreamedResponse('');
+    setError(null);
+    
+    const context = buildPageContext(currentPage, selection);
+    
+    await streamAICopilot(
+      'generate',
+      prompt,
+      context,
+      {
+        onDelta: (chunk) => {
+          setStreamedResponse(prev => prev + chunk);
+        },
+        onDone: () => {
+          setIsProcessing(false);
+          toast.success('AI response generated!');
+          setPrompt('');
+          // Parse and apply the response if it's a valid block
+          // This would be handled by the parent component
+        },
+        onError: (err) => {
+          setIsProcessing(false);
+          setError(err.message);
+          toast.error(err.message);
+        },
+      }
+    );
   };
 
-  const handleApplySuggestion = (suggestion: AIsuggestion) => {
+  const handleApplySuggestion = async (suggestion: AIsuggestion) => {
     setIsProcessing(true);
-    setTimeout(() => {
+    setError(null);
+    
+    try {
+      // For now, directly apply the suggestion
+      // In future, could call AI to expand the suggestion
       onApplySuggestion(suggestion);
+      toast.success(`Applied: ${suggestion.title}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to apply suggestion';
+      toast.error(message);
+    } finally {
       setIsProcessing(false);
-    }, 800);
+    }
   };
 
   return (
@@ -127,9 +160,6 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <span className="text-sm font-semibold text-builder-text">AI Copilot</span>
-          <span className="px-1.5 py-0.5 text-[9px] font-medium bg-builder-accent-secondary/15 text-builder-accent-secondary rounded-full">
-            Demo
-          </span>
           {isProcessing && (
             <Loader2 className="w-4 h-4 text-builder-accent animate-spin" />
           )}
@@ -179,42 +209,83 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
             </div>
           </div>
 
+          {/* Streamed Response */}
+          {streamedResponse && (
+            <div className="px-3 pb-3">
+              <div className="p-3 rounded-lg bg-builder-bg text-xs text-builder-text-secondary whitespace-pre-wrap max-h-32 overflow-y-auto">
+                {streamedResponse}
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="px-3 pb-3">
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+
           {/* Suggestions */}
           <div className="px-3 pb-3">
-            <div className="text-xs text-builder-text-dim mb-2 flex items-center gap-1.5">
-              <MessageSquare className="w-3 h-3" />
-              Suggestions
-            </div>
-            <div className="space-y-2">
-              {suggestions.map((suggestion) => (
+            <div className="text-xs text-builder-text-dim mb-2 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <MessageSquare className="w-3 h-3" />
+                Suggestions
+              </div>
+              {!isLoadingSuggestions && (
                 <button
-                  key={suggestion.id}
-                  onClick={() => handleApplySuggestion(suggestion)}
-                  disabled={isProcessing}
-                  className={cn(
-                    'w-full text-left p-3 rounded-xl bg-builder-surface border border-builder-border-subtle hover:border-builder-accent/40 hover:bg-builder-surface-hover transition-all group',
-                    isProcessing && 'opacity-50 cursor-not-allowed'
-                  )}
+                  onClick={fetchSuggestions}
+                  className="p-1 hover:bg-builder-surface-hover rounded transition-colors"
+                  title="Refresh suggestions"
                 >
-                  <div className="flex items-start gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-builder-surface-hover text-builder-accent group-hover:bg-builder-accent/10">
-                      {suggestionIcons[suggestion.type]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-builder-text">
-                        {suggestion.title}
-                      </div>
-                      <div className="text-xs text-builder-text-muted mt-0.5">
-                        {suggestion.description}
-                      </div>
-                    </div>
-                    <div className="text-xs text-builder-text-dim font-mono">
-                      {Math.round(suggestion.confidence * 100)}%
-                    </div>
-                  </div>
+                  <RefreshCw className="w-3 h-3" />
                 </button>
-              ))}
+              )}
             </div>
+            
+            {isLoadingSuggestions ? (
+              <div className="flex items-center justify-center py-6 text-builder-text-muted">
+                <Loader2 className="w-5 h-5 animate-spin" />
+              </div>
+            ) : suggestions.length > 0 ? (
+              <div className="space-y-2">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    onClick={() => handleApplySuggestion(suggestion)}
+                    disabled={isProcessing}
+                    className={cn(
+                      'w-full text-left p-3 rounded-xl bg-builder-surface border border-builder-border-subtle hover:border-builder-accent/40 hover:bg-builder-surface-hover transition-all group',
+                      isProcessing && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-builder-surface-hover text-builder-accent group-hover:bg-builder-accent/10">
+                        {suggestionIcons[suggestion.type] || <Sparkles className="w-4 h-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-builder-text">
+                          {suggestion.title}
+                        </div>
+                        <div className="text-xs text-builder-text-muted mt-0.5">
+                          {suggestion.description}
+                        </div>
+                      </div>
+                      <div className="text-xs text-builder-text-dim font-mono">
+                        {Math.round(suggestion.confidence * 100)}%
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : !error ? (
+              <div className="text-xs text-builder-text-muted text-center py-4">
+                No suggestions available
+              </div>
+            ) : null}
           </div>
 
           {/* Context indicator */}

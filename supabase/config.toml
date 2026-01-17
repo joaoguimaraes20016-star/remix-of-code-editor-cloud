@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.automation-trigger]
 verify_jwt = false
+
+[functions.ai-copilot]
+verify_jwt = false

@@ -213,3 +213,76 @@ if (snapshot && isRangeValid(snapshot.range)) {
   // Apply styles
 }
 ```
+
+## Phase 9: AI Copilot Integration
+
+### Overview
+The AI Copilot uses Lovable AI Gateway (OpenAI-compatible) for real AI-powered features:
+- **Smart Suggestions**: Context-aware recommendations based on current page state
+- **Block Generation**: Create blocks from natural language descriptions
+- **Copy Rewriting**: Improve copy for better conversion
+- **Funnel Analysis**: Get recommendations to improve conversion
+
+### Architecture
+```
+┌─────────────────────────────────────┐
+│      AIBuilderCopilot.tsx           │ ← UI component
+│      AIGenerateModal.tsx            │
+├─────────────────────────────────────┤
+│      aiCopilotService.ts            │ ← Client service
+├─────────────────────────────────────┤
+│  supabase/functions/ai-copilot/     │ ← Edge function
+│    ├── index.ts                     │   (API proxy)
+│    └── prompts.ts                   │   (System prompts)
+├─────────────────────────────────────┤
+│      Lovable AI Gateway             │ ← AI provider
+│  (ai.gateway.lovable.dev)           │
+└─────────────────────────────────────┘
+```
+
+### Provider Swapping
+The edge function is designed for easy provider swapping:
+
+```typescript
+// supabase/functions/ai-copilot/index.ts
+
+// Current: Lovable AI (no setup needed)
+const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const getApiKey = () => Deno.env.get("LOVABLE_API_KEY");
+
+// To swap to OpenAI:
+// const AI_URL = "https://api.openai.com/v1/chat/completions";
+// const getApiKey = () => Deno.env.get("OPENAI_API_KEY");
+```
+
+### Task Types
+| Task | Description | Use Case |
+|------|-------------|----------|
+| `suggest` | Get context-aware suggestions | AI Copilot panel |
+| `generate` | Create blocks from prompts | AI Generate Modal |
+| `rewrite` | Improve existing copy | Right-click menu |
+| `analyze` | Analyze funnel structure | Funnel diagnostics |
+
+### Usage
+```tsx
+import { getSuggestions, generateBlock, streamAICopilot } from '@/lib/ai/aiCopilotService';
+
+// Get suggestions
+const suggestions = await getSuggestions({
+  pageName: 'Landing Page',
+  stepIntents: ['capture', 'qualify'],
+});
+
+// Generate a block
+const block = await generateBlock(
+  'Create a hero section with headline and CTA',
+  { pageName: 'Landing Page' }
+);
+
+// Stream a response
+await streamAICopilot('generate', prompt, context, {
+  onDelta: (chunk) => setResponse(prev => prev + chunk),
+  onDone: () => console.log('Complete'),
+  onError: (err) => console.error(err),
+});
+```

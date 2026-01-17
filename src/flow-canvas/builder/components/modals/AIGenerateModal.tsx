@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Wand2, Loader2, Lightbulb } from 'lucide-react';
+import { Sparkles, Wand2, Loader2, Lightbulb, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,11 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Block } from '../../../types/infostack';
 import { generateId } from '../../utils/helpers';
 import { toast } from 'sonner';
+import { generateBlock, PageContext } from '@/lib/ai/aiCopilotService';
 
 interface AIGenerateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onGenerateBlock: (block: Block) => void;
+  context?: PageContext;
 }
 
 const suggestions = [
@@ -30,59 +32,62 @@ export const AIGenerateModal: React.FC<AIGenerateModalProps> = ({
   isOpen,
   onClose,
   onGenerateBlock,
+  context = {},
 }) => {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
     setIsGenerating(true);
+    setError(null);
     
-    // Simulate AI generation (in real app, this would call an API)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const aiBlock = await generateBlock(prompt, context);
+      
+      // Convert AI response to Block format with proper IDs
+      const blockType = (aiBlock.type || 'text-block') as Block['type'];
+      const block: Block = {
+        id: generateId(),
+        type: blockType,
+        label: aiBlock.label || 'AI Generated Block',
+        elements: (aiBlock.elements || []).map(el => ({
+          id: generateId(),
+          type: el.type as 'heading' | 'text' | 'button' | 'image',
+          content: el.content,
+          props: el.props || {},
+        })),
+        props: aiBlock.props || {},
+      };
 
-    // Generate a mock block based on the prompt
-    const block: Block = {
-      id: generateId(),
-      type: 'text-block',
-      label: 'AI Generated Block',
-      elements: [
-        {
-          id: generateId(),
-          type: 'heading',
-          content: 'AI Generated Content',
-          props: { level: 2 },
-        },
-        {
-          id: generateId(),
-          type: 'text',
-          content: `This block was generated based on your prompt: "${prompt}". In a production environment, this would be replaced with actual AI-generated content.`,
-          props: {},
-        },
-        {
-          id: generateId(),
-          type: 'button',
-          content: 'Learn More',
-          props: {},
-        },
-      ],
-      props: {},
-    };
-
-    onGenerateBlock(block);
-    setIsGenerating(false);
-    setPrompt('');
-    toast.success('Block generated successfully!');
-    onClose();
+      onGenerateBlock(block);
+      setPrompt('');
+      toast.success('Block generated successfully!');
+      onClose();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate block';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setPrompt(suggestion);
+    setError(null);
+  };
+
+  const handleClose = () => {
+    setError(null);
+    setPrompt('');
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="bg-builder-surface border-builder-border max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-builder-text flex items-center gap-2">
@@ -90,9 +95,6 @@ export const AIGenerateModal: React.FC<AIGenerateModalProps> = ({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             Generate with AI
-            <span className="ml-2 px-2 py-0.5 text-[10px] font-medium bg-builder-accent-secondary/15 text-builder-accent-secondary rounded-full">
-              Demo
-            </span>
           </DialogTitle>
         </DialogHeader>
 
@@ -103,12 +105,23 @@ export const AIGenerateModal: React.FC<AIGenerateModalProps> = ({
             </label>
             <Textarea
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => {
+                setPrompt(e.target.value);
+                setError(null);
+              }}
               placeholder="E.g., Create a hero section with a bold headline, supporting text, and a call-to-action button..."
               className="builder-input resize-none"
               rows={4}
             />
           </div>
+
+          {/* Error State */}
+          {error && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Suggestions */}
           <div className="space-y-2">
@@ -121,7 +134,8 @@ export const AIGenerateModal: React.FC<AIGenerateModalProps> = ({
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="text-xs px-3 py-1.5 rounded-full bg-[hsl(var(--builder-surface-hover))] border border-[hsl(var(--builder-border-subtle))] text-builder-text-secondary hover:bg-builder-accent/10 hover:text-builder-accent hover:border-builder-accent/30 transition-colors"
+                  disabled={isGenerating}
+                  className="text-xs px-3 py-1.5 rounded-full bg-[hsl(var(--builder-surface-hover))] border border-[hsl(var(--builder-border-subtle))] text-builder-text-secondary hover:bg-builder-accent/10 hover:text-builder-accent hover:border-builder-accent/30 transition-colors disabled:opacity-50"
                 >
                   {suggestion.length > 40 ? suggestion.slice(0, 40) + '...' : suggestion}
                 </button>
