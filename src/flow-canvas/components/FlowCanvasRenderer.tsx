@@ -12,7 +12,17 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Loader2, Play, User } from 'lucide-react';
+
+// Helper to convert gradient object to CSS
+function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): string {
+  const stops = (gradient.stops || [{ color: '#8B5CF6', position: 0 }, { color: '#EC4899', position: 100 }])
+    .map(s => `${s.color} ${s.position}%`).join(', ');
+  if (gradient.type === 'radial') {
+    return `radial-gradient(circle, ${stops})`;
+  }
+  return `linear-gradient(${gradient.angle || 135}deg, ${stops})`;
+}
 
 // Types
 interface FlowCanvasBlock {
@@ -497,6 +507,132 @@ export function FlowCanvasRenderer({
         return src ? (
           <img key={element.id} src={src} alt={alt} className="w-full rounded-lg" />
         ) : null;
+
+      case 'video':
+        const videoUrl = ((element.props?.videoSettings as { url?: string })?.url) || (element.props?.src as string);
+        if (!videoUrl) return null;
+        const embedUrl = videoUrl.includes('youtube') 
+          ? videoUrl.replace('watch?v=', 'embed/')
+          : videoUrl.includes('vimeo') 
+            ? `https://player.vimeo.com/video/${videoUrl.split('/').pop()}`
+            : videoUrl;
+        return (
+          <div key={element.id} className="aspect-video w-full rounded-lg overflow-hidden">
+            <iframe src={embedUrl} className="w-full h-full" allow="autoplay; fullscreen" />
+          </div>
+        );
+
+      case 'divider':
+        return <hr key={element.id} className="border-t border-border my-4" style={element.styles} />;
+
+      case 'spacer':
+        return <div key={element.id} style={{ height: element.styles?.height || '48px' }} />;
+
+      // Premium Elements
+      case 'gradient-text':
+        const gradientProps = (element.props?.gradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }) || {};
+        return (
+          <span 
+            key={element.id}
+            className="text-4xl font-bold bg-clip-text text-transparent"
+            style={{ backgroundImage: gradientToCSS(gradientProps) }}
+          >
+            {element.content || 'Gradient Text'}
+          </span>
+        );
+
+      case 'stat-number':
+        const suffix = (element.props?.suffix as string) || '+';
+        const statLabel = (element.props?.label as string) || '';
+        return (
+          <div key={element.id} className="text-center">
+            <div className="text-5xl font-bold tracking-tight">{element.content || '0'}{suffix}</div>
+            {statLabel && <div className="text-xs uppercase tracking-wider mt-2 opacity-70">{statLabel}</div>}
+          </div>
+        );
+
+      case 'avatar-group':
+        const avatarCount = (element.props?.count as number) || 3;
+        const avatarBaseColor = (element.props?.gradientFrom as string) || '#8B5CF6';
+        return (
+          <div key={element.id} className="flex -space-x-3">
+            {Array.from({ length: avatarCount }).map((_, i) => (
+              <div 
+                key={i}
+                className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-background"
+                style={{ background: `linear-gradient(${135 + i * 15}deg, ${avatarBaseColor}, #EC4899)` }}
+              >
+                <User className="w-5 h-5 text-white" />
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'ticker':
+        const tickerItems = (element.props?.items as string[]) || ['Item 1', 'Item 2', 'Item 3'];
+        const tickerSep = (element.props?.separator as string) || '  •  ';
+        return (
+          <div key={element.id} className="w-full overflow-hidden py-3">
+            <div className="animate-marquee whitespace-nowrap">
+              {[...tickerItems, ...tickerItems].map((item, i) => (
+                <span key={i} className="text-sm font-medium uppercase tracking-wider mx-4">
+                  {item}{tickerSep}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'badge':
+        const badgeVariant = (element.props?.variant as string) || 'primary';
+        const badgeClasses: Record<string, string> = {
+          primary: 'bg-purple-500/20 text-purple-400',
+          success: 'bg-green-500/20 text-green-400',
+          warning: 'bg-amber-500/20 text-amber-400',
+          premium: 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black'
+        };
+        return (
+          <span key={element.id} className={cn('px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider', badgeClasses[badgeVariant] || badgeClasses.primary)}>
+            {element.content || 'BADGE'}
+          </span>
+        );
+
+      case 'process-step':
+        const stepNum = (element.props?.step as number) || 1;
+        return (
+          <div key={element.id} className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-xl font-bold text-primary">
+              {stepNum}
+            </div>
+            <span className="font-medium">{element.content || 'Step Title'}</span>
+          </div>
+        );
+
+      case 'video-thumbnail':
+        const thumbnailUrl = (element.props?.thumbnailUrl as string);
+        return (
+          <div key={element.id} className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+            {thumbnailUrl && <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
+                <Play className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'underline-text':
+        const underlineFrom = (element.props?.underlineFrom as string) || '#8B5CF6';
+        const underlineTo = (element.props?.underlineTo as string) || '#EC4899';
+        return (
+          <span key={element.id} className="relative inline-block text-2xl font-bold">
+            {element.content || 'Underlined Text'}
+            <span 
+              className="absolute bottom-0 left-0 right-0 h-1 rounded-full"
+              style={{ background: `linear-gradient(90deg, ${underlineFrom}, ${underlineTo})` }}
+            />
+          </span>
+        );
         
       default:
         return null;

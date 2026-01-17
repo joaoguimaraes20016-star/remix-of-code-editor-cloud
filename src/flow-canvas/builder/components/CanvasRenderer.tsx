@@ -2169,18 +2169,15 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               {Array.from({ length: avatarCount }).map((_, i) => {
-                // Use primary color from theme with hue shift for variety
-                const baseColor = primaryColor || '#8B5CF6';
-                const hueShift = i * 15;
-                // Simple inline hue shift approximation - shift towards complementary
-                const shiftedColor = i === 0 ? baseColor : 
-                  `hsl(${(parseInt(baseColor.slice(1,3), 16) + hueShift) % 360}, 70%, 55%)`;
+                // Use user's chosen color with angle variation for visual variety
+                const baseColor = (element.props?.gradientFrom as string) || primaryColor || '#8B5CF6';
+                const endColor = '#EC4899';
                 return (
                   <div 
                     key={i}
                     className="w-10 h-10 rounded-full flex items-center justify-center"
                     style={{
-                      background: `linear-gradient(135deg, ${baseColor}, ${shiftedColor})`
+                      background: `linear-gradient(${135 + i * 15}deg, ${baseColor}, ${endColor})`
                     }}
                   >
                     <User className="w-5 h-5 text-white" />
