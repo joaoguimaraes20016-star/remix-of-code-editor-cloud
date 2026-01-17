@@ -1,10 +1,45 @@
-// InfoStack Builder Module
-// A modular, importable Funnel & Website Builder
+/**
+ * InfoStack Builder Module
+ * A modular, importable Funnel & Website Builder
+ * 
+ * Architecture Overview:
+ * ─────────────────────────────────────────────────────────
+ * Phase 1: Core Type Consolidation
+ *   - Unified type definitions in ../types/infostack.ts
+ *   - Consistent interfaces across all components
+ * 
+ * Phase 2: Button System Consolidation
+ *   - UnifiedButton as single source of truth
+ *   - FlowButton re-exports UnifiedButton for compatibility
+ * 
+ * Phase 3: Renderer Improvements
+ *   - Modular renderer components in ./components/renderers/
+ *   - CanvasRenderer orchestrates sub-renderers
+ * 
+ * Phase 4: Inspector Enhancements
+ *   - Extended validation settings
+ *   - Phone-specific controls
+ *   - Improved UI organization
+ * 
+ * Phase 5: Text Editor Improvements
+ *   - Enhanced selection handling via InlineEditContext
+ *   - Better Right Panel integration
+ *   - Selection manager utilities
+ * 
+ * Phase 6: Cleanup & Documentation
+ *   - Consolidated exports
+ *   - Comprehensive documentation
+ * ─────────────────────────────────────────────────────────
+ */
 
-// Main Editor Component
+// ─────────────────────────────────────────────────────────
+// MAIN EDITOR COMPONENT
+// ─────────────────────────────────────────────────────────
 export { EditorShell } from './components/EditorShell';
 
-// Individual Components (for custom integrations)
+// ─────────────────────────────────────────────────────────
+// INDIVIDUAL COMPONENTS (for custom integrations)
+// ─────────────────────────────────────────────────────────
 export { LeftPanel } from './components/LeftPanel';
 export { RightPanel } from './components/RightPanel';
 export { TopToolbar } from './components/TopToolbar';
@@ -16,18 +51,52 @@ export { BlockActionBar } from './components/BlockActionBar';
 export { InlineTextEditor } from './components/InlineTextEditor';
 export { RichTextToolbar } from './components/RichTextToolbar';
 
-// Contexts
-export { InlineEditProvider, useInlineEdit, useInlineSelectionSync } from './contexts/InlineEditContext';
+// ─────────────────────────────────────────────────────────
+// MODULAR RENDERERS (Phase 3)
+// ─────────────────────────────────────────────────────────
+export {
+  CanvasUtilities,
+  ThemeContext,
+  FormStateContext,
+  ElementDragOverlay,
+  BlockDragOverlay,
+  StackRenderer,
+  FrameRenderer,
+  SortableFrameRenderer,
+} from './components/renderers';
 
-// Hooks
+export type {
+  ThemeContextValue,
+  FormStateContextValue,
+} from './components/renderers';
+
+// ─────────────────────────────────────────────────────────
+// CONTEXTS (Phase 5)
+// ─────────────────────────────────────────────────────────
+export { 
+  InlineEditProvider, 
+  useInlineEdit, 
+  useInlineSelectionSync 
+} from './contexts/InlineEditContext';
+
+// ─────────────────────────────────────────────────────────
+// HOOKS
+// ─────────────────────────────────────────────────────────
 export { useHistory } from './hooks/useHistory';
+export { useSnapGuides, SnapGuidesOverlay } from './hooks/useSnapGuides';
+export { useScrollAnimation, evaluateVisibility, collectFieldKeys } from './hooks/useScrollAnimation';
 
-// Utilities
+// ─────────────────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────────────────
 export * from './utils/helpers';
 export * from './utils/textHighlight';
 export * from './utils/selectionManager';
+export { backgroundColorPresets, textColorPresets, elementColorPresets, highlightPresets, gradientPresets } from './utils/presets';
 
-// Types (re-exported from types folder)
+// ─────────────────────────────────────────────────────────
+// TYPES (re-exported from types folder)
+// ─────────────────────────────────────────────────────────
 export type {
   Page,
   Step,
@@ -46,6 +115,9 @@ export type {
   AICopilotProps,
   TextStyles,
   BlockAction,
+  ConditionalRule,
+  VisibilitySettings,
+  AnimationSettings,
 } from '../types/infostack';
 
 // Re-export sample page creator
