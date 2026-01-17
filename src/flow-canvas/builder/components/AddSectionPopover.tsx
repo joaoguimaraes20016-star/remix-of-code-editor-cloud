@@ -10,6 +10,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { Block } from '@/flow-canvas/types/infostack';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { 
+  buildTemplateTheme, 
+  type TemplateTheme, 
+  type PageSettings 
+} from '../utils/templateThemeUtils';
 
 const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -20,7 +25,7 @@ interface BlockTemplate {
   label: string;
   icon: React.ReactNode;
   description: string;
-  template: () => Block;
+  template: (theme: TemplateTheme) => Block;
 }
 
 interface SectionCategory {
@@ -36,7 +41,26 @@ interface AddSectionPopoverProps {
   position?: 'above' | 'below';
   variant?: 'button' | 'inline' | 'minimal';
   className?: string;
+  pageSettings?: PageSettings;
 }
+
+// ============ THEME-AWARE HELPERS ============
+
+/** Get text class based on theme */
+const textClass = (t: TemplateTheme, variant: 'normal' | 'muted' | 'caption' = 'normal') => {
+  if (t.isDark) {
+    return variant === 'muted' ? 'text-white/70' : variant === 'caption' ? 'text-white/50' : 'text-white';
+  }
+  return variant === 'muted' ? 'text-gray-600' : variant === 'caption' ? 'text-gray-400' : 'text-gray-900';
+};
+
+/** Get surface/card background class */
+const surfaceClass = (t: TemplateTheme) => 
+  t.isDark ? 'bg-white/5' : 'bg-gray-50';
+
+/** Get gradient CSS for urgency banners */
+const urgencyGradient = (t: TemplateTheme) => 
+  `linear-gradient(90deg, ${t.primaryColor}, ${t.accentGradient[1]})`;
 
 // ============ BASIC BLOCKS (Single Elements) ============
 
@@ -46,11 +70,11 @@ const basicBlocks: BlockTemplate[] = [
     label: 'Text',
     icon: <Type size={16} />,
     description: 'Paragraph text',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'text-block',
       label: 'Text',
-      elements: [{ id: generateId(), type: 'text', content: 'Your supporting text', props: {} }],
+      elements: [{ id: generateId(), type: 'text', content: 'Your supporting text', props: { color: t.textColor } }],
       props: {},
     }),
   },
@@ -59,11 +83,11 @@ const basicBlocks: BlockTemplate[] = [
     label: 'Heading',
     icon: <FileText size={16} />,
     description: 'Title text',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'text-block',
       label: 'Heading',
-      elements: [{ id: generateId(), type: 'heading', content: 'Your main headline', props: { level: 2 } }],
+      elements: [{ id: generateId(), type: 'heading', content: 'Your main headline', props: { level: 2, color: t.textColor } }],
       props: {},
     }),
   },
@@ -98,11 +122,11 @@ const basicBlocks: BlockTemplate[] = [
     label: 'Button',
     icon: <MousePointer size={16} />,
     description: 'Call to action',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'cta',
       label: 'Button',
-      elements: [{ id: generateId(), type: 'button', content: 'Click Here', props: { variant: 'primary' } }],
+      elements: [{ id: generateId(), type: 'button', content: 'Click Here', props: { variant: 'primary', backgroundColor: t.primaryColor } }],
       props: { action: 'next-step', href: '' },
     }),
   },
@@ -111,11 +135,11 @@ const basicBlocks: BlockTemplate[] = [
     label: 'Link',
     icon: <Link size={16} />,
     description: 'Text link',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'text-block',
       label: 'Link',
-      elements: [{ id: generateId(), type: 'link', content: 'Learn more', props: { href: '#' } }],
+      elements: [{ id: generateId(), type: 'link', content: 'Learn more', props: { href: '#', color: t.primaryColor } }],
       props: {},
     }),
   },
@@ -137,21 +161,17 @@ const basicBlocks: BlockTemplate[] = [
     label: 'Divider',
     icon: <Minus size={16} className="rotate-90" />,
     description: 'Horizontal line',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'divider',
       label: 'Divider',
       elements: [],
-      props: { style: 'solid', color: 'border' },
+      props: { style: 'solid', color: t.borderColor },
     }),
   },
 ];
 
-// ============ INTERACTIVE BLOCKS (Form Elements) ============
-
-// ============ INTERACTIVE BLOCKS (Application Flow - NOT standalone form-field) ============
-// All interactive/form elements should be added through Application Flow
-// This ensures unified flow behavior across the builder
+// ============ INTERACTIVE BLOCKS (Application Flow) ============
 
 const interactiveBlocks: BlockTemplate[] = [
   {
@@ -159,7 +179,7 @@ const interactiveBlocks: BlockTemplate[] = [
     label: 'Text Question',
     icon: <Type size={16} />,
     description: 'Open-ended text input',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'application-flow',
       label: 'Text Question',
@@ -168,10 +188,10 @@ const interactiveBlocks: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: true,
         transition: 'fade',
-        background: { type: 'solid', color: '#ffffff' },
-        textColor: '#000000',
-        inputBackground: '#ffffff',
-        inputBorderColor: '#e5e7eb',
+        background: { type: 'solid', color: t.backgroundColor },
+        textColor: t.textColor,
+        inputBackground: t.inputBg,
+        inputBorderColor: t.inputBorder,
         steps: [
           {
             id: generateId(),
@@ -197,7 +217,7 @@ const interactiveBlocks: BlockTemplate[] = [
     label: 'Multiple Choice',
     icon: <ListChecks size={16} />,
     description: 'Multi-select options',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'application-flow',
       label: 'Multiple Choice',
@@ -206,6 +226,8 @@ const interactiveBlocks: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: true,
         transition: 'fade',
+        background: { type: 'solid', color: t.backgroundColor },
+        textColor: t.textColor,
         steps: [
           {
             id: generateId(),
@@ -229,7 +251,7 @@ const interactiveBlocks: BlockTemplate[] = [
     label: 'Single Choice',
     icon: <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-current" /></div>,
     description: 'Radio button selection',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'application-flow',
       label: 'Single Choice',
@@ -238,6 +260,8 @@ const interactiveBlocks: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: true,
         transition: 'fade',
+        background: { type: 'solid', color: t.backgroundColor },
+        textColor: t.textColor,
         steps: [
           {
             id: generateId(),
@@ -261,7 +285,7 @@ const interactiveBlocks: BlockTemplate[] = [
     label: 'Dropdown',
     icon: <ChevronDown size={16} />,
     description: 'Select menu',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'application-flow',
       label: 'Dropdown Question',
@@ -270,6 +294,8 @@ const interactiveBlocks: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: true,
         transition: 'fade',
+        background: { type: 'solid', color: t.backgroundColor },
+        textColor: t.textColor,
         steps: [
           {
             id: generateId(),
@@ -293,7 +319,7 @@ const interactiveBlocks: BlockTemplate[] = [
     label: 'Email Capture',
     icon: <Mail size={16} />,
     description: 'Collect email address',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'application-flow',
       label: 'Email Capture',
@@ -302,6 +328,10 @@ const interactiveBlocks: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: false,
         transition: 'fade',
+        background: { type: 'solid', color: t.backgroundColor },
+        textColor: t.textColor,
+        inputBackground: t.inputBg,
+        inputBorderColor: t.inputBorder,
         steps: [
           {
             id: generateId(),
@@ -327,7 +357,7 @@ const interactiveBlocks: BlockTemplate[] = [
     label: 'Full Opt-In',
     icon: <Upload size={16} />,
     description: 'Name, email & phone',
-    template: () => ({
+    template: (t) => ({
       id: generateId(),
       type: 'application-flow',
       label: 'Full Opt-In',
@@ -336,6 +366,10 @@ const interactiveBlocks: BlockTemplate[] = [
         displayMode: 'one-at-a-time',
         showProgress: false,
         transition: 'fade',
+        background: { type: 'solid', color: t.backgroundColor },
+        textColor: t.textColor,
+        inputBackground: t.inputBg,
+        inputBorderColor: t.inputBorder,
         steps: [
           {
             id: generateId(),
@@ -358,7 +392,7 @@ const interactiveBlocks: BlockTemplate[] = [
   },
 ];
 
-// ============ SECTION TEMPLATES (Pre-designed) ============
+// ============ SECTION TEMPLATES (Pre-designed, Theme-Aware) ============
 
 const sectionCategories: SectionCategory[] = [
   {
@@ -371,20 +405,20 @@ const sectionCategories: SectionCategory[] = [
         label: 'VSL Hero',
         icon: <Play size={16} />,
         description: 'Premium video sales letter',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'hero',
           label: 'VSL Hero',
           elements: [
             { id: generateId(), type: 'avatar-group', content: '', props: { count: 3, size: 'sm' } },
-            { id: generateId(), type: 'text', content: 'From the team who helped Alex Hormozi, Mr. Beast, and more...', props: { variant: 'caption', className: 'text-muted-foreground' } },
-            { id: generateId(), type: 'badge', content: 'FREE TRAINING', props: { variant: 'premium' } },
-            { id: generateId(), type: 'heading', content: 'The System That Turns Long-Form Into', props: { level: 1 } },
-            { id: generateId(), type: 'gradient-text', content: 'Viral Content', props: { gradient: ['#A855F7', '#EC4899'] } },
-            { id: generateId(), type: 'text', content: 'Watch this free training to learn the exact framework used by 9,943+ business owners', props: {} },
+            { id: generateId(), type: 'text', content: 'From the team who helped Alex Hormozi, Mr. Beast, and more...', props: { variant: 'caption', color: t.mutedTextColor } },
+            { id: generateId(), type: 'badge', content: 'FREE TRAINING', props: { variant: 'premium', backgroundColor: t.badgeBg, textColor: t.badgeText } },
+            { id: generateId(), type: 'heading', content: 'The System That Turns Long-Form Into', props: { level: 1, color: t.textColor } },
+            { id: generateId(), type: 'gradient-text', content: 'Viral Content', props: { gradient: t.accentGradient } },
+            { id: generateId(), type: 'text', content: 'Watch this free training to learn the exact framework used by 9,943+ business owners', props: { color: t.mutedTextColor } },
             { id: generateId(), type: 'video-thumbnail', content: '', props: { placeholder: true, aspectRatio: '16:9' } },
-            { id: generateId(), type: 'button', content: 'BOOK YOUR FREE STRATEGY CALL', props: { variant: 'primary', size: 'xl', className: 'glow-primary' } },
-            { id: generateId(), type: 'text', content: 'Join 9,943+ entrepreneurs already using this system', props: { variant: 'caption' } },
+            { id: generateId(), type: 'button', content: 'BOOK YOUR FREE STRATEGY CALL', props: { variant: 'primary', size: 'xl', backgroundColor: t.primaryColor } },
+            { id: generateId(), type: 'text', content: 'Join 9,943+ entrepreneurs already using this system', props: { variant: 'caption', color: t.captionColor } },
           ],
           props: { alignment: 'center', className: 'py-16' },
         }),
@@ -394,19 +428,19 @@ const sectionCategories: SectionCategory[] = [
         label: 'Stats Hero',
         icon: <BarChart3 size={16} />,
         description: 'Headlines with proof numbers',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'hero',
           label: 'Stats Hero',
           elements: [
-            { id: generateId(), type: 'badge', content: 'PROVEN RESULTS', props: { variant: 'premium' } },
-            { id: generateId(), type: 'heading', content: 'Add 20+ High-Ticket Clients Per Month With', props: { level: 1 } },
-            { id: generateId(), type: 'underline-text', content: 'Predictable Systems', props: { color: '#8B5CF6' } },
-            { id: generateId(), type: 'text', content: 'The exact framework used by top agencies to scale past $100K/mo without burning out', props: {} },
-            { id: generateId(), type: 'stat-number', content: '', props: { value: '9,943', suffix: '+', label: 'MEMBERS' } },
-            { id: generateId(), type: 'stat-number', content: '', props: { value: '5', suffix: 'B+', label: 'VIEWS GENERATED' } },
-            { id: generateId(), type: 'stat-number', content: '', props: { value: '70', suffix: '+', label: 'COUNTRIES' } },
-            { id: generateId(), type: 'button', content: 'GET STARTED TODAY', props: { variant: 'primary', size: 'xl' } },
+            { id: generateId(), type: 'badge', content: 'PROVEN RESULTS', props: { variant: 'premium', backgroundColor: t.badgeBg, textColor: t.badgeText } },
+            { id: generateId(), type: 'heading', content: 'Add 20+ High-Ticket Clients Per Month With', props: { level: 1, color: t.textColor } },
+            { id: generateId(), type: 'underline-text', content: 'Predictable Systems', props: { color: t.primaryColor } },
+            { id: generateId(), type: 'text', content: 'The exact framework used by top agencies to scale past $100K/mo without burning out', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'stat-number', content: '', props: { value: '9,943', suffix: '+', label: 'MEMBERS', color: t.textColor, labelColor: t.mutedTextColor } },
+            { id: generateId(), type: 'stat-number', content: '', props: { value: '5', suffix: 'B+', label: 'VIEWS GENERATED', color: t.textColor, labelColor: t.mutedTextColor } },
+            { id: generateId(), type: 'stat-number', content: '', props: { value: '70', suffix: '+', label: 'COUNTRIES', color: t.textColor, labelColor: t.mutedTextColor } },
+            { id: generateId(), type: 'button', content: 'GET STARTED TODAY', props: { variant: 'primary', size: 'xl', backgroundColor: t.primaryColor } },
           ],
           props: { alignment: 'center', className: 'py-16' },
         }),
@@ -416,16 +450,16 @@ const sectionCategories: SectionCategory[] = [
         label: 'Split Hero',
         icon: <LayoutGrid size={16} />,
         description: 'Text left, media right',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'hero',
           label: 'Split Hero',
           elements: [
-            { id: generateId(), type: 'badge', content: 'NEW FOR 2025', props: { variant: 'warning' } },
-            { id: generateId(), type: 'heading', content: 'Stop Trading Time For Money', props: { level: 1 } },
-            { id: generateId(), type: 'text', content: 'Learn how to build systems that generate clients on autopilot while you focus on what matters most.', props: {} },
-            { id: generateId(), type: 'button', content: 'Watch Free Training', props: { variant: 'primary', size: 'lg' } },
-            { id: generateId(), type: 'text', content: '✓ No credit card required  ✓ Instant access', props: { variant: 'caption' } },
+            { id: generateId(), type: 'badge', content: 'NEW FOR 2025', props: { variant: 'warning', backgroundColor: t.badgeBg, textColor: t.badgeText } },
+            { id: generateId(), type: 'heading', content: 'Stop Trading Time For Money', props: { level: 1, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Learn how to build systems that generate clients on autopilot while you focus on what matters most.', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'button', content: 'Watch Free Training', props: { variant: 'primary', size: 'lg', backgroundColor: t.primaryColor } },
+            { id: generateId(), type: 'text', content: '✓ No credit card required  ✓ Instant access', props: { variant: 'caption', color: t.captionColor } },
             { id: generateId(), type: 'image', content: '', props: { alt: 'Hero image', src: '', className: 'rounded-xl shadow-2xl' } },
           ],
           props: { alignment: 'left', layout: 'split', className: 'py-16' },
@@ -436,14 +470,14 @@ const sectionCategories: SectionCategory[] = [
         label: 'Simple Hero',
         icon: <LayoutGrid size={16} />,
         description: 'Clean title + subtitle + CTA',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'hero',
           label: 'Hero Section',
           elements: [
-            { id: generateId(), type: 'heading', content: 'Welcome to Our Platform', props: { level: 1 } },
-            { id: generateId(), type: 'text', content: 'Discover how we can help you achieve your goals faster than ever before.', props: {} },
-            { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg' } },
+            { id: generateId(), type: 'heading', content: 'Welcome to Our Platform', props: { level: 1, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Discover how we can help you achieve your goals faster than ever before.', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg', backgroundColor: t.primaryColor } },
           ],
           props: { alignment: 'center' },
         }),
@@ -460,13 +494,13 @@ const sectionCategories: SectionCategory[] = [
         label: 'Credibility Bar',
         icon: <Users size={16} />,
         description: 'Avatars + authority text',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'credibility-bar',
           label: 'Credibility Bar',
           elements: [
             { id: generateId(), type: 'avatar-group', content: '', props: { count: 3, size: 'md' } },
-            { id: generateId(), type: 'text', content: 'From the creators who helped Alex Hormozi, Mr. Beast, and 500+ entrepreneurs scale to 7-figures', props: {} },
+            { id: generateId(), type: 'text', content: 'From the creators who helped Alex Hormozi, Mr. Beast, and 500+ entrepreneurs scale to 7-figures', props: { color: t.mutedTextColor } },
           ],
           props: { alignment: 'center', className: 'py-4' },
         }),
@@ -476,14 +510,14 @@ const sectionCategories: SectionCategory[] = [
         label: 'Stats Row',
         icon: <BarChart3 size={16} />,
         description: 'Big numbers with labels',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'stats-row',
           label: 'Stats Row',
           elements: [
-            { id: generateId(), type: 'stat-number', content: '', props: { value: '9,943', suffix: '+', label: 'MEMBERS' } },
-            { id: generateId(), type: 'stat-number', content: '', props: { value: '5', suffix: 'B+', label: 'VIEWS GENERATED' } },
-            { id: generateId(), type: 'stat-number', content: '', props: { value: '70', suffix: '+', label: 'COUNTRIES' } },
+            { id: generateId(), type: 'stat-number', content: '', props: { value: '9,943', suffix: '+', label: 'MEMBERS', color: t.textColor, labelColor: t.mutedTextColor } },
+            { id: generateId(), type: 'stat-number', content: '', props: { value: '5', suffix: 'B+', label: 'VIEWS GENERATED', color: t.textColor, labelColor: t.mutedTextColor } },
+            { id: generateId(), type: 'stat-number', content: '', props: { value: '70', suffix: '+', label: 'COUNTRIES', color: t.textColor, labelColor: t.mutedTextColor } },
           ],
           props: { layout: 'horizontal', gap: 48, className: 'py-8' },
         }),
@@ -493,16 +527,16 @@ const sectionCategories: SectionCategory[] = [
         label: 'Logo Bar (Static)',
         icon: <Award size={16} />,
         description: 'As seen in logos',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'logo-bar',
           label: 'Logo Bar',
           elements: [
-            { id: generateId(), type: 'text', content: 'AS SEEN IN', props: { variant: 'caption', className: 'uppercase tracking-widest text-muted-foreground' } },
-            { id: generateId(), type: 'image', content: '', props: { alt: 'Forbes', src: '', className: 'h-8 opacity-60 grayscale' } },
-            { id: generateId(), type: 'image', content: '', props: { alt: 'Inc', src: '', className: 'h-8 opacity-60 grayscale' } },
-            { id: generateId(), type: 'image', content: '', props: { alt: 'Bloomberg', src: '', className: 'h-8 opacity-60 grayscale' } },
-            { id: generateId(), type: 'image', content: '', props: { alt: 'Entrepreneur', src: '', className: 'h-8 opacity-60 grayscale' } },
+            { id: generateId(), type: 'text', content: 'AS SEEN IN', props: { variant: 'caption', className: 'uppercase tracking-widest', color: t.captionColor } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Forbes', src: '', className: `h-8 ${t.isDark ? 'opacity-60 invert' : 'opacity-60 grayscale'}` } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Inc', src: '', className: `h-8 ${t.isDark ? 'opacity-60 invert' : 'opacity-60 grayscale'}` } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Bloomberg', src: '', className: `h-8 ${t.isDark ? 'opacity-60 invert' : 'opacity-60 grayscale'}` } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Entrepreneur', src: '', className: `h-8 ${t.isDark ? 'opacity-60 invert' : 'opacity-60 grayscale'}` } },
           ],
           props: { layout: 'horizontal', gap: 32, alignment: 'center', className: 'py-6' },
         }),
@@ -512,7 +546,7 @@ const sectionCategories: SectionCategory[] = [
         label: 'Scrolling Logos',
         icon: <TrendingUp size={16} />,
         description: 'Animated logo marquee',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'ticker-bar',
           label: 'Scrolling Logos',
@@ -520,10 +554,11 @@ const sectionCategories: SectionCategory[] = [
             { id: generateId(), type: 'ticker', content: '', props: { 
               items: ['FORBES', 'INC', 'BLOOMBERG', 'ENTREPRENEUR', 'BUSINESS INSIDER', 'FAST COMPANY'],
               speed: 25,
-              separator: '   •   '
+              separator: '   •   ',
+              color: t.mutedTextColor,
             }},
           ],
-          props: { className: 'py-4 bg-muted/30' },
+          props: { className: `py-4 ${surfaceClass(t)}` },
         }),
       },
     ],
@@ -538,7 +573,7 @@ const sectionCategories: SectionCategory[] = [
         label: 'Urgency Ticker',
         icon: <Clock size={16} />,
         description: 'Scrolling urgency message',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'urgency-banner',
           label: 'Urgency Banner',
@@ -546,10 +581,11 @@ const sectionCategories: SectionCategory[] = [
             { id: generateId(), type: 'ticker', content: '', props: {
               items: ['LIVE EVENT', 'NO REPLAYS', 'JAN 27TH 2PM EST', 'LIMITED SPOTS'],
               speed: 20,
-              separator: '  •  '
+              separator: '  •  ',
+              color: '#ffffff',
             }},
           ],
-          props: { className: 'py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white' },
+          props: { className: 'py-3 text-white', style: { background: urgencyGradient(t) } },
         }),
       },
       {
@@ -557,16 +593,16 @@ const sectionCategories: SectionCategory[] = [
         label: 'Live Badge Banner',
         icon: <Zap size={16} />,
         description: 'Event announcement bar',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'urgency-banner',
           label: 'Live Banner',
           elements: [
             { id: generateId(), type: 'badge', content: '🔴 LIVE', props: { variant: 'destructive' } },
-            { id: generateId(), type: 'text', content: 'Free Workshop Starting Now — Limited Spots Available', props: { className: 'font-semibold' } },
-            { id: generateId(), type: 'button', content: 'Join Now →', props: { variant: 'ghost', size: 'sm' } },
+            { id: generateId(), type: 'text', content: 'Free Workshop Starting Now — Limited Spots Available', props: { className: 'font-semibold', color: '#ffffff' } },
+            { id: generateId(), type: 'button', content: 'Join Now →', props: { variant: 'ghost', size: 'sm', color: '#ffffff' } },
           ],
-          props: { layout: 'horizontal', gap: 16, alignment: 'center', className: 'py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white' },
+          props: { layout: 'horizontal', gap: 16, alignment: 'center', className: 'py-3 text-white', style: { background: urgencyGradient(t) } },
         }),
       },
     ],
@@ -581,15 +617,15 @@ const sectionCategories: SectionCategory[] = [
         label: '3-Step Process',
         icon: <Rocket size={16} />,
         description: 'Visual step-by-step',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'process-flow',
           label: '3-Step Process',
           elements: [
-            { id: generateId(), type: 'heading', content: 'How It Works', props: { level: 2, className: 'text-center mb-8' } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 1, title: 'MAP THE NARRATIVE', description: 'We identify your unique story and positioning', icon: 'search', showArrow: true } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 2, title: 'GO VIRAL', description: 'Deploy our proven content system', icon: 'share-2', showArrow: true } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 3, title: 'SCALE', description: 'Turn views into high-ticket clients', icon: 'rocket', showArrow: false } },
+            { id: generateId(), type: 'heading', content: 'How It Works', props: { level: 2, className: 'text-center mb-8', color: t.textColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 1, title: 'MAP THE NARRATIVE', description: 'We identify your unique story and positioning', icon: 'search', showArrow: true, color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 2, title: 'GO VIRAL', description: 'Deploy our proven content system', icon: 'share-2', showArrow: true, color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 3, title: 'SCALE', description: 'Turn views into high-ticket clients', icon: 'rocket', showArrow: false, color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
           ],
           props: { layout: 'horizontal', className: 'py-12' },
         }),
@@ -599,15 +635,15 @@ const sectionCategories: SectionCategory[] = [
         label: 'Vertical Timeline',
         icon: <Target size={16} />,
         description: 'Steps stacked vertically',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'process-flow',
           label: 'Timeline',
           elements: [
-            { id: generateId(), type: 'heading', content: 'Your Journey', props: { level: 2, className: 'text-center mb-8' } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 1, title: 'Book Your Call', description: 'Schedule a free 30-minute strategy session', icon: 'calendar' } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 2, title: 'Get Your Plan', description: 'Receive a custom growth roadmap', icon: 'file-text' } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 3, title: 'Launch & Scale', description: 'Execute with our proven framework', icon: 'rocket' } },
+            { id: generateId(), type: 'heading', content: 'Your Journey', props: { level: 2, className: 'text-center mb-8', color: t.textColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 1, title: 'Book Your Call', description: 'Schedule a free 30-minute strategy session', icon: 'calendar', color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 2, title: 'Get Your Plan', description: 'Receive a custom growth roadmap', icon: 'file-text', color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 3, title: 'Launch & Scale', description: 'Execute with our proven framework', icon: 'rocket', color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
           ],
           props: { layout: 'vertical', className: 'py-12' },
         }),
@@ -624,15 +660,15 @@ const sectionCategories: SectionCategory[] = [
         label: 'Video Hero',
         icon: <Play size={16} />,
         description: 'Full video with overlay',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'video-hero',
           label: 'Video Hero',
           elements: [
-            { id: generateId(), type: 'badge', content: 'WATCH NOW', props: { variant: 'premium' } },
-            { id: generateId(), type: 'heading', content: 'Free Training: The Exact System We Use', props: { level: 2 } },
+            { id: generateId(), type: 'badge', content: 'WATCH NOW', props: { variant: 'premium', backgroundColor: t.badgeBg, textColor: t.badgeText } },
+            { id: generateId(), type: 'heading', content: 'Free Training: The Exact System We Use', props: { level: 2, color: t.textColor } },
             { id: generateId(), type: 'video-thumbnail', content: '', props: { placeholder: true, aspectRatio: '16:9', className: 'rounded-xl shadow-2xl' } },
-            { id: generateId(), type: 'text', content: 'Over 9,943 business owners have watched this training', props: { variant: 'caption' } },
+            { id: generateId(), type: 'text', content: 'Over 9,943 business owners have watched this training', props: { variant: 'caption', color: t.captionColor } },
           ],
           props: { alignment: 'center', className: 'py-12' },
         }),
@@ -662,16 +698,16 @@ const sectionCategories: SectionCategory[] = [
         label: 'Money-Back Guarantee',
         icon: <Shield size={16} />,
         description: 'Risk reversal section',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'guarantee',
           label: 'Guarantee',
           elements: [
-            { id: generateId(), type: 'heading', content: '100% Risk-Free Guarantee', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'Try it for 30 days. If you are not completely satisfied with your results, we will refund every penny. No questions asked, no hoops to jump through.', props: {} },
+            { id: generateId(), type: 'heading', content: '100% Risk-Free Guarantee', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Try it for 30 days. If you are not completely satisfied with your results, we will refund every penny. No questions asked, no hoops to jump through.', props: { color: t.mutedTextColor } },
             { id: generateId(), type: 'badge', content: '30-Day Money Back', props: { variant: 'success', icon: 'shield' } },
           ],
-          props: { alignment: 'center', className: 'py-12 bg-muted/30 rounded-xl' },
+          props: { alignment: 'center', className: `py-12 rounded-xl ${surfaceClass(t)}` },
         }),
       },
     ],
@@ -686,18 +722,18 @@ const sectionCategories: SectionCategory[] = [
         label: 'Premium CTA',
         icon: <Zap size={16} />,
         description: 'Urgency + button + trust',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'cta',
           label: 'Premium CTA',
           elements: [
-            { id: generateId(), type: 'badge', content: 'LIMITED OFFER', props: { variant: 'warning' } },
-            { id: generateId(), type: 'heading', content: 'Ready to Transform Your Business?', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'Join 9,943+ entrepreneurs who are already scaling with our proven system.', props: {} },
-            { id: generateId(), type: 'button', content: 'CLAIM YOUR SPOT NOW', props: { variant: 'primary', size: 'xl', className: 'glow-primary' } },
-            { id: generateId(), type: 'text', content: '✓ No credit card required  ✓ Instant access  ✓ Cancel anytime', props: { variant: 'caption' } },
+            { id: generateId(), type: 'badge', content: 'LIMITED OFFER', props: { variant: 'warning', backgroundColor: t.badgeBg, textColor: t.badgeText } },
+            { id: generateId(), type: 'heading', content: 'Ready to Transform Your Business?', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Join 9,943+ entrepreneurs who are already scaling with our proven system.', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'button', content: 'CLAIM YOUR SPOT NOW', props: { variant: 'primary', size: 'xl', backgroundColor: t.primaryColor } },
+            { id: generateId(), type: 'text', content: '✓ No credit card required  ✓ Instant access  ✓ Cancel anytime', props: { variant: 'caption', color: t.captionColor } },
           ],
-          props: { alignment: 'center', className: 'py-12 bg-gradient-to-b from-transparent to-muted/30 rounded-xl' },
+          props: { alignment: 'center', className: `py-12 rounded-xl ${surfaceClass(t)}` },
         }),
       },
       {
@@ -705,14 +741,14 @@ const sectionCategories: SectionCategory[] = [
         label: 'Simple CTA',
         icon: <MousePointer size={16} />,
         description: 'Text + button',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'cta',
           label: 'Call to Action',
           elements: [
-            { id: generateId(), type: 'heading', content: 'Ready to get started?', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'Take the first step towards your goals today.', props: {} },
-            { id: generateId(), type: 'button', content: 'Get Started Now', props: { variant: 'primary', size: 'lg' } },
+            { id: generateId(), type: 'heading', content: 'Ready to get started?', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Take the first step towards your goals today.', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'button', content: 'Get Started Now', props: { variant: 'primary', size: 'lg', backgroundColor: t.primaryColor } },
           ],
           props: { action: 'next-step' },
         }),
@@ -722,16 +758,16 @@ const sectionCategories: SectionCategory[] = [
         label: 'CTA with Email',
         icon: <Mail size={16} />,
         description: 'Email capture + button',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'cta',
           label: 'CTA with Email',
           elements: [
-            { id: generateId(), type: 'heading', content: 'Get Instant Access', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'Enter your email to receive the free training.', props: {} },
-            { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'Enter your email' } },
-            { id: generateId(), type: 'button', content: 'Send Me The Training →', props: { variant: 'primary', size: 'lg' } },
-            { id: generateId(), type: 'text', content: '🔒 We respect your privacy. Unsubscribe anytime.', props: { variant: 'caption' } },
+            { id: generateId(), type: 'heading', content: 'Get Instant Access', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Enter your email to receive the free training.', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'input', content: '', props: { type: 'email', placeholder: 'Enter your email', backgroundColor: t.inputBg, borderColor: t.inputBorder } },
+            { id: generateId(), type: 'button', content: 'Send Me The Training →', props: { variant: 'primary', size: 'lg', backgroundColor: t.primaryColor } },
+            { id: generateId(), type: 'text', content: '🔒 We respect your privacy. Unsubscribe anytime.', props: { variant: 'caption', color: t.captionColor } },
           ],
           props: { action: 'submit', alignment: 'center' },
         }),
@@ -748,17 +784,17 @@ const sectionCategories: SectionCategory[] = [
         label: 'Founder Story',
         icon: <Users size={16} />,
         description: 'Personal bio + image',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'about',
           label: 'Founder Story',
           elements: [
-            { id: generateId(), type: 'heading', content: 'Hey, I\'m [Your Name]', props: { level: 2 } },
+            { id: generateId(), type: 'heading', content: 'Hey, I\'m [Your Name]', props: { level: 2, color: t.textColor } },
             { id: generateId(), type: 'image', content: '', props: { alt: 'Founder photo', src: '', className: 'rounded-full w-32 h-32 mx-auto mb-4' } },
-            { id: generateId(), type: 'text', content: 'I\'ve helped over 500+ business owners scale past $100K/mo using the exact system you\'re about to learn. After 10 years in the trenches, I\'ve distilled everything into a simple, repeatable framework.', props: {} },
-            { id: generateId(), type: 'stat-number', content: '', props: { value: '500', suffix: '+', label: 'CLIENTS SERVED' } },
-            { id: generateId(), type: 'stat-number', content: '', props: { value: '$50', suffix: 'M+', label: 'REVENUE GENERATED' } },
-            { id: generateId(), type: 'button', content: 'Learn My Story', props: { variant: 'outline' } },
+            { id: generateId(), type: 'text', content: 'I\'ve helped over 500+ business owners scale past $100K/mo using the exact system you\'re about to learn. After 10 years in the trenches, I\'ve distilled everything into a simple, repeatable framework.', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'stat-number', content: '', props: { value: '500', suffix: '+', label: 'CLIENTS SERVED', color: t.textColor, labelColor: t.mutedTextColor } },
+            { id: generateId(), type: 'stat-number', content: '', props: { value: '$50', suffix: 'M+', label: 'REVENUE GENERATED', color: t.textColor, labelColor: t.mutedTextColor } },
+            { id: generateId(), type: 'button', content: 'Learn My Story', props: { variant: 'outline', borderColor: t.borderColor, color: t.textColor } },
           ],
           props: { alignment: 'center', className: 'py-12' },
         }),
@@ -768,14 +804,14 @@ const sectionCategories: SectionCategory[] = [
         label: 'About Section',
         icon: <Users size={16} />,
         description: 'Company info',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'about',
           label: 'About Us',
           elements: [
-            { id: generateId(), type: 'heading', content: 'About Us', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'We are a team of passionate individuals dedicated to helping you succeed. With years of experience and a commitment to excellence, we deliver results that matter.', props: {} },
-            { id: generateId(), type: 'button', content: 'Learn More', props: { variant: 'outline' } },
+            { id: generateId(), type: 'heading', content: 'About Us', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'We are a team of passionate individuals dedicated to helping you succeed. With years of experience and a commitment to excellence, we deliver results that matter.', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'button', content: 'Learn More', props: { variant: 'outline', borderColor: t.borderColor, color: t.textColor } },
           ],
           props: {},
         }),
@@ -792,15 +828,15 @@ const sectionCategories: SectionCategory[] = [
         label: 'Premium Testimonial',
         icon: <Quote size={16} />,
         description: 'Full testimonial card',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'testimonial',
           label: 'Testimonial',
           elements: [
             { id: generateId(), type: 'avatar-group', content: '', props: { count: 1, size: 'lg' } },
-            { id: generateId(), type: 'text', content: '"We went from struggling to adding $47K in monthly revenue within 90 days. This system actually works."', props: { className: 'text-lg italic' } },
-            { id: generateId(), type: 'text', content: 'Sarah Johnson', props: { className: 'font-bold' } },
-            { id: generateId(), type: 'text', content: 'CEO, TechStartup • $2.4M Revenue', props: { variant: 'caption' } },
+            { id: generateId(), type: 'text', content: '"We went from struggling to adding $47K in monthly revenue within 90 days. This system actually works."', props: { className: 'text-lg italic', color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Sarah Johnson', props: { className: 'font-bold', color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'CEO, TechStartup • $2.4M Revenue', props: { variant: 'caption', color: t.captionColor } },
             { id: generateId(), type: 'badge', content: '✓ Verified Client', props: { variant: 'success' } },
           ],
           props: { rating: 5, className: 'py-8' },
@@ -811,14 +847,14 @@ const sectionCategories: SectionCategory[] = [
         label: 'Video Testimonial',
         icon: <Play size={16} />,
         description: 'Video + quote',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'testimonial',
           label: 'Video Testimonial',
           elements: [
             { id: generateId(), type: 'video-thumbnail', content: '', props: { placeholder: true, aspectRatio: '16:9', className: 'rounded-xl' } },
-            { id: generateId(), type: 'text', content: '"This changed everything for my business"', props: { className: 'text-lg font-semibold mt-4' } },
-            { id: generateId(), type: 'text', content: 'John Smith, Founder @ AgencyXYZ', props: { variant: 'caption' } },
+            { id: generateId(), type: 'text', content: '"This changed everything for my business"', props: { className: 'text-lg font-semibold mt-4', color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'John Smith, Founder @ AgencyXYZ', props: { variant: 'caption', color: t.captionColor } },
           ],
           props: { rating: 5, className: 'py-8' },
         }),
@@ -828,14 +864,14 @@ const sectionCategories: SectionCategory[] = [
         label: 'Simple Testimonial',
         icon: <Quote size={16} />,
         description: 'Basic quote',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'testimonial',
           label: 'Testimonial',
           elements: [
             { id: generateId(), type: 'image', content: '', props: { alt: 'Customer photo', src: '', style: 'avatar' } },
-            { id: generateId(), type: 'text', content: '"The best decision I ever made for my business."', props: {} },
-            { id: generateId(), type: 'text', content: '— John Smith, Founder', props: { variant: 'caption' } },
+            { id: generateId(), type: 'text', content: '"The best decision I ever made for my business."', props: { color: t.textColor } },
+            { id: generateId(), type: 'text', content: '— John Smith, Founder', props: { variant: 'caption', color: t.captionColor } },
           ],
           props: { rating: 5 },
         }),
@@ -852,15 +888,15 @@ const sectionCategories: SectionCategory[] = [
         label: 'Trust Badges',
         icon: <Award size={16} />,
         description: 'Social proof',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'trust',
           label: 'Trust Badges',
           elements: [
-            { id: generateId(), type: 'text', content: '⭐ 4.9/5 Rating', props: { variant: 'badge' } },
-            { id: generateId(), type: 'text', content: '🏆 #1 Rated', props: { variant: 'badge' } },
-            { id: generateId(), type: 'text', content: '✓ 10,000+ Users', props: { variant: 'badge' } },
-            { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'badge' } },
+            { id: generateId(), type: 'text', content: '⭐ 4.9/5 Rating', props: { variant: 'badge', color: t.textColor } },
+            { id: generateId(), type: 'text', content: '🏆 #1 Rated', props: { variant: 'badge', color: t.textColor } },
+            { id: generateId(), type: 'text', content: '✓ 10,000+ Users', props: { variant: 'badge', color: t.textColor } },
+            { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'badge', color: t.textColor } },
           ],
           props: { layout: 'horizontal' },
           styles: { display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' },
@@ -871,15 +907,15 @@ const sectionCategories: SectionCategory[] = [
         label: 'Logo Bar',
         icon: <Star size={16} />,
         description: 'Partner logos',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'trust',
           label: 'Logo Bar',
           elements: [
-            { id: generateId(), type: 'text', content: 'Trusted by leading companies', props: { variant: 'caption' } },
-            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 1', src: '' } },
-            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 2', src: '' } },
-            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 3', src: '' } },
+            { id: generateId(), type: 'text', content: 'Trusted by leading companies', props: { variant: 'caption', color: t.captionColor } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 1', src: '', className: `h-8 ${t.isDark ? 'opacity-60 invert' : 'opacity-60 grayscale'}` } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 2', src: '', className: `h-8 ${t.isDark ? 'opacity-60 invert' : 'opacity-60 grayscale'}` } },
+            { id: generateId(), type: 'image', content: '', props: { alt: 'Logo 3', src: '', className: `h-8 ${t.isDark ? 'opacity-60 invert' : 'opacity-60 grayscale'}` } },
           ],
           props: { layout: 'horizontal' },
         }),
@@ -896,18 +932,18 @@ const sectionCategories: SectionCategory[] = [
         label: 'Premium Features',
         icon: <Sparkles size={16} />,
         description: 'Icons + headlines + text',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'feature',
           label: 'Premium Features',
           elements: [
-            { id: generateId(), type: 'badge', content: 'EVERYTHING YOU GET', props: { variant: 'premium' } },
-            { id: generateId(), type: 'heading', content: 'The Complete System', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'Everything you need to scale your business to 7-figures and beyond', props: { className: 'mb-8' } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 1, title: 'Viral Content System', description: 'Our proven framework for creating content that converts', icon: 'video' } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 2, title: 'Client Acquisition Engine', description: 'Automated systems for attracting high-ticket clients', icon: 'users' } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 3, title: 'Scale & Systemize', description: 'SOPs and frameworks to remove yourself from operations', icon: 'settings' } },
-            { id: generateId(), type: 'process-step', content: '', props: { step: 4, title: '1-on-1 Coaching', description: 'Weekly calls with our expert team', icon: 'message-circle' } },
+            { id: generateId(), type: 'badge', content: 'EVERYTHING YOU GET', props: { variant: 'premium', backgroundColor: t.badgeBg, textColor: t.badgeText } },
+            { id: generateId(), type: 'heading', content: 'The Complete System', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Everything you need to scale your business to 7-figures and beyond', props: { className: 'mb-8', color: t.mutedTextColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 1, title: 'Viral Content System', description: 'Our proven framework for creating content that converts', icon: 'video', color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 2, title: 'Client Acquisition Engine', description: 'Automated systems for attracting high-ticket clients', icon: 'users', color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 3, title: 'Scale & Systemize', description: 'SOPs and frameworks to remove yourself from operations', icon: 'settings', color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
+            { id: generateId(), type: 'process-step', content: '', props: { step: 4, title: '1-on-1 Coaching', description: 'Weekly calls with our expert team', icon: 'message-circle', color: t.textColor, mutedColor: t.mutedTextColor, accentColor: t.primaryColor } },
           ],
           props: { layout: 'grid', columns: 2, className: 'py-12' },
         }),
@@ -917,18 +953,18 @@ const sectionCategories: SectionCategory[] = [
         label: 'Features Grid',
         icon: <Package size={16} />,
         description: '3 feature cards',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'feature',
           label: 'Features Grid',
           elements: [
-            { id: generateId(), type: 'heading', content: 'Why Choose Us', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: '🚀 Fast & Reliable', props: { variant: 'feature' } },
-            { id: generateId(), type: 'text', content: 'Lightning-fast performance with 99.9% uptime', props: {} },
-            { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'feature' } },
-            { id: generateId(), type: 'text', content: 'Enterprise-grade security for your data', props: {} },
-            { id: generateId(), type: 'text', content: '💬 24/7 Support', props: { variant: 'feature' } },
-            { id: generateId(), type: 'text', content: 'Round-the-clock support from our team', props: {} },
+            { id: generateId(), type: 'heading', content: 'Why Choose Us', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: '🚀 Fast & Reliable', props: { variant: 'feature', color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Lightning-fast performance with 99.9% uptime', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'text', content: '🔒 Secure', props: { variant: 'feature', color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Enterprise-grade security for your data', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'text', content: '💬 24/7 Support', props: { variant: 'feature', color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Round-the-clock support from our team', props: { color: t.mutedTextColor } },
           ],
           props: { columns: 3 },
         }),
@@ -938,17 +974,17 @@ const sectionCategories: SectionCategory[] = [
         label: 'Benefits List',
         icon: <Zap size={16} />,
         description: 'Checkmark bullet points',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'feature',
           label: 'Benefits',
           elements: [
-            { id: generateId(), type: 'heading', content: 'What You Get', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: '✓ Unlimited access to all features', props: {} },
-            { id: generateId(), type: 'text', content: '✓ Priority customer support', props: {} },
-            { id: generateId(), type: 'text', content: '✓ Free updates and upgrades', props: {} },
-            { id: generateId(), type: 'text', content: '✓ 30-day money-back guarantee', props: {} },
-            { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg' } },
+            { id: generateId(), type: 'heading', content: 'What You Get', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: '✓ Unlimited access to all features', props: { color: t.textColor } },
+            { id: generateId(), type: 'text', content: '✓ Priority customer support', props: { color: t.textColor } },
+            { id: generateId(), type: 'text', content: '✓ Free updates and upgrades', props: { color: t.textColor } },
+            { id: generateId(), type: 'text', content: '✓ 30-day money-back guarantee', props: { color: t.textColor } },
+            { id: generateId(), type: 'button', content: 'Get Started', props: { variant: 'primary', size: 'lg', backgroundColor: t.primaryColor } },
           ],
           props: { alignment: 'center', className: 'py-8' },
         }),
@@ -965,7 +1001,7 @@ const sectionCategories: SectionCategory[] = [
         label: 'Quiz Question',
         icon: <HelpCircle size={16} />,
         description: 'Interactive quiz',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'application-flow',
           label: 'Quiz Flow',
@@ -974,6 +1010,8 @@ const sectionCategories: SectionCategory[] = [
             displayMode: 'one-at-a-time',
             showProgress: true,
             transition: 'slide-up',
+            background: { type: 'solid', color: t.backgroundColor },
+            textColor: t.textColor,
             steps: [
               {
                 id: generateId(),
@@ -1004,15 +1042,15 @@ const sectionCategories: SectionCategory[] = [
         label: 'Team Section',
         icon: <Users size={16} />,
         description: 'Team members',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'team',
           label: 'Our Team',
           elements: [
-            { id: generateId(), type: 'heading', content: 'Meet Our Team', props: { level: 2 } },
+            { id: generateId(), type: 'heading', content: 'Meet Our Team', props: { level: 2, color: t.textColor } },
             { id: generateId(), type: 'image', content: '', props: { alt: 'Team member 1', src: '', style: 'avatar' } },
-            { id: generateId(), type: 'text', content: 'Jane Doe', props: { variant: 'strong' } },
-            { id: generateId(), type: 'text', content: 'CEO & Founder', props: { variant: 'caption' } },
+            { id: generateId(), type: 'text', content: 'Jane Doe', props: { variant: 'strong', color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'CEO & Founder', props: { variant: 'caption', color: t.captionColor } },
           ],
           props: {},
         }),
@@ -1029,7 +1067,7 @@ const sectionCategories: SectionCategory[] = [
         label: 'Contact Form',
         icon: <Mail size={16} />,
         description: 'Full contact form',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'application-flow',
           label: 'Contact Flow',
@@ -1038,6 +1076,10 @@ const sectionCategories: SectionCategory[] = [
             displayMode: 'one-at-a-time',
             showProgress: false,
             transition: 'fade',
+            background: { type: 'solid', color: t.backgroundColor },
+            textColor: t.textColor,
+            inputBackground: t.inputBg,
+            inputBorderColor: t.inputBorder,
             steps: [
               {
                 id: generateId(),
@@ -1074,15 +1116,15 @@ const sectionCategories: SectionCategory[] = [
         label: 'Appointment',
         icon: <Calendar size={16} />,
         description: 'Schedule booking',
-        template: () => ({
+        template: (t) => ({
           id: generateId(),
           type: 'booking',
           label: 'Appointment Booking',
           elements: [
-            { id: generateId(), type: 'heading', content: 'Book your appointment', props: { level: 2 } },
-            { id: generateId(), type: 'text', content: 'Select a date and time that works for you.', props: {} },
-            { id: generateId(), type: 'input', content: '', props: { type: 'datetime-local', placeholder: 'Select date & time' } },
-            { id: generateId(), type: 'button', content: 'Book Now', props: { variant: 'primary' } },
+            { id: generateId(), type: 'heading', content: 'Book your appointment', props: { level: 2, color: t.textColor } },
+            { id: generateId(), type: 'text', content: 'Select a date and time that works for you.', props: { color: t.mutedTextColor } },
+            { id: generateId(), type: 'input', content: '', props: { type: 'datetime-local', placeholder: 'Select date & time', backgroundColor: t.inputBg, borderColor: t.inputBorder } },
+            { id: generateId(), type: 'button', content: 'Book Now', props: { variant: 'primary', backgroundColor: t.primaryColor } },
           ],
           props: { trackingId: '', duration: 30, timezone: 'auto' },
         }),
@@ -1115,10 +1157,14 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
   position = 'below',
   variant = 'button',
   className = '',
+  pageSettings,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
+  // Build theme from page settings
+  const theme = buildTemplateTheme(pageSettings);
 
   // Collect all templates for search
   const allTemplates = [
@@ -1135,7 +1181,8 @@ export const AddSectionPopover: React.FC<AddSectionPopoverProps> = ({
     : [];
 
   const handleAddBlock = (template: BlockTemplate) => {
-    onAddBlock(template.template());
+    // Pass theme to template function
+    onAddBlock(template.template(theme));
     setIsOpen(false);
     setSearchQuery('');
     setExpandedCategory(null);
