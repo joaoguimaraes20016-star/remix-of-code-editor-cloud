@@ -3987,25 +3987,41 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               {step.frames.length === 0 && !readOnly && onOpenSectionPicker && (
                 <div className="flex items-center justify-center min-h-[500px] px-4">
                   <div className="w-full max-w-md text-center">
-                    {/* Icon */}
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center">
-                      <Layers className="w-8 h-8 text-gray-400" />
+                    {/* Icon - theme aware */}
+                    <div className={cn(
+                      "w-16 h-16 mx-auto mb-4 rounded-xl border flex items-center justify-center",
+                      isDarkTheme 
+                        ? "bg-white/10 border-white/20" 
+                        : "bg-gray-100 border-gray-200"
+                    )}>
+                      <Layers className={cn("w-8 h-8", isDarkTheme ? "text-white/50" : "text-gray-400")} />
                     </div>
                     
-                    {/* Title */}
-                    <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                    {/* Title - theme aware */}
+                    <h2 className={cn(
+                      "text-lg font-semibold mb-2",
+                      isDarkTheme ? "text-white" : "text-gray-900"
+                    )}>
                       Add a Section
                     </h2>
                     
-                    {/* Subtitle */}
-                    <p className="text-sm text-gray-500 mb-6">
+                    {/* Subtitle - theme aware */}
+                    <p className={cn(
+                      "text-sm mb-6",
+                      isDarkTheme ? "text-white/60" : "text-gray-500"
+                    )}>
                       Start building your page by adding sections
                     </p>
                     
-                    {/* Primary CTA */}
+                    {/* Primary CTA - theme aware */}
                     <button
                       onClick={() => onOpenSectionPicker()}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all shadow-sm"
+                      className={cn(
+                        "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm",
+                        isDarkTheme 
+                          ? "bg-white text-gray-900 hover:bg-gray-100" 
+                          : "bg-gray-900 text-white hover:bg-gray-800"
+                      )}
                     >
                       <Plus size={18} />
                       Add Section
