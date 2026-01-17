@@ -18,6 +18,10 @@ import {
   RotateCw,
   Layers,
   Sparkles,
+  Layout,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from 'lucide-react';
 import { ColorPickerPopover } from '../modals';
 import { CollapsibleSection } from './shared/CollapsibleSection';
@@ -48,9 +52,96 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
     : (element.styles?.rotate as number) ?? 0;
   const blur = (element.props?.blur as number) ?? 0;
   const brightness = (element.props?.brightness as number) ?? 100;
+  const marginTop = parseInt((element.styles?.marginTop as string) || '0');
+  const marginBottom = parseInt((element.styles?.marginBottom as string) || '0');
   
   return (
     <>
+      {/* ========== LAYOUT SECTION ========== */}
+      <CollapsibleSection title="Layout" icon={<Layout className="w-4 h-4" />}>
+        <div className="pt-3 space-y-4">
+          {/* Alignment within parent */}
+          <div className="space-y-2">
+            <span className="text-xs text-builder-text-muted">Align Self</span>
+            <div className="flex gap-1">
+              {[
+                { value: 'flex-start', icon: AlignLeft, label: 'Left' },
+                { value: 'center', icon: AlignCenter, label: 'Center' },
+                { value: 'flex-end', icon: AlignRight, label: 'Right' },
+              ].map(({ value, icon: Icon, label }) => (
+                <button
+                  key={value}
+                  onClick={() => handleStyleChange('alignSelf', value)}
+                  className={cn(
+                    'flex-1 p-2 rounded border transition-colors',
+                    (element.styles?.alignSelf || 'flex-start') === value
+                      ? 'border-builder-accent bg-builder-accent/10 text-builder-accent'
+                      : 'border-builder-border bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                  title={label}
+                >
+                  <Icon className="w-4 h-4 mx-auto" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Width control */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Width</span>
+              <span className="text-xs font-mono text-builder-text-dim">
+                {element.styles?.width || 'auto'}
+              </span>
+            </div>
+            <Select
+              value={(element.styles?.width as string) || 'auto'}
+              onValueChange={(v) => handleStyleChange('width', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Auto" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="auto">Auto</SelectItem>
+                <SelectItem value="100%">Full Width</SelectItem>
+                <SelectItem value="75%">75%</SelectItem>
+                <SelectItem value="50%">50%</SelectItem>
+                <SelectItem value="fit-content">Fit Content</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Margin */}
+          <div className="space-y-2">
+            <span className="text-xs text-builder-text-muted">Margin</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-builder-text-dim">Top</span>
+                  <span className="text-[10px] font-mono text-builder-text-dim">{marginTop}px</span>
+                </div>
+                <Slider
+                  value={[marginTop]}
+                  onValueChange={([v]) => handleStyleChange('marginTop', `${v}px`)}
+                  min={0} max={100} step={4}
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-builder-text-dim">Bottom</span>
+                  <span className="text-[10px] font-mono text-builder-text-dim">{marginBottom}px</span>
+                </div>
+                <Slider
+                  value={[marginBottom]}
+                  onValueChange={([v]) => handleStyleChange('marginBottom', `${v}px`)}
+                  min={0} max={100} step={4}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
+      
       {/* ========== APPEARANCE SECTION ========== */}
       <CollapsibleSection title="Appearance" icon={<Eye className="w-4 h-4" />}>
         <div className="pt-3 space-y-4">

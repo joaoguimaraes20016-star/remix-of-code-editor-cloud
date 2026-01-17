@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef } from 'react';
-import { Palette, Pipette, Hash, Check } from 'lucide-react';
+import { Pipette, Hash, Check, RotateCcw } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -17,30 +17,56 @@ interface ColorPickerPopoverProps {
   onGradientClick?: () => void;
 }
 
-// Unified color presets - dark-theme-friendly, organized by type
+// Expanded color presets - 48 colors organized by type
 const presetColors = [
-  // Whites & Blacks (always visible on dark bg)
-  '#FFFFFF', '#F9FAFB', '#E5E7EB', '#9CA3AF', '#4B5563', '#111827',
-  // Brand Purples
-  '#8B5CF6', '#7C3AED', '#6D28D9', '#A78BFA', '#C4B5FD', '#D946EF',
-  // Warm (Red/Orange/Yellow)
-  '#EF4444', '#DC2626', '#F97316', '#F59E0B', '#FBBF24', '#FCD34D',
-  // Cool (Blue/Cyan/Green)
-  '#3B82F6', '#2563EB', '#06B6D4', '#10B981', '#22C55E', '#34D399',
-  // Pinks/Magentas
-  '#EC4899', '#F472B6', '#FB7185',
+  // Neutrals (Row 1)
+  '#FFFFFF', '#F9FAFB', '#E5E7EB', '#9CA3AF', '#4B5563', '#1F2937', '#111827', '#000000',
+  // Brand Purples/Magentas (Row 2)
+  '#F5D0FE', '#E879F9', '#D946EF', '#C026D3', '#A855F7', '#8B5CF6', '#7C3AED', '#6D28D9',
+  // Blues/Cyans (Row 3)
+  '#BFDBFE', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#06B6D4', '#0891B2', '#0E7490',
+  // Greens (Row 4)
+  '#BBF7D0', '#86EFAC', '#4ADE80', '#22C55E', '#16A34A', '#10B981', '#059669', '#047857',
+  // Yellows/Oranges (Row 5)
+  '#FEF08A', '#FACC15', '#EAB308', '#F59E0B', '#F97316', '#EA580C', '#DC2626', '#B91C1C',
+  // Pinks/Reds (Row 6)
+  '#FECDD3', '#FDA4AF', '#FB7185', '#F43F5E', '#E11D48', '#EC4899', '#DB2777', '#BE185D',
 ];
 
 // Check for EyeDropper API support
 const supportsEyeDropper = typeof window !== 'undefined' && 'EyeDropper' in window;
 
+// Recent colors storage key
+const RECENT_COLORS_KEY = 'builder-recent-colors';
+
 export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopoverProps>(
-  ({ children, color, onChange, showGradientOption = false, onGradientClick }, ref) => {
+  ({ children, color, onChange, showGradientOption = true, onGradientClick }, ref) => {
     const [inputValue, setInputValue] = useState(color);
     const [isOpen, setIsOpen] = useState(false);
+    const [inputMode, setInputMode] = useState<'hex' | 'rgb'>('hex');
     const contentRef = useRef<HTMLDivElement | null>(null);
     // Capture selection when popover opens so we can restore it before applying colors
     const savedSelectionRef = useRef<Range | null>(null);
+    
+    // Recent colors state - persisted to localStorage
+    const [recentColors, setRecentColors] = useState<string[]>(() => {
+      if (typeof window === 'undefined') return [];
+      try {
+        const stored = localStorage.getItem(RECENT_COLORS_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch { return []; }
+    });
+    
+    // Track recent colors on selection
+    const trackRecentColor = useCallback((newColor: string) => {
+      if (newColor === 'transparent' || !newColor.startsWith('#')) return;
+      if (recentColors.includes(newColor)) return;
+      const updated = [newColor, ...recentColors.slice(0, 7)]; // Keep last 8
+      setRecentColors(updated);
+      try {
+        localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(updated));
+      } catch { /* ignore */ }
+    }, [recentColors]);
 
     // Capture selection when popover opens
     useEffect(() => {
@@ -118,12 +144,42 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
     const handlePresetClick = (preset: string) => {
       setInputValue(preset);
       restoreSelectionAndApply(preset);
+      trackRecentColor(preset);
     };
 
     const handleColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setInputValue(value);
       restoreSelectionAndApply(value);
+      trackRecentColor(value);
+    };
+    
+    // Hex to RGB conversion
+    const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    };
+    
+    // RGB to Hex conversion
+    const rgbToHex = (r: number, g: number, b: number): string => {
+      return '#' + [r, g, b].map(x => {
+        const hex = Math.max(0, Math.min(255, x)).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      }).join('').toUpperCase();
+    };
+    
+    const currentRgb = hexToRgb(color) || { r: 0, g: 0, b: 0 };
+    
+    const handleRgbChange = (channel: 'r' | 'g' | 'b', value: number) => {
+      const rgb = { ...currentRgb, [channel]: value };
+      const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+      setInputValue(hex);
+      restoreSelectionAndApply(hex);
+      trackRecentColor(hex);
     };
 
     // Eyedropper handler using browser EyeDropper API
@@ -167,56 +223,131 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
           onPointerMove={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
-          {/* Color Selection */}
-
-          {/* Color Input */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="relative flex-1">
-              <Hash className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-builder-text-muted" />
-              <Input
-                value={inputValue.replace('#', '')}
-                onChange={(e) => handleInputChange({ ...e, target: { ...e.target, value: `#${e.target.value}` } } as React.ChangeEvent<HTMLInputElement>)}
-                className="builder-input pl-7 font-mono text-xs uppercase"
-                placeholder="000000"
-                maxLength={6}
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="color"
-                value={color.startsWith('#') ? color : '#000000'}
-                onChange={handleColorInputChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <div 
-                className="w-9 h-9 rounded-lg border border-builder-border cursor-pointer flex items-center justify-center hover:ring-2 hover:ring-builder-accent transition-all"
-                style={{ backgroundColor: color }}
-              >
-                <Pipette className="w-4 h-4 text-white mix-blend-difference" />
-              </div>
-            </div>
-            
-            {/* Eyedropper Button */}
-            {supportsEyeDropper && (
-              <button
-                type="button"
-                onClick={handleEyedropper}
-                className="w-9 h-9 rounded-lg border border-builder-border bg-builder-surface-hover cursor-pointer flex items-center justify-center hover:ring-2 hover:ring-builder-accent hover:bg-builder-accent/10 transition-all"
-                title="Pick color from screen"
-              >
-                <Pipette className="w-4 h-4 text-builder-accent" />
-              </button>
-            )}
+          {/* Input Mode Toggle */}
+          <div className="flex items-center gap-1 mb-2">
+            <button
+              onClick={() => setInputMode('hex')}
+              className={cn(
+                'px-2 py-0.5 text-[10px] rounded transition-colors',
+                inputMode === 'hex' ? 'bg-builder-accent text-white' : 'text-builder-text-muted hover:text-builder-text'
+              )}
+            >
+              HEX
+            </button>
+            <button
+              onClick={() => setInputMode('rgb')}
+              className={cn(
+                'px-2 py-0.5 text-[10px] rounded transition-colors',
+                inputMode === 'rgb' ? 'bg-builder-accent text-white' : 'text-builder-text-muted hover:text-builder-text'
+              )}
+            >
+              RGB
+            </button>
           </div>
 
-          {/* Preset Colors Grid */}
-          <div className="grid grid-cols-6 gap-1.5 mb-3">
+          {/* Color Input - HEX or RGB */}
+          {inputMode === 'hex' ? (
+            <div className="flex items-center gap-2 mb-3">
+              <div className="relative flex-1">
+                <Hash className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-builder-text-muted" />
+                <Input
+                  value={inputValue.replace('#', '')}
+                  onChange={(e) => handleInputChange({ ...e, target: { ...e.target, value: `#${e.target.value}` } } as React.ChangeEvent<HTMLInputElement>)}
+                  className="builder-input pl-7 font-mono text-xs uppercase"
+                  placeholder="000000"
+                  maxLength={6}
+                />
+              </div>
+              <div className="relative">
+                <input
+                  type="color"
+                  value={color.startsWith('#') ? color : '#000000'}
+                  onChange={handleColorInputChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div 
+                  className="w-9 h-9 rounded-lg border border-builder-border cursor-pointer flex items-center justify-center hover:ring-2 hover:ring-builder-accent transition-all"
+                  style={{ backgroundColor: color }}
+                >
+                  <Pipette className="w-4 h-4 text-white mix-blend-difference" />
+                </div>
+              </div>
+              
+              {/* Eyedropper Button */}
+              {supportsEyeDropper && (
+                <button
+                  type="button"
+                  onClick={handleEyedropper}
+                  className="w-9 h-9 rounded-lg border border-builder-border bg-builder-surface-hover cursor-pointer flex items-center justify-center hover:ring-2 hover:ring-builder-accent hover:bg-builder-accent/10 transition-all"
+                  title="Pick color from screen"
+                >
+                  <Pipette className="w-4 h-4 text-builder-accent" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mb-3">
+              {(['r', 'g', 'b'] as const).map(channel => (
+                <div key={channel} className="flex-1">
+                  <span className="text-[10px] text-builder-text-dim uppercase block mb-1">{channel}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={255}
+                    value={currentRgb[channel]}
+                    onChange={(e) => handleRgbChange(channel, parseInt(e.target.value) || 0)}
+                    className="builder-input text-xs font-mono text-center"
+                  />
+                </div>
+              ))}
+              <div 
+                className="w-9 h-9 rounded-lg border border-builder-border mt-4"
+                style={{ backgroundColor: color }}
+              />
+            </div>
+          )}
+
+          {/* Recent Colors */}
+          {recentColors.length > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-builder-text-dim">Recent</span>
+                <button
+                  onClick={() => {
+                    setRecentColors([]);
+                    localStorage.removeItem(RECENT_COLORS_KEY);
+                  }}
+                  className="text-[10px] text-builder-text-dim hover:text-builder-text transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="flex gap-1.5">
+                {recentColors.map((recentColor) => (
+                  <button
+                    key={recentColor}
+                    onClick={() => handlePresetClick(recentColor)}
+                    className={cn(
+                      'w-6 h-6 rounded-md border transition-all hover:scale-110',
+                      color === recentColor 
+                        ? 'ring-2 ring-builder-accent border-builder-accent' 
+                        : 'border-builder-border hover:border-builder-text-muted'
+                    )}
+                    style={{ backgroundColor: recentColor }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Preset Colors Grid - 8 columns for 48 colors */}
+          <div className="grid grid-cols-8 gap-1 mb-3">
             {presetColors.map((preset) => (
               <button
                 key={preset}
                 onClick={() => handlePresetClick(preset)}
                 className={cn(
-                  'w-8 h-8 rounded-md border transition-all hover:scale-110',
+                  'w-6 h-6 rounded-md border transition-all hover:scale-110',
                   color === preset 
                     ? 'ring-2 ring-builder-accent border-builder-accent' 
                     : 'border-builder-border hover:border-builder-text-muted'
@@ -224,7 +355,7 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
                 style={{ backgroundColor: preset }}
               >
                 {color === preset && (
-                  <Check className="w-3 h-3 mx-auto text-white mix-blend-difference" />
+                  <Check className="w-2.5 h-2.5 mx-auto text-white mix-blend-difference" />
                 )}
               </button>
             ))}

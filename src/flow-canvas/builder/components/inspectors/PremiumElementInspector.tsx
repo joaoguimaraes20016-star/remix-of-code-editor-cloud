@@ -337,6 +337,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
   // ========== AVATAR GROUP ==========
   if (element.type === 'avatar-group') {
     const count = (element.props?.count as number) || 3;
+    const colorMode = (element.props?.colorMode as string) || 'gradient';
     
     return (
       <div className="space-y-0">
@@ -346,8 +347,8 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               <Slider
                 value={[count]}
                 onValueChange={([v]) => handlePropsChange('count', v)}
-                min={2}
-                max={8}
+                min={1}
+                max={20}
                 step={1}
                 className="flex-1"
               />
@@ -364,14 +365,88 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 <SelectValue placeholder="Size" />
               </SelectTrigger>
               <SelectContent className="bg-background border-border">
+                <SelectItem value="xs">X-Small (24px)</SelectItem>
                 <SelectItem value="sm">Small (32px)</SelectItem>
                 <SelectItem value="md">Medium (40px)</SelectItem>
                 <SelectItem value="lg">Large (48px)</SelectItem>
+                <SelectItem value="xl">X-Large (56px)</SelectItem>
+                <SelectItem value="2xl">2XL (72px)</SelectItem>
               </SelectContent>
             </Select>
           </FieldGroup>
           
-          <FieldGroup label="Colors">
+          <FieldGroup label="Alignment">
+            <div className="flex gap-1">
+              {[
+                { value: 'flex-start', icon: AlignLeft },
+                { value: 'center', icon: AlignCenter },
+                { value: 'flex-end', icon: AlignRight },
+              ].map(({ value, icon: Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handlePropsChange('alignment', value)}
+                  className={cn(
+                    'flex-1 p-2 rounded-md border transition-colors',
+                    (element.props?.alignment || 'flex-start') === value
+                      ? 'border-builder-accent bg-builder-accent/10 text-builder-accent'
+                      : 'border-builder-border bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                >
+                  <Icon className="w-4 h-4 mx-auto" />
+                </button>
+              ))}
+            </div>
+          </FieldGroup>
+          
+          <FieldGroup label="Overlap">
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[(element.props?.overlap as number) || 12]}
+                onValueChange={([v]) => handlePropsChange('overlap', v)}
+                min={0}
+                max={40}
+                step={2}
+                className="flex-1"
+              />
+              <span className="text-xs font-mono text-builder-text-muted w-8 text-center">
+                {(element.props?.overlap as number) || 12}px
+              </span>
+            </div>
+          </FieldGroup>
+        </Section>
+        
+        <Section title="Colors" icon={<Sparkles className="w-4 h-4" />}>
+          <FieldGroup label="Color Mode">
+            <Select
+              value={colorMode}
+              onValueChange={(v) => handlePropsChange('colorMode', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="gradient">Gradient</SelectItem>
+                <SelectItem value="solid">Solid Color</SelectItem>
+                <SelectItem value="varied">Varied Colors</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          {colorMode === 'solid' && (
+            <FieldGroup label="Avatar Color">
+              <ColorPickerPopover
+                color={(element.props?.solidColor as string) || primaryColor}
+                onChange={(c) => handlePropsChange('solidColor', c)}
+              >
+                <button 
+                  className="w-full h-8 rounded-md border border-builder-border hover:ring-2 hover:ring-builder-accent transition-all" 
+                  style={{ backgroundColor: (element.props?.solidColor as string) || primaryColor }} 
+                />
+              </ColorPickerPopover>
+            </FieldGroup>
+          )}
+          
+          {colorMode === 'gradient' && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-dim">Gradient Start</span>
@@ -392,23 +467,13 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 </ColorPickerPopover>
               </div>
             </div>
-          </FieldGroup>
+          )}
           
-          <FieldGroup label="Overlap">
-            <div className="flex items-center gap-3">
-              <Slider
-                value={[(element.props?.overlap as number) || 12]}
-                onValueChange={([v]) => handlePropsChange('overlap', v)}
-                min={0}
-                max={24}
-                step={2}
-                className="flex-1"
-              />
-              <span className="text-xs font-mono text-builder-text-muted w-8 text-center">
-                {(element.props?.overlap as number) || 12}px
-              </span>
-            </div>
-          </FieldGroup>
+          {colorMode === 'varied' && (
+            <p className="text-[10px] text-builder-text-dim">
+              Each avatar gets a unique color based on index.
+            </p>
+          )}
         </Section>
       </div>
     );
@@ -471,12 +536,62 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               <Slider
                 value={[speed]}
                 onValueChange={([v]) => handlePropsChange('speed', v)}
-                min={10}
-                max={60}
+                min={5}
+                max={120}
                 step={5}
                 className="flex-1"
               />
               <span className="text-xs font-mono text-builder-text-muted w-8 text-center">{speed}s</span>
+            </div>
+          </FieldGroup>
+          
+          <FieldGroup label="Pause on Hover">
+            <div className="flex gap-1">
+              <button
+                onClick={() => handlePropsChange('pauseOnHover', true)}
+                className={cn(
+                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors',
+                  (element.props?.pauseOnHover ?? true) === true
+                    ? 'bg-builder-accent text-white'
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => handlePropsChange('pauseOnHover', false)}
+                className={cn(
+                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors',
+                  (element.props?.pauseOnHover ?? true) === false
+                    ? 'bg-builder-accent text-white'
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                No
+              </button>
+            </div>
+          </FieldGroup>
+          
+          <FieldGroup label="Alignment">
+            <div className="flex gap-1">
+              {[
+                { value: 'left', icon: AlignLeft },
+                { value: 'center', icon: AlignCenter },
+                { value: 'right', icon: AlignRight },
+              ].map(({ value, icon: Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handlePropsChange('alignment', value)}
+                  className={cn(
+                    'flex-1 p-2 rounded-md border transition-colors',
+                    (element.props?.alignment || 'left') === value
+                      ? 'border-builder-accent bg-builder-accent/10 text-builder-accent'
+                      : 'border-builder-border bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                >
+                  <Icon className="w-4 h-4 mx-auto" />
+                </button>
+              ))}
             </div>
           </FieldGroup>
         </Section>
@@ -543,6 +658,29 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 <SelectItem value="custom">Custom Colors</SelectItem>
               </SelectContent>
             </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Alignment">
+            <div className="flex gap-1">
+              {[
+                { value: 'flex-start', icon: AlignLeft },
+                { value: 'center', icon: AlignCenter },
+                { value: 'flex-end', icon: AlignRight },
+              ].map(({ value, icon: Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handlePropsChange('alignment', value)}
+                  className={cn(
+                    'flex-1 p-2 rounded-md border transition-colors',
+                    (element.props?.alignment || 'flex-start') === value
+                      ? 'border-builder-accent bg-builder-accent/10 text-builder-accent'
+                      : 'border-builder-border bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                >
+                  <Icon className="w-4 h-4 mx-auto" />
+                </button>
+              ))}
+            </div>
           </FieldGroup>
         </Section>
         
@@ -627,14 +765,19 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
       <div className="space-y-0">
         <Section title="Step" icon={<ListOrdered className="w-4 h-4" />} defaultOpen>
           <FieldGroup label="Step Number">
-            <Input
-              type="number"
-              value={(element.props?.step as number) || 1}
-              onChange={(e) => handlePropsChange('step', parseInt(e.target.value) || 1)}
-              min={1}
-              max={10}
-              className="builder-input text-xs"
-            />
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[(element.props?.step as number) || 1]}
+                onValueChange={([v]) => handlePropsChange('step', v)}
+                min={1}
+                max={99}
+                step={1}
+                className="flex-1"
+              />
+              <span className="text-xs font-mono text-builder-text-muted w-6 text-center">
+                {(element.props?.step as number) || 1}
+              </span>
+            </div>
           </FieldGroup>
           
           <FieldGroup label="Title">

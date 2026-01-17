@@ -2242,6 +2242,32 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       
       case 'avatar-group':
         const avatarCount = (element.props?.count as number) || 3;
+        const avatarSize = (element.props?.size as string) || 'md';
+        const avatarAlignment = (element.props?.alignment as string) || 'flex-start';
+        const avatarColorMode = (element.props?.colorMode as string) || 'gradient';
+        const avatarOverlap = (element.props?.overlap as number) || 12;
+        
+        // Size mapping
+        const sizeMap: Record<string, { wrapper: string; icon: string }> = {
+          'xs': { wrapper: 'w-6 h-6', icon: 'w-3 h-3' },
+          'sm': { wrapper: 'w-8 h-8', icon: 'w-4 h-4' },
+          'md': { wrapper: 'w-10 h-10', icon: 'w-5 h-5' },
+          'lg': { wrapper: 'w-12 h-12', icon: 'w-6 h-6' },
+          'xl': { wrapper: 'w-14 h-14', icon: 'w-7 h-7' },
+          '2xl': { wrapper: 'w-18 h-18', icon: 'w-9 h-9' },
+        };
+        const avatarSizeClasses = sizeMap[avatarSize] || sizeMap['md'];
+        
+        // Alignment mapping for row-reverse
+        const alignmentJustify: Record<string, string> = {
+          'flex-start': 'flex-end', // left aligned in row-reverse
+          'center': 'center',
+          'flex-end': 'flex-start', // right aligned in row-reverse
+        };
+        
+        // Varied colors palette
+        const variedColors = ['#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#84CC16'];
+        
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
@@ -2260,23 +2286,37 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             )}
             <div 
               className="avatar-group"
-              style={{ '--avatar-border': isDarkTheme ? '#0a0a0f' : '#ffffff' } as React.CSSProperties}
+              style={{ 
+                '--avatar-border': isDarkTheme ? '#0a0a0f' : '#ffffff',
+                '--avatar-overlap': `-${avatarOverlap}px`,
+                justifyContent: alignmentJustify[avatarAlignment] || 'flex-end',
+              } as React.CSSProperties}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               {Array.from({ length: avatarCount }).map((_, i) => {
-                // Use user's chosen colors with angle variation for visual variety
+                // Color logic based on mode
+                let avatarBg: string;
                 const baseColor = (element.props?.gradientFrom as string) || primaryColor || '#8B5CF6';
-                // Theme-aware end color: shift hue from primary instead of hardcoded pink
                 const endColor = (element.props?.gradientTo as string) || shiftHue(baseColor, 40);
+                
+                if (avatarColorMode === 'solid') {
+                  avatarBg = (element.props?.solidColor as string) || primaryColor;
+                } else if (avatarColorMode === 'varied') {
+                  avatarBg = variedColors[i % variedColors.length];
+                } else {
+                  // gradient mode
+                  avatarBg = `linear-gradient(${135 + i * 15}deg, ${baseColor}, ${endColor})`;
+                }
+                
                 return (
                   <div 
                     key={i}
-                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    className={cn(avatarSizeClasses.wrapper, 'rounded-full flex items-center justify-center shrink-0')}
                     style={{
-                      background: `linear-gradient(${135 + i * 15}deg, ${baseColor}, ${endColor})`
+                      background: avatarBg,
                     }}
                   >
-                    <User className="w-5 h-5 text-white" />
+                    <User className={cn(avatarSizeClasses.icon, 'text-white')} />
                   </div>
                 );
               })}
