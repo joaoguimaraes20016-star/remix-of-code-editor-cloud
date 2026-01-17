@@ -730,16 +730,23 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         styles.textAlign = element.props.textAlign as 'left' | 'center' | 'right';
       }
       
-      // Line height
-      if (element.props?.lineHeight) {
-        styles.lineHeight = element.props.lineHeight as string;
+      // Line height - supports both numeric (1.5) and string values
+      if (element.props?.lineHeight !== undefined) {
+        const lh = element.props.lineHeight;
+        styles.lineHeight = typeof lh === 'number' ? lh : lh as string;
       }
       
-      // Letter spacing
-      const letterSpacing = element.props?.letterSpacing as string;
-      if (letterSpacing) {
-        const spacingMap: Record<string, string> = { tighter: '-0.05em', tight: '-0.025em', normal: '0', wide: '0.025em', wider: '0.05em' };
-        styles.letterSpacing = spacingMap[letterSpacing] || '0';
+      // Letter spacing - supports numeric (px), preset strings, or direct values
+      const letterSpacing = element.props?.letterSpacing;
+      if (letterSpacing !== undefined) {
+        if (typeof letterSpacing === 'number') {
+          // Numeric value from slider - convert to px
+          styles.letterSpacing = `${letterSpacing}px`;
+        } else {
+          // String value - check presets or use directly
+          const spacingMap: Record<string, string> = { tighter: '-0.05em', tight: '-0.025em', normal: '0', wide: '0.025em', wider: '0.05em' };
+          styles.letterSpacing = spacingMap[letterSpacing as string] || letterSpacing as string;
+        }
       }
       
       // Text transform

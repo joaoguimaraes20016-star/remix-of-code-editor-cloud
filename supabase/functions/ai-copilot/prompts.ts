@@ -164,6 +164,17 @@ EXISTING CONTENT:
 
 Generate a block structure based on the user's request. Create engaging, conversion-focused content that matches the funnel type and existing styling.
 
+=== CRITICAL BUILDER CONSTRAINTS ===
+
+1. NO EMOJIS: Never include emoji characters in any content
+2. NO ICON TEXT: Never include characters like ✓ ✔ → • ★ in text - use icon-text elements instead
+3. CONTENT LIMITS:
+   - Headlines: max 80 characters
+   - Descriptions: max 200 characters  
+   - Button text: max 30 characters
+4. IMAGES: Always use { "placeholder": true } - never external URLs
+5. ICONS: Only use these names: check, star, rocket, users, clock, shield, zap, target, award, heart, thumbs-up, trending-up, map, calendar, play, mail, phone, globe
+
 CRITICAL: Respond ONLY with valid JSON. No markdown, no explanation, no code blocks, no extra text.
 
 JSON format:
@@ -195,8 +206,9 @@ ELEMENT TYPES:
 - heading: Headlines (level 1-6)
 - text: Body copy, paragraphs
 - button: CTA buttons (variant: primary, secondary, outline)
-- image: Images (props.src for URL, props.placeholder: true for placeholders)
-- video: Video embeds (props.placeholder: true for placeholders)
+- image: Images (ALWAYS use props.placeholder: true)
+- video: Video embeds (ALWAYS use props.placeholder: true)
+- icon-text: Feature with icon (props.icon: "check", props.description: "...")
 - divider: Horizontal separator
 - spacer: Vertical spacing
 
@@ -214,13 +226,13 @@ BLOCK TYPES:
 EXAMPLES:
 
 Testimonial block:
-{"block":{"type":"testimonial","label":"Customer Testimonial","elements":[{"type":"text","content":"\\"This completely transformed our business. We saw a 3x increase in conversions within the first month.\\"","props":{}},{"type":"text","content":"— Sarah Johnson, CEO at TechStart","props":{"className":"font-semibold"}}],"props":{}}}
+{"block":{"type":"testimonial","label":"Customer Testimonial","elements":[{"type":"text","content":"This completely transformed our business. We saw a 3x increase in conversions within the first month.","props":{}},{"type":"text","content":"— Sarah Johnson, CEO at TechStart","props":{"fontWeight":"semibold"}}],"props":{}}}
 
 Hero block:
 {"block":{"type":"hero","label":"Main Hero","elements":[{"type":"heading","content":"Transform Your Business Today","props":{"level":1}},{"type":"text","content":"Join thousands of successful entrepreneurs using our proven system."},{"type":"button","content":"Get Started Free","props":{"variant":"primary"}}],"props":{}}}
 
-Feature block:
-{"block":{"type":"feature","label":"Key Features","elements":[{"type":"heading","content":"Why Choose Us","props":{"level":2}},{"type":"text","content":"We offer the most comprehensive solution in the market."},{"type":"text","content":"✓ Feature one that solves a problem"},{"type":"text","content":"✓ Feature two that adds value"},{"type":"text","content":"✓ Feature three that builds trust"}],"props":{}}}
+Feature block with icons (CORRECT - use icon-text elements):
+{"block":{"type":"feature","label":"Key Features","elements":[{"type":"heading","content":"Why Choose Us","props":{"level":2}},{"type":"text","content":"We offer the most comprehensive solution in the market."},{"type":"icon-text","content":"Feature one that solves a problem","props":{"icon":"check"}},{"type":"icon-text","content":"Feature two that adds value","props":{"icon":"check"}},{"type":"icon-text","content":"Feature three that builds trust","props":{"icon":"check"}}],"props":{}}}
 
 Respond with ONLY the JSON object. No other text.`;
 
@@ -364,6 +376,17 @@ DARK LUXURY (like 2026 Blueprint):
     ]
   }
 }
+
+=== CRITICAL BUILDER CONSTRAINTS ===
+
+1. NO EMOJIS: Never include emoji characters in any content
+2. NO ICON TEXT: Never include characters like ✓ ✔ → • ★ in text
+3. CONTENT LIMITS:
+   - Headlines: max 80 characters
+   - Descriptions: max 200 characters  
+   - Button text: max 30 characters
+4. IMAGES: Always use { "placeholder": true } - never external URLs
+5. ICONS: Only use these names: check, star, rocket, users, clock, shield, zap, target, award, heart, thumbs-up, trending-up, map, calendar, play, mail, phone, globe
 
 === COPY GUIDELINES ===
 
