@@ -409,28 +409,21 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
         const sections = data.sections || [];
         
         // Import and use the section generator
-        const { generateBlocksFromSections } = await import('../utils/sectionGenerator');
+        const { generateStacksFromSections } = await import('../utils/sectionGenerator');
         
-        // Generate blocks from scraped sections
-        const generatedBlocks = sections.length > 0 
-          ? generateBlocksFromSections(sections, style)
+        // Generate stacks (sections) from scraped sections
+        const generatedStacks = sections.length > 0 
+          ? generateStacksFromSections(sections, style)
           : [];
         
-        // Create a new step with the generated blocks if we have sections
+        // Create a new step with the generated stacks if we have sections
         let updatedSteps = currentPage.steps;
         
-        if (generatedBlocks.length > 0) {
-          // Build the page structure with generated content
+        if (generatedStacks.length > 0) {
           const newFrame = {
             id: `frame-${Date.now()}`,
-            label: 'Cloned Section',
-            stacks: [{
-              id: `stack-${Date.now()}`,
-              label: 'Main',
-              direction: 'vertical' as const,
-              blocks: generatedBlocks,
-              props: {},
-            }],
+            label: 'Cloned Page',
+            stacks: generatedStacks,
             props: {},
           };
           
@@ -452,22 +445,28 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
                     if (element.type === 'button') {
                       return {
                         ...element,
-                        styles: { ...element.styles, backgroundColor: style.primaryColor },
+                        props: { ...element.props, backgroundColor: style.primaryColor },
                       };
                     }
-                    if (element.type === 'heading' || element.type === 'gradient-text') {
+                    if (element.type === 'heading') {
                       const textColor = style.theme === 'dark' ? '#ffffff' : '#111827';
                       return {
                         ...element,
-                        styles: { ...element.styles, color: element.type === 'gradient-text' ? undefined : textColor },
-                        props: element.type === 'gradient-text' 
-                          ? { ...element.props, gradientFrom: style.primaryColor, gradientTo: style.accentColor } 
-                          : element.props,
+                        props: { ...element.props, color: textColor },
+                      };
+                    }
+                    if (element.type === 'gradient-text') {
+                      return {
+                        ...element,
+                        props: { ...element.props, gradientFrom: style.primaryColor, gradientTo: style.accentColor },
                       };
                     }
                     if (element.type === 'text') {
                       const textColor = style.theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
-                      return { ...element, styles: { ...element.styles, color: textColor } };
+                      return {
+                        ...element,
+                        props: { ...element.props, color: textColor },
+                      };
                     }
                     return element;
                   }),
