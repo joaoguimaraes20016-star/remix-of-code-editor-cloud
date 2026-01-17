@@ -3775,32 +3775,39 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
     ? step.background
     : pageSettings?.page_background;
 
-  // Phase 14: Improved dark theme detection using luminance
+  // Dark theme detection: prefer luminance of the actual visible background when available.
+  // Only fall back to pageSettings.theme when we can't infer background luminance (e.g. image/video).
   const isDarkTheme = (() => {
-    // Check explicit theme setting first
-    if (pageSettings?.theme === 'dark') return true;
-    if (pageSettings?.theme === 'light') return false;
-    
-    // Fall back to luminance-based detection
-    if (!backgroundSource) return false;
-    
+    if (!backgroundSource) {
+      return pageSettings?.theme === 'dark';
+    }
+
     let bgColor: string | undefined;
     if (backgroundSource.type === 'solid') {
       bgColor = backgroundSource.color;
     } else if (backgroundSource.type === 'gradient' && backgroundSource.gradient?.stops?.[0]) {
       bgColor = backgroundSource.gradient.stops[0].color;
     }
-    
-    if (!bgColor) return false;
-    
-    // Calculate relative luminance
-    const hex = bgColor.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16) / 255;
-    const g = parseInt(hex.substring(2, 4), 16) / 255;
-    const b = parseInt(hex.substring(4, 6), 16) / 255;
-    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    
-    return luminance < 0.5;
+
+    if (bgColor) {
+      try {
+        const hex = bgColor.replace('#', '');
+        if (hex.length === 6) {
+          const r = parseInt(hex.substring(0, 2), 16) / 255;
+          const g = parseInt(hex.substring(2, 4), 16) / 255;
+          const b = parseInt(hex.substring(4, 6), 16) / 255;
+          const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          return luminance < 0.5;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Fallback when we can't infer luminance from the background
+    if (pageSettings?.theme === 'dark') return true;
+    if (pageSettings?.theme === 'light') return false;
+    return false;
   })();
 
   const primaryColor = pageSettings?.primary_color || '#8B5CF6';
@@ -3986,8 +3993,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               {/* Empty canvas state - adapts to actual step background color */}
               {step.frames.length === 0 && !readOnly && onOpenSectionPicker && (() => {
                 // Compute dark mode based on actual step/page background, not global theme setting
-                const bgSource = (step.background && (step.background.type || step.background.color)) 
-                  ? step.background 
+                const bgSource = (step.background && (step.background.type || step.background.color))
+                  ? step.background
                   : pageSettings?.page_background;
                 const bgColor = bgSource?.color || '#ffffff';
                 // Simple luminance check: if background is dark, use light text
@@ -4001,20 +4008,20 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
                   return luminance < 0.5;
                 })();
-                
+
                 return (
                   <div className="flex items-center justify-center min-h-[500px] px-4">
                     <div className="w-full max-w-md text-center">
                       {/* Icon - adapts to background */}
                       <div className={cn(
                         "w-16 h-16 mx-auto mb-4 rounded-xl border flex items-center justify-center",
-                        isBackgroundDark 
-                          ? "bg-white/10 border-white/20" 
+                        isBackgroundDark
+                          ? "bg-white/10 border-white/20"
                           : "bg-gray-100 border-gray-200"
                       )}>
                         <Layers className={cn("w-8 h-8", isBackgroundDark ? "text-white/50" : "text-gray-400")} />
                       </div>
-                      
+
                       {/* Title - adapts to background */}
                       <h2 className={cn(
                         "text-lg font-semibold mb-2",
@@ -4022,22 +4029,22 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                       )}>
                         Add a Section
                       </h2>
-                      
-                      {/* Subtitle - adapts to background */}
+
+                      {/* Subtitle - increase contrast on light backgrounds */}
                       <p className={cn(
                         "text-sm mb-6",
-                        isBackgroundDark ? "text-white/60" : "text-gray-500"
+                        isBackgroundDark ? "text-white/70" : "text-gray-600"
                       )}>
                         Start building your page by adding sections
                       </p>
-                      
+
                       {/* Primary CTA - adapts to background */}
                       <button
                         onClick={() => onOpenSectionPicker()}
                         className={cn(
                           "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm",
-                          isBackgroundDark 
-                            ? "bg-white text-gray-900 hover:bg-gray-100" 
+                          isBackgroundDark
+                            ? "bg-white text-gray-900 hover:bg-gray-100"
                             : "bg-gray-900 text-white hover:bg-gray-800"
                         )}
                       >
@@ -4048,11 +4055,11 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   </div>
                 );
               })()}
-              
+
               {/* Subtle Add Section button at bottom - adapts to actual background */}
               {step.frames.length > 0 && !readOnly && onOpenSectionPicker && (() => {
-                const bgSource = (step.background && (step.background.type || step.background.color)) 
-                  ? step.background 
+                const bgSource = (step.background && (step.background.type || step.background.color))
+                  ? step.background
                   : pageSettings?.page_background;
                 const bgColor = bgSource?.color || '#ffffff';
                 const isBackgroundDark = (() => {
@@ -4065,7 +4072,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
                   return luminance < 0.5;
                 })();
-                
+
                 return (
                   <div className="flex flex-col items-center py-8 group">
                     <button
@@ -4073,8 +4080,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center transition-all",
                         "border-2 border-dashed",
-                        isBackgroundDark 
-                          ? "border-gray-600 text-gray-500 hover:border-gray-400 hover:text-gray-300 hover:bg-gray-800" 
+                        isBackgroundDark
+                          ? "border-gray-600 text-gray-500 hover:border-gray-400 hover:text-gray-300 hover:bg-gray-800"
                           : "border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
                       )}
                     >
