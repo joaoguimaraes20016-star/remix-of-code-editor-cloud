@@ -9,13 +9,39 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
 
+export type FunnelType = 'vsl' | 'webinar' | 'optin' | 'sales' | 'booking' | 'quiz' | 'application' | 'checkout' | 'thank-you' | 'general';
+
+export interface StylingContext {
+  theme?: 'light' | 'dark';
+  primaryColor?: string;
+  backgroundColor?: string;
+  backgroundType?: 'solid' | 'gradient' | 'image';
+  fontFamily?: string;
+}
+
 export interface PageContext {
+  // Basic context
   pageName?: string;
   stepIntents?: string[];
   currentStep?: string;
   elementType?: string;
   elementContent?: string;
   blockType?: string;
+  
+  // Funnel intelligence
+  funnelType?: FunnelType;
+  funnelTypeConfidence?: number;
+  
+  // Styling context (for style matching)
+  styling?: StylingContext;
+  
+  // Content analysis (for coherence)
+  existingBlockTypes?: string[];
+  hasVideo?: boolean;
+  hasForm?: boolean;
+  hasCTA?: boolean;
+  hasTestimonials?: boolean;
+  hasPricing?: boolean;
 }
 
 export interface AISuggestion {

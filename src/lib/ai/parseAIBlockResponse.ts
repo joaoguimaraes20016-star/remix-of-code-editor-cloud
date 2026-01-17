@@ -130,11 +130,21 @@ function normalizeBlockType(type: string | undefined): BlockType {
   return typeMap[normalized] || 'text-block';
 }
 
+export interface StylingContext {
+  theme?: 'light' | 'dark';
+  primaryColor?: string;
+  backgroundColor?: string;
+}
+
 /**
  * Parse an AI response into a valid Block structure
+ * Optionally applies styling from page context
  * Returns null if parsing fails
  */
-export function parseAIBlockResponse(response: string): Block | null {
+export function parseAIBlockResponse(
+  response: string,
+  stylingContext?: StylingContext
+): Block | null {
   try {
     const jsonStr = extractJSON(response);
     if (!jsonStr) {
@@ -152,12 +162,35 @@ export function parseAIBlockResponse(response: string): Block | null {
     const blockData = parsed.block;
     
     // Create valid elements with generated IDs
-    const elements: Element[] = (blockData.elements || []).map((el) => ({
-      id: generateId(),
-      type: normalizeElementType(el.type),
-      content: el.content || '',
-      props: el.props || {},
-    }));
+    const elements: Element[] = (blockData.elements || []).map((el) => {
+      const baseProps = el.props ? { ...el.props } : {};
+      const element: Element = {
+        id: generateId(),
+        type: normalizeElementType(el.type),
+        content: el.content || '',
+        props: baseProps,
+      };
+      
+      // Apply styling to buttons if we have styling context
+      if (stylingContext?.primaryColor && element.type === 'button') {
+        element.props = {
+          ...element.props,
+          backgroundColor: stylingContext.primaryColor,
+        };
+      }
+      
+      // Apply theme-aware text colors
+      if (stylingContext?.theme === 'dark' && (element.type === 'text' || element.type === 'heading')) {
+        if (!element.props.color) {
+          element.props = {
+            ...element.props,
+            color: '#ffffff',
+          };
+        }
+      }
+      
+      return element;
+    });
     
     // Ensure at least one element
     if (elements.length === 0) {
@@ -169,13 +202,19 @@ export function parseAIBlockResponse(response: string): Block | null {
       });
     }
     
-    // Create valid block
+    // Create valid block with styling applied
     const block: Block = {
       id: generateId(),
       type: normalizeBlockType(blockData.type),
       label: blockData.label || 'AI Generated Block',
       elements,
-      props: blockData.props || {},
+      props: {
+        ...blockData.props,
+        // Apply background styling if we have a dark theme
+        ...(stylingContext?.theme === 'dark' && !blockData.props?.backgroundColor ? {
+          backgroundColor: 'transparent',
+        } : {}),
+      },
     };
     
     return block;
