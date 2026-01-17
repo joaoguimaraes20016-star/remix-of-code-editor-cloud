@@ -90,10 +90,24 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
   const easingFn = easingFunctions[easing];
 
   useEffect(() => {
+    // In builder mode, run a looping preview animation that respects duration/easing
     if (isBuilder) {
-      // In builder, show at 60% for preview
-      setProgress(60);
-      return;
+      let animationFrame: number;
+      let startTime = Date.now();
+      
+      const animatePreview = () => {
+        const elapsed = Date.now() - startTime;
+        // Loop the animation based on actual duration
+        const loopedElapsed = elapsed % duration;
+        const rawProgress = loopedElapsed / duration;
+        const easedProgress = easingFn(rawProgress) * 100;
+        
+        setProgress(easedProgress);
+        animationFrame = requestAnimationFrame(animatePreview);
+      };
+      
+      animationFrame = requestAnimationFrame(animatePreview);
+      return () => cancelAnimationFrame(animationFrame);
     }
 
     if (!autoAdvance) {
@@ -119,7 +133,7 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
     }, 50);
 
     return () => clearInterval(interval);
-  }, [duration, autoAdvance, onComplete, isBuilder, easing]);
+  }, [duration, autoAdvance, onComplete, isBuilder, easing, easingFn]);
 
   const primaryColor = colors.primary || 'hsl(var(--primary))';
   const backgroundColor = colors.background || 'hsl(var(--muted))';
