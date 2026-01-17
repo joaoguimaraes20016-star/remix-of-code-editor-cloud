@@ -93,6 +93,14 @@ export const elementTypeLabels: Record<ElementType, string> = {
   'icon-text': 'Icon Text',
   'process-step': 'Process Step',
   'video-thumbnail': 'Video Thumbnail',
+  // Functional element types
+  countdown: 'Countdown Timer',
+  loader: 'Loader',
+  carousel: 'Image Carousel',
+  'logo-marquee': 'Logo Bar',
+  'map-embed': 'Google Maps',
+  'html-embed': 'HTML Embed',
+  trustpilot: 'Trustpilot Widget',
 };
 
 // Step intent labels - User-friendly, not system terminology

@@ -102,6 +102,10 @@ import {
   Smartphone,
   ArrowRight,
   PanelRightClose,
+  Loader2,
+  MapPin,
+  Code,
+  Star,
 } from 'lucide-react';
 import { 
   EffectsPickerPopover, 
@@ -1760,6 +1764,439 @@ const ElementInspector: React.FC<{
                   </button>
                 </ColorPickerPopover>
               </div>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* ========== COUNTDOWN TIMER SECTION ========== */}
+      {element.type === 'countdown' && (
+        <>
+          <CollapsibleSection title="Timer Settings" icon={<Timer className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="End Date & Time">
+                <Input
+                  type="datetime-local"
+                  value={element.props?.endDate ? new Date(element.props.endDate as string).toISOString().slice(0, 16) : ''}
+                  onChange={(e) => handlePropsChange('endDate', new Date(e.target.value).toISOString())}
+                  className="builder-input"
+                />
+              </FieldGroup>
+              <FieldGroup label="Style">
+                <Select 
+                  value={element.props?.style as string || 'boxes'}
+                  onValueChange={(value) => handlePropsChange('style', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="boxes">Boxes</SelectItem>
+                    <SelectItem value="inline">Inline</SelectItem>
+                    <SelectItem value="minimal">Minimal</SelectItem>
+                    <SelectItem value="flip">Flip</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Days</span>
+                <TogglePill value={element.props?.showDays !== false} onToggle={() => handlePropsChange('showDays', element.props?.showDays === false)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Seconds</span>
+                <TogglePill value={element.props?.showSeconds !== false} onToggle={() => handlePropsChange('showSeconds', element.props?.showSeconds === false)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Labels</span>
+                <TogglePill value={element.props?.showLabels !== false} onToggle={() => handlePropsChange('showLabels', element.props?.showLabels === false)} />
+              </div>
+            </div>
+          </CollapsibleSection>
+          <CollapsibleSection title="When Expired" icon={<Clock className="w-4 h-4" />}>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="Action">
+                <Select 
+                  value={element.props?.expiredAction as string || 'show-message'}
+                  onValueChange={(value) => handlePropsChange('expiredAction', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="show-message">Show Message</SelectItem>
+                    <SelectItem value="hide">Hide Timer</SelectItem>
+                    <SelectItem value="redirect">Redirect</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              {element.props?.expiredAction === 'show-message' && (
+                <FieldGroup label="Message">
+                  <Input
+                    value={element.props?.expiredMessage as string || "Time's up!"}
+                    onChange={(e) => handlePropsChange('expiredMessage', e.target.value)}
+                    className="builder-input"
+                    placeholder="Time's up!"
+                  />
+                </FieldGroup>
+              )}
+              {element.props?.expiredAction === 'redirect' && (
+                <FieldGroup label="Redirect URL">
+                  <Input
+                    value={element.props?.expiredRedirectUrl as string || ''}
+                    onChange={(e) => handlePropsChange('expiredRedirectUrl', e.target.value)}
+                    className="builder-input"
+                    placeholder="https://..."
+                  />
+                </FieldGroup>
+              )}
+            </div>
+          </CollapsibleSection>
+          <CollapsibleSection title="Colors" icon={<Palette className="w-4 h-4" />}>
+            <div className="pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Background</span>
+                <ColorPickerPopover color={element.props?.backgroundColor as string || 'rgba(139, 92, 246, 0.15)'} onChange={(color) => handlePropsChange('backgroundColor', color)}>
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.backgroundColor as string || 'rgba(139, 92, 246, 0.15)' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Text</span>
+                <ColorPickerPopover color={element.props?.color as string || '#ffffff'} onChange={(color) => handlePropsChange('color', color)}>
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.color as string || '#ffffff' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* ========== LOADER SECTION ========== */}
+      {element.type === 'loader' && (
+        <>
+          <CollapsibleSection title="Loader Settings" icon={<Loader2 className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="Text">
+                <Input
+                  value={element.content || 'Analyzing your results...'}
+                  onChange={(e) => onUpdate({ content: e.target.value })}
+                  className="builder-input"
+                  placeholder="Loading text..."
+                />
+              </FieldGroup>
+              <FieldGroup label="Sub Text">
+                <Input
+                  value={element.props?.subText as string || ''}
+                  onChange={(e) => handlePropsChange('subText', e.target.value)}
+                  className="builder-input"
+                  placeholder="Optional sub text..."
+                />
+              </FieldGroup>
+              <FieldGroup label="Animation">
+                <Select 
+                  value={element.props?.animationType as string || 'analyzing'}
+                  onValueChange={(value) => handlePropsChange('animationType', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="analyzing">Analyzing (Multi-step)</SelectItem>
+                    <SelectItem value="spinner">Spinner</SelectItem>
+                    <SelectItem value="progress">Progress Bar</SelectItem>
+                    <SelectItem value="dots">Bouncing Dots</SelectItem>
+                    <SelectItem value="pulse">Pulse</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              <FieldGroup label="Duration" hint="In seconds">
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[(element.props?.duration as number || 3000) / 1000]}
+                    onValueChange={([v]) => handlePropsChange('duration', v * 1000)}
+                    min={1} max={10} step={0.5} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-10">{((element.props?.duration as number || 3000) / 1000).toFixed(1)}s</span>
+                </div>
+              </FieldGroup>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Progress</span>
+                <TogglePill value={element.props?.showProgress !== false} onToggle={() => handlePropsChange('showProgress', element.props?.showProgress === false)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Auto Advance</span>
+                <TogglePill value={element.props?.autoAdvance !== false} onToggle={() => handlePropsChange('autoAdvance', element.props?.autoAdvance === false)} />
+              </div>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* ========== CAROUSEL SECTION ========== */}
+      {element.type === 'carousel' && (
+        <>
+          <CollapsibleSection title="Carousel Settings" icon={<Layers className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="Aspect Ratio">
+                <Select 
+                  value={element.props?.aspectRatio as string || '16:9'}
+                  onValueChange={(value) => handlePropsChange('aspectRatio', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
+                    <SelectItem value="4:3">4:3 (Standard)</SelectItem>
+                    <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                    <SelectItem value="21:9">21:9 (Cinematic)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              <FieldGroup label="Navigation">
+                <Select 
+                  value={element.props?.navigationStyle as string || 'both'}
+                  onValueChange={(value) => handlePropsChange('navigationStyle', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="both">Arrows + Dots</SelectItem>
+                    <SelectItem value="arrows">Arrows Only</SelectItem>
+                    <SelectItem value="dots">Dots Only</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Autoplay</span>
+                <TogglePill value={element.props?.autoplay as boolean || false} onToggle={() => handlePropsChange('autoplay', !element.props?.autoplay)} />
+              </div>
+              {element.props?.autoplay && (
+                <FieldGroup label="Interval" hint="Seconds between slides">
+                  <div className="flex items-center gap-2">
+                    <Slider
+                      value={[(element.props?.autoplayInterval as number || 4000) / 1000]}
+                      onValueChange={([v]) => handlePropsChange('autoplayInterval', v * 1000)}
+                      min={2} max={10} step={0.5} className="flex-1"
+                    />
+                    <span className="text-xs text-builder-text w-10">{((element.props?.autoplayInterval as number || 4000) / 1000).toFixed(1)}s</span>
+                  </div>
+                </FieldGroup>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Loop</span>
+                <TogglePill value={element.props?.loop !== false} onToggle={() => handlePropsChange('loop', element.props?.loop === false)} />
+              </div>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* ========== LOGO MARQUEE SECTION ========== */}
+      {element.type === 'logo-marquee' && (
+        <>
+          <CollapsibleSection title="Logo Bar Settings" icon={<Layout className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Animated</span>
+                <TogglePill value={element.props?.animated !== false} onToggle={() => handlePropsChange('animated', element.props?.animated === false)} />
+              </div>
+              {element.props?.animated !== false && (
+                <>
+                  <FieldGroup label="Speed" hint="Seconds for one cycle">
+                    <div className="flex items-center gap-2">
+                      <Slider
+                        value={[element.props?.speed as number || 30]}
+                        onValueChange={([v]) => handlePropsChange('speed', v)}
+                        min={10} max={60} step={5} className="flex-1"
+                      />
+                      <span className="text-xs text-builder-text w-10">{String(element.props?.speed || 30)}s</span>
+                    </div>
+                  </FieldGroup>
+                  <FieldGroup label="Direction">
+                    <Select 
+                      value={element.props?.direction as string || 'left'}
+                      onValueChange={(value) => handlePropsChange('direction', value)}
+                    >
+                      <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-background border-border">
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FieldGroup>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-builder-text-muted">Pause on Hover</span>
+                    <TogglePill value={element.props?.pauseOnHover !== false} onToggle={() => handlePropsChange('pauseOnHover', element.props?.pauseOnHover === false)} />
+                  </div>
+                </>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Grayscale</span>
+                <TogglePill value={element.props?.grayscale !== false} onToggle={() => handlePropsChange('grayscale', element.props?.grayscale === false)} />
+              </div>
+              <FieldGroup label="Logo Height">
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[element.props?.logoHeight as number || 40]}
+                    onValueChange={([v]) => handlePropsChange('logoHeight', v)}
+                    min={24} max={80} step={4} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-10">{String(element.props?.logoHeight || 40)}px</span>
+                </div>
+              </FieldGroup>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* ========== MAP EMBED SECTION ========== */}
+      {element.type === 'map-embed' && (
+        <>
+          <CollapsibleSection title="Map Settings" icon={<MapPin className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="Address">
+                <Textarea
+                  value={element.props?.address as string || ''}
+                  onChange={(e) => handlePropsChange('address', e.target.value)}
+                  className="builder-input min-h-[60px]"
+                  placeholder="123 Main St, City, Country"
+                />
+              </FieldGroup>
+              <FieldGroup label="Zoom Level">
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[element.props?.zoom as number || 15]}
+                    onValueChange={([v]) => handlePropsChange('zoom', v)}
+                    min={5} max={20} step={1} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-8">{String(element.props?.zoom || 15)}</span>
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Map Type">
+                <Select 
+                  value={element.props?.mapType as string || 'roadmap'}
+                  onValueChange={(value) => handlePropsChange('mapType', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="roadmap">Roadmap</SelectItem>
+                    <SelectItem value="satellite">Satellite</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectItem value="terrain">Terrain</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              <FieldGroup label="Height">
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[parseInt(element.styles?.height as string || '300', 10)]}
+                    onValueChange={([v]) => handleStyleChange('height', `${v}px`)}
+                    min={150} max={600} step={50} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-12">{parseInt(element.styles?.height as string || '300', 10)}px</span>
+                </div>
+              </FieldGroup>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* ========== HTML EMBED SECTION ========== */}
+      {element.type === 'html-embed' && (
+        <>
+          <CollapsibleSection title="HTML Settings" icon={<Code className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="HTML Code">
+                <Textarea
+                  value={element.props?.code as string || ''}
+                  onChange={(e) => handlePropsChange('code', e.target.value)}
+                  className="builder-input min-h-[120px] font-mono text-xs"
+                  placeholder="<div>Your HTML here...</div>"
+                />
+              </FieldGroup>
+              <FieldGroup label="Height">
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[parseInt(element.styles?.height as string || '300', 10)]}
+                    onValueChange={([v]) => handleStyleChange('height', `${v}px`)}
+                    min={100} max={600} step={50} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-12">{parseInt(element.styles?.height as string || '300', 10)}px</span>
+                </div>
+              </FieldGroup>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Allow Scripts</span>
+                <TogglePill value={element.props?.allowScripts as boolean || false} onToggle={() => handlePropsChange('allowScripts', !element.props?.allowScripts)} />
+              </div>
+              {element.props?.allowScripts && (
+                <p className="text-[10px] text-amber-500 flex items-center gap-1">
+                  <Info className="w-3 h-3" />
+                  Scripts are sandboxed for security
+                </p>
+              )}
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* ========== TRUSTPILOT SECTION ========== */}
+      {element.type === 'trustpilot' && (
+        <>
+          <CollapsibleSection title="Trustpilot Settings" icon={<Star className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="Rating" hint="1-5 stars">
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[element.props?.rating as number || 4.5]}
+                    onValueChange={([v]) => handlePropsChange('rating', v)}
+                    min={1} max={5} step={0.1} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-10">{(element.props?.rating as number || 4.5).toFixed(1)}</span>
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Review Count">
+                <Input
+                  type="number"
+                  value={element.props?.reviewCount as number || 1234}
+                  onChange={(e) => handlePropsChange('reviewCount', parseInt(e.target.value) || 0)}
+                  className="builder-input"
+                />
+              </FieldGroup>
+              <FieldGroup label="Business Name">
+                <Input
+                  value={element.props?.businessName as string || ''}
+                  onChange={(e) => handlePropsChange('businessName', e.target.value)}
+                  className="builder-input"
+                  placeholder="Your Company"
+                />
+              </FieldGroup>
+              <FieldGroup label="Layout">
+                <Select 
+                  value={element.props?.layout as string || 'horizontal'}
+                  onValueChange={(value) => handlePropsChange('layout', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="horizontal">Horizontal</SelectItem>
+                    <SelectItem value="vertical">Vertical</SelectItem>
+                    <SelectItem value="compact">Compact</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Logo</span>
+                <TogglePill value={element.props?.showLogo !== false} onToggle={() => handlePropsChange('showLogo', element.props?.showLogo === false)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Review Count</span>
+                <TogglePill value={element.props?.showReviewCount !== false} onToggle={() => handlePropsChange('showReviewCount', element.props?.showReviewCount === false)} />
+              </div>
+              <FieldGroup label="Link URL" hint="Optional Trustpilot page">
+                <Input
+                  value={element.props?.linkUrl as string || ''}
+                  onChange={(e) => handlePropsChange('linkUrl', e.target.value)}
+                  className="builder-input"
+                  placeholder="https://trustpilot.com/review/..."
+                />
+              </FieldGroup>
             </div>
           </CollapsibleSection>
         </>
