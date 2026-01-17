@@ -1654,47 +1654,38 @@ export const EditorShell: React.FC<EditorShellProps> = ({
 
         {/* Right Panel */}
         {!previewMode && !isMobile && rightPanelOpen && (
-          <div className="relative">
-            {/* Close button */}
-            <button
-              onClick={() => setRightPanelOpen(false)}
-              className="absolute top-2 left-2 z-10 p-1 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
-              title="Close right panel"
-            >
-              <PanelRightClose size={14} />
-            </button>
-            <RightPanel
-              page={page}
-              selection={selection}
-              onUpdateNode={handleUpdateNode}
-              onClearSelection={handleClearSelection}
-              onSelect={handleSelect}
-              onPublish={handlePublish}
-              onDuplicateElement={handleDuplicateElement}
-              onDeleteElement={handleDeleteElement}
-              onMoveElement={handleMoveElement}
-              onUpdateElement={handleUpdateElement}
-              onReplayAnimation={handleReplayAnimation}
-              currentDeviceMode={deviceMode}
-              onDeleteFrame={handleDeleteFrame}
-              onDuplicateFrame={handleDuplicateFrame}
-              onMoveFrame={(frameId, direction) => {
-                if (!activeStep) return;
-                const currentIndex = activeStep.frames.findIndex(f => f.id === frameId);
-                if (currentIndex === -1) return;
-                const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-                if (newIndex >= 0 && newIndex < activeStep.frames.length) {
-                  handleReorderFrames(currentIndex, newIndex);
-                }
-              }}
-              onAddFrameAt={handleAddFrameAt}
-              activeStep={activeStep}
-              selectedApplicationStepId={selectedApplicationStepId}
-              onSelectApplicationStep={handleSelectApplicationStepWithTracking}
-              selectedStepElement={selectedStepElement}
-              onClearStepElement={() => setSelectedStepElement(null)}
-            />
-          </div>
+          <RightPanel
+            page={page}
+            selection={selection}
+            onUpdateNode={handleUpdateNode}
+            onClearSelection={handleClearSelection}
+            onSelect={handleSelect}
+            onPublish={handlePublish}
+            onDuplicateElement={handleDuplicateElement}
+            onDeleteElement={handleDeleteElement}
+            onMoveElement={handleMoveElement}
+            onUpdateElement={handleUpdateElement}
+            onReplayAnimation={handleReplayAnimation}
+            currentDeviceMode={deviceMode}
+            onDeleteFrame={handleDeleteFrame}
+            onDuplicateFrame={handleDuplicateFrame}
+            onMoveFrame={(frameId, direction) => {
+              if (!activeStep) return;
+              const currentIndex = activeStep.frames.findIndex(f => f.id === frameId);
+              if (currentIndex === -1) return;
+              const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+              if (newIndex >= 0 && newIndex < activeStep.frames.length) {
+                handleReorderFrames(currentIndex, newIndex);
+              }
+            }}
+            onAddFrameAt={handleAddFrameAt}
+            activeStep={activeStep}
+            selectedApplicationStepId={selectedApplicationStepId}
+            onSelectApplicationStep={handleSelectApplicationStepWithTracking}
+            selectedStepElement={selectedStepElement}
+            onClearStepElement={() => setSelectedStepElement(null)}
+            onClosePanel={() => setRightPanelOpen(false)}
+          />
         )}
         
         {/* Right Panel Toggle Button - when collapsed */}
