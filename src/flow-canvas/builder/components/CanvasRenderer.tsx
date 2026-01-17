@@ -2286,20 +2286,27 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               className="text-center stat-item"
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              <div 
-                className="stat-number stat-number-animate text-5xl font-bold tracking-tight"
-                style={{ color: isDarkTheme ? '#ffffff' : '#111827' }}
-              >
-                {element.content || '0'}{statSuffix}
-              </div>
-              {statLabel && (
-                <div 
-                  className="text-xs uppercase tracking-wider mt-2 opacity-70"
-                  style={{ color: isDarkTheme ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}
-                >
-                  {statLabel}
-                </div>
-              )}
+              {(() => {
+                const numberColor = (element.props?.numberColor as string) || (isDarkTheme ? '#ffffff' : '#111827');
+                const suffixColor = (element.props?.suffixColor as string) || primaryColor;
+                const labelColor = (element.props?.labelColor as string) || (isDarkTheme ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)');
+                return (
+                  <>
+                    <div className="stat-number stat-number-animate text-5xl font-bold tracking-tight">
+                      <span style={{ color: numberColor }}>{element.content || '0'}</span>
+                      <span style={{ color: suffixColor }}>{statSuffix}</span>
+                    </div>
+                    {statLabel && (
+                      <div 
+                        className="text-xs uppercase tracking-wider mt-2"
+                        style={{ color: labelColor }}
+                      >
+                        {statLabel}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         );
@@ -2456,7 +2463,10 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               className={cn('premium-badge', badgeClasses[badgeVariant as keyof typeof badgeClasses] || badgeClasses.primary)}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              {badgeIcon && <Sparkles className="w-3 h-3" />}
+              {badgeIcon && (() => {
+                const IconComponent = getButtonIconComponent(badgeIcon);
+                return <IconComponent className="w-3 h-3" />;
+              })()}
               {element.content || 'BADGE'}
             </span>
           </div>
