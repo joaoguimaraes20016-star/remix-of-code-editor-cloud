@@ -15,6 +15,9 @@ import {
   Copy,
   ArrowUp,
   ArrowDown,
+  Phone,
+  Shield,
+  Globe,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -65,6 +68,37 @@ const STEP_TYPE_LABELS: Record<ApplicationStepType, string> = {
   'welcome': 'Welcome',
   'ending': 'Ending',
 };
+
+// ============ PHONE COUNTRY CODES ============
+
+const COUNTRY_CODES = [
+  { code: '+1', flag: '🇺🇸', name: 'United States' },
+  { code: '+1', flag: '🇨🇦', name: 'Canada' },
+  { code: '+44', flag: '🇬🇧', name: 'United Kingdom' },
+  { code: '+61', flag: '🇦🇺', name: 'Australia' },
+  { code: '+52', flag: '🇲🇽', name: 'Mexico' },
+  { code: '+55', flag: '🇧🇷', name: 'Brazil' },
+  { code: '+49', flag: '🇩🇪', name: 'Germany' },
+  { code: '+33', flag: '🇫🇷', name: 'France' },
+  { code: '+34', flag: '🇪🇸', name: 'Spain' },
+  { code: '+39', flag: '🇮🇹', name: 'Italy' },
+  { code: '+81', flag: '🇯🇵', name: 'Japan' },
+  { code: '+91', flag: '🇮🇳', name: 'India' },
+  { code: '+86', flag: '🇨🇳', name: 'China' },
+  { code: '+351', flag: '🇵🇹', name: 'Portugal' },
+  { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
+  { code: '+31', flag: '🇳🇱', name: 'Netherlands' },
+  { code: '+46', flag: '🇸🇪', name: 'Sweden' },
+  { code: '+47', flag: '🇳🇴', name: 'Norway' },
+  { code: '+45', flag: '🇩🇰', name: 'Denmark' },
+  { code: '+358', flag: '🇫🇮', name: 'Finland' },
+];
+
+const PHONE_FORMATS = [
+  { value: 'us', label: '(XXX) XXX-XXXX', example: '(555) 123-4567' },
+  { value: 'international', label: '+X XXX XXX XXXX', example: '+1 555 123 4567' },
+  { value: 'none', label: 'No formatting', example: '5551234567' },
+];
 
 // ============ MAIN COMPONENT ============
 
@@ -325,6 +359,144 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
           </CollapsibleSection>
         )}
 
+        {/* Phone Settings (for phone and full-identity steps) */}
+        {(step.type === 'phone' || (step.type === 'full-identity' && step.settings.collectPhone !== false)) && (
+          <CollapsibleSection title="Phone Settings" icon={<Phone className="w-4 h-4" />} defaultOpen={false}>
+            <div className="space-y-3">
+              <FieldGroup label="Default Country">
+                <Select
+                  value={step.settings.defaultCountryCode || '+1'}
+                  onValueChange={(value) => updateSettings('defaultCountryCode', value)}
+                >
+                  <SelectTrigger className="builder-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {COUNTRY_CODES.map((country) => (
+                      <SelectItem key={`${country.code}-${country.name}`} value={country.code}>
+                        <span className="flex items-center gap-2">
+                          <span>{country.flag}</span>
+                          <span>{country.name}</span>
+                          <span className="text-muted-foreground">{country.code}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+
+              <FieldGroup label="Phone Format">
+                <Select
+                  value={step.settings.phoneFormat || 'us'}
+                  onValueChange={(value) => updateSettings('phoneFormat', value)}
+                >
+                  <SelectTrigger className="builder-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PHONE_FORMATS.map((format) => (
+                      <SelectItem key={format.value} value={format.value}>
+                        <span className="flex flex-col">
+                          <span>{format.label}</span>
+                          <span className="text-[10px] text-muted-foreground">{format.example}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-builder-text-muted">Allow Country Selection</span>
+                  <p className="text-[10px] text-builder-text-dim">Let users choose their country</p>
+                </div>
+                <Switch
+                  checked={step.settings.allowCountrySelection !== false}
+                  onCheckedChange={(checked) => updateSettings('allowCountrySelection', checked)}
+                />
+              </div>
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Validation Settings */}
+        <CollapsibleSection title="Validation" icon={<Shield className="w-4 h-4" />} defaultOpen={false}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Required</span>
+              <Switch
+                checked={step.validation?.required !== false}
+                onCheckedChange={(checked) => onUpdate({
+                  validation: { ...step.validation, required: checked }
+                })}
+              />
+            </div>
+
+            {step.type === 'open-ended' && (
+              <>
+                <FieldGroup label="Min Characters">
+                  <Input
+                    type="number"
+                    value={step.validation?.minLength || ''}
+                    onChange={(e) => onUpdate({
+                      validation: { 
+                        ...step.validation, 
+                        minLength: e.target.value ? parseInt(e.target.value) : undefined 
+                      }
+                    })}
+                    placeholder="No minimum"
+                    className="builder-input"
+                  />
+                </FieldGroup>
+                <FieldGroup label="Max Characters">
+                  <Input
+                    type="number"
+                    value={step.validation?.maxLength || ''}
+                    onChange={(e) => onUpdate({
+                      validation: { 
+                        ...step.validation, 
+                        maxLength: e.target.value ? parseInt(e.target.value) : undefined 
+                      }
+                    })}
+                    placeholder="No maximum"
+                    className="builder-input"
+                  />
+                </FieldGroup>
+              </>
+            )}
+
+            {step.type === 'email' && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-builder-text-muted">Block Free Emails</span>
+                  <p className="text-[10px] text-builder-text-dim">Gmail, Yahoo, etc.</p>
+                </div>
+                <Switch
+                  checked={step.validation?.blockFreeEmails || false}
+                  onCheckedChange={(checked) => onUpdate({
+                    validation: { ...step.validation, blockFreeEmails: checked }
+                  })}
+                />
+              </div>
+            )}
+
+            <FieldGroup label="Error Message">
+              <Input
+                value={step.validation?.customMessage || ''}
+                onChange={(e) => onUpdate({
+                  validation: { ...step.validation, customMessage: e.target.value }
+                })}
+                placeholder="Please fill out this field"
+                className="builder-input"
+              />
+              <p className="text-[10px] text-builder-text-dim mt-1">
+                Shown when validation fails
+              </p>
+            </FieldGroup>
+          </div>
+        </CollapsibleSection>
+
         {/* Style Section */}
         <CollapsibleSection title="Style" icon={<AlignCenter className="w-4 h-4" />} defaultOpen={false}>
           <div className="space-y-4">
@@ -447,16 +619,6 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
                 Used to identify this answer in submissions
               </p>
             </FieldGroup>
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Required</span>
-              <Switch
-                checked={step.validation?.required !== false}
-                onCheckedChange={(checked) => onUpdate({
-                  validation: { ...step.validation, required: checked }
-                })}
-              />
-            </div>
           </div>
         </CollapsibleSection>
       </div>
