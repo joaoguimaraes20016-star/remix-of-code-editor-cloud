@@ -1152,15 +1152,15 @@
   animation: count-up 0.6s ease-out forwards;
 }
 
-/* Avatar group overlapping */
+/* Avatar group overlapping - supports alignment via inline justifyContent */
 .avatar-group {
   display: flex;
   flex-direction: row-reverse;
-  justify-content: flex-end;
+  /* justifyContent set via inline style for alignment control */
 }
 
 .avatar-group > * {
-  margin-left: -12px;
+  margin-left: var(--avatar-overlap, -12px);
   border: 2px solid var(--avatar-border, #0a0a0f);
   border-radius: 9999px;
 }
@@ -1168,6 +1168,10 @@
 .avatar-group > *:last-child {
   margin-left: 0;
 }
+
+/* Extra sizes for avatar group */
+.w-18 { width: 4.5rem; }
+.h-18 { height: 4.5rem; }
 
 /* Premium background patterns */
 .bg-pattern-grid {
