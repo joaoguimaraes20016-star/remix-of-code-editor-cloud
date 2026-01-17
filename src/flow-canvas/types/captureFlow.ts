@@ -115,7 +115,7 @@ export interface CaptureNode {
 export type CaptureFlowRenderMode = 'inline' | 'modal' | 'fullpage';
 
 export interface CaptureFlowBackground {
-  type: 'solid' | 'gradient' | 'image';
+  type: 'solid' | 'gradient' | 'image' | 'video';
   color?: string;
   gradient?: {
     type: 'linear' | 'radial';
@@ -123,6 +123,10 @@ export interface CaptureFlowBackground {
     stops: Array<{ color: string; position: number }>;
   };
   imageUrl?: string;
+  videoUrl?: string;
+  videoAutoplay?: boolean;
+  videoLoop?: boolean;
+  videoMuted?: boolean;
 }
 
 export interface CaptureFlowAppearance {
