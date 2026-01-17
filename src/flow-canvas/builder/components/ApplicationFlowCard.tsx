@@ -199,13 +199,43 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
   };
   
   // Input styling (passed to individual inputs, not container)
-  const flowTextColor = settings.textColor || '#000000';
   const flowInputBg = settings.inputBackground || '#ffffff';
   const flowInputBorder = settings.inputBorderColor || '#e5e7eb';
   
-  // Helper to get step-level element colors (falls back to flow-level)
+  // Determine if background is dark for theme-aware text colors
+  const isDarkBackground = React.useMemo(() => {
+    const bg = settings.background;
+    if (!bg) return false;
+    
+    // Handle different background types
+    let colorHex: string | undefined;
+    if (typeof bg === 'string') {
+      colorHex = bg;
+    } else if (bg.type === 'solid' && bg.color) {
+      colorHex = bg.color;
+    }
+    
+    if (!colorHex || !colorHex.startsWith('#') || colorHex.length !== 7) return false;
+    
+    // Parse hex color and calculate relative luminance
+    const hex = colorHex.replace('#', '');
+    const r = parseInt(hex.slice(0, 2), 16) / 255;
+    const g = parseInt(hex.slice(2, 4), 16) / 255;
+    const b = parseInt(hex.slice(4, 6), 16) / 255;
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return luminance < 0.5;
+  }, [settings.background]);
+  
+  // Theme-aware default text color
+  const flowTextColor = settings.textColor || (isDarkBackground ? '#F9FAFB' : '#111827');
+  
+  // Helper to get step-level element colors (falls back to flow-level with theme awareness)
   const getElementColor = (stepSettings: any, key: 'titleColor' | 'descriptionColor') => {
-    return stepSettings[key] || flowTextColor;
+    if (stepSettings[key]) return stepSettings[key];
+    // Use theme-aware defaults based on background
+    if (key === 'titleColor') return flowTextColor;
+    if (key === 'descriptionColor') return isDarkBackground ? '#D1D5DB' : '#6B7280';
+    return flowTextColor;
   };
   
   // Helper to get option style settings from step - enhanced with checkbox indicator styling

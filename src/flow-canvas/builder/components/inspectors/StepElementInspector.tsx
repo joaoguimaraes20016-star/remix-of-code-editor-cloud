@@ -231,17 +231,17 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           </div>
         </FieldGroup>
 
-        <FieldGroup label="Color">
+        <FieldGroup label="Color" hint="Auto-adapts to flow background if unset">
           <ColorPickerPopover
-            color={stepSettings.titleColor || '#000000'}
+            color={stepSettings.titleColor || '#111827'}
             onChange={(color) => updateStepSetting('titleColor', color)}
           >
             <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
               <div 
                 className="w-5 h-5 rounded border border-border"
-                style={{ backgroundColor: stepSettings.titleColor || '#000000' }}
+                style={{ backgroundColor: stepSettings.titleColor || '#111827' }}
               />
-              <span className="text-xs text-foreground font-mono">{stepSettings.titleColor || '#000000'}</span>
+              <span className="text-xs text-foreground font-mono">{stepSettings.titleColor || 'Auto'}</span>
             </button>
           </ColorPickerPopover>
         </FieldGroup>
@@ -279,17 +279,17 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
             </SelectContent>
           </Select>
         </FieldGroup>
-        <FieldGroup label="Color">
+        <FieldGroup label="Color" hint="Auto-adapts to flow background if unset">
           <ColorPickerPopover
-            color={stepSettings.descriptionColor || '#666666'}
+            color={stepSettings.descriptionColor || '#6B7280'}
             onChange={(color) => updateStepSetting('descriptionColor', color)}
           >
             <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
               <div 
                 className="w-5 h-5 rounded border border-border"
-                style={{ backgroundColor: stepSettings.descriptionColor || '#666666' }}
+                style={{ backgroundColor: stepSettings.descriptionColor || '#6B7280' }}
               />
-              <span className="text-xs text-foreground font-mono">{stepSettings.descriptionColor || '#666666'}</span>
+              <span className="text-xs text-foreground font-mono">{stepSettings.descriptionColor || 'Auto'}</span>
             </button>
           </ColorPickerPopover>
         </FieldGroup>
