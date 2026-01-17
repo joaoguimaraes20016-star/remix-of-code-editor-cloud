@@ -56,6 +56,7 @@ const unifiedButtonVariants = cva(
         md: 'shadow-md',
         lg: 'shadow-lg',
         xl: 'shadow-xl',
+        glow: '', // Handled via customShadow prop
       },
     },
     defaultVariants: {

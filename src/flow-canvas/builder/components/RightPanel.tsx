@@ -760,7 +760,7 @@ const ElementInspector: React.FC<{
               <ButtonActionSelector
                 action={buttonAction as ActionSelectorAction | undefined}
                 onChange={(action) => handlePropsChange('buttonAction', action)}
-                availableSteps={[]} // TODO: Pass available steps from flow context if needed
+                availableSteps={steps}
                 stepType={undefined} // Not in a flow step, show all actions
               />
             </div>
@@ -1488,7 +1488,7 @@ const ElementInspector: React.FC<{
                 onValueChange={(value) => handleStyleChange('height', value)}
               >
                 <SelectTrigger className="builder-input w-20"><SelectValue placeholder="1px" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border-border">
                   <SelectItem value="1px">1px</SelectItem>
                   <SelectItem value="2px">2px</SelectItem>
                   <SelectItem value="3px">3px</SelectItem>
@@ -1511,7 +1511,7 @@ const ElementInspector: React.FC<{
                 onValueChange={(value) => handleStyleChange('height', value)}
               >
                 <SelectTrigger className="builder-input w-24"><SelectValue placeholder="48px" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border-border">
                   <SelectItem value="16px">Small (16px)</SelectItem>
                   <SelectItem value="24px">Medium (24px)</SelectItem>
                   <SelectItem value="32px">32px</SelectItem>
@@ -1537,7 +1537,7 @@ const ElementInspector: React.FC<{
                   onValueChange={(value) => onUpdate({ content: value })}
                 >
                   <SelectTrigger className="builder-input w-28"><SelectValue placeholder="Star" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border-border">
                     <SelectItem value="star">Star</SelectItem>
                     <SelectItem value="check">Check</SelectItem>
                     <SelectItem value="arrow-right">Arrow Right</SelectItem>
@@ -3342,19 +3342,53 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   const handleBreadcrumbSelect = useCallback((type: string, id: string) => {
     if (type === 'page') {
       onClearSelection();
-    } else if (type === 'section') {
-      // Find the frame and select it
+    } else if (type === 'section' || type === 'frame') {
+      // Select the frame
       if (activeStep) {
-        const frame = activeStep.frames.find(f => f.id === id);
-        if (frame) {
-          onUpdateNode(['step', activeStep.id, 'frame', id], {});
-          // This needs to trigger selection - we need a callback for this
-          // For now, we'll just clear and let parent handle
+        onSelect?.({ 
+          id, 
+          type: 'frame', 
+          path: ['step', activeStep.id, 'frame', id] 
+        });
+      }
+    } else if (type === 'block') {
+      // Find the block's parent frame and select the block
+      if (activeStep) {
+        for (const frame of activeStep.frames) {
+          for (const stack of frame.stacks) {
+            const blockIndex = stack.blocks.findIndex(b => b.id === id);
+            if (blockIndex !== -1) {
+              onSelect?.({ 
+                id, 
+                type: 'block', 
+                path: ['step', activeStep.id, 'frame', frame.id, 'block', id] 
+              });
+              return;
+            }
+          }
+        }
+      }
+    } else if (type === 'element') {
+      // Find the element's parent block and frame
+      if (activeStep) {
+        for (const frame of activeStep.frames) {
+          for (const stack of frame.stacks) {
+            for (const block of stack.blocks) {
+              const elementIndex = block.elements.findIndex(e => e.id === id);
+              if (elementIndex !== -1) {
+                onSelect?.({ 
+                  id, 
+                  type: 'element', 
+                  path: ['step', activeStep.id, 'frame', frame.id, 'block', block.id, 'element', id] 
+                });
+                return;
+              }
+            }
+          }
         }
       }
     }
-    // Block and element selections would need additional callback props
-  }, [onClearSelection, activeStep, onUpdateNode]);
+  }, [onClearSelection, activeStep, onSelect]);
 
   // Use direct element update for elements, path-based for others
   // For page updates (no selection.id), always use empty path to target the page root
