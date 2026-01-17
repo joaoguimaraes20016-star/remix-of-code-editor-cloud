@@ -3775,10 +3775,32 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
     ? step.background
     : pageSettings?.page_background;
 
+  // Phase 14: Improved dark theme detection using luminance
   const isDarkTheme = (() => {
-    if (!backgroundSource || backgroundSource.type !== 'solid') return false;
-    const c = (backgroundSource.color || '').toLowerCase();
-    return c === '#111827' || c === '#0f172a' || c === '#1f2937';
+    // Check explicit theme setting first
+    if (pageSettings?.theme === 'dark') return true;
+    if (pageSettings?.theme === 'light') return false;
+    
+    // Fall back to luminance-based detection
+    if (!backgroundSource) return false;
+    
+    let bgColor: string | undefined;
+    if (backgroundSource.type === 'solid') {
+      bgColor = backgroundSource.color;
+    } else if (backgroundSource.type === 'gradient' && backgroundSource.gradient?.stops?.[0]) {
+      bgColor = backgroundSource.gradient.stops[0].color;
+    }
+    
+    if (!bgColor) return false;
+    
+    // Calculate relative luminance
+    const hex = bgColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    
+    return luminance < 0.5;
   })();
 
   const primaryColor = pageSettings?.primary_color || '#8B5CF6';
