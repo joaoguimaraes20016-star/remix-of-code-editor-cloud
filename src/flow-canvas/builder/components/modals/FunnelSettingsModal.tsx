@@ -225,13 +225,6 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
         );
 
       case 'colors':
-        // Determine current theme from page_background
-        const currentBgColor = (settings as any).page_background?.color || '#ffffff';
-        const isDarkBackground = currentBgColor.toLowerCase() === '#111827' || 
-                                  currentBgColor.toLowerCase() === '#0f172a' ||
-                                  currentBgColor.toLowerCase() === '#1f2937';
-        const isDarkThemeSelected = settings.theme === 'dark' || isDarkBackground;
-        
         return (
           <div className="space-y-6">
             <div>
@@ -240,45 +233,6 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
             </div>
             
             <div className="space-y-6">
-              {/* Dark Theme */}
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-builder-text">Dark Theme</Label>
-                  <p className="text-xs text-builder-text-muted mt-1">
-                    Enable a dark background for your funnel
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    onUpdateSettings('page_background', { type: 'solid', color: '#111827' });
-                    onUpdateSettings('theme', 'dark');
-                  }}
-                  className={cn(
-                    'w-full flex items-center justify-between gap-3 p-4 rounded-xl border-2 transition-all',
-                    isDarkThemeSelected
-                      ? 'border-builder-accent bg-builder-accent/10'
-                      : 'border-builder-border hover:border-builder-accent/50'
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-700 flex items-center justify-center">
-                      <Moon className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div className="text-left">
-                      <div className="text-sm font-medium text-builder-text">Enable dark theme</div>
-                      <div className="text-xs text-builder-text-muted">#111827 background</div>
-                    </div>
-                  </div>
-
-                  {isDarkThemeSelected ? (
-                    <Check className="w-5 h-5 text-builder-accent" />
-                  ) : (
-                    <span className="text-xs text-builder-text-muted">Off</span>
-                  )}
-                </button>
-              </div>
-
               {/* Button & Accent Color */}
               <div className="space-y-3">
                 <div>
