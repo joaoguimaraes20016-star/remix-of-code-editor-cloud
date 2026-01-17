@@ -1642,6 +1642,9 @@ interface CollapsibleCategoryProps {
   onAddBlock: (template: BlockTemplate, isSection: boolean, categoryId?: string) => void;
   isSection?: boolean;
   activeApplicationFlowBlockId?: string | null;
+  viewMode?: 'list' | 'grid';
+  favorites?: string[];
+  onToggleFavorite?: (type: string) => void;
 }
 
 const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({ 
@@ -1649,6 +1652,9 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
   onAddBlock,
   isSection = false,
   activeApplicationFlowBlockId,
+  viewMode = 'list',
+  favorites = [],
+  onToggleFavorite,
 }) => {
   const [isOpen, setIsOpen] = useState(category.defaultOpen ?? false);
   const blocks = 'blocks' in category ? category.blocks : category.sections;
@@ -1678,29 +1684,69 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="pl-6 pr-1 pb-2 pt-1 space-y-2">
-          {hint && (
+        <div className={cn(
+          "pl-2 pr-1 pb-2 pt-1",
+          viewMode === 'grid' && isSection ? "grid grid-cols-2 gap-2" : "space-y-2 pl-6"
+        )}>
+          {hint && viewMode !== 'grid' && (
             <p className="text-[10px] text-builder-accent mb-2">{hint}</p>
           )}
           {blocks.map((block, idx) => (
-            <button
-              key={`${block.label}-${idx}`}
-              onClick={() => onAddBlock(block, isSection, category.id)}
-              className="w-full text-left p-3 rounded-xl bg-builder-bg border border-builder-border-subtle hover:border-builder-accent/50 hover:bg-builder-surface-hover transition-all group"
-            >
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-builder-surface-hover text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
-                  {block.icon}
+            viewMode === 'grid' && isSection ? (
+              // Grid View with Thumbnails
+              <button
+                key={`${block.label}-${idx}`}
+                onClick={() => onAddBlock(block, isSection, category.id)}
+                className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-builder-border hover:border-builder-accent transition-all group"
+              >
+                <SectionThumbnail templateType={block.type} className="w-full h-full" />
+                <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                  <span className="text-[10px] text-white font-medium line-clamp-1">{block.label}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-builder-text">{block.label}</span>
-                    <ChevronRight className="w-4 h-4 text-builder-text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
+                {onToggleFavorite && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(block.type); }}
+                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-white/80 hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <Star className={cn(
+                      "w-3 h-3",
+                      favorites.includes(block.type) ? "fill-yellow-400 text-yellow-400" : "text-gray-500"
+                    )} />
+                  </button>
+                )}
+              </button>
+            ) : (
+              // List View
+              <button
+                key={`${block.label}-${idx}`}
+                onClick={() => onAddBlock(block, isSection, category.id)}
+                className="w-full text-left p-3 rounded-xl bg-builder-bg border border-builder-border-subtle hover:border-builder-accent/50 hover:bg-builder-surface-hover transition-all group relative"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-builder-surface-hover text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
+                    {block.icon}
                   </div>
-                  <p className="text-[10px] text-builder-text-dim mt-0.5">{block.description}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-builder-text">{block.label}</span>
+                      <ChevronRight className="w-4 h-4 text-builder-text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <p className="text-[10px] text-builder-text-dim mt-0.5">{block.description}</p>
+                  </div>
                 </div>
-              </div>
-            </button>
+                {onToggleFavorite && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(block.type); }}
+                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-builder-surface-active transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <Star className={cn(
+                      "w-3 h-3",
+                      favorites.includes(block.type) ? "fill-yellow-400 text-yellow-400" : "text-builder-text-muted"
+                    )} />
+                  </button>
+                )}
+              </button>
+            )
           ))}
         </div>
       </CollapsibleContent>
@@ -2079,6 +2125,65 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
         ) : activeTab === 'blocks' ? (
           // Blocks Tab Content - Collapsible Categories
           <div className="p-2 pb-20 space-y-1">
+            {/* Favorites Section */}
+            {favorites.length > 0 && (
+              <div className="mb-3 p-2 bg-yellow-500/5 border border-yellow-500/20 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                  <span className="text-xs font-medium text-builder-text">Favorites</span>
+                </div>
+                <div className="space-y-1.5">
+                  {allTemplates
+                    .filter(t => favorites.includes(t.type) && !t.isSection)
+                    .slice(0, 5)
+                    .map((template, idx) => (
+                      <button
+                        key={`fav-${template.type}-${idx}`}
+                        onClick={() => handleAddBlock(template, false, template.categoryId)}
+                        className="w-full flex items-center gap-2 p-2 rounded-lg bg-builder-bg hover:bg-builder-surface-hover border border-builder-border-subtle hover:border-builder-accent/50 transition-all text-left"
+                      >
+                        <div className="p-1.5 rounded bg-builder-surface-hover text-builder-text-muted">
+                          {template.icon}
+                        </div>
+                        <span className="text-xs font-medium text-builder-text flex-1">{template.label}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(template.type); }}
+                          className="p-1 rounded hover:bg-builder-surface-active"
+                        >
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                        </button>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Recent Blocks Section */}
+            {recentBlocks.length > 0 && (
+              <div className="mb-3 p-2 bg-builder-surface-hover/50 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-3.5 h-3.5 text-builder-text-muted" />
+                  <span className="text-xs font-medium text-builder-text">Recently Used</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {recentBlocks
+                    .map(type => allTemplates.find(t => t.type === type && !t.isSection))
+                    .filter(Boolean)
+                    .slice(0, 6)
+                    .map((template, idx) => template && (
+                      <button
+                        key={`recent-${template.type}-${idx}`}
+                        onClick={() => handleAddBlock(template, false, template.categoryId)}
+                        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-builder-bg hover:bg-builder-surface-hover border border-builder-border-subtle hover:border-builder-accent/50 transition-all"
+                      >
+                        <span className="text-builder-text-muted">{template.icon}</span>
+                        <span className="text-[10px] font-medium text-builder-text">{template.label}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+            
             {blockCategories.map((category) => (
               <CollapsibleCategory
                 key={category.id}
@@ -2086,12 +2191,85 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 onAddBlock={handleAddBlock}
                 isSection={false}
                 activeApplicationFlowBlockId={activeApplicationFlowBlockId}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
               />
             ))}
           </div>
         ) : (
-          // Sections Tab Content - Collapsible Categories
+          // Sections Tab Content - Collapsible Categories with View Toggle
           <div className="p-2 pb-20 space-y-1">
+            {/* View Mode Toggle */}
+            <div className="flex items-center justify-between px-1 py-2 mb-2">
+              <span className="text-xs text-builder-text-muted">View</span>
+              <div className="flex items-center gap-1 bg-builder-surface-hover rounded-lg p-0.5">
+                <button 
+                  onClick={() => setSectionViewMode('grid')}
+                  className={cn(
+                    "p-1.5 rounded transition-colors",
+                    sectionViewMode === 'grid' 
+                      ? "bg-builder-accent text-white" 
+                      : "text-builder-text-muted hover:text-builder-text"
+                  )}
+                  title="Grid view"
+                >
+                  <LayoutGrid size={14} />
+                </button>
+                <button 
+                  onClick={() => setSectionViewMode('list')}
+                  className={cn(
+                    "p-1.5 rounded transition-colors",
+                    sectionViewMode === 'list' 
+                      ? "bg-builder-accent text-white" 
+                      : "text-builder-text-muted hover:text-builder-text"
+                  )}
+                  title="List view"
+                >
+                  <List size={14} />
+                </button>
+              </div>
+            </div>
+            
+            {/* Section Favorites */}
+            {favorites.some(f => allTemplates.find(t => t.type === f && t.isSection)) && (
+              <div className="mb-3 p-2 bg-yellow-500/5 border border-yellow-500/20 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                  <span className="text-xs font-medium text-builder-text">Favorite Sections</span>
+                </div>
+                <div className={sectionViewMode === 'grid' ? "grid grid-cols-2 gap-2" : "space-y-1.5"}>
+                  {allTemplates
+                    .filter(t => favorites.includes(t.type) && t.isSection)
+                    .slice(0, 4)
+                    .map((template, idx) => (
+                      sectionViewMode === 'grid' ? (
+                        <button
+                          key={`fav-section-${template.type}-${idx}`}
+                          onClick={() => handleAddBlock(template, true, template.categoryId)}
+                          className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-yellow-500/30 hover:border-builder-accent transition-all group"
+                        >
+                          <SectionThumbnail templateType={template.type} className="w-full h-full" />
+                          <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                            <span className="text-[10px] text-white font-medium line-clamp-1">{template.label}</span>
+                          </div>
+                        </button>
+                      ) : (
+                        <button
+                          key={`fav-section-${template.type}-${idx}`}
+                          onClick={() => handleAddBlock(template, true, template.categoryId)}
+                          className="w-full flex items-center gap-2 p-2 rounded-lg bg-builder-bg hover:bg-builder-surface-hover border border-builder-border-subtle hover:border-builder-accent/50 transition-all text-left"
+                        >
+                          <div className="p-1.5 rounded bg-builder-surface-hover text-builder-text-muted">
+                            {template.icon}
+                          </div>
+                          <span className="text-xs font-medium text-builder-text flex-1">{template.label}</span>
+                        </button>
+                      )
+                    ))}
+                </div>
+              </div>
+            )}
+            
             {sectionCategories.map((category) => (
               <CollapsibleCategory
                 key={category.id}
@@ -2099,6 +2277,9 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
                 onAddBlock={handleAddBlock}
                 isSection={true}
                 activeApplicationFlowBlockId={activeApplicationFlowBlockId}
+                viewMode={sectionViewMode}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
               />
             ))}
           </div>
