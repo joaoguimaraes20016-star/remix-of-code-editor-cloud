@@ -13,6 +13,9 @@ interface ElementActionMenuProps {
   onMoveDown?: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
+  onAddAbove?: () => void;
+  onAddBelow?: () => void;
+  onSelectParent?: () => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   className?: string;
@@ -24,6 +27,9 @@ export function ElementActionMenu({
   onMoveDown,
   onDuplicate,
   onDelete,
+  onAddAbove,
+  onAddBelow,
+  onSelectParent,
   canMoveUp = true,
   canMoveDown = true,
   className,
@@ -37,24 +43,28 @@ export function ElementActionMenu({
       onClick={(e) => e.stopPropagation()}
     >
       {/* Add element above */}
-      <button
-        type="button"
-        className="element-action-btn"
-        onClick={(e) => { e.stopPropagation(); /* TODO: add above */ }}
-        title="Add above"
-      >
-        <Plus size={16} />
-      </button>
+      {onAddAbove && (
+        <button
+          type="button"
+          className="element-action-btn"
+          onClick={(e) => { e.stopPropagation(); onAddAbove(); }}
+          title="Add above"
+        >
+          <Plus size={16} />
+        </button>
+      )}
 
       {/* Add element below */}
-      <button
-        type="button"
-        className="element-action-btn"
-        onClick={(e) => { e.stopPropagation(); /* TODO: add below */ }}
-        title="Add below"
-      >
-        <Minus size={16} />
-      </button>
+      {onAddBelow && (
+        <button
+          type="button"
+          className="element-action-btn"
+          onClick={(e) => { e.stopPropagation(); onAddBelow(); }}
+          title="Add below"
+        >
+          <Minus size={16} />
+        </button>
+      )}
       
       {onDuplicate && (
         <button
@@ -68,14 +78,16 @@ export function ElementActionMenu({
       )}
 
       {/* Select parent */}
-      <button
-        type="button"
-        className="element-action-btn"
-        onClick={(e) => { e.stopPropagation(); /* TODO: select parent */ }}
-        title="Select parent"
-      >
-        <Square size={16} />
-      </button>
+      {onSelectParent && (
+        <button
+          type="button"
+          className="element-action-btn"
+          onClick={(e) => { e.stopPropagation(); onSelectParent(); }}
+          title="Select parent"
+        >
+          <Square size={16} />
+        </button>
+      )}
       
       {onDelete && (
         <button

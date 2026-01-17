@@ -527,8 +527,8 @@ const ElementInspector: React.FC<{
   const buttonAction = element.props?.buttonAction as ButtonAction | null;
   const videoSettings = element.props?.videoSettings as VideoSettings | null;
 
-  // Check if states section should show - ONLY for buttons now
-  const showStates = element.type === 'button';
+  // Check if states section should show - extended to all interactive elements
+  const showStates = ['button', 'text', 'heading', 'image', 'container', 'icon-text', 'gradient-text'].includes(element.type);
   const showAnimation = (sectionsToShow as readonly string[]).includes('animation');
 
   // Premium element types get specialized inspector
@@ -786,10 +786,10 @@ const ElementInspector: React.FC<{
         </div>
       )}
 
-      {/* State Tabs - ONLY for buttons */}
+      {/* State Tabs - for all interactive elements */}
       {showStates && (
         <div className="px-4 py-2 border-b border-builder-border">
-          <p className="text-[10px] text-builder-text-dim mb-2">Style button for different interaction states:</p>
+          <p className="text-[10px] text-builder-text-dim mb-2">Style for different interaction states:</p>
           <div className="flex gap-1">
             {(['base', 'hover', 'active'] as const).map((state) => {
               const hasStylesForState = state !== 'base' && 
@@ -1846,20 +1846,18 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
   // Previously, useState initialized once and never updated when switching steps, causing
   // the inspector to show stale background type from the previous step.
   const currentBgType = step.background?.type || 'solid';
-  // Filter out 'pattern' since UI doesn't support it yet, and include 'video'
-  const normalizedBgType = currentBgType === 'pattern' ? 'solid' : currentBgType;
-  const [bgType, setBgType] = useState<'solid' | 'gradient' | 'image' | 'video'>(normalizedBgType as 'solid' | 'gradient' | 'image' | 'video');
+  // Now support all background types including 'pattern'
+  const [bgType, setBgType] = useState<'solid' | 'gradient' | 'image' | 'video' | 'pattern'>(currentBgType as 'solid' | 'gradient' | 'image' | 'video' | 'pattern');
   
   // CRITICAL: Reset local bgType state when the step changes.
   // Without this, switching to a new step would keep the old step's bgType in state,
   // causing visual mismatch and potential data corruption when editing.
   useEffect(() => {
     const type = step.background?.type || 'solid';
-    const normalized = type === 'pattern' ? 'solid' : type;
-    setBgType(normalized as 'solid' | 'gradient' | 'image' | 'video');
+    setBgType(type as 'solid' | 'gradient' | 'image' | 'video' | 'pattern');
   }, [step.id, step.background?.type]);
   
-  const handleBackgroundTypeChange = (newType: 'solid' | 'gradient' | 'image' | 'video') => {
+  const handleBackgroundTypeChange = (newType: 'solid' | 'gradient' | 'image' | 'video' | 'pattern') => {
     setBgType(newType);
     const updates: Partial<Step> = {
       background: {
@@ -1879,6 +1877,15 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
           videoLoop: true,
           videoMuted: true,
           videoOpacity: 100
+        }),
+        ...(newType === 'pattern' && {
+          color: step.background?.color || '#0f172a',
+          pattern: {
+            type: step.background?.pattern?.type || 'dots',
+            color: step.background?.pattern?.color || '#3b82f6',
+            size: step.background?.pattern?.size || 20,
+            opacity: step.background?.pattern?.opacity || 20,
+          },
         }),
       },
     };
@@ -2016,6 +2023,12 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
             >
               Video
             </button>
+            <button 
+              onClick={() => handleBackgroundTypeChange('pattern')}
+              className={cn('toggle-pill-option flex-1 text-center', bgType === 'pattern' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
+            >
+              Pattern
+            </button>
           </div>
 
           {bgType === 'solid' && (
@@ -2109,6 +2122,105 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
                     background: { ...step.background, type: 'video', videoLoop: !(step.background?.videoLoop ?? true) } 
                   })}
                 />
+              </div>
+            </div>
+          )}
+
+          {bgType === 'pattern' && (
+            <div className="space-y-3">
+              <FieldGroup label="Pattern Type">
+                <Select 
+                  value={step.background?.pattern?.type || 'dots'}
+                  onValueChange={(value) => onUpdate({ 
+                    background: { 
+                      ...step.background, 
+                      type: 'pattern', 
+                      pattern: { ...step.background?.pattern, type: value as 'dots' | 'grid' | 'lines' | 'noise', color: step.background?.pattern?.color || '#3b82f6', opacity: step.background?.pattern?.opacity || 20 } 
+                    } 
+                  })}
+                >
+                  <SelectTrigger className="builder-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="dots">Dots</SelectItem>
+                    <SelectItem value="grid">Grid</SelectItem>
+                    <SelectItem value="lines">Diagonal Lines</SelectItem>
+                    <SelectItem value="noise">Cross-Hatch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Pattern Color</span>
+                <ColorPickerPopover
+                  color={step.background?.pattern?.color || '#3b82f6'}
+                  onChange={(color) => onUpdate({ 
+                    background: { 
+                      ...step.background, 
+                      type: 'pattern', 
+                      pattern: { ...step.background?.pattern, type: step.background?.pattern?.type || 'dots', color, opacity: step.background?.pattern?.opacity || 20 } 
+                    } 
+                  })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div 
+                      className="w-6 h-6 rounded-md border border-builder-border" 
+                      style={{ backgroundColor: step.background?.pattern?.color || '#3b82f6' }}
+                    />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Base Color</span>
+                <ColorPickerPopover
+                  color={step.background?.color || '#0f172a'}
+                  onChange={(color) => onUpdate({ 
+                    background: { ...step.background, type: 'pattern', color } 
+                  })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div 
+                      className="w-6 h-6 rounded-md border border-builder-border" 
+                      style={{ backgroundColor: step.background?.color || '#0f172a' }}
+                    />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Pattern Size</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[step.background?.pattern?.size ?? 20]}
+                    onValueChange={([v]) => onUpdate({ 
+                      background: { 
+                        ...step.background, 
+                        type: 'pattern', 
+                        pattern: { ...step.background?.pattern, type: step.background?.pattern?.type || 'dots', color: step.background?.pattern?.color || '#3b82f6', opacity: step.background?.pattern?.opacity || 20, size: v } 
+                      } 
+                    })}
+                    min={8} max={60} step={4} className="w-20"
+                  />
+                  <span className="text-xs text-builder-text w-8">{step.background?.pattern?.size ?? 20}px</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Opacity</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[step.background?.pattern?.opacity ?? 20]}
+                    onValueChange={([v]) => onUpdate({ 
+                      background: { 
+                        ...step.background, 
+                        type: 'pattern', 
+                        pattern: { ...step.background?.pattern, type: step.background?.pattern?.type || 'dots', color: step.background?.pattern?.color || '#3b82f6', size: step.background?.pattern?.size || 20, opacity: v } 
+                      } 
+                    })}
+                    min={5} max={50} step={5} className="w-20"
+                  />
+                  <span className="text-xs text-builder-text w-8">{step.background?.pattern?.opacity ?? 20}%</span>
+                </div>
               </div>
             </div>
           )}
