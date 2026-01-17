@@ -24,9 +24,20 @@
 // ─────────────────────────────────────────────────────────
 export { 
   UnifiedButton, 
+  unifiedButtonVariants,
   SHADOW_PRESETS, 
   getShadowValue,
-  type UnifiedButtonProps,
+  presetToVariant,
+  sizeToVariant,
+  // Deprecated aliases for backward compatibility
+  FlowButton,
+} from './UnifiedButton';
+
+export type { 
+  UnifiedButtonProps,
+  ButtonPreset,
+  // Deprecated alias
+  FlowButtonProps,
 } from './UnifiedButton';
 
 // ─────────────────────────────────────────────────────────
@@ -34,5 +45,8 @@ export {
 // ─────────────────────────────────────────────────────────
 export { 
   ButtonStyleInspector,
-  type ButtonStyleSettings,
+} from './ButtonStyleInspector';
+
+export type { 
+  ButtonStyleSettings,
 } from './ButtonStyleInspector';
