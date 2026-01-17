@@ -296,12 +296,7 @@ const SiteInfo: React.FC<{ page: Page; onPublish?: () => void }> = ({ page, onPu
         <Clock className="w-4 h-4 text-builder-text-muted" />
         <span className="text-xs text-builder-text-muted">Updated {lastUpdated}</span>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="w-4 h-4 rounded-full bg-builder-success/20 flex items-center justify-center">
-          <Check className="w-2.5 h-2.5 text-builder-success" />
-        </div>
-        <span className="text-xs text-builder-text-muted">All changes saved</span>
-      </div>
+      {/* Save status is now handled by SaveStatusIndicator in the toolbar - no duplicate indicator here */}
       <button 
         onClick={onPublish}
         className="w-full py-2.5 rounded-lg bg-builder-accent text-white text-sm font-semibold hover:brightness-110 transition-all"
@@ -1095,8 +1090,8 @@ const ElementInspector: React.FC<{
                 </div>
                 <Slider 
                   value={[parseFontSize(element.props?.fontSize)]}
-                  onValueChange={(v) => {
-                    // Store as direct pixel value string for consistency
+                  onValueCommit={(v) => {
+                    // Store as direct pixel value string for consistency - only on release
                     handlePropsChange('fontSize', `${v[0]}px`);
                   }}
                   min={12} max={72} step={1}
@@ -1206,7 +1201,7 @@ const ElementInspector: React.FC<{
                 </div>
                 <Slider 
                   value={[(element.props?.letterSpacing as number) ?? 0]}
-                  onValueChange={(v) => handlePropsChange('letterSpacing', v[0])}
+                  onValueCommit={(v) => handlePropsChange('letterSpacing', v[0])}
                   min={-2} max={10} step={0.5}
                   className="w-full"
                 />
@@ -1226,7 +1221,7 @@ const ElementInspector: React.FC<{
                 </div>
                 <Slider 
                   value={[(element.props?.lineHeight as number) ?? 1.5]}
-                  onValueChange={(v) => handlePropsChange('lineHeight', v[0])}
+                  onValueCommit={(v) => handlePropsChange('lineHeight', v[0])}
                   min={1} max={2.5} step={0.1}
                   className="w-full"
                 />
@@ -1632,7 +1627,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center gap-2">
                   <Slider 
                     value={[parseInt(element.styles?.borderRadius as string || '12')]}
-                    onValueChange={(v) => handleStyleChange('borderRadius', `${v[0]}px`)}
+                    onValueCommit={(v) => handleStyleChange('borderRadius', `${v[0]}px`)}
                     min={0} max={24} step={2} className="w-16"
                   />
                   <span className="text-xs text-builder-text w-10">{element.styles?.borderRadius || '12px'}</span>
@@ -1868,7 +1863,7 @@ const ElementInspector: React.FC<{
                   <div className="flex items-center gap-2">
                     <Slider
                       value={[element.props?.loopInterval as number || 60]}
-                      onValueChange={([v]) => handlePropsChange('loopInterval', v)}
+                      onValueCommit={([v]) => handlePropsChange('loopInterval', v)}
                       min={5} max={180} step={5} className="flex-1"
                     />
                     <span className="text-xs text-builder-text w-12">{String(element.props?.loopInterval || 60)}m</span>
@@ -1880,7 +1875,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center gap-2">
                   <Slider
                     value={[element.props?.speedMultiplier as number || 1]}
-                    onValueChange={([v]) => handlePropsChange('speedMultiplier', v)}
+                    onValueCommit={([v]) => handlePropsChange('speedMultiplier', v)}
                     min={1} max={10} step={0.5} className="w-20"
                   />
                   <span className="text-xs text-builder-text w-8">{String(element.props?.speedMultiplier || 1)}x</span>
@@ -2097,7 +2092,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center gap-2">
                   <Slider
                     value={[(element.props?.duration as number || 3000) / 1000]}
-                    onValueChange={([v]) => handlePropsChange('duration', v * 1000)}
+                    onValueCommit={([v]) => handlePropsChange('duration', v * 1000)}
                     min={1} max={10} step={0.5} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-10">{((element.props?.duration as number || 3000) / 1000).toFixed(1)}s</span>
@@ -2275,7 +2270,7 @@ const ElementInspector: React.FC<{
                   <div className="flex items-center gap-2">
                     <Slider
                       value={[(element.props?.autoplayInterval as number || 4000) / 1000]}
-                      onValueChange={([v]) => handlePropsChange('autoplayInterval', v * 1000)}
+                      onValueCommit={([v]) => handlePropsChange('autoplayInterval', v * 1000)}
                       min={2} max={10} step={0.5} className="flex-1"
                     />
                     <span className="text-xs text-builder-text w-10">{((element.props?.autoplayInterval as number || 4000) / 1000).toFixed(1)}s</span>
@@ -2368,7 +2363,7 @@ const ElementInspector: React.FC<{
                     <div className="flex items-center gap-2">
                       <Slider
                         value={[element.props?.speed as number || 30]}
-                        onValueChange={([v]) => handlePropsChange('speed', v)}
+                        onValueCommit={([v]) => handlePropsChange('speed', v)}
                         min={10} max={60} step={5} className="flex-1"
                       />
                       <span className="text-xs text-builder-text w-10">{String(element.props?.speed || 30)}s</span>
@@ -2406,7 +2401,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center gap-2">
                   <Slider
                     value={[element.props?.logoHeight as number || 40]}
-                    onValueChange={([v]) => handlePropsChange('logoHeight', v)}
+                    onValueCommit={([v]) => handlePropsChange('logoHeight', v)}
                     min={24} max={80} step={4} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-10">{String(element.props?.logoHeight || 40)}px</span>
@@ -2489,7 +2484,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center gap-2">
                   <Slider
                     value={[element.props?.zoom as number || 15]}
-                    onValueChange={([v]) => handlePropsChange('zoom', v)}
+                    onValueCommit={([v]) => handlePropsChange('zoom', v)}
                     min={5} max={20} step={1} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-8">{String(element.props?.zoom || 15)}</span>
@@ -2513,7 +2508,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center gap-2">
                   <Slider
                     value={[parseInt(element.styles?.height as string || '300', 10)]}
-                    onValueChange={([v]) => handleStyleChange('height', `${v}px`)}
+                    onValueCommit={([v]) => handleStyleChange('height', `${v}px`)}
                     min={150} max={600} step={50} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-12">{parseInt(element.styles?.height as string || '300', 10)}px</span>
@@ -2541,7 +2536,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center gap-2">
                   <Slider
                     value={[parseInt(element.styles?.height as string || '300', 10)]}
-                    onValueChange={([v]) => handleStyleChange('height', `${v}px`)}
+                    onValueCommit={([v]) => handleStyleChange('height', `${v}px`)}
                     min={100} max={600} step={50} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-12">{parseInt(element.styles?.height as string || '300', 10)}px</span>
@@ -2574,7 +2569,7 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center gap-2">
                   <Slider
                     value={[element.props?.rating as number || 4.5]}
-                    onValueChange={([v]) => handlePropsChange('rating', v)}
+                    onValueCommit={([v]) => handlePropsChange('rating', v)}
                     min={1} max={5} step={0.1} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-10">{(element.props?.rating as number || 4.5).toFixed(1)}</span>
