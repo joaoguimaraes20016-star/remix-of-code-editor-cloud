@@ -175,6 +175,7 @@ export interface ApplicationFlowBackground {
   videoAutoplay?: boolean;
   videoLoop?: boolean;
   videoMuted?: boolean;
+  videoOpacity?: number; // 0-100, default 100
 }
 
 export interface ApplicationFlowSettings {
@@ -304,6 +305,7 @@ export interface PageBackground {
   videoAutoplay?: boolean;
   videoLoop?: boolean;
   videoMuted?: boolean;
+  videoOpacity?: number; // 0-100, default 100
 }
 
 // Block animation with stagger support
@@ -349,7 +351,7 @@ export interface Stack {
   styles?: Record<string, string>;
 }
 
-export type FrameBackgroundType = 'transparent' | 'white' | 'dark' | 'glass' | 'custom' | 'gradient' | 'image';
+export type FrameBackgroundType = 'transparent' | 'white' | 'dark' | 'glass' | 'custom' | 'gradient' | 'image' | 'video';
 
 // Frame layout width options
 export type FrameLayout = 'contained' | 'full-width';
@@ -397,6 +399,12 @@ export interface Frame {
     stops: Array<{ color: string; position: number }>;
   };
   backgroundImage?: string;
+  // Video background settings
+  backgroundVideo?: string;
+  backgroundVideoAutoplay?: boolean;
+  backgroundVideoLoop?: boolean;
+  backgroundVideoMuted?: boolean;
+  backgroundVideoOpacity?: number;
   // Glassmorphism
   glass?: GlassmorphismSettings;
   // Custom shadows

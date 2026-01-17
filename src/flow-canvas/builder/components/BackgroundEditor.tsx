@@ -19,6 +19,7 @@ export interface BackgroundValue {
   videoAutoplay?: boolean;
   videoLoop?: boolean;
   videoMuted?: boolean;
+  videoOpacity?: number; // 0-100, default 100
 }
 
 interface BackgroundEditorProps {
@@ -343,6 +344,25 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
                 checked={value.videoMuted ?? true}
                 onCheckedChange={(checked) => handleVideoChange({ videoMuted: checked })}
               />
+            </div>
+          </div>
+          
+          {/* Video Opacity */}
+          <div className="space-y-2 pt-2 border-t border-builder-border">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-builder-text-muted">Opacity</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={value.videoOpacity ?? 100}
+                  onChange={(e) => handleVideoChange({ videoOpacity: parseInt(e.target.value, 10) })}
+                  className="w-20 h-1.5 bg-builder-surface-hover rounded-full appearance-none cursor-pointer accent-builder-accent"
+                />
+                <span className="text-xs text-builder-text w-10 text-right">{value.videoOpacity ?? 100}%</span>
+              </div>
             </div>
           </div>
         </div>

@@ -2392,6 +2392,16 @@ const FrameInspector: React.FC<{
     if (bg === 'image' && frame.backgroundImage) {
       return { type: 'image', imageUrl: frame.backgroundImage };
     }
+    if (bg === 'video' && frame.backgroundVideo) {
+      return { 
+        type: 'video', 
+        videoUrl: frame.backgroundVideo,
+        videoAutoplay: frame.backgroundVideoAutoplay ?? true,
+        videoLoop: frame.backgroundVideoLoop ?? true,
+        videoMuted: frame.backgroundVideoMuted ?? true,
+        videoOpacity: frame.backgroundVideoOpacity ?? 100,
+      };
+    }
     if (bg === 'custom' && frame.backgroundColor) {
       return { type: 'solid', color: frame.backgroundColor };
     }
@@ -2406,16 +2416,29 @@ const FrameInspector: React.FC<{
       updates.backgroundColor = value.color;
       updates.backgroundGradient = undefined;
       updates.backgroundImage = undefined;
+      updates.backgroundVideo = undefined;
     } else if (value.type === 'gradient') {
       updates.background = 'gradient';
       updates.backgroundGradient = value.gradient ? cloneGradient(value.gradient) : undefined;
       updates.backgroundColor = undefined;
       updates.backgroundImage = undefined;
+      updates.backgroundVideo = undefined;
     } else if (value.type === 'image') {
       updates.background = 'image';
       updates.backgroundImage = value.imageUrl;
       updates.backgroundColor = undefined;
       updates.backgroundGradient = undefined;
+      updates.backgroundVideo = undefined;
+    } else if (value.type === 'video') {
+      updates.background = 'video';
+      updates.backgroundVideo = value.videoUrl;
+      updates.backgroundVideoAutoplay = value.videoAutoplay ?? true;
+      updates.backgroundVideoLoop = value.videoLoop ?? true;
+      updates.backgroundVideoMuted = value.videoMuted ?? true;
+      updates.backgroundVideoOpacity = value.videoOpacity ?? 100;
+      updates.backgroundColor = undefined;
+      updates.backgroundGradient = undefined;
+      updates.backgroundImage = undefined;
     }
     
     onUpdate(updates);
@@ -2729,7 +2752,7 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
   }, [page.settings, onUpdate]);
 
   // Background type change handler - updates local state immediately for UI feedback
-  const handleBackgroundTypeChange = useCallback((newType: 'solid' | 'gradient' | 'image') => {
+  const handleBackgroundTypeChange = useCallback((newType: 'solid' | 'gradient' | 'image' | 'video') => {
     // Update local state immediately for instant UI feedback
     setLocalBgType(newType);
     
@@ -2752,6 +2775,13 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
           ...(newType === 'image' && {
             image: page.settings.page_background?.image || ''
           }),
+          ...(newType === 'video' && {
+            video: page.settings.page_background?.video || '',
+            videoAutoplay: page.settings.page_background?.videoAutoplay ?? true,
+            videoLoop: page.settings.page_background?.videoLoop ?? true,
+            videoMuted: page.settings.page_background?.videoMuted ?? true,
+            videoOpacity: page.settings.page_background?.videoOpacity ?? 100,
+          }),
         },
       },
     };
@@ -2761,7 +2791,7 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
 
   // Keyboard navigation for toggle pill
   const handleToggleKeyDown = useCallback((e: React.KeyboardEvent, currentType: string) => {
-    const types = ['solid', 'gradient', 'image'] as const;
+    const types = ['solid', 'gradient', 'image', 'video'] as const;
     const currentIndex = types.indexOf(currentType as typeof types[number]);
     
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
@@ -2872,6 +2902,20 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
               )}
             >
               Image
+            </button>
+            <button 
+              type="button"
+              role="tab"
+              aria-selected={currentBgType === 'video'}
+              tabIndex={currentBgType === 'video' ? 0 : -1}
+              onClick={() => handleBackgroundTypeChange('video')}
+              onKeyDown={(e) => handleToggleKeyDown(e, currentBgType)}
+              className={cn(
+                'toggle-pill-option flex-1 text-center focus:outline-none focus:ring-2 focus:ring-builder-accent focus:ring-inset',
+                currentBgType === 'video' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive'
+              )}
+            >
+              Video
             </button>
           </div>
 
@@ -3054,6 +3098,109 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
                   className="w-20"
                 />
                 <span className="text-xs text-builder-text w-10">{page.settings.page_background?.blur || 0}px</span>
+              </div>
+            </div>
+          )}
+
+          {/* Video Background Section */}
+          {currentBgType === 'video' && (
+            <div className="space-y-3">
+              <FieldGroup label="Video URL" hint="YouTube, Vimeo, or direct .mp4 URL">
+                <Input
+                  value={page.settings.page_background?.video || ''}
+                  onChange={(e) => onUpdate({ 
+                    settings: { 
+                      ...page.settings, 
+                      page_background: { 
+                        ...page.settings.page_background,
+                        type: 'video', 
+                        video: e.target.value 
+                      } 
+                    } 
+                  })}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="builder-input"
+                />
+              </FieldGroup>
+              
+              {/* Video Options */}
+              <div className="space-y-2 pt-2 border-t border-builder-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Autoplay</span>
+                  <TogglePill 
+                    value={page.settings.page_background?.videoAutoplay ?? true}
+                    onToggle={() => onUpdate({ 
+                      settings: { 
+                        ...page.settings, 
+                        page_background: { 
+                          ...page.settings.page_background,
+                          type: 'video',
+                          videoAutoplay: !(page.settings.page_background?.videoAutoplay ?? true)
+                        } 
+                      } 
+                    })}
+                    labels={['On', 'Off']}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Loop</span>
+                  <TogglePill 
+                    value={page.settings.page_background?.videoLoop ?? true}
+                    onToggle={() => onUpdate({ 
+                      settings: { 
+                        ...page.settings, 
+                        page_background: { 
+                          ...page.settings.page_background,
+                          type: 'video',
+                          videoLoop: !(page.settings.page_background?.videoLoop ?? true)
+                        } 
+                      } 
+                    })}
+                    labels={['On', 'Off']}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Muted</span>
+                  <TogglePill 
+                    value={page.settings.page_background?.videoMuted ?? true}
+                    onToggle={() => onUpdate({ 
+                      settings: { 
+                        ...page.settings, 
+                        page_background: { 
+                          ...page.settings.page_background,
+                          type: 'video',
+                          videoMuted: !(page.settings.page_background?.videoMuted ?? true)
+                        } 
+                      } 
+                    })}
+                    labels={['On', 'Off']}
+                  />
+                </div>
+              </div>
+              
+              {/* Video Opacity */}
+              <div className="flex items-center justify-between pt-2 border-t border-builder-border">
+                <span className="text-xs text-builder-text-muted">Opacity</span>
+                <div className="flex items-center gap-2">
+                  <Slider 
+                    value={[page.settings.page_background?.videoOpacity ?? 100]}
+                    onValueChange={(v) => onUpdate({ 
+                      settings: { 
+                        ...page.settings, 
+                        page_background: { 
+                          ...page.settings.page_background,
+                          type: 'video',
+                          videoOpacity: v[0] 
+                        } 
+                      } 
+                    })}
+                    min={0}
+                    max={100}
+                    step={5}
+                    className="w-20"
+                  />
+                  <span className="text-xs text-builder-text w-10">{page.settings.page_background?.videoOpacity ?? 100}%</span>
+                </div>
               </div>
             </div>
           )}
