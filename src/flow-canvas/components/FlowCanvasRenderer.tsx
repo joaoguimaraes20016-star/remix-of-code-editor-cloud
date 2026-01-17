@@ -172,10 +172,32 @@ function renderHeading(element: FlowCanvasElement) {
     4: 'text-lg font-medium',
   };
   
+  // Get state styles and typography
+  const stateStyles = element.props?.stateStyles as Record<string, unknown> | undefined;
+  const stateStylesCSS = stateStyles ? generateStateStylesCSS(element.id, stateStyles as any) : '';
+  const stateClassName = stateStyles ? `runtime-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
+  
+  // Typography styles
+  const typographyStyle: React.CSSProperties = {
+    color: element.props?.textColor as string || element.styles?.color,
+    fontSize: element.props?.fontSize as string || element.styles?.fontSize,
+    fontWeight: element.props?.fontWeight as string || element.styles?.fontWeight,
+    letterSpacing: element.props?.letterSpacing as string || element.styles?.letterSpacing,
+    lineHeight: element.props?.lineHeight as string || element.styles?.lineHeight,
+    textTransform: (element.props?.textTransform || element.styles?.textTransform) as React.CSSProperties['textTransform'],
+    textAlign: (element.props?.textAlign || element.styles?.textAlign) as React.CSSProperties['textAlign'],
+  };
+  
   return (
-    <Tag key={element.id} className={cn('text-foreground', sizeClasses[level] || sizeClasses[2])}>
-      {element.content}
-    </Tag>
+    <React.Fragment key={element.id}>
+      {stateStylesCSS && <style>{stateStylesCSS}</style>}
+      <Tag 
+        className={cn('text-foreground', sizeClasses[level] || sizeClasses[2], stateClassName)}
+        style={typographyStyle}
+      >
+        {element.content}
+      </Tag>
+    </React.Fragment>
   );
 }
 
@@ -189,10 +211,32 @@ function renderText(element: FlowCanvasElement) {
     quote: 'text-lg italic border-l-2 border-primary pl-4',
   };
   
+  // Get state styles and typography
+  const stateStyles = element.props?.stateStyles as Record<string, unknown> | undefined;
+  const stateStylesCSS = stateStyles ? generateStateStylesCSS(element.id, stateStyles as any) : '';
+  const stateClassName = stateStyles ? `runtime-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
+  
+  // Typography styles
+  const typographyStyle: React.CSSProperties = {
+    color: element.props?.textColor as string || element.styles?.color,
+    fontSize: element.props?.fontSize as string || element.styles?.fontSize,
+    fontWeight: element.props?.fontWeight as string || element.styles?.fontWeight,
+    letterSpacing: element.props?.letterSpacing as string || element.styles?.letterSpacing,
+    lineHeight: element.props?.lineHeight as string || element.styles?.lineHeight,
+    textTransform: (element.props?.textTransform || element.styles?.textTransform) as React.CSSProperties['textTransform'],
+    textAlign: (element.props?.textAlign || element.styles?.textAlign) as React.CSSProperties['textAlign'],
+  };
+  
   return (
-    <p key={element.id} className={cn(baseClasses, variantClasses[variant] || '')}>
-      {element.content}
-    </p>
+    <React.Fragment key={element.id}>
+      {stateStylesCSS && <style>{stateStylesCSS}</style>}
+      <p 
+        className={cn(baseClasses, variantClasses[variant] || '', stateClassName)}
+        style={typographyStyle}
+      >
+        {element.content}
+      </p>
+    </React.Fragment>
   );
 }
 

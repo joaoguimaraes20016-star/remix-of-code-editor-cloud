@@ -3078,8 +3078,8 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
                     onPaste={() => onPaste?.()}
                     onDuplicate={() => onDuplicateElement?.(element.id)}
                     onDelete={() => onDeleteElement?.(element.id)}
-                    onMoveUp={() => {}}
-                    onMoveDown={() => {}}
+                    onMoveUp={() => onReorderElements?.(block.id, elementIndex, elementIndex - 1)}
+                    onMoveDown={() => onReorderElements?.(block.id, elementIndex, elementIndex + 1)}
                     canMoveUp={elementIndex > 0}
                     canMoveDown={elementIndex < block.elements.length - 1}
                     canPaste={canPaste}

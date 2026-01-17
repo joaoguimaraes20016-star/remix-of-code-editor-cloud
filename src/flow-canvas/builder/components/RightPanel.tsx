@@ -598,12 +598,12 @@ const ElementInspector: React.FC<{
               }) || []}
               onUpdate={(conditions) => {
                 // Map from ConditionalLogicEditor operators back to ConditionalRule operators
-                const reverseOperatorMap: Record<string, 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'isEmpty'> = {
+              const reverseOperatorMap: Record<string, 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'isEmpty' | 'greaterThan' | 'lessThan'> = {
                   equals: 'equals',
                   not_equals: 'notEquals',
                   contains: 'contains',
-                  greater_than: 'notEquals',
-                  less_than: 'notEquals',
+                  greater_than: 'greaterThan',
+                  less_than: 'lessThan',
                   is_empty: 'isEmpty',
                   is_not_empty: 'notEmpty',
                 };
@@ -1788,12 +1788,12 @@ const ElementInspector: React.FC<{
               };
             }) || []}
             onUpdate={(conditions) => {
-              const reverseOperatorMap: Record<string, 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'isEmpty'> = {
+              const reverseOperatorMap: Record<string, 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'isEmpty' | 'greaterThan' | 'lessThan'> = {
                 equals: 'equals',
                 not_equals: 'notEquals',
                 contains: 'contains',
-                greater_than: 'notEquals',
-                less_than: 'notEquals',
+                greater_than: 'greaterThan',
+                less_than: 'lessThan',
               };
               const mapped = conditions.map(c => ({
                 field: c.fieldKey,
