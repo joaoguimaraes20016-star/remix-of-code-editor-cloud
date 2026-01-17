@@ -83,6 +83,7 @@ export interface IntentResult {
 export interface FlowStep {
   id: string;
   name?: string;
+  elements?: { id: string }[];
 }
 
 // ============ CONTEXT VALUE ============
@@ -239,10 +240,14 @@ export function FlowContainerProvider({
       return evaluateEmptyRules();
     }
     
+    const allElementIds = steps.flatMap(s => 
+      s.elements?.map(e => e.id) || []
+    );
+    
     return evaluateRules(rules, {
       values: formValues,
       allStepIds: steps.map(s => s.id),
-      allElementIds: [], // TODO: pass element IDs when available
+      allElementIds,
     });
   }, [rules, formValues, steps]);
   

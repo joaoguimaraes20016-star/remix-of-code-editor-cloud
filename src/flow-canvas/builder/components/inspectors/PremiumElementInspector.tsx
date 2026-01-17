@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS } from '../modals';
 import type { GradientValue } from '../modals';
+import { ButtonIconPicker } from '../ButtonIconPicker';
 import {
   Sparkles,
   Hash,
@@ -250,15 +251,42 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             </Select>
           </FieldGroup>
           
-          <FieldGroup label="Color">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-dim">Gradient Start</span>
-              <ColorPickerPopover
-                color={(element.props?.gradientFrom as string) || primaryColor}
-                onChange={(c) => handlePropsChange('gradientFrom', c)}
-              >
-                <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.gradientFrom as string) || primaryColor }} />
-              </ColorPickerPopover>
+          <FieldGroup label="Colors">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-dim">Gradient Start</span>
+                <ColorPickerPopover
+                  color={(element.props?.gradientFrom as string) || primaryColor}
+                  onChange={(c) => handlePropsChange('gradientFrom', c)}
+                >
+                  <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.gradientFrom as string) || primaryColor }} />
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-dim">Gradient End</span>
+                <ColorPickerPopover
+                  color={(element.props?.gradientTo as string) || '#EC4899'}
+                  onChange={(c) => handlePropsChange('gradientTo', c)}
+                >
+                  <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.gradientTo as string) || '#EC4899' }} />
+                </ColorPickerPopover>
+              </div>
+            </div>
+          </FieldGroup>
+          
+          <FieldGroup label="Overlap">
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[(element.props?.overlap as number) || 12]}
+                onValueChange={([v]) => handlePropsChange('overlap', v)}
+                min={0}
+                max={24}
+                step={2}
+                className="flex-1"
+              />
+              <span className="text-xs font-mono text-builder-text-muted w-8 text-center">
+                {(element.props?.overlap as number) || 12}px
+              </span>
             </div>
           </FieldGroup>
         </Section>
@@ -433,28 +461,10 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           
           {element.props?.icon && (
             <FieldGroup label="Select Icon">
-              <Select
+              <ButtonIconPicker
                 value={(element.props?.icon as string) || 'Sparkles'}
-                onValueChange={(v) => handlePropsChange('icon', v)}
-              >
-                <SelectTrigger className="builder-input text-xs">
-                  <SelectValue placeholder="Select icon" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border-border">
-                  <SelectItem value="Sparkles">✨ Sparkles</SelectItem>
-                  <SelectItem value="Star">⭐ Star</SelectItem>
-                  <SelectItem value="Zap">⚡ Zap</SelectItem>
-                  <SelectItem value="Trophy">🏆 Trophy</SelectItem>
-                  <SelectItem value="Award">🥇 Award</SelectItem>
-                  <SelectItem value="Crown">👑 Crown</SelectItem>
-                  <SelectItem value="Check">✓ Check</SelectItem>
-                  <SelectItem value="Heart">❤️ Heart</SelectItem>
-                  <SelectItem value="Flame">🔥 Flame</SelectItem>
-                  <SelectItem value="Rocket">🚀 Rocket</SelectItem>
-                  <SelectItem value="Gift">🎁 Gift</SelectItem>
-                  <SelectItem value="Bell">🔔 Bell</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(iconName) => handlePropsChange('icon', iconName)}
+              />
             </FieldGroup>
           )}
         </Section>
@@ -515,36 +525,10 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           
           {element.props?.icon && element.props?.icon !== 'number' && (
             <FieldGroup label="Select Icon">
-              <Select
+              <ButtonIconPicker
                 value={(element.props?.icon as string) || 'Check'}
-                onValueChange={(v) => handlePropsChange('icon', v)}
-              >
-                <SelectTrigger className="builder-input text-xs">
-                  <SelectValue placeholder="Select icon" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border-border max-h-60">
-                  <SelectItem value="Check">✓ Check</SelectItem>
-                  <SelectItem value="CheckCircle">✓ Check Circle</SelectItem>
-                  <SelectItem value="ArrowRight">→ Arrow Right</SelectItem>
-                  <SelectItem value="ChevronRight">› Chevron Right</SelectItem>
-                  <SelectItem value="Play">▶ Play</SelectItem>
-                  <SelectItem value="Star">⭐ Star</SelectItem>
-                  <SelectItem value="Heart">❤️ Heart</SelectItem>
-                  <SelectItem value="Zap">⚡ Zap</SelectItem>
-                  <SelectItem value="Rocket">🚀 Rocket</SelectItem>
-                  <SelectItem value="Target">🎯 Target</SelectItem>
-                  <SelectItem value="Trophy">🏆 Trophy</SelectItem>
-                  <SelectItem value="Gift">🎁 Gift</SelectItem>
-                  <SelectItem value="Sparkles">✨ Sparkles</SelectItem>
-                  <SelectItem value="Lightbulb">💡 Lightbulb</SelectItem>
-                  <SelectItem value="Map">📍 Map</SelectItem>
-                  <SelectItem value="Share2">↗ Share</SelectItem>
-                  <SelectItem value="Send">✉ Send</SelectItem>
-                  <SelectItem value="Download">⬇ Download</SelectItem>
-                  <SelectItem value="Upload">⬆ Upload</SelectItem>
-                  <SelectItem value="Settings">⚙ Settings</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(iconName) => handlePropsChange('icon', iconName)}
+              />
             </FieldGroup>
           )}
         </Section>
