@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Type, Image, MousePointer, 
   Mail, Phone, User, UserCheck, ChevronRight,
@@ -591,6 +591,11 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
+
+  // Sync activeTab when initialTab prop changes (e.g., switching between blocks/sections)
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Use the module-level constant for Application Flow categories
   // (defined at top of file for use in CollapsibleCategory)
