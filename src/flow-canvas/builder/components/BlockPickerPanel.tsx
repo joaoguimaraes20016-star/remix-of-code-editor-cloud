@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, Search, Type, Image, MousePointer, 
   Mail, Phone, User, UserCheck, ChevronRight,
   HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow,
   Sparkles, Star, SlidersHorizontal, Shapes, Timer, Loader2, MapPin, Code,
   Upload, MessageSquare, CalendarDays, CreditCard, LayoutGrid, List, Minus, Play,
-  Users, Package, Quote, PanelLeftClose, Image as ImageIcon, Layout, Hash
+  Users, Package, Quote, PanelLeftClose, Image as ImageIcon, Layout, Hash, Clock, Heart
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '@/flow-canvas/types/infostack';
@@ -15,6 +15,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { SectionThumbnail } from './SectionThumbnail';
+import { toast } from 'sonner';
 
 
 const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -1068,6 +1070,7 @@ interface SectionCategory {
   defaultOpen?: boolean;
 }
 
+// ======= HERO SECTIONS =======
 const heroSections: BlockTemplate[] = [
   {
     type: 'hero',
@@ -1086,9 +1089,140 @@ const heroSections: BlockTemplate[] = [
       props: { intent: 'collect' },
     }),
   },
+  {
+    type: 'hero-video',
+    label: 'Video Hero',
+    icon: <Play size={16} />,
+    description: 'Hero with background video',
+    template: () => ({
+      id: generateId(),
+      type: 'hero',
+      label: 'Video Hero',
+      elements: [
+        { id: generateId(), type: 'video', content: '', props: { src: '', autoplay: true, muted: true, loop: true } },
+        { id: generateId(), type: 'heading', content: 'Transform Your Business', props: { level: 1 } },
+        { id: generateId(), type: 'text', content: 'Watch how we help entrepreneurs scale to 7 figures.', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'button', content: 'Get Started', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
+      ],
+      props: { intent: 'collect' },
+    }),
+  },
+  {
+    type: 'hero-split',
+    label: 'Split Hero',
+    icon: <Layers size={16} />,
+    description: 'Image on one side, text on other',
+    template: () => ({
+      id: generateId(),
+      type: 'hero',
+      label: 'Split Hero',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'The System That Changes Everything', props: { level: 1 } },
+        { id: generateId(), type: 'text', content: 'Join thousands who have transformed their business with our proven framework.', props: {} },
+        { id: generateId(), type: 'button', content: 'Apply Now', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
+        { id: generateId(), type: 'image', content: '', props: { alt: 'Hero image', src: '' } },
+      ],
+      props: { layout: 'split', intent: 'collect' },
+    }),
+  },
+  {
+    type: 'hero-centered',
+    label: 'Centered Hero',
+    icon: <Layers size={16} />,
+    description: 'Centered text with gradient',
+    template: () => ({
+      id: generateId(),
+      type: 'hero',
+      label: 'Centered Hero',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Your Path to Freedom Starts Here', props: { level: 1, align: 'center' } },
+        { id: generateId(), type: 'text', content: 'Discover the exact steps to build a business that runs without you.', props: { align: 'center' } },
+        { id: generateId(), type: 'button', content: 'Start Free', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
+      ],
+      props: { layout: 'centered', background: 'gradient', intent: 'collect' },
+    }),
+  },
+  {
+    type: 'hero-badge',
+    label: 'Hero + Badge',
+    icon: <Star size={16} />,
+    description: 'Hero with social proof badge',
+    template: () => ({
+      id: generateId(),
+      type: 'hero',
+      label: 'Hero with Badge',
+      elements: [
+        { id: generateId(), type: 'badge', content: '🔥 LIMITED SPOTS', props: { variant: 'highlight' } },
+        { id: generateId(), type: 'heading', content: 'Join 10,000+ Entrepreneurs', props: { level: 1 } },
+        { id: generateId(), type: 'text', content: 'Get access to the exact playbook that generated $50M+ in revenue.', props: {} },
+        { id: generateId(), type: 'button', content: 'Claim Your Spot', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
+      ],
+      props: { intent: 'collect' },
+    }),
+  },
 ];
 
-const contentSections: BlockTemplate[] = [
+// ======= FEATURES SECTIONS =======
+const featureSections: BlockTemplate[] = [
+  {
+    type: 'features-grid',
+    label: 'Feature Grid',
+    icon: <LayoutGrid size={16} />,
+    description: '3-column feature icons',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Feature Grid',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Why Choose Us', props: { level: 2, align: 'center' } },
+        { id: generateId(), type: 'text', content: 'Everything you need to succeed', props: { align: 'center' } },
+      ],
+      props: { 
+        layout: 'grid',
+        features: [
+          { icon: '🚀', title: 'Fast Results', description: 'See results in 30 days' },
+          { icon: '🎯', title: 'Proven System', description: 'Battle-tested methodology' },
+          { icon: '💪', title: 'Full Support', description: '24/7 expert assistance' },
+        ]
+      },
+    }),
+  },
+  {
+    type: 'features-list',
+    label: 'Feature List',
+    icon: <List size={16} />,
+    description: 'Vertical list with icons',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Feature List',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What You Get', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: '✓ Complete video training\n✓ Weekly coaching calls\n✓ Private community access\n✓ Done-for-you templates', props: {} },
+      ],
+      props: {},
+    }),
+  },
+  {
+    type: 'benefits',
+    label: 'Benefits List',
+    icon: <ListChecks size={16} />,
+    description: 'Checkmark benefits list',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Benefits',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'What You\'ll Achieve', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: '• Generate consistent leads on autopilot\n• Close high-ticket clients with ease\n• Build a team that runs without you\n• Scale to 7 figures and beyond', props: {} },
+      ],
+      props: {},
+    }),
+  },
+];
+
+// ======= SOCIAL PROOF SECTIONS =======
+const socialProofSections: BlockTemplate[] = [
   {
     type: 'testimonial',
     label: 'Testimonial',
@@ -1105,6 +1239,180 @@ const contentSections: BlockTemplate[] = [
       props: {},
     }),
   },
+  {
+    type: 'stats-bar',
+    label: 'Stats Bar',
+    icon: <Hash size={16} />,
+    description: 'Row of impressive numbers',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Stats Bar',
+      elements: [
+        { id: generateId(), type: 'stat-number', content: '10K+', props: { label: 'Students' } },
+        { id: generateId(), type: 'stat-number', content: '$50M+', props: { label: 'Revenue Generated' } },
+        { id: generateId(), type: 'stat-number', content: '97%', props: { label: 'Success Rate' } },
+      ],
+      props: { layout: 'horizontal' },
+    }),
+  },
+  {
+    type: 'guarantee',
+    label: 'Guarantee',
+    icon: <Star size={16} />,
+    description: 'Trust badge with text',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Guarantee',
+      elements: [
+        { id: generateId(), type: 'heading', content: '30-Day Money Back Guarantee', props: { level: 3 } },
+        { id: generateId(), type: 'text', content: 'If you don\'t see results in 30 days, we\'ll refund every penny. No questions asked.', props: {} },
+      ],
+      props: { variant: 'guarantee' },
+    }),
+  },
+];
+
+// ======= CTA SECTIONS =======
+const ctaSections: BlockTemplate[] = [
+  {
+    type: 'cta-banner',
+    label: 'CTA Banner',
+    icon: <MousePointer size={16} />,
+    description: 'Full-width call to action',
+    template: () => ({
+      id: generateId(),
+      type: 'cta',
+      label: 'CTA Banner',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Ready to Get Started?', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Join thousands who have already transformed their business.', props: {} },
+        { id: generateId(), type: 'button', content: 'Start Now', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
+      ],
+      props: { background: 'primary' },
+    }),
+  },
+  {
+    type: 'cta-image',
+    label: 'CTA + Image',
+    icon: <ImageIcon size={16} />,
+    description: 'Side-by-side CTA with visual',
+    template: () => ({
+      id: generateId(),
+      type: 'cta',
+      label: 'CTA with Image',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Don\'t Miss Out', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Limited spots available for this exclusive offer.', props: {} },
+        { id: generateId(), type: 'button', content: 'Claim Your Spot', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
+        { id: generateId(), type: 'image', content: '', props: { alt: 'CTA image', src: '' } },
+      ],
+      props: { layout: 'split' },
+    }),
+  },
+  {
+    type: 'cta-urgency',
+    label: 'Urgency CTA',
+    icon: <Timer size={16} />,
+    description: 'Last chance messaging',
+    template: () => ({
+      id: generateId(),
+      type: 'cta',
+      label: 'Urgency CTA',
+      elements: [
+        { id: generateId(), type: 'badge', content: '⏰ OFFER ENDS SOON', props: { variant: 'warning' } },
+        { id: generateId(), type: 'heading', content: 'This Price Won\'t Last', props: { level: 2 } },
+        { id: generateId(), type: 'countdown', content: '', props: { endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() } },
+        { id: generateId(), type: 'button', content: 'Get Access Now', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
+      ],
+      props: { background: 'dark' },
+    }),
+  },
+  {
+    type: 'cta-double',
+    label: 'Two CTAs',
+    icon: <MousePointer size={16} />,
+    description: 'Primary + secondary buttons',
+    template: () => ({
+      id: generateId(),
+      type: 'cta',
+      label: 'Double CTA',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Choose Your Path', props: { level: 2 } },
+        { id: generateId(), type: 'button', content: 'Get Started', props: { size: 'lg', preset: 'primary', buttonAction: { type: 'next-step' } } },
+        { id: generateId(), type: 'button', content: 'Learn More', props: { size: 'lg', preset: 'outline', buttonAction: { type: 'scroll' } } },
+      ],
+      props: {},
+    }),
+  },
+];
+
+// ======= PRICING SECTIONS =======
+const pricingSections: BlockTemplate[] = [
+  {
+    type: 'pricing',
+    label: 'Pricing Table',
+    icon: <CreditCard size={16} />,
+    description: 'Comparison pricing cards',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Pricing',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Choose Your Plan', props: { level: 2, align: 'center' } },
+      ],
+      props: { 
+        variant: 'pricing',
+        plans: [
+          { name: 'Starter', price: '$97', features: ['Feature 1', 'Feature 2'], popular: false },
+          { name: 'Pro', price: '$297', features: ['All Starter features', 'Feature 3', 'Feature 4'], popular: true },
+        ]
+      },
+    }),
+  },
+  {
+    type: 'pricing-single',
+    label: 'Single Price',
+    icon: <CreditCard size={16} />,
+    description: 'One offer, no comparison',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Single Price',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'One Investment, Unlimited Value', props: { level: 2, align: 'center' } },
+        { id: generateId(), type: 'text', content: '$997', props: { variant: 'price' } },
+        { id: generateId(), type: 'text', content: 'One-time payment, lifetime access', props: { align: 'center' } },
+        { id: generateId(), type: 'button', content: 'Enroll Now', props: { size: 'lg', buttonAction: { type: 'next-step' } } },
+      ],
+      props: {},
+    }),
+  },
+];
+
+// ======= FAQ SECTIONS =======
+const faqSections: BlockTemplate[] = [
+  {
+    type: 'faq',
+    label: 'FAQ',
+    icon: <HelpCircle size={16} />,
+    description: 'Expandable Q&A accordion',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'FAQ',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Frequently Asked Questions', props: { level: 2, align: 'center' } },
+        { id: generateId(), type: 'text', content: 'Q: What is included?\nA: Everything you need to get started.\n\nQ: How long does it take?\nA: Results typically within 30 days.\n\nQ: Is there a guarantee?\nA: Yes, 30-day money back guarantee.', props: { variant: 'faq' } },
+      ],
+      props: {},
+    }),
+  },
+];
+
+// ======= CONTENT SECTIONS =======
+const contentSections: BlockTemplate[] = [
   {
     type: 'text-block',
     label: 'Thank You',
@@ -1175,6 +1483,73 @@ const contentSections: BlockTemplate[] = [
   },
 ];
 
+// ======= FOOTER/HEADER SECTIONS =======
+const footerHeaderSections: BlockTemplate[] = [
+  {
+    type: 'footer-simple',
+    label: 'Simple Footer',
+    icon: <Layers size={16} />,
+    description: 'Copyright + links',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Footer',
+      elements: [
+        { id: generateId(), type: 'text', content: '© 2024 Your Company. All rights reserved.', props: { align: 'center' } },
+        { id: generateId(), type: 'text', content: 'Privacy Policy | Terms of Service', props: { align: 'center', variant: 'link' } },
+      ],
+      props: { variant: 'footer' },
+    }),
+  },
+  {
+    type: 'footer-social',
+    label: 'Footer + Social',
+    icon: <Layers size={16} />,
+    description: 'Links + social icons',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Footer with Social',
+      elements: [
+        { id: generateId(), type: 'text', content: 'Follow us on social media', props: { align: 'center' } },
+        { id: generateId(), type: 'text', content: '© 2024 Your Company', props: { align: 'center', variant: 'caption' } },
+      ],
+      props: { variant: 'footer', showSocial: true },
+    }),
+  },
+  {
+    type: 'header-nav',
+    label: 'Navigation',
+    icon: <Layers size={16} />,
+    description: 'Logo + nav links',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Header',
+      elements: [
+        { id: generateId(), type: 'image', content: '', props: { alt: 'Logo', src: '', width: 120 } },
+      ],
+      props: { variant: 'header', showNav: true },
+    }),
+  },
+  {
+    type: 'header-minimal',
+    label: 'Minimal Header',
+    icon: <Layers size={16} />,
+    description: 'Logo only header',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Minimal Header',
+      elements: [
+        { id: generateId(), type: 'image', content: '', props: { alt: 'Logo', src: '', width: 100 } },
+      ],
+      props: { variant: 'header' },
+    }),
+  },
+];
+
+// ======= ADVANCED SECTIONS =======
 const advancedSections: BlockTemplate[] = [
   {
     type: 'custom',
@@ -1191,6 +1566,7 @@ const advancedSections: BlockTemplate[] = [
   },
 ];
 
+// ======= SECTION CATEGORIES =======
 const sectionCategories: SectionCategory[] = [
   {
     id: 'hero',
@@ -1200,11 +1576,53 @@ const sectionCategories: SectionCategory[] = [
     defaultOpen: true,
   },
   {
-    id: 'content',
-    label: 'Content Sections',
-    hint: 'Testimonials, about, team, product',
-    sections: contentSections,
+    id: 'features',
+    label: 'Features',
+    hint: 'Feature grids, lists & benefits',
+    sections: featureSections,
+    defaultOpen: false,
+  },
+  {
+    id: 'social-proof',
+    label: 'Social Proof',
+    hint: 'Testimonials, stats & guarantees',
+    sections: socialProofSections,
+    defaultOpen: false,
+  },
+  {
+    id: 'cta',
+    label: 'Call to Action',
+    hint: 'CTAs, urgency & conversions',
+    sections: ctaSections,
     defaultOpen: true,
+  },
+  {
+    id: 'pricing',
+    label: 'Pricing',
+    hint: 'Pricing tables & offers',
+    sections: pricingSections,
+    defaultOpen: false,
+  },
+  {
+    id: 'faq',
+    label: 'FAQ',
+    hint: 'Questions & answers',
+    sections: faqSections,
+    defaultOpen: false,
+  },
+  {
+    id: 'content',
+    label: 'Content',
+    hint: 'About, team, products',
+    sections: contentSections,
+    defaultOpen: false,
+  },
+  {
+    id: 'footer-header',
+    label: 'Footer / Header',
+    hint: 'Navigation & footers',
+    sections: footerHeaderSections,
+    defaultOpen: false,
   },
   {
     id: 'advanced',
@@ -1307,11 +1725,64 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
+  
+  // Favorites & Recent state with localStorage persistence
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('builder-favorite-blocks');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  
+  const [recentBlocks, setRecentBlocks] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('builder-recent-blocks');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  
+  // View mode for sections: 'list' or 'grid'
+  const [sectionViewMode, setSectionViewMode] = useState<'list' | 'grid'>('grid');
 
   // Sync activeTab when initialTab prop changes (e.g., switching between blocks/sections)
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+  
+  // Persist favorites
+  useEffect(() => {
+    localStorage.setItem('builder-favorite-blocks', JSON.stringify(favorites));
+  }, [favorites]);
+  
+  // Persist recent blocks
+  useEffect(() => {
+    localStorage.setItem('builder-recent-blocks', JSON.stringify(recentBlocks));
+  }, [recentBlocks]);
+  
+  // Toggle favorite
+  const toggleFavorite = useCallback((templateType: string) => {
+    setFavorites(prev => {
+      if (prev.includes(templateType)) {
+        toast.success('Removed from favorites');
+        return prev.filter(t => t !== templateType);
+      } else {
+        toast.success('Added to favorites');
+        return [...prev, templateType];
+      }
+    });
+  }, []);
+  
+  // Add to recent
+  const addToRecent = useCallback((templateType: string) => {
+    setRecentBlocks(prev => {
+      const filtered = prev.filter(t => t !== templateType);
+      return [templateType, ...filtered].slice(0, 8); // Keep last 8
+    });
+  }, []);
 
   // Use the module-level constant for Application Flow categories
   // (defined at top of file for use in CollapsibleCategory)
@@ -1430,8 +1901,16 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
     ...embedBlocks.map(b => ({ ...b, isSection: false, categoryId: 'embed' })),
     ...schedulingBlocks.map(b => ({ ...b, isSection: false, categoryId: 'scheduling' })),
     ...flowBlocks.map(t => ({ ...t, isSection: false, categoryId: 'flows' })),
+    ...premiumBlocks.map(t => ({ ...t, isSection: false, categoryId: 'premium' })),
+    // Section templates
     ...heroSections.map(t => ({ ...t, isSection: true, categoryId: 'hero' })),
-    ...contentSections.map(t => ({ ...t, isSection: true, categoryId: 'content-sections' })),
+    ...featureSections.map(t => ({ ...t, isSection: true, categoryId: 'features' })),
+    ...socialProofSections.map(t => ({ ...t, isSection: true, categoryId: 'social-proof' })),
+    ...ctaSections.map(t => ({ ...t, isSection: true, categoryId: 'cta' })),
+    ...pricingSections.map(t => ({ ...t, isSection: true, categoryId: 'pricing' })),
+    ...faqSections.map(t => ({ ...t, isSection: true, categoryId: 'faq' })),
+    ...contentSections.map(t => ({ ...t, isSection: true, categoryId: 'content' })),
+    ...footerHeaderSections.map(t => ({ ...t, isSection: true, categoryId: 'footer-header' })),
     ...advancedSections.map(t => ({ ...t, isSection: true, categoryId: 'advanced' })),
   ];
 
@@ -1443,6 +1922,9 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
     : [];
 
   const handleAddBlock = (template: BlockTemplate, isSection: boolean = false, categoryId?: string) => {
+    // Track in recent blocks
+    addToRecent(template.type);
+    
     // Check if this is a Flow Container (application-flow) - those should be added as standalone
     const isFlowContainer = template.type === 'application-flow';
     
