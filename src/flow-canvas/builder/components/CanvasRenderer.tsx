@@ -3983,45 +3983,29 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Empty canvas state - Simple "Add Section" prompt */}
+              {/* Empty canvas state - Fixed neutral styling (never changes based on canvas theme) */}
               {step.frames.length === 0 && !readOnly && onOpenSectionPicker && (
                 <div className="flex items-center justify-center min-h-[500px] px-4">
                   <div className="w-full max-w-md text-center">
-                    {/* Icon - theme aware */}
-                    <div className={cn(
-                      "w-16 h-16 mx-auto mb-4 rounded-xl border flex items-center justify-center",
-                      isDarkTheme 
-                        ? "bg-white/10 border-white/20" 
-                        : "bg-gray-100 border-gray-200"
-                    )}>
-                      <Layers className={cn("w-8 h-8", isDarkTheme ? "text-white/50" : "text-gray-400")} />
+                    {/* Icon - fixed neutral */}
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl border flex items-center justify-center bg-gray-100 border-gray-200">
+                      <Layers className="w-8 h-8 text-gray-400" />
                     </div>
                     
-                    {/* Title - theme aware */}
-                    <h2 className={cn(
-                      "text-lg font-semibold mb-2",
-                      isDarkTheme ? "text-white" : "text-gray-900"
-                    )}>
+                    {/* Title - fixed neutral */}
+                    <h2 className="text-lg font-semibold mb-2 text-gray-900">
                       Add a Section
                     </h2>
                     
-                    {/* Subtitle - theme aware */}
-                    <p className={cn(
-                      "text-sm mb-6",
-                      isDarkTheme ? "text-white/60" : "text-gray-500"
-                    )}>
+                    {/* Subtitle - fixed neutral */}
+                    <p className="text-sm mb-6 text-gray-500">
                       Start building your page by adding sections
                     </p>
                     
-                    {/* Primary CTA - theme aware */}
+                    {/* Primary CTA - fixed neutral */}
                     <button
                       onClick={() => onOpenSectionPicker()}
-                      className={cn(
-                        "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm",
-                        isDarkTheme 
-                          ? "bg-white text-gray-900 hover:bg-gray-100" 
-                          : "bg-gray-900 text-white hover:bg-gray-800"
-                      )}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm bg-gray-900 text-white hover:bg-gray-800"
                     >
                       <Plus size={18} />
                       Add Section
@@ -4030,25 +4014,16 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                 </div>
               )}
               
-              {/* Subtle Add Section button at bottom - only when content exists */}
+              {/* Subtle Add Section button at bottom - fixed neutral styling */}
               {step.frames.length > 0 && !readOnly && onOpenSectionPicker && (
                 <div className="flex flex-col items-center py-8 group">
                   <button
                     onClick={() => onOpenSectionPicker()}
-                    className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                      "border-2 border-dashed",
-                      isDarkTheme 
-                        ? "border-gray-600 text-gray-500 hover:border-gray-400 hover:text-gray-300 hover:bg-gray-800" 
-                        : "border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
-                    )}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all border-2 border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
                   >
                     <Plus size={18} />
                   </button>
-                  <span className={cn(
-                    "mt-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity",
-                    isDarkTheme ? "text-gray-500" : "text-gray-400"
-                  )}>
+                  <span className="mt-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">
                     Add Section
                   </span>
                 </div>
