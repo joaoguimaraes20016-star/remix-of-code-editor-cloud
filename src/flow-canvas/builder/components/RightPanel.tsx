@@ -1751,18 +1751,10 @@ const ElementInspector: React.FC<{
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Icon</span>
-                <Select 
-                  value={element.content || 'star'}
-                  onValueChange={(value) => onUpdate({ content: value })}
-                >
-                  <SelectTrigger className="builder-input w-28"><SelectValue placeholder="Star" /></SelectTrigger>
-                  <SelectContent className="bg-background border-border">
-                    <SelectItem value="star">Star</SelectItem>
-                    <SelectItem value="check">Check</SelectItem>
-                    <SelectItem value="arrow-right">Arrow Right</SelectItem>
-                    <SelectItem value="play">Play</SelectItem>
-                  </SelectContent>
-                </Select>
+                <ButtonIconPicker 
+                  value={element.content || 'Star'}
+                  onChange={(value) => onUpdate({ content: value })}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Size</span>
@@ -1777,6 +1769,8 @@ const ElementInspector: React.FC<{
                     <SelectItem value="24px">24px</SelectItem>
                     <SelectItem value="32px">32px</SelectItem>
                     <SelectItem value="48px">48px</SelectItem>
+                    <SelectItem value="64px">64px</SelectItem>
+                    <SelectItem value="96px">96px</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

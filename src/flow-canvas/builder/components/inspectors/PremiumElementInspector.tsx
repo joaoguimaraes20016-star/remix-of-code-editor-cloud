@@ -350,7 +350,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             />
           </FieldGroup>
           
-          <FieldGroup label="Variant">
+          <FieldGroup label="Preset Style">
             <Select
               value={(element.props?.variant as string) || 'primary'}
               onValueChange={(v) => handlePropsChange('variant', v)}
@@ -363,14 +363,61 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 <SelectItem value="success">Success (Green)</SelectItem>
                 <SelectItem value="warning">Warning (Orange)</SelectItem>
                 <SelectItem value="premium">Premium (Gold)</SelectItem>
+                <SelectItem value="custom">Custom Colors</SelectItem>
               </SelectContent>
             </Select>
           </FieldGroup>
-          
-          <FieldGroup label="Show Icon">
+        </Section>
+        
+        {/* Custom Colors - only shown when variant is 'custom' */}
+        {element.props?.variant === 'custom' && (
+          <Section title="Custom Colors" icon={<Sparkles className="w-4 h-4" />} defaultOpen>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Background</span>
+                <ColorPickerPopover
+                  color={(element.props?.bgColor as string) || '#8B5CF6'}
+                  onChange={(c) => handlePropsChange('bgColor', c)}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.bgColor as string) || '#8B5CF6' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Text Color</span>
+                <ColorPickerPopover
+                  color={(element.props?.textColor as string) || '#ffffff'}
+                  onChange={(c) => handlePropsChange('textColor', c)}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.textColor as string) || '#ffffff' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Border Color</span>
+                <ColorPickerPopover
+                  color={(element.props?.borderColor as string) || 'transparent'}
+                  onChange={(c) => handlePropsChange('borderColor', c)}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.borderColor as string) || 'transparent' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            </div>
+          </Section>
+        )}
+        
+        <Section title="Icon" icon={<Sparkles className="w-4 h-4" />}>
+          <FieldGroup label="Badge Icon">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handlePropsChange('icon', element.props?.icon ? undefined : 'sparkles')}
+                onClick={() => handlePropsChange('icon', element.props?.icon ? undefined : 'Sparkles')}
                 className={cn(
                   'flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors',
                   element.props?.icon 
@@ -383,6 +430,33 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               </button>
             </div>
           </FieldGroup>
+          
+          {element.props?.icon && (
+            <FieldGroup label="Select Icon">
+              <Select
+                value={(element.props?.icon as string) || 'Sparkles'}
+                onValueChange={(v) => handlePropsChange('icon', v)}
+              >
+                <SelectTrigger className="builder-input text-xs">
+                  <SelectValue placeholder="Select icon" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="Sparkles">✨ Sparkles</SelectItem>
+                  <SelectItem value="Star">⭐ Star</SelectItem>
+                  <SelectItem value="Zap">⚡ Zap</SelectItem>
+                  <SelectItem value="Trophy">🏆 Trophy</SelectItem>
+                  <SelectItem value="Award">🥇 Award</SelectItem>
+                  <SelectItem value="Crown">👑 Crown</SelectItem>
+                  <SelectItem value="Check">✓ Check</SelectItem>
+                  <SelectItem value="Heart">❤️ Heart</SelectItem>
+                  <SelectItem value="Flame">🔥 Flame</SelectItem>
+                  <SelectItem value="Rocket">🚀 Rocket</SelectItem>
+                  <SelectItem value="Gift">🎁 Gift</SelectItem>
+                  <SelectItem value="Bell">🔔 Bell</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+          )}
         </Section>
       </div>
     );
@@ -413,23 +487,83 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             />
           </FieldGroup>
           
-          <FieldGroup label="Icon">
+          <FieldGroup label="Description">
+            <Input
+              value={(element.props?.description as string) || ''}
+              onChange={(e) => handlePropsChange('description', e.target.value)}
+              placeholder="Optional description..."
+              className="builder-input text-xs"
+            />
+          </FieldGroup>
+        </Section>
+        
+        <Section title="Icon" icon={<Sparkles className="w-4 h-4" />}>
+          <FieldGroup label="Display Mode">
             <Select
-              value={(element.props?.icon as string) || 'number'}
-              onValueChange={(v) => handlePropsChange('icon', v)}
+              value={(element.props?.icon as string) === 'number' || !element.props?.icon ? 'number' : 'icon'}
+              onValueChange={(v) => handlePropsChange('icon', v === 'number' ? 'number' : 'Check')}
             >
               <SelectTrigger className="builder-input text-xs">
-                <SelectValue placeholder="Icon" />
+                <SelectValue placeholder="Display" />
               </SelectTrigger>
               <SelectContent className="bg-background border-border">
                 <SelectItem value="number">Show Number</SelectItem>
-                <SelectItem value="map">Map</SelectItem>
-                <SelectItem value="share-2">Share</SelectItem>
-                <SelectItem value="rocket">Rocket</SelectItem>
-                <SelectItem value="check">Checkmark</SelectItem>
+                <SelectItem value="icon">Show Icon</SelectItem>
               </SelectContent>
             </Select>
           </FieldGroup>
+          
+          {element.props?.icon && element.props?.icon !== 'number' && (
+            <FieldGroup label="Select Icon">
+              <Select
+                value={(element.props?.icon as string) || 'Check'}
+                onValueChange={(v) => handlePropsChange('icon', v)}
+              >
+                <SelectTrigger className="builder-input text-xs">
+                  <SelectValue placeholder="Select icon" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border max-h-60">
+                  <SelectItem value="Check">✓ Check</SelectItem>
+                  <SelectItem value="CheckCircle">✓ Check Circle</SelectItem>
+                  <SelectItem value="ArrowRight">→ Arrow Right</SelectItem>
+                  <SelectItem value="ChevronRight">› Chevron Right</SelectItem>
+                  <SelectItem value="Play">▶ Play</SelectItem>
+                  <SelectItem value="Star">⭐ Star</SelectItem>
+                  <SelectItem value="Heart">❤️ Heart</SelectItem>
+                  <SelectItem value="Zap">⚡ Zap</SelectItem>
+                  <SelectItem value="Rocket">🚀 Rocket</SelectItem>
+                  <SelectItem value="Target">🎯 Target</SelectItem>
+                  <SelectItem value="Trophy">🏆 Trophy</SelectItem>
+                  <SelectItem value="Gift">🎁 Gift</SelectItem>
+                  <SelectItem value="Sparkles">✨ Sparkles</SelectItem>
+                  <SelectItem value="Lightbulb">💡 Lightbulb</SelectItem>
+                  <SelectItem value="Map">📍 Map</SelectItem>
+                  <SelectItem value="Share2">↗ Share</SelectItem>
+                  <SelectItem value="Send">✉ Send</SelectItem>
+                  <SelectItem value="Download">⬇ Download</SelectItem>
+                  <SelectItem value="Upload">⬆ Upload</SelectItem>
+                  <SelectItem value="Settings">⚙ Settings</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+          )}
+        </Section>
+        
+        <Section title="Colors" icon={<Award className="w-4 h-4" />}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Accent Color</span>
+              <ColorPickerPopover
+                color={(element.props?.accentColor as string) || primaryColor}
+                onChange={(c) => handlePropsChange('accentColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.accentColor as string) || primaryColor }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+          </div>
         </Section>
       </div>
     );
