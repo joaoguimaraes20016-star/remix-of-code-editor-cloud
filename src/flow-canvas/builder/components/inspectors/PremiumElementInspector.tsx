@@ -270,6 +270,24 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               </SelectContent>
             </Select>
           </FieldGroup>
+          
+          <FieldGroup label="Font Weight">
+            <Select
+              value={(element.props?.fontWeight as string) || 'bold'}
+              onValueChange={(v) => handlePropsChange('fontWeight', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Weight" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="semibold">Semibold</SelectItem>
+                <SelectItem value="bold">Bold</SelectItem>
+                <SelectItem value="extrabold">Extra Bold</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
         </Section>
         
         <Section title="Colors" icon={<Sparkles className="w-4 h-4" />}>
