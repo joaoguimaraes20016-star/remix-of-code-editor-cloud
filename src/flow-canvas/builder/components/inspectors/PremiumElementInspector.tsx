@@ -35,6 +35,9 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from 'lucide-react';
 
 interface PremiumElementInspectorProps {
@@ -136,7 +139,9 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               </button>
             </GradientPickerPopover>
           </FieldGroup>
-          
+        </Section>
+        
+        <Section title="Typography" icon={<Type className="w-4 h-4" />}>
           <FieldGroup label="Font Size">
             <Select
               value={(element.props?.fontSize as string) || '4xl'}
@@ -153,6 +158,62 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 <SelectItem value="6xl">6XL (72px)</SelectItem>
               </SelectContent>
             </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Font Weight">
+            <Select
+              value={(element.props?.fontWeight as string) || 'bold'}
+              onValueChange={(v) => handlePropsChange('fontWeight', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Weight" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="semibold">Semibold</SelectItem>
+                <SelectItem value="bold">Bold</SelectItem>
+                <SelectItem value="extrabold">Extra Bold</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Alignment">
+            <div className="flex gap-1">
+              <button
+                onClick={() => handlePropsChange('textAlign', 'left')}
+                className={cn(
+                  'p-2 rounded-md transition-colors',
+                  (element.props?.textAlign || 'left') === 'left' 
+                    ? 'bg-builder-accent text-white' 
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                <AlignLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handlePropsChange('textAlign', 'center')}
+                className={cn(
+                  'p-2 rounded-md transition-colors',
+                  element.props?.textAlign === 'center' 
+                    ? 'bg-builder-accent text-white' 
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                <AlignCenter className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handlePropsChange('textAlign', 'right')}
+                className={cn(
+                  'p-2 rounded-md transition-colors',
+                  element.props?.textAlign === 'right' 
+                    ? 'bg-builder-accent text-white' 
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                <AlignRight className="w-4 h-4" />
+              </button>
+            </div>
           </FieldGroup>
         </Section>
       </div>
@@ -209,6 +270,47 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               </SelectContent>
             </Select>
           </FieldGroup>
+        </Section>
+        
+        <Section title="Colors" icon={<Sparkles className="w-4 h-4" />}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Number</span>
+              <ColorPickerPopover
+                color={(element.props?.numberColor as string) || '#ffffff'}
+                onChange={(c) => handlePropsChange('numberColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.numberColor as string) || '#ffffff' }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Suffix</span>
+              <ColorPickerPopover
+                color={(element.props?.suffixColor as string) || '#8B5CF6'}
+                onChange={(c) => handlePropsChange('suffixColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.suffixColor as string) || '#8B5CF6' }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Label</span>
+              <ColorPickerPopover
+                color={(element.props?.labelColor as string) || '#888888'}
+                onChange={(c) => handlePropsChange('labelColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.labelColor as string) || '#888888' }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+          </div>
         </Section>
       </div>
     );
@@ -359,6 +461,35 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               <span className="text-xs font-mono text-builder-text-muted w-8 text-center">{speed}s</span>
             </div>
           </FieldGroup>
+        </Section>
+        
+        <Section title="Colors" icon={<Sparkles className="w-4 h-4" />}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Text</span>
+              <ColorPickerPopover
+                color={(element.props?.textColor as string) || '#ffffff'}
+                onChange={(c) => handlePropsChange('textColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.textColor as string) || '#ffffff' }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Separator</span>
+              <ColorPickerPopover
+                color={(element.props?.separatorColor as string) || '#888888'}
+                onChange={(c) => handlePropsChange('separatorColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.separatorColor as string) || '#888888' }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+          </div>
         </Section>
       </div>
     );
@@ -592,6 +723,58 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             </Select>
           </FieldGroup>
         </Section>
+        
+        <Section title="Playback" icon={<Play className="w-4 h-4" />}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Show Play Button</span>
+              <button
+                onClick={() => handlePropsChange('showPlayButton', element.props?.showPlayButton === false)}
+                className={cn(
+                  'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                  element.props?.showPlayButton !== false
+                    ? 'bg-builder-accent text-white'
+                    : 'bg-builder-surface-hover text-builder-text-muted'
+                )}
+              >
+                {element.props?.showPlayButton !== false ? 'On' : 'Off'}
+              </button>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Autoplay on Click</span>
+              <button
+                onClick={() => handlePropsChange('autoplayOnClick', element.props?.autoplayOnClick !== false ? false : true)}
+                className={cn(
+                  'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                  element.props?.autoplayOnClick !== false
+                    ? 'bg-builder-accent text-white'
+                    : 'bg-builder-surface-hover text-builder-text-muted'
+                )}
+              >
+                {element.props?.autoplayOnClick !== false ? 'On' : 'Off'}
+              </button>
+            </div>
+          </div>
+          
+          {element.props?.showPlayButton !== false && (
+            <FieldGroup label="Play Button Style">
+              <Select
+                value={(element.props?.playButtonStyle as string) || 'rounded'}
+                onValueChange={(v) => handlePropsChange('playButtonStyle', v)}
+              >
+                <SelectTrigger className="builder-input text-xs">
+                  <SelectValue placeholder="Style" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="rounded">Rounded</SelectItem>
+                  <SelectItem value="square">Square</SelectItem>
+                  <SelectItem value="minimal">Minimal</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+          )}
+        </Section>
       </div>
     );
   }
@@ -608,6 +791,44 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               placeholder="Underlined text..."
               className="builder-input text-xs"
             />
+          </FieldGroup>
+          
+          <FieldGroup label="Alignment">
+            <div className="flex gap-1">
+              <button
+                onClick={() => handlePropsChange('textAlign', 'left')}
+                className={cn(
+                  'p-2 rounded-md transition-colors',
+                  (element.props?.textAlign || 'left') === 'left' 
+                    ? 'bg-builder-accent text-white' 
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                <AlignLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handlePropsChange('textAlign', 'center')}
+                className={cn(
+                  'p-2 rounded-md transition-colors',
+                  element.props?.textAlign === 'center' 
+                    ? 'bg-builder-accent text-white' 
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                <AlignCenter className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handlePropsChange('textAlign', 'right')}
+                className={cn(
+                  'p-2 rounded-md transition-colors',
+                  element.props?.textAlign === 'right' 
+                    ? 'bg-builder-accent text-white' 
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                <AlignRight className="w-4 h-4" />
+              </button>
+            </div>
           </FieldGroup>
         </Section>
         
