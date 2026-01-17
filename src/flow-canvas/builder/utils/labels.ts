@@ -34,6 +34,15 @@ export const blockTypeLabels: Record<BlockType, string> = {
   contact: 'Contact',
   spacer: 'Spacer',
   divider: 'Divider',
+  // Premium block types
+  'credibility-bar': 'Credibility Bar',
+  'stats-row': 'Stats Row',
+  'process-flow': 'Process Flow',
+  'urgency-banner': 'Urgency Banner',
+  'ticker-bar': 'Ticker Bar',
+  'video-hero': 'Video Hero',
+  'split-hero': 'Split Hero',
+  guarantee: 'Guarantee',
 };
 
 // Check if a block type is a "Section" (container) vs "Content" (element)
@@ -74,6 +83,16 @@ export const elementTypeLabels: Record<ElementType, string> = {
   link: 'Link',
   'multiple-choice': 'Multiple Choice',
   'single-choice': 'Single Choice',
+  // Premium element types
+  'gradient-text': 'Gradient Text',
+  'underline-text': 'Underline Text',
+  'stat-number': 'Stat Number',
+  'avatar-group': 'Avatar Group',
+  ticker: 'Ticker',
+  badge: 'Badge',
+  'icon-text': 'Icon Text',
+  'process-step': 'Process Step',
+  'video-thumbnail': 'Video Thumbnail',
 };
 
 // Step intent labels - User-friendly, not system terminology

@@ -24,7 +24,17 @@ export type ElementType =
   | 'link'
   // Extended types for flexibility
   | 'multiple-choice'
-  | 'single-choice';
+  | 'single-choice'
+  // Premium elements for high-converting funnels
+  | 'gradient-text'      // Text with gradient fill (bold accent phrases)
+  | 'underline-text'     // Text with custom styled underline
+  | 'stat-number'        // Large animated numbers (9,943+)
+  | 'avatar-group'       // Overlapping avatar circles for social proof
+  | 'ticker'             // Scrolling marquee text
+  | 'badge'              // Pill badge with optional icon
+  | 'icon-text'          // Icon + text pair
+  | 'process-step'       // Step in a process visualization
+  | 'video-thumbnail';   // Video with styled play overlay
 
 // Block types - core types actively used in builder
 export type BlockType = 
@@ -49,7 +59,16 @@ export type BlockType =
   | 'footer'
   | 'contact'
   | 'spacer'
-  | 'divider';
+  | 'divider'
+  // Premium block types for high-converting funnels
+  | 'credibility-bar'    // Avatar group + "From the team who..." text
+  | 'stats-row'          // Row of large stat numbers
+  | 'process-flow'       // Step 1 → Step 2 → Step 3 visualization
+  | 'urgency-banner'     // Top banner with countdown or promo
+  | 'ticker-bar'         // Scrolling marquee with key points
+  | 'video-hero'         // Hero section centered on video
+  | 'split-hero'         // Left text, right media layout
+  | 'guarantee';         // Risk reversal / guarantee section
 
 /**
  * @deprecated Use ApplicationStepType from '@/flow-canvas/shared/types/applicationEngine' instead.
@@ -253,9 +272,17 @@ export interface ResponsiveOverrides {
   mobile?: Partial<ElementStateStyles> & ResponsiveTypography;
 }
 
+// Background pattern configuration for premium designs
+export interface BackgroundPattern {
+  type: 'grid' | 'dots' | 'noise' | 'lines';
+  color: string;
+  opacity: number;
+  size?: number;  // Pattern size in px
+}
+
 // Page background settings (Framer-level control)
 export interface PageBackground {
-  type: 'solid' | 'gradient' | 'image';
+  type: 'solid' | 'gradient' | 'image' | 'pattern';
   color?: string;
   gradient?: {
     type: 'linear' | 'radial';
@@ -266,6 +293,8 @@ export interface PageBackground {
   blur?: number;
   overlay?: string;
   overlayOpacity?: number;
+  // Premium pattern overlay
+  pattern?: BackgroundPattern;
 }
 
 // Block animation with stagger support

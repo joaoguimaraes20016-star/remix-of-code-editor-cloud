@@ -16,7 +16,7 @@ export interface StylingContext {
   theme?: 'light' | 'dark';
   primaryColor?: string;
   backgroundColor?: string;
-  backgroundType?: 'solid' | 'gradient' | 'image';
+  backgroundType?: 'solid' | 'gradient' | 'image' | 'pattern';
   fontFamily?: string;
 }
 
