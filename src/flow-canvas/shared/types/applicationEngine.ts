@@ -49,6 +49,8 @@ export interface ApplicationStepValidation {
   maxLength?: number;
   pattern?: string;       // Regex pattern
   customMessage?: string; // Validation error message
+  // Email-specific
+  blockFreeEmails?: boolean;  // Block Gmail, Yahoo, etc.
 }
 
 export interface ApplicationStepSettings {
@@ -79,6 +81,11 @@ export interface ApplicationStepSettings {
   namePlaceholder?: string;
   emailPlaceholder?: string;
   phonePlaceholder?: string;
+  
+  // Phone-specific
+  defaultCountryCode?: string;      // e.g., '+1'
+  phoneFormat?: 'us' | 'international' | 'none';
+  allowCountrySelection?: boolean;
   
   // Appearance
   align?: 'left' | 'center' | 'right';

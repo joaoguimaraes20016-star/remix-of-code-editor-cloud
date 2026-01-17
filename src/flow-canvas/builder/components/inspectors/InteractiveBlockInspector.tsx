@@ -253,6 +253,15 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               />
             </FieldGroup>
           )}
+
+          {/* Button Styling Hint */}
+          {buttonElement && (
+            <div className="px-3 py-2 bg-muted/30 rounded-lg border border-border/50">
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                <span className="font-medium">Tip:</span> To style this button (colors, size, shadow), click the button directly on the canvas to open the button inspector.
+              </p>
+            </div>
+          )}
         </CollapsibleSection>
 
         {/* Options Section - for multi-choice blocks with checkbox elements */}
@@ -320,6 +329,46 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
               </Select>
             </FieldGroup>
 
+            {/* Phone-specific settings */}
+            {inputType === 'tel' && (
+              <>
+                <FieldGroup label="Default Country">
+                  <Select
+                    value={(inputElement.props?.defaultCountryCode as string) || '+1'}
+                    onValueChange={(value) => updateElementProps(inputElement.id, { defaultCountryCode: value })}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      <SelectItem value="+1">🇺🇸 United States (+1)</SelectItem>
+                      <SelectItem value="+44">🇬🇧 United Kingdom (+44)</SelectItem>
+                      <SelectItem value="+61">🇦🇺 Australia (+61)</SelectItem>
+                      <SelectItem value="+49">🇩🇪 Germany (+49)</SelectItem>
+                      <SelectItem value="+33">🇫🇷 France (+33)</SelectItem>
+                      <SelectItem value="+52">🇲🇽 Mexico (+52)</SelectItem>
+                      <SelectItem value="+91">🇮🇳 India (+91)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldGroup>
+                <FieldGroup label="Phone Format">
+                  <Select
+                    value={(inputElement.props?.phoneFormat as string) || 'us'}
+                    onValueChange={(value) => updateElementProps(inputElement.id, { phoneFormat: value })}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="us">(XXX) XXX-XXXX</SelectItem>
+                      <SelectItem value="international">+X XXX XXX XXXX</SelectItem>
+                      <SelectItem value="none">No formatting</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldGroup>
+              </>
+            )}
+
             {/* Field Key */}
             <FieldGroup label="Field Key">
               <Input
@@ -349,6 +398,34 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                 onCheckedChange={(checked) => updateElementProps(inputElement.id, { required: checked })}
               />
             </div>
+
+            {/* Validation - Min/Max length for text inputs */}
+            {(inputType === 'text' || inputType === 'textarea') && (
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <FieldGroup label="Min Length">
+                  <Input
+                    type="number"
+                    value={(inputElement.props?.minLength as number) || ''}
+                    onChange={(e) => updateElementProps(inputElement.id, { 
+                      minLength: e.target.value ? parseInt(e.target.value) : undefined 
+                    })}
+                    placeholder="0"
+                    className="h-8 text-sm"
+                  />
+                </FieldGroup>
+                <FieldGroup label="Max Length">
+                  <Input
+                    type="number"
+                    value={(inputElement.props?.maxLength as number) || ''}
+                    onChange={(e) => updateElementProps(inputElement.id, { 
+                      maxLength: e.target.value ? parseInt(e.target.value) : undefined 
+                    })}
+                    placeholder="∞"
+                    className="h-8 text-sm"
+                  />
+                </FieldGroup>
+              </div>
+            )}
           </CollapsibleSection>
         )}
 
