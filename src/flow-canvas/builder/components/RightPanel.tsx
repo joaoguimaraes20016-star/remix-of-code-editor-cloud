@@ -122,6 +122,8 @@ import { ButtonIconPicker } from './ButtonIconPicker';
 import { ApplicationFlowInspector } from './inspectors/ApplicationFlowInspector';
 import { InteractiveBlockInspector } from './inspectors/InteractiveBlockInspector';
 import { StepElementInspector } from './inspectors/StepElementInspector';
+import { PremiumElementInspector } from './inspectors/PremiumElementInspector';
+import { ConditionalLogicEditor } from './inspectors/ConditionalLogicEditor';
 import { ButtonActionSelector, type ButtonAction as ActionSelectorAction } from './ButtonActionSelector';
 import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
 import { DEFAULT_FLOW_BUTTON_COLOR } from './ApplicationFlowCard';
@@ -312,7 +314,22 @@ const ELEMENT_SECTIONS = {
   radio: ['field'],
   divider: ['dividerStyle'],
   spacer: ['spacerStyle'],
+  // Premium elements - handled by PremiumElementInspector
+  'gradient-text': ['premium'],
+  'stat-number': ['premium'],
+  'avatar-group': ['premium'],
+  'ticker': ['premium'],
+  'badge': ['premium'],
+  'process-step': ['premium'],
+  'video-thumbnail': ['premium'],
+  'underline-text': ['premium'],
 } as const;
+
+// Premium element types that need specialized inspector
+const PREMIUM_ELEMENT_TYPES = [
+  'gradient-text', 'stat-number', 'avatar-group', 'ticker',
+  'badge', 'process-step', 'video-thumbnail', 'underline-text'
+] as const;
 
 type ElementSectionType = keyof typeof ELEMENT_SECTIONS;
 
@@ -513,6 +530,98 @@ const ElementInspector: React.FC<{
   // Check if states section should show - ONLY for buttons now
   const showStates = element.type === 'button';
   const showAnimation = (sectionsToShow as readonly string[]).includes('animation');
+
+  // Premium element types get specialized inspector
+  if ((PREMIUM_ELEMENT_TYPES as readonly string[]).includes(element.type)) {
+    return (
+      <div className="space-y-0">
+        {/* Premium Element Header */}
+        <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(315,85%,58%,0.1)] to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[hsl(315,85%,58%,0.15)] flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-[hsl(315,85%,70%)]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-builder-text capitalize">
+                  {element.type.replace(/-/g, ' ')}
+                </p>
+                <p className="text-[10px] text-[hsl(315,85%,65%)]">Premium Element</p>
+              </div>
+            </div>
+            {/* Quick Actions */}
+            <div className="flex items-center gap-0.5">
+              <button onClick={onMoveUp} className="p-1.5 rounded-md bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active transition-colors" title="Move Up">
+                <MoveUp className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={onMoveDown} className="p-1.5 rounded-md bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active transition-colors" title="Move Down">
+                <MoveDown className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={onDuplicate} className="p-1.5 rounded-md bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active transition-colors" title="Duplicate">
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={onDelete} className="p-1.5 rounded-md bg-builder-surface-hover text-builder-text-muted hover:text-destructive hover:bg-destructive/15 transition-colors" title="Delete">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+        <PremiumElementInspector 
+          element={element} 
+          onUpdate={onUpdate}
+          primaryColor={page.settings.primary_color}
+        />
+        {/* Visibility Section - universal for all elements including premium */}
+        <CollapsibleSection title="Visibility" icon={<Eye className="w-4 h-4" />}>
+          <div className="pt-3 space-y-3">
+            <p className="text-[10px] text-builder-text-dim">
+              Show or hide this element based on form field values.
+            </p>
+            <ConditionalLogicEditor
+              conditions={element.visibility?.conditions?.map(c => {
+                // Map from ConditionalRule operators to ConditionalLogicEditor operators
+                const operatorMap: Record<string, 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than'> = {
+                  equals: 'equals',
+                  notEquals: 'not_equals',
+                  contains: 'contains',
+                  notEmpty: 'not_equals', // Approximate mapping
+                  isEmpty: 'equals', // Approximate mapping
+                };
+                return {
+                  id: c.field,
+                  fieldKey: c.field,
+                  operator: operatorMap[c.operator] || 'equals',
+                  value: c.value
+                };
+              }) || []}
+              onUpdate={(conditions) => {
+                // Map from ConditionalLogicEditor operators back to ConditionalRule operators
+                const reverseOperatorMap: Record<string, 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'isEmpty'> = {
+                  equals: 'equals',
+                  not_equals: 'notEquals',
+                  contains: 'contains',
+                  greater_than: 'notEquals', // Approximate
+                  less_than: 'notEquals', // Approximate
+                };
+                const mapped = conditions.map(c => ({
+                  field: c.fieldKey,
+                  operator: reverseOperatorMap[c.operator] || 'equals',
+                  value: c.value,
+                  action: 'show' as const
+                }));
+                onUpdate({ 
+                  visibility: mapped.length > 0 
+                    ? { conditions: mapped, logic: 'and' as const }
+                    : undefined 
+                });
+              }}
+              availableFields={collectFieldKeys(page.steps || []).map(f => ({ key: f.key, label: f.label }))}
+            />
+          </div>
+        </CollapsibleSection>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="space-y-0">
@@ -1648,7 +1757,7 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
     setBgType(normalized as 'solid' | 'gradient' | 'image' | 'video');
   }, [step.id, step.background?.type]);
   
-  const handleBackgroundTypeChange = (newType: 'solid' | 'gradient' | 'image') => {
+  const handleBackgroundTypeChange = (newType: 'solid' | 'gradient' | 'image' | 'video') => {
     setBgType(newType);
     const updates: Partial<Step> = {
       background: {
@@ -1662,6 +1771,13 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
           }
         }),
         ...(newType === 'image' && { image: step.background?.image || '' }),
+        ...(newType === 'video' && { 
+          video: step.background?.video || '',
+          videoAutoplay: true,
+          videoLoop: true,
+          videoMuted: true,
+          videoOpacity: 100
+        }),
       },
     };
     onUpdate(updates);
@@ -1792,6 +1908,12 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
             >
               Image
             </button>
+            <button 
+              onClick={() => handleBackgroundTypeChange('video')}
+              className={cn('toggle-pill-option flex-1 text-center', bgType === 'video' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
+            >
+              Video
+            </button>
           </div>
 
           {bgType === 'solid' && (
@@ -1841,6 +1963,52 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
                 className="builder-input"
               />
             </FieldGroup>
+          )}
+
+          {bgType === 'video' && (
+            <div className="space-y-3">
+              <FieldGroup label="Video URL">
+                <Input
+                  value={step.background?.video || ''}
+                  onChange={(e) => onUpdate({ 
+                    background: { ...step.background, type: 'video', video: e.target.value } 
+                  })}
+                  placeholder="YouTube, Vimeo, or MP4 URL..."
+                  className="builder-input"
+                />
+              </FieldGroup>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Opacity</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[step.background?.videoOpacity ?? 100]}
+                    onValueChange={([v]) => onUpdate({ 
+                      background: { ...step.background, type: 'video', videoOpacity: v } 
+                    })}
+                    min={0} max={100} step={5} className="w-20"
+                  />
+                  <span className="text-xs text-builder-text w-8">{step.background?.videoOpacity ?? 100}%</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Autoplay</span>
+                <TogglePill 
+                  value={step.background?.videoAutoplay ?? true} 
+                  onToggle={() => onUpdate({ 
+                    background: { ...step.background, type: 'video', videoAutoplay: !(step.background?.videoAutoplay ?? true) } 
+                  })}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Loop</span>
+                <TogglePill 
+                  value={step.background?.videoLoop ?? true} 
+                  onToggle={() => onUpdate({ 
+                    background: { ...step.background, type: 'video', videoLoop: !(step.background?.videoLoop ?? true) } 
+                  })}
+                />
+              </div>
+            </div>
           )}
 
           <p className="text-[10px] text-builder-text-dim">

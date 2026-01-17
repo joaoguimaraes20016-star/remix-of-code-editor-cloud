@@ -2168,14 +2168,25 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               style={{ '--avatar-border': isDarkTheme ? '#0a0a0f' : '#ffffff' } as React.CSSProperties}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              {Array.from({ length: avatarCount }).map((_, i) => (
-                <div 
-                  key={i}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center"
-                >
-                  <User className="w-5 h-5 text-white" />
-                </div>
-              ))}
+              {Array.from({ length: avatarCount }).map((_, i) => {
+                // Use primary color from theme with hue shift for variety
+                const baseColor = primaryColor || '#8B5CF6';
+                const hueShift = i * 15;
+                // Simple inline hue shift approximation - shift towards complementary
+                const shiftedColor = i === 0 ? baseColor : 
+                  `hsl(${(parseInt(baseColor.slice(1,3), 16) + hueShift) % 360}, 70%, 55%)`;
+                return (
+                  <div 
+                    key={i}
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${baseColor}, ${shiftedColor})`
+                    }}
+                  >
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
