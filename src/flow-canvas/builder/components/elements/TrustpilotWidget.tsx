@@ -99,18 +99,18 @@ export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
         rel="noopener noreferrer"
         className={cn(
           'inline-flex items-center gap-2 px-3 py-2 rounded-lg',
-          'bg-white border border-gray-200 hover:border-gray-300',
+          'bg-background border border-border hover:border-muted-foreground/40',
           'transition-colors cursor-pointer',
           className
         )}
         onClick={(e) => isBuilder && e.preventDefault()}
       >
         <StarRating rating={rating} size={16} />
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-foreground">
           {ratingText}
         </span>
         {showReviewCount && (
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             ({reviewText})
           </span>
         )}
@@ -127,7 +127,7 @@ export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
         rel="noopener noreferrer"
         className={cn(
           'flex flex-col items-center gap-3 p-4 rounded-xl',
-          'bg-white border border-gray-200 hover:border-gray-300',
+          'bg-background border border-border hover:border-muted-foreground/40',
           'transition-colors cursor-pointer text-center',
           className
         )}
@@ -136,25 +136,25 @@ export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
         {showLogo && (
           <div className="flex items-center gap-1">
             <Star className="w-5 h-5 text-[#00b67a] fill-[#00b67a]" />
-            <span className="font-semibold text-gray-900">Trustpilot</span>
+            <span className="font-semibold text-foreground">Trustpilot</span>
           </div>
         )}
         
         <StarRating rating={rating} size={24} />
         
         <div className="flex flex-col items-center">
-          <span className="text-2xl font-bold text-gray-900">
+          <span className="text-2xl font-bold text-foreground">
             {ratingText}
           </span>
           {showReviewCount && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               Based on {reviewText}
             </span>
           )}
         </div>
 
         {businessName && (
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {businessName}
           </span>
         )}
@@ -175,16 +175,16 @@ export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
       rel="noopener noreferrer"
       className={cn(
         'flex items-center gap-4 p-4 rounded-xl',
-        'bg-white border border-gray-200 hover:border-gray-300',
+        'bg-background border border-border hover:border-muted-foreground/40',
         'transition-colors cursor-pointer',
         className
       )}
       onClick={(e) => isBuilder && e.preventDefault()}
     >
       {showLogo && (
-        <div className="flex items-center gap-1 pr-4 border-r border-gray-200">
+        <div className="flex items-center gap-1 pr-4 border-r border-border">
           <Star className="w-6 h-6 text-[#00b67a] fill-[#00b67a]" />
-          <span className="font-semibold text-gray-900">Trustpilot</span>
+          <span className="font-semibold text-foreground">Trustpilot</span>
         </div>
       )}
       
@@ -192,18 +192,18 @@ export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
         <StarRating rating={rating} size={20} />
         
         <div className="flex flex-col">
-          <span className="font-bold text-gray-900">
+          <span className="font-bold text-foreground">
             {ratingText} out of 5
           </span>
           {showReviewCount && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               Based on {reviewText}
             </span>
           )}
         </div>
       </div>
 
-      <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+      <ExternalLink className="w-4 h-4 text-muted-foreground ml-auto" />
     </a>
   );
 };

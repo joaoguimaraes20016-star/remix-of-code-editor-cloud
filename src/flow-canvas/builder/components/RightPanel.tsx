@@ -73,7 +73,7 @@ import {
   Clock,
   Check,
   ExternalLink,
-  Image,
+  Image as ImageIcon,
   Video,
   Play,
   Upload,
@@ -525,7 +525,30 @@ const ElementInspector: React.FC<{
   };
 
   const handleImageSelect = (url: string) => {
-    onUpdate({ props: { ...element.props, src: url } });
+    // Check if we're editing a specific slide or logo
+    const editingSlideIndex = (window as any).__editingSlideIndex;
+    const editingLogoIndex = (window as any).__editingLogoIndex;
+    
+    if (editingSlideIndex !== undefined && editingSlideIndex !== null) {
+      // Editing a carousel slide
+      const slides = [...((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || [])];
+      if (slides[editingSlideIndex]) {
+        slides[editingSlideIndex] = { ...slides[editingSlideIndex], src: url };
+        onUpdate({ props: { ...element.props, slides } });
+      }
+      (window as any).__editingSlideIndex = undefined;
+    } else if (editingLogoIndex !== undefined && editingLogoIndex !== null) {
+      // Editing a logo bar logo
+      const logos = [...((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || [])];
+      if (logos[editingLogoIndex]) {
+        logos[editingLogoIndex] = { ...logos[editingLogoIndex], src: url };
+        onUpdate({ props: { ...element.props, logos } });
+      }
+      (window as any).__editingLogoIndex = undefined;
+    } else {
+      // Default: update the main image src
+      onUpdate({ props: { ...element.props, src: url } });
+    }
   };
 
   const buttonAction = element.props?.buttonAction as ButtonAction | null;
@@ -639,7 +662,7 @@ const ElementInspector: React.FC<{
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[hsl(315,85%,58%,0.15)] flex items-center justify-center">
               {element.type === 'button' && <MousePointer2 className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
-              {element.type === 'image' && <Image className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
+              {element.type === 'image' && <ImageIcon className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
               {element.type === 'video' && <Video className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
               {['input', 'select'].includes(element.type) && <Type className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
               {!['button', 'image', 'video', 'input', 'select'].includes(element.type) && <Type className="w-4 h-4 text-[hsl(315,85%,70%)]" />}
@@ -1368,7 +1391,7 @@ const ElementInspector: React.FC<{
       {element.type === 'image' && (
         <>
           {/* Image Source */}
-          <CollapsibleSection title="Image Source" icon={<Image className="w-4 h-4" />} defaultOpen sectionId="source" isHighlighted={highlightedSection === 'source'}>
+          <CollapsibleSection title="Image Source" icon={<ImageIcon className="w-4 h-4" />} defaultOpen sectionId="source" isHighlighted={highlightedSection === 'source'}>
             <div className="pt-3 space-y-3">
               {element.props?.src ? (
                 <div className="relative rounded-lg overflow-hidden border border-builder-border">
@@ -1851,18 +1874,24 @@ const ElementInspector: React.FC<{
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Background</span>
-                <ColorPickerPopover color={element.props?.backgroundColor as string || 'rgba(139, 92, 246, 0.15)'} onChange={(color) => handlePropsChange('backgroundColor', color)}>
+                <ColorPickerPopover 
+                  color={(element.props?.colors as { background?: string; text?: string } | undefined)?.background || 'rgba(139, 92, 246, 0.15)'} 
+                  onChange={(color) => handlePropsChange('colors', { ...(element.props?.colors as object || {}), background: color })}
+                >
                   <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.backgroundColor as string || 'rgba(139, 92, 246, 0.15)' }} />
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { background?: string; text?: string } | undefined)?.background || 'rgba(139, 92, 246, 0.15)' }} />
                     <span className="text-xs text-builder-text-muted">Edit</span>
                   </button>
                 </ColorPickerPopover>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Text</span>
-                <ColorPickerPopover color={element.props?.color as string || '#ffffff'} onChange={(color) => handlePropsChange('color', color)}>
+                <ColorPickerPopover 
+                  color={(element.props?.colors as { background?: string; text?: string } | undefined)?.text || '#ffffff'} 
+                  onChange={(color) => handlePropsChange('colors', { ...(element.props?.colors as object || {}), text: color })}
+                >
                   <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.color as string || '#ffffff' }} />
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { background?: string; text?: string } | undefined)?.text || '#ffffff' }} />
                     <span className="text-xs text-builder-text-muted">Edit</span>
                   </button>
                 </ColorPickerPopover>
@@ -1928,6 +1957,22 @@ const ElementInspector: React.FC<{
               </div>
             </div>
           </CollapsibleSection>
+          <CollapsibleSection title="Colors" icon={<Palette className="w-4 h-4" />}>
+            <div className="pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Primary Color</span>
+                <ColorPickerPopover 
+                  color={(element.props?.colors as { primary?: string } | undefined)?.primary || 'hsl(var(--primary))'}
+                  onChange={(color) => handlePropsChange('colors', { ...(element.props?.colors as object || {}), primary: color })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { primary?: string } | undefined)?.primary || 'hsl(var(--primary))' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            </div>
+          </CollapsibleSection>
         </>
       )}
 
@@ -1986,6 +2031,62 @@ const ElementInspector: React.FC<{
               </div>
             </div>
           </CollapsibleSection>
+          <CollapsibleSection title="Slides" icon={<ImageIcon className="w-4 h-4" />}>
+            <div className="pt-3 space-y-2">
+              {((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || []).map((slide, idx) => (
+                <div key={slide.id} className="flex items-center gap-2 p-2 rounded-lg border border-builder-border bg-builder-surface-hover/50">
+                  <div 
+                    className="w-14 h-10 rounded bg-muted flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
+                    onClick={() => {
+                      // Store which slide we're editing and open image picker
+                      (window as any).__editingSlideIndex = idx;
+                      setIsImagePickerOpen(true);
+                    }}
+                  >
+                    {slide.src ? (
+                      <img src={slide.src} alt={slide.alt || ''} className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-5 h-5 text-muted-foreground/50" />
+                    )}
+                  </div>
+                  <Input 
+                    value={slide.alt || ''} 
+                    onChange={(e) => {
+                      const slides = [...((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || [])];
+                      slides[idx] = { ...slides[idx], alt: e.target.value };
+                      handlePropsChange('slides', slides);
+                    }}
+                    placeholder="Alt text..."
+                    className="builder-input flex-1 text-xs h-8"
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      const slides = ((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || []).filter((_, i) => i !== idx);
+                      handlePropsChange('slides', slides);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2 mt-2"
+                onClick={() => {
+                  const slides = [...((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || [])];
+                  slides.push({ id: `slide-${Date.now()}`, src: '', alt: `Slide ${slides.length + 1}` });
+                  handlePropsChange('slides', slides);
+                }}
+              >
+                <Plus className="w-4 h-4" />
+                Add Slide
+              </Button>
+            </div>
+          </CollapsibleSection>
         </>
       )}
 
@@ -2042,6 +2143,61 @@ const ElementInspector: React.FC<{
                   <span className="text-xs text-builder-text w-10">{String(element.props?.logoHeight || 40)}px</span>
                 </div>
               </FieldGroup>
+            </div>
+          </CollapsibleSection>
+          <CollapsibleSection title="Logos" icon={<ImageIcon className="w-4 h-4" />}>
+            <div className="pt-3 space-y-2">
+              {((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || []).map((logo, idx) => (
+                <div key={logo.id} className="flex items-center gap-2 p-2 rounded-lg border border-builder-border bg-builder-surface-hover/50">
+                  <div 
+                    className="w-12 h-8 rounded bg-muted flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
+                    onClick={() => {
+                      (window as any).__editingLogoIndex = idx;
+                      setIsImagePickerOpen(true);
+                    }}
+                  >
+                    {logo.src ? (
+                      <img src={logo.src} alt={logo.alt || ''} className="w-full h-full object-contain" />
+                    ) : (
+                      <ImageIcon className="w-4 h-4 text-muted-foreground/50" />
+                    )}
+                  </div>
+                  <Input 
+                    value={logo.url || ''} 
+                    onChange={(e) => {
+                      const logos = [...((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || [])];
+                      logos[idx] = { ...logos[idx], url: e.target.value };
+                      handlePropsChange('logos', logos);
+                    }}
+                    placeholder="Link URL..."
+                    className="builder-input flex-1 text-xs h-8"
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      const logos = ((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || []).filter((_, i) => i !== idx);
+                      handlePropsChange('logos', logos);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2 mt-2"
+                onClick={() => {
+                  const logos = [...((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || [])];
+                  logos.push({ id: `logo-${Date.now()}`, src: '', alt: `Logo ${logos.length + 1}` });
+                  handlePropsChange('logos', logos);
+                }}
+              >
+                <Plus className="w-4 h-4" />
+                Add Logo
+              </Button>
             </div>
           </CollapsibleSection>
         </>
@@ -3062,7 +3218,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
 
       {/* Media Block Controls - for media/image/video content blocks */}
       {block.type === 'media' && (
-        <CollapsibleSection title="Media Settings" icon={<Image className="w-4 h-4" />} defaultOpen>
+        <CollapsibleSection title="Media Settings" icon={<ImageIcon className="w-4 h-4" />} defaultOpen>
           <div className="pt-3 space-y-3">
             <div className="text-xs text-builder-text-muted bg-builder-surface-hover rounded-lg p-3">
               <p className="font-medium text-builder-text mb-1">💡 To edit the image:</p>
@@ -3944,7 +4100,7 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
       
       <SiteInfo page={page} onPublish={onPublish} />
 
-      <CollapsibleSection title="Canvas Background" icon={<Image className="w-4 h-4" />} defaultOpen>
+      <CollapsibleSection title="Canvas Background" icon={<ImageIcon className="w-4 h-4" />} defaultOpen>
         <div className="space-y-3 pt-3">
           {/* Hint explaining canvas vs section */}
           <div className="text-[10px] text-builder-text-dim bg-builder-surface-hover rounded-lg px-3 py-2 -mt-1 space-y-1">

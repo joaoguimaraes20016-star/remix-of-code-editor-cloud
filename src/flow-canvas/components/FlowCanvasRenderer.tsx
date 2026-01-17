@@ -824,9 +824,9 @@ export function FlowCanvasRenderer({
               showDays={element.props?.showDays !== false}
               showSeconds={element.props?.showSeconds !== false}
               colors={{
-                background: element.props?.backgroundColor as string,
-                text: element.props?.color as string,
-                label: element.props?.labelColor as string,
+                background: (element.props?.colors as { background?: string })?.background || element.props?.backgroundColor as string,
+                text: (element.props?.colors as { text?: string })?.text || element.props?.color as string,
+                label: (element.props?.colors as { label?: string })?.label || element.props?.labelColor as string,
               }}
               onExpire={() => {
                 // Could trigger next step or custom action
@@ -855,8 +855,8 @@ export function FlowCanvasRenderer({
               autoAdvance={autoAdvance}
               showProgress={element.props?.showProgress !== false}
               colors={{
-                primary: element.props?.primaryColor as string || (page as FlowCanvasPage).settings?.primary_color,
-                text: element.props?.color as string,
+                primary: (element.props?.colors as { primary?: string })?.primary || element.props?.primaryColor as string || (page as FlowCanvasPage).settings?.primary_color,
+                text: (element.props?.colors as { text?: string })?.text || element.props?.color as string,
               }}
               onComplete={() => {
                 // Auto-advance to next step when loader completes

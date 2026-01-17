@@ -2462,9 +2462,9 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   showDays={showDays}
                   showSeconds={showSeconds}
                   colors={{
-                    background: element.props?.backgroundColor as string,
-                    text: element.props?.color as string,
-                    label: element.props?.labelColor as string,
+                    background: (element.props?.colors as { background?: string })?.background || element.props?.backgroundColor as string,
+                    text: (element.props?.colors as { text?: string })?.text || element.props?.color as string,
+                    label: (element.props?.colors as { label?: string })?.label || element.props?.labelColor as string,
                   }}
                   isBuilder={true}
                 />
@@ -2505,8 +2505,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   duration={duration}
                   showProgress={element.props?.showProgress !== false}
                   colors={{
-                    primary: element.props?.primaryColor as string || primaryColor,
-                    text: element.props?.color as string,
+                    primary: (element.props?.colors as { primary?: string })?.primary || element.props?.primaryColor as string || primaryColor,
+                    text: (element.props?.colors as { text?: string })?.text || element.props?.color as string,
                   }}
                   isBuilder={true}
                 />
