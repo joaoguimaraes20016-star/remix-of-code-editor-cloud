@@ -1,10 +1,14 @@
 /**
  * AI Copilot System Prompts
  * 
- * Each task type has a specialized prompt to get optimal results.
+ * Supports multiple generation modes:
+ * - block: Single block generation (existing)
+ * - funnel: Full multi-step funnel generation with branding
+ * - settings: Page settings updates (theme, background, etc.)
  */
 
 export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
+export type GenerationMode = 'block' | 'funnel' | 'settings';
 export type FunnelType = 'vsl' | 'webinar' | 'optin' | 'sales' | 'booking' | 'quiz' | 'application' | 'checkout' | 'thank-you' | 'general';
 
 export interface StylingContext {
@@ -191,8 +195,8 @@ ELEMENT TYPES:
 - heading: Headlines (level 1-6)
 - text: Body copy, paragraphs
 - button: CTA buttons (variant: primary, secondary, outline)
-- image: Images (props.src for URL)
-- video: Video embeds
+- image: Images (props.src for URL, props.placeholder: true for placeholders)
+- video: Video embeds (props.placeholder: true for placeholders)
 - divider: Horizontal separator
 - spacer: Vertical spacing
 
@@ -219,6 +223,153 @@ Feature block:
 {"block":{"type":"feature","label":"Key Features","elements":[{"type":"heading","content":"Why Choose Us","props":{"level":2}},{"type":"text","content":"We offer the most comprehensive solution in the market."},{"type":"text","content":"✓ Feature one that solves a problem"},{"type":"text","content":"✓ Feature two that adds value"},{"type":"text","content":"✓ Feature three that builds trust"}],"props":{}}}
 
 Respond with ONLY the JSON object. No other text.`;
+
+// NEW: Full funnel generation prompt
+const FUNNEL_GENERATE_PROMPT = `${BASE_CONTEXT}
+
+You are an expert funnel architect. Generate complete, beautiful, high-converting funnels.
+
+USER TOPIC/NICHE:
+{{USER_PROMPT}}
+
+FUNNEL TYPES AND STRUCTURES:
+- VSL: Video → Pain Points → Transformation → CTA
+- Webinar: Registration Hero → Benefits → Social Proof → Form
+- Opt-in: Hook Headline → Value Stack → Lead Form → Thank You
+- Sales: Hero → Problem → Solution → Features → Testimonials → Pricing → FAQ → CTA
+- Quiz: Welcome → Questions → Results → Offer
+- Booking: Value Prop → Calendar → Testimonials → Confirmation
+
+GENERATE A COHESIVE BRAND KIT:
+Create beautiful, modern styling that fits the topic. Use:
+- Bold, striking color palettes (not generic)
+- Dark themes work great for premium/exclusive offers
+- Gradients add depth and sophistication
+- Choose fonts that match the brand personality
+
+BRAND KIT SCHEMA:
+{
+  "brandKit": {
+    "theme": "dark" | "light",
+    "primaryColor": "#HEX",
+    "accentColor": "#HEX",
+    "backgroundColor": "#HEX",
+    "backgroundType": "solid" | "gradient",
+    "backgroundGradient": {
+      "type": "linear",
+      "angle": 135,
+      "stops": [
+        { "color": "#HEX", "position": 0 },
+        { "color": "#HEX", "position": 100 }
+      ]
+    },
+    "fontFamily": "Inter" | "Space Grotesk" | "DM Sans" | "Outfit" | "Poppins",
+    "headingFont": "Space Grotesk" | "Outfit" | "Playfair Display"
+  }
+}
+
+STEP STRUCTURE:
+Each step has frames (sections), and each frame has blocks.
+
+{
+  "funnel": {
+    "name": "Descriptive Funnel Name",
+    "funnelType": "vsl|webinar|optin|sales|quiz|booking",
+    "brandKit": { ... },
+    "steps": [
+      {
+        "name": "Page Title",
+        "intent": "capture|qualify|schedule|convert|complete",
+        "frames": [
+          {
+            "layout": "contained" | "full-width",
+            "designPreset": "minimal" | "card" | "glass" | "full-bleed",
+            "label": "Section Name",
+            "blocks": [
+              {
+                "type": "hero|cta|testimonial|feature|faq|media|text-block|pricing|trust",
+                "label": "Block Name",
+                "elements": [
+                  { "type": "heading", "content": "Headline", "props": { "level": 1 } },
+                  { "type": "text", "content": "Body copy" },
+                  { "type": "button", "content": "CTA Text", "props": { "variant": "primary" } },
+                  { "type": "image", "props": { "placeholder": true, "placeholderContext": "hero", "aspectRatio": "16:9" } },
+                  { "type": "video", "props": { "placeholder": true } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+COPY GUIDELINES:
+- Headlines: Benefit-driven, specific, create urgency
+- Subheads: Expand on pain or promise
+- CTAs: Action verbs, value-focused ("Get Instant Access", "Claim Your Spot")
+- Testimonials: Specific results, relatable names
+- Features: Benefits over features, use icons mentally
+
+PLACEHOLDER MEDIA:
+Use placeholder: true for all images and videos. Include:
+- placeholderContext: "hero" | "testimonial" | "feature" | "avatar" | "product"
+- aspectRatio: "16:9" | "4:3" | "1:1" for appropriate sizing
+
+DESIGN PRESETS:
+- minimal: Clean, no background styling
+- card: White/dark card with subtle shadow
+- glass: Glassmorphism with blur effect
+- full-bleed: Edge-to-edge, typically for heroes
+
+Respond with ONLY valid JSON. No markdown, no explanation.`;
+
+// NEW: Settings update prompt
+const SETTINGS_PROMPT = `${BASE_CONTEXT}
+
+You update page styling and theme settings based on user requests.
+
+CURRENT SETTINGS:
+{{CURRENT_SETTINGS}}
+
+USER REQUEST:
+{{USER_PROMPT}}
+
+Update the page settings to match the user's request. You can modify:
+- theme: "light" or "dark"
+- primary_color: HEX color for buttons and accents
+- page_background: Background configuration
+- font_family: Typography choice
+
+BACKGROUND OPTIONS:
+1. Solid color:
+   { "type": "solid", "color": "#HEX" }
+
+2. Gradient:
+   { 
+     "type": "gradient", 
+     "gradient": {
+       "type": "linear",
+       "angle": 135,
+       "stops": [
+         { "color": "#HEX", "position": 0 },
+         { "color": "#HEX", "position": 100 }
+       ]
+     }
+   }
+
+RESPONSE FORMAT:
+{
+  "pageSettings": {
+    "theme": "dark",
+    "primary_color": "#8B5CF6",
+    "page_background": { ... },
+    "font_family": "Inter"
+  }
+}
+
+Respond with ONLY valid JSON. No markdown, no explanation.`;
 
 const REWRITE_PROMPT = `${BASE_CONTEXT}
 
@@ -344,13 +495,53 @@ function formatExistingContent(context: PageContext): string {
   return parts.length > 0 ? parts.join('\n') : 'Empty page';
 }
 
-export function getSystemPrompt(task: TaskType, context?: PageContext): string {
+function formatCurrentSettings(context: PageContext): string {
+  const parts: string[] = [];
+  const styling = context.styling;
+  
+  if (styling?.theme) parts.push(`Theme: ${styling.theme}`);
+  if (styling?.primaryColor) parts.push(`Primary Color: ${styling.primaryColor}`);
+  if (styling?.backgroundColor) parts.push(`Background: ${styling.backgroundColor}`);
+  if (styling?.backgroundType) parts.push(`Background Type: ${styling.backgroundType}`);
+  if (styling?.fontFamily) parts.push(`Font: ${styling.fontFamily}`);
+  
+  return parts.length > 0 ? parts.join('\n') : 'Default settings';
+}
+
+export function getSystemPrompt(
+  task: TaskType, 
+  context?: PageContext,
+  mode?: GenerationMode,
+  userPrompt?: string
+): string {
   const formattedContext = context ? formatContext(context) : 'No context provided';
   const funnelTypeGuidance = context?.funnelType 
     ? FUNNEL_TYPE_GUIDANCE[context.funnelType] 
     : FUNNEL_TYPE_GUIDANCE['general'];
   const stylingContext = context ? formatStylingContext(context) : 'No styling context';
   const existingContent = context ? formatExistingContent(context) : 'No existing content';
+  const currentSettings = context ? formatCurrentSettings(context) : 'Default settings';
+  
+  // Handle generation modes for 'generate' task
+  if (task === 'generate' && mode) {
+    switch (mode) {
+      case 'funnel':
+        return FUNNEL_GENERATE_PROMPT
+          .replace('{{USER_PROMPT}}', userPrompt || 'Create a professional funnel');
+      
+      case 'settings':
+        return SETTINGS_PROMPT
+          .replace('{{CURRENT_SETTINGS}}', currentSettings)
+          .replace('{{USER_PROMPT}}', userPrompt || 'Update the theme');
+      
+      case 'block':
+      default:
+        return GENERATE_PROMPT
+          .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
+          .replace('{{STYLING_CONTEXT}}', stylingContext)
+          .replace('{{EXISTING_CONTENT}}', existingContent);
+    }
+  }
   
   switch (task) {
     case 'suggest':
