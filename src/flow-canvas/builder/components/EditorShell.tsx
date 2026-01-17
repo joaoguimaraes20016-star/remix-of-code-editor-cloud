@@ -481,7 +481,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   }, [page, handlePageUpdate]);
 
   // Add block from palette (with optional position)
-  const handleAddBlock = useCallback((newBlock: Block, position?: { stackId: string; index: number }, options?: { type?: 'block' | 'section' }) => {
+  const handleAddBlock = useCallback((newBlock: Block, position?: { stackId: string; index: number }, options?: { type?: 'block' | 'section'; createSectionIfNeeded?: boolean }) => {
     const updatedPage = deepClone(page);
     const addMode = options?.type || 'block';
     
@@ -526,13 +526,55 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     } else {
       // Default: add to first stack of active step at the end
       const step = updatedPage.steps.find(s => s.id === activeStepId);
+      
+      // If page is empty and createSectionIfNeeded is true, create a section first
+      if (options?.createSectionIfNeeded && step && (!step.frames?.length || !step.frames[0]?.stacks?.length)) {
+        const newFrame = {
+          id: generateId(),
+          label: newBlock.label || 'New Section',
+          stacks: [{
+            id: generateId(),
+            label: 'Main Stack',
+            direction: 'vertical' as const,
+            blocks: [newBlock],
+            props: { alignment: 'center' },
+          }],
+          props: {},
+        };
+        if (!step.frames) step.frames = [];
+        step.frames.push(newFrame);
+        handlePageUpdate(updatedPage, 'Add content');
+        return;
+      }
+      
       if (step && step.frames[0] && step.frames[0].stacks[0]) {
         step.frames[0].stacks[0].blocks.push(newBlock);
         handlePageUpdate(updatedPage, 'Add content');
-        toast.success('Content added');
       }
     }
   }, [page, activeStepId, handlePageUpdate]);
+
+  // Handle AI-generated full page update
+  const handleAIPageUpdate = useCallback((generatedPage: Page) => {
+    // Merge with existing page (keep ID, update structure)
+    const updatedPage: Page = {
+      ...page,
+      name: generatedPage.name || page.name,
+      slug: generatedPage.slug || page.slug,
+      steps: generatedPage.steps.length > 0 ? generatedPage.steps : page.steps,
+      settings: {
+        ...page.settings,
+        ...generatedPage.settings,
+      },
+    };
+    
+    handlePageUpdate(updatedPage, 'AI generated funnel');
+    
+    // Select first step after generation
+    if (updatedPage.steps.length > 0) {
+      setActiveStepId(updatedPage.steps[0].id);
+    }
+  }, [page, handlePageUpdate]);
 
   // Duplicate block
   const handleDuplicateBlock = useCallback((blockId: string) => {
@@ -1709,6 +1751,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           selection={selection}
           onApplySuggestion={handleApplySuggestion}
           onAddBlock={handleAddBlock}
+          onRemoveBlock={handleDeleteBlock}
+          onUpdatePage={handleAIPageUpdate}
           isExpanded={isAICopilotExpanded}
           onToggle={() => setIsAICopilotExpanded(!isAICopilotExpanded)}
         />
