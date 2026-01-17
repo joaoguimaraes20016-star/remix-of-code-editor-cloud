@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Plus, Search, Type, Image, MousePointer, 
-  Mail, Phone, User, UserCheck, ChevronRight, ChevronDown,
+  Mail, Phone, User, UserCheck, ChevronRight,
   HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow,
   Sparkles
 } from 'lucide-react';
@@ -528,29 +528,26 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger className="w-full">
-        <div className="flex items-center justify-between px-2 py-2.5 rounded-lg hover:bg-builder-surface-hover transition-colors group">
-          <div className="flex items-center gap-2">
-            {isOpen ? (
-              <ChevronDown size={14} className="text-builder-text-muted" />
-            ) : (
-              <ChevronRight size={14} className="text-builder-text-muted" />
-            )}
-            <span className="text-sm font-medium text-builder-text">{category.label}</span>
-            <span className="text-[10px] text-builder-text-dim bg-builder-surface-active px-1.5 py-0.5 rounded">
-              {blocks.length}
+        <div className="flex items-center gap-3 px-1 py-2 hover:bg-builder-surface-hover/50 rounded-lg transition-colors cursor-pointer">
+          <ChevronRight 
+            size={16} 
+            className={`text-builder-text-muted transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} 
+          />
+          <span className="text-sm font-medium text-builder-text">{category.label}</span>
+          <span className="text-[11px] text-builder-text-dim bg-builder-surface-active/80 px-2 py-0.5 rounded-full">
+            {blocks.length}
+          </span>
+          {showFlowBadge && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
+              → Flow
             </span>
-            {showFlowBadge && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
-                → Flow
-              </span>
-            )}
-          </div>
+          )}
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="pl-2 pr-1 pb-2 space-y-2">
+        <div className="pl-6 pr-1 pb-2 pt-1 space-y-2">
           {hint && (
-            <p className="text-[10px] text-builder-accent mb-2 ml-2">{hint}</p>
+            <p className="text-[10px] text-builder-accent mb-2">{hint}</p>
           )}
           {blocks.map((block, idx) => (
             <button
