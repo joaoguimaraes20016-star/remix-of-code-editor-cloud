@@ -388,7 +388,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   // Get thinking text
   const thinkingText = getThinkingText(detectedMode);
 
-  // Phase 14: Handle style cloning from URL
+  // Phase 14 Enhanced: Handle full style + layout cloning from URL
   const handleCloneStyle = async () => {
     if (!cloneUrl.trim() || !cloneUrl.startsWith('http')) {
       toast.error('Please enter a valid URL');
@@ -406,65 +406,81 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
 
       if (data?.success && data?.style && onUpdatePage) {
         const style = data.style;
+        const sections = data.sections || [];
         
-        // Deep clone to modify elements
-        const clonedSteps = currentPage.steps.map(step => ({
-          ...step,
-          frames: step.frames?.map(frame => ({
-            ...frame,
-            stacks: frame.stacks?.map(stack => ({
-              ...stack,
-              blocks: stack.blocks?.map(block => ({
-                ...block,
-                elements: block.elements?.map(element => {
-                  // Update buttons with new primary color
-                  if (element.type === 'button') {
-                    return {
-                      ...element,
-                      styles: {
-                        ...element.styles,
-                        backgroundColor: style.primaryColor,
-                      },
-                    };
-                  }
-                  // Update headings with proper contrast text color
-                  if (element.type === 'heading' || element.type === 'gradient-text') {
-                    const textColor = style.theme === 'dark' ? '#ffffff' : '#111827';
-                    return {
-                      ...element,
-                      styles: {
-                        ...element.styles,
-                        color: element.type === 'gradient-text' ? undefined : textColor,
-                      },
-                      props: element.type === 'gradient-text' ? {
-                        ...element.props,
-                        gradientFrom: style.primaryColor,
-                        gradientTo: style.accentColor,
-                      } : element.props,
-                    };
-                  }
-                  // Update text elements with proper contrast
-                  if (element.type === 'text') {
-                    const textColor = style.theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
-                    return {
-                      ...element,
-                      styles: {
-                        ...element.styles,
-                        color: textColor,
-                      },
-                    };
-                  }
-                  return element;
-                }),
+        // Import and use the section generator
+        const { generateBlocksFromSections } = await import('../utils/sectionGenerator');
+        
+        // Generate blocks from scraped sections
+        const generatedBlocks = sections.length > 0 
+          ? generateBlocksFromSections(sections, style)
+          : [];
+        
+        // Create a new step with the generated blocks if we have sections
+        let updatedSteps = currentPage.steps;
+        
+        if (generatedBlocks.length > 0) {
+          // Build the page structure with generated content
+          const newFrame = {
+            id: `frame-${Date.now()}`,
+            label: 'Cloned Section',
+            stacks: [{
+              id: `stack-${Date.now()}`,
+              label: 'Main',
+              direction: 'vertical' as const,
+              blocks: generatedBlocks,
+              props: {},
+            }],
+            props: {},
+          };
+          
+          updatedSteps = [{
+            ...currentPage.steps[0],
+            frames: [newFrame],
+          }];
+        } else {
+          // Just apply colors to existing elements if no sections scraped
+          updatedSteps = currentPage.steps.map(step => ({
+            ...step,
+            frames: step.frames?.map(frame => ({
+              ...frame,
+              stacks: frame.stacks?.map(stack => ({
+                ...stack,
+                blocks: stack.blocks?.map(block => ({
+                  ...block,
+                  elements: block.elements?.map(element => {
+                    if (element.type === 'button') {
+                      return {
+                        ...element,
+                        styles: { ...element.styles, backgroundColor: style.primaryColor },
+                      };
+                    }
+                    if (element.type === 'heading' || element.type === 'gradient-text') {
+                      const textColor = style.theme === 'dark' ? '#ffffff' : '#111827';
+                      return {
+                        ...element,
+                        styles: { ...element.styles, color: element.type === 'gradient-text' ? undefined : textColor },
+                        props: element.type === 'gradient-text' 
+                          ? { ...element.props, gradientFrom: style.primaryColor, gradientTo: style.accentColor } 
+                          : element.props,
+                      };
+                    }
+                    if (element.type === 'text') {
+                      const textColor = style.theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
+                      return { ...element, styles: { ...element.styles, color: textColor } };
+                    }
+                    return element;
+                  }),
+                })),
               })),
             })),
-          })),
-        }));
+          }));
+        }
         
         // Apply the cloned style to the page
         const updatedPage: Page = {
           ...currentPage,
-          steps: clonedSteps,
+          steps: updatedSteps,
           settings: {
             ...currentPage.settings,
             theme: style.theme,
@@ -479,15 +495,19 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
         };
 
         onUpdatePage(updatedPage);
-        toast.success(`Style cloned from ${new URL(cloneUrl).hostname}`, {
-          description: `Applied ${style.style} design with ${style.theme} theme`,
+        
+        const sectionCount = generatedBlocks.length;
+        toast.success(`Cloned from ${new URL(cloneUrl).hostname}`, {
+          description: sectionCount > 0 
+            ? `Created ${sectionCount} sections with ${style.style} style`
+            : `Applied ${style.style} design with ${style.theme} theme`,
         });
         setCloneUrl('');
         setShowUrlInput(false);
       }
     } catch (err) {
       console.error('[AIBuilderCopilot] Clone style error:', err);
-      toast.error('Failed to clone style from URL');
+      toast.error('Failed to clone from URL');
     } finally {
       setIsCloningStyle(false);
     }

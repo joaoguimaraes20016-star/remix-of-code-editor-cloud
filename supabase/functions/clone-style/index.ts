@@ -1,8 +1,7 @@
 /**
  * Clone Style Edge Function
  * 
- * Phase 14: Extracts color palette and typography from a URL
- * for users to clone the style of existing landing pages.
+ * Phase 14 Enhanced: Full visual replica - scrapes page HTML and recreates layout + colors
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -26,6 +25,26 @@ interface ClonedStyle {
   theme: 'dark' | 'light';
   style: string;
   confidence: number;
+}
+
+interface GeneratedSection {
+  type: 'hero' | 'features' | 'testimonials' | 'cta' | 'faq' | 'pricing' | 'logo-bar' | 'stats' | 'text-block' | 'footer';
+  content: {
+    headline?: string;
+    subheadline?: string;
+    buttonText?: string;
+    items?: Array<{
+      title?: string;
+      description?: string;
+      icon?: string;
+    }>;
+  };
+}
+
+interface CloneResult {
+  style: ClonedStyle;
+  sections: GeneratedSection[];
+  sourceUrl: string;
 }
 
 serve(async (req: Request) => {
@@ -52,6 +71,8 @@ serve(async (req: Request) => {
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+    
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
@@ -59,7 +80,113 @@ serve(async (req: Request) => {
       });
     }
 
-    // Use AI to analyze the URL and extract style
+    let pageContent = "";
+    let brandingData: any = null;
+
+    // Step 1: Try to scrape the page with Firecrawl for structure + branding
+    if (FIRECRAWL_API_KEY) {
+      console.log('[clone-style] Scraping page with Firecrawl...');
+      try {
+        const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url,
+            formats: ['markdown', 'branding'],
+            onlyMainContent: true,
+            waitFor: 2000,
+          }),
+        });
+
+        if (scrapeResponse.ok) {
+          const scrapeData = await scrapeResponse.json();
+          pageContent = scrapeData.data?.markdown || scrapeData.markdown || "";
+          brandingData = scrapeData.data?.branding || scrapeData.branding || null;
+          console.log('[clone-style] Scraped content length:', pageContent.length);
+          console.log('[clone-style] Branding data:', brandingData ? 'found' : 'not found');
+        } else {
+          console.log('[clone-style] Firecrawl scrape failed:', await scrapeResponse.text());
+        }
+      } catch (scrapeError) {
+        console.error('[clone-style] Firecrawl error:', scrapeError);
+      }
+    } else {
+      console.log('[clone-style] Firecrawl not configured, using AI-only analysis');
+    }
+
+    // Step 2: Use AI to analyze and generate structure
+    const analysisPrompt = pageContent 
+      ? `You are a landing page analyzer. Analyze this scraped content and extract the page structure.
+
+PAGE CONTENT:
+${pageContent.slice(0, 8000)}
+
+${brandingData ? `BRANDING DATA:
+${JSON.stringify(brandingData, null, 2)}` : ''}
+
+Based on this content, provide:
+1. The visual style (colors, fonts, theme)
+2. The section structure (what sections exist and their content)
+
+Respond with JSON only:
+{
+  "style": {
+    "primaryColor": "#HEX",
+    "accentColor": "#HEX",
+    "backgroundColor": "#HEX",
+    "headingFont": "Font Name",
+    "bodyFont": "Font Name",
+    "theme": "dark|light",
+    "style": "minimal|bold|luxury|playful|corporate|editorial|brutalist",
+    "confidence": 0.8
+  },
+  "sections": [
+    {
+      "type": "hero|features|testimonials|cta|faq|pricing|logo-bar|stats|text-block|footer",
+      "content": {
+        "headline": "Main headline text",
+        "subheadline": "Supporting text",
+        "buttonText": "CTA button text",
+        "items": [{"title": "Feature 1", "description": "Description"}]
+      }
+    }
+  ]
+}`
+      : `You are a landing page analyzer. Analyze this URL and provide an educated guess about its structure.
+
+URL: ${url}
+
+Based on the domain name and common patterns for this type of site, provide:
+1. The likely visual style (colors, fonts, theme)
+2. The typical section structure
+
+Respond with JSON only:
+{
+  "style": {
+    "primaryColor": "#HEX",
+    "accentColor": "#HEX", 
+    "backgroundColor": "#HEX",
+    "headingFont": "Font Name",
+    "bodyFont": "Font Name",
+    "theme": "dark|light",
+    "style": "minimal|bold|luxury|playful|corporate|editorial|brutalist",
+    "confidence": 0.4
+  },
+  "sections": [
+    {
+      "type": "hero|features|testimonials|cta|faq|pricing|logo-bar|stats|text-block|footer",
+      "content": {
+        "headline": "Suggested headline",
+        "subheadline": "Suggested subheadline",
+        "buttonText": "Get Started"
+      }
+    }
+  ]
+}`;
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -70,41 +197,10 @@ serve(async (req: Request) => {
         model: "google/gemini-3-flash-preview",
         messages: [{
           role: "user",
-          content: `You are a design analysis expert. Analyze this landing page URL and extract its visual design system.
-
-URL: ${url}
-
-Visit this URL mentally (use your knowledge of common landing pages and design patterns if you recognize the domain) and extract:
-
-1. Primary color (the main brand color used for CTAs, accents) - provide as hex
-2. Accent/secondary color (complementary accent) - provide as hex  
-3. Background color (page background) - provide as hex
-4. Heading font family (the font used for headlines)
-5. Body font family (the font used for paragraphs)
-6. Theme (dark or light based on background)
-7. Design style (one of: minimal, bold, luxury, playful, corporate, editorial, brutalist)
-
-If you cannot access the URL, make educated guesses based on:
-- The domain name and industry
-- Common design patterns for that type of site
-- Modern design trends
-
-Respond ONLY with valid JSON in this exact format:
-{
-  "primaryColor": "#HEX",
-  "accentColor": "#HEX", 
-  "backgroundColor": "#HEX",
-  "headingFont": "Font Name",
-  "bodyFont": "Font Name",
-  "theme": "dark|light",
-  "style": "minimal|bold|luxury|playful|corporate|editorial|brutalist",
-  "confidence": 0.0-1.0
-}
-
-Set confidence to 0.8+ if you recognize the site, 0.5-0.7 if guessing from domain, 0.3-0.5 if highly uncertain.`
+          content: analysisPrompt
         }],
         temperature: 0.3,
-        max_tokens: 500,
+        max_tokens: 4000,
       }),
     });
 
@@ -129,30 +225,55 @@ Set confidence to 0.8+ if you recognize the site, 0.5-0.7 if guessing from domai
 
     // Parse the JSON response
     try {
-      // Clean up potential markdown formatting
       const cleanContent = content
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim();
       
-      const style: ClonedStyle = JSON.parse(cleanContent);
+      const parsed = JSON.parse(cleanContent);
+      
+      // Apply branding data if Firecrawl provided it
+      if (brandingData?.colors) {
+        parsed.style.primaryColor = brandingData.colors.primary || parsed.style.primaryColor;
+        parsed.style.accentColor = brandingData.colors.accent || brandingData.colors.secondary || parsed.style.accentColor;
+        parsed.style.backgroundColor = brandingData.colors.background || parsed.style.backgroundColor;
+        parsed.style.confidence = 0.95; // High confidence with real branding data
+      }
+      if (brandingData?.fonts?.[0]?.family) {
+        parsed.style.headingFont = brandingData.fonts[0].family;
+      }
+      if (brandingData?.typography?.fontFamilies?.primary) {
+        parsed.style.bodyFont = brandingData.typography.fontFamilies.primary;
+      }
       
       // Validate and provide defaults
       const validatedStyle: ClonedStyle = {
-        primaryColor: style.primaryColor || '#8B5CF6',
-        accentColor: style.accentColor || '#A855F7',
-        backgroundColor: style.backgroundColor || '#0a0a0f',
-        headingFont: style.headingFont || 'Inter',
-        bodyFont: style.bodyFont || 'Inter',
-        theme: style.theme === 'dark' ? 'dark' : 'light',
-        style: style.style || 'minimal',
-        confidence: typeof style.confidence === 'number' ? style.confidence : 0.5,
+        primaryColor: parsed.style?.primaryColor || '#8B5CF6',
+        accentColor: parsed.style?.accentColor || '#A855F7',
+        backgroundColor: parsed.style?.backgroundColor || '#0a0a0f',
+        headingFont: parsed.style?.headingFont || 'Inter',
+        bodyFont: parsed.style?.bodyFont || 'Inter',
+        theme: parsed.style?.theme === 'dark' ? 'dark' : 'light',
+        style: parsed.style?.style || 'minimal',
+        confidence: typeof parsed.style?.confidence === 'number' ? parsed.style.confidence : 0.5,
+      };
+
+      const validatedSections: GeneratedSection[] = Array.isArray(parsed.sections) 
+        ? parsed.sections.map((s: any) => ({
+            type: s.type || 'text-block',
+            content: s.content || {},
+          }))
+        : [{ type: 'hero', content: { headline: 'Welcome', buttonText: 'Get Started' } }];
+
+      const result: CloneResult = {
+        style: validatedStyle,
+        sections: validatedSections,
+        sourceUrl: url,
       };
 
       return new Response(JSON.stringify({ 
         success: true, 
-        style: validatedStyle,
-        sourceUrl: url,
+        ...result,
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
