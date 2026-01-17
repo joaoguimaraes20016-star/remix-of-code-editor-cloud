@@ -163,11 +163,43 @@ export function getPageBackgroundStyles(bg: PageBackground | undefined, isDarkTh
         styles.backgroundColor = defaultBg;
       }
       break;
+    case 'video':
+      // Video backgrounds render as transparent - actual video element overlaid separately
+      styles.backgroundColor = 'transparent';
+      break;
     default:
       styles.backgroundColor = defaultBg;
   }
   
   return styles;
+}
+
+/**
+ * Get video embed URL from various platforms
+ */
+export function getVideoBackgroundUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${ytMatch[1]}&controls=0&showinfo=0&modestbranding=1`;
+  
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1&loop=1&background=1`;
+  
+  // Direct video URL (mp4, webm)
+  if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return url;
+  
+  return null;
+}
+
+/**
+ * Check if a video URL is a direct file (mp4, webm) vs embed (YouTube, Vimeo)
+ */
+export function isDirectVideoUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return !!url.match(/\.(mp4|webm|ogg)(\?|$)/i);
 }
 
 /**

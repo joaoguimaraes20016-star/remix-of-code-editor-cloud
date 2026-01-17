@@ -140,7 +140,7 @@ export interface StylingContext {
   theme?: 'light' | 'dark';
   primaryColor?: string;
   backgroundColor?: string;
-  backgroundType?: 'solid' | 'gradient' | 'image' | 'pattern';
+  backgroundType?: 'solid' | 'gradient' | 'image' | 'pattern' | 'video';
 }
 
 /**
