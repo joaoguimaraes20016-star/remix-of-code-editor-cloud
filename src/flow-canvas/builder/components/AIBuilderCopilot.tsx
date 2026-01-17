@@ -14,22 +14,25 @@ import {
   Layout,
   AlertCircle,
   RefreshCw,
-  Undo2
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { getSuggestions, streamAICopilot, PageContext } from '@/lib/ai/aiCopilotService';
 import { parseAIBlockResponse, looksLikeJSON, StylingContext } from '@/lib/ai/parseAIBlockResponse';
-import { detectFunnelType, getFunnelTypeDescription, extractExistingBlockTypes, analyzePageContent } from '@/lib/ai/funnelTypeDetector';
+import { detectFunnelType, extractExistingBlockTypes, analyzePageContent } from '@/lib/ai/funnelTypeDetector';
 import { Button } from '@/components/ui/button';
+import { GenerationMode } from '@/lib/ai/copilotTypes';
+import { parseFunnelResponse } from '@/lib/ai/parseFunnelResponse';
 
 interface AIBuilderCopilotPanelProps extends AICopilotProps {
   isExpanded: boolean;
   onToggle: () => void;
   /** Callback to add a block to the canvas */
-  onAddBlock?: (block: Block, position?: { stackId: string; index: number }, options?: { type?: 'block' | 'section' }) => void;
+  onAddBlock?: (block: Block, position?: { stackId: string; index: number }, options?: { type?: 'block' | 'section'; createSectionIfNeeded?: boolean }) => void;
   /** Callback to remove a block (for undo) */
   onRemoveBlock?: (blockId: string) => void;
+  /** Callback to update the entire page (for full funnel generation) */
+  onUpdatePage?: (page: Page) => void;
 }
 
 const suggestionIcons: Record<string, React.ReactNode> = {
@@ -40,17 +43,63 @@ const suggestionIcons: Record<string, React.ReactNode> = {
 };
 
 /**
+ * Detect generation mode from user prompt
+ */
+function detectGenerationMode(prompt: string): GenerationMode {
+  const lowerPrompt = prompt.toLowerCase();
+  
+  // Funnel keywords - user wants full funnel/page generation
+  const funnelKeywords = [
+    'funnel', 'vsl', 'webinar', 'opt-in', 'optin', 'opt in',
+    'sales page', 'landing page', 'quiz funnel', 'booking page',
+    'build me a', 'create a', 'make me a', 'generate a',
+    'full page', 'entire page', 'whole page', 'complete funnel',
+    'build a', 'design a', 'new page', 'new funnel',
+  ];
+  
+  // Settings keywords - user wants to change page styling
+  const settingsKeywords = [
+    'background', 'theme', 'dark mode', 'light mode', 
+    'colors', 'color scheme', 'brand', 'gradient', 'page styling',
+    'make the page', 'change the background'
+  ];
+  
+  if (funnelKeywords.some(kw => lowerPrompt.includes(kw))) return 'funnel';
+  if (settingsKeywords.some(kw => lowerPrompt.includes(kw))) return 'settings';
+  return 'block';
+}
+
+/**
+ * Get friendly text for the thinking state based on mode
+ */
+function getThinkingText(mode: GenerationMode): { title: string; subtitle: string } {
+  switch (mode) {
+    case 'funnel':
+      return { 
+        title: 'Building your funnel...', 
+        subtitle: 'Generating pages, sections, and content' 
+      };
+    case 'settings':
+      return { 
+        title: 'Updating styling...', 
+        subtitle: 'Applying theme and colors' 
+      };
+    default:
+      return { 
+        title: 'Creating content...', 
+        subtitle: 'Generating block for your page' 
+      };
+  }
+}
+
+/**
  * Build rich context from current page state for intelligent AI responses
  */
 function buildPageContext(page: Page, selection: SelectionState): PageContext {
-  // Detect funnel type
   const funnelTypeResult = detectFunnelType(page);
-  
-  // Analyze existing content
   const contentAnalysis = analyzePageContent(page);
   const existingBlockTypes = extractExistingBlockTypes(page);
   
-  // Extract styling context
   const stylingContext = {
     theme: page.settings.theme || 'light',
     primaryColor: page.settings.primary_color,
@@ -70,15 +119,9 @@ function buildPageContext(page: Page, selection: SelectionState): PageContext {
       )
     )?.step_intent,
     elementType: selection.type || undefined,
-    
-    // Funnel intelligence
     funnelType: funnelTypeResult.type,
     funnelTypeConfidence: funnelTypeResult.confidence,
-    
-    // Styling context
     styling: stylingContext,
-    
-    // Content analysis
     existingBlockTypes,
     ...contentAnalysis,
   };
@@ -95,17 +138,30 @@ function extractStylingContext(page: Page): StylingContext {
   };
 }
 
+/**
+ * Check if page has at least one valid section to add blocks to
+ */
+function pageHasValidStack(page: Page, activeStepId?: string): boolean {
+  const activeStep = page.steps.find(s => s.id === activeStepId) || page.steps[0];
+  if (!activeStep) return false;
+  
+  return activeStep.frames?.some(f => f.stacks?.some(s => s.id)) || false;
+}
+
 export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   currentPage,
   selection,
   onApplySuggestion,
   onAddBlock,
   onRemoveBlock,
+  onUpdatePage,
   isExpanded,
   onToggle,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const [detectedMode, setDetectedMode] = useState<GenerationMode>('block');
   const [suggestions, setSuggestions] = useState<AIsuggestion[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [streamedResponse, setStreamedResponse] = useState('');
@@ -114,26 +170,69 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   
   // Track last added block for undo
   const lastAddedBlockRef = useRef<{ id: string; label: string } | null>(null);
+  
+  // Track detected mode for response handling
+  const detectedModeRef = useRef<GenerationMode>('block');
 
-  // Fetch suggestions when panel expands or context changes
+  // Fetch suggestions when panel expands
   useEffect(() => {
     if (isExpanded && !isLoadingSuggestions && suggestions.length === 0) {
       fetchSuggestions();
     }
   }, [isExpanded]);
 
-  // AUTO-APPLY: Parse and add block automatically when streaming completes
+  // AUTO-APPLY: Parse and apply response when streaming completes
   useEffect(() => {
-    if (streamedResponse && !isProcessing && looksLikeJSON(streamedResponse)) {
+    if (!streamedResponse || isProcessing) return;
+    
+    const mode = detectedModeRef.current;
+    
+    // Check if it looks like a funnel response
+    if (mode === 'funnel' && (streamedResponse.includes('"funnel"') || streamedResponse.includes('"steps"'))) {
+      const result = parseFunnelResponse(streamedResponse, currentPage);
+      
+      if (result.success && result.page && onUpdatePage) {
+        onUpdatePage(result.page);
+        const stepCount = result.page.steps.length;
+        toast.success(`Generated "${result.page.name}" with ${stepCount} page${stepCount > 1 ? 's' : ''}`);
+        setStreamedResponse('');
+        setPrompt('');
+        setIsThinking(false);
+        setParseError(null);
+        return;
+      } else if (result.error) {
+        console.error('[AIBuilderCopilot] Funnel parse error:', result.error);
+        setParseError(result.error);
+        setIsThinking(false);
+        return;
+      }
+    }
+    
+    // Check if it looks like a settings response
+    if (mode === 'settings' && streamedResponse.includes('"pageSettings"')) {
+      const result = parseFunnelResponse(streamedResponse, currentPage);
+      
+      if (result.success && result.page && onUpdatePage) {
+        onUpdatePage(result.page);
+        toast.success('Page styling updated');
+        setStreamedResponse('');
+        setPrompt('');
+        setIsThinking(false);
+        setParseError(null);
+        return;
+      }
+    }
+    
+    // Fallback: try to parse as single block
+    if (looksLikeJSON(streamedResponse)) {
       const stylingContext = extractStylingContext(currentPage);
       const block = parseAIBlockResponse(streamedResponse, stylingContext);
       
       if (block && onAddBlock) {
-        // Auto-apply immediately
-        onAddBlock(block);
+        // Auto-create section if needed
+        onAddBlock(block, undefined, { createSectionIfNeeded: true });
         lastAddedBlockRef.current = { id: block.id, label: block.label };
         
-        // Show success toast with undo option
         toast.success(`Added "${block.label}" to canvas`, {
           action: onRemoveBlock ? {
             label: 'Undo',
@@ -147,15 +246,16 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
           duration: 4000,
         });
         
-        // Clear state after auto-applying
         setStreamedResponse('');
         setParseError(null);
         setPrompt('');
+        setIsThinking(false);
       } else if (streamedResponse && !block) {
-        setParseError('Could not parse AI response into a valid block');
+        setParseError('Could not parse AI response');
+        setIsThinking(false);
       }
     }
-  }, [streamedResponse, isProcessing, currentPage, onAddBlock, onRemoveBlock]);
+  }, [streamedResponse, isProcessing, currentPage, onAddBlock, onRemoveBlock, onUpdatePage]);
 
   const fetchSuggestions = async () => {
     setIsLoadingSuggestions(true);
@@ -165,7 +265,6 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
       const context = buildPageContext(currentPage, selection);
       const newSuggestions = await getSuggestions(context);
       
-      // Map to expected format with unique IDs
       const mappedSuggestions: AIsuggestion[] = newSuggestions.map((s, i) => ({
         id: s.id || `suggestion-${i}`,
         type: s.type,
@@ -186,15 +285,24 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   const handleSubmitPrompt = async () => {
     if (!prompt.trim()) return;
     
+    // Detect generation mode from prompt
+    const mode = detectGenerationMode(prompt);
+    setDetectedMode(mode);
+    detectedModeRef.current = mode;
+    
+    console.log('[AIBuilderCopilot] Detected mode:', mode, 'for prompt:', prompt);
+    
     setIsProcessing(true);
+    setIsThinking(true);
     setStreamedResponse('');
     setError(null);
     setParseError(null);
     
-    // Build rich context with funnel type and styling
+    // Build rich context
     const context = buildPageContext(currentPage, selection);
     
     console.log('[AIBuilderCopilot] Generating with context:', {
+      mode,
       funnelType: context.funnelType,
       styling: context.styling,
       existingBlockTypes: context.existingBlockTypes,
@@ -214,16 +322,19 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
         },
         onError: (err) => {
           setIsProcessing(false);
+          setIsThinking(false);
           setError(err.message);
           toast.error(err.message);
         },
-      }
+      },
+      mode  // Pass detected mode to service
     );
   };
 
   const handleDiscardResponse = () => {
     setStreamedResponse('');
     setParseError(null);
+    setIsThinking(false);
   };
 
   const handleApplySuggestion = async (suggestion: AIsuggestion) => {
@@ -243,10 +354,13 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
 
   // Get funnel type for display
   const funnelType = detectFunnelType(currentPage);
+  
+  // Get thinking text
+  const thinkingText = getThinkingText(detectedMode);
 
   return (
     <div className={cn(
-      'fixed bottom-6 left-6 w-72 bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 z-40',
+      'fixed bottom-6 left-6 w-80 bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 z-40',
       isExpanded ? 'max-h-[500px]' : 'h-12'
     )}>
       {/* Header */}
@@ -288,9 +402,10 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Create a testimonial section..."
+                placeholder="Build me a VSL funnel for..."
                 className="builder-input resize-none pr-12 text-sm"
                 rows={2}
+                disabled={isProcessing}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -317,41 +432,70 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
             </div>
           </div>
 
-          {/* Streaming Response (while processing) */}
-          {isProcessing && streamedResponse && (
+          {/* Thinking State - Friendly loading indicator instead of raw JSON */}
+          {isThinking && !parseError && (
             <div className="px-3 pb-3">
-              <div className="p-3 rounded-lg bg-builder-bg text-xs text-builder-text-secondary whitespace-pre-wrap max-h-32 overflow-y-auto font-mono">
-                {streamedResponse}
-                <span className="animate-pulse">▊</span>
+              <div className="p-4 rounded-xl bg-gradient-to-br from-builder-accent/10 to-builder-accent/5 border border-builder-accent/20">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-builder-accent/20 rounded-full animate-ping" />
+                    <div className="relative p-2 bg-builder-accent rounded-full">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-builder-text">
+                      {thinkingText.title}
+                    </div>
+                    <div className="text-xs text-builder-text-muted mt-0.5">
+                      {thinkingText.subtitle}
+                    </div>
+                  </div>
+                </div>
+                {/* Progress dots */}
+                <div className="flex justify-center gap-1.5 mt-3">
+                  <div className="w-2 h-2 rounded-full bg-builder-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-builder-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-builder-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             </div>
           )}
 
-          {/* Parse Error - Show raw response with error */}
-          {parseError && streamedResponse && !isProcessing && (
+          {/* Parse Error - Show error with discard option */}
+          {parseError && !isProcessing && (
             <div className="px-3 pb-3">
               <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertCircle className="w-4 h-4 text-orange-500 shrink-0" />
                   <span className="text-xs font-medium text-orange-500">{parseError}</span>
                 </div>
-                <div className="text-xs text-builder-text-muted whitespace-pre-wrap max-h-24 overflow-y-auto mb-2 font-mono bg-builder-bg p-2 rounded">
-                  {streamedResponse}
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={handleDiscardResponse}
+                    className="flex-1 text-builder-text-muted"
+                  >
+                    Dismiss
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => {
+                      handleDiscardResponse();
+                      handleSubmitPrompt();
+                    }}
+                    className="flex-1"
+                  >
+                    Retry
+                  </Button>
                 </div>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={handleDiscardResponse}
-                  className="w-full text-builder-text-muted"
-                >
-                  Dismiss
-                </Button>
               </div>
             </div>
           )}
 
           {/* Error State */}
-          {error && !streamedResponse && (
+          {error && !streamedResponse && !isThinking && (
             <div className="px-3 pb-3">
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -360,8 +504,8 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
             </div>
           )}
 
-          {/* Suggestions */}
-          {!parseError && !isProcessing && (
+          {/* Suggestions - Only show when idle */}
+          {!isThinking && !parseError && !isProcessing && (
             <div className="px-3 pb-3">
               <div className="text-xs text-builder-text-dim mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -385,7 +529,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
                 </div>
               ) : suggestions.length > 0 ? (
                 <div className="space-y-2">
-                  {suggestions.map((suggestion) => (
+                  {suggestions.slice(0, 3).map((suggestion) => (
                     <button
                       key={suggestion.id}
                       onClick={() => handleApplySuggestion(suggestion)}
@@ -403,12 +547,9 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
                           <div className="text-sm font-medium text-builder-text">
                             {suggestion.title}
                           </div>
-                          <div className="text-xs text-builder-text-muted mt-0.5">
+                          <div className="text-xs text-builder-text-muted mt-0.5 line-clamp-2">
                             {suggestion.description}
                           </div>
-                        </div>
-                        <div className="text-xs text-builder-text-dim font-mono">
-                          {Math.round(suggestion.confidence * 100)}%
                         </div>
                       </div>
                     </button>
@@ -416,14 +557,14 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
                 </div>
               ) : !error ? (
                 <div className="text-xs text-builder-text-muted text-center py-4">
-                  No suggestions available
+                  Type a prompt to get started
                 </div>
               ) : null}
             </div>
           )}
 
           {/* Context indicator */}
-          {selection.id && (
+          {selection.id && !isThinking && (
             <div className="px-3 pb-3">
               <div className="text-xs text-builder-text-dim px-3 py-2 bg-builder-bg rounded-lg flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-builder-accent" />
