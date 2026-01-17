@@ -133,15 +133,25 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
       )}
       style={{ backgroundColor }}
     >
-      {/* Fade edges */}
-      <div 
-        className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" 
-        style={{ width: fadeEdgeWidth }}
-      />
-      <div 
-        className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" 
-        style={{ width: fadeEdgeWidth }}
-      />
+      {/* Fade edges - use backgroundColor prop */}
+      {fadeEdgeWidth > 0 && (
+        <>
+          <div 
+            className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none" 
+            style={{ 
+              width: fadeEdgeWidth,
+              background: `linear-gradient(to right, ${backgroundColor || 'hsl(var(--background))'}, transparent)`
+            }}
+          />
+          <div 
+            className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none" 
+            style={{ 
+              width: fadeEdgeWidth,
+              background: `linear-gradient(to left, ${backgroundColor || 'hsl(var(--background))'}, transparent)`
+            }}
+          />
+        </>
+      )}
       
       {/* Marquee track */}
       <div 
