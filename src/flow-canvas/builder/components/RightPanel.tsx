@@ -4157,6 +4157,7 @@ const FrameInspector: React.FC<{
             value={getBackgroundValue()}
             onChange={handleBackgroundEditorChange}
             showImageOption={true}
+            showVideoOption={true}
           />
           
           {/* Presets for quick selection */}
