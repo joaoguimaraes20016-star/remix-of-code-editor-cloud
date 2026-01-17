@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface CountdownTimerProps {
@@ -16,6 +16,19 @@ export interface CountdownTimerProps {
   showLabels?: boolean;
   showDays?: boolean;
   showSeconds?: boolean;
+  // NEW: Enhanced features
+  loopMode?: boolean;
+  loopInterval?: number; // minutes to reset to
+  speedMultiplier?: number; // 1 = real, 2 = 2x faster, etc.
+  boxSize?: 'sm' | 'md' | 'lg' | 'xl';
+  customLabels?: {
+    days?: string;
+    hours?: string;
+    minutes?: string;
+    seconds?: string;
+  };
+  animateDigits?: boolean;
+  urgencyPulse?: boolean; // Pulse animation when under 1 minute
   onExpire?: () => void;
   className?: string;
   isBuilder?: boolean;
@@ -46,6 +59,14 @@ function padZero(num: number): string {
   return num.toString().padStart(2, '0');
 }
 
+// Size variants for boxes
+const sizeClasses = {
+  sm: { box: 'w-10 h-10 sm:w-12 sm:h-12', text: 'text-lg sm:text-xl', label: 'text-[8px]', separator: 'text-lg sm:text-xl' },
+  md: { box: 'w-14 h-14 sm:w-20 sm:h-20', text: 'text-2xl sm:text-4xl', label: 'text-[10px] sm:text-xs', separator: 'text-2xl sm:text-3xl' },
+  lg: { box: 'w-18 h-18 sm:w-24 sm:h-24', text: 'text-3xl sm:text-5xl', label: 'text-xs sm:text-sm', separator: 'text-3xl sm:text-4xl' },
+  xl: { box: 'w-24 h-24 sm:w-32 sm:h-32', text: 'text-4xl sm:text-6xl', label: 'text-sm', separator: 'text-4xl sm:text-5xl' },
+};
+
 export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   endDate,
   style = 'boxes',
@@ -56,6 +77,13 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   showLabels = true,
   showDays = true,
   showSeconds = true,
+  loopMode = false,
+  loopInterval = 60, // 60 minutes default
+  speedMultiplier = 1,
+  boxSize = 'md',
+  customLabels,
+  animateDigits = false,
+  urgencyPulse = false,
   onExpire,
   className,
   isBuilder = false,
@@ -64,32 +92,58 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
     calculateTimeRemaining(endDate)
   );
   const [hasExpired, setHasExpired] = useState(false);
+  const [loopEndDate, setLoopEndDate] = useState(endDate);
+  const prevTimeRef = useRef<TimeRemaining | null>(null);
 
   useEffect(() => {
     // Update immediately when endDate changes
     setTimeRemaining(calculateTimeRemaining(endDate));
+    setLoopEndDate(endDate);
     setHasExpired(false);
   }, [endDate]);
 
   useEffect(() => {
-    if (hasExpired) return;
+    if (hasExpired && !loopMode) return;
+    
+    // Use faster interval for speed multiplier
+    const intervalMs = Math.max(50, 1000 / speedMultiplier);
     
     const interval = setInterval(() => {
-      const remaining = calculateTimeRemaining(endDate);
+      const remaining = calculateTimeRemaining(loopEndDate);
+      
+      // Apply speed multiplier by advancing time faster
+      if (speedMultiplier > 1) {
+        const adjustedTotal = remaining.total - (intervalMs * (speedMultiplier - 1));
+        const adjustedEnd = new Date(new Date(loopEndDate).getTime() - (intervalMs * (speedMultiplier - 1)));
+        setLoopEndDate(adjustedEnd.toISOString());
+      }
+      
       setTimeRemaining(remaining);
       
-      if (remaining.total <= 0 && !hasExpired) {
-        setHasExpired(true);
-        onExpire?.();
-        
-        if (expiredAction === 'redirect' && expiredRedirectUrl && !isBuilder) {
-          window.location.href = expiredRedirectUrl;
+      if (remaining.total <= 0) {
+        if (loopMode && !isBuilder) {
+          // Reset to loop interval
+          const newEndDate = new Date(Date.now() + loopInterval * 60 * 1000);
+          setLoopEndDate(newEndDate.toISOString());
+          setTimeRemaining(calculateTimeRemaining(newEndDate.toISOString()));
+        } else if (!hasExpired) {
+          setHasExpired(true);
+          onExpire?.();
+          
+          if (expiredAction === 'redirect' && expiredRedirectUrl && !isBuilder) {
+            window.location.href = expiredRedirectUrl;
+          }
         }
       }
-    }, 1000);
+    }, intervalMs);
     
     return () => clearInterval(interval);
-  }, [endDate, hasExpired, expiredAction, expiredRedirectUrl, onExpire, isBuilder]);
+  }, [loopEndDate, hasExpired, expiredAction, expiredRedirectUrl, onExpire, isBuilder, loopMode, loopInterval, speedMultiplier]);
+
+  // Track previous values for animation
+  useEffect(() => {
+    prevTimeRef.current = timeRemaining;
+  }, [timeRemaining]);
 
   // Expired state
   if (hasExpired && expiredAction === 'hide') {
@@ -109,43 +163,59 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
     );
   }
 
-  const { days, hours, minutes, seconds } = timeRemaining;
+  const { days, hours, minutes, seconds, total } = timeRemaining;
+  const isUrgent = urgencyPulse && total < 60000 && total > 0; // Under 1 minute
+  const sizes = sizeClasses[boxSize];
+
+  const getLabel = (key: 'days' | 'hours' | 'minutes' | 'seconds') => {
+    return customLabels?.[key] || key.charAt(0).toUpperCase() + key.slice(1);
+  };
 
   const timeUnits = useMemo(() => {
-    const units: { value: number; label: string }[] = [];
-    if (showDays) units.push({ value: days, label: 'Days' });
-    units.push({ value: hours, label: 'Hours' });
-    units.push({ value: minutes, label: 'Minutes' });
-    if (showSeconds) units.push({ value: seconds, label: 'Seconds' });
+    const units: { value: number; label: string; key: string }[] = [];
+    if (showDays) units.push({ value: days, label: getLabel('days'), key: 'days' });
+    units.push({ value: hours, label: getLabel('hours'), key: 'hours' });
+    units.push({ value: minutes, label: getLabel('minutes'), key: 'minutes' });
+    if (showSeconds) units.push({ value: seconds, label: getLabel('seconds'), key: 'seconds' });
     return units;
-  }, [days, hours, minutes, seconds, showDays, showSeconds]);
+  }, [days, hours, minutes, seconds, showDays, showSeconds, customLabels]);
+
+  // Check if digit changed for animation
+  const didChange = (key: string, value: number) => {
+    if (!animateDigits || !prevTimeRef.current) return false;
+    const prev = prevTimeRef.current;
+    const prevValue = key === 'days' ? prev.days : key === 'hours' ? prev.hours : key === 'minutes' ? prev.minutes : prev.seconds;
+    return prevValue !== value;
+  };
 
   // Boxes style (default)
   if (style === 'boxes') {
     return (
-      <div className={cn('flex items-center justify-center gap-2 sm:gap-4', className)}>
+      <div className={cn('flex items-center justify-center gap-2 sm:gap-4', isUrgent && 'animate-pulse', className)}>
         {timeUnits.map((unit, index) => (
-          <React.Fragment key={unit.label}>
+          <React.Fragment key={unit.key}>
             {index > 0 && (
               <span 
-                className="text-2xl sm:text-3xl font-bold opacity-50"
+                className={cn('font-bold opacity-50', sizes.separator)}
                 style={{ color: colors.separator || colors.text }}
               >
                 :
               </span>
             )}
-            <div 
-              className="flex flex-col items-center"
-            >
+            <div className="flex flex-col items-center">
               <div 
-                className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center"
+                className={cn(
+                  'rounded-xl flex items-center justify-center transition-transform',
+                  sizes.box,
+                  animateDigits && didChange(unit.key, unit.value) && 'animate-bounce-subtle'
+                )}
                 style={{ 
                   backgroundColor: colors.background || 'rgba(139, 92, 246, 0.15)',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
               >
                 <span 
-                  className="text-2xl sm:text-4xl font-bold tabular-nums"
+                  className={cn('font-bold tabular-nums', sizes.text)}
                   style={{ color: colors.text || 'inherit' }}
                 >
                   {padZero(unit.value)}
@@ -153,7 +223,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
               </div>
               {showLabels && (
                 <span 
-                  className="text-[10px] sm:text-xs uppercase tracking-wider mt-1.5 font-medium opacity-70"
+                  className={cn('uppercase tracking-wider mt-1.5 font-medium opacity-70', sizes.label)}
                   style={{ color: colors.label || colors.text }}
                 >
                   {unit.label}
@@ -162,6 +232,29 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
             </div>
           </React.Fragment>
         ))}
+        
+        {/* Urgency pulse keyframes */}
+        {isUrgent && (
+          <style>{`
+            @keyframes urgency-pulse {
+              0%, 100% { opacity: 1; transform: scale(1); }
+              50% { opacity: 0.8; transform: scale(1.02); }
+            }
+          `}</style>
+        )}
+        
+        {/* Digit bounce animation */}
+        {animateDigits && (
+          <style>{`
+            @keyframes bounce-subtle {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+            }
+            .animate-bounce-subtle {
+              animation: bounce-subtle 0.3s ease-out;
+            }
+          `}</style>
+        )}
       </div>
     );
   }
@@ -170,7 +263,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   if (style === 'inline') {
     const parts = timeUnits.map(u => padZero(u.value));
     return (
-      <div className={cn('text-center', className)}>
+      <div className={cn('text-center', isUrgent && 'animate-pulse', className)}>
         <span 
           className="text-3xl sm:text-5xl font-mono font-bold tracking-tight"
           style={{ color: colors.text || 'inherit' }}
@@ -181,7 +274,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
           <div className="flex justify-center gap-8 mt-2">
             {timeUnits.map(unit => (
               <span 
-                key={unit.label}
+                key={unit.key}
                 className="text-xs uppercase tracking-wider opacity-60"
                 style={{ color: colors.label || colors.text }}
               >
@@ -199,7 +292,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
     const parts = timeUnits.map(u => padZero(u.value));
     return (
       <span 
-        className={cn('font-mono font-semibold text-lg', className)}
+        className={cn('font-mono font-semibold text-lg', isUrgent && 'animate-pulse', className)}
         style={{ color: colors.text || 'inherit' }}
       >
         {parts.join(':')}
@@ -210,9 +303,9 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   // Flip style (animated)
   if (style === 'flip') {
     return (
-      <div className={cn('flex items-center justify-center gap-1 sm:gap-3', className)}>
+      <div className={cn('flex items-center justify-center gap-1 sm:gap-3', isUrgent && 'animate-pulse', className)}>
         {timeUnits.map((unit, index) => (
-          <React.Fragment key={unit.label}>
+          <React.Fragment key={unit.key}>
             {index > 0 && (
               <span 
                 className="text-3xl font-bold mx-1"
@@ -222,16 +315,23 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
               </span>
             )}
             <div className="flex flex-col items-center">
-              <div className="relative">
+              <div className="relative perspective-500">
                 <div 
-                  className="w-12 h-16 sm:w-16 sm:h-20 rounded-lg flex items-center justify-center overflow-hidden"
+                  className={cn(
+                    'rounded-lg flex items-center justify-center overflow-hidden',
+                    boxSize === 'sm' ? 'w-10 h-14 sm:w-12 sm:h-16' :
+                    boxSize === 'lg' ? 'w-16 h-22 sm:w-20 sm:h-28' :
+                    boxSize === 'xl' ? 'w-20 h-28 sm:w-24 sm:h-32' :
+                    'w-12 h-16 sm:w-16 sm:h-20',
+                    animateDigits && didChange(unit.key, unit.value) && 'flip-animate'
+                  )}
                   style={{ 
                     backgroundColor: colors.background || '#1a1a2e',
                     boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2)'
                   }}
                 >
                   <span 
-                    className="text-2xl sm:text-4xl font-bold tabular-nums"
+                    className={cn('font-bold tabular-nums', sizes.text)}
                     style={{ color: colors.text || '#ffffff' }}
                   >
                     {padZero(unit.value)}
@@ -245,7 +345,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
               </div>
               {showLabels && (
                 <span 
-                  className="text-[10px] sm:text-xs uppercase tracking-wider mt-2 font-medium"
+                  className={cn('uppercase tracking-wider mt-2 font-medium', sizes.label)}
                   style={{ color: colors.label || colors.text || '#888' }}
                 >
                   {unit.label}
@@ -254,6 +354,20 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
             </div>
           </React.Fragment>
         ))}
+        
+        {animateDigits && (
+          <style>{`
+            .perspective-500 { perspective: 500px; }
+            @keyframes flip-down {
+              0% { transform: rotateX(0deg); }
+              50% { transform: rotateX(-90deg); }
+              100% { transform: rotateX(0deg); }
+            }
+            .flip-animate {
+              animation: flip-down 0.6s ease-in-out;
+            }
+          `}</style>
+        )}
       </div>
     );
   }

@@ -74,9 +74,24 @@ interface EffectsPickerPopoverProps {
 interface EffectSettings {
   duration: number;
   delay: number;
-  easing: 'ease' | 'ease-in' | 'ease-out' | 'linear' | 'bounce';
+  easing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear' | 'bounce';
   repeat: 'once' | 'loop' | 'hover';
 }
+
+const EASING_OPTIONS: { value: EffectSettings['easing']; label: string }[] = [
+  { value: 'ease', label: 'Ease' },
+  { value: 'ease-in', label: 'Ease In' },
+  { value: 'ease-out', label: 'Ease Out' },
+  { value: 'ease-in-out', label: 'Ease In-Out' },
+  { value: 'linear', label: 'Linear' },
+  { value: 'bounce', label: 'Bounce' },
+];
+
+const REPEAT_OPTIONS: { value: EffectSettings['repeat']; label: string; icon: React.ReactNode }[] = [
+  { value: 'once', label: 'Once', icon: <Zap className="w-3 h-3" /> },
+  { value: 'loop', label: 'Loop', icon: <RotateCw className="w-3 h-3" /> },
+  { value: 'hover', label: 'On Hover', icon: <MousePointer className="w-3 h-3" /> },
+];
 
 export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
   children,
@@ -86,6 +101,8 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
   const [selectedEffect, setSelectedEffect] = useState<string | null>(currentEffect || null);
   const [duration, setDuration] = useState(0.5);
   const [delay, setDelay] = useState(0);
+  const [easing, setEasing] = useState<EffectSettings['easing']>('ease');
+  const [repeat, setRepeat] = useState<EffectSettings['repeat']>('once');
   const [isOpen, setIsOpen] = useState(false);
   
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -118,21 +135,22 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
     return () => document.removeEventListener('pointerdown', handlePointerDown, true);
   }, [isOpen]);
 
-  // Emit updated settings when duration/delay changes (if an effect is selected)
+  // Emit updated settings when any setting changes (if an effect is selected)
   React.useEffect(() => {
     if (selectedEffect) {
-      onSelectEffect(selectedEffect, { duration, delay, easing: 'ease', repeat: 'once' });
+      onSelectEffect(selectedEffect, { duration, delay, easing, repeat });
     }
-  }, [duration, delay]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [duration, delay, easing, repeat]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectEffect = (effectId: string) => {
     setSelectedEffect(effectId);
-    onSelectEffect(effectId, { duration, delay, easing: 'ease', repeat: 'once' });
-    setIsOpen(false);
+    onSelectEffect(effectId, { duration, delay, easing, repeat });
   };
 
   const handleRemoveEffect = () => {
     setSelectedEffect(null);
+    setEasing('ease');
+    setRepeat('once');
     onSelectEffect('', undefined);
     setIsOpen(false);
   };
@@ -238,6 +256,49 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
                 className="w-20"
               />
               <span className="text-xs text-builder-text w-8">{delay}s</span>
+            </div>
+          </div>
+          
+          {/* Easing Selector */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Easing</span>
+            <div className="flex gap-1">
+              {EASING_OPTIONS.slice(0, 4).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setEasing(opt.value)}
+                  className={cn(
+                    'px-2 py-1 text-[10px] rounded transition-colors',
+                    easing === opt.value
+                      ? 'bg-builder-accent text-white'
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                >
+                  {opt.label.replace('Ease ', '').replace('Ease', 'Ease')}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Repeat Selector */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Repeat</span>
+            <div className="flex gap-1">
+              {REPEAT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setRepeat(opt.value)}
+                  className={cn(
+                    'flex items-center gap-1 px-2 py-1 text-[10px] rounded transition-colors',
+                    repeat === opt.value
+                      ? 'bg-builder-accent text-white'
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                >
+                  {opt.icon}
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

@@ -17,6 +17,10 @@ export interface LogoMarqueeProps {
   grayscale?: boolean;
   logoHeight?: number;
   gap?: number;
+  // NEW: Enhanced features
+  fadeEdgeWidth?: number; // 0-100px
+  hoverEffect?: 'none' | 'color' | 'scale' | 'both';
+  backgroundColor?: string;
   className?: string;
   isBuilder?: boolean;
   onLogosChange?: (logos: LogoMarqueeProps['logos']) => void;
@@ -31,6 +35,9 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
   grayscale = true,
   logoHeight = 40,
   gap = 48,
+  fadeEdgeWidth = 48,
+  hoverEffect = 'color',
+  backgroundColor,
   className,
   isBuilder = false,
   onLogosChange,
@@ -97,6 +104,7 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
             logo={logo}
             height={logoHeight}
             grayscale={grayscale}
+            hoverEffect={hoverEffect}
             isBuilder={isBuilder}
             onRemove={(e) => handleRemoveLogo(logo.id, e)}
           />
@@ -123,10 +131,17 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
         'relative w-full overflow-hidden group',
         className
       )}
+      style={{ backgroundColor }}
     >
       {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+      <div 
+        className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" 
+        style={{ width: fadeEdgeWidth }}
+      />
+      <div 
+        className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" 
+        style={{ width: fadeEdgeWidth }}
+      />
       
       {/* Marquee track */}
       <div 
@@ -145,6 +160,7 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
             logo={logo}
             height={logoHeight}
             grayscale={grayscale}
+            hoverEffect={hoverEffect}
             isBuilder={isBuilder && index < logos.length}
             onRemove={(e) => handleRemoveLogo(logo.id, e)}
           />
@@ -186,6 +202,7 @@ interface LogoItemProps {
   logo: LogoMarqueeProps['logos'][0];
   height: number;
   grayscale: boolean;
+  hoverEffect: 'none' | 'color' | 'scale' | 'both';
   isBuilder: boolean;
   onRemove: (e: React.MouseEvent) => void;
 }
@@ -194,16 +211,29 @@ const LogoItem: React.FC<LogoItemProps> = ({
   logo,
   height,
   grayscale,
+  hoverEffect,
   isBuilder,
   onRemove,
 }) => {
+  const getHoverClasses = () => {
+    if (hoverEffect === 'none') return '';
+    if (hoverEffect === 'color') return grayscale ? 'hover:grayscale-0 hover:opacity-100' : '';
+    if (hoverEffect === 'scale') return 'hover:scale-110';
+    if (hoverEffect === 'both') return cn(
+      grayscale && 'hover:grayscale-0 hover:opacity-100',
+      'hover:scale-110'
+    );
+    return '';
+  };
+
   const content = logo.src ? (
     <img 
       src={logo.src}
       alt={logo.alt || 'Logo'}
       className={cn(
         'object-contain transition-all duration-300',
-        grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100'
+        grayscale && 'grayscale opacity-60',
+        getHoverClasses()
       )}
       style={{ height, maxWidth: height * 3 }}
     />

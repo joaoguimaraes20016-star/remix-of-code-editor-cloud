@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Loader2, Check, Sparkles } from 'lucide-react';
 
@@ -15,9 +15,57 @@ export interface LoaderAnimationProps {
     text?: string;
   };
   showProgress?: boolean;
+  // NEW: Enhanced features
+  size?: 'sm' | 'md' | 'lg';
+  customSteps?: string[]; // For analyzing type
+  easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+  completeText?: string;
+  showPercentage?: boolean;
   className?: string;
   isBuilder?: boolean;
 }
+
+// Size configurations
+const sizeConfig = {
+  sm: {
+    spinner: 'w-10 h-10',
+    check: 'w-5 h-5',
+    progress: 'h-2 max-w-[200px]',
+    dot: 'w-2.5 h-2.5',
+    text: 'text-sm',
+    subText: 'text-xs',
+    pulse: { outer: 'w-14 h-14', inner: 'w-8 h-8', icon: 'w-4 h-4' },
+    analyzing: { outer: 'w-16 h-16', middle: 'w-14 h-14', inner: 'w-12 h-12', text: 'text-lg' },
+  },
+  md: {
+    spinner: 'w-16 h-16',
+    check: 'w-8 h-8',
+    progress: 'h-3 max-w-xs',
+    dot: 'w-4 h-4',
+    text: 'text-lg',
+    subText: 'text-sm',
+    pulse: { outer: 'w-20 h-20', inner: 'w-12 h-12', icon: 'w-6 h-6' },
+    analyzing: { outer: 'w-24 h-24', middle: 'w-20 h-20', inner: 'w-16 h-16', text: 'text-2xl' },
+  },
+  lg: {
+    spinner: 'w-24 h-24',
+    check: 'w-12 h-12',
+    progress: 'h-4 max-w-md',
+    dot: 'w-6 h-6',
+    text: 'text-xl',
+    subText: 'text-base',
+    pulse: { outer: 'w-28 h-28', inner: 'w-16 h-16', icon: 'w-8 h-8' },
+    analyzing: { outer: 'w-32 h-32', middle: 'w-28 h-28', inner: 'w-24 h-24', text: 'text-3xl' },
+  },
+};
+
+// Easing functions
+const easingFunctions = {
+  'linear': (t: number) => t,
+  'ease-in': (t: number) => t * t,
+  'ease-out': (t: number) => 1 - Math.pow(1 - t, 2),
+  'ease-in-out': (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+};
 
 export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
   text = 'Loading...',
@@ -28,11 +76,18 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
   onComplete,
   colors = {},
   showProgress = true,
+  size = 'md',
+  customSteps,
+  easing = 'ease-out',
+  completeText = 'Complete!',
+  showPercentage = true,
   className,
   isBuilder = false,
 }) => {
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const sizes = sizeConfig[size];
+  const easingFn = easingFunctions[easing];
 
   useEffect(() => {
     if (isBuilder) {
@@ -49,13 +104,12 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
     const startTime = Date.now();
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const newProgress = Math.min(100, (elapsed / duration) * 100);
+      const rawProgress = Math.min(1, elapsed / duration);
+      const easedProgress = easingFn(rawProgress) * 100;
       
-      // Ease-out for more natural feel
-      const easedProgress = 100 - Math.pow(1 - newProgress / 100, 3) * 100;
       setProgress(easedProgress);
 
-      if (newProgress >= 100) {
+      if (rawProgress >= 1) {
         clearInterval(interval);
         setIsComplete(true);
         setTimeout(() => {
@@ -65,7 +119,7 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
     }, 50);
 
     return () => clearInterval(interval);
-  }, [duration, autoAdvance, onComplete, isBuilder]);
+  }, [duration, autoAdvance, onComplete, isBuilder, easing]);
 
   const primaryColor = colors.primary || 'hsl(var(--primary))';
   const backgroundColor = colors.background || 'hsl(var(--muted))';
@@ -78,33 +132,33 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
         <div className="relative">
           {isComplete ? (
             <div 
-              className="w-16 h-16 rounded-full flex items-center justify-center animate-scale-in"
+              className={cn('rounded-full flex items-center justify-center animate-scale-in', sizes.spinner)}
               style={{ backgroundColor: primaryColor }}
             >
-              <Check className="w-8 h-8 text-white" />
+              <Check className={cn('text-white', sizes.check)} />
             </div>
           ) : (
             <Loader2 
-              className="w-16 h-16 animate-spin" 
+              className={cn('animate-spin', sizes.spinner)} 
               style={{ color: primaryColor }}
             />
           )}
         </div>
         <p 
-          className="mt-4 text-lg font-medium"
+          className={cn('mt-4 font-medium', sizes.text)}
           style={{ color: textColor }}
         >
-          {isComplete ? 'Complete!' : text}
+          {isComplete ? completeText : text}
         </p>
         {subText && !isComplete && (
-          <p className="mt-1 text-sm opacity-60" style={{ color: textColor }}>
+          <p className={cn('mt-1 opacity-60', sizes.subText)} style={{ color: textColor }}>
             {subText}
           </p>
         )}
         {showProgress && (
-          <div className="mt-4 w-48">
+          <div className={cn('mt-4 w-48', sizes.progress)}>
             <div 
-              className="h-1.5 rounded-full overflow-hidden"
+              className="h-full rounded-full overflow-hidden"
               style={{ backgroundColor }}
             >
               <div 
@@ -115,6 +169,11 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
                 }}
               />
             </div>
+            {showPercentage && (
+              <p className="mt-1 text-xs text-center opacity-60" style={{ color: textColor }}>
+                {Math.round(progress)}%
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -126,14 +185,14 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
     return (
       <div className={cn('flex flex-col items-center justify-center py-8', className)}>
         <p 
-          className="mb-4 text-lg font-medium"
+          className={cn('mb-4 font-medium', sizes.text)}
           style={{ color: textColor }}
         >
-          {isComplete ? 'Complete!' : text}
+          {isComplete ? completeText : text}
         </p>
-        <div className="w-full max-w-xs">
+        <div className={cn('w-full', sizes.progress)}>
           <div 
-            className="h-3 rounded-full overflow-hidden"
+            className="h-full rounded-full overflow-hidden"
             style={{ backgroundColor }}
           >
             <div 
@@ -147,12 +206,14 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
             </div>
           </div>
-          <p className="mt-2 text-sm text-center opacity-60" style={{ color: textColor }}>
-            {Math.round(progress)}%
-          </p>
+          {showPercentage && (
+            <p className="mt-2 text-sm text-center opacity-60" style={{ color: textColor }}>
+              {Math.round(progress)}%
+            </p>
+          )}
         </div>
         {subText && !isComplete && (
-          <p className="mt-3 text-sm opacity-60" style={{ color: textColor }}>
+          <p className={cn('mt-3 opacity-60', sizes.subText)} style={{ color: textColor }}>
             {subText}
           </p>
         )}
@@ -178,7 +239,7 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="w-4 h-4 rounded-full animate-bounce"
+              className={cn('rounded-full animate-bounce', sizes.dot)}
               style={{ 
                 backgroundColor: primaryColor,
                 animationDelay: `${i * 0.15}s`,
@@ -188,13 +249,13 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
           ))}
         </div>
         <p 
-          className="mt-4 text-lg font-medium"
+          className={cn('mt-4 font-medium', sizes.text)}
           style={{ color: textColor }}
         >
           {text}
         </p>
         {subText && (
-          <p className="mt-1 text-sm opacity-60" style={{ color: textColor }}>
+          <p className={cn('mt-1 opacity-60', sizes.subText)} style={{ color: textColor }}>
             {subText}
           </p>
         )}
@@ -208,31 +269,31 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
       <div className={cn('flex flex-col items-center justify-center py-8', className)}>
         <div className="relative">
           <div 
-            className="w-20 h-20 rounded-full animate-pulse"
+            className={cn('rounded-full animate-pulse', sizes.pulse.outer)}
             style={{ backgroundColor: `${primaryColor}20` }}
           />
           <div 
-            className="absolute inset-0 m-auto w-12 h-12 rounded-full flex items-center justify-center"
+            className={cn('absolute inset-0 m-auto rounded-full flex items-center justify-center', sizes.pulse.inner)}
             style={{ backgroundColor: primaryColor }}
           >
-            <Sparkles className="w-6 h-6 text-white" />
+            <Sparkles className={cn('text-white', sizes.pulse.icon)} />
           </div>
         </div>
         <p 
-          className="mt-4 text-lg font-medium"
+          className={cn('mt-4 font-medium', sizes.text)}
           style={{ color: textColor }}
         >
           {text}
         </p>
         {subText && (
-          <p className="mt-1 text-sm opacity-60" style={{ color: textColor }}>
+          <p className={cn('mt-1 opacity-60', sizes.subText)} style={{ color: textColor }}>
             {subText}
           </p>
         )}
         {showProgress && (
-          <div className="mt-4 w-48">
+          <div className={cn('mt-4 w-48', sizes.progress)}>
             <div 
-              className="h-1.5 rounded-full overflow-hidden"
+              className="h-full rounded-full overflow-hidden"
               style={{ backgroundColor }}
             >
               <div 
@@ -251,22 +312,23 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
 
   // Analyzing animation (multi-step with messages)
   if (animationType === 'analyzing') {
-    const steps = [
+    const defaultSteps = [
       'Analyzing your responses...',
       'Calculating results...',
       'Preparing your personalized report...',
     ];
-    const currentStep = Math.min(Math.floor(progress / 35), steps.length - 1);
+    const steps = customSteps?.length ? customSteps : defaultSteps;
+    const currentStep = Math.min(Math.floor(progress / (100 / steps.length)), steps.length - 1);
 
     return (
       <div className={cn('flex flex-col items-center justify-center py-8', className)}>
         <div className="relative mb-4">
           <div 
-            className="w-24 h-24 rounded-full border-4 border-t-transparent animate-spin"
+            className={cn('rounded-full border-4 border-t-transparent animate-spin', sizes.analyzing.outer)}
             style={{ borderColor: `${primaryColor}30`, borderTopColor: 'transparent' }}
           />
           <div 
-            className="absolute inset-0 m-auto w-20 h-20 rounded-full border-4 border-t-transparent animate-spin"
+            className={cn('absolute inset-0 m-auto rounded-full border-4 border-t-transparent animate-spin', sizes.analyzing.middle)}
             style={{ 
               borderColor: `${primaryColor}60`, 
               borderTopColor: 'transparent',
@@ -275,24 +337,24 @@ export const LoaderAnimation: React.FC<LoaderAnimationProps> = ({
             }}
           />
           <div 
-            className="absolute inset-0 m-auto w-16 h-16 rounded-full flex items-center justify-center"
+            className={cn('absolute inset-0 m-auto rounded-full flex items-center justify-center', sizes.analyzing.inner)}
             style={{ backgroundColor: primaryColor }}
           >
-            <span className="text-2xl font-bold text-white">
+            <span className={cn('font-bold text-white', sizes.analyzing.text)}>
               {Math.round(progress)}%
             </span>
           </div>
         </div>
         
         <p 
-          className="text-lg font-medium transition-all duration-300"
+          className={cn('font-medium transition-all duration-300', sizes.text)}
           style={{ color: textColor }}
         >
           {isBuilder ? text : steps[currentStep]}
         </p>
         
         {subText && (
-          <p className="mt-1 text-sm opacity-60" style={{ color: textColor }}>
+          <p className={cn('mt-1 opacity-60', sizes.subText)} style={{ color: textColor }}>
             {subText}
           </p>
         )}
