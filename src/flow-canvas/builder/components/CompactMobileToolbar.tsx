@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
   MoreHorizontal,
@@ -90,6 +90,19 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activePanel, setActivePanel] = useState<'main' | 'font' | 'color' | null>(null);
+
+  // Reset expansion and active panel when deselected or element changes to prevent stuck toolbars
+  useEffect(() => {
+    if (!isSelected) {
+      setIsExpanded(false);
+      setActivePanel(null);
+    }
+  }, [isSelected]);
+
+  useEffect(() => {
+    setIsExpanded(false);
+    setActivePanel(null);
+  }, [elementId]);
 
   if (!isSelected || !targetRect) return null;
 

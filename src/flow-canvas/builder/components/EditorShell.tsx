@@ -354,20 +354,29 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     onSelect({ type: null, id: null, path: [] });
   }, [onSelect]);
   
-  // Escape key to close block picker
+  // Escape key to close block picker and clear selection
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && blockPickerOpen) {
+      if (e.key === 'Escape') {
         e.preventDefault();
-        setBlockPickerOpen(false);
-        setBlockPickerTargetStackId(null);
-        setBlockPickerMode('blocks');
+        // First priority: close block picker if open
+        if (blockPickerOpen) {
+          setBlockPickerOpen(false);
+          setBlockPickerTargetStackId(null);
+          setBlockPickerMode('blocks');
+          return;
+        }
+        // Second priority: clear any selection (this will close floating toolbars)
+        if (selection.id) {
+          handleClearSelection();
+          return;
+        }
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [blockPickerOpen]);
+  }, [blockPickerOpen, selection.id, handleClearSelection]);
 
   // Step operations
   const handleStepSelect = useCallback((stepId: string) => {

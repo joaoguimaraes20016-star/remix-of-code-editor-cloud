@@ -87,6 +87,12 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
           return;
         }
 
+        // If click is on a canvas element, close immediately to prevent stuck popovers
+        if (target.closest('[data-node-id]') || target.closest('[data-element-id]')) {
+          setIsOpen(false);
+          return;
+        }
+
         // Close the popover but don't prevent the click from reaching its target
         setIsOpen(false);
       };
