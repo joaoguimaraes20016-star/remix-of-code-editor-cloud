@@ -130,6 +130,7 @@ import { InteractiveBlockInspector } from './inspectors/InteractiveBlockInspecto
 import { StepElementInspector } from './inspectors/StepElementInspector';
 import { PremiumElementInspector } from './inspectors/PremiumElementInspector';
 import { ConditionalLogicEditor } from './inspectors/ConditionalLogicEditor';
+import { UniversalAppearanceSection } from './inspectors/UniversalAppearanceSection';
 import { ButtonActionSelector, type ButtonAction as ActionSelectorAction } from './ButtonActionSelector';
 import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
 import { DEFAULT_FLOW_BUTTON_COLOR } from './ApplicationFlowCard';
@@ -2583,6 +2584,9 @@ const ElementInspector: React.FC<{
           </CollapsibleSection>
         </>
       )}
+
+      {/* ========== UNIVERSAL APPEARANCE/BORDER/RESPONSIVE SECTIONS ========== */}
+      <UniversalAppearanceSection element={element} onUpdate={onUpdate} />
 
       {/* ========== UNIVERSAL VISIBILITY SECTION (for all non-premium elements) ========== */}
       <CollapsibleSection title="Visibility" icon={<Eye className="w-4 h-4" />}>
