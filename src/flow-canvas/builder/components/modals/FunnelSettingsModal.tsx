@@ -9,7 +9,6 @@ import {
   Webhook, 
   X,
   ChevronRight,
-  Moon,
   Eye,
   EyeOff,
   ExternalLink,
