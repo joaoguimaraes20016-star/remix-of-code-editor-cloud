@@ -224,77 +224,137 @@ Feature block:
 
 Respond with ONLY the JSON object. No other text.`;
 
-// NEW: Full funnel generation prompt
+// NEW: Full funnel generation prompt - PREMIUM QUALITY
 const FUNNEL_GENERATE_PROMPT = `${BASE_CONTEXT}
 
-You are an expert funnel architect. Generate complete, beautiful, high-converting funnels.
+You are an elite funnel architect trained on high-converting pages like InfiniaGrowth, Puppetmaster, and The 2026 Blueprint.
 
 USER TOPIC/NICHE:
 {{USER_PROMPT}}
 
-FUNNEL TYPES AND STRUCTURES:
-- VSL: Video → Pain Points → Transformation → CTA
-- Webinar: Registration Hero → Benefits → Social Proof → Form
-- Opt-in: Hook Headline → Value Stack → Lead Form → Thank You
-- Sales: Hero → Problem → Solution → Features → Testimonials → Pricing → FAQ → CTA
-- Quiz: Welcome → Questions → Results → Offer
-- Booking: Value Prop → Calendar → Testimonials → Confirmation
+=== DESIGN PRINCIPLES (CRITICAL) ===
 
-GENERATE A COHESIVE BRAND KIT:
-Create beautiful, modern styling that fits the topic. Use:
-- Bold, striking color palettes (not generic)
-- Dark themes work great for premium/exclusive offers
-- Gradients add depth and sophistication
-- Choose fonts that match the brand personality
+1. VISUAL HIERARCHY: Guide the eye with size, contrast, and spacing
+2. CREDIBILITY FIRST: Social proof BEFORE the ask (avatars, logos, stats)
+3. TYPOGRAPHY MIX: Combine bold sans-serif with accent elements
+4. CONTRAST SECTIONS: Alternate dark/light, full/contained layouts
+5. PREMIUM FEEL: Gradients, subtle patterns, glassmorphism, depth
 
-BRAND KIT SCHEMA:
+=== PREMIUM ELEMENT TYPES ===
+
+Use these special elements for premium feel:
+
+- gradient-text: Key phrases with gradient fill
+  { "type": "gradient-text", "content": "Viral Content", "props": { "gradient": ["#A855F7", "#EC4899"] } }
+
+- stat-number: Large animated counters
+  { "type": "stat-number", "content": "9,943", "props": { "suffix": "+", "label": "MEMBERS JOINED" } }
+
+- avatar-group: Overlapping profile pictures for social proof
+  { "type": "avatar-group", "props": { "count": 5, "placeholder": true } }
+
+- ticker: Scrolling marquee bar
+  { "type": "ticker", "props": { "items": ["LIVE EVENT", "NO REPLAYS", "JAN 27TH"], "separator": "  •  " } }
+
+- badge: Pill badge with optional icon
+  { "type": "badge", "content": "LIMITED SPOTS", "props": { "variant": "warning", "icon": "alert-circle" } }
+
+- process-step: Step in a visual flow
+  { "type": "process-step", "content": "MAP THE NARRATIVE", "props": { "icon": "map", "step": 1 } }
+
+- video-thumbnail: Styled video with play overlay
+  { "type": "video-thumbnail", "props": { "placeholder": true, "overlayStyle": "gradient" } }
+
+=== PREMIUM BLOCK TYPES ===
+
+- credibility-bar: Avatar group + "From the team who..." text
+- stats-row: Row of 3-4 large stat numbers
+- process-flow: Visual step process (3 steps with arrows)
+- urgency-banner: Top banner with countdown/promo
+- ticker-bar: Scrolling text marquee
+- video-hero: Hero centered around video
+- split-hero: Left text, right media
+- guarantee: Risk reversal section
+
+=== BRAND KIT PRESETS ===
+
+DARK PREMIUM (like InfiniaGrowth):
 {
-  "brandKit": {
-    "theme": "dark" | "light",
-    "primaryColor": "#HEX",
-    "accentColor": "#HEX",
-    "backgroundColor": "#HEX",
-    "backgroundType": "solid" | "gradient",
-    "backgroundGradient": {
-      "type": "linear",
-      "angle": 135,
-      "stops": [
-        { "color": "#HEX", "position": 0 },
-        { "color": "#HEX", "position": 100 }
-      ]
-    },
-    "fontFamily": "Inter" | "Space Grotesk" | "DM Sans" | "Outfit" | "Poppins",
-    "headingFont": "Space Grotesk" | "Outfit" | "Playfair Display"
-  }
+  "theme": "dark",
+  "primaryColor": "#8B5CF6",
+  "accentColor": "#A855F7", 
+  "backgroundColor": "#0a0a0f",
+  "backgroundType": "pattern",
+  "backgroundPattern": { "type": "grid", "color": "rgba(139,92,246,0.05)", "size": 40 },
+  "fontFamily": "Inter",
+  "headingFont": "Space Grotesk"
 }
 
-STEP STRUCTURE:
-Each step has frames (sections), and each frame has blocks.
+LIGHT BOLD (like Stickley):
+{
+  "theme": "light",
+  "primaryColor": "#0D9488",
+  "accentColor": "#14B8A6",
+  "backgroundColor": "#E0F7FA",
+  "backgroundType": "solid",
+  "fontFamily": "Inter",
+  "headingFont": "Outfit"
+}
+
+DARK LUXURY (like 2026 Blueprint):
+{
+  "theme": "dark",
+  "primaryColor": "#D4AF37",
+  "accentColor": "#F5D061",
+  "backgroundColor": "#0a0a0a",
+  "backgroundType": "gradient",
+  "backgroundGradient": {
+    "type": "linear",
+    "angle": 180,
+    "stops": [{ "color": "#0a0a0a", "position": 0 }, { "color": "#1a1a2e", "position": 100 }]
+  },
+  "fontFamily": "Inter",
+  "headingFont": "Playfair Display"
+}
+
+=== OUTPUT JSON SCHEMA ===
 
 {
   "funnel": {
     "name": "Descriptive Funnel Name",
     "funnelType": "vsl|webinar|optin|sales|quiz|booking",
-    "brandKit": { ... },
+    "brandKit": {
+      "theme": "dark",
+      "primaryColor": "#HEX",
+      "accentColor": "#HEX",
+      "backgroundColor": "#HEX",
+      "backgroundType": "solid|gradient|pattern",
+      "backgroundGradient": { ... },
+      "backgroundPattern": { "type": "grid|dots", "color": "rgba(...)", "size": 40 },
+      "fontFamily": "Inter|Space Grotesk|DM Sans|Outfit|Poppins",
+      "headingFont": "Space Grotesk|Outfit|Playfair Display"
+    },
     "steps": [
       {
-        "name": "Page Title",
+        "name": "Watch The Video",
         "intent": "capture|qualify|schedule|convert|complete",
         "frames": [
           {
-            "layout": "contained" | "full-width",
-            "designPreset": "minimal" | "card" | "glass" | "full-bleed",
+            "layout": "contained|full-width",
+            "designPreset": "minimal|card|glass|full-bleed",
             "label": "Section Name",
             "blocks": [
               {
-                "type": "hero|cta|testimonial|feature|faq|media|text-block|pricing|trust",
+                "type": "credibility-bar|hero|stats-row|process-flow|cta|testimonial|feature|faq|media|text-block|pricing|trust",
                 "label": "Block Name",
                 "elements": [
-                  { "type": "heading", "content": "Headline", "props": { "level": 1 } },
-                  { "type": "text", "content": "Body copy" },
-                  { "type": "button", "content": "CTA Text", "props": { "variant": "primary" } },
-                  { "type": "image", "props": { "placeholder": true, "placeholderContext": "hero", "aspectRatio": "16:9" } },
-                  { "type": "video", "props": { "placeholder": true } }
+                  { "type": "avatar-group", "props": { "count": 3, "placeholder": true } },
+                  { "type": "heading", "content": "The System That Turns Long-Form Into", "props": { "level": 1 } },
+                  { "type": "gradient-text", "content": "Viral Content", "props": { "gradient": ["#A855F7", "#EC4899"] } },
+                  { "type": "text", "content": "Built on live sprints that generated 5 billion views" },
+                  { "type": "stat-number", "content": "5B", "props": { "suffix": "+", "label": "VIEWS" } },
+                  { "type": "video-thumbnail", "props": { "placeholder": true } },
+                  { "type": "button", "content": "BOOK THE BACK-ROOM CALL", "props": { "variant": "primary", "size": "xl" } }
                 ]
               }
             ]
@@ -305,23 +365,35 @@ Each step has frames (sections), and each frame has blocks.
   }
 }
 
-COPY GUIDELINES:
-- Headlines: Benefit-driven, specific, create urgency
-- Subheads: Expand on pain or promise
-- CTAs: Action verbs, value-focused ("Get Instant Access", "Claim Your Spot")
-- Testimonials: Specific results, relatable names
-- Features: Benefits over features, use icons mentally
+=== COPY GUIDELINES ===
 
-PLACEHOLDER MEDIA:
-Use placeholder: true for all images and videos. Include:
-- placeholderContext: "hero" | "testimonial" | "feature" | "avatar" | "product"
-- aspectRatio: "16:9" | "4:3" | "1:1" for appropriate sizing
+- Headlines: Benefit-first, specific results ("Add 20+ High-Ticket Clients")
+- Use CAPS for power words (VIRAL, FREE, EXCLUSIVE)
+- Stats: Use real-feeling numbers ("9,943+" not "10,000+")
+- CTAs: Action + Benefit ("Book Your Free Funnel Audit")
+- Social proof: "From the team who blew up [names]..."
 
-DESIGN PRESETS:
-- minimal: Clean, no background styling
-- card: White/dark card with subtle shadow
-- glass: Glassmorphism with blur effect
-- full-bleed: Edge-to-edge, typically for heroes
+=== FUNNEL STRUCTURE PATTERNS ===
+
+VSL FUNNEL:
+1. Credibility Bar → Headline with gradient accent → Video → CTA
+2. Stats Row (views, members, results)
+3. Process Flow (3 steps)
+4. Testimonials
+5. Final CTA with urgency
+
+WEBINAR FUNNEL:
+1. Ticker Bar (date/urgency) → Hero with registration
+2. Host credibility section
+3. What You'll Learn (bullets)
+4. Social proof
+5. Registration CTA
+
+OPT-IN FUNNEL:
+1. Hook headline with gradient text
+2. Value stack (what they get)
+3. Simple form
+4. Trust badges
 
 Respond with ONLY valid JSON. No markdown, no explanation.`;
 

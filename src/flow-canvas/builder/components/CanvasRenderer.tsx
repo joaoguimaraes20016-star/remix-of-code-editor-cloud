@@ -2040,6 +2040,312 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           </div>
         );
 
+      // ============================================
+      // PREMIUM ELEMENT TYPES
+      // ============================================
+      
+      case 'gradient-text':
+        const gradientColors = (element.props?.gradient as string[]) || ['#8B5CF6', '#EC4899'];
+        const gradientAngle = (element.props?.gradientAngle as number) || 135;
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="gradient-text"
+                elementLabel="Gradient Text"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <span 
+              className="text-4xl font-bold bg-clip-text text-transparent"
+              style={{ 
+                backgroundImage: `linear-gradient(${gradientAngle}deg, ${gradientColors.join(', ')})`,
+                ...getTypographyStyles()
+              }}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {element.content || 'Gradient Text'}
+            </span>
+          </div>
+        );
+      
+      case 'stat-number':
+        const statSuffix = (element.props?.suffix as string) || '+';
+        const statLabel = (element.props?.label as string) || '';
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="stat-number"
+                elementLabel="Stat Number"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className="text-center stat-item"
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              <div 
+                className="stat-number stat-number-animate text-5xl font-bold tracking-tight"
+                style={{ color: isDarkTheme ? '#ffffff' : '#111827' }}
+              >
+                {element.content || '0'}{statSuffix}
+              </div>
+              {statLabel && (
+                <div 
+                  className="text-xs uppercase tracking-wider mt-2 opacity-70"
+                  style={{ color: isDarkTheme ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}
+                >
+                  {statLabel}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      
+      case 'avatar-group':
+        const avatarCount = (element.props?.count as number) || 3;
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="avatar-group"
+                elementLabel="Avatar Group"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className="avatar-group"
+              style={{ '--avatar-border': isDarkTheme ? '#0a0a0f' : '#ffffff' } as React.CSSProperties}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {Array.from({ length: avatarCount }).map((_, i) => (
+                <div 
+                  key={i}
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center"
+                >
+                  <User className="w-5 h-5 text-white" />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'ticker':
+        const tickerItems = (element.props?.items as string[]) || ['Item 1', 'Item 2', 'Item 3'];
+        const tickerSeparator = (element.props?.separator as string) || '  •  ';
+        const tickerSpeed = (element.props?.speed as number) || 30;
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative w-full')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="ticker"
+                elementLabel="Ticker"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className="ticker-container w-full py-3"
+              style={{ '--ticker-speed': `${tickerSpeed}s` } as React.CSSProperties}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              <div className="ticker-content">
+                {[...tickerItems, ...tickerItems].map((item, i) => (
+                  <span 
+                    key={i} 
+                    className="text-sm font-medium uppercase tracking-wider"
+                    style={{ color: isDarkTheme ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)' }}
+                  >
+                    {item}{tickerSeparator}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'badge':
+        const badgeVariant = (element.props?.variant as string) || 'primary';
+        const badgeIcon = element.props?.icon as string;
+        const badgeClasses = {
+          primary: 'premium-badge-primary',
+          warning: 'premium-badge-warning',
+          success: 'premium-badge-success',
+        };
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative inline-block')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="badge"
+                elementLabel="Badge"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <span 
+              className={cn('premium-badge', badgeClasses[badgeVariant as keyof typeof badgeClasses] || badgeClasses.primary)}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {badgeIcon && <Sparkles className="w-3 h-3" />}
+              {element.content || 'BADGE'}
+            </span>
+          </div>
+        );
+      
+      case 'process-step':
+        const stepNumber = (element.props?.step as number) || 1;
+        const stepIcon = element.props?.icon as string;
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="process-step"
+                elementLabel="Process Step"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className="process-step-item"
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              <div 
+                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{ 
+                  background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}80)`,
+                }}
+              >
+                {stepIcon === 'map' && <Layout className="w-7 h-7 text-white" />}
+                {stepIcon === 'share-2' && <ArrowRight className="w-7 h-7 text-white" />}
+                {stepIcon === 'rocket' && <Sparkles className="w-7 h-7 text-white" />}
+                {!['map', 'share-2', 'rocket'].includes(stepIcon || '') && (
+                  <span className="text-xl font-bold text-white">{stepNumber}</span>
+                )}
+              </div>
+              <span 
+                className="text-sm font-semibold uppercase tracking-wider mt-2"
+                style={{ color: isDarkTheme ? '#ffffff' : '#111827' }}
+              >
+                {element.content || `Step ${stepNumber}`}
+              </span>
+            </div>
+          </div>
+        );
+      
+      case 'video-thumbnail':
+        const overlayStyle = (element.props?.overlayStyle as string) || 'gradient';
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="video-thumbnail"
+                elementLabel="Video Thumbnail"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className="relative rounded-2xl overflow-hidden aspect-video bg-gray-900"
+              style={{ minHeight: '200px' }}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {/* Placeholder background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                <Video className="w-12 h-12 text-gray-600" />
+              </div>
+              {/* Overlay */}
+              <div className={cn(
+                "video-thumbnail-overlay",
+                overlayStyle === 'gradient' && "bg-gradient-to-b from-transparent to-black/50"
+              )}>
+                <div className="video-play-button">
+                  <Play className="w-8 h-8 text-gray-900 ml-1" />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'underline-text':
+        const underlineFrom = (element.props?.underlineFrom as string) || primaryColor;
+        const underlineTo = (element.props?.underlineTo as string) || '#EC4899';
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative inline-block')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="underline-text"
+                elementLabel="Underline Text"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <span 
+              className="underline-gradient text-2xl font-bold"
+              style={{ 
+                '--underline-from': underlineFrom,
+                '--underline-to': underlineTo,
+                color: isDarkTheme ? '#ffffff' : '#111827',
+                ...getTypographyStyles()
+              } as React.CSSProperties}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {element.content || 'Underlined Text'}
+            </span>
+          </div>
+        );
+
       default:
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
