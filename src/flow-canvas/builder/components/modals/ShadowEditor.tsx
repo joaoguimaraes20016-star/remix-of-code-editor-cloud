@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
-export interface ShadowLayer {
-  x: number;
-  y: number;
-  blur: number;
-  spread: number;
-  color: string;
-  inset?: boolean;
-}
+// Import unified presets from single source of truth
+import { 
+  advancedShadowPresets as shadowPresets,
+  shadowLayersToCSS,
+  type ShadowLayer,
+} from '../../utils/presets';
+
+// Re-export for backwards compatibility
+export { shadowLayersToCSS, shadowPresets };
+export type { ShadowLayer };
 
 interface ShadowEditorProps {
   value: ShadowLayer[];
@@ -26,29 +28,6 @@ const defaultLayer: ShadowLayer = {
   color: 'rgba(0, 0, 0, 0.15)',
   inset: false,
 };
-
-// Convert shadow layers to CSS box-shadow string
-export const shadowLayersToCSS = (layers: ShadowLayer[]): string => {
-  if (!layers || layers.length === 0) return 'none';
-  
-  return layers
-    .map(layer => {
-      const inset = layer.inset ? 'inset ' : '';
-      return `${inset}${layer.x}px ${layer.y}px ${layer.blur}px ${layer.spread}px ${layer.color}`;
-    })
-    .join(', ');
-};
-
-// Preset shadows for quick selection
-export const shadowPresets: { label: string; layers: ShadowLayer[] }[] = [
-  { label: 'None', layers: [] },
-  { label: 'Subtle', layers: [{ x: 0, y: 1, blur: 3, spread: 0, color: 'rgba(0, 0, 0, 0.1)' }] },
-  { label: 'Medium', layers: [{ x: 0, y: 4, blur: 6, spread: -1, color: 'rgba(0, 0, 0, 0.1)' }, { x: 0, y: 2, blur: 4, spread: -1, color: 'rgba(0, 0, 0, 0.06)' }] },
-  { label: 'Large', layers: [{ x: 0, y: 10, blur: 15, spread: -3, color: 'rgba(0, 0, 0, 0.1)' }, { x: 0, y: 4, blur: 6, spread: -2, color: 'rgba(0, 0, 0, 0.05)' }] },
-  { label: 'Elevated', layers: [{ x: 0, y: 20, blur: 25, spread: -5, color: 'rgba(0, 0, 0, 0.1)' }, { x: 0, y: 8, blur: 10, spread: -6, color: 'rgba(0, 0, 0, 0.1)' }] },
-  { label: 'Glow', layers: [{ x: 0, y: 0, blur: 20, spread: 0, color: 'rgba(139, 92, 246, 0.35)' }] },
-  { label: 'Inset', layers: [{ x: 0, y: 2, blur: 4, spread: 0, color: 'rgba(0, 0, 0, 0.1)', inset: true }] },
-];
 
 export const ShadowEditor: React.FC<ShadowEditorProps> = ({
   value = [],

@@ -104,20 +104,10 @@ const sidebarItems: { id: SettingsSection; label: string; icon: React.ElementTyp
 ];
 
 // Import unified presets from single source of truth
-import { accentColorPresets as presetColors } from '../../utils/presets';
-
-const fontOptions = [
-  { value: 'Inter', label: 'Inter' },
-  { value: 'DM Sans', label: 'DM Sans' },
-  { value: 'Roboto', label: 'Roboto' },
-  { value: 'Open Sans', label: 'Open Sans' },
-  { value: 'Poppins', label: 'Poppins' },
-  { value: 'Montserrat', label: 'Montserrat' },
-  { value: 'Playfair Display', label: 'Playfair Display' },
-  { value: 'Lato', label: 'Lato' },
-  { value: 'Raleway', label: 'Raleway' },
-  { value: 'Space Grotesk', label: 'Space Grotesk' },
-];
+import { 
+  accentColorPresets as presetColors,
+  settingsFontFamilies as fontOptions 
+} from '../../utils/presets';
 
 export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
   isOpen,

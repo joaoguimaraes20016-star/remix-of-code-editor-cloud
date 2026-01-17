@@ -74,54 +74,25 @@ const FONT_SIZES = [
   { value: 'large', label: 'Large' },
 ];
 
-const FONT_FAMILIES = [
-  { value: 'system-ui', label: 'System' },
-  { value: 'Inter', label: 'Inter' },
-  { value: 'Poppins', label: 'Poppins' },
-  { value: 'Montserrat', label: 'Montserrat' },
-  { value: 'Playfair Display', label: 'Playfair' },
-];
-
 // Import unified presets from single source of truth
-import { elementColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
+import { 
+  compactFontFamilies as FONT_FAMILIES,
+  elementColorPresets as COLOR_PRESETS,
+  gradientDirections as GRADIENT_DIRECTIONS,
+  legacyGradientPresets as GRADIENT_PRESETS,
+} from '@/flow-canvas/builder/utils/presets';
 
-const GRADIENT_DIRECTIONS = [
-  { value: 'to bottom', label: 'Top to Bottom' },
-  { value: 'to top', label: 'Bottom to Top' },
-  { value: 'to right', label: 'Left to Right' },
-  { value: 'to left', label: 'Right to Left' },
-  { value: 'to bottom right', label: 'Diagonal ↘' },
-  { value: 'to bottom left', label: 'Diagonal ↙' },
-  { value: 'to top right', label: 'Diagonal ↗' },
-  { value: 'to top left', label: 'Diagonal ↖' },
-];
+// Import button animation presets from unified source
+import { 
+  buttonAnimationOptions as BUTTON_ANIMATION_OPTIONS,
+  buttonHoverOptions as BUTTON_HOVER_OPTIONS,
+} from '@/flow-canvas/builder/utils/presets';
 
-// Legacy gradient format for this component (kept for backwards compatibility)
-const GRADIENT_PRESETS = [
-  { from: '#667eea', to: '#764ba2', label: 'Purple Dream' },
-  { from: '#f093fb', to: '#f5576c', label: 'Pink Sunset' },
-  { from: '#4facfe', to: '#00f2fe', label: 'Ocean Blue' },
-  { from: '#43e97b', to: '#38f9d7', label: 'Fresh Mint' },
-  { from: '#fa709a', to: '#fee140', label: 'Warm Glow' },
-  { from: '#a8edea', to: '#fed6e3', label: 'Soft Pastel' },
-  { from: '#ff0844', to: '#ffb199', label: 'Coral Fire' },
-  { from: '#0f0c29', to: '#302b63', label: 'Dark Night' },
-];
-
-const BUTTON_ANIMATION_OPTIONS = [
+const OPTION_HOVER_OPTIONS = [
   { value: 'none', label: 'None' },
-  { value: 'fade', label: 'Fade In' },
-  { value: 'slide-up', label: 'Slide Up' },
-  { value: 'bounce', label: 'Bounce' },
   { value: 'scale', label: 'Scale' },
-];
-
-const BUTTON_HOVER_OPTIONS = [
-  { value: 'none', label: 'None' },
   { value: 'glow', label: 'Glow' },
   { value: 'lift', label: 'Lift' },
-  { value: 'pulse', label: 'Pulse' },
-  { value: 'shine', label: 'Shine' },
 ];
 
 const OPTION_HOVER_OPTIONS = [

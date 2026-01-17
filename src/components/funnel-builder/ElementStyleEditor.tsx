@@ -33,17 +33,11 @@ interface ElementStyleEditorProps {
   onChange: (style: ElementStyle) => void;
 }
 
-const FONT_FAMILIES = [
-  { value: 'system-ui', label: 'System' },
-  { value: 'Inter', label: 'Inter' },
-  { value: 'Poppins', label: 'Poppins' },
-  { value: 'Montserrat', label: 'Montserrat' },
-  { value: 'Playfair Display', label: 'Playfair' },
-  { value: 'Space Grotesk', label: 'Space' },
-];
-
 // Import unified presets from single source of truth
-import { compactColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
+import { 
+  compactFontFamilies as FONT_FAMILIES,
+  compactColorPresets as COLOR_PRESETS 
+} from '@/flow-canvas/builder/utils/presets';
 
 export function ElementStyleEditor({ elementType, style, onChange }: ElementStyleEditorProps) {
   const updateStyle = <K extends keyof ElementStyle>(key: K, value: ElementStyle[K]) => {

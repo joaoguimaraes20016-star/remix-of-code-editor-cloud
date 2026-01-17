@@ -5,18 +5,13 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+// Import unified presets from single source of truth
+import { inspectorShadowPresets as shadowPresets } from '@/flow-canvas/builder/utils/presets';
+
 interface ShadowControlProps {
   value: 'none' | 'sm' | 'md' | 'lg' | 'xl';
   onChange: (value: 'none' | 'sm' | 'md' | 'lg' | 'xl') => void;
 }
-
-const shadowPresets = [
-  { value: 'none' as const, label: 'None', preview: 'shadow-none' },
-  { value: 'sm' as const, label: 'S', preview: 'shadow-sm' },
-  { value: 'md' as const, label: 'M', preview: 'shadow-md' },
-  { value: 'lg' as const, label: 'L', preview: 'shadow-lg' },
-  { value: 'xl' as const, label: 'XL', preview: 'shadow-xl' },
-];
 
 export function ShadowControl({ value, onChange }: ShadowControlProps) {
   return (
