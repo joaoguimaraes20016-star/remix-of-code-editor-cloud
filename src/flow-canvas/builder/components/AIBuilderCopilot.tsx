@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Page, SelectionState, AIsuggestion, AICopilotProps, Block } from '../../types/infostack';
 import { cn } from '@/lib/utils';
 import { 
@@ -14,13 +14,13 @@ import {
   Layout,
   AlertCircle,
   RefreshCw,
-  Check,
-  X
+  Undo2
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { getSuggestions, streamAICopilot, PageContext } from '@/lib/ai/aiCopilotService';
-import { parseAIBlockResponse, getBlockDescription, looksLikeJSON } from '@/lib/ai/parseAIBlockResponse';
+import { parseAIBlockResponse, looksLikeJSON, StylingContext } from '@/lib/ai/parseAIBlockResponse';
+import { detectFunnelType, getFunnelTypeDescription, extractExistingBlockTypes, analyzePageContent } from '@/lib/ai/funnelTypeDetector';
 import { Button } from '@/components/ui/button';
 
 interface AIBuilderCopilotPanelProps extends AICopilotProps {
@@ -28,6 +28,8 @@ interface AIBuilderCopilotPanelProps extends AICopilotProps {
   onToggle: () => void;
   /** Callback to add a block to the canvas */
   onAddBlock?: (block: Block, position?: { stackId: string; index: number }, options?: { type?: 'block' | 'section' }) => void;
+  /** Callback to remove a block (for undo) */
+  onRemoveBlock?: (blockId: string) => void;
 }
 
 const suggestionIcons: Record<string, React.ReactNode> = {
@@ -37,8 +39,26 @@ const suggestionIcons: Record<string, React.ReactNode> = {
   'next-action': <ArrowRight className="w-4 h-4" />,
 };
 
-// Build context from current page state
+/**
+ * Build rich context from current page state for intelligent AI responses
+ */
 function buildPageContext(page: Page, selection: SelectionState): PageContext {
+  // Detect funnel type
+  const funnelTypeResult = detectFunnelType(page);
+  
+  // Analyze existing content
+  const contentAnalysis = analyzePageContent(page);
+  const existingBlockTypes = extractExistingBlockTypes(page);
+  
+  // Extract styling context
+  const stylingContext = {
+    theme: page.settings.theme || 'light',
+    primaryColor: page.settings.primary_color,
+    backgroundColor: page.settings.page_background?.color,
+    backgroundType: page.settings.page_background?.type,
+    fontFamily: page.settings.font_family,
+  };
+  
   return {
     pageName: page.name,
     stepIntents: page.steps.map(s => s.step_intent),
@@ -50,6 +70,28 @@ function buildPageContext(page: Page, selection: SelectionState): PageContext {
       )
     )?.step_intent,
     elementType: selection.type || undefined,
+    
+    // Funnel intelligence
+    funnelType: funnelTypeResult.type,
+    funnelTypeConfidence: funnelTypeResult.confidence,
+    
+    // Styling context
+    styling: stylingContext,
+    
+    // Content analysis
+    existingBlockTypes,
+    ...contentAnalysis,
+  };
+}
+
+/**
+ * Extract styling context for the block parser
+ */
+function extractStylingContext(page: Page): StylingContext {
+  return {
+    theme: page.settings.theme || 'light',
+    primaryColor: page.settings.primary_color,
+    backgroundColor: page.settings.page_background?.color,
   };
 }
 
@@ -58,6 +100,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   selection,
   onApplySuggestion,
   onAddBlock,
+  onRemoveBlock,
   isExpanded,
   onToggle,
 }) => {
@@ -67,10 +110,10 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [streamedResponse, setStreamedResponse] = useState('');
   const [error, setError] = useState<string | null>(null);
-  
-  // Parsed block ready to apply
-  const [parsedBlock, setParsedBlock] = useState<Block | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
+  
+  // Track last added block for undo
+  const lastAddedBlockRef = useRef<{ id: string; label: string } | null>(null);
 
   // Fetch suggestions when panel expands or context changes
   useEffect(() => {
@@ -79,19 +122,40 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
     }
   }, [isExpanded]);
 
-  // Try to parse block when streaming completes
+  // AUTO-APPLY: Parse and add block automatically when streaming completes
   useEffect(() => {
     if (streamedResponse && !isProcessing && looksLikeJSON(streamedResponse)) {
-      const block = parseAIBlockResponse(streamedResponse);
-      if (block) {
-        setParsedBlock(block);
+      const stylingContext = extractStylingContext(currentPage);
+      const block = parseAIBlockResponse(streamedResponse, stylingContext);
+      
+      if (block && onAddBlock) {
+        // Auto-apply immediately
+        onAddBlock(block);
+        lastAddedBlockRef.current = { id: block.id, label: block.label };
+        
+        // Show success toast with undo option
+        toast.success(`Added "${block.label}" to canvas`, {
+          action: onRemoveBlock ? {
+            label: 'Undo',
+            onClick: () => {
+              if (lastAddedBlockRef.current) {
+                onRemoveBlock(lastAddedBlockRef.current.id);
+                toast.info('Block removed');
+              }
+            },
+          } : undefined,
+          duration: 4000,
+        });
+        
+        // Clear state after auto-applying
+        setStreamedResponse('');
         setParseError(null);
-      } else {
-        setParsedBlock(null);
+        setPrompt('');
+      } else if (streamedResponse && !block) {
         setParseError('Could not parse AI response into a valid block');
       }
     }
-  }, [streamedResponse, isProcessing]);
+  }, [streamedResponse, isProcessing, currentPage, onAddBlock, onRemoveBlock]);
 
   const fetchSuggestions = async () => {
     setIsLoadingSuggestions(true);
@@ -114,7 +178,6 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
     } catch (err) {
       console.error('Failed to fetch suggestions:', err);
       setError(err instanceof Error ? err.message : 'Failed to load suggestions');
-      // Don't show toast for initial load failures - just show inline error
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -126,10 +189,16 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
     setIsProcessing(true);
     setStreamedResponse('');
     setError(null);
-    setParsedBlock(null);
     setParseError(null);
     
+    // Build rich context with funnel type and styling
     const context = buildPageContext(currentPage, selection);
+    
+    console.log('[AIBuilderCopilot] Generating with context:', {
+      funnelType: context.funnelType,
+      styling: context.styling,
+      existingBlockTypes: context.existingBlockTypes,
+    });
     
     await streamAICopilot(
       'generate',
@@ -141,7 +210,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
         },
         onDone: () => {
           setIsProcessing(false);
-          // Parsing happens in useEffect above
+          // Auto-apply happens in useEffect above
         },
         onError: (err) => {
           setIsProcessing(false);
@@ -152,22 +221,8 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
     );
   };
 
-  const handleApplyBlock = () => {
-    if (!parsedBlock || !onAddBlock) return;
-    
-    onAddBlock(parsedBlock);
-    toast.success(`Added "${parsedBlock.label}" to canvas`);
-    
-    // Clear state after applying
-    setStreamedResponse('');
-    setParsedBlock(null);
-    setParseError(null);
-    setPrompt('');
-  };
-
   const handleDiscardResponse = () => {
     setStreamedResponse('');
-    setParsedBlock(null);
     setParseError(null);
   };
 
@@ -176,8 +231,6 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
     setError(null);
     
     try {
-      // For now, directly apply the suggestion
-      // In future, could call AI to expand the suggestion
       onApplySuggestion(suggestion);
       toast.success(`Applied: ${suggestion.title}`);
     } catch (err) {
@@ -187,6 +240,9 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
       setIsProcessing(false);
     }
   };
+
+  // Get funnel type for display
+  const funnelType = detectFunnelType(currentPage);
 
   return (
     <div className={cn(
@@ -217,13 +273,22 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="border-t border-builder-border-subtle animate-in">
+          {/* Funnel Type Indicator */}
+          <div className="px-3 pt-3">
+            <div className="text-xs text-builder-text-dim flex items-center gap-2 px-2 py-1.5 bg-builder-bg rounded-lg">
+              <div className="w-1.5 h-1.5 rounded-full bg-builder-accent animate-pulse" />
+              <span className="capitalize font-medium">{funnelType.type}</span>
+              <span className="text-builder-text-muted">funnel detected</span>
+            </div>
+          </div>
+
           {/* Prompt Input */}
           <div className="p-3">
             <div className="relative">
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Ask AI to help with your funnel..."
+                placeholder="Create a testimonial section..."
                 className="builder-input resize-none pr-12 text-sm"
                 rows={2}
                 onKeyDown={(e) => {
@@ -252,43 +317,18 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
             </div>
           </div>
 
-          {/* Parsed Block Preview - Ready to Apply */}
-          {parsedBlock && onAddBlock && (
+          {/* Streaming Response (while processing) */}
+          {isProcessing && streamedResponse && (
             <div className="px-3 pb-3">
-              <div className="p-3 rounded-lg bg-builder-success/10 border border-builder-success/30">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-builder-success shrink-0" />
-                    <span className="text-xs font-medium text-builder-success">Block Ready</span>
-                  </div>
-                </div>
-                <p className="text-xs text-builder-text-secondary mb-3">
-                  {getBlockDescription(parsedBlock)}
-                </p>
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    onClick={handleApplyBlock}
-                    className="flex-1 bg-builder-success hover:bg-builder-success/90 text-white"
-                  >
-                    <Check className="w-3 h-3 mr-1" />
-                    Apply to Canvas
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={handleDiscardResponse}
-                    className="text-builder-text-muted hover:text-builder-text"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
+              <div className="p-3 rounded-lg bg-builder-bg text-xs text-builder-text-secondary whitespace-pre-wrap max-h-32 overflow-y-auto font-mono">
+                {streamedResponse}
+                <span className="animate-pulse">▊</span>
               </div>
             </div>
           )}
 
           {/* Parse Error - Show raw response with error */}
-          {parseError && streamedResponse && !parsedBlock && (
+          {parseError && streamedResponse && !isProcessing && (
             <div className="px-3 pb-3">
               <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30">
                 <div className="flex items-center gap-2 mb-2">
@@ -310,16 +350,6 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
             </div>
           )}
 
-          {/* Streaming Response (while processing) */}
-          {isProcessing && streamedResponse && (
-            <div className="px-3 pb-3">
-              <div className="p-3 rounded-lg bg-builder-bg text-xs text-builder-text-secondary whitespace-pre-wrap max-h-32 overflow-y-auto font-mono">
-                {streamedResponse}
-                <span className="animate-pulse">▊</span>
-              </div>
-            </div>
-          )}
-
           {/* Error State */}
           {error && !streamedResponse && (
             <div className="px-3 pb-3">
@@ -331,7 +361,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
           )}
 
           {/* Suggestions */}
-          {!parsedBlock && !parseError && !isProcessing && (
+          {!parseError && !isProcessing && (
             <div className="px-3 pb-3">
               <div className="text-xs text-builder-text-dim mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
