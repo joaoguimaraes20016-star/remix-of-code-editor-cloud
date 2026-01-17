@@ -1693,22 +1693,52 @@ const ElementInspector: React.FC<{
         </>
       )}
 
-      {/* ========== SIMPLIFIED ADVANCED SECTION (Visibility only - animation is at top) ========== */}
-      {element.type === 'button' && (
-        <CollapsibleSection title="More Options" icon={<Settings2 className="w-4 h-4" />}>
-          <div className="pt-3 space-y-2">
-            {/* Visibility/Show-Hide */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Visibility</span>
-              <TogglePill 
-                value={element.styles?.display !== 'none'} 
-                onToggle={() => onUpdate({ styles: { ...element.styles, display: element.styles?.display === 'none' ? 'block' : 'none' } })}
-                labels={['Show', 'Hide']}
-              />
-            </div>
-          </div>
-        </CollapsibleSection>
-      )}
+      {/* ========== UNIVERSAL VISIBILITY SECTION (for all non-premium elements) ========== */}
+      <CollapsibleSection title="Visibility" icon={<Eye className="w-4 h-4" />}>
+        <div className="pt-3 space-y-3">
+          <p className="text-[10px] text-builder-text-dim">
+            Show or hide this element based on form field values.
+          </p>
+          <ConditionalLogicEditor
+            conditions={element.visibility?.conditions?.map(c => {
+              const operatorMap: Record<string, 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than'> = {
+                equals: 'equals',
+                notEquals: 'not_equals',
+                contains: 'contains',
+                notEmpty: 'not_equals',
+                isEmpty: 'equals',
+              };
+              return {
+                id: c.field,
+                fieldKey: c.field,
+                operator: operatorMap[c.operator] || 'equals',
+                value: c.value
+              };
+            }) || []}
+            onUpdate={(conditions) => {
+              const reverseOperatorMap: Record<string, 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'isEmpty'> = {
+                equals: 'equals',
+                not_equals: 'notEquals',
+                contains: 'contains',
+                greater_than: 'notEquals',
+                less_than: 'notEquals',
+              };
+              const mapped = conditions.map(c => ({
+                field: c.fieldKey,
+                operator: reverseOperatorMap[c.operator] || 'equals',
+                value: c.value,
+                action: 'show' as const
+              }));
+              onUpdate({ 
+                visibility: mapped.length > 0 
+                  ? { conditions: mapped, logic: 'and' as const }
+                  : undefined 
+              });
+            }}
+            availableFields={collectFieldKeys(page.steps || []).map(f => ({ key: f.key, label: f.label }))}
+          />
+        </div>
+      </CollapsibleSection>
 
       {/* Modals */}
       <ButtonActionModal
