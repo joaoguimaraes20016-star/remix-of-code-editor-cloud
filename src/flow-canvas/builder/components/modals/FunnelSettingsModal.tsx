@@ -21,8 +21,10 @@ import {
 } from 'lucide-react';
 import {
   Dialog,
-  DialogContent,
+  DialogPortal,
+  DialogOverlay,
 } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -827,59 +829,72 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-builder-surface border-builder-border max-w-4xl h-[85vh] p-0 gap-0 overflow-hidden">
-          <div className="flex h-full">
-            {/* Sidebar */}
-            <div className="w-56 border-r border-builder-border bg-builder-bg flex flex-col shrink-0">
-              <div className="p-4 border-b border-builder-border">
-                <h2 className="text-lg font-semibold text-builder-text flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-builder-accent" />
-                  Funnel Settings
-                </h2>
+        <DialogPortal>
+          <DialogOverlay className="z-[10000]" />
+          <DialogPrimitive.Content
+            className="fixed left-[50%] top-[50%] z-[10000] w-full max-w-4xl h-[85vh] translate-x-[-50%] translate-y-[-50%] bg-builder-surface border border-builder-border rounded-lg shadow-lg overflow-hidden"
+          >
+            {/* Hidden title for accessibility */}
+            <DialogPrimitive.Title className="sr-only">
+              Funnel Settings
+            </DialogPrimitive.Title>
+            <DialogPrimitive.Description className="sr-only">
+              Configure your funnel settings including colors, branding, tracking, and integrations.
+            </DialogPrimitive.Description>
+            
+            <div className="flex h-full pointer-events-auto">
+              {/* Sidebar */}
+              <div className="w-56 border-r border-builder-border bg-builder-bg flex flex-col shrink-0 pointer-events-auto">
+                <div className="p-4 border-b border-builder-border">
+                  <h2 className="text-lg font-semibold text-builder-text flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-builder-accent" />
+                    Funnel Settings
+                  </h2>
+                </div>
+                
+                <nav className="flex-1 overflow-y-auto p-2">
+                  {sidebarItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSection(item.id)}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all mb-1',
+                        activeSection === item.id
+                          ? 'bg-builder-accent/10 text-builder-accent'
+                          : 'text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover'
+                      )}
+                    >
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      <span className="flex-1 text-left">{item.label}</span>
+                      <ChevronRight className={cn(
+                        'w-4 h-4 transition-transform',
+                        activeSection === item.id && 'rotate-90'
+                      )} />
+                    </button>
+                  ))}
+                </nav>
               </div>
-              
-              <nav className="flex-1 overflow-y-auto p-2">
-                {sidebarItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveSection(item.id)}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all mb-1',
-                      activeSection === item.id
-                        ? 'bg-builder-accent/10 text-builder-accent'
-                        : 'text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover'
-                    )}
-                  >
-                    <item.icon className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    <ChevronRight className={cn(
-                      'w-4 h-4 transition-transform',
-                      activeSection === item.id && 'rotate-90'
-                    )} />
-                  </button>
-                ))}
-              </nav>
-            </div>
 
-            {/* Content */}
-            <div className="flex-1 flex flex-col min-w-0">
-              {/* Header */}
-              <div className="h-14 border-b border-builder-border flex items-center justify-end px-4 shrink-0">
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-lg text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {renderSectionContent()}
+              {/* Content */}
+              <div className="flex-1 flex flex-col min-w-0 pointer-events-auto">
+                {/* Header */}
+                <div className="h-14 border-b border-builder-border flex items-center justify-end px-4 shrink-0">
+                  <button
+                    onClick={onClose}
+                    className="p-2 rounded-lg text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {renderSectionContent()}
+                </div>
               </div>
             </div>
-          </div>
-        </DialogContent>
+          </DialogPrimitive.Content>
+        </DialogPortal>
       </Dialog>
 
       {/* Image Picker Modal */}
