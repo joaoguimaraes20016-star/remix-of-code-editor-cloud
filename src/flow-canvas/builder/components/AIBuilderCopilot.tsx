@@ -495,7 +495,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
 
         onUpdatePage(updatedPage);
         
-        const sectionCount = generatedBlocks.length;
+        const sectionCount = generatedStacks.length;
         toast.success(`Cloned from ${new URL(cloneUrl).hostname}`, {
           description: sectionCount > 0 
             ? `Created ${sectionCount} sections with ${style.style} style`
