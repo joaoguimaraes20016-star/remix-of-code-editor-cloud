@@ -1455,12 +1455,27 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           </div>
         )}
         
+        {/* Left Panel Toggle Button - when collapsed */}
+        {!previewMode && !isMobile && !leftPanelOpen && (
+          <div className="shrink-0 h-full flex flex-col border-r border-builder-border bg-builder-surface">
+            <button
+              onClick={() => setLeftPanelOpen(true)}
+              className="p-2 hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+              title="Open left panel"
+            >
+              <PanelLeftClose size={16} className="rotate-180" />
+            </button>
+          </div>
+        )}
+        
         {/* Left Panel - Desktop */}
         {!previewMode && !isMobile && leftPanelOpen && (
-          <div className="w-60 shrink-0 h-full overflow-hidden relative">
+          <div className="w-60 shrink-0 h-full overflow-hidden relative flex flex-col">
+            {/* Close button in header area - below tabs */}
             <button
               onClick={() => setLeftPanelOpen(false)}
-              className="absolute top-2 right-2 z-10 p-1 rounded hover:bg-white/10 text-[hsl(var(--builder-text-muted))]"
+              className="absolute top-[52px] right-2 z-10 p-1 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+              title="Close left panel"
             >
               <PanelLeftClose size={14} />
             </button>
@@ -1644,38 +1659,61 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         </div>
 
         {/* Right Panel */}
-        {!previewMode && (
-          <RightPanel
-            page={page}
-            selection={selection}
-            onUpdateNode={handleUpdateNode}
-            onClearSelection={handleClearSelection}
-            onSelect={handleSelect}
-            onPublish={handlePublish}
-            onDuplicateElement={handleDuplicateElement}
-            onDeleteElement={handleDeleteElement}
-            onMoveElement={handleMoveElement}
-            onUpdateElement={handleUpdateElement}
-            onReplayAnimation={handleReplayAnimation}
-            currentDeviceMode={deviceMode}
-            onDeleteFrame={handleDeleteFrame}
-            onDuplicateFrame={handleDuplicateFrame}
-            onMoveFrame={(frameId, direction) => {
-              if (!activeStep) return;
-              const currentIndex = activeStep.frames.findIndex(f => f.id === frameId);
-              if (currentIndex === -1) return;
-              const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-              if (newIndex >= 0 && newIndex < activeStep.frames.length) {
-                handleReorderFrames(currentIndex, newIndex);
-              }
-            }}
-            onAddFrameAt={handleAddFrameAt}
-            activeStep={activeStep}
-            selectedApplicationStepId={selectedApplicationStepId}
-            onSelectApplicationStep={handleSelectApplicationStepWithTracking}
-            selectedStepElement={selectedStepElement}
-            onClearStepElement={() => setSelectedStepElement(null)}
-          />
+        {!previewMode && !isMobile && rightPanelOpen && (
+          <div className="relative">
+            {/* Close button */}
+            <button
+              onClick={() => setRightPanelOpen(false)}
+              className="absolute top-2 left-2 z-10 p-1 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+              title="Close right panel"
+            >
+              <PanelRightClose size={14} />
+            </button>
+            <RightPanel
+              page={page}
+              selection={selection}
+              onUpdateNode={handleUpdateNode}
+              onClearSelection={handleClearSelection}
+              onSelect={handleSelect}
+              onPublish={handlePublish}
+              onDuplicateElement={handleDuplicateElement}
+              onDeleteElement={handleDeleteElement}
+              onMoveElement={handleMoveElement}
+              onUpdateElement={handleUpdateElement}
+              onReplayAnimation={handleReplayAnimation}
+              currentDeviceMode={deviceMode}
+              onDeleteFrame={handleDeleteFrame}
+              onDuplicateFrame={handleDuplicateFrame}
+              onMoveFrame={(frameId, direction) => {
+                if (!activeStep) return;
+                const currentIndex = activeStep.frames.findIndex(f => f.id === frameId);
+                if (currentIndex === -1) return;
+                const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+                if (newIndex >= 0 && newIndex < activeStep.frames.length) {
+                  handleReorderFrames(currentIndex, newIndex);
+                }
+              }}
+              onAddFrameAt={handleAddFrameAt}
+              activeStep={activeStep}
+              selectedApplicationStepId={selectedApplicationStepId}
+              onSelectApplicationStep={handleSelectApplicationStepWithTracking}
+              selectedStepElement={selectedStepElement}
+              onClearStepElement={() => setSelectedStepElement(null)}
+            />
+          </div>
+        )}
+        
+        {/* Right Panel Toggle Button - when collapsed */}
+        {!previewMode && !isMobile && !rightPanelOpen && (
+          <div className="shrink-0 h-full flex flex-col border-l border-builder-border bg-builder-surface">
+            <button
+              onClick={() => setRightPanelOpen(true)}
+              className="p-2 hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+              title="Open right panel"
+            >
+              <PanelRightClose size={16} className="rotate-180" />
+            </button>
+          </div>
         )}
       </div>
 
