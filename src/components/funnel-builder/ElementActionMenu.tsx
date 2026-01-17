@@ -13,6 +13,7 @@ interface ElementActionMenuProps {
   onMoveDown?: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
+  onSelectParent?: () => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   className?: string;
@@ -24,6 +25,7 @@ export function ElementActionMenu({
   onMoveDown,
   onDuplicate,
   onDelete,
+  onSelectParent,
   canMoveUp = true,
   canMoveDown = true,
   className,
@@ -70,14 +72,16 @@ export function ElementActionMenu({
       )}
 
       {/* Select parent */}
-      <button
-        type="button"
-        className="element-action-btn"
-        onClick={(e) => { e.stopPropagation(); /* TODO: select parent */ }}
-        title="Select parent"
-      >
-        <Square size={16} />
-      </button>
+      {onSelectParent && (
+        <button
+          type="button"
+          className="element-action-btn"
+          onClick={(e) => { e.stopPropagation(); onSelectParent(); }}
+          title="Select parent"
+        >
+          <Square size={16} />
+        </button>
+      )}
       
       {onDelete && (
         <button
