@@ -43,7 +43,7 @@ interface MultiSelection {
 
 // Import shared utilities from CanvasUtilities (Phase 8: consolidated)
 import { CanvasUtilities } from './renderers/CanvasUtilities';
-const { getContrastTextColor, lightenHex } = CanvasUtilities;
+const { getContrastTextColor, lightenHex, shiftHue } = CanvasUtilities;
 
 // Helper to generate page background styles
 const getPageBackgroundStyles = (bg: PageBackground | undefined, isDarkTheme: boolean): React.CSSProperties => {
@@ -2169,9 +2169,10 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               {Array.from({ length: avatarCount }).map((_, i) => {
-                // Use user's chosen color with angle variation for visual variety
+                // Use user's chosen colors with angle variation for visual variety
                 const baseColor = (element.props?.gradientFrom as string) || primaryColor || '#8B5CF6';
-                const endColor = '#EC4899';
+                // Theme-aware end color: shift hue from primary instead of hardcoded pink
+                const endColor = (element.props?.gradientTo as string) || shiftHue(baseColor, 40);
                 return (
                   <div 
                     key={i}
@@ -2327,13 +2328,19 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               />
             )}
             <div 
-              className="relative rounded-2xl overflow-hidden aspect-video bg-gray-900"
+              className={cn(
+                "relative rounded-2xl overflow-hidden aspect-video",
+                isDarkTheme ? "bg-white/5" : "bg-gray-100"
+              )}
               style={{ minHeight: '200px' }}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              {/* Placeholder background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                <Video className="w-12 h-12 text-gray-600" />
+              {/* Theme-aware placeholder background */}
+              <div className={cn(
+                "absolute inset-0 flex items-center justify-center",
+                isDarkTheme ? "bg-gradient-to-br from-white/10 to-white/5" : "bg-gradient-to-br from-gray-100 to-gray-200"
+              )}>
+                <Video className={cn("w-12 h-12", isDarkTheme ? "text-white/30" : "text-gray-400")} />
               </div>
               {/* Overlay */}
               <div className={cn(
@@ -3783,24 +3790,42 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
     }
 
     let bgColor: string | undefined;
+    // Helper to calculate luminance from hex color
+    const calcLuminance = (hex: string): number | null => {
+      try {
+        const h = hex.replace('#', '');
+        if (h.length !== 6) return null;
+        const r = parseInt(h.substring(0, 2), 16) / 255;
+        const g = parseInt(h.substring(2, 4), 16) / 255;
+        const b = parseInt(h.substring(4, 6), 16) / 255;
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      } catch {
+        return null;
+      }
+    };
+
     if (backgroundSource.type === 'solid') {
       bgColor = backgroundSource.color;
-    } else if (backgroundSource.type === 'gradient' && backgroundSource.gradient?.stops?.[0]) {
-      bgColor = backgroundSource.gradient.stops[0].color;
+    } else if (backgroundSource.type === 'gradient' && backgroundSource.gradient?.stops?.length) {
+      // Average luminance across all gradient stops for more accurate detection
+      const stops = backgroundSource.gradient.stops;
+      const luminances = stops.map((s: { color: string }) => calcLuminance(s.color)).filter((l: number | null): l is number => l !== null);
+      if (luminances.length > 0) {
+        const avgLuminance = luminances.reduce((a: number, b: number) => a + b, 0) / luminances.length;
+        return avgLuminance < 0.5;
+      }
+    } else if ((backgroundSource.type === 'image' || backgroundSource.type === 'video') && backgroundSource.overlay) {
+      // Check overlay color for image/video backgrounds
+      const overlayLum = calcLuminance(backgroundSource.overlay);
+      if (overlayLum !== null) {
+        return overlayLum < 0.5;
+      }
     }
 
     if (bgColor) {
-      try {
-        const hex = bgColor.replace('#', '');
-        if (hex.length === 6) {
-          const r = parseInt(hex.substring(0, 2), 16) / 255;
-          const g = parseInt(hex.substring(2, 4), 16) / 255;
-          const b = parseInt(hex.substring(4, 6), 16) / 255;
-          const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          return luminance < 0.5;
-        }
-      } catch {
-        // ignore
+      const lum = calcLuminance(bgColor);
+      if (lum !== null) {
+        return lum < 0.5;
       }
     }
 
