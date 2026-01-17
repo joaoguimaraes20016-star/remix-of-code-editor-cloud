@@ -3799,11 +3799,19 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
               }
             : { backgroundColor: frame.backgroundColor || '#ffffff' },
         };
+      case 'video':
+        // Video backgrounds are handled separately with a video element overlay
+        return { className: 'shadow-lg overflow-hidden' };
       case 'transparent':
       default:
         return { className: 'bg-transparent' };
     }
   };
+
+  // Check if this frame has a video background
+  const hasVideoBackground = frame.background === 'video' && frame.backgroundVideo;
+  const videoUrl = hasVideoBackground ? getVideoBackgroundUrl(frame.backgroundVideo) : null;
+  const videoOpacity = (frame.backgroundVideoOpacity ?? 100) / 100;
 
   const frameStyles = getFrameBackgroundStyles();
   
@@ -3853,8 +3861,35 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
           dragHandleAttributes={dragHandleAttributes}
         />
       )}
+      
+      {/* Video Background Layer */}
+      {hasVideoBackground && videoUrl && (
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" style={{ borderRadius: !isFullWidth ? '1rem' : undefined }}>
+          {isDirectVideoUrl(frame.backgroundVideo) ? (
+            <video
+              src={videoUrl}
+              autoPlay={frame.backgroundVideoAutoplay ?? true}
+              muted={frame.backgroundVideoMuted ?? true}
+              loop={frame.backgroundVideoLoop ?? true}
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ opacity: videoOpacity }}
+            />
+          ) : (
+            <iframe
+              src={videoUrl}
+              className="absolute inset-0 w-full h-full scale-150"
+              style={{ opacity: videoOpacity }}
+              allow="autoplay; fullscreen"
+              frameBorder={0}
+            />
+          )}
+        </div>
+      )}
+      
       {/* Apply dynamic padding and spacing based on frame settings */}
       <div 
+        className="relative z-10"
         style={{
           paddingTop: frame.paddingVertical || 32,
           paddingBottom: frame.paddingVertical || 32,
