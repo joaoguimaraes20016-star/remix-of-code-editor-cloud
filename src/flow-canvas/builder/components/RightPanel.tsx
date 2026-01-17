@@ -1635,13 +1635,16 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
   // Previously, useState initialized once and never updated when switching steps, causing
   // the inspector to show stale background type from the previous step.
   const currentBgType = step.background?.type || 'solid';
-  const [bgType, setBgType] = useState<'solid' | 'gradient' | 'image'>(currentBgType);
+  // Filter out 'pattern' since UI doesn't support it yet
+  const normalizedBgType = currentBgType === 'pattern' ? 'solid' : currentBgType;
+  const [bgType, setBgType] = useState<'solid' | 'gradient' | 'image'>(normalizedBgType);
   
   // CRITICAL: Reset local bgType state when the step changes.
   // Without this, switching to a new step would keep the old step's bgType in state,
   // causing visual mismatch and potential data corruption when editing.
   useEffect(() => {
-    setBgType(step.background?.type || 'solid');
+    const type = step.background?.type || 'solid';
+    setBgType(type === 'pattern' ? 'solid' : type);
   }, [step.id, step.background?.type]);
   
   const handleBackgroundTypeChange = (newType: 'solid' | 'gradient' | 'image') => {
@@ -2689,15 +2692,17 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
   onPublish
 }) => {
   // Local state for immediate UI feedback on background type change
+  const rawBgType = page.settings.page_background?.type || 'solid';
   const [localBgType, setLocalBgType] = useState<'solid' | 'gradient' | 'image'>(
-    page.settings.page_background?.type || 'solid'
+    rawBgType === 'pattern' ? 'solid' : rawBgType
   );
   
   // Sync local state with external prop changes
   useEffect(() => {
     const externalType = page.settings.page_background?.type || 'solid';
-    if (externalType !== localBgType) {
-      setLocalBgType(externalType);
+    const normalizedType = externalType === 'pattern' ? 'solid' : externalType;
+    if (normalizedType !== localBgType) {
+      setLocalBgType(normalizedType);
     }
   }, [page.settings.page_background?.type]);
   

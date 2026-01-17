@@ -47,7 +47,7 @@ interface FunnelSettingsModalProps {
     theme?: 'light' | 'dark';
     primary_color?: string;
     font_family?: string;
-    page_background?: { type: 'solid' | 'gradient' | 'image'; color?: string };
+    page_background?: { type: 'solid' | 'gradient' | 'image' | 'pattern'; color?: string };
     // Branding
     logo_url?: string;
     favicon_url?: string;

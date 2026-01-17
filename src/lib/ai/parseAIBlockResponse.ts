@@ -15,7 +15,10 @@ import { generateId } from '@/flow-canvas/builder/utils/helpers';
 const VALID_ELEMENT_TYPES: ElementType[] = [
   'text', 'heading', 'button', 'input', 'select', 'checkbox', 'radio',
   'image', 'video', 'divider', 'spacer', 'icon', 'link',
-  'multiple-choice', 'single-choice'
+  'multiple-choice', 'single-choice',
+  // Premium elements
+  'gradient-text', 'underline-text', 'stat-number', 'avatar-group',
+  'ticker', 'badge', 'icon-text', 'process-step', 'video-thumbnail'
 ];
 
 // Valid block types from the schema
@@ -23,7 +26,10 @@ const VALID_BLOCK_TYPES: BlockType[] = [
   'hero', 'form-field', 'cta', 'testimonial', 'media', 'text-block',
   'custom', 'booking', 'application-flow', 'capture-flow-embed',
   'feature', 'pricing', 'faq', 'about', 'team', 'trust',
-  'logo-bar', 'footer', 'contact', 'spacer', 'divider'
+  'logo-bar', 'footer', 'contact', 'spacer', 'divider',
+  // Premium blocks
+  'credibility-bar', 'stats-row', 'process-flow', 'urgency-banner',
+  'ticker-bar', 'video-hero', 'split-hero', 'guarantee'
 ];
 
 interface AIBlockResponse {
@@ -134,6 +140,7 @@ export interface StylingContext {
   theme?: 'light' | 'dark';
   primaryColor?: string;
   backgroundColor?: string;
+  backgroundType?: 'solid' | 'gradient' | 'image' | 'pattern';
 }
 
 /**
