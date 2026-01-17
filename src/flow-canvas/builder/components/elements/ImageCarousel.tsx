@@ -23,6 +23,14 @@ export interface ImageCarouselProps {
   objectFit?: 'cover' | 'contain' | 'fill';
   borderRadius?: number;
   gap?: number;
+  // NEW: Enhanced features
+  arrowStyle?: 'default' | 'minimal' | 'rounded';
+  arrowColor?: string;
+  dotStyle?: 'dots' | 'lines' | 'numbers';
+  dotColor?: string;
+  dotActiveColor?: string;
+  showCaptions?: boolean;
+  captionPosition?: 'bottom' | 'overlay';
   onSlideChange?: (index: number) => void;
   onSlideClick?: (slide: ImageCarouselProps['slides'][0]) => void;
   isBuilder?: boolean;

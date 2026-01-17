@@ -106,6 +106,7 @@ import {
   MapPin,
   Code,
   Star,
+  ListOrdered,
 } from 'lucide-react';
 import { 
   EffectsPickerPopover, 
@@ -1819,6 +1820,20 @@ const ElementInspector: React.FC<{
                   </SelectContent>
                 </Select>
               </FieldGroup>
+              <FieldGroup label="Size">
+                <Select 
+                  value={element.props?.boxSize as string || 'md'}
+                  onValueChange={(value) => handlePropsChange('boxSize', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="sm">Small</SelectItem>
+                    <SelectItem value="md">Medium</SelectItem>
+                    <SelectItem value="lg">Large</SelectItem>
+                    <SelectItem value="xl">Extra Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Days</span>
                 <TogglePill value={element.props?.showDays !== false} onToggle={() => handlePropsChange('showDays', element.props?.showDays === false)} />
@@ -1833,6 +1848,87 @@ const ElementInspector: React.FC<{
               </div>
             </div>
           </CollapsibleSection>
+          
+          <CollapsibleSection title="Urgency & Effects" icon={<Zap className="w-4 h-4" />}>
+            <div className="pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Loop Mode</span>
+                <TogglePill value={element.props?.loopMode as boolean || false} onToggle={() => handlePropsChange('loopMode', !element.props?.loopMode)} />
+              </div>
+              {element.props?.loopMode && (
+                <FieldGroup label="Reset Interval" hint="Minutes">
+                  <div className="flex items-center gap-2">
+                    <Slider
+                      value={[element.props?.loopInterval as number || 60]}
+                      onValueChange={([v]) => handlePropsChange('loopInterval', v)}
+                      min={5} max={180} step={5} className="flex-1"
+                    />
+                    <span className="text-xs text-builder-text w-12">{String(element.props?.loopInterval || 60)}m</span>
+                  </div>
+                </FieldGroup>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Speed Multiplier</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[element.props?.speedMultiplier as number || 1]}
+                    onValueChange={([v]) => handlePropsChange('speedMultiplier', v)}
+                    min={1} max={10} step={0.5} className="w-20"
+                  />
+                  <span className="text-xs text-builder-text w-8">{String(element.props?.speedMultiplier || 1)}x</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Animate Digits</span>
+                <TogglePill value={element.props?.animateDigits as boolean || false} onToggle={() => handlePropsChange('animateDigits', !element.props?.animateDigits)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Urgency Pulse</span>
+                <TogglePill value={element.props?.urgencyPulse as boolean || false} onToggle={() => handlePropsChange('urgencyPulse', !element.props?.urgencyPulse)} />
+              </div>
+              <p className="text-[10px] text-builder-text-dim">
+                Urgency pulse adds animation when under 1 minute remaining
+              </p>
+            </div>
+          </CollapsibleSection>
+          
+          <CollapsibleSection title="Custom Labels" icon={<Type className="w-4 h-4" />}>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="Days Label">
+                <Input
+                  value={(element.props?.customLabels as { days?: string })?.days || ''}
+                  onChange={(e) => handlePropsChange('customLabels', { ...(element.props?.customLabels as object || {}), days: e.target.value })}
+                  className="builder-input"
+                  placeholder="Days"
+                />
+              </FieldGroup>
+              <FieldGroup label="Hours Label">
+                <Input
+                  value={(element.props?.customLabels as { hours?: string })?.hours || ''}
+                  onChange={(e) => handlePropsChange('customLabels', { ...(element.props?.customLabels as object || {}), hours: e.target.value })}
+                  className="builder-input"
+                  placeholder="Hours"
+                />
+              </FieldGroup>
+              <FieldGroup label="Minutes Label">
+                <Input
+                  value={(element.props?.customLabels as { minutes?: string })?.minutes || ''}
+                  onChange={(e) => handlePropsChange('customLabels', { ...(element.props?.customLabels as object || {}), minutes: e.target.value })}
+                  className="builder-input"
+                  placeholder="Minutes"
+                />
+              </FieldGroup>
+              <FieldGroup label="Seconds Label">
+                <Input
+                  value={(element.props?.customLabels as { seconds?: string })?.seconds || ''}
+                  onChange={(e) => handlePropsChange('customLabels', { ...(element.props?.customLabels as object || {}), seconds: e.target.value })}
+                  className="builder-input"
+                  placeholder="Seconds"
+                />
+              </FieldGroup>
+            </div>
+          </CollapsibleSection>
+          
           <CollapsibleSection title="When Expired" icon={<Clock className="w-4 h-4" />}>
             <div className="pt-3 space-y-3">
               <FieldGroup label="Action">
@@ -1870,6 +1966,7 @@ const ElementInspector: React.FC<{
               )}
             </div>
           </CollapsibleSection>
+          
           <CollapsibleSection title="Colors" icon={<Palette className="w-4 h-4" />}>
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
@@ -1892,6 +1989,30 @@ const ElementInspector: React.FC<{
                 >
                   <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                     <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { background?: string; text?: string } | undefined)?.text || '#ffffff' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Labels</span>
+                <ColorPickerPopover 
+                  color={(element.props?.colors as { label?: string })?.label || '#888888'} 
+                  onChange={(color) => handlePropsChange('colors', { ...(element.props?.colors as object || {}), label: color })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { label?: string })?.label || '#888888' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Separator</span>
+                <ColorPickerPopover 
+                  color={(element.props?.colors as { separator?: string })?.separator || '#ffffff'} 
+                  onChange={(color) => handlePropsChange('colors', { ...(element.props?.colors as object || {}), separator: color })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { separator?: string })?.separator || '#ffffff' }} />
                     <span className="text-xs text-builder-text-muted">Edit</span>
                   </button>
                 </ColorPickerPopover>
@@ -1922,6 +2043,14 @@ const ElementInspector: React.FC<{
                   placeholder="Optional sub text..."
                 />
               </FieldGroup>
+              <FieldGroup label="Complete Text">
+                <Input
+                  value={element.props?.completeText as string || 'Complete!'}
+                  onChange={(e) => handlePropsChange('completeText', e.target.value)}
+                  className="builder-input"
+                  placeholder="Complete!"
+                />
+              </FieldGroup>
               <FieldGroup label="Animation">
                 <Select 
                   value={element.props?.animationType as string || 'analyzing'}
@@ -1937,6 +2066,19 @@ const ElementInspector: React.FC<{
                   </SelectContent>
                 </Select>
               </FieldGroup>
+              <FieldGroup label="Size">
+                <Select 
+                  value={element.props?.size as string || 'md'}
+                  onValueChange={(value) => handlePropsChange('size', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="sm">Small</SelectItem>
+                    <SelectItem value="md">Medium</SelectItem>
+                    <SelectItem value="lg">Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
               <FieldGroup label="Duration" hint="In seconds">
                 <div className="flex items-center gap-2">
                   <Slider
@@ -1947,9 +2089,27 @@ const ElementInspector: React.FC<{
                   <span className="text-xs text-builder-text w-10">{((element.props?.duration as number || 3000) / 1000).toFixed(1)}s</span>
                 </div>
               </FieldGroup>
+              <FieldGroup label="Easing">
+                <Select 
+                  value={element.props?.easing as string || 'ease-out'}
+                  onValueChange={(value) => handlePropsChange('easing', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="linear">Linear</SelectItem>
+                    <SelectItem value="ease-in">Ease In</SelectItem>
+                    <SelectItem value="ease-out">Ease Out</SelectItem>
+                    <SelectItem value="ease-in-out">Ease In-Out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Progress</span>
                 <TogglePill value={element.props?.showProgress !== false} onToggle={() => handlePropsChange('showProgress', element.props?.showProgress === false)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Percentage</span>
+                <TogglePill value={element.props?.showPercentage !== false} onToggle={() => handlePropsChange('showPercentage', element.props?.showPercentage === false)} />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Auto Advance</span>
@@ -1957,6 +2117,53 @@ const ElementInspector: React.FC<{
               </div>
             </div>
           </CollapsibleSection>
+          
+          {/* Custom Steps for Analyzing type */}
+          {element.props?.animationType === 'analyzing' && (
+            <CollapsibleSection title="Step Messages" icon={<ListOrdered className="w-4 h-4" />}>
+              <div className="pt-3 space-y-2">
+                {((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...']).map((step, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-xs text-builder-text-muted w-4">{idx + 1}.</span>
+                    <Input
+                      value={step}
+                      onChange={(e) => {
+                        const steps = [...((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...'])];
+                        steps[idx] = e.target.value;
+                        handlePropsChange('customSteps', steps);
+                      }}
+                      className="builder-input flex-1 text-xs h-8"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        const steps = ((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...']).filter((_, i) => i !== idx);
+                        if (steps.length > 0) handlePropsChange('customSteps', steps);
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full gap-2 mt-2"
+                  onClick={() => {
+                    const steps = [...((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...'])];
+                    steps.push(`Step ${steps.length + 1}...`);
+                    handlePropsChange('customSteps', steps);
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Step
+                </Button>
+              </div>
+            </CollapsibleSection>
+          )}
+          
           <CollapsibleSection title="Colors" icon={<Palette className="w-4 h-4" />}>
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
@@ -1967,6 +2174,30 @@ const ElementInspector: React.FC<{
                 >
                   <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                     <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { primary?: string } | undefined)?.primary || 'hsl(var(--primary))' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Background</span>
+                <ColorPickerPopover 
+                  color={(element.props?.colors as { background?: string } | undefined)?.background || 'hsl(var(--muted))'}
+                  onChange={(color) => handlePropsChange('colors', { ...(element.props?.colors as object || {}), background: color })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { background?: string } | undefined)?.background || 'hsl(var(--muted))' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Text Color</span>
+                <ColorPickerPopover 
+                  color={(element.props?.colors as { text?: string } | undefined)?.text || '#ffffff'}
+                  onChange={(color) => handlePropsChange('colors', { ...(element.props?.colors as object || {}), text: color })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.colors as { text?: string } | undefined)?.text || '#ffffff' }} />
                     <span className="text-xs text-builder-text-muted">Edit</span>
                   </button>
                 </ColorPickerPopover>
