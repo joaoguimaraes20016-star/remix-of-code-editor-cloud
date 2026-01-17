@@ -603,7 +603,7 @@ const ElementInspector: React.FC<{
                   <SelectTrigger className="builder-input h-7 text-xs flex-1">
                     <SelectValue placeholder="Trigger" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border-border">
                     <SelectItem value="load">On Page Load</SelectItem>
                     <SelectItem value="scroll">When Scrolled Into View</SelectItem>
                     <SelectItem value="hover">On Hover</SelectItem>
@@ -728,7 +728,7 @@ const ElementInspector: React.FC<{
               onValueChange={(value) => handleStyleChange('scale', value === 'none' ? '' : value)}
             >
               <SelectTrigger className="builder-input w-24"><SelectValue placeholder="None" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border-border">
                 <SelectItem value="none">None</SelectItem>
                 <SelectItem value="0.95">Shrink (95%)</SelectItem>
                 <SelectItem value="1.02">Subtle (102%)</SelectItem>
@@ -1070,7 +1070,7 @@ const ElementInspector: React.FC<{
                 <span className="text-xs text-builder-text-muted">Font</span>
                 <Select value={element.props?.fontFamily as string || 'inherit'} onValueChange={(value) => handlePropsChange('fontFamily', value)}>
                   <SelectTrigger className="builder-input w-28"><SelectValue placeholder="Inherit" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border-border">
                     <SelectItem value="inherit">Inherit</SelectItem>
                     <SelectItem value="Inter">Inter</SelectItem>
                     <SelectItem value="DM Sans">DM Sans</SelectItem>
@@ -1141,7 +1141,7 @@ const ElementInspector: React.FC<{
                 <span className="text-xs text-builder-text-muted">Shadow</span>
                 <Select value={element.props?.textShadow as string || 'none'} onValueChange={(value) => handlePropsChange('textShadow', value)}>
                   <SelectTrigger className="builder-input w-24"><SelectValue placeholder="None" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border-border">
                     <SelectItem value="none">None</SelectItem>
                     <SelectItem value="subtle">Subtle</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
@@ -1221,7 +1221,7 @@ const ElementInspector: React.FC<{
                     }}
                   >
                     <SelectTrigger className="builder-input w-20"><SelectValue placeholder="Auto" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border-border">
                       <SelectItem value="auto">Auto</SelectItem>
                       <SelectItem value="full">Full</SelectItem>
                       <SelectItem value="custom">Custom</SelectItem>
@@ -1237,7 +1237,7 @@ const ElementInspector: React.FC<{
                 <span className="text-xs text-builder-text-muted">Object Fit</span>
                 <Select value={element.props?.objectFit as string || 'cover'} onValueChange={(value) => handlePropsChange('objectFit', value)}>
                   <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Cover" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border-border">
                     <SelectItem value="cover">Cover</SelectItem>
                     <SelectItem value="contain">Contain</SelectItem>
                     <SelectItem value="fill">Fill</SelectItem>
@@ -1315,7 +1315,7 @@ const ElementInspector: React.FC<{
                   }}
                 >
                   <SelectTrigger className="builder-input w-24"><SelectValue placeholder="Auto" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border-border">
                     <SelectItem value="auto">Auto</SelectItem>
                     <SelectItem value="full">Full</SelectItem>
                     <SelectItem value="custom">Custom</SelectItem>
@@ -1327,7 +1327,7 @@ const ElementInspector: React.FC<{
                 <span className="text-xs text-builder-text-muted">Aspect Ratio</span>
                 <Select value={(element.styles?.aspectRatio as string) || '16/9'} onValueChange={(value) => handleStyleChange('aspectRatio', value)}>
                   <SelectTrigger className="builder-input w-24"><SelectValue placeholder="16:9" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border-border">
                     <SelectItem value="16/9">16:9</SelectItem>
                     <SelectItem value="4/3">4:3</SelectItem>
                     <SelectItem value="1/1">1:1</SelectItem>
@@ -1356,7 +1356,7 @@ const ElementInspector: React.FC<{
                 <FieldGroup label="Input Type">
                   <Select value={element.props?.type as string || 'text'} onValueChange={(value) => handlePropsChange('type', value)}>
                     <SelectTrigger className="builder-input"><SelectValue placeholder="Text" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border-border">
                       <SelectItem value="text">Text</SelectItem>
                       <SelectItem value="email">Email</SelectItem>
                       <SelectItem value="tel">Phone</SelectItem>

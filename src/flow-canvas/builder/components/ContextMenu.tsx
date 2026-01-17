@@ -60,9 +60,7 @@ export const BuilderContextMenu: React.FC<ContextMenuProps> = ({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div className="contents">
-          {children}
-        </div>
+        <span className="contents">{children}</span>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-56 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))] z-[9999] shadow-xl">
         <ContextMenuItem 
