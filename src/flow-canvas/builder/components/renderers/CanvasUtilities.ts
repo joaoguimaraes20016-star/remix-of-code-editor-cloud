@@ -336,19 +336,9 @@ export function getEmbedUrl(url: string, platform: string): string {
   return url;
 }
 
-/**
- * Easing presets map
- */
-export const easingMap: Record<string, string> = {
-  'ease': 'ease',
-  'ease-in': 'ease-in',
-  'ease-out': 'ease-out',
-  'ease-in-out': 'ease-in-out',
-  'linear': 'linear',
-  'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-  'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-  'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
-};
+// Re-export easing map from unified presets
+import { easingMap } from '../../utils/presets';
+export { easingMap };
 
 // Export a utility object for convenient access
 export const CanvasUtilities = {

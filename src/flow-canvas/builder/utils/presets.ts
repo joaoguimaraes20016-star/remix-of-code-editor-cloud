@@ -368,3 +368,282 @@ export const defaultGradientValue: GradientValue = {
     { color: '#d946ef', position: 100 },
   ],
 };
+
+// ===========================================
+// MASTER FONT FAMILY PRESETS
+// ===========================================
+
+export interface FontFamilyOption {
+  value: string;
+  label: string;
+  category?: 'system' | 'display' | 'standard' | 'serif';
+}
+
+// Master font list - ALL editors must use this
+export const masterFontFamilies: FontFamilyOption[] = [
+  // System
+  { value: 'inherit', label: 'Inherit', category: 'system' },
+  { value: 'system-ui', label: 'System', category: 'system' },
+  // Display fonts (bold, expressive)
+  { value: 'Oswald', label: 'Oswald', category: 'display' },
+  { value: 'Anton', label: 'Anton', category: 'display' },
+  { value: 'Bebas Neue', label: 'Bebas Neue', category: 'display' },
+  { value: 'Archivo Black', label: 'Archivo Black', category: 'display' },
+  { value: 'Space Grotesk', label: 'Space Grotesk', category: 'display' },
+  { value: 'Syne', label: 'Syne', category: 'display' },
+  // Standard fonts (readable, professional)
+  { value: 'Inter', label: 'Inter', category: 'standard' },
+  { value: 'DM Sans', label: 'DM Sans', category: 'standard' },
+  { value: 'Roboto', label: 'Roboto', category: 'standard' },
+  { value: 'Open Sans', label: 'Open Sans', category: 'standard' },
+  { value: 'Poppins', label: 'Poppins', category: 'standard' },
+  { value: 'Montserrat', label: 'Montserrat', category: 'standard' },
+  { value: 'Lato', label: 'Lato', category: 'standard' },
+  { value: 'Raleway', label: 'Raleway', category: 'standard' },
+  // Serif/Display
+  { value: 'Playfair Display', label: 'Playfair Display', category: 'serif' },
+];
+
+// Compact font list for settings/global (most common)
+export const compactFontFamilies: FontFamilyOption[] = masterFontFamilies.filter(
+  f => ['inherit', 'system-ui', 'Inter', 'DM Sans', 'Poppins', 'Montserrat', 'Playfair Display', 'Oswald', 'Space Grotesk'].includes(f.value)
+);
+
+// Settings font options (without 'inherit')
+export const settingsFontFamilies: FontFamilyOption[] = masterFontFamilies.filter(
+  f => f.value !== 'inherit'
+);
+
+// ===========================================
+// BOX SHADOW CSS PRESETS
+// ===========================================
+
+// CSS string values for box shadows
+export const boxShadowCSS: Record<string, string> = {
+  none: 'none',
+  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+  '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
+  glow: '0 0 20px rgba(139, 92, 246, 0.35)',
+  neon: '0 0 10px currentColor, 0 0 20px currentColor',
+};
+
+// Inspector shadow presets with Tailwind class mapping
+export const inspectorShadowPresets = [
+  { value: 'none' as const, label: 'None', preview: 'shadow-none' },
+  { value: 'sm' as const, label: 'S', preview: 'shadow-sm' },
+  { value: 'md' as const, label: 'M', preview: 'shadow-md' },
+  { value: 'lg' as const, label: 'L', preview: 'shadow-lg' },
+  { value: 'xl' as const, label: 'XL', preview: 'shadow-xl' },
+];
+
+// Multi-layer shadow presets for advanced editor
+export interface ShadowLayer {
+  x: number;
+  y: number;
+  blur: number;
+  spread: number;
+  color: string;
+  inset?: boolean;
+}
+
+export const advancedShadowPresets: { label: string; layers: ShadowLayer[] }[] = [
+  { label: 'None', layers: [] },
+  { label: 'Subtle', layers: [{ x: 0, y: 1, blur: 3, spread: 0, color: 'rgba(0, 0, 0, 0.1)' }] },
+  { label: 'Medium', layers: [{ x: 0, y: 4, blur: 6, spread: -1, color: 'rgba(0, 0, 0, 0.1)' }, { x: 0, y: 2, blur: 4, spread: -1, color: 'rgba(0, 0, 0, 0.06)' }] },
+  { label: 'Large', layers: [{ x: 0, y: 10, blur: 15, spread: -3, color: 'rgba(0, 0, 0, 0.1)' }, { x: 0, y: 4, blur: 6, spread: -2, color: 'rgba(0, 0, 0, 0.05)' }] },
+  { label: 'Elevated', layers: [{ x: 0, y: 20, blur: 25, spread: -5, color: 'rgba(0, 0, 0, 0.1)' }, { x: 0, y: 8, blur: 10, spread: -6, color: 'rgba(0, 0, 0, 0.1)' }] },
+  { label: 'Glow', layers: [{ x: 0, y: 0, blur: 20, spread: 0, color: 'rgba(139, 92, 246, 0.35)' }] },
+  { label: 'Inset', layers: [{ x: 0, y: 2, blur: 4, spread: 0, color: 'rgba(0, 0, 0, 0.1)', inset: true }] },
+];
+
+// Convert shadow layers to CSS box-shadow string
+export const shadowLayersToCSS = (layers: ShadowLayer[]): string => {
+  if (!layers || layers.length === 0) return 'none';
+  
+  return layers
+    .map(layer => {
+      const inset = layer.inset ? 'inset ' : '';
+      return `${inset}${layer.x}px ${layer.y}px ${layer.blur}px ${layer.spread}px ${layer.color}`;
+    })
+    .join(', ');
+};
+
+// ===========================================
+// BORDER RADIUS PRESETS
+// ===========================================
+
+// Unified radius constraints
+export const RADIUS_MAX = 50;
+export const RADIUS_STEP = 2;
+
+export const radiusPresets = [
+  { value: 0, label: 'None' },
+  { value: 4, label: 'XS' },
+  { value: 8, label: 'SM' },
+  { value: 12, label: 'MD' },
+  { value: 16, label: 'LG' },
+  { value: 24, label: 'XL' },
+  { value: 32, label: '2XL' },
+  { value: 9999, label: 'Full' },
+];
+
+// Named radius presets for buttons/inputs
+export const namedRadiusPresets = [
+  { value: 'none', label: 'Square', px: 0 },
+  { value: 'sm', label: 'Subtle', px: 4 },
+  { value: 'md', label: 'Medium', px: 8 },
+  { value: 'lg', label: 'Large', px: 12 },
+  { value: 'xl', label: 'Extra Large', px: 16 },
+  { value: 'full', label: 'Pill', px: 9999 },
+];
+
+// ===========================================
+// ANIMATION & EASING PRESETS
+// ===========================================
+
+// Master easing map - cubic-bezier values
+export const easingMap: Record<string, string> = {
+  'linear': 'linear',
+  'ease': 'ease',
+  'ease-in': 'ease-in',
+  'ease-out': 'ease-out',
+  'ease-in-out': 'ease-in-out',
+  'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+  'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+// Easing options for dropdowns
+export const easingOptions = [
+  { value: 'ease', label: 'Ease' },
+  { value: 'ease-in', label: 'Ease In' },
+  { value: 'ease-out', label: 'Ease Out' },
+  { value: 'ease-in-out', label: 'Ease In-Out' },
+  { value: 'linear', label: 'Linear' },
+  { value: 'bounce', label: 'Bounce' },
+  { value: 'spring', label: 'Spring' },
+];
+
+// Animation repeat options
+export const repeatOptions = [
+  { value: 'once', label: 'Once' },
+  { value: 'loop', label: 'Loop' },
+  { value: 'hover', label: 'On Hover' },
+];
+
+// Transition timing
+export const transitionDurations = {
+  instant: 0,
+  fast: 150,
+  normal: 300,
+  slow: 500,
+  verySlow: 800,
+};
+
+// ===========================================
+// SPACING & PADDING PRESETS
+// ===========================================
+
+// Unified spacing constraints
+export const SPACING_MAX = 100;
+export const SPACING_STEP = 4;
+
+export const spacingPresets = [
+  { value: 0, label: 'None' },
+  { value: 8, label: 'XS' },
+  { value: 16, label: 'SM' },
+  { value: 24, label: 'MD' },
+  { value: 32, label: 'LG' },
+  { value: 48, label: 'XL' },
+  { value: 64, label: '2XL' },
+  { value: 80, label: '3XL' },
+];
+
+// Container padding presets
+export const containerPaddingPresets = [
+  { value: 0, label: 'None' },
+  { value: 16, label: 'Tight' },
+  { value: 24, label: 'Compact' },
+  { value: 32, label: 'Normal' },
+  { value: 48, label: 'Spacious' },
+  { value: 64, label: 'Generous' },
+];
+
+// ===========================================
+// BUTTON STYLE PRESETS
+// ===========================================
+
+export const buttonVariantPresets = [
+  { value: 'primary', label: 'Primary', description: 'Solid primary color' },
+  { value: 'secondary', label: 'Secondary', description: 'Muted background' },
+  { value: 'outline', label: 'Outline', description: 'Border only' },
+  { value: 'ghost', label: 'Ghost', description: 'Transparent' },
+  { value: 'gradient', label: 'Gradient', description: 'Custom gradient' },
+  { value: 'custom', label: 'Custom', description: 'Full control' },
+];
+
+export const buttonSizePresets = [
+  { value: 'sm', label: 'Small', height: 36 },
+  { value: 'md', label: 'Medium', height: 40 },
+  { value: 'lg', label: 'Large', height: 48 },
+  { value: 'xl', label: 'Extra Large', height: 56 },
+];
+
+export const buttonShadowPresets = [
+  { value: 'none', label: 'None' },
+  { value: 'sm', label: 'Subtle' },
+  { value: 'md', label: 'Medium' },
+  { value: 'lg', label: 'Large' },
+  { value: 'glow', label: 'Glow' },
+];
+
+// ===========================================
+// GRADIENT DIRECTION PRESETS
+// ===========================================
+
+export const gradientDirections = [
+  { value: 'to bottom', label: 'Top to Bottom' },
+  { value: 'to top', label: 'Bottom to Top' },
+  { value: 'to right', label: 'Left to Right' },
+  { value: 'to left', label: 'Right to Left' },
+  { value: 'to bottom right', label: 'Diagonal ↘' },
+  { value: 'to bottom left', label: 'Diagonal ↙' },
+  { value: 'to top right', label: 'Diagonal ↗' },
+  { value: 'to top left', label: 'Diagonal ↖' },
+];
+
+// Legacy two-stop gradient presets (for backwards compatibility)
+export const legacyGradientPresets = [
+  { from: '#667eea', to: '#764ba2', label: 'Purple Dream' },
+  { from: '#f093fb', to: '#f5576c', label: 'Pink Sunset' },
+  { from: '#4facfe', to: '#00f2fe', label: 'Ocean Blue' },
+  { from: '#43e97b', to: '#38f9d7', label: 'Fresh Mint' },
+  { from: '#fa709a', to: '#fee140', label: 'Warm Glow' },
+  { from: '#a8edea', to: '#fed6e3', label: 'Soft Pastel' },
+  { from: '#ff0844', to: '#ffb199', label: 'Coral Fire' },
+  { from: '#0f0c29', to: '#302b63', label: 'Dark Night' },
+];
+
+// ===========================================
+// BUTTON ANIMATION PRESETS
+// ===========================================
+
+export const buttonAnimationOptions = [
+  { value: 'none', label: 'None' },
+  { value: 'fade', label: 'Fade In' },
+  { value: 'slide-up', label: 'Slide Up' },
+  { value: 'bounce', label: 'Bounce' },
+  { value: 'scale', label: 'Scale' },
+];
+
+export const buttonHoverOptions = [
+  { value: 'none', label: 'None' },
+  { value: 'glow', label: 'Glow' },
+  { value: 'lift', label: 'Lift' },
+  { value: 'pulse', label: 'Pulse' },
+  { value: 'shine', label: 'Shine' },
+];

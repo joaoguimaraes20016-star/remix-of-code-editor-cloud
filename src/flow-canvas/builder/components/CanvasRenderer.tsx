@@ -377,8 +377,9 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
     }
   }, [setNodeRef, forwardedRef]);
   
-  // Easing presets map
-  const easingMap: Record<string, string> = {
+  // Import easing map from unified presets
+  // Note: We need to use it inline here since this is inside a component
+  const easingMapLocal: Record<string, string> = {
     'ease': 'ease',
     'ease-in': 'ease-in',
     'ease-out': 'ease-out',
@@ -393,7 +394,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
   const buildTransitionCSS = useCallback((): string => {
     const baseStyles = element.stateStyles?.base;
     const duration = baseStyles?.transitionDuration || '200ms';
-    const easing = easingMap[baseStyles?.transitionEasing || 'ease'] || 'ease';
+    const easing = easingMapLocal[baseStyles?.transitionEasing || 'ease'] || 'ease';
     const delay = baseStyles?.transitionDelay || '0ms';
     
     // Build transition for all commonly animated properties

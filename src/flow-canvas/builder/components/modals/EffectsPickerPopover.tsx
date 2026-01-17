@@ -78,14 +78,13 @@ interface EffectSettings {
   repeat: 'once' | 'loop' | 'hover';
 }
 
-const EASING_OPTIONS: { value: EffectSettings['easing']; label: string }[] = [
-  { value: 'ease', label: 'Ease' },
-  { value: 'ease-in', label: 'Ease In' },
-  { value: 'ease-out', label: 'Ease Out' },
-  { value: 'ease-in-out', label: 'Ease In-Out' },
-  { value: 'linear', label: 'Linear' },
-  { value: 'bounce', label: 'Bounce' },
-];
+// Import unified presets from single source of truth
+import { easingOptions } from '../../utils/presets';
+
+// Filter to match EffectSettings['easing'] type
+const EASING_OPTIONS = easingOptions.filter(
+  e => ['ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'bounce'].includes(e.value)
+) as { value: EffectSettings['easing']; label: string }[];
 
 const REPEAT_OPTIONS: { value: EffectSettings['repeat']; label: string; icon: React.ReactNode }[] = [
   { value: 'once', label: 'Once', icon: <Zap className="w-3 h-3" /> },
