@@ -81,9 +81,17 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
   const isLightMode = editorTheme === 'light';
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
+  // Reset mobile expand state when deselected - immediate reset to prevent stuck menus
   useEffect(() => {
-    if (!isSelected) setMobileExpanded(false);
+    if (!isSelected) {
+      setMobileExpanded(false);
+    }
   }, [isSelected]);
+
+  // Also reset on any block change to prevent ghost menus
+  useEffect(() => {
+    setMobileExpanded(false);
+  }, [blockId]);
 
   const portalContainer = useMemo(() => {
     let el = document.getElementById('toolbar-portal-root');

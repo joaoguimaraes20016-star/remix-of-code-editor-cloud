@@ -155,6 +155,15 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
     }
   }, [isSelected]);
 
+  // Reset all internal popover/expand states when deselected to prevent "stuck" toolbars
+  useEffect(() => {
+    if (!isSelected) {
+      setMobileExpanded(false);
+      setFontOpen(false);
+      setColorOpen(false);
+    }
+  }, [isSelected]);
+
   // Smart positioning like Framer - with generous breathing room
   useEffect(() => {
     if (!isSelected || !targetRef?.current) return;
