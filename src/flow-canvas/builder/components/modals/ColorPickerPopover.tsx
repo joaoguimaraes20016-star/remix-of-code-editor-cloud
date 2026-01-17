@@ -17,21 +17,8 @@ interface ColorPickerPopoverProps {
   onGradientClick?: () => void;
 }
 
-// Expanded color presets - 48 colors organized by type
-const presetColors = [
-  // Neutrals (Row 1)
-  '#FFFFFF', '#F9FAFB', '#E5E7EB', '#9CA3AF', '#4B5563', '#1F2937', '#111827', '#000000',
-  // Brand Purples/Magentas (Row 2)
-  '#F5D0FE', '#E879F9', '#D946EF', '#C026D3', '#A855F7', '#8B5CF6', '#7C3AED', '#6D28D9',
-  // Blues/Cyans (Row 3)
-  '#BFDBFE', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#06B6D4', '#0891B2', '#0E7490',
-  // Greens (Row 4)
-  '#BBF7D0', '#86EFAC', '#4ADE80', '#22C55E', '#16A34A', '#10B981', '#059669', '#047857',
-  // Yellows/Oranges (Row 5)
-  '#FEF08A', '#FACC15', '#EAB308', '#F59E0B', '#F97316', '#EA580C', '#DC2626', '#B91C1C',
-  // Pinks/Reds (Row 6)
-  '#FECDD3', '#FDA4AF', '#FB7185', '#F43F5E', '#E11D48', '#EC4899', '#DB2777', '#BE185D',
-];
+// Import unified presets from single source of truth
+import { masterColorPresets as presetColors } from '../../utils/presets';
 
 // Check for EyeDropper API support
 const supportsEyeDropper = typeof window !== 'undefined' && 'EyeDropper' in window;

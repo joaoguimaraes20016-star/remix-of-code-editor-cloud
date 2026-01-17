@@ -15,18 +15,8 @@ interface ColorControlProps {
   label?: string;
 }
 
-const COLOR_PRESETS = [
-  // Whites & Grays
-  '#ffffff', '#f8fafc', '#e2e8f0', '#94a3b8', '#475569', '#1e293b', '#0f172a',
-  // Accent colors
-  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e',
-  // Warm colors
-  '#f97316', '#fb923c', '#fbbf24', '#facc15', '#a3e635', '#22c55e',
-  // Cool colors
-  '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#4f46e5',
-  // Transparent
-  'transparent',
-];
+// Import unified presets from single source of truth
+import { inspectorColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
 
 export function ColorControl({ value, onChange, label }: ColorControlProps) {
   const [isOpen, setIsOpen] = useState(false);

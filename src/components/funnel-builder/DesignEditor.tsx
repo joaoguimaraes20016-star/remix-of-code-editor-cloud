@@ -82,14 +82,8 @@ const FONT_FAMILIES = [
   { value: 'Playfair Display', label: 'Playfair' },
 ];
 
-const COLOR_PRESETS = [
-  '#0a0a0a', '#1a1a1a', '#2d2d2d', 
-  '#ffffff', '#f5f5f5', '#e5e5e5',
-  '#3b82f6', '#2563eb', '#1d4ed8',
-  '#f59e0b', '#d97706', '#b45309',
-  '#10b981', '#059669', '#047857',
-  '#ef4444', '#dc2626', '#b91c1c',
-];
+// Import unified presets from single source of truth
+import { elementColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
 
 const GRADIENT_DIRECTIONS = [
   { value: 'to bottom', label: 'Top to Bottom' },
@@ -102,6 +96,7 @@ const GRADIENT_DIRECTIONS = [
   { value: 'to top left', label: 'Diagonal ↖' },
 ];
 
+// Legacy gradient format for this component (kept for backwards compatibility)
 const GRADIENT_PRESETS = [
   { from: '#667eea', to: '#764ba2', label: 'Purple Dream' },
   { from: '#f093fb', to: '#f5576c', label: 'Pink Sunset' },

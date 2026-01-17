@@ -65,47 +65,13 @@ function findNodeById(node: CanvasNode, nodeId: string): CanvasNode | null {
   return null;
 }
 
-// Color presets - expanded palette
-const COLOR_PRESETS = [
-  '#ffffff', '#f8fafc', '#e2e8f0', '#94a3b8', '#64748b',
-  '#334155', '#1e293b', '#0f172a', '#000000', 'transparent',
-  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899',
-  '#f43f5e', '#ef4444', '#f97316', '#eab308', '#84cc16',
-  '#22c55e', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
-];
-
-// Gradient presets
-const GRADIENT_PRESETS = [
-  { name: 'Indigo', value: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' },
-  { name: 'Sunset', value: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)' },
-  { name: 'Ocean', value: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' },
-  { name: 'Forest', value: 'linear-gradient(135deg, #22c55e 0%, #14b8a6 100%)' },
-  { name: 'Night', value: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' },
-  { name: 'Purple', value: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)' },
-];
-
-// Font size options
-const FONT_SIZES = [
-  { label: 'XS', value: '12px' },
-  { label: 'SM', value: '14px' },
-  { label: 'Base', value: '16px' },
-  { label: 'LG', value: '18px' },
-  { label: 'XL', value: '20px' },
-  { label: '2XL', value: '24px' },
-  { label: '3XL', value: '30px' },
-  { label: '4XL', value: '36px' },
-  { label: '5XL', value: '48px' },
-];
-
-// Font weight options
-const FONT_WEIGHTS = [
-  { label: 'Light', value: '300' },
-  { label: 'Normal', value: '400' },
-  { label: 'Medium', value: '500' },
-  { label: 'Semibold', value: '600' },
-  { label: 'Bold', value: '700' },
-  { label: 'Black', value: '900' },
-];
+// Import unified presets from single source of truth
+import { 
+  inspectorColorPresets as COLOR_PRESETS,
+  inspectorGradientPresets as GRADIENT_PRESETS,
+  inspectorFontSizes as FONT_SIZES,
+  fontWeightOptions as FONT_WEIGHTS,
+} from '@/flow-canvas/builder/utils/presets';
 
 // Animation presets
 const ANIMATION_PRESETS = [

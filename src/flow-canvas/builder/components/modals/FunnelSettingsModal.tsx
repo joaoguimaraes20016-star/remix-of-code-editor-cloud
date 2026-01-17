@@ -103,16 +103,8 @@ const sidebarItems: { id: SettingsSection; label: string; icon: React.ElementTyp
   { id: 'integrations', label: 'Integrations', icon: Webhook },
 ];
 
-const presetColors = [
-  { name: 'Cyan', value: '#00d4ff' },
-  { name: 'Purple', value: '#8b5cf6' },
-  { name: 'Pink', value: '#ec4899' },
-  { name: 'Green', value: '#10b981' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Red', value: '#ef4444' },
-  { name: 'Yellow', value: '#eab308' },
-];
+// Import unified presets from single source of truth
+import { accentColorPresets as presetColors } from '../../utils/presets';
 
 const fontOptions = [
   { value: 'Inter', label: 'Inter' },

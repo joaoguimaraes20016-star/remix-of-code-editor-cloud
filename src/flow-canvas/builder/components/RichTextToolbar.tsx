@@ -25,13 +25,13 @@ import type { GradientValue } from './modals';
 import { cn } from '@/lib/utils';
 import { normalizeColorForColorInput } from '../utils/color';
 
-// Color presets - dark theme friendly
-const colorPresets = [
-  '#FFFFFF', '#F9FAFB', '#E5E7EB', '#9CA3AF', '#6B7280', '#374151',
-  '#111827', '#000000', '#EF4444', '#F97316', '#F59E0B', '#FCD34D',
-  '#10B981', '#14B8A6', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6',
-  '#A855F7', '#D946EF', '#EC4899', '#F472B6',
-];
+// Import unified presets from single source of truth
+import { 
+  compactColorPresets as colorPresets, 
+  fontSizeOptions as fontSizes,
+  displayFonts,
+  compactTextShadowPresets as textShadowPresets,
+} from '../utils/presets';
 
 interface RichTextToolbarProps {
   styles: Partial<TextStyles>;
@@ -41,44 +41,6 @@ interface RichTextToolbarProps {
   position: { top: number; left: number };
   onClose: () => void;
 }
-
-// Extended font sizes for hero headlines
-const fontSizes = [
-  { label: 'S', value: 'sm' as const },
-  { label: 'M', value: 'md' as const },
-  { label: 'L', value: 'lg' as const },
-  { label: 'XL', value: 'xl' as const },
-  { label: '2XL', value: '2xl' as const },
-  { label: '3XL', value: '3xl' as const },
-  { label: '4XL', value: '4xl' as const },
-  { label: '5XL', value: '5xl' as const },
-];
-
-const displayFonts = [
-  { label: 'Inherit', value: 'inherit' },
-  { label: 'Oswald', value: 'Oswald', isDisplay: true },
-  { label: 'Anton', value: 'Anton', isDisplay: true },
-  { label: 'Bebas Neue', value: 'Bebas Neue', isDisplay: true },
-  { label: 'Archivo Black', value: 'Archivo Black', isDisplay: true },
-  { label: 'Space Grotesk', value: 'Space Grotesk', isDisplay: true },
-  { label: 'Syne', value: 'Syne', isDisplay: true },
-  { label: 'Inter', value: 'Inter' },
-  { label: 'DM Sans', value: 'DM Sans' },
-  { label: 'Poppins', value: 'Poppins' },
-  { label: 'Montserrat', value: 'Montserrat' },
-  { label: 'Playfair', value: 'Playfair Display' },
-];
-
-const textShadowPresets = [
-  { label: 'None', value: 'none' },
-  { label: 'Subtle', value: 'subtle' },
-  { label: 'Medium', value: 'medium' },
-  { label: 'Strong', value: 'strong' },
-  { label: 'Glow', value: 'glow' },
-  { label: 'Neon', value: 'neon' },
-  { label: '3D', value: 'depth' },
-];
-
 export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(({
   styles,
   formatState,
