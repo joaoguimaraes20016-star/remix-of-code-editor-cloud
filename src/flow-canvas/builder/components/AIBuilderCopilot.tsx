@@ -407,9 +407,64 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
       if (data?.success && data?.style && onUpdatePage) {
         const style = data.style;
         
+        // Deep clone to modify elements
+        const clonedSteps = currentPage.steps.map(step => ({
+          ...step,
+          frames: step.frames?.map(frame => ({
+            ...frame,
+            stacks: frame.stacks?.map(stack => ({
+              ...stack,
+              blocks: stack.blocks?.map(block => ({
+                ...block,
+                elements: block.elements?.map(element => {
+                  // Update buttons with new primary color
+                  if (element.type === 'button') {
+                    return {
+                      ...element,
+                      styles: {
+                        ...element.styles,
+                        backgroundColor: style.primaryColor,
+                      },
+                    };
+                  }
+                  // Update headings with proper contrast text color
+                  if (element.type === 'heading' || element.type === 'gradient-text') {
+                    const textColor = style.theme === 'dark' ? '#ffffff' : '#111827';
+                    return {
+                      ...element,
+                      styles: {
+                        ...element.styles,
+                        color: element.type === 'gradient-text' ? undefined : textColor,
+                      },
+                      props: element.type === 'gradient-text' ? {
+                        ...element.props,
+                        gradientFrom: style.primaryColor,
+                        gradientTo: style.accentColor,
+                      } : element.props,
+                    };
+                  }
+                  // Update text elements with proper contrast
+                  if (element.type === 'text') {
+                    const textColor = style.theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
+                    return {
+                      ...element,
+                      styles: {
+                        ...element.styles,
+                        color: textColor,
+                      },
+                    };
+                  }
+                  return element;
+                }),
+              })),
+            })),
+          })),
+        }));
+        
         // Apply the cloned style to the page
         const updatedPage: Page = {
           ...currentPage,
+          steps: clonedSteps,
           settings: {
             ...currentPage.settings,
             theme: style.theme,
