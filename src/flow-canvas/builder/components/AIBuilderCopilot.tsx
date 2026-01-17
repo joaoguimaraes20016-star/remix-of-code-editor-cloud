@@ -526,7 +526,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
           <div className="p-1.5 rounded-lg btn-gradient">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
-          <span className="text-sm font-semibold text-builder-text">AI Copilot</span>
+          <span className="text-sm font-semibold text-builder-text">Stacker AI</span>
           {isProcessing && (
             <Loader2 className="w-4 h-4 text-builder-accent animate-spin" />
           )}
