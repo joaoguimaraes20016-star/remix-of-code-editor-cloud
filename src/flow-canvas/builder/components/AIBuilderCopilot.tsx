@@ -14,15 +14,20 @@ import {
   Layout,
   AlertCircle,
   RefreshCw,
+  Link2,
+  X,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { getSuggestions, streamAICopilot, PageContext } from '@/lib/ai/aiCopilotService';
 import { parseAIBlockResponse, looksLikeJSON, StylingContext } from '@/lib/ai/parseAIBlockResponse';
 import { detectFunnelType, extractExistingBlockTypes, analyzePageContent } from '@/lib/ai/funnelTypeDetector';
+import { extractContentSnapshot, analyzeContrastContext } from '@/lib/ai/contentSnapshotExtractor';
 import { Button } from '@/components/ui/button';
 import { GenerationMode } from '@/lib/ai/copilotTypes';
 import { parseFunnelResponse } from '@/lib/ai/parseFunnelResponse';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AIBuilderCopilotPanelProps extends AICopilotProps {
   isExpanded: boolean;
@@ -94,11 +99,18 @@ function getThinkingText(mode: GenerationMode): { title: string; subtitle: strin
 
 /**
  * Build rich context from current page state for intelligent AI responses
+ * 
+ * Phase 14: Now includes actual content snapshot and contrast analysis
+ * for true context awareness.
  */
 function buildPageContext(page: Page, selection: SelectionState): PageContext {
   const funnelTypeResult = detectFunnelType(page);
   const contentAnalysis = analyzePageContent(page);
   const existingBlockTypes = extractExistingBlockTypes(page);
+  
+  // Phase 14: Extract actual content for true context
+  const contentSnapshot = extractContentSnapshot(page);
+  const contrastContext = analyzeContrastContext(page);
   
   const stylingContext = {
     theme: page.settings.theme || 'light',
@@ -124,6 +136,19 @@ function buildPageContext(page: Page, selection: SelectionState): PageContext {
     styling: stylingContext,
     existingBlockTypes,
     ...contentAnalysis,
+    // Phase 14: New content awareness fields
+    contentSnapshot: {
+      headlines: contentSnapshot.headlines,
+      colorsUsed: contentSnapshot.colorsUsed,
+      premiumElementsUsed: contentSnapshot.premiumElementsUsed,
+      sectionCount: contentSnapshot.sectionCount,
+      contentSummary: contentSnapshot.contentSummary,
+    },
+    contrast: {
+      isDarkBackground: contrastContext.isDarkBackground,
+      backgroundLuminance: contrastContext.backgroundLuminance,
+      recommendedTextColor: contrastContext.recommendedTextColor,
+    },
   };
 }
 
@@ -167,6 +192,11 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   const [streamedResponse, setStreamedResponse] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
+  
+  // Phase 14: URL style cloning state
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [cloneUrl, setCloneUrl] = useState('');
+  const [isCloningStyle, setIsCloningStyle] = useState(false);
   
   // Track last added block for undo
   const lastAddedBlockRef = useRef<{ id: string; label: string } | null>(null);
@@ -358,6 +388,56 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   // Get thinking text
   const thinkingText = getThinkingText(detectedMode);
 
+  // Phase 14: Handle style cloning from URL
+  const handleCloneStyle = async () => {
+    if (!cloneUrl.trim() || !cloneUrl.startsWith('http')) {
+      toast.error('Please enter a valid URL');
+      return;
+    }
+
+    setIsCloningStyle(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('clone-style', {
+        body: { url: cloneUrl },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.style && onUpdatePage) {
+        const style = data.style;
+        
+        // Apply the cloned style to the page
+        const updatedPage: Page = {
+          ...currentPage,
+          settings: {
+            ...currentPage.settings,
+            theme: style.theme,
+            primary_color: style.primaryColor,
+            font_family: style.bodyFont,
+            page_background: {
+              ...currentPage.settings.page_background,
+              type: 'solid',
+              color: style.backgroundColor,
+            },
+          },
+        };
+
+        onUpdatePage(updatedPage);
+        toast.success(`Style cloned from ${new URL(cloneUrl).hostname}`, {
+          description: `Applied ${style.style} design with ${style.theme} theme`,
+        });
+        setCloneUrl('');
+        setShowUrlInput(false);
+      }
+    } catch (err) {
+      console.error('[AIBuilderCopilot] Clone style error:', err);
+      toast.error('Failed to clone style from URL');
+    } finally {
+      setIsCloningStyle(false);
+    }
+  };
+
   return (
     <div className={cn(
       'fixed bottom-6 left-6 w-80 bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 z-40',
@@ -387,16 +467,66 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="border-t border-builder-border-subtle animate-in">
-          {/* Funnel Type Indicator */}
+          {/* Phase 14: Enhanced Funnel Type Indicator with signals */}
           <div className="px-3 pt-3">
-            <div className="text-xs text-builder-text-dim flex items-center gap-2 px-2 py-1.5 bg-builder-bg rounded-lg">
-              <div className="w-1.5 h-1.5 rounded-full bg-builder-accent animate-pulse" />
-              <span className="capitalize font-medium">{funnelType.type}</span>
-              <span className="text-builder-text-muted">funnel detected</span>
+            <div className="text-xs text-builder-text-dim px-2 py-1.5 bg-builder-bg rounded-lg space-y-1">
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  funnelType.confidence > 0.7 ? "bg-green-500" : 
+                  funnelType.confidence > 0.4 ? "bg-amber-500 animate-pulse" : 
+                  "bg-gray-400"
+                )} />
+                <span className="capitalize font-medium">{funnelType.type}</span>
+                <span className="text-builder-text-muted">
+                  {funnelType.confidence > 0.7 ? 'detected' : 
+                   funnelType.confidence > 0.4 ? '(uncertain)' : 
+                   '(default)'}
+                </span>
+              </div>
+              {funnelType.signals.length > 0 && funnelType.confidence > 0.3 && (
+                <div className="text-[10px] text-builder-text-muted pl-3">
+                  Based on: {funnelType.signals.slice(0, 2).join(', ')}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Prompt Input */}
+          {/* Phase 14: Clone Style from URL */}
+          <div className="px-3 pt-2">
+            {!showUrlInput ? (
+              <button
+                onClick={() => setShowUrlInput(true)}
+                className="flex items-center gap-2 text-xs text-builder-text-muted hover:text-builder-text transition-colors"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                Clone style from URL
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={cloneUrl}
+                  onChange={(e) => setCloneUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="builder-input text-xs h-8 flex-1"
+                  disabled={isCloningStyle}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCloneStyle()}
+                />
+                {isCloningStyle ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-builder-accent" />
+                ) : (
+                  <>
+                    <Button size="sm" onClick={handleCloneStyle} className="h-8 px-2">
+                      <Link2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <button onClick={() => { setShowUrlInput(false); setCloneUrl(''); }}>
+                      <X className="w-4 h-4 text-builder-text-muted" />
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
           <div className="p-3">
             <div className="relative">
               <Textarea
