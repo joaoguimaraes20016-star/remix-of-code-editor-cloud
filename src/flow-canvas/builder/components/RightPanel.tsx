@@ -2047,6 +2047,254 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
         </div>
       </CollapsibleSection>
 
+      {/* Phase 14: Content Area Settings */}
+      <CollapsibleSection title="Content Area" icon={<BoxSelect className="w-4 h-4" />}>
+        <div className="space-y-3 pt-3">
+          <FieldGroup label="Max Width">
+            <Select 
+              value={step.settings?.maxWidth as string || '1200px'}
+              onValueChange={(value) => onUpdate({ settings: { ...step.settings, maxWidth: value } })}
+            >
+              <SelectTrigger className="builder-input">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="640px">Narrow (640px)</SelectItem>
+                <SelectItem value="768px">Small (768px)</SelectItem>
+                <SelectItem value="1024px">Medium (1024px)</SelectItem>
+                <SelectItem value="1200px">Large (1200px)</SelectItem>
+                <SelectItem value="1400px">XL (1400px)</SelectItem>
+                <SelectItem value="100%">Full Width</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Min Height">
+            <Select 
+              value={step.settings?.minHeight as string || 'auto'}
+              onValueChange={(value) => onUpdate({ settings: { ...step.settings, minHeight: value } })}
+            >
+              <SelectTrigger className="builder-input">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="auto">Auto</SelectItem>
+                <SelectItem value="50vh">Half Screen</SelectItem>
+                <SelectItem value="100vh">Full Screen</SelectItem>
+                <SelectItem value="150vh">1.5x Screen</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Content Alignment">
+            <Select 
+              value={step.settings?.verticalAlign || 'top'}
+              onValueChange={(value) => onUpdate({ settings: { ...step.settings, verticalAlign: value as 'top' | 'center' | 'bottom' } })}
+            >
+              <SelectTrigger className="builder-input">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="top">Top</SelectItem>
+                <SelectItem value="center">Center</SelectItem>
+                <SelectItem value="bottom">Bottom</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+        </div>
+      </CollapsibleSection>
+
+      {/* Phase 14: Background Overlay */}
+      <CollapsibleSection title="Background Overlay" icon={<Layers className="w-4 h-4" />}>
+        <div className="space-y-3 pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Enable Overlay</span>
+            <TogglePill 
+              value={(step.settings as Record<string, unknown>)?.overlayEnabled as boolean || false}
+              onToggle={() => onUpdate({ 
+                settings: { 
+                  ...step.settings, 
+                  overlayEnabled: !(step.settings as Record<string, unknown>)?.overlayEnabled 
+                }
+              })}
+            />
+          </div>
+          
+          {(step.settings as Record<string, unknown>)?.overlayEnabled && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Overlay Color</span>
+                <ColorPickerPopover
+                  color={(step.settings as Record<string, unknown>)?.overlayColor as string || '#000000'}
+                  onChange={(color) => onUpdate({ 
+                    settings: { ...step.settings, overlayColor: color }
+                  })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div 
+                      className="w-6 h-6 rounded-md border border-builder-border" 
+                      style={{ backgroundColor: (step.settings as Record<string, unknown>)?.overlayColor as string || '#000000' }} 
+                    />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Opacity</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[(step.settings as Record<string, unknown>)?.overlayOpacity as number ?? 50]}
+                    onValueChange={([v]) => onUpdate({ 
+                      settings: { ...step.settings, overlayOpacity: v }
+                    })}
+                    min={0} max={100} step={5}
+                    className="w-20"
+                  />
+                  <span className="text-xs text-builder-text w-8">
+                    {step.settings?.overlayOpacity ?? 50}%
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+          
+          <p className="text-[10px] text-builder-text-dim">
+            Adds a color overlay on top of the background for better text readability.
+          </p>
+        </div>
+      </CollapsibleSection>
+
+      {/* Phase 14: Glass/Blur Effects */}
+      <CollapsibleSection title="Effects" icon={<Sparkles className="w-4 h-4" />}>
+        <div className="space-y-3 pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Glassmorphism</span>
+            <TogglePill 
+              value={(step.settings as Record<string, unknown>)?.glassEnabled as boolean || false}
+              onToggle={() => onUpdate({ 
+                settings: { 
+                  ...step.settings, 
+                  glassEnabled: !(step.settings as Record<string, unknown>)?.glassEnabled 
+                }
+              })}
+            />
+          </div>
+          
+          {(step.settings as Record<string, unknown>)?.glassEnabled && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Blur Amount</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[(step.settings as Record<string, unknown>)?.glassBlur as number ?? 10]}
+                    onValueChange={([v]) => onUpdate({ 
+                      settings: { ...step.settings, glassBlur: v }
+                    })}
+                    min={0} max={30} step={2}
+                    className="w-20"
+                  />
+                  <span className="text-xs text-builder-text w-8">
+                    {step.settings?.glassBlur ?? 10}px
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Glass Tint</span>
+                <ColorPickerPopover
+                  color={(step.settings as Record<string, unknown>)?.glassTint as string || 'rgba(255,255,255,0.1)'}
+                  onChange={(color) => onUpdate({ 
+                    settings: { ...step.settings, glassTint: color }
+                  })}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div 
+                      className="w-6 h-6 rounded-md border border-builder-border" 
+                      style={{ backgroundColor: (step.settings as Record<string, unknown>)?.glassTint as string || 'rgba(255,255,255,0.1)' }} 
+                    />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            </>
+          )}
+          
+          <p className="text-[10px] text-builder-text-dim">
+            Creates a frosted glass effect on the content area.
+          </p>
+        </div>
+      </CollapsibleSection>
+
+      {/* Phase 14: Scroll Animation */}
+      <CollapsibleSection title="Scroll Animation" icon={<ArrowUpDown className="w-4 h-4" />}>
+        <div className="space-y-3 pt-3">
+          <FieldGroup label="Animation Type">
+            <Select 
+              value={step.settings?.scrollAnimation || 'none'}
+              onValueChange={(value) => onUpdate({ settings: { ...step.settings, scrollAnimation: value as Step['settings']['scrollAnimation'] } })}
+            >
+              <SelectTrigger className="builder-input">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="fade-in">Fade In</SelectItem>
+                <SelectItem value="slide-up">Slide Up</SelectItem>
+                <SelectItem value="slide-left">Slide from Left</SelectItem>
+                <SelectItem value="slide-right">Slide from Right</SelectItem>
+                <SelectItem value="scale">Scale Up</SelectItem>
+                <SelectItem value="parallax">Parallax</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          {(step.settings as Record<string, unknown>)?.scrollAnimation && 
+           (step.settings as Record<string, unknown>)?.scrollAnimation !== 'none' && (
+            <>
+              <FieldGroup label="Delay">
+                <Select 
+                  value={(step.settings as Record<string, unknown>)?.scrollDelay as string || '0ms'}
+                  onValueChange={(value) => onUpdate({ settings: { ...step.settings, scrollDelay: value } })}
+                >
+                  <SelectTrigger className="builder-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="0ms">None</SelectItem>
+                    <SelectItem value="100ms">100ms</SelectItem>
+                    <SelectItem value="200ms">200ms</SelectItem>
+                    <SelectItem value="300ms">300ms</SelectItem>
+                    <SelectItem value="500ms">500ms</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              
+              <FieldGroup label="Duration">
+                <Select 
+                  value={(step.settings as Record<string, unknown>)?.scrollDuration as string || '500ms'}
+                  onValueChange={(value) => onUpdate({ settings: { ...step.settings, scrollDuration: value } })}
+                >
+                  <SelectTrigger className="builder-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="300ms">Fast (300ms)</SelectItem>
+                    <SelectItem value="500ms">Normal (500ms)</SelectItem>
+                    <SelectItem value="700ms">Slow (700ms)</SelectItem>
+                    <SelectItem value="1000ms">Very Slow (1s)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+            </>
+          )}
+          
+          <p className="text-[10px] text-builder-text-dim">
+            Animate content as visitors scroll down the page.
+          </p>
+        </div>
+      </CollapsibleSection>
+
       {step.submit_mode === 'redirect' && (
         <CollapsibleSection title="Redirect" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen>
           <div className="space-y-4 pt-3">

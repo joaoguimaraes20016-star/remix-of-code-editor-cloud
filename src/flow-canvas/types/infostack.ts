@@ -423,6 +423,22 @@ export interface Step {
   settings: {
     redirect_url?: string;
     validation_rules?: Record<string, unknown>;
+    // Phase 14: Content area settings
+    maxWidth?: string;
+    minHeight?: string;
+    verticalAlign?: 'top' | 'center' | 'bottom';
+    // Phase 14: Background overlay
+    overlayEnabled?: boolean;
+    overlayColor?: string;
+    overlayOpacity?: number;
+    // Phase 14: Glass effects
+    glassEnabled?: boolean;
+    glassBlur?: number;
+    glassTint?: string;
+    // Phase 14: Scroll animation
+    scrollAnimation?: 'none' | 'fade-in' | 'slide-up' | 'slide-left' | 'slide-right' | 'scale' | 'parallax';
+    scrollDelay?: string;
+    scrollDuration?: string;
   };
 }
 
