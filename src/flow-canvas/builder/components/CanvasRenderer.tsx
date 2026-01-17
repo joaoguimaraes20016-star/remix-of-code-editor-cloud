@@ -789,25 +789,38 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       
       if (!shadow || shadow === 'none') return {};
       
-      // If using glow/neon and custom glow color, set CSS variable
-      if ((shadow === 'glow' || shadow === 'neon') && glowColor) {
-        // Convert hex to rgba for glow
-        const hexToRgba = (hex: string, alpha: number) => {
-          const r = parseInt(hex.slice(1, 3), 16);
-          const g = parseInt(hex.slice(3, 5), 16);
-          const b = parseInt(hex.slice(5, 7), 16);
-          return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      // Standard shadow presets - explicit CSS values for visual distinction
+      const standardShadows: Record<string, string> = {
+        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+      };
+      
+      if (standardShadows[shadow]) {
+        return { boxShadow: standardShadows[shadow] };
+      }
+      
+      // Convert hex to rgba helper
+      const hexToRgba = (hex: string, alpha: number) => {
+        if (!hex || !hex.startsWith('#') || hex.length < 7) return `rgba(139, 92, 246, ${alpha})`;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      };
+      
+      // Custom glow/neon effects
+      if (shadow === 'glow') {
+        const glowBase = glowColor || element.styles?.backgroundColor as string || '#8b5cf6';
+        return {
+          boxShadow: `0 0 15px ${hexToRgba(glowBase, 0.5)}, 0 4px 15px -3px rgba(0, 0, 0, 0.2)`
         };
-        
-        if (shadow === 'glow') {
-          return {
-            boxShadow: `0 0 15px ${hexToRgba(glowColor, 0.5)}, 0 4px 15px -3px rgba(0, 0, 0, 0.2)`
-          };
-        } else if (shadow === 'neon') {
-          return {
-            boxShadow: `0 0 5px ${hexToRgba(glowColor, 0.6)}, 0 0 15px ${hexToRgba(glowColor, 0.4)}, 0 0 30px ${hexToRgba(glowColor, 0.2)}`
-          };
-        }
+      } else if (shadow === 'neon') {
+        const neonBase = glowColor || '#8b5cf6';
+        return {
+          boxShadow: `0 0 5px ${hexToRgba(neonBase, 0.6)}, 0 0 15px ${hexToRgba(neonBase, 0.4)}, 0 0 30px ${hexToRgba(neonBase, 0.2)}`
+        };
       }
       
       return {};
@@ -1321,7 +1334,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           // Outline buttons get no shadow; filled buttons can have shadow
           boxShadow: (isOutlineMode || isNavPill || isFooterLink || isGhostButton) 
             ? 'none' 
-            : (buttonShadowStyle.boxShadow || defaultShadow),
+            : (buttonShadowStyle.boxShadow || 'none'),
           // CRITICAL: Only outline mode gets border; filled buttons have NO border
           borderWidth: isOutlineMode ? '2px' : (isNavPill ? '1px' : '0'),
           borderColor: isOutlineMode 
