@@ -5,7 +5,6 @@ import { CanvasRenderer } from './CanvasRenderer';
 import { RightPanel } from './RightPanel';
 import { TopToolbar, DeviceMode } from './TopToolbar';
 import { AIBuilderCopilot } from './AIBuilderCopilot';
-import { BlockPalette } from './BlockPalette';
 import { BlockPickerPanel } from './BlockPickerPanel';
 import { useHistory } from '../hooks/useHistory';
 import { 
@@ -114,7 +113,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [isAICopilotExpanded, setIsAICopilotExpanded] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
-  const [isBlockPaletteOpen, setIsBlockPaletteOpen] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [replayAnimationKey, setReplayAnimationKey] = useState(0);
   
@@ -1251,17 +1249,20 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         return;
       }
       
-      // 'B' - Open Block Palette
+      // 'B' - Open Block Picker Panel
       if (e.key === 'b' && !modifier && !e.shiftKey && !previewMode && !readOnly) {
         e.preventDefault();
-        setIsBlockPaletteOpen(true);
+        setBlockPickerOpen(true);
+        setBlockPickerMode('blocks');
       }
       
-      // 'Escape' - Step up selection hierarchy or close palette
+      // 'Escape' - Step up selection hierarchy or close picker
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (isBlockPaletteOpen) {
-          setIsBlockPaletteOpen(false);
+        if (blockPickerOpen) {
+          setBlockPickerOpen(false);
+          setBlockPickerTargetStackId(null);
+          setBlockPickerMode('blocks');
         } else if (selection.type === 'element' && selection.path.length >= 2) {
           // Step up from element to block
           const blockIndex = selection.path.findIndex((p, i) => p === 'block' && selection.path[i + 1]);
@@ -1381,7 +1382,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     previewMode, 
     readOnly, 
     selection, 
-    isBlockPaletteOpen, 
+    blockPickerOpen, 
     handleClearSelection, 
     handleDeleteElement, 
     handleDeleteBlock, 
@@ -1416,7 +1417,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         canRedo={canRedo}
         onUndo={handleUndo}
         onRedo={handleRedo}
-        onOpenBlockPalette={() => setIsBlockPaletteOpen(true)}
+        onOpenBlockPalette={() => {
+          setBlockPickerOpen(true);
+          setBlockPickerMode('blocks');
+        }}
         onAddFrame={handleAddFrame}
         onOpenTextStyles={() => setIsTextStylesOpen(true)}
         showGrid={showGrid}
@@ -1499,6 +1503,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                   setBlockPickerMode('blocks');
                 }}
                 targetStackId={blockPickerTargetStackId}
+                onOpenAIGenerate={() => {
+                  setBlockPickerOpen(false);
+                  setIsAIGenerateOpen(true);
+                }}
               />
             ) : (
               <LeftPanel
@@ -1576,7 +1584,10 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             designMode={designMode}
             onReorderBlocks={handleReorderBlocks}
             onReorderElements={handleReorderElements}
-            onOpenBlockPalette={() => setIsBlockPaletteOpen(true)}
+            onOpenBlockPalette={() => {
+              setBlockPickerOpen(true);
+              setBlockPickerMode('blocks');
+            }}
             onAddBlock={handleAddBlock}
             onDuplicateBlock={handleDuplicateBlock}
             onDeleteBlock={handleDeleteBlock}
@@ -1678,16 +1689,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         />
       )}
 
-      {/* Block Palette Drawer */}
-      <BlockPalette
-        isOpen={isBlockPaletteOpen}
-        onClose={() => setIsBlockPaletteOpen(false)}
-        onAddBlock={handleAddBlock}
-        onOpenAIGenerate={() => {
-          setIsBlockPaletteOpen(false);
-          setIsAIGenerateOpen(true);
-        }}
-      />
 
       {/* Modals */}
       <CollaboratorsModal

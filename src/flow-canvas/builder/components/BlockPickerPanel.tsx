@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { 
   Plus, Search, Type, Image, MousePointer, 
   Mail, Phone, User, UserCheck, ChevronRight, ChevronDown,
-  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow
+  HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow,
+  Sparkles
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '@/flow-canvas/types/infostack';
@@ -52,6 +53,8 @@ interface BlockPickerPanelProps {
   onCreateApplicationFlowWithStep?: (step: ApplicationFlowStep) => void;
   /** Target stack ID - when set, the picker was opened for a specific section (Add Content button) */
   targetStackId?: string | null;
+  /** Callback to open AI Generate modal */
+  onOpenAIGenerate?: () => void;
 }
 
 type ActiveTab = 'blocks' | 'sections';
@@ -545,27 +548,30 @@ const CollapsibleCategory: React.FC<CollapsibleCategoryProps> = ({
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="pl-4 pr-1 pb-2">
+        <div className="pl-2 pr-1 pb-2 space-y-2">
           {hint && (
             <p className="text-[10px] text-builder-accent mb-2 ml-2">{hint}</p>
           )}
-          <div className="space-y-0.5">
-            {blocks.map((block, idx) => (
-              <button
-                key={`${block.label}-${idx}`}
-                onClick={() => onAddBlock(block, isSection, category.id)}
-                className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-builder-surface-hover transition-colors text-left group"
-              >
-                <div className="w-7 h-7 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
+          {blocks.map((block, idx) => (
+            <button
+              key={`${block.label}-${idx}`}
+              onClick={() => onAddBlock(block, isSection, category.id)}
+              className="w-full text-left p-3 rounded-xl bg-builder-bg border border-builder-border-subtle hover:border-builder-accent/50 hover:bg-builder-surface-hover transition-all group"
+            >
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-builder-surface-hover text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
                   {block.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-builder-text">{block.label}</div>
-                  <div className="text-[10px] text-builder-text-dim">{block.description}</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-builder-text">{block.label}</span>
+                    <ChevronRight className="w-4 h-4 text-builder-text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <p className="text-[10px] text-builder-text-dim mt-0.5">{block.description}</p>
                 </div>
-              </button>
-            ))}
-          </div>
+              </div>
+            </button>
+          ))}
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -584,6 +590,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   onAddApplicationFlowStep,
   onCreateApplicationFlowWithStep,
   targetStackId,
+  onOpenAIGenerate,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
@@ -749,7 +756,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   return (
     <div className="flex flex-col h-full min-h-0 bg-builder-surface">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-builder-border">
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2.5 border-b border-builder-border">
         <div className="flex items-center gap-2">
           <button 
             onClick={onClose}
@@ -757,6 +764,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
           >
             <ArrowLeft size={16} />
           </button>
+          <Sparkles className="w-4 h-4 text-builder-accent" />
           <span className="text-sm font-medium text-builder-text">Add Content</span>
         </div>
         <button 
@@ -814,41 +822,44 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
       <div className="flex-1 min-h-0 overflow-y-auto">
         {searchQuery.length > 0 ? (
           // Search Results
-          <div className="p-2 pb-20">
+          <div className="p-2 pb-20 space-y-2">
             {filteredResults.length === 0 ? (
               <div className="p-4 text-center text-builder-text-muted text-sm">
                 No results found
               </div>
             ) : (
-              <div className="space-y-1">
-                {filteredResults.map((template, idx) => (
-                  <button
-                    key={`${template.type}-${template.label}-${idx}`}
-                    onClick={() => handleAddBlock(template, template.isSection, template.categoryId)}
-                    className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-builder-surface-hover transition-colors text-left"
-                  >
-                    <div className="w-8 h-8 rounded-md bg-builder-surface-active flex items-center justify-center text-builder-text-muted">
+              filteredResults.map((template, idx) => (
+                <button
+                  key={`${template.type}-${template.label}-${idx}`}
+                  onClick={() => handleAddBlock(template, template.isSection, template.categoryId)}
+                  className="w-full text-left p-3 rounded-xl bg-builder-bg border border-builder-border-subtle hover:border-builder-accent/50 hover:bg-builder-surface-hover transition-all group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-builder-surface-hover text-builder-text-muted group-hover:text-builder-accent group-hover:bg-builder-accent/10 transition-colors">
                       {template.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-builder-text flex items-center gap-2">
-                        {template.label}
-                        {template.isSection && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-builder-accent/20 text-builder-accent font-medium">
-                            Section
-                          </span>
-                        )}
-                        {activeApplicationFlowBlockId && template.categoryId && APPLICATION_ENGINE_CATEGORIES.includes(template.categoryId) && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
-                            → Flow
-                          </span>
-                        )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-builder-text">{template.label}</span>
+                          {template.isSection && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-builder-accent/20 text-builder-accent font-medium">
+                              Section
+                            </span>
+                          )}
+                          {activeApplicationFlowBlockId && template.categoryId && APPLICATION_ENGINE_CATEGORIES.includes(template.categoryId) && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
+                              → Flow
+                            </span>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-builder-text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                      <div className="text-xs text-builder-text-dim truncate">{template.description}</div>
+                      <p className="text-[10px] text-builder-text-dim mt-0.5">{template.description}</p>
                     </div>
-                  </button>
-                ))}
-              </div>
+                  </div>
+                </button>
+              ))
             )}
           </div>
         ) : activeTab === 'blocks' ? (
@@ -879,6 +890,19 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
           </div>
         )}
       </div>
+
+      {/* Generate with AI Footer */}
+      {onOpenAIGenerate && (
+        <div className="flex-shrink-0 p-3 border-t border-builder-border">
+          <button 
+            onClick={onOpenAIGenerate}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all"
+          >
+            <Sparkles className="w-4 h-4" />
+            Generate with AI
+          </button>
+        </div>
+      )}
     </div>
   );
 };
