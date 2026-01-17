@@ -57,6 +57,13 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   objectFit = 'cover',
   borderRadius = 12,
   gap = 0,
+  arrowStyle = 'default',
+  arrowColor,
+  dotStyle = 'dots',
+  dotColor,
+  dotActiveColor,
+  showCaptions = true,
+  captionPosition = 'overlay',
   onSlideChange,
   onSlideClick,
   isBuilder = false,
@@ -67,6 +74,9 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
 
+  // For fade effect, we don't use Embla - just manual index management
+  const isFade = transitionEffect === 'fade';
+
   const autoplayPlugin = autoplay 
     ? [Autoplay({ delay: autoplayInterval, stopOnInteraction: true })]
     : [];
@@ -76,9 +86,19 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
       loop,
       align: 'start',
       skipSnaps: false,
+      active: !isFade, // Disable embla for fade effect
     },
-    autoplayPlugin
+    isFade ? [] : autoplayPlugin
   );
+
+  // Manual autoplay for fade effect
+  useEffect(() => {
+    if (!isFade || !autoplay || slides.length <= 1) return;
+    const interval = setInterval(() => {
+      setSelectedIndex(prev => (prev + 1) % slides.length);
+    }, autoplayInterval);
+    return () => clearInterval(interval);
+  }, [isFade, autoplay, autoplayInterval, slides.length]);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
@@ -154,95 +174,185 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
     );
   }
 
+  // Arrow styling
+  const getArrowStyles = () => {
+    const baseStyles: React.CSSProperties = {};
+    if (arrowColor) {
+      baseStyles.backgroundColor = arrowStyle === 'minimal' ? 'transparent' : arrowColor;
+      baseStyles.color = arrowStyle === 'minimal' ? arrowColor : 'white';
+    }
+    return baseStyles;
+  };
+
+  // Dot styling
+  const getDotStyles = (isActive: boolean): React.CSSProperties => {
+    return {
+      backgroundColor: isActive 
+        ? (dotActiveColor || 'white') 
+        : (dotColor || 'rgba(255,255,255,0.5)'),
+    };
+  };
+
+  // Scroll functions for fade mode
+  const scrollPrevFade = () => setSelectedIndex(prev => prev === 0 ? slides.length - 1 : prev - 1);
+  const scrollNextFade = () => setSelectedIndex(prev => (prev + 1) % slides.length);
+
   return (
     <div className={cn('relative group', className)}>
       {/* Carousel viewport */}
       <div 
         className={cn('overflow-hidden', aspectRatioClasses[aspectRatio])}
         style={{ borderRadius }}
-        ref={emblaRef}
+        ref={isFade ? undefined : emblaRef}
       >
-        <div className="flex" style={{ gap }}>
-          {slides.map((slide, index) => (
-            <div 
-              key={slide.id}
-              className="flex-[0_0_100%] min-w-0 relative"
-              onClick={() => onSlideClick?.(slide)}
-            >
-              {slide.src ? (
-                <img
-                  src={slide.src}
-                  alt={slide.alt || `Slide ${index + 1}`}
-                  className={cn(
-                    'w-full h-full',
-                    objectFit === 'cover' && 'object-cover',
-                    objectFit === 'contain' && 'object-contain',
-                    objectFit === 'fill' && 'object-fill',
-                    transitionEffect === 'fade' && 'transition-opacity duration-500'
-                  )}
-                  style={{ borderRadius }}
-                />
-              ) : (
-                <div 
-                  className={cn(
-                    'w-full h-full flex items-center justify-center',
-                    'bg-muted/50'
-                  )}
-                  style={{ borderRadius, minHeight: 200 }}
-                >
-                  <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
-                </div>
-              )}
-              
-              {/* Caption */}
-              {slide.caption && (
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                  <p className="text-white text-sm">{slide.caption}</p>
-                </div>
-              )}
+        {/* Fade mode: absolute positioned slides */}
+        {isFade ? (
+          <div className="relative w-full h-full">
+            {slides.map((slide, index) => (
+              <div 
+                key={slide.id}
+                className={cn(
+                  'absolute inset-0 transition-opacity duration-500',
+                  index === selectedIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                )}
+                onClick={() => onSlideClick?.(slide)}
+              >
+                {slide.src ? (
+                  <img
+                    src={slide.src}
+                    alt={slide.alt || `Slide ${index + 1}`}
+                    className={cn(
+                      'w-full h-full',
+                      objectFit === 'cover' && 'object-cover',
+                      objectFit === 'contain' && 'object-contain',
+                      objectFit === 'fill' && 'object-fill'
+                    )}
+                    style={{ borderRadius }}
+                  />
+                ) : (
+                  <div 
+                    className="w-full h-full flex items-center justify-center bg-muted/50"
+                    style={{ borderRadius, minHeight: 200 }}
+                  >
+                    <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
+                  </div>
+                )}
+                
+                {/* Caption */}
+                {showCaptions && slide.caption && (
+                  <div className={cn(
+                    'absolute left-0 right-0 p-4',
+                    captionPosition === 'overlay' 
+                      ? 'bottom-0 bg-gradient-to-t from-black/60 to-transparent'
+                      : 'bottom-0 bg-black/80'
+                  )}>
+                    <p className="text-white text-sm">{slide.caption}</p>
+                  </div>
+                )}
 
-              {/* Builder: Remove button */}
-              {isBuilder && onSlidesChange && (
-                <button
-                  onClick={(e) => handleRemoveSlide(slide.id, e)}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+                {/* Builder: Remove button */}
+                {isBuilder && onSlidesChange && (
+                  <button
+                    onClick={(e) => handleRemoveSlide(slide.id, e)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Slide mode: Embla carousel */
+          <div className="flex" style={{ gap }}>
+            {slides.map((slide, index) => (
+              <div 
+                key={slide.id}
+                className="flex-[0_0_100%] min-w-0 relative"
+                onClick={() => onSlideClick?.(slide)}
+              >
+                {slide.src ? (
+                  <img
+                    src={slide.src}
+                    alt={slide.alt || `Slide ${index + 1}`}
+                    className={cn(
+                      'w-full h-full',
+                      objectFit === 'cover' && 'object-cover',
+                      objectFit === 'contain' && 'object-contain',
+                      objectFit === 'fill' && 'object-fill'
+                    )}
+                    style={{ borderRadius }}
+                  />
+                ) : (
+                  <div 
+                    className="w-full h-full flex items-center justify-center bg-muted/50"
+                    style={{ borderRadius, minHeight: 200 }}
+                  >
+                    <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
+                  </div>
+                )}
+                
+                {/* Caption */}
+                {showCaptions && slide.caption && (
+                  <div className={cn(
+                    'absolute left-0 right-0 p-4',
+                    captionPosition === 'overlay' 
+                      ? 'bottom-0 bg-gradient-to-t from-black/60 to-transparent'
+                      : 'bottom-0 bg-black/80'
+                  )}>
+                    <p className="text-white text-sm">{slide.caption}</p>
+                  </div>
+                )}
+
+                {/* Builder: Remove button */}
+                {isBuilder && onSlidesChange && (
+                  <button
+                    onClick={(e) => handleRemoveSlide(slide.id, e)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Navigation arrows */}
       {showArrows && slides.length > 1 && (
         <>
           <button
-            onClick={scrollPrev}
-            disabled={!loop && !canScrollPrev}
+            onClick={isFade ? scrollPrevFade : scrollPrev}
+            disabled={!loop && !canScrollPrev && !isFade}
             className={cn(
-              'absolute left-3 top-1/2 -translate-y-1/2 z-10',
-              'w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm',
-              'flex items-center justify-center text-white',
+              'absolute left-3 top-1/2 -translate-y-1/2 z-20',
+              'flex items-center justify-center',
               'opacity-0 group-hover:opacity-100 transition-all duration-200',
-              'hover:bg-black/60 hover:scale-110',
-              'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100'
+              'hover:scale-110',
+              'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100',
+              arrowStyle === 'minimal' && 'bg-transparent',
+              arrowStyle === 'default' && 'w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm text-white',
+              arrowStyle === 'rounded' && 'w-10 h-10 rounded-full bg-white/90 text-black shadow-lg'
             )}
+            style={getArrowStyles()}
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <button
-            onClick={scrollNext}
-            disabled={!loop && !canScrollNext}
+            onClick={isFade ? scrollNextFade : scrollNext}
+            disabled={!loop && !canScrollNext && !isFade}
             className={cn(
-              'absolute right-3 top-1/2 -translate-y-1/2 z-10',
-              'w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm',
-              'flex items-center justify-center text-white',
+              'absolute right-3 top-1/2 -translate-y-1/2 z-20',
+              'flex items-center justify-center',
               'opacity-0 group-hover:opacity-100 transition-all duration-200',
-              'hover:bg-black/60 hover:scale-110',
-              'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100'
+              'hover:scale-110',
+              'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100',
+              arrowStyle === 'minimal' && 'bg-transparent',
+              arrowStyle === 'default' && 'w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm text-white',
+              arrowStyle === 'rounded' && 'w-10 h-10 rounded-full bg-white/90 text-black shadow-lg'
             )}
+            style={getArrowStyles()}
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -251,18 +361,30 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
 
       {/* Dots indicator */}
       {showDots && slides.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
           {slides.map((_, index) => (
             <button
               key={index}
-              onClick={() => scrollTo(index)}
+              onClick={() => isFade ? setSelectedIndex(index) : scrollTo(index)}
               className={cn(
-                'w-2 h-2 rounded-full transition-all duration-200',
-                index === selectedIndex 
-                  ? 'bg-white w-6' 
-                  : 'bg-white/50 hover:bg-white/75'
+                'transition-all duration-200',
+                dotStyle === 'dots' && cn(
+                  'rounded-full',
+                  index === selectedIndex ? 'w-6 h-2' : 'w-2 h-2'
+                ),
+                dotStyle === 'lines' && cn(
+                  'h-1 rounded-sm',
+                  index === selectedIndex ? 'w-8' : 'w-4'
+                ),
+                dotStyle === 'numbers' && cn(
+                  'w-6 h-6 rounded-full text-xs font-medium flex items-center justify-center',
+                  index === selectedIndex ? 'text-black' : 'text-white'
+                )
               )}
-            />
+              style={getDotStyles(index === selectedIndex)}
+            >
+              {dotStyle === 'numbers' && index + 1}
+            </button>
           ))}
         </div>
       )}

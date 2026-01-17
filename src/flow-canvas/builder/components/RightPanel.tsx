@@ -117,7 +117,8 @@ import {
   cloneGradient,
   ButtonActionModal,
   VideoEmbedModal,
-  ImagePickerModal
+  ImagePickerModal,
+  StockVideoPicker
 } from './modals';
 import { BackgroundEditor, BackgroundValue, backgroundValueToCSS } from './BackgroundEditor';
 import type { GradientValue, ButtonAction, VideoSettings } from './modals';
@@ -4611,22 +4612,70 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
           {currentBgType === 'video' && (
             <div className="space-y-3">
               <FieldGroup label="Video URL" hint="YouTube, Vimeo, or direct .mp4 URL">
-                <Input
-                  value={page.settings.page_background?.video || ''}
-                  onChange={(e) => onUpdate({ 
+                <div className="flex gap-2">
+                  <Input
+                    value={page.settings.page_background?.video || ''}
+                    onChange={(e) => onUpdate({ 
+                      settings: { 
+                        ...page.settings, 
+                        page_background: { 
+                          ...page.settings.page_background,
+                          type: 'video', 
+                          video: e.target.value 
+                        } 
+                      } 
+                    })}
+                    placeholder="https://..."
+                    className="builder-input flex-1"
+                  />
+                  <StockVideoPicker onSelect={(url) => onUpdate({ 
                     settings: { 
                       ...page.settings, 
                       page_background: { 
                         ...page.settings.page_background,
                         type: 'video', 
-                        video: e.target.value 
+                        video: url 
                       } 
                     } 
-                  })}
-                  placeholder="https://youtube.com/watch?v=..."
-                  className="builder-input"
-                />
+                  })}>
+                    <Button variant="outline" size="sm" className="px-2">
+                      <Video className="w-4 h-4" />
+                    </Button>
+                  </StockVideoPicker>
+                </div>
               </FieldGroup>
+              
+              {/* Video Preview */}
+              {page.settings.page_background?.video && (
+                <div className="relative aspect-video rounded-lg overflow-hidden border border-builder-border bg-black">
+                  {page.settings.page_background.video.match(/\.(mp4|webm|ogg)(\?|$)/i) ? (
+                    <video 
+                      src={page.settings.page_background.video} 
+                      autoPlay 
+                      muted 
+                      loop 
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  ) : page.settings.page_background.video.includes('youtube') || page.settings.page_background.video.includes('youtu.be') ? (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${page.settings.page_background.video.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1]}?autoplay=1&mute=1&loop=1&controls=0`}
+                      className="w-full h-full"
+                      allow="autoplay"
+                    />
+                  ) : page.settings.page_background.video.includes('vimeo') ? (
+                    <iframe
+                      src={`https://player.vimeo.com/video/${page.settings.page_background.video.match(/vimeo\.com\/(\d+)/)?.[1]}?autoplay=1&muted=1&loop=1&background=1`}
+                      className="w-full h-full"
+                      allow="autoplay"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <Video className="w-8 h-8" />
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Video Options */}
               <div className="space-y-2 pt-2 border-t border-builder-border">
