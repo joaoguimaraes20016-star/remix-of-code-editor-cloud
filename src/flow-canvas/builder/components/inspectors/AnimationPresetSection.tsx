@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Element } from '@/flow-canvas/types/infostack';
+import { Element, AnimationSettings } from '@/flow-canvas/types/infostack';
 import { cn } from '@/lib/utils';
-import { Sparkles, Play, ChevronRight, ChevronDown, Eye } from 'lucide-react';
+import { Sparkles, Play, ChevronRight, ChevronDown, X } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -133,7 +133,6 @@ const triggerOptions = [
   { value: 'load', label: 'On Page Load' },
   { value: 'scroll', label: 'On Scroll Into View' },
   { value: 'hover', label: 'On Hover' },
-  { value: 'click', label: 'On Click' },
 ];
 
 const easingOptions = [
@@ -141,7 +140,6 @@ const easingOptions = [
   { value: 'ease-in', label: 'Ease In' },
   { value: 'ease-in-out', label: 'Ease In/Out' },
   { value: 'spring', label: 'Spring' },
-  { value: 'bounce', label: 'Bounce' },
   { value: 'linear', label: 'Linear' },
 ];
 
@@ -151,6 +149,10 @@ interface AnimationPresetSectionProps {
   onReplayAnimation?: () => void;
 }
 
+/**
+ * AnimationPresetSection - Uses legacy element.animation structure for compatibility
+ * with the existing CanvasRenderer animation system.
+ */
 export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
   element,
   onUpdate,
@@ -158,65 +160,90 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   
-  const currentPresetId = (element.props?.animationPreset as string) || 'none';
-  const currentTrigger = (element.props?.animationTrigger as string) || 'scroll';
-  const currentDuration = (element.props?.animationDuration as number) || 500;
-  const currentDelay = (element.props?.animationDelay as number) || 0;
-  const currentEasing = (element.props?.animationEasing as string) || 'ease-out';
+  // Read from legacy element.animation structure
+  const currentEffect = element.animation?.effect || 'none';
+  const currentTrigger = element.animation?.trigger || 'scroll';
+  const currentDuration = element.animation?.duration || 500;
+  const currentDelay = element.animation?.delay || 0;
+  const currentEasing = element.animation?.easing || 'ease-out';
   
-  const currentPreset = animationPresets.find(p => p.id === currentPresetId);
+  const currentPreset = animationPresets.find(p => p.id === currentEffect || p.animation.type === currentEffect);
   
   const handlePresetChange = (presetId: string) => {
     const preset = animationPresets.find(p => p.id === presetId);
-    if (preset) {
-      onUpdate({
-        props: {
-          ...element.props,
-          animationPreset: presetId,
-          animationDuration: preset.animation.duration,
-          animationEasing: preset.animation.easing || 'ease-out',
-        }
-      });
+    if (!preset || presetId === 'none') {
+      // Clear animation
+      onUpdate({ animation: undefined });
+      return;
     }
+    
+    // Update using legacy animation structure
+    onUpdate({
+      animation: {
+        effect: preset.animation.type,
+        trigger: currentTrigger as 'load' | 'scroll' | 'hover',
+        duration: preset.animation.duration,
+        delay: currentDelay,
+        easing: preset.animation.easing || 'ease-out',
+        threshold: 0.1,
+      } as AnimationSettings
+    });
   };
   
-  const handlePropsChange = (key: string, value: unknown) => {
+  const handleAnimationChange = (updates: Partial<AnimationSettings>) => {
     onUpdate({
-      props: {
-        ...element.props,
-        [key]: value,
-      }
+      animation: {
+        effect: currentEffect,
+        trigger: currentTrigger as 'load' | 'scroll' | 'hover',
+        duration: currentDuration,
+        delay: currentDelay,
+        easing: currentEasing,
+        threshold: 0.1,
+        ...element.animation,
+        ...updates,
+      } as AnimationSettings
     });
   };
 
   return (
-    <div className="inspector-section">
+    <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(315,85%,58%)]/5 to-transparent">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="inspector-section-header w-full"
+        className="w-full flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-builder-text-muted" />
+          <Sparkles className="w-4 h-4 text-[hsl(315,85%,58%)]" />
           <span className="text-xs font-medium text-builder-text">Animation</span>
-          {currentPresetId !== 'none' && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-builder-accent/20 text-builder-accent">
-              {currentPreset?.label}
+          {currentEffect && currentEffect !== 'none' && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[hsl(315,85%,58%)]/20 text-[hsl(315,85%,58%)]">
+              {currentPreset?.label || currentEffect}
             </span>
           )}
         </div>
-        {isOpen ? (
-          <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
-        )}
+        <div className="flex items-center gap-1.5">
+          {currentEffect && currentEffect !== 'none' && onReplayAnimation && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onReplayAnimation(); }}
+              className="flex items-center gap-1 px-2 py-1 rounded-md bg-builder-surface-hover text-builder-text-muted hover:text-[hsl(315,85%,58%)] hover:bg-[hsl(315,85%,58%)]/10 transition-colors text-xs"
+              title="Replay animation"
+            >
+              <Play className="w-3 h-3" />
+            </button>
+          )}
+          {isOpen ? (
+            <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
+          )}
+        </div>
       </button>
       
       {isOpen && (
-        <div className="inspector-section-content space-y-4">
+        <div className="mt-3 space-y-3">
           {/* Preset Selection */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-builder-text-muted">Entrance Effect</Label>
-            <Select value={currentPresetId} onValueChange={handlePresetChange}>
+            <Label className="text-xs text-builder-text-muted">Effect</Label>
+            <Select value={currentEffect || 'none'} onValueChange={handlePresetChange}>
               <SelectTrigger className="builder-input text-xs">
                 <SelectValue placeholder="Select animation" />
               </SelectTrigger>
@@ -243,16 +270,15 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
             </Select>
           </div>
           
-          {currentPresetId !== 'none' && (
+          {currentEffect && currentEffect !== 'none' && (
             <>
               {/* Trigger */}
-              <div className="space-y-1.5">
-                <Label className="text-xs text-builder-text-muted">Trigger</Label>
+              <div className="flex items-center gap-2">
                 <Select 
                   value={currentTrigger} 
-                  onValueChange={(v) => handlePropsChange('animationTrigger', v)}
+                  onValueChange={(v) => handleAnimationChange({ trigger: v as 'load' | 'scroll' | 'hover' })}
                 >
-                  <SelectTrigger className="builder-input text-xs">
+                  <SelectTrigger className="builder-input h-7 text-xs flex-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-background border-border">
@@ -263,17 +289,24 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
+                <button
+                  onClick={() => onUpdate({ animation: undefined })}
+                  className="p-1.5 rounded-md hover:bg-destructive/10 text-builder-text-muted hover:text-destructive transition-colors"
+                  title="Remove animation"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
               
               {/* Duration */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-builder-text-muted">Duration</Label>
-                  <span className="text-[10px] text-builder-text-dim">{currentDuration}ms</span>
+                  <span className="text-xs text-builder-text-muted">Duration</span>
+                  <span className="text-xs font-mono text-builder-text-dim">{currentDuration}ms</span>
                 </div>
                 <Slider
                   value={[currentDuration]}
-                  onValueChange={([v]) => handlePropsChange('animationDuration', v)}
+                  onValueChange={([v]) => handleAnimationChange({ duration: v })}
                   min={100}
                   max={2000}
                   step={50}
@@ -282,14 +315,14 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
               </div>
               
               {/* Delay */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-builder-text-muted">Delay</Label>
-                  <span className="text-[10px] text-builder-text-dim">{currentDelay}ms</span>
+                  <span className="text-xs text-builder-text-muted">Delay</span>
+                  <span className="text-xs font-mono text-builder-text-dim">{currentDelay}ms</span>
                 </div>
                 <Slider
                   value={[currentDelay]}
-                  onValueChange={([v]) => handlePropsChange('animationDelay', v)}
+                  onValueChange={([v]) => handleAnimationChange({ delay: v })}
                   min={0}
                   max={2000}
                   step={50}
@@ -302,9 +335,9 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
                 <Label className="text-xs text-builder-text-muted">Easing</Label>
                 <Select 
                   value={currentEasing} 
-                  onValueChange={(v) => handlePropsChange('animationEasing', v)}
+                  onValueChange={(v) => handleAnimationChange({ easing: v as 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear' })}
                 >
-                  <SelectTrigger className="builder-input text-xs">
+                  <SelectTrigger className="builder-input text-xs h-7">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-background border-border">
@@ -316,19 +349,6 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              
-              {/* Preview Button */}
-              {onReplayAnimation && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onReplayAnimation}
-                  className="w-full text-xs h-8 gap-2"
-                >
-                  <Play className="w-3 h-3" />
-                  Preview Animation
-                </Button>
-              )}
             </>
           )}
         </div>

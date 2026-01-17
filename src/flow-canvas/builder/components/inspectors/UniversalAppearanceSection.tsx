@@ -20,54 +20,12 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ColorPickerPopover } from '../modals';
+import { CollapsibleSection } from './shared/CollapsibleSection';
 
 interface UniversalAppearanceSectionProps {
   element: Element;
   onUpdate: (updates: Partial<Element>) => void;
 }
-
-interface CollapsibleSectionProps {
-  title: string;
-  icon?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}
-
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
-  title, 
-  icon,
-  defaultOpen = false, 
-  children,
-}) => {
-  const [isOpen, setIsOpen] = React.useState(defaultOpen);
-
-  return (
-    <div className="inspector-section">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="inspector-section-header w-full"
-      >
-        <div className="flex items-center gap-2">
-          {icon && <span className="text-builder-text-muted">{icon}</span>}
-          <span className="text-xs font-medium text-builder-text">{title}</span>
-        </div>
-        <svg 
-          className={cn("w-3.5 h-3.5 text-builder-text-dim transition-transform", isOpen && "rotate-90")}
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-      {isOpen && (
-        <div className="inspector-section-content animate-in">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProps> = ({
   element,

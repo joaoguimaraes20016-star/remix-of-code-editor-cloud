@@ -2128,9 +2128,20 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
             {/* Favorites Section */}
             {favorites.length > 0 && (
               <div className="mb-3 p-2 bg-yellow-500/5 border border-yellow-500/20 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                  <span className="text-xs font-medium text-builder-text">Favorites</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                    <span className="text-xs font-medium text-builder-text">Favorites</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setFavorites([]);
+                      toast.success('Favorites cleared');
+                    }}
+                    className="text-[10px] text-builder-text-muted hover:text-builder-text transition-colors"
+                  >
+                    Clear all
+                  </button>
                 </div>
                 <div className="space-y-1.5">
                   {allTemplates

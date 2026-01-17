@@ -118,38 +118,8 @@ const SHADOW_OPTIONS = [
 // HELPER COMPONENTS
 // ─────────────────────────────────────────────────────────
 
-const CollapsibleSection: React.FC<{
-  title: string;
-  icon?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}> = ({ title, icon, defaultOpen = false, children }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="border-b border-builder-border last:border-b-0">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          {icon && <span className="text-builder-text-muted">{icon}</span>}
-          <span className="text-xs font-medium text-builder-text">{title}</span>
-        </div>
-        {isOpen ? (
-          <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
-        )}
-      </button>
-      {isOpen && (
-        <div className="px-3 pb-3 space-y-3">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
+// Import shared CollapsibleSection from flow-canvas
+import { CollapsibleSection } from '@/flow-canvas/builder/components/inspectors/shared/CollapsibleSection';
 
 const FieldGroup: React.FC<{ 
   label: string; 
