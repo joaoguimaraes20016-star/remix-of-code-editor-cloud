@@ -29,7 +29,7 @@ serve(async (req) => {
   }
 
   try {
-    const { task, context, prompt, stream = true } = await req.json();
+    const { task, context, prompt, mode, stream = true } = await req.json();
     
     const API_KEY = getApiKey();
     if (!API_KEY) {
@@ -40,10 +40,13 @@ serve(async (req) => {
       );
     }
 
-    // Get the appropriate system prompt based on task type
-    const systemPrompt = getSystemPrompt(task, context);
+    // Get the appropriate system prompt based on task type and mode
+    const systemPrompt = getSystemPrompt(task, context, mode, prompt);
 
-    console.log(`[ai-copilot] Task: ${task}, Stream: ${stream}`);
+    // Increase max tokens for funnel generation
+    const maxTokens = mode === 'funnel' ? 4096 : 2048;
+
+    console.log(`[ai-copilot] Task: ${task}, Mode: ${mode || 'block'}, Stream: ${stream}`);
 
     const response = await fetch(AI_URL, {
       method: "POST",
@@ -58,7 +61,7 @@ serve(async (req) => {
           { role: "user", content: prompt },
         ],
         stream,
-        max_tokens: 2048,
+        max_tokens: maxTokens,
         temperature: 0.7,
       }),
     });

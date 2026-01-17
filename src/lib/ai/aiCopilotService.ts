@@ -8,6 +8,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
+export type GenerationMode = 'block' | 'funnel' | 'settings';
 
 export type FunnelType = 'vsl' | 'webinar' | 'optin' | 'sales' | 'booking' | 'quiz' | 'application' | 'checkout' | 'thank-you' | 'general';
 
@@ -94,7 +95,8 @@ export async function streamAICopilot(
   task: TaskType,
   prompt: string,
   context: PageContext,
-  options: StreamOptions
+  options: StreamOptions,
+  mode?: GenerationMode
 ): Promise<void> {
   const { onDelta, onDone, onError } = options;
 
@@ -109,7 +111,7 @@ export async function streamAICopilot(
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ task, prompt, context, stream: true }),
+      body: JSON.stringify({ task, prompt, context, mode, stream: true }),
     });
 
     if (!response.ok) {
