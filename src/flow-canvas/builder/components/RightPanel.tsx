@@ -131,6 +131,7 @@ import { StepElementInspector } from './inspectors/StepElementInspector';
 import { PremiumElementInspector } from './inspectors/PremiumElementInspector';
 import { ConditionalLogicEditor } from './inspectors/ConditionalLogicEditor';
 import { UniversalAppearanceSection } from './inspectors/UniversalAppearanceSection';
+import { AnimationPresetSection } from './inspectors/AnimationPresetSection';
 import { ButtonActionSelector, type ButtonAction as ActionSelectorAction } from './ButtonActionSelector';
 import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
 import { DEFAULT_FLOW_BUTTON_COLOR } from './ApplicationFlowCard';
@@ -695,125 +696,11 @@ const ElementInspector: React.FC<{
 
       {/* ========== QUICK ANIMATION (Easy to find!) ========== */}
       {showAnimation && (
-        <div className="px-4 py-3 border-b border-builder-border bg-gradient-to-r from-[hsl(315,85%,58%)]/5 to-transparent">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[hsl(315,85%,58%)]" />
-              <span className="text-xs font-medium text-builder-text">Animation</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {/* Replay button - only show when animation is set */}
-              {element.animation?.effect && onReplayAnimation && (
-                <button
-                  onClick={onReplayAnimation}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-builder-surface-hover text-builder-text-muted hover:text-[hsl(315,85%,58%)] hover:bg-[hsl(315,85%,58%)]/10 transition-colors text-xs"
-                  title="Replay animation"
-                >
-                  <Play className="w-3 h-3" />
-                </button>
-              )}
-              <EffectsPickerPopover 
-                onSelectEffect={(effect) => {
-                  onUpdate({ 
-                    animation: { 
-                      ...(element.animation || {}), 
-                      effect,
-                      trigger: element.animation?.trigger || 'scroll',
-                      delay: element.animation?.delay || 0,
-                      duration: element.animation?.duration || 500,
-                      easing: element.animation?.easing || 'ease-out',
-                      threshold: element.animation?.threshold || 0.1
-                    } as AnimationSettings
-                  });
-                }} 
-                currentEffect={element.animation?.effect}
-              >
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[hsl(315,85%,58%)]/10 text-[hsl(315,85%,58%)] text-xs font-medium hover:bg-[hsl(315,85%,58%)]/20 transition-colors border border-[hsl(315,85%,58%)]/20">
-                  {element.animation?.effect ? (
-                    <>
-                      <Sparkles className="w-3 h-3" />
-                      <span className="capitalize">{element.animation.effect.replace('-', ' ')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-3 h-3" />
-                      <span>Add Effect</span>
-                    </>
-                  )}
-                </button>
-              </EffectsPickerPopover>
-            </div>
-          </div>
-          {element.animation?.effect && (
-            <div className="mt-3 space-y-3">
-              {/* Trigger selector */}
-              <div className="flex items-center gap-2">
-                <Select 
-                  value={element.animation?.trigger || 'scroll'}
-                  onValueChange={(value) => onUpdate({ animation: { ...(element.animation || { effect: '', delay: 0, duration: 500, easing: 'ease-out', threshold: 0.1 }), trigger: value as any } as AnimationSettings })}
-                >
-                  <SelectTrigger className="builder-input h-7 text-xs flex-1">
-                    <SelectValue placeholder="Trigger" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border-border">
-                    <SelectItem value="load">On Page Load</SelectItem>
-                    <SelectItem value="scroll">When Scrolled Into View</SelectItem>
-                    <SelectItem value="hover">On Hover</SelectItem>
-                  </SelectContent>
-                </Select>
-                <button
-                  onClick={() => onUpdate({ animation: undefined })}
-                  className="p-1.5 rounded-md hover:bg-destructive/10 text-builder-text-muted hover:text-destructive transition-colors"
-                  title="Remove animation"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              
-              {/* Duration slider with real-time feedback */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Duration</span>
-                  <span className="text-xs font-mono text-builder-text-dim">{element.animation?.duration || 500}ms</span>
-                </div>
-                <Slider 
-                  value={[element.animation?.duration || 500]}
-                  onValueChange={(v) => onUpdate({ 
-                    animation: { 
-                      ...(element.animation || { effect: '', trigger: 'scroll', delay: 0, easing: 'ease-out', threshold: 0.1 }), 
-                      duration: v[0] 
-                    } as AnimationSettings 
-                  })}
-                  min={100}
-                  max={2000}
-                  step={50}
-                  className="w-full"
-                />
-              </div>
-              
-              {/* Delay slider */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-builder-text-muted">Delay</span>
-                  <span className="text-xs font-mono text-builder-text-dim">{element.animation?.delay || 0}ms</span>
-                </div>
-                <Slider 
-                  value={[element.animation?.delay || 0]}
-                  onValueChange={(v) => onUpdate({ 
-                    animation: { 
-                      ...(element.animation || { effect: '', trigger: 'scroll', duration: 500, easing: 'ease-out', threshold: 0.1 }), 
-                      delay: v[0] 
-                    } as AnimationSettings 
-                  })}
-                  min={0}
-                  max={2000}
-                  step={50}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        <AnimationPresetSection
+          element={element}
+          onUpdate={onUpdate}
+          onReplayAnimation={onReplayAnimation}
+        />
       )}
 
       {/* State Tabs - for all interactive elements */}
