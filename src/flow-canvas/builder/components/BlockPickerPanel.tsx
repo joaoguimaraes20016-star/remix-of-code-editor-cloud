@@ -3,7 +3,9 @@ import {
   Plus, Search, Type, Image, MousePointer, 
   Mail, Phone, User, UserCheck, ChevronRight,
   HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow,
-  Sparkles
+  Sparkles, Star, SlidersHorizontal, Shapes, Timer, Loader2, MapPin, Code,
+  Upload, MessageSquare, CalendarDays, CreditCard, LayoutGrid, List, Minus, Play,
+  Users, Package, Quote
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '@/flow-canvas/types/infostack';
@@ -59,12 +61,12 @@ interface BlockPickerPanelProps {
 
 type ActiveTab = 'blocks' | 'sections';
 
-// ============ APPLICATION QUESTIONS (prioritized first) ============
+// ============ QUESTIONS ============
 
-const applicationQuestions: BlockTemplate[] = [
+const questionBlocks: BlockTemplate[] = [
   {
     type: 'application-step',
-    label: 'Open-Ended Question',
+    label: 'Open-Ended',
     icon: <Type size={16} />,
     description: 'Free text answer',
     template: () => ({
@@ -117,14 +119,32 @@ const applicationQuestions: BlockTemplate[] = [
       props: { trackingId: '', intent: 'qualify' },
     }),
   },
-];
-
-// ============ CAPTURE FIELDS ============
-
-const captureFields: BlockTemplate[] = [
   {
     type: 'application-step',
-    label: 'Email Field',
+    label: 'Video Question',
+    icon: <Video size={16} />,
+    description: 'Video prompt with answer',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Video Question',
+      elements: [
+        { id: generateId(), type: 'video', content: '', props: { src: '', autoplay: false } },
+        { id: generateId(), type: 'heading', content: 'After watching, what resonated most?', props: { level: 3 } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'text', placeholder: 'Your thoughts...', required: true, fieldKey: 'video_response' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
+      ],
+      props: { trackingId: '', intent: 'qualify' },
+    }),
+  },
+];
+
+// ============ FORM FIELDS ============
+
+const formFields: BlockTemplate[] = [
+  {
+    type: 'application-step',
+    label: 'Email',
     icon: <Mail size={16} />,
     description: 'Email with validation',
     template: () => ({
@@ -142,7 +162,7 @@ const captureFields: BlockTemplate[] = [
   },
   {
     type: 'application-step',
-    label: 'Phone Field',
+    label: 'Phone',
     icon: <Phone size={16} />,
     description: 'Phone with formatting',
     template: () => ({
@@ -160,7 +180,7 @@ const captureFields: BlockTemplate[] = [
   },
   {
     type: 'application-step',
-    label: 'Name Field',
+    label: 'Name',
     icon: <User size={16} />,
     description: 'Full name input',
     template: () => ({
@@ -177,9 +197,9 @@ const captureFields: BlockTemplate[] = [
   },
   {
     type: 'application-step',
-    label: 'Contact Info Opt-In',
+    label: 'Contact Info',
     icon: <UserCheck size={16} />,
-    description: 'Collect name, email, phone — Perspective style',
+    description: 'Collect name, email, phone',
     template: () => ({
       id: generateId(),
       type: 'form-field',
@@ -195,11 +215,115 @@ const captureFields: BlockTemplate[] = [
       props: { trackingId: '', intent: 'capture' },
     }),
   },
+  {
+    type: 'application-step',
+    label: 'Upload',
+    icon: <Upload size={16} />,
+    description: 'File upload field',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Upload',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Upload your file', props: { level: 3 } },
+        { id: generateId(), type: 'text', content: 'Supported formats: PDF, DOC, JPG, PNG', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'file', required: false, fieldKey: 'file_upload' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
+  },
+  {
+    type: 'application-step',
+    label: 'Message',
+    icon: <MessageSquare size={16} />,
+    description: 'Long text input',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Message',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Tell us more', props: { level: 3 } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'textarea', placeholder: 'Write your message here...', required: true, fieldKey: 'message' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
+  },
+  {
+    type: 'application-step',
+    label: 'Date',
+    icon: <CalendarDays size={16} />,
+    description: 'Date selection',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Date',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Select a date', props: { level: 3 } },
+        { id: generateId(), type: 'input', content: '', props: { type: 'date', required: true, fieldKey: 'selected_date' } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
+  },
+  {
+    type: 'application-step',
+    label: 'Dropdown',
+    icon: <List size={16} />,
+    description: 'Select menu',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Dropdown',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Choose an option', props: { level: 3 } },
+        { id: generateId(), type: 'select', content: '', props: { 
+          options: ['Option 1', 'Option 2', 'Option 3'], 
+          placeholder: 'Select...', 
+          required: true, 
+          fieldKey: 'selection' 
+        } },
+        { id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } },
+      ],
+      props: { trackingId: '', intent: 'capture' },
+    }),
+  },
+  {
+    type: 'application-step',
+    label: 'Payment',
+    icon: <CreditCard size={16} />,
+    description: 'Payment form',
+    template: () => ({
+      id: generateId(),
+      type: 'form-field',
+      label: 'Payment',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Complete your payment', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Secure payment powered by Stripe', props: { variant: 'subtext' } },
+        { id: generateId(), type: 'button', content: 'Pay Now', props: { size: 'lg', preset: 'primary', fullWidth: true, buttonAction: { type: 'submit' } } },
+      ],
+      props: { trackingId: '', intent: 'payment' },
+    }),
+  },
 ];
 
-// ============ CONTENT BLOCKS ============
+// ============ BASIC BLOCKS ============
 
-const contentBlocks: BlockTemplate[] = [
+const basicBlocks: BlockTemplate[] = [
+  {
+    type: 'text-block',
+    label: 'Text',
+    icon: <Type size={16} />,
+    description: 'Paragraph or body copy',
+    template: () => ({
+      id: generateId(),
+      type: 'text-block',
+      label: 'Text',
+      elements: [{ id: generateId(), type: 'text', content: 'Your supporting text goes here. Keep it short and persuasive.', props: {} }],
+      props: {},
+    }),
+  },
   {
     type: 'heading',
     label: 'Heading',
@@ -214,16 +338,16 @@ const contentBlocks: BlockTemplate[] = [
     }),
   },
   {
-    type: 'text-block',
-    label: 'Text',
-    icon: <Type size={16} />,
-    description: 'Paragraph or body copy',
+    type: 'cta',
+    label: 'Button',
+    icon: <MousePointer size={16} />,
+    description: 'CTA or navigation button',
     template: () => ({
       id: generateId(),
-      type: 'text-block',
-      label: 'Text',
-      elements: [{ id: generateId(), type: 'text', content: 'Your supporting text goes here. Keep it short and persuasive.', props: {} }],
-      props: {},
+      type: 'cta',
+      label: 'Button',
+      elements: [{ id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } }],
+      props: { href: '' },
     }),
   },
   {
@@ -240,6 +364,34 @@ const contentBlocks: BlockTemplate[] = [
     }),
   },
   {
+    type: 'list',
+    label: 'List',
+    icon: <List size={16} />,
+    description: 'Bullet or numbered list',
+    template: () => ({
+      id: generateId(),
+      type: 'text-block',
+      label: 'List',
+      elements: [
+        { id: generateId(), type: 'text', content: '• First item\n• Second item\n• Third item', props: {} }
+      ],
+      props: {},
+    }),
+  },
+  {
+    type: 'divider',
+    label: 'Divider',
+    icon: <Minus size={16} />,
+    description: 'Horizontal separator',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Divider',
+      elements: [{ id: generateId(), type: 'divider', content: '', props: {} }],
+      props: {},
+    }),
+  },
+  {
     type: 'video',
     label: 'Video',
     icon: <Video size={16} />,
@@ -252,31 +404,225 @@ const contentBlocks: BlockTemplate[] = [
       props: { aspectRatio: '16:9' },
     }),
   },
-];
-
-// ============ BUTTONS & ACTIONS ============
-// NOTE: Only non-interactive actions here. Interactive blocks (booking, flows) are in Interactive category.
-
-const actionBlocks: BlockTemplate[] = [
   {
-    type: 'cta',
-    label: 'Submit Button',
-    icon: <MousePointer size={16} />,
-    description: 'Triggers form submission + next action',
+    type: 'logo-bar',
+    label: 'Logo Bar',
+    icon: <LayoutGrid size={16} />,
+    description: 'Client/partner logos',
     template: () => ({
       id: generateId(),
-      type: 'cta',
-      label: 'Button',
-      elements: [{ id: generateId(), type: 'button', content: 'Continue', props: { buttonAction: { type: 'next-step' } } }],
-      props: { href: '' },
+      type: 'custom',
+      label: 'Logo Bar',
+      elements: [{ id: generateId(), type: 'image', content: '', props: { 
+        variant: 'logo-bar',
+        logos: [],
+        grayscale: true
+      } }],
+      props: {},
+    }),
+  },
+  {
+    type: 'reviews',
+    label: 'Reviews',
+    icon: <Star size={16} />,
+    description: 'Star ratings display',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Reviews',
+      elements: [{ id: generateId(), type: 'text', content: '★★★★★ 127 reviews', props: { 
+        variant: 'reviews',
+        rating: 5,
+        count: 127,
+        source: 'Google'
+      } }],
+      props: {},
+    }),
+  },
+  {
+    type: 'testimonial-block',
+    label: 'Testimonial',
+    icon: <Quote size={16} />,
+    description: 'Customer quote',
+    template: () => ({
+      id: generateId(),
+      type: 'testimonial',
+      label: 'Testimonial',
+      elements: [
+        { id: generateId(), type: 'text', content: '"This completely transformed my business. Highly recommended!"', props: { variant: 'quote' } },
+        { id: generateId(), type: 'text', content: '— Sarah M., Agency Owner', props: { variant: 'caption' } },
+      ],
+      props: {},
+    }),
+  },
+  {
+    type: 'slider',
+    label: 'Slider',
+    icon: <SlidersHorizontal size={16} />,
+    description: 'Image carousel',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Slider',
+      elements: [{ id: generateId(), type: 'image', content: '', props: { 
+        variant: 'slider',
+        slides: [],
+        autoplay: true,
+        interval: 5000
+      } }],
+      props: {},
+    }),
+  },
+  {
+    type: 'graphic',
+    label: 'Graphic',
+    icon: <Shapes size={16} />,
+    description: 'Decorative icons/emojis',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Graphic',
+      elements: [{ id: generateId(), type: 'icon', content: '🚀', props: { 
+        size: 'lg',
+        align: 'center'
+      } }],
+      props: {},
+    }),
+  },
+];
+
+// ============ INFORMATIVE BLOCKS ============
+
+const informativeBlocks: BlockTemplate[] = [
+  {
+    type: 'webinar',
+    label: 'Webinar',
+    icon: <Play size={16} />,
+    description: 'Video with progress bar',
+    template: () => ({
+      id: generateId(),
+      type: 'media',
+      label: 'Webinar',
+      elements: [
+        { id: generateId(), type: 'video', content: '', props: { src: '', autoplay: false, showProgress: true } },
+      ],
+      props: { showProgress: true, requireWatch: false },
+    }),
+  },
+  {
+    type: 'faq',
+    label: 'FAQ',
+    icon: <HelpCircle size={16} />,
+    description: 'Accordion Q&A',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'FAQ',
+      elements: [{ id: generateId(), type: 'text', content: 'Q: What is included?\nA: Everything you need to get started.\n\nQ: How long does it take?\nA: Results typically within 30 days.', props: { 
+        variant: 'faq',
+        items: [
+          { question: 'What is included?', answer: 'Everything you need to get started.' },
+          { question: 'How long does it take?', answer: 'Results typically within 30 days.' },
+          { question: 'Is there a guarantee?', answer: 'Yes, 30-day money back guarantee.' },
+        ]
+      } }],
+      props: {},
+    }),
+  },
+  {
+    type: 'countdown',
+    label: 'Countdown',
+    icon: <Timer size={16} />,
+    description: 'Timer countdown',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Countdown',
+      elements: [{ id: generateId(), type: 'text', content: '24:00:00', props: { 
+        variant: 'countdown',
+        endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        style: 'boxes'
+      } }],
+      props: {},
+    }),
+  },
+  {
+    type: 'loader',
+    label: 'Loader',
+    icon: <Loader2 size={16} />,
+    description: 'Progress indicator',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Loader',
+      elements: [{ id: generateId(), type: 'text', content: 'Analyzing your results...', props: { 
+        variant: 'loader',
+        duration: 3000
+      } }],
+      props: {},
+    }),
+  },
+];
+
+// ============ EMBED BLOCKS ============
+
+const embedBlocks: BlockTemplate[] = [
+  {
+    type: 'trustpilot',
+    label: 'Trustpilot',
+    icon: <Star size={16} />,
+    description: 'Trustpilot reviews widget',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Trustpilot',
+      elements: [{ id: generateId(), type: 'text', content: 'Trustpilot Widget', props: { 
+        variant: 'embed',
+        embedType: 'trustpilot',
+        businessId: ''
+      } }],
+      props: {},
+    }),
+  },
+  {
+    type: 'google-maps',
+    label: 'Google Maps',
+    icon: <MapPin size={16} />,
+    description: 'Embed location map',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Google Maps',
+      elements: [{ id: generateId(), type: 'text', content: 'Google Maps Embed', props: { 
+        variant: 'embed',
+        embedType: 'google-maps',
+        address: ''
+      } }],
+      props: {},
+    }),
+  },
+  {
+    type: 'html-embed',
+    label: 'HTML',
+    icon: <Code size={16} />,
+    description: 'Custom code embed',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'HTML Embed',
+      elements: [{ id: generateId(), type: 'text', content: '<!-- Custom HTML -->', props: { 
+        variant: 'embed',
+        embedType: 'html',
+        code: ''
+      } }],
+      props: {},
     }),
   },
 ];
 
 // ============ SCHEDULING & BOOKING ============
-// Moved from Actions to Interactive since it collects data
 
-const bookingBlocks: BlockTemplate[] = [
+const schedulingBlocks: BlockTemplate[] = [
   {
     type: 'booking',
     label: 'Book a Call',
@@ -293,12 +639,27 @@ const bookingBlocks: BlockTemplate[] = [
       props: { calendlyUrl: '', intent: 'schedule' },
     }),
   },
+  {
+    type: 'appointment',
+    label: 'Appointment',
+    icon: <CalendarDays size={16} />,
+    description: 'Built-in appointment picker',
+    template: () => ({
+      id: generateId(),
+      type: 'booking',
+      label: 'Appointment',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Select a Time', props: { level: 2 } },
+      ],
+      props: { intent: 'schedule' },
+    }),
+  },
 ];
 
-// ============ FLOW CONTAINER ============
-// A container for grouping multiple interactive blocks into a Typeform-style experience
 
-const flowTemplates: BlockTemplate[] = [
+// ============ FLOW CONTAINER ============
+
+const flowBlocks: BlockTemplate[] = [
   {
     type: 'application-flow',
     label: 'Flow Container',
@@ -307,7 +668,7 @@ const flowTemplates: BlockTemplate[] = [
     template: () => ({
       id: generateId(),
       type: 'application-flow',
-      label: 'Flow Container', // Single name for Typeform-style experiences
+      label: 'Flow Container',
       elements: [],
       props: {
         displayMode: 'one-at-a-time',
@@ -370,35 +731,54 @@ const flowTemplates: BlockTemplate[] = [
 
 // ============ BLOCK CATEGORIES ============
 
-// Unified "Interactive" category - consolidates all data-collection blocks + flows
-// Order: Questions → Capture Fields → Booking → Flow Container
-const interactiveBlocks: BlockTemplate[] = [
-  ...applicationQuestions,
-  ...captureFields,
-  ...bookingBlocks,
-  ...flowTemplates, // Flow Container at the end - it's a grouping feature, not a primary block
-];
-
 const blockCategories: BlockCategory[] = [
   {
-    id: 'interactive',
-    label: 'Interactive',
-    hint: 'Questions, lead capture & scheduling',
-    blocks: interactiveBlocks,
-    defaultOpen: true, // Interactive blocks are the core use case
+    id: 'basic',
+    label: 'Basic Blocks',
+    hint: 'Text, images, and layout elements',
+    blocks: basicBlocks,
+    defaultOpen: true,
   },
   {
-    id: 'content',
-    label: 'Content',
-    hint: 'Text, images, and media',
-    blocks: contentBlocks,
-    defaultOpen: true, // Open by default for better discoverability
+    id: 'informative',
+    label: 'Informative',
+    hint: 'Webinar, FAQ, timers & loaders',
+    blocks: informativeBlocks,
+    defaultOpen: false,
   },
   {
-    id: 'actions',
-    label: 'Actions',
-    hint: 'Buttons and navigation',
-    blocks: actionBlocks,
+    id: 'embed',
+    label: 'Embed',
+    hint: 'External widgets & custom code',
+    blocks: embedBlocks,
+    defaultOpen: false,
+  },
+  {
+    id: 'questions',
+    label: 'Questions',
+    hint: 'Survey & qualification questions',
+    blocks: questionBlocks,
+    defaultOpen: true,
+  },
+  {
+    id: 'forms',
+    label: 'Forms',
+    hint: 'Lead capture & data collection',
+    blocks: formFields,
+    defaultOpen: false,
+  },
+  {
+    id: 'scheduling',
+    label: 'Scheduling',
+    hint: 'Booking & appointments',
+    blocks: schedulingBlocks,
+    defaultOpen: false,
+  },
+  {
+    id: 'flows',
+    label: 'Flows',
+    hint: 'Multi-step experiences',
+    blocks: flowBlocks,
     defaultOpen: false,
   },
 ];
@@ -413,7 +793,7 @@ interface SectionCategory {
   defaultOpen?: boolean;
 }
 
-const contentSections: BlockTemplate[] = [
+const heroSections: BlockTemplate[] = [
   {
     type: 'hero',
     label: 'Welcome / Hero',
@@ -431,11 +811,14 @@ const contentSections: BlockTemplate[] = [
       props: { intent: 'collect' },
     }),
   },
+];
+
+const contentSections: BlockTemplate[] = [
   {
     type: 'testimonial',
     label: 'Testimonial',
-    icon: <FileText size={16} />,
-    description: 'Social proof',
+    icon: <Quote size={16} />,
+    description: 'Social proof with quote',
     template: () => ({
       id: generateId(),
       type: 'testimonial',
@@ -463,6 +846,58 @@ const contentSections: BlockTemplate[] = [
       props: { intent: 'complete' },
     }),
   },
+  {
+    type: 'about',
+    label: 'About Us',
+    icon: <Users size={16} />,
+    description: 'Company or personal intro',
+    template: () => ({
+      id: generateId(),
+      type: 'about',
+      label: 'About Us',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'About Us', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'We help businesses grow with proven strategies and expert guidance.', props: {} },
+      ],
+      props: {},
+    }),
+  },
+  {
+    type: 'team',
+    label: 'Team',
+    icon: <Users size={16} />,
+    description: 'Team member cards',
+    template: () => ({
+      id: generateId(),
+      type: 'team',
+      label: 'Team',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Meet Our Team', props: { level: 2 } },
+      ],
+      props: { 
+        members: [
+          { name: 'John Doe', role: 'CEO', image: '' },
+          { name: 'Jane Smith', role: 'CTO', image: '' },
+        ]
+      },
+    }),
+  },
+  {
+    type: 'product',
+    label: 'Product',
+    icon: <Package size={16} />,
+    description: 'Product/service showcase',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Product',
+      elements: [
+        { id: generateId(), type: 'heading', content: 'Our Solution', props: { level: 2 } },
+        { id: generateId(), type: 'text', content: 'Everything you need to succeed in one powerful platform.', props: {} },
+      ],
+      props: {},
+    }),
+  },
 ];
 
 const advancedSections: BlockTemplate[] = [
@@ -481,12 +916,18 @@ const advancedSections: BlockTemplate[] = [
   },
 ];
 
-// Sections are purely visual - no behavioral/capture logic
 const sectionCategories: SectionCategory[] = [
+  {
+    id: 'hero',
+    label: 'Hero',
+    hint: 'Opening sections with CTAs',
+    sections: heroSections,
+    defaultOpen: true,
+  },
   {
     id: 'content',
     label: 'Content Sections',
-    hint: 'Pre-designed layouts for your page',
+    hint: 'Testimonials, about, team, product',
     sections: contentSections,
     defaultOpen: true,
   },
@@ -498,7 +939,6 @@ const sectionCategories: SectionCategory[] = [
     defaultOpen: false,
   },
 ];
-
 // ============ COLLAPSIBLE CATEGORY COMPONENT ============
 
 // Categories that should add to Application Engine instead of standalone blocks
@@ -707,12 +1147,14 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
 
   // All templates for search
   const allTemplates = [
-    ...applicationQuestions.map(b => ({ ...b, isSection: false, categoryId: 'interactive' })),
-    ...captureFields.map(b => ({ ...b, isSection: false, categoryId: 'interactive' })),
-    ...bookingBlocks.map(b => ({ ...b, isSection: false, categoryId: 'interactive' })),
-    ...contentBlocks.map(b => ({ ...b, isSection: false, categoryId: 'content' })),
-    ...actionBlocks.map(b => ({ ...b, isSection: false, categoryId: 'actions' })),
-    ...flowTemplates.map(t => ({ ...t, isSection: false, categoryId: 'interactive' })), // Flow container is a block, not a section
+    ...questionBlocks.map(b => ({ ...b, isSection: false, categoryId: 'questions' })),
+    ...formFields.map(b => ({ ...b, isSection: false, categoryId: 'forms' })),
+    ...basicBlocks.map(b => ({ ...b, isSection: false, categoryId: 'basic' })),
+    ...informativeBlocks.map(b => ({ ...b, isSection: false, categoryId: 'informative' })),
+    ...embedBlocks.map(b => ({ ...b, isSection: false, categoryId: 'embed' })),
+    ...schedulingBlocks.map(b => ({ ...b, isSection: false, categoryId: 'scheduling' })),
+    ...flowBlocks.map(t => ({ ...t, isSection: false, categoryId: 'flows' })),
+    ...heroSections.map(t => ({ ...t, isSection: true, categoryId: 'hero' })),
     ...contentSections.map(t => ({ ...t, isSection: true, categoryId: 'content-sections' })),
     ...advancedSections.map(t => ({ ...t, isSection: true, categoryId: 'advanced' })),
   ];
