@@ -1007,6 +1007,27 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           textAlign: typographyStyles.textAlign,
         };
         
+        // Text Effect styles (underline/highlight) - replaces separate elements
+        const headingTextEffect = element.props?.textEffect as 'none' | 'underline' | 'highlight' | undefined;
+        const headingTextEffectStyles: React.CSSProperties = {};
+        
+        if (headingTextEffect === 'underline') {
+          const underlineFrom = (element.props?.underlineFrom as string) || '#8B5CF6';
+          const underlineTo = (element.props?.underlineTo as string) || '#EC4899';
+          headingTextEffectStyles.backgroundImage = `linear-gradient(90deg, ${underlineFrom}, ${underlineTo})`;
+          headingTextEffectStyles.backgroundSize = '100% 3px';
+          headingTextEffectStyles.backgroundPosition = '0 100%';
+          headingTextEffectStyles.backgroundRepeat = 'no-repeat';
+          headingTextEffectStyles.paddingBottom = '4px';
+          headingTextEffectStyles.display = 'inline';
+        } else if (headingTextEffect === 'highlight') {
+          const highlightColor = (element.props?.highlightColor as string) || 'rgba(255,255,0,0.3)';
+          headingTextEffectStyles.backgroundColor = highlightColor;
+          headingTextEffectStyles.padding = '0.1em 0.25em';
+          headingTextEffectStyles.borderRadius = '0.15em';
+          headingTextEffectStyles.display = 'inline';
+        }
+        
         const headingContent = (
           <div 
             className={cn(
@@ -1017,7 +1038,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               headingLinkUrl && headingLinkUnderline === 'hover' && 'hover:underline',
               headingLinkUrl && 'cursor-pointer'
             )} 
-            style={headingWrapperStyles}
+            style={{ ...headingWrapperStyles, ...headingTextEffectStyles }}
             onClick={(e) => { e.stopPropagation(); onSelect(); }}
           >
             <InlineTextEditor
@@ -1173,6 +1194,28 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           ...variantStyles,
         };
         
+        // Text Effect styles (underline/highlight) - replaces separate underline-text element
+        const textEffect = element.props?.textEffect as 'none' | 'underline' | 'highlight' | undefined;
+        const textEffectStyles: React.CSSProperties = {};
+        let textEffectClasses = '';
+        
+        if (textEffect === 'underline') {
+          const underlineFrom = (element.props?.underlineFrom as string) || '#8B5CF6';
+          const underlineTo = (element.props?.underlineTo as string) || '#EC4899';
+          textEffectStyles.backgroundImage = `linear-gradient(90deg, ${underlineFrom}, ${underlineTo})`;
+          textEffectStyles.backgroundSize = '100% 3px';
+          textEffectStyles.backgroundPosition = '0 100%';
+          textEffectStyles.backgroundRepeat = 'no-repeat';
+          textEffectStyles.paddingBottom = '4px';
+          textEffectStyles.display = 'inline';
+        } else if (textEffect === 'highlight') {
+          const highlightColor = (element.props?.highlightColor as string) || 'rgba(255,255,0,0.3)';
+          textEffectStyles.backgroundColor = highlightColor;
+          textEffectStyles.padding = '0.1em 0.25em';
+          textEffectStyles.borderRadius = '0.15em';
+          textEffectStyles.display = 'inline';
+        }
+        
         const textContent = (
           <div 
             className={cn(
@@ -1182,9 +1225,10 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               variantClasses,
               textLinkUrl && textLinkUnderline === 'always' && 'underline',
               textLinkUrl && textLinkUnderline === 'hover' && 'hover:underline',
-              textLinkUrl && 'cursor-pointer'
+              textLinkUrl && 'cursor-pointer',
+              textEffectClasses
             )} 
-            style={textWrapperStyles}
+            style={{ ...textWrapperStyles, ...textEffectStyles }}
             onClick={(e) => { e.stopPropagation(); onSelect(); }}
           >
             <InlineTextEditor

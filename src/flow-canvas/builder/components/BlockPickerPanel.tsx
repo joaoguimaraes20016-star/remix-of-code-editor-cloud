@@ -817,36 +817,10 @@ const flowBlocks: BlockTemplate[] = [
 ];
 
 // ============ PREMIUM ELEMENTS ============
+// NOTE: gradient-text-block and underline-text-block REMOVED
+// Gradient and underline are now TEXT STYLING OPTIONS in the text inspector, not separate blocks
 
 const premiumBlocks: BlockTemplate[] = [
-  {
-    type: 'gradient-text-block',
-    label: 'Gradient Text',
-    icon: <Sparkles size={16} />,
-    description: 'Bold text with gradient fill',
-    template: () => ({
-      id: generateId(),
-      type: 'custom',
-      label: 'Gradient Text',
-      elements: [{
-        id: generateId(),
-        type: 'gradient-text',
-        content: 'Gradient Text',
-        props: {
-          gradient: {
-            type: 'linear',
-            angle: 135,
-            stops: [
-              { color: '#8B5CF6', position: 0 },
-              { color: '#EC4899', position: 100 }
-            ]
-          },
-          fontSize: '4xl'
-        }
-      }],
-      props: {},
-    }),
-  },
   {
     type: 'stat-number-block',
     label: 'Stat Number',
@@ -933,27 +907,7 @@ const premiumBlocks: BlockTemplate[] = [
       props: {},
     }),
   },
-  {
-    type: 'underline-text-block',
-    label: 'Underline Text',
-    icon: <Type size={16} />,
-    description: 'Text with gradient underline',
-    template: () => ({
-      id: generateId(),
-      type: 'custom',
-      label: 'Underline Text',
-      elements: [{
-        id: generateId(),
-        type: 'underline-text',
-        content: 'Stand out with style',
-        props: {
-          underlineFrom: '#8B5CF6',
-          underlineTo: '#EC4899'
-        }
-      }],
-      props: {},
-    }),
-  },
+  // underline-text-block REMOVED - now a text styling option
   {
     type: 'process-step-block',
     label: 'Process Step',
