@@ -3983,51 +3983,112 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                     </React.Fragment>
                   ))}
               
-              {/* Empty canvas state - Fixed neutral styling (never changes based on canvas theme) */}
-              {step.frames.length === 0 && !readOnly && onOpenSectionPicker && (
-                <div className="flex items-center justify-center min-h-[500px] px-4">
-                  <div className="w-full max-w-md text-center">
-                    {/* Icon - fixed neutral */}
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl border flex items-center justify-center bg-gray-100 border-gray-200">
-                      <Layers className="w-8 h-8 text-gray-400" />
+              {/* Empty canvas state - adapts to actual step background color */}
+              {step.frames.length === 0 && !readOnly && onOpenSectionPicker && (() => {
+                // Compute dark mode based on actual step/page background, not global theme setting
+                const bgSource = (step.background && (step.background.type || step.background.color)) 
+                  ? step.background 
+                  : pageSettings?.page_background;
+                const bgColor = bgSource?.color || '#ffffff';
+                // Simple luminance check: if background is dark, use light text
+                const isBackgroundDark = (() => {
+                  if (!bgColor || bgColor === 'transparent') return false;
+                  const hex = bgColor.replace('#', '');
+                  if (hex.length !== 6) return false;
+                  const r = parseInt(hex.slice(0, 2), 16);
+                  const g = parseInt(hex.slice(2, 4), 16);
+                  const b = parseInt(hex.slice(4, 6), 16);
+                  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                  return luminance < 0.5;
+                })();
+                
+                return (
+                  <div className="flex items-center justify-center min-h-[500px] px-4">
+                    <div className="w-full max-w-md text-center">
+                      {/* Icon - adapts to background */}
+                      <div className={cn(
+                        "w-16 h-16 mx-auto mb-4 rounded-xl border flex items-center justify-center",
+                        isBackgroundDark 
+                          ? "bg-white/10 border-white/20" 
+                          : "bg-gray-100 border-gray-200"
+                      )}>
+                        <Layers className={cn("w-8 h-8", isBackgroundDark ? "text-white/50" : "text-gray-400")} />
+                      </div>
+                      
+                      {/* Title - adapts to background */}
+                      <h2 className={cn(
+                        "text-lg font-semibold mb-2",
+                        isBackgroundDark ? "text-white" : "text-gray-900"
+                      )}>
+                        Add a Section
+                      </h2>
+                      
+                      {/* Subtitle - adapts to background */}
+                      <p className={cn(
+                        "text-sm mb-6",
+                        isBackgroundDark ? "text-white/60" : "text-gray-500"
+                      )}>
+                        Start building your page by adding sections
+                      </p>
+                      
+                      {/* Primary CTA - adapts to background */}
+                      <button
+                        onClick={() => onOpenSectionPicker()}
+                        className={cn(
+                          "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm",
+                          isBackgroundDark 
+                            ? "bg-white text-gray-900 hover:bg-gray-100" 
+                            : "bg-gray-900 text-white hover:bg-gray-800"
+                        )}
+                      >
+                        <Plus size={18} />
+                        Add Section
+                      </button>
                     </div>
-                    
-                    {/* Title - fixed neutral */}
-                    <h2 className="text-lg font-semibold mb-2 text-gray-900">
-                      Add a Section
-                    </h2>
-                    
-                    {/* Subtitle - fixed neutral */}
-                    <p className="text-sm mb-6 text-gray-500">
-                      Start building your page by adding sections
-                    </p>
-                    
-                    {/* Primary CTA - fixed neutral */}
+                  </div>
+                );
+              })()}
+              
+              {/* Subtle Add Section button at bottom - adapts to actual background */}
+              {step.frames.length > 0 && !readOnly && onOpenSectionPicker && (() => {
+                const bgSource = (step.background && (step.background.type || step.background.color)) 
+                  ? step.background 
+                  : pageSettings?.page_background;
+                const bgColor = bgSource?.color || '#ffffff';
+                const isBackgroundDark = (() => {
+                  if (!bgColor || bgColor === 'transparent') return false;
+                  const hex = bgColor.replace('#', '');
+                  if (hex.length !== 6) return false;
+                  const r = parseInt(hex.slice(0, 2), 16);
+                  const g = parseInt(hex.slice(2, 4), 16);
+                  const b = parseInt(hex.slice(4, 6), 16);
+                  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                  return luminance < 0.5;
+                })();
+                
+                return (
+                  <div className="flex flex-col items-center py-8 group">
                     <button
                       onClick={() => onOpenSectionPicker()}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm bg-gray-900 text-white hover:bg-gray-800"
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                        "border-2 border-dashed",
+                        isBackgroundDark 
+                          ? "border-gray-600 text-gray-500 hover:border-gray-400 hover:text-gray-300 hover:bg-gray-800" 
+                          : "border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                      )}
                     >
                       <Plus size={18} />
-                      Add Section
                     </button>
+                    <span className={cn(
+                      "mt-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity",
+                      isBackgroundDark ? "text-gray-500" : "text-gray-400"
+                    )}>
+                      Add Section
+                    </span>
                   </div>
-                </div>
-              )}
-              
-              {/* Subtle Add Section button at bottom - fixed neutral styling */}
-              {step.frames.length > 0 && !readOnly && onOpenSectionPicker && (
-                <div className="flex flex-col items-center py-8 group">
-                  <button
-                    onClick={() => onOpenSectionPicker()}
-                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all border-2 border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
-                  >
-                    <Plus size={18} />
-                  </button>
-                  <span className="mt-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">
-                    Add Section
-                  </span>
-                </div>
-              )}
+                );
+              })()}
                 </div>
               </SortableContext>
             </DndContext>
