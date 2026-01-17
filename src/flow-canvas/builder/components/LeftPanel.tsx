@@ -291,6 +291,44 @@ const DragOverlayItem: React.FC<{ step: Step; index: number }> = ({ step, index 
   </div>
 );
 
+// Collapsible Social Preview Component
+const CollapsibleSocialPreview: React.FC<{ onOpenImagePicker?: () => void }> = ({ onOpenImagePicker }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="border-t border-builder-border-subtle">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
+      >
+        <span className="text-xs font-medium text-builder-text">Social Preview</span>
+        {isOpen ? (
+          <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="px-3 pb-3">
+          <div className="p-3 rounded-lg bg-builder-bg">
+            <div className="text-xs text-builder-text-dim mb-2">1200 × 630 pixels</div>
+            <div className="aspect-video bg-builder-surface rounded-md flex items-center justify-center mb-2">
+              <span className="text-lg font-semibold text-builder-text-muted">funnel</span>
+            </div>
+            <button 
+              onClick={() => onOpenImagePicker?.()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-builder-surface-hover text-xs text-builder-text-secondary hover:bg-builder-surface-active transition-colors"
+            >
+              Choose Image
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Get icon for element type
 const getElementIcon = (type: string) => {
   switch (type) {
@@ -976,23 +1014,8 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
               </DndContext>
             </div>
 
-            {/* Social Preview Card */}
-            <div className="p-3 border-t border-builder-border-subtle">
-              <div className="p-3 rounded-lg bg-builder-bg">
-                <div className="text-xs font-medium text-builder-text mb-1">Social Preview</div>
-                <div className="text-xs text-builder-text-dim mb-2">1200 × 630 pixels</div>
-                <div className="aspect-video bg-builder-surface rounded-md flex items-center justify-center mb-2">
-                  <span className="text-lg font-semibold text-builder-text-muted">funnel</span>
-                </div>
-                <button 
-                  onClick={() => onOpenImagePicker?.()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-builder-surface-hover text-xs text-builder-text-secondary hover:bg-builder-surface-active transition-colors"
-                >
-                  Choose Image
-                  <ChevronRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
+            {/* Collapsible Social Preview Card */}
+            <CollapsibleSocialPreview onOpenImagePicker={onOpenImagePicker} />
           </>
         )}
 
