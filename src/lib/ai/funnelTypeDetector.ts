@@ -13,6 +13,10 @@ export interface FunnelTypeResult {
   type: FunnelType;
   confidence: number; // 0-1
   signals: string[]; // What led to this conclusion
+  /** True if confidence was below threshold but we found some signals */
+  isUncertain?: boolean;
+  /** The type we would have returned if confidence was high enough */
+  rawType?: FunnelType;
 }
 
 /**
@@ -28,8 +32,30 @@ function extractBlocksFromStep(step: Step): Block[] {
 /**
  * Detect funnel type from page structure
  */
+/**
+ * Minimum confidence threshold to avoid false positives.
+ * Below this, we return "general" to avoid misleading the AI.
+ */
+const CONFIDENCE_THRESHOLD = 0.5;
+
+/**
+ * Minimum number of signals required to classify as a specific funnel type.
+ * This prevents single weak signals from triggering false classifications.
+ */
+const MIN_SIGNALS_FOR_CLASSIFICATION = 2;
+
+/**
+ * Detect funnel type from page structure with enhanced accuracy.
+ * 
+ * PHASE 14 FIXES:
+ * - Added confidence threshold (0.5) to prevent false positives
+ * - Requires at least 2 signals for non-general classification
+ * - Tracks which signals contributed to avoid phantom detections
+ */
 export function detectFunnelType(page: Page): FunnelTypeResult {
   const signals: string[] = [];
+  const signalDetails: Map<FunnelType, string[]> = new Map();
+  
   const scores: Record<FunnelType, number> = {
     'vsl': 0,
     'webinar': 0,
@@ -43,47 +69,49 @@ export function detectFunnelType(page: Page): FunnelTypeResult {
     'general': 0.1, // Base score for general
   };
 
+  // Helper to add score and track signal
+  const addScore = (type: FunnelType, score: number, signal: string) => {
+    scores[type] += score;
+    signals.push(signal);
+    const existing = signalDetails.get(type) || [];
+    existing.push(signal);
+    signalDetails.set(type, existing);
+  };
+
   // Analyze step intents (using correct StepIntent type)
   const stepIntents = page.steps.map(s => s.step_intent);
   const stepTypes = page.steps.map(s => s.step_type);
   
-  // Check step types for funnel indicators
+  // Check step types for funnel indicators (STRONG signals)
   if (stepTypes.includes('checkout')) {
-    scores['checkout'] += 0.8;
-    signals.push('Has checkout step');
+    addScore('checkout', 0.8, 'Has checkout step');
   }
   
   if (stepTypes.includes('thankyou')) {
-    scores['thank-you'] += 0.8;
-    signals.push('Has thank you step');
+    addScore('thank-you', 0.8, 'Has thank you step');
   }
   
   if (stepTypes.includes('booking')) {
-    scores['booking'] += 0.6;
-    signals.push('Has booking step');
+    addScore('booking', 0.6, 'Has booking step');
   }
   
   if (stepTypes.includes('quiz')) {
-    scores['quiz'] += 0.6;
-    signals.push('Has quiz step');
+    addScore('quiz', 0.6, 'Has quiz step');
   }
   
-  // Check step intents
+  // Check step intents (MEDIUM signals)
   if (stepIntents.includes('capture')) {
-    scores['optin'] += 0.4;
-    signals.push('Has capture intent');
+    addScore('optin', 0.3, 'Has capture intent');
   }
   
   if (stepIntents.includes('convert')) {
-    scores['sales'] += 0.3;
-    scores['checkout'] += 0.3;
-    signals.push('Has convert intent');
+    addScore('sales', 0.25, 'Has convert intent');
+    addScore('checkout', 0.25, 'Has convert intent');
   }
   
   if (stepIntents.includes('schedule')) {
-    scores['booking'] += 0.5;
-    scores['webinar'] += 0.3;
-    signals.push('Has schedule intent');
+    addScore('booking', 0.4, 'Has schedule intent');
+    addScore('webinar', 0.25, 'Has schedule intent');
   }
 
   // Analyze all blocks across all steps
@@ -95,24 +123,23 @@ export function detectFunnelType(page: Page): FunnelTypeResult {
                    allBlocks.some(b => b.type === 'media' && b.elements?.some(e => e.type === 'video'));
   
   if (hasVideo) {
-    scores['vsl'] += 0.4;
-    scores['webinar'] += 0.3;
-    signals.push('Contains video content');
+    addScore('vsl', 0.35, 'Contains video content');
+    addScore('webinar', 0.25, 'Contains video content');
   }
 
-  // Check for forms/inputs
+  // Check for forms/inputs - INCREASED threshold to prevent false positives
   const inputCount = allElements.filter(e => 
     e.type === 'input' || e.type === 'select' || e.type === 'checkbox' || e.type === 'radio'
   ).length;
   
-  if (inputCount >= 3) {
-    scores['optin'] += 0.3;
-    scores['application'] += 0.4;
-    signals.push(`Has ${inputCount} form inputs`);
-  } else if (inputCount >= 1) {
-    scores['optin'] += 0.2;
-    signals.push('Has form input');
+  // Only count as opt-in signal if there are 2+ inputs (not just 1)
+  if (inputCount >= 4) {
+    addScore('optin', 0.35, `Has ${inputCount} form inputs`);
+    addScore('application', 0.4, `Has ${inputCount} form inputs`);
+  } else if (inputCount >= 2) {
+    addScore('optin', 0.25, `Has ${inputCount} form inputs`);
   }
+  // Single input is NOT enough to classify as opt-in (was causing false positives)
 
   // Check for multiple choice (Quiz indicator)
   const hasMultipleChoice = allElements.some(e => 
@@ -120,79 +147,74 @@ export function detectFunnelType(page: Page): FunnelTypeResult {
   );
   
   if (hasMultipleChoice) {
-    scores['quiz'] += 0.6;
-    scores['application'] += 0.3;
-    signals.push('Has multiple choice questions');
+    addScore('quiz', 0.6, 'Has multiple choice questions');
+    addScore('application', 0.3, 'Has multiple choice questions');
   }
 
-  // Check for booking/calendar
+  // Check for booking/calendar (STRONG signal)
   const hasBooking = allBlocks.some(b => b.type === 'booking');
   
   if (hasBooking) {
-    scores['booking'] += 0.7;
-    signals.push('Has booking/calendar block');
+    addScore('booking', 0.7, 'Has booking/calendar block');
   }
 
-  // Check for application flow
+  // Check for application flow (STRONG signal)
   const hasApplicationFlow = allBlocks.some(b => b.type === 'application-flow');
   
   if (hasApplicationFlow) {
-    scores['application'] += 0.6;
-    signals.push('Has application flow');
+    addScore('application', 0.5, 'Has application flow');
+    addScore('quiz', 0.3, 'Has application flow');
   }
 
   // Check for testimonials (Sales page indicator)
   const hasTestimonials = allBlocks.some(b => b.type === 'testimonial');
   
   if (hasTestimonials) {
-    scores['sales'] += 0.3;
-    scores['vsl'] += 0.2;
-    signals.push('Has testimonials');
+    addScore('sales', 0.3, 'Has testimonials');
+    addScore('vsl', 0.2, 'Has testimonials');
   }
 
   // Check for pricing (Sales/Checkout indicator)
   const hasPricing = allBlocks.some(b => b.type === 'pricing');
   
   if (hasPricing) {
-    scores['sales'] += 0.4;
-    scores['checkout'] += 0.2;
-    signals.push('Has pricing block');
+    addScore('sales', 0.4, 'Has pricing block');
+    addScore('checkout', 0.2, 'Has pricing block');
   }
 
-  // Check for hero sections
+  // Check for hero sections (weak signal)
   const hasHero = allBlocks.some(b => b.type === 'hero');
   
   if (hasHero) {
-    scores['sales'] += 0.1;
-    scores['optin'] += 0.1;
-    signals.push('Has hero section');
+    // Don't add signal - too generic
+    scores['sales'] += 0.05;
+    scores['optin'] += 0.05;
   }
 
-  // Check for FAQ
+  // Check for FAQ (Sales indicator)
   const hasFAQ = allBlocks.some(b => b.type === 'faq');
   
   if (hasFAQ) {
-    scores['sales'] += 0.2;
-    signals.push('Has FAQ section');
+    addScore('sales', 0.2, 'Has FAQ section');
   }
 
   // Check step count (multi-step = quiz/application)
-  if (page.steps.length >= 3) {
-    scores['quiz'] += 0.2;
-    scores['application'] += 0.2;
-    signals.push(`Has ${page.steps.length} steps`);
+  if (page.steps.length >= 4) {
+    addScore('quiz', 0.25, `Has ${page.steps.length} steps`);
+    addScore('application', 0.25, `Has ${page.steps.length} steps`);
+  } else if (page.steps.length >= 3) {
+    scores['quiz'] += 0.1;
+    scores['application'] += 0.1;
   }
 
   // VSL specific: Video + minimal form + urgency copy
-  if (hasVideo && inputCount <= 2) {
-    scores['vsl'] += 0.3;
-    signals.push('Video-focused with minimal form (VSL pattern)');
+  if (hasVideo && inputCount <= 1) {
+    addScore('vsl', 0.3, 'Video-focused with minimal form (VSL pattern)');
   }
 
   // Webinar specific: Video + registration form
-  if (hasVideo && inputCount >= 2) {
-    scores['webinar'] += 0.3;
-    signals.push('Video with registration form (Webinar pattern)');
+  if (hasVideo && inputCount >= 2 && inputCount <= 4) {
+    addScore('webinar', 0.3, 'Video with registration form (Webinar pattern)');
   }
 
   // Find the highest scoring type
@@ -208,6 +230,25 @@ export function detectFunnelType(page: Page): FunnelTypeResult {
 
   // Normalize confidence to 0-1 range (cap at 1)
   const confidence = Math.min(maxScore, 1);
+
+  // PHASE 14 FIX: Apply confidence threshold and signal count requirement
+  // If confidence is too low OR we don't have enough signals, default to "general"
+  const typeSignals = signalDetails.get(maxType) || [];
+  const shouldDefaultToGeneral = 
+    maxType !== 'general' && (
+      confidence < CONFIDENCE_THRESHOLD || 
+      typeSignals.length < MIN_SIGNALS_FOR_CLASSIFICATION
+    );
+
+  if (shouldDefaultToGeneral) {
+    return {
+      type: 'general',
+      confidence: confidence,
+      signals: signals,
+      isUncertain: true,
+      rawType: maxType, // The type we would have returned if confident
+    } as FunnelTypeResult;
+  }
 
   return {
     type: maxType,

@@ -43,6 +43,22 @@ export interface PageContext {
   hasCTA?: boolean;
   hasTestimonials?: boolean;
   hasPricing?: boolean;
+  
+  // Phase 14: Content snapshot for true context awareness
+  contentSnapshot?: {
+    headlines: string[];
+    colorsUsed: string[];
+    premiumElementsUsed: string[];
+    sectionCount: number;
+    contentSummary: string;
+  };
+  
+  // Phase 14: Contrast context for readable text
+  contrast?: {
+    isDarkBackground: boolean;
+    backgroundLuminance: number;
+    recommendedTextColor: string;
+  };
 }
 
 export interface AISuggestion {
