@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Block, ApplicationFlowSettings } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,6 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { 
   ChevronLeft, 
-  ChevronDown,
-  ChevronRight,
   Type, 
   MousePointer2, 
   Palette,
@@ -42,6 +40,8 @@ import {
   type CaptureIconType 
 } from '../../utils/stepRenderHelpers';
 import { DEFAULT_FLOW_BUTTON_COLOR } from '../ApplicationFlowCard';
+import { CollapsibleSection, FieldGroup } from './shared';
+
 // Local type definitions (matches ApplicationFlowCard)
 export type StepElementType = 'title' | 'description' | 'button' | 'option' | 'input';
 
@@ -68,63 +68,6 @@ const elementTypeLabels: Record<StepElementType, string> = {
   input: 'Input Field',
 };
 
-// Collapsible section component - using forwardRef to avoid Radix warnings
-interface CollapsibleSectionProps {
-  title: string;
-  icon?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}
-
-const CollapsibleSection = React.forwardRef<HTMLDivElement, CollapsibleSectionProps>(
-  ({ title, icon, defaultOpen = false, children }, ref) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
-
-    return (
-      <div ref={ref} className="border-b border-builder-border">
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            {icon && <span className="text-builder-text-muted">{icon}</span>}
-            <span className="text-xs font-medium text-builder-text">{title}</span>
-          </div>
-          {isOpen ? (
-            <ChevronDown className="w-3.5 h-3.5 text-builder-text-dim" />
-          ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim" />
-          )}
-        </button>
-        {isOpen && (
-          <div className="px-3 pb-3 space-y-3">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  }
-);
-CollapsibleSection.displayName = 'CollapsibleSection';
-
-// Field group with label - using forwardRef to avoid Radix warnings
-interface FieldGroupProps {
-  label: string;
-  children: React.ReactNode;
-  hint?: string;
-}
-
-const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
-  ({ label, children, hint }, ref) => (
-    <div ref={ref} className="space-y-1.5">
-      <Label className="text-xs text-builder-text-muted">{label}</Label>
-      {children}
-      {hint && <p className="text-[10px] text-builder-text-dim">{hint}</p>}
-    </div>
-  )
-);
-FieldGroup.displayName = 'FieldGroup';
-
 export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   block,
   selection,
@@ -136,6 +79,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   const settings = block.props as Partial<ApplicationFlowSettings>;
   const steps = settings?.steps || [];
   const step = steps.find(s => s.id === selection.stepId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stepSettings = (step as any)?.settings || {};
 
   if (!step) {
@@ -147,15 +91,18 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   }
 
   // Update step settings helper
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateStepSettings = (updates: Record<string, any>) => {
     const newSteps = steps.map((s) =>
       s.id === step.id
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ? { ...s, settings: { ...((s as any).settings || {}), ...updates } }
         : s
     );
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateStepSetting = (key: string, value: any) => {
     updateStepSettings({ [key]: value });
   };
@@ -168,6 +115,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
   };
 
   // Update capture field
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateCaptureField = (fieldIndex: number, updates: Record<string, any>) => {
     const fields = [...(stepSettings.captureFields || [])];
     fields[fieldIndex] = { ...fields[fieldIndex], ...updates };

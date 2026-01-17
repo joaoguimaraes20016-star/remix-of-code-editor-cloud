@@ -3,12 +3,11 @@
 // - Flow Container steps (Typeform-style multi-step experience)
 // - Inline interactive blocks (standalone questions/capture fields)
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   Type,
   Settings2,
   Workflow,
-  ChevronDown,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -19,7 +18,6 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -29,12 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { CollapsibleSection, FieldGroup } from './shared';
 import type { 
   ApplicationStep, 
   ApplicationStepType,
@@ -72,51 +66,6 @@ const STEP_TYPE_LABELS: Record<ApplicationStepType, string> = {
   'ending': 'Ending',
 };
 
-// ============ COLLAPSIBLE SECTION ============
-
-interface CollapsibleSectionProps {
-  title: string;
-  icon?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}
-
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
-  title,
-  icon,
-  defaultOpen = true,
-  children,
-}) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-builder-border">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 hover:bg-builder-surface-hover transition-colors">
-        <div className="flex items-center gap-2 text-sm font-medium text-builder-text">
-          {icon && <span className="text-builder-text-muted">{icon}</span>}
-          {title}
-        </div>
-        <ChevronDown className={cn(
-          "w-4 h-4 text-builder-text-muted transition-transform",
-          isOpen && "rotate-180"
-        )} />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="px-4 pb-4">
-        {children}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
-
-// ============ FIELD GROUP ============
-
-const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="space-y-1.5">
-    <Label className="text-xs text-builder-text-muted">{label}</Label>
-    {children}
-  </div>
-);
-
 // ============ MAIN COMPONENT ============
 
 export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> = ({
@@ -129,7 +78,7 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
   availableSteps = [],
 }) => {
   // Update settings helper
-  const updateSettings = useCallback((key: keyof ApplicationStepSettings, value: any) => {
+  const updateSettings = useCallback((key: keyof ApplicationStepSettings, value: unknown) => {
     onUpdate({
       settings: {
         ...step.settings,
@@ -139,7 +88,7 @@ export const ApplicationStepInspector: React.FC<ApplicationStepInspectorProps> =
   }, [step.settings, onUpdate]);
 
   // Update navigation helper
-  const updateNavigation = useCallback((key: string, value: any) => {
+  const updateNavigation = useCallback((key: string, value: unknown) => {
     onUpdate({
       navigation: {
         ...step.navigation,
