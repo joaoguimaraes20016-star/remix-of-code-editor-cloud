@@ -122,7 +122,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 </div>
                 <Slider
                   value={[marginTop]}
-                  onValueChange={([v]) => handleStyleChange('marginTop', `${v}px`)}
+                  onValueCommit={([v]) => handleStyleChange('marginTop', `${v}px`)}
                   min={0} max={100} step={4}
                 />
               </div>
@@ -133,7 +133,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 </div>
                 <Slider
                   value={[marginBottom]}
-                  onValueChange={([v]) => handleStyleChange('marginBottom', `${v}px`)}
+                  onValueCommit={([v]) => handleStyleChange('marginBottom', `${v}px`)}
                   min={0} max={100} step={4}
                 />
               </div>
@@ -153,7 +153,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             </div>
             <Slider 
               value={[opacity]}
-              onValueChange={(v) => handleStyleChange('opacity', String(v[0]))}
+              onValueCommit={(v) => handleStyleChange('opacity', String(v[0]))}
               min={0} max={100} step={5}
               className="w-full"
             />
@@ -170,7 +170,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             </div>
             <Slider 
               value={[rotation]}
-              onValueChange={(v) => handleStyleChange('rotate', String(v[0]))}
+              onValueCommit={(v) => handleStyleChange('rotate', String(v[0]))}
               min={0} max={360} step={5}
               className="w-full"
             />
@@ -184,7 +184,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             </div>
             <Slider 
               value={[blur]}
-              onValueChange={(v) => handlePropsChange('blur', v[0])}
+              onValueCommit={(v) => handlePropsChange('blur', v[0])}
               min={0} max={20} step={1}
               className="w-full"
             />
@@ -198,7 +198,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             </div>
             <Slider 
               value={[brightness]}
-              onValueChange={(v) => handlePropsChange('brightness', v[0])}
+              onValueCommit={(v) => handlePropsChange('brightness', v[0])}
               min={50} max={150} step={5}
               className="w-full"
             />
@@ -311,7 +311,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             </div>
             <Slider 
               value={[parseInt((element.styles?.borderRadius as string) || '0')]}
-              onValueChange={(v) => handleStyleChange('borderRadius', `${v[0]}px`)}
+              onValueCommit={(v) => handleStyleChange('borderRadius', `${v[0]}px`)}
               min={0} max={50} step={2}
               className="w-full"
             />

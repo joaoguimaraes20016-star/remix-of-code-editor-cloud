@@ -347,7 +347,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             <div className="flex items-center gap-3">
               <Slider
                 value={[count]}
-                onValueChange={([v]) => handlePropsChange('count', v)}
+                onValueCommit={([v]) => handlePropsChange('count', v)}
                 min={1}
                 max={20}
                 step={1}
@@ -403,7 +403,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             <div className="flex items-center gap-3">
               <Slider
                 value={[(element.props?.overlap as number) || 12]}
-                onValueChange={([v]) => handlePropsChange('overlap', v)}
+                onValueCommit={([v]) => handlePropsChange('overlap', v)}
                 min={0}
                 max={40}
                 step={2}
@@ -560,7 +560,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             <div className="flex items-center gap-3">
               <Slider
                 value={[speed]}
-                onValueChange={([v]) => handlePropsChange('speed', v)}
+                onValueCommit={([v]) => handlePropsChange('speed', v)}
                 min={5}
                 max={120}
                 step={5}
@@ -618,7 +618,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             <div className="flex items-center gap-3">
               <Slider
                 value={[(element.props?.letterSpacing as number) || 0]}
-                onValueChange={([v]) => handlePropsChange('letterSpacing', v)}
+                onValueCommit={([v]) => handlePropsChange('letterSpacing', v)}
                 min={-2}
                 max={8}
                 step={0.5}
@@ -815,7 +815,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
             <div className="flex items-center gap-3">
               <Slider
                 value={[(element.props?.step as number) || 1]}
-                onValueChange={([v]) => handlePropsChange('step', v)}
+                onValueCommit={([v]) => handlePropsChange('step', v)}
                 min={1}
                 max={99}
                 step={1}
