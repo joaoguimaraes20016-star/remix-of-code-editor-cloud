@@ -284,7 +284,7 @@ function generateStatsStack(section: GeneratedSection, theme: TemplateTheme): St
       ? [
           {
             id: generateId(),
-            type: 'heading',
+            type: 'heading' as const,
             content: section.content.headline,
             props: { level: 2, color: theme.textColor },
           },
@@ -292,7 +292,7 @@ function generateStatsStack(section: GeneratedSection, theme: TemplateTheme): St
             ? [
                 {
                   id: generateId(),
-                  type: 'text',
+                  type: 'text' as const,
                   content: section.content.subheadline,
                   props: { color: theme.mutedTextColor },
                 },
@@ -381,33 +381,35 @@ function generateTestimonialsStack(section: GeneratedSection, theme: TemplateThe
 }
 
 function generateCTASTack(section: GeneratedSection, theme: TemplateTheme): Stack {
+  const elements: Element[] = [
+    {
+      id: generateId(),
+      type: 'heading' as const,
+      content: section.content.headline || 'Ready to start?',
+      props: { level: 2, color: theme.textColor },
+    },
+  ];
+
+  if (section.content.subheadline) {
+    elements.push({
+      id: generateId(),
+      type: 'text' as const,
+      content: section.content.subheadline,
+      props: { color: theme.mutedTextColor },
+    });
+  }
+
+  elements.push({
+    id: generateId(),
+    type: 'button' as const,
+    content: section.content.buttonText || 'Get Started',
+    props: { variant: 'primary', size: 'lg', backgroundColor: theme.primaryColor },
+  });
+
   const block = makeBlock({
     type: 'cta',
     label: 'CTA',
-    elements: [
-      {
-        id: generateId(),
-        type: 'heading',
-        content: section.content.headline || 'Ready to start?',
-        props: { level: 2, color: theme.textColor },
-      },
-      ...(section.content.subheadline
-        ? [
-            {
-              id: generateId(),
-              type: 'text',
-              content: section.content.subheadline,
-              props: { color: theme.mutedTextColor },
-            },
-          ]
-        : []),
-      {
-        id: generateId(),
-        type: 'button',
-        content: section.content.buttonText || 'Get Started',
-        props: { variant: 'primary', size: 'lg', backgroundColor: theme.primaryColor },
-      },
-    ],
+    elements,
     props: { alignment: 'center' },
   });
 
@@ -420,31 +422,30 @@ function generateCTASTack(section: GeneratedSection, theme: TemplateTheme): Stac
 }
 
 function generateTextStack(section: GeneratedSection, theme: TemplateTheme, label: string): Stack {
+  const elements: Element[] = [];
+  
+  if (section.content.headline) {
+    elements.push({
+      id: generateId(),
+      type: 'heading' as const,
+      content: section.content.headline,
+      props: { level: 2, color: theme.textColor },
+    });
+  }
+  
+  if (section.content.subheadline) {
+    elements.push({
+      id: generateId(),
+      type: 'text' as const,
+      content: section.content.subheadline,
+      props: { color: theme.mutedTextColor },
+    });
+  }
+  
   const block = makeBlock({
     type: 'text-block',
     label,
-    elements: [
-      ...(section.content.headline
-        ? [
-            {
-              id: generateId(),
-              type: 'heading',
-              content: section.content.headline,
-              props: { level: 2, color: theme.textColor },
-            },
-          ]
-        : []),
-      ...(section.content.subheadline
-        ? [
-            {
-              id: generateId(),
-              type: 'text',
-              content: section.content.subheadline,
-              props: { color: theme.mutedTextColor },
-            },
-          ]
-        : []),
-    ],
+    elements,
     props: { alignment: 'center' },
   });
 
@@ -463,7 +464,7 @@ function generateFooterStack(section: GeneratedSection, theme: TemplateTheme): S
     elements: [
       {
         id: generateId(),
-        type: 'text',
+        type: 'text' as const,
         content: section.content.headline || '© 2026. All rights reserved.',
         props: { color: theme.captionColor, variant: 'caption' },
       },
