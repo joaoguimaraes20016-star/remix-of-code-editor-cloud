@@ -193,11 +193,7 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
 
       {/* Solid Color Picker */}
       {bgType === 'solid' && (
-        <div 
-          className="flex items-center justify-between"
-          onPointerDown={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
+        <div className="flex items-center justify-between">
           <span className="text-xs text-builder-text-muted">Color</span>
           <ColorPickerPopover
             color={value.color || 'transparent'}
@@ -206,9 +202,8 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
             onGradientClick={() => handleTypeChange('gradient')}
           >
             <button 
+              type="button"
               className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-builder-surface-hover hover:bg-builder-surface-active transition-colors"
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
             >
               <div 
                 className={cn(
