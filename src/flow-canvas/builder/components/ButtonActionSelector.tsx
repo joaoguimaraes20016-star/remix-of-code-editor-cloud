@@ -229,16 +229,12 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
   const currentDefinition = ALL_ACTIONS.find(a => a.type === currentType);
 
   const handleSelectAction = (type: ButtonActionType) => {
-    // "Next Step" is stored as undefined internally (cleaner data)
-    if (type === 'next-step') {
-      onChange(undefined);
-    } else {
-      onChange({ 
-        type, 
-        value: '', 
-        openNewTab: type === 'url' ? false : undefined 
-      });
-    }
+    // Store action type explicitly - never undefined
+    onChange({ 
+      type, 
+      value: type === 'next-step' ? undefined : '', 
+      openNewTab: type === 'url' ? false : undefined 
+    });
   };
 
   const handleValueChange = (value: string) => {
