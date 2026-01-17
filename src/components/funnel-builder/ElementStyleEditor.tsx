@@ -42,10 +42,8 @@ const FONT_FAMILIES = [
   { value: 'Space Grotesk', label: 'Space' },
 ];
 
-const COLOR_PRESETS = [
-  '#ffffff', '#f5f5f5', '#d4d4d4', '#a3a3a3', '#737373', '#525252', '#262626', '#0a0a0a',
-  '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899',
-];
+// Import unified presets from single source of truth
+import { compactColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
 
 export function ElementStyleEditor({ elementType, style, onChange }: ElementStyleEditorProps) {
   const updateStyle = <K extends keyof ElementStyle>(key: K, value: ElementStyle[K]) => {

@@ -25,31 +25,15 @@ import {
 import { gradientToCSS, GradientEditor, defaultGradient, cloneGradient } from './modals';
 import type { GradientValue } from './modals';
 
-// Color presets
-const colorPresets = [
-  '#FFFFFF', '#F9FAFB', '#E5E7EB', '#9CA3AF', '#6B7280', '#374151',
-  '#111827', '#000000', '#EF4444', '#F97316', '#F59E0B', '#FCD34D',
-  '#10B981', '#14B8A6', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6',
-  '#A855F7', '#D946EF', '#EC4899', '#F472B6',
-];
+// Import unified presets from single source of truth
+import { 
+  compactColorPresets as colorPresets, 
+  fontSizeOptions,
+  compactDisplayFonts as displayFonts,
+} from '../utils/presets';
 
-// Font sizes
-const fontSizes = [
-  { label: 'S', value: 'sm' },
-  { label: 'M', value: 'md' },
-  { label: 'L', value: 'lg' },
-  { label: 'XL', value: 'xl' },
-  { label: '2XL', value: '2xl' },
-];
-
-// Display fonts
-const displayFonts = [
-  { label: 'Inherit', value: 'inherit' },
-  { label: 'Oswald', value: 'Oswald' },
-  { label: 'Anton', value: 'Anton' },
-  { label: 'Inter', value: 'Inter' },
-  { label: 'Poppins', value: 'Poppins' },
-];
+// Map to match expected format
+const fontSizes = fontSizeOptions.map(f => ({ label: f.label, value: f.value as string }));
 
 export interface CompactToolbarStyles {
   fontFamily?: string;

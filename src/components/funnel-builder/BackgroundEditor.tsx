@@ -41,10 +41,8 @@ const GRADIENT_DIRECTIONS = [
   { value: 'to-tl', label: '↖' },
 ];
 
-const COLOR_PRESETS = [
-  '#0a0a0a', '#1a1a1a', '#2d2d2d', '#0f172a', '#1e1b4b', '#1e3a5f',
-  '#ffffff', '#f5f5f5', '#e5e5e5', '#fef3c7', '#dbeafe', '#d1fae5',
-];
+// Import unified presets from single source of truth
+import { backgroundColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
 
 export function BackgroundEditor({ settings, onChange }: BackgroundEditorProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
