@@ -135,20 +135,25 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* Tabs */}
+      {/* Tabs with icons */}
       <div className="flex border-b border-border">
-        {(['content', 'style', 'logic'] as const).map((tab) => (
+        {([
+          { key: 'content', label: 'Content', icon: <Type className="w-3.5 h-3.5" /> },
+          { key: 'style', label: 'Style', icon: <Square className="w-3.5 h-3.5" /> },
+          { key: 'logic', label: 'Logic', icon: <Link className="w-3.5 h-3.5" /> },
+        ] as const).map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'flex-1 px-3 py-2 text-xs font-medium transition-colors',
-              activeTab === tab
+              'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors',
+              activeTab === tab.key
                 ? 'text-foreground border-b-2 border-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab.icon}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -328,7 +333,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                         <SelectTrigger className="w-24 h-7 text-xs">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                      <SelectContent className="bg-background border-border">
                           {CAPTURE_ICON_OPTIONS.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value} className="text-xs">
                               <div className="flex items-center gap-2">
@@ -374,7 +379,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                         <SelectTrigger className="w-24 h-7 text-xs">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-background border-border">
                           {CAPTURE_ICON_OPTIONS.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value} className="text-xs">
                               <div className="flex items-center gap-2">
@@ -420,7 +425,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
                         <SelectTrigger className="w-24 h-7 text-xs">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-background border-border">
                           {CAPTURE_ICON_OPTIONS.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value} className="text-xs">
                               <div className="flex items-center gap-2">

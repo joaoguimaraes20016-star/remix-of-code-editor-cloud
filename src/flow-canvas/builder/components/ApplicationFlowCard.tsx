@@ -532,34 +532,51 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           </div>
         )}
         
-        {/* Multiple Choice Options - enhanced with checkbox indicator */}
+        {/* Multiple Choice Options - enhanced with checkbox indicator and hover preview */}
         {s.questionType === 'multiple-choice' && s.options && (
           <div className="mt-4 space-y-2 max-w-md w-full">
-            {(s.options as string[]).map((option: string, i: number) => (
-              <div 
-                key={i} 
-                className={cn(
-                  'flex items-center gap-3 px-4 py-3 text-left text-sm cursor-pointer transition-all duration-150',
-                  !isPreviewMode && 'hover:opacity-80 hover:scale-[1.01]',
-                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-2'
-                )}
-                style={{ 
-                  ...getOptionStyles(s),
-                  color: flowTextColor 
-                }}
-                onClick={(e) => handleElementClick(e, step.id, 'option', i)}
-              >
-                {/* Checkbox indicator */}
+            {(s.options as string[]).map((option: string, i: number) => {
+              const optionStyles = getOptionStyles(s);
+              const selectedBg = s.optionSelectedBg || defaultButtonColor;
+              return (
                 <div 
-                  className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                  key={i} 
+                  className={cn(
+                    'group flex items-center gap-3 px-4 py-3 text-left text-sm cursor-pointer transition-all duration-150',
+                    isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-2'
+                  )}
                   style={{ 
-                    borderColor: flowInputBorder,
-                    backgroundColor: 'transparent',
+                    ...optionStyles,
+                    color: flowTextColor,
+                    // Add CSS custom property for hover state
+                    ['--hover-bg' as any]: `${selectedBg}15`,
                   }}
-                />
-                <span className="flex-1">{option}</span>
-              </div>
-            ))}
+                  onMouseEnter={(e) => {
+                    if (!isPreviewMode) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = `${selectedBg}15`;
+                      (e.currentTarget as HTMLElement).style.borderColor = selectedBg;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isPreviewMode) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = optionStyles.backgroundColor || '';
+                      (e.currentTarget as HTMLElement).style.borderColor = optionStyles.borderColor || flowInputBorder;
+                    }
+                  }}
+                  onClick={(e) => handleElementClick(e, step.id, 'option', i)}
+                >
+                  {/* Checkbox indicator */}
+                  <div 
+                    className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors group-hover:border-current"
+                    style={{ 
+                      borderColor: flowInputBorder,
+                      backgroundColor: 'transparent',
+                    }}
+                  />
+                  <span className="flex-1">{option}</span>
+                </div>
+              );
+            })}
           </div>
         )}
         
@@ -1002,19 +1019,19 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         {showProgress && steps.length > 1 && (
           <div className="w-full mb-4">
             <div 
-              className="h-1 rounded-full overflow-hidden"
-              style={{ backgroundColor: `${flowTextColor}15` }}
+              className="h-1.5 rounded-full overflow-hidden"
+              style={{ backgroundColor: `${defaultButtonColor}20` }}
             >
               <div 
                 className="h-full rounded-full transition-all duration-300"
                 style={{ 
                   width: `${progressPercent}%`,
-                  backgroundColor: defaultButtonColor, // Use theme primary for progress bar
+                  backgroundColor: defaultButtonColor,
                 }}
               />
             </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px] opacity-50" style={{ color: flowTextColor }}>
+            <div className="flex justify-between mt-1.5">
+              <span className="text-[10px] font-medium opacity-60" style={{ color: flowTextColor }}>
                 Step {currentStepIndex + 1} of {steps.length}
               </span>
             </div>
@@ -1078,18 +1095,17 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                       aria-current={isCurrent ? 'step' : undefined}
                       title={step.name}
                       className={cn(
-                        'w-1.5 h-1.5 rounded-full transition-all duration-150',
+                        'rounded-full transition-all duration-150',
                         isCurrent
-                          ? 'w-3'
-                          : isDisabled
-                            ? 'opacity-30 cursor-not-allowed'
-                            : 'hover:opacity-70 cursor-pointer'
+                          ? 'w-4 h-2'
+                          : 'w-2 h-2',
+                        isDisabled
+                          ? 'opacity-30 cursor-not-allowed'
+                          : 'hover:scale-110 cursor-pointer'
                       )}
                       style={{
-                        // Active dot uses theme primary color for visibility
-                        // Inactive dots have border for visibility on any background
-                        backgroundColor: isCurrent ? defaultButtonColor : `${flowTextColor}30`,
-                        boxShadow: !isCurrent ? `0 0 0 1px ${flowTextColor}20` : undefined,
+                        backgroundColor: isCurrent ? defaultButtonColor : `${defaultButtonColor}40`,
+                        boxShadow: isCurrent ? `0 0 8px ${defaultButtonColor}50` : undefined,
                       }}
                     />
                   );

@@ -112,7 +112,7 @@ const SelectionBreadcrumbInner: React.FC<SelectionBreadcrumbProps> = ({
                 )}
               >
                 <span className="opacity-80">{typeIcons[item.type]}</span>
-                <span className="truncate max-w-[70px]">
+                <span className="truncate max-w-[100px]">
                   {item.label || typeLabels[item.type]}
                 </span>
               </motion.button>
