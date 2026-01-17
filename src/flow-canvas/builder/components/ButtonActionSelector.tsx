@@ -326,15 +326,19 @@ export const ButtonActionSelector: React.FC<ButtonActionSelectorProps> = ({
       {currentDefinition?.requiresValue && (
         <div className="space-y-2 pt-2 border-t border-border/30">
           {currentType === 'go-to-step' ? (
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">
+            <div className={cn(
+              "space-y-1 p-2 rounded-lg transition-colors",
+              !currentValue && "bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
+            )}>
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
                 {currentDefinition.valueLabel}
+                {!currentValue && <span className="text-amber-600 dark:text-amber-400">(required)</span>}
               </Label>
               <Select value={currentValue} onValueChange={handleValueChange}>
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger className="h-8 text-xs bg-background">
                   <SelectValue placeholder="Select step..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border-border">
                   {availableSteps.map((step) => (
                     <SelectItem key={step.id} value={step.id} className="text-xs">
                       {step.name}
