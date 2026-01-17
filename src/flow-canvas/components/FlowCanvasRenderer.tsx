@@ -806,6 +806,157 @@ export function FlowCanvasRenderer({
           </span>
         );
         
+      // FUNCTIONAL ELEMENT TYPES
+      case 'countdown': {
+        const CountdownTimer = React.lazy(() => import('../builder/components/elements/CountdownTimer'));
+        const endDate = (element.props?.endDate as string) || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const countdownStyle = (element.props?.style as 'boxes' | 'inline' | 'minimal' | 'flip') || 'boxes';
+        
+        return (
+          <React.Suspense key={element.id} fallback={<div className="animate-pulse h-20 bg-muted rounded-xl" />}>
+            <CountdownTimer
+              endDate={endDate}
+              style={countdownStyle}
+              expiredAction={(element.props?.expiredAction as 'hide' | 'show-message' | 'redirect') || 'show-message'}
+              expiredMessage={element.props?.expiredMessage as string}
+              expiredRedirectUrl={element.props?.expiredRedirectUrl as string}
+              showLabels={element.props?.showLabels !== false}
+              showDays={element.props?.showDays !== false}
+              showSeconds={element.props?.showSeconds !== false}
+              colors={{
+                background: element.props?.backgroundColor as string,
+                text: element.props?.color as string,
+                label: element.props?.labelColor as string,
+              }}
+              onExpire={() => {
+                // Could trigger next step or custom action
+                if (element.props?.expiredAction === 'redirect' && element.props?.expiredRedirectUrl) {
+                  window.location.href = element.props.expiredRedirectUrl as string;
+                }
+              }}
+            />
+          </React.Suspense>
+        );
+      }
+
+      case 'loader': {
+        const LoaderAnimation = React.lazy(() => import('../builder/components/elements/LoaderAnimation'));
+        const animationType = (element.props?.animationType as 'spinner' | 'progress' | 'dots' | 'pulse' | 'analyzing') || 'analyzing';
+        const duration = (element.props?.duration as number) || 3000;
+        const autoAdvance = element.props?.autoAdvance !== false;
+        
+        return (
+          <React.Suspense key={element.id} fallback={<div className="animate-pulse h-32 bg-muted rounded-xl" />}>
+            <LoaderAnimation
+              text={element.content || 'Analyzing your results...'}
+              subText={element.props?.subText as string}
+              animationType={animationType}
+              duration={duration}
+              autoAdvance={autoAdvance}
+              showProgress={element.props?.showProgress !== false}
+              colors={{
+                primary: element.props?.primaryColor as string || (page as FlowCanvasPage).settings?.primary_color,
+                text: element.props?.color as string,
+              }}
+              onComplete={() => {
+                // Auto-advance to next step when loader completes
+                if (autoAdvance) {
+                  handleButtonClick({ type: 'button', id: 'loader-complete', props: { action: 'next-step' } } as FlowCanvasElement);
+                }
+              }}
+            />
+          </React.Suspense>
+        );
+      }
+
+      case 'carousel': {
+        const ImageCarousel = React.lazy(() => import('../builder/components/elements/ImageCarousel'));
+        const slides = (element.props?.slides as Array<{ id: string; src: string; alt?: string }>) || [];
+        
+        return (
+          <React.Suspense key={element.id} fallback={<div className="animate-pulse aspect-video bg-muted rounded-xl" />}>
+            <ImageCarousel
+              slides={slides}
+              autoplay={element.props?.autoplay as boolean || false}
+              autoplayInterval={element.props?.autoplayInterval as number || 4000}
+              navigationStyle={(element.props?.navigationStyle as 'arrows' | 'dots' | 'both' | 'none') || 'both'}
+              loop={element.props?.loop !== false}
+              aspectRatio={(element.props?.aspectRatio as '16:9' | '4:3' | '1:1') || '16:9'}
+              borderRadius={parseInt(element.styles?.borderRadius as string || '12')}
+            />
+          </React.Suspense>
+        );
+      }
+
+      case 'logo-marquee': {
+        const LogoMarquee = React.lazy(() => import('../builder/components/elements/LogoMarquee'));
+        const logos = (element.props?.logos as Array<{ id: string; src: string; alt?: string }>) || [];
+        
+        return (
+          <React.Suspense key={element.id} fallback={<div className="animate-pulse h-16 bg-muted rounded-xl" />}>
+            <LogoMarquee
+              logos={logos}
+              animated={element.props?.animated !== false}
+              speed={element.props?.speed as number || 30}
+              direction={(element.props?.direction as 'left' | 'right') || 'left'}
+              pauseOnHover={element.props?.pauseOnHover !== false}
+              grayscale={element.props?.grayscale !== false}
+              logoHeight={element.props?.logoHeight as number || 40}
+              gap={element.props?.gap as number || 48}
+            />
+          </React.Suspense>
+        );
+      }
+
+      case 'map-embed': {
+        const MapEmbed = React.lazy(() => import('../builder/components/elements/MapEmbed'));
+        
+        return (
+          <React.Suspense key={element.id} fallback={<div className="animate-pulse h-64 bg-muted rounded-xl" />}>
+            <MapEmbed
+              address={element.props?.address as string || ''}
+              zoom={element.props?.zoom as number || 15}
+              mapType={(element.props?.mapType as 'roadmap' | 'satellite') || 'roadmap'}
+              height={parseInt(element.styles?.height as string || '300', 10)}
+              borderRadius={parseInt(element.styles?.borderRadius as string || '12')}
+            />
+          </React.Suspense>
+        );
+      }
+
+      case 'html-embed': {
+        const HTMLEmbed = React.lazy(() => import('../builder/components/elements/HTMLEmbed'));
+        
+        return (
+          <React.Suspense key={element.id} fallback={<div className="animate-pulse h-48 bg-muted rounded-xl" />}>
+            <HTMLEmbed
+              code={element.props?.code as string || ''}
+              height={parseInt(element.styles?.height as string || '300', 10)}
+              borderRadius={parseInt(element.styles?.borderRadius as string || '12')}
+              allowScripts={element.props?.allowScripts as boolean || false}
+            />
+          </React.Suspense>
+        );
+      }
+
+      case 'trustpilot': {
+        const TrustpilotWidget = React.lazy(() => import('../builder/components/elements/TrustpilotWidget'));
+        
+        return (
+          <React.Suspense key={element.id} fallback={<div className="animate-pulse h-24 bg-muted rounded-xl" />}>
+            <TrustpilotWidget
+              rating={element.props?.rating as number || 4.5}
+              reviewCount={element.props?.reviewCount as number || 1234}
+              businessName={element.props?.businessName as string}
+              layout={(element.props?.layout as 'horizontal' | 'vertical' | 'compact') || 'horizontal'}
+              showLogo={element.props?.showLogo !== false}
+              showReviewCount={element.props?.showReviewCount !== false}
+              linkUrl={element.props?.linkUrl as string}
+            />
+          </React.Suspense>
+        );
+      }
+        
       default:
         return null;
     }

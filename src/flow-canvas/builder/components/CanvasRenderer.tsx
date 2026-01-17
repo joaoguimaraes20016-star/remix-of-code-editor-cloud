@@ -2423,6 +2423,288 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           </div>
         );
 
+      // FUNCTIONAL ELEMENT TYPES (Phase: Make Components Work)
+      // ============================================
+      
+      case 'countdown': {
+        // Import the component dynamically to avoid circular deps
+        const CountdownTimer = React.lazy(() => import('./elements/CountdownTimer'));
+        const endDate = (element.props?.endDate as string) || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const countdownStyle = (element.props?.style as 'boxes' | 'inline' | 'minimal' | 'flip') || 'boxes';
+        const expiredAction = (element.props?.expiredAction as 'hide' | 'show-message' | 'redirect') || 'show-message';
+        const showLabels = element.props?.showLabels !== false;
+        const showDays = element.props?.showDays !== false;
+        const showSeconds = element.props?.showSeconds !== false;
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="countdown"
+                elementLabel="Countdown Timer"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+              <React.Suspense fallback={<div className="animate-pulse h-20 bg-muted rounded-xl" />}>
+                <CountdownTimer
+                  endDate={endDate}
+                  style={countdownStyle}
+                  expiredAction={expiredAction}
+                  showLabels={showLabels}
+                  showDays={showDays}
+                  showSeconds={showSeconds}
+                  colors={{
+                    background: element.props?.backgroundColor as string,
+                    text: element.props?.color as string,
+                    label: element.props?.labelColor as string,
+                  }}
+                  isBuilder={true}
+                />
+              </React.Suspense>
+            </div>
+          </div>
+        );
+      }
+
+      case 'loader': {
+        const LoaderAnimation = React.lazy(() => import('./elements/LoaderAnimation'));
+        const animationType = (element.props?.animationType as 'spinner' | 'progress' | 'dots' | 'pulse' | 'analyzing') || 'analyzing';
+        const duration = (element.props?.duration as number) || 3000;
+        const loaderText = element.content || 'Analyzing your results...';
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="loader"
+                elementLabel="Loader"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+              <React.Suspense fallback={<div className="animate-pulse h-32 bg-muted rounded-xl" />}>
+                <LoaderAnimation
+                  text={loaderText}
+                  subText={element.props?.subText as string}
+                  animationType={animationType}
+                  duration={duration}
+                  showProgress={element.props?.showProgress !== false}
+                  colors={{
+                    primary: element.props?.primaryColor as string || primaryColor,
+                    text: element.props?.color as string,
+                  }}
+                  isBuilder={true}
+                />
+              </React.Suspense>
+            </div>
+          </div>
+        );
+      }
+
+      case 'carousel': {
+        const ImageCarousel = React.lazy(() => import('./elements/ImageCarousel'));
+        const slides = (element.props?.slides as Array<{ id: string; src: string; alt?: string }>) || [];
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="carousel"
+                elementLabel="Image Carousel"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+              <React.Suspense fallback={<div className="animate-pulse aspect-video bg-muted rounded-xl" />}>
+                <ImageCarousel
+                  slides={slides}
+                  autoplay={element.props?.autoplay as boolean || false}
+                  autoplayInterval={element.props?.autoplayInterval as number || 4000}
+                  navigationStyle={(element.props?.navigationStyle as 'arrows' | 'dots' | 'both' | 'none') || 'both'}
+                  loop={element.props?.loop !== false}
+                  aspectRatio={(element.props?.aspectRatio as '16:9' | '4:3' | '1:1') || '16:9'}
+                  borderRadius={parseInt(element.styles?.borderRadius as string || '12')}
+                  isBuilder={true}
+                  onSlidesChange={(newSlides) => {
+                    onUpdate?.({ props: { ...element.props, slides: newSlides } });
+                  }}
+                />
+              </React.Suspense>
+            </div>
+          </div>
+        );
+      }
+
+      case 'logo-marquee': {
+        const LogoMarquee = React.lazy(() => import('./elements/LogoMarquee'));
+        const logos = (element.props?.logos as Array<{ id: string; src: string; alt?: string }>) || [];
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative w-full')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="logo-marquee"
+                elementLabel="Logo Bar"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+              <React.Suspense fallback={<div className="animate-pulse h-16 bg-muted rounded-xl" />}>
+                <LogoMarquee
+                  logos={logos}
+                  animated={element.props?.animated !== false}
+                  speed={element.props?.speed as number || 30}
+                  direction={(element.props?.direction as 'left' | 'right') || 'left'}
+                  pauseOnHover={element.props?.pauseOnHover !== false}
+                  grayscale={element.props?.grayscale !== false}
+                  logoHeight={element.props?.logoHeight as number || 40}
+                  gap={element.props?.gap as number || 48}
+                  isBuilder={true}
+                  onLogosChange={(newLogos) => {
+                    onUpdate?.({ props: { ...element.props, logos: newLogos } });
+                  }}
+                />
+              </React.Suspense>
+            </div>
+          </div>
+        );
+      }
+
+      case 'map-embed': {
+        const MapEmbed = React.lazy(() => import('./elements/MapEmbed'));
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="map-embed"
+                elementLabel="Google Maps"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+              <React.Suspense fallback={<div className="animate-pulse h-64 bg-muted rounded-xl" />}>
+                <MapEmbed
+                  address={element.props?.address as string || ''}
+                  zoom={element.props?.zoom as number || 15}
+                  mapType={(element.props?.mapType as 'roadmap' | 'satellite') || 'roadmap'}
+                  height={parseInt(element.styles?.height as string || '300', 10)}
+                  borderRadius={parseInt(element.styles?.borderRadius as string || '12')}
+                  isBuilder={true}
+                />
+              </React.Suspense>
+            </div>
+          </div>
+        );
+      }
+
+      case 'html-embed': {
+        const HTMLEmbed = React.lazy(() => import('./elements/HTMLEmbed'));
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="html-embed"
+                elementLabel="HTML Embed"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+              <React.Suspense fallback={<div className="animate-pulse h-48 bg-muted rounded-xl" />}>
+                <HTMLEmbed
+                  code={element.props?.code as string || ''}
+                  height={parseInt(element.styles?.height as string || '300', 10)}
+                  borderRadius={parseInt(element.styles?.borderRadius as string || '12')}
+                  allowScripts={element.props?.allowScripts as boolean || false}
+                  isBuilder={true}
+                />
+              </React.Suspense>
+            </div>
+          </div>
+        );
+      }
+
+      case 'trustpilot': {
+        const TrustpilotWidget = React.lazy(() => import('./elements/TrustpilotWidget'));
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="trustpilot"
+                elementLabel="Trustpilot Widget"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+              <React.Suspense fallback={<div className="animate-pulse h-24 bg-muted rounded-xl" />}>
+                <TrustpilotWidget
+                  rating={element.props?.rating as number || 4.5}
+                  reviewCount={element.props?.reviewCount as number || 1234}
+                  businessName={element.props?.businessName as string}
+                  layout={(element.props?.layout as 'horizontal' | 'vertical' | 'compact') || 'horizontal'}
+                  showLogo={element.props?.showLogo !== false}
+                  showReviewCount={element.props?.showReviewCount !== false}
+                  linkUrl={element.props?.linkUrl as string}
+                  isBuilder={true}
+                />
+              </React.Suspense>
+            </div>
+          </div>
+        );
+      }
+
       default:
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>

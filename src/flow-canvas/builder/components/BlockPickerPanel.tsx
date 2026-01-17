@@ -5,7 +5,7 @@ import {
   HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow,
   Sparkles, Star, SlidersHorizontal, Shapes, Timer, Loader2, MapPin, Code,
   Upload, MessageSquare, CalendarDays, CreditCard, LayoutGrid, List, Minus, Play,
-  Users, Package, Quote, PanelLeftClose
+  Users, Package, Quote, PanelLeftClose, Image as ImageIcon, Layout
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '@/flow-canvas/types/infostack';
@@ -540,11 +540,19 @@ const informativeBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'custom',
       label: 'Countdown',
-      elements: [{ id: generateId(), type: 'text', content: '24:00:00', props: { 
-        variant: 'countdown',
-        endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        style: 'boxes'
-      } }],
+      elements: [{ 
+        id: generateId(), 
+        type: 'countdown', 
+        content: '', 
+        props: { 
+          endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          style: 'boxes',
+          expiredAction: 'show-message',
+          showLabels: true,
+          showDays: true,
+          showSeconds: true
+        } 
+      }],
       props: {},
     }),
   },
@@ -557,10 +565,17 @@ const informativeBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'custom',
       label: 'Loader',
-      elements: [{ id: generateId(), type: 'text', content: 'Analyzing your results...', props: { 
-        variant: 'loader',
-        duration: 3000
-      } }],
+      elements: [{ 
+        id: generateId(), 
+        type: 'loader', 
+        content: 'Analyzing your results...', 
+        props: { 
+          animationType: 'analyzing',
+          duration: 3000,
+          autoAdvance: true,
+          showProgress: true
+        } 
+      }],
       props: {},
     }),
   },
@@ -578,11 +593,18 @@ const embedBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'custom',
       label: 'Trustpilot',
-      elements: [{ id: generateId(), type: 'text', content: 'Trustpilot Widget', props: { 
-        variant: 'embed',
-        embedType: 'trustpilot',
-        businessId: ''
-      } }],
+      elements: [{ 
+        id: generateId(), 
+        type: 'trustpilot', 
+        content: '', 
+        props: { 
+          rating: 4.5,
+          reviewCount: 1234,
+          layout: 'horizontal',
+          showLogo: true,
+          showReviewCount: true
+        } 
+      }],
       props: {},
     }),
   },
@@ -595,11 +617,16 @@ const embedBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'custom',
       label: 'Google Maps',
-      elements: [{ id: generateId(), type: 'text', content: 'Google Maps Embed', props: { 
-        variant: 'embed',
-        embedType: 'google-maps',
-        address: ''
-      } }],
+      elements: [{ 
+        id: generateId(), 
+        type: 'map-embed', 
+        content: '', 
+        props: { 
+          address: '',
+          zoom: 15,
+          mapType: 'roadmap'
+        } 
+      }],
       props: {},
     }),
   },
@@ -612,11 +639,67 @@ const embedBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'custom',
       label: 'HTML Embed',
-      elements: [{ id: generateId(), type: 'text', content: '<!-- Custom HTML -->', props: { 
-        variant: 'embed',
-        embedType: 'html',
-        code: ''
-      } }],
+      elements: [{ 
+        id: generateId(), 
+        type: 'html-embed', 
+        content: '', 
+        props: { 
+          code: '',
+          allowScripts: false
+        } 
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'carousel',
+    label: 'Image Carousel',
+    icon: <ImageIcon size={16} />,
+    description: 'Slideshow gallery',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Image Carousel',
+      elements: [{ 
+        id: generateId(), 
+        type: 'carousel', 
+        content: '', 
+        props: { 
+          slides: [],
+          autoplay: false,
+          autoplayInterval: 4000,
+          navigationStyle: 'both',
+          loop: true,
+          aspectRatio: '16:9'
+        } 
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'logo-marquee',
+    label: 'Logo Bar',
+    icon: <Layout size={16} />,
+    description: 'Animated logo scroll',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Logo Bar',
+      elements: [{ 
+        id: generateId(), 
+        type: 'logo-marquee', 
+        content: '', 
+        props: { 
+          logos: [],
+          animated: true,
+          speed: 30,
+          direction: 'left',
+          pauseOnHover: true,
+          grayscale: true,
+          logoHeight: 40,
+          gap: 48
+        } 
+      }],
       props: {},
     }),
   },

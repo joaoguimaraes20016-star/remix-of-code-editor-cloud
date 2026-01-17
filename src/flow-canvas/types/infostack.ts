@@ -34,7 +34,15 @@ export type ElementType =
   | 'badge'              // Pill badge with optional icon
   | 'icon-text'          // Icon + text pair
   | 'process-step'       // Step in a process visualization
-  | 'video-thumbnail';   // Video with styled play overlay
+  | 'video-thumbnail'    // Video with styled play overlay
+  // Functional elements (fully interactive)
+  | 'countdown'          // Live countdown timer with expiration actions
+  | 'loader'             // Animated loading/progress indicator
+  | 'carousel'           // Image carousel with navigation
+  | 'logo-marquee'       // Animated scrolling logo bar
+  | 'map-embed'          // Google Maps embed
+  | 'html-embed'         // Custom HTML/code embed
+  | 'trustpilot';        // Trustpilot review widget
 
 // Block types - core types actively used in builder
 export type BlockType = 
