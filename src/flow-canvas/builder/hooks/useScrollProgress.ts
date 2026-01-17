@@ -16,7 +16,7 @@ interface ScrollProgress {
 }
 
 export function useScrollProgress(): ScrollProgress {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLElement>(null) as React.RefObject<HTMLElement>;
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 

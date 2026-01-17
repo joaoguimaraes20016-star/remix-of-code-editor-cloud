@@ -1,8 +1,8 @@
 import { 
   Plus,
-  Minus,
+  PlusCircle,
   Copy, 
-  Square,
+  ArrowUpToLine,
   Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,7 @@ export function ElementActionMenu({
           onClick={(e) => { e.stopPropagation(); onAddBelow(); }}
           title="Add below"
         >
-          <Minus size={16} />
+          <PlusCircle size={16} />
         </button>
       )}
       
@@ -85,7 +85,7 @@ export function ElementActionMenu({
           onClick={(e) => { e.stopPropagation(); onSelectParent(); }}
           title="Select parent"
         >
-          <Square size={16} />
+          <ArrowUpToLine size={16} />
         </button>
       )}
       
