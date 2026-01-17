@@ -16,7 +16,7 @@ interface CommitSliderProps {
   disabled?: boolean;
 }
 
-/**
+/*
  * A slider that commits values only on release, not while dragging.
  * 
  * This prevents:
