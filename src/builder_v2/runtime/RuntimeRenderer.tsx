@@ -21,6 +21,7 @@
  * - Undo/redo logic
  */
 
+import React from 'react';
 import type { PublishedDocumentSnapshot } from '../state/documentTypes';
 
 import { renderTree } from '../canvas/renderNode';
@@ -52,13 +53,13 @@ export interface RuntimeRendererProps {
 /**
  * Empty state when the published snapshot has no renderable pages.
  */
-function EmptySnapshotState() {
+function EmptySnapshotState({ reason }: { reason?: string }) {
   return (
     <div className="runtime-empty-state">
       <div className="runtime-empty-icon">📄</div>
       <h2 className="runtime-empty-title">No Content Available</h2>
       <p className="runtime-empty-description">
-        This page has no content to display.
+        {reason || 'This page has no content to display.'}
       </p>
     </div>
   );
@@ -77,6 +78,15 @@ function EmptySnapshotState() {
  * - Clean, minimal DOM structure
  */
 export function RuntimeRenderer({ snapshot, pageId }: RuntimeRendererProps) {
+  // Validate snapshot structure
+  if (!snapshot) {
+    return <EmptySnapshotState reason="Snapshot data is unavailable." />;
+  }
+
+  if (!snapshot.pages || snapshot.pages.length === 0) {
+    return <EmptySnapshotState reason="This document has no pages to display." />;
+  }
+
   // Determine which page to render
   const targetPageId = pageId ?? snapshot.activePageId;
   const activePage = snapshot.pages.find((page) => page.id === targetPageId);
@@ -84,22 +94,73 @@ export function RuntimeRenderer({ snapshot, pageId }: RuntimeRendererProps) {
   // Fallback to first page if target page not found
   const pageToRender = activePage ?? snapshot.pages[0];
 
-  // No pages available - show empty state
-  if (!pageToRender?.canvasRoot) {
-    return <EmptySnapshotState />;
+  // Page exists but has no canvas root
+  if (!pageToRender) {
+    return <EmptySnapshotState reason="The requested page could not be found." />;
   }
 
-  const layout = resolveFunnelLayout(pageToRender);
+  if (!pageToRender.canvasRoot) {
+    return <EmptySnapshotState reason="This page has no content structure." />;
+  }
 
+  // Safely resolve layout with fallback
+  let layout;
+  try {
+    layout = resolveFunnelLayout(pageToRender);
+  } catch (error) {
+    console.error('[RuntimeRenderer] Layout resolution failed:', error);
+    layout = { mode: 'default' as const };
+  }
+
+  // Render with error boundary wrapper
   return (
     <RuntimeLayout mode="runtime" layout={layout}>
       <StepStack layout={layout} mode="runtime">
         <StepBoundary motionMode="runtime" stepId={pageToRender.id}>
-          {renderTree(pageToRender.canvasRoot, { readonly: true })}
+          <RuntimeErrorBoundary pageId={pageToRender.id}>
+            {renderTree(pageToRender.canvasRoot, { readonly: true })}
+          </RuntimeErrorBoundary>
         </StepBoundary>
       </StepStack>
     </RuntimeLayout>
   );
+}
+
+/**
+ * Error boundary for runtime rendering failures.
+ * Catches errors in child components and displays a graceful fallback.
+ */
+class RuntimeErrorBoundary extends React.Component<
+  { children: React.ReactNode; pageId: string },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode; pageId: string }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[RuntimeRenderer] Rendering error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="runtime-render-error">
+          <div className="runtime-error-icon">⚠️</div>
+          <p className="runtime-error-description">
+            This content could not be displayed. Please try refreshing the page.
+          </p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 // ============================================================================

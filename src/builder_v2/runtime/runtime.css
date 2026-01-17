@@ -330,6 +330,33 @@
   font-style: italic;
 }
 
+/* Inline render error - shown when component fails to render */
+.runtime-render-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(248, 113, 113, 0.05);
+  border-radius: 12px;
+  border: 1px dashed rgba(248, 113, 113, 0.2);
+}
+
+.runtime-render-error .runtime-error-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.runtime-render-error .runtime-error-description {
+  font-size: 14px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 280px;
+}
+
 /* ============================================================================
    LOADING STATE - calm, anticipatory
    ============================================================================ */
