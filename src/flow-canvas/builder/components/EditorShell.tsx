@@ -1708,6 +1708,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           currentPage={page}
           selection={selection}
           onApplySuggestion={handleApplySuggestion}
+          onAddBlock={handleAddBlock}
           isExpanded={isAICopilotExpanded}
           onToggle={() => setIsAICopilotExpanded(!isAICopilotExpanded)}
         />
