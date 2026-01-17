@@ -1470,15 +1470,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         
         {/* Left Panel - Desktop */}
         {!previewMode && !isMobile && leftPanelOpen && (
-          <div className="w-60 shrink-0 h-full overflow-hidden relative flex flex-col">
-            {/* Close button in header area - below tabs */}
-            <button
-              onClick={() => setLeftPanelOpen(false)}
-              className="absolute top-[52px] right-2 z-10 p-1 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
-              title="Close left panel"
-            >
-              <PanelLeftClose size={14} />
-            </button>
+          <div className="w-60 shrink-0 h-full overflow-hidden flex flex-col border-r border-builder-border bg-builder-surface">
             {blockPickerOpen ? (
               <BlockPickerPanel
                 onAddBlock={(block, options) => {
@@ -1522,6 +1514,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                   setBlockPickerOpen(false);
                   setIsAIGenerateOpen(true);
                 }}
+                onClosePanel={() => setLeftPanelOpen(false)}
               />
             ) : (
               <LeftPanel
@@ -1543,6 +1536,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                   setBlockPickerOpen(true);
                   setBlockPickerMode('sections');
                 }}
+                onClosePanel={() => setLeftPanelOpen(false)}
               />
             )}
           </div>
