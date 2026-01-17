@@ -217,7 +217,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   }, [isEditing, onEditingChange]);
 
   // Get inline edit context for Right Panel integration
-  const { registerEditor } = useInlineEdit();
+  const { registerEditor, notifySelectionChange } = useInlineEdit();
 
   // Handle double click to start editing
   const handleDoubleClick = useCallback(() => {
@@ -600,17 +600,29 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     // Initial snap
     schedule();
 
-    document.addEventListener('selectionchange', schedule);
+    // Notify Right Panel of selection changes
+    const notifyRightPanel = () => {
+      if (elementId) {
+        notifySelectionChange(elementId);
+      }
+    };
+
+    const onSelectionChange = () => {
+      schedule();
+      notifyRightPanel();
+    };
+
+    document.addEventListener('selectionchange', onSelectionChange);
     window.addEventListener('scroll', schedule, true);
     window.addEventListener('resize', schedule);
 
     return () => {
       cancelAnimationFrame(rafId);
-      document.removeEventListener('selectionchange', schedule);
+      document.removeEventListener('selectionchange', onSelectionChange);
       window.removeEventListener('scroll', schedule, true);
       window.removeEventListener('resize', schedule);
     };
-  }, [showToolbar, isEditing, updateToolbarPosition]);
+  }, [showToolbar, isEditing, updateToolbarPosition, elementId, notifySelectionChange]);
 
   // Debounced save for inline HTML updates (prevents re-render jitter while tweaking custom gradients)
   // NOTE: During active editing, we must NOT run full sanitizeStyledHTML() here because it:

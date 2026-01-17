@@ -2,9 +2,14 @@
  * Context to bridge Right Panel style changes with InlineTextEditor
  * When a user has text selected and uses the Right Panel to change color/gradient,
  * this context routes those changes through InlineTextEditor's selection-aware logic.
+ * 
+ * Phase 5 Improvements:
+ * - Added selection change notification for better Right Panel sync
+ * - Added active element tracking for debugging
+ * - Improved bridge cleanup handling
  */
 
-import React, { createContext, useContext, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useCallback, useRef, useState, useEffect } from 'react';
 import type { TextStyles } from '../components/InlineTextEditor';
 
 type StyleChangeHandler = (styles: Partial<TextStyles>) => boolean;
@@ -39,6 +44,24 @@ interface InlineEditContextValue {
    * Check if an editor is currently active for a given element.
    */
   hasActiveEditor: (elementId: string) => boolean;
+
+  /**
+   * Get the currently active element ID (if any).
+   * Useful for debugging and conditional rendering.
+   */
+  getActiveElementId: () => string | null;
+
+  /**
+   * Subscribe to selection changes within active editors.
+   * Returns an unsubscribe function.
+   */
+  onSelectionChange: (callback: (elementId: string) => void) => () => void;
+
+  /**
+   * Notify listeners that selection has changed in an editor.
+   * Called by InlineTextEditor when selection changes.
+   */
+  notifySelectionChange: (elementId: string) => void;
 }
 
 const InlineEditContext = createContext<InlineEditContextValue | null>(null);
@@ -46,11 +69,27 @@ const InlineEditContext = createContext<InlineEditContextValue | null>(null);
 export function InlineEditProvider({ children }: { children: React.ReactNode }) {
   // Map of elementId -> editor bridge
   const editorsRef = useRef<Map<string, EditorBridge>>(new Map());
+  
+  // Track selection change listeners
+  const selectionListenersRef = useRef<Set<(elementId: string) => void>>(new Set());
+  
+  // Track the most recently active editor for debugging
+  const lastActiveElementRef = useRef<string | null>(null);
 
   const registerEditor = useCallback((elementId: string, bridge: EditorBridge) => {
     editorsRef.current.set(elementId, bridge);
+    lastActiveElementRef.current = elementId;
+    
     return () => {
-      editorsRef.current.delete(elementId);
+      // Only remove if it's still the same bridge (prevents race conditions)
+      if (editorsRef.current.get(elementId) === bridge) {
+        editorsRef.current.delete(elementId);
+        if (lastActiveElementRef.current === elementId) {
+          // Set to next active or null
+          const remaining = Array.from(editorsRef.current.keys());
+          lastActiveElementRef.current = remaining[0] ?? null;
+        }
+      }
     };
   }, []);
 
@@ -71,8 +110,37 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
     return editorsRef.current.has(elementId);
   }, []);
 
+  const getActiveElementId = useCallback((): string | null => {
+    return lastActiveElementRef.current;
+  }, []);
+
+  const onSelectionChange = useCallback((callback: (elementId: string) => void): (() => void) => {
+    selectionListenersRef.current.add(callback);
+    return () => {
+      selectionListenersRef.current.delete(callback);
+    };
+  }, []);
+
+  const notifySelectionChange = useCallback((elementId: string): void => {
+    selectionListenersRef.current.forEach(callback => {
+      try {
+        callback(elementId);
+      } catch (err) {
+        console.error('[InlineEditContext] Selection listener error:', err);
+      }
+    });
+  }, []);
+
   return (
-    <InlineEditContext.Provider value={{ registerEditor, applyInlineStyle, getInlineSelectionStyles, hasActiveEditor }}>
+    <InlineEditContext.Provider value={{ 
+      registerEditor, 
+      applyInlineStyle, 
+      getInlineSelectionStyles, 
+      hasActiveEditor,
+      getActiveElementId,
+      onSelectionChange,
+      notifySelectionChange,
+    }}>
       {children}
     </InlineEditContext.Provider>
   );
@@ -87,7 +155,33 @@ export function useInlineEdit() {
       applyInlineStyle: () => false,
       getInlineSelectionStyles: () => null,
       hasActiveEditor: () => false,
+      getActiveElementId: () => null,
+      onSelectionChange: () => () => {},
+      notifySelectionChange: () => {},
     };
   }
   return ctx;
+}
+
+/**
+ * Hook to subscribe to selection changes in a specific editor.
+ * Re-renders when selection changes occur.
+ */
+export function useInlineSelectionSync(elementId: string): number {
+  const { onSelectionChange, hasActiveEditor } = useInlineEdit();
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!hasActiveEditor(elementId)) return;
+
+    const unsubscribe = onSelectionChange((changedId) => {
+      if (changedId === elementId) {
+        setTick(t => t + 1);
+      }
+    });
+
+    return unsubscribe;
+  }, [elementId, onSelectionChange, hasActiveEditor]);
+
+  return tick;
 }
