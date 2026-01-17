@@ -479,7 +479,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
     );
   }
 
-  // ========== TICKER ==========
+  // ========== TICKER (ENHANCED) ==========
   if (element.type === 'ticker') {
     const items = (element.props?.items as string[]) || ['Item 1', 'Item 2', 'Item 3'];
     const speed = (element.props?.speed as number) || 30;
@@ -530,7 +530,31 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           </FieldGroup>
         </Section>
         
-        <Section title="Animation" icon={<Play className="w-4 h-4" />}>
+        <Section title="Animation" icon={<Play className="w-4 h-4" />} defaultOpen>
+          <FieldGroup label="Direction">
+            <div className="grid grid-cols-4 gap-1">
+              {[
+                { value: 'left', label: '←' },
+                { value: 'right', label: '→' },
+                { value: 'up', label: '↑' },
+                { value: 'down', label: '↓' },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => handlePropsChange('direction', value)}
+                  className={cn(
+                    'p-2 rounded-md text-sm transition-colors',
+                    (element.props?.direction || 'left') === value
+                      ? 'bg-builder-accent text-white'
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </FieldGroup>
+          
           <FieldGroup label="Speed (seconds per loop)">
             <div className="flex items-center gap-3">
               <Slider
@@ -571,27 +595,57 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               </button>
             </div>
           </FieldGroup>
+        </Section>
+        
+        <Section title="Typography" icon={<Type className="w-4 h-4" />}>
+          <FieldGroup label="Font Size">
+            <Select
+              value={(element.props?.fontSize as string) || 'md'}
+              onValueChange={(v) => handlePropsChange('fontSize', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Size" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="xs">Extra Small (12px)</SelectItem>
+                <SelectItem value="sm">Small (14px)</SelectItem>
+                <SelectItem value="md">Medium (16px)</SelectItem>
+                <SelectItem value="lg">Large (18px)</SelectItem>
+                <SelectItem value="xl">Extra Large (20px)</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
           
-          <FieldGroup label="Alignment">
-            <div className="flex gap-1">
-              {[
-                { value: 'left', icon: AlignLeft },
-                { value: 'center', icon: AlignCenter },
-                { value: 'right', icon: AlignRight },
-              ].map(({ value, icon: Icon }) => (
-                <button
-                  key={value}
-                  onClick={() => handlePropsChange('alignment', value)}
-                  className={cn(
-                    'flex-1 p-2 rounded-md border transition-colors',
-                    (element.props?.alignment || 'left') === value
-                      ? 'border-builder-accent bg-builder-accent/10 text-builder-accent'
-                      : 'border-builder-border bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
-                  )}
-                >
-                  <Icon className="w-4 h-4 mx-auto" />
-                </button>
-              ))}
+          <FieldGroup label="Font Weight">
+            <Select
+              value={(element.props?.fontWeight as string) || 'normal'}
+              onValueChange={(v) => handlePropsChange('fontWeight', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Weight" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="semibold">Semibold</SelectItem>
+                <SelectItem value="bold">Bold</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Letter Spacing">
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[(element.props?.letterSpacing as number) || 0]}
+                onValueChange={([v]) => handlePropsChange('letterSpacing', v)}
+                min={-2}
+                max={8}
+                step={0.5}
+                className="flex-1"
+              />
+              <span className="text-xs font-mono text-builder-text-muted w-8 text-center">
+                {(element.props?.letterSpacing as number) || 0}px
+              </span>
             </div>
           </FieldGroup>
         </Section>
@@ -618,6 +672,18 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               >
                 <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                   <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.separatorColor as string) || '#888888' }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Background</span>
+              <ColorPickerPopover
+                color={(element.props?.backgroundColor as string) || 'transparent'}
+                onChange={(c) => handlePropsChange('backgroundColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.backgroundColor as string) || 'transparent' }} />
                   <span className="text-xs text-builder-text-muted">Edit</span>
                 </button>
               </ColorPickerPopover>
@@ -759,7 +825,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
     );
   }
 
-  // ========== PROCESS STEP ==========
+  // ========== PROCESS STEP (ENHANCED) ==========
   if (element.type === 'process-step') {
     return (
       <div className="space-y-0">
@@ -796,6 +862,73 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               placeholder="Optional description..."
               className="builder-input text-xs"
             />
+          </FieldGroup>
+        </Section>
+        
+        <Section title="Appearance" icon={<Sparkles className="w-4 h-4" />} defaultOpen>
+          <FieldGroup label="Shape">
+            <div className="grid grid-cols-4 gap-1">
+              {[
+                { value: 'circle', label: '●' },
+                { value: 'rounded-square', label: '■' },
+                { value: 'hexagon', label: '⬡' },
+                { value: 'badge', label: '🏷' },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => handlePropsChange('shape', value)}
+                  className={cn(
+                    'p-2 rounded-md text-sm transition-colors',
+                    (element.props?.shape || 'circle') === value
+                      ? 'bg-builder-accent text-white'
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                  title={value}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </FieldGroup>
+          
+          <FieldGroup label="Size">
+            <Select
+              value={(element.props?.size as string) || 'md'}
+              onValueChange={(v) => handlePropsChange('size', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Size" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="sm">Small (32px)</SelectItem>
+                <SelectItem value="md">Medium (48px)</SelectItem>
+                <SelectItem value="lg">Large (64px)</SelectItem>
+                <SelectItem value="xl">Extra Large (80px)</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          
+          <FieldGroup label="Alignment">
+            <div className="flex gap-1">
+              {[
+                { value: 'flex-start', icon: AlignLeft },
+                { value: 'center', icon: AlignCenter },
+                { value: 'flex-end', icon: AlignRight },
+              ].map(({ value, icon: Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handlePropsChange('alignment', value)}
+                  className={cn(
+                    'flex-1 p-2 rounded-md border transition-colors',
+                    (element.props?.alignment || 'flex-start') === value
+                      ? 'border-builder-accent bg-builder-accent/10 text-builder-accent'
+                      : 'border-builder-border bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                >
+                  <Icon className="w-4 h-4 mx-auto" />
+                </button>
+              ))}
+            </div>
           </FieldGroup>
         </Section>
         
@@ -839,7 +972,79 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 </button>
               </ColorPickerPopover>
             </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Text Color</span>
+              <ColorPickerPopover
+                color={(element.props?.textColor as string) || '#ffffff'}
+                onChange={(c) => handlePropsChange('textColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.textColor as string) || '#ffffff' }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Number/Icon Color</span>
+              <ColorPickerPopover
+                color={(element.props?.numberColor as string) || '#ffffff'}
+                onChange={(c) => handlePropsChange('numberColor', c)}
+              >
+                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.numberColor as string) || '#ffffff' }} />
+                  <span className="text-xs text-builder-text-muted">Edit</span>
+                </button>
+              </ColorPickerPopover>
+            </div>
           </div>
+        </Section>
+        
+        <Section title="Connector" icon={<ListOrdered className="w-4 h-4" />}>
+          <FieldGroup label="Show Connector">
+            <div className="flex gap-1">
+              <button
+                onClick={() => handlePropsChange('showConnector', true)}
+                className={cn(
+                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors',
+                  (element.props?.showConnector ?? true) === true
+                    ? 'bg-builder-accent text-white'
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => handlePropsChange('showConnector', false)}
+                className={cn(
+                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors',
+                  (element.props?.showConnector ?? true) === false
+                    ? 'bg-builder-accent text-white'
+                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                )}
+              >
+                No
+              </button>
+            </div>
+          </FieldGroup>
+          
+          {(element.props?.showConnector ?? true) && (
+            <FieldGroup label="Connector Style">
+              <Select
+                value={(element.props?.connectorStyle as string) || 'line'}
+                onValueChange={(v) => handlePropsChange('connectorStyle', v)}
+              >
+                <SelectTrigger className="builder-input text-xs">
+                  <SelectValue placeholder="Style" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="line">Solid Line</SelectItem>
+                  <SelectItem value="dotted">Dotted</SelectItem>
+                  <SelectItem value="dashed">Dashed</SelectItem>
+                  <SelectItem value="arrow">Arrow</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+          )}
         </Section>
       </div>
     );

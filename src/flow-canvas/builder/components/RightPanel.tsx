@@ -1262,6 +1262,109 @@ const ElementInspector: React.FC<{
             </div>
           </CollapsibleSection>
 
+          {/* Text Effect - Underline styling (moved from separate block) */}
+          <CollapsibleSection title="Text Effect" icon={<Underline className="w-4 h-4" />}>
+            <div className="space-y-3 pt-3">
+              {/* Effect Type Toggle */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Effect</span>
+                <div className="flex rounded-lg overflow-hidden border border-builder-border">
+                  <button
+                    onClick={() => handleMultiPropsChange({ textEffect: 'none', underlineFrom: undefined, underlineTo: undefined })}
+                    className={cn(
+                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                      (!element.props?.textEffect || element.props?.textEffect === 'none')
+                        ? 'bg-builder-accent text-white' 
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                    )}
+                  >
+                    None
+                  </button>
+                  <button
+                    onClick={() => handleMultiPropsChange({ 
+                      textEffect: 'underline',
+                      underlineFrom: (element.props?.underlineFrom as string) || page.settings.primary_color || '#8B5CF6',
+                      underlineTo: (element.props?.underlineTo as string) || '#EC4899'
+                    })}
+                    className={cn(
+                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                      element.props?.textEffect === 'underline'
+                        ? 'bg-builder-accent text-white' 
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                    )}
+                  >
+                    Underline
+                  </button>
+                  <button
+                    onClick={() => handleMultiPropsChange({ textEffect: 'highlight' })}
+                    className={cn(
+                      "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                      element.props?.textEffect === 'highlight'
+                        ? 'bg-builder-accent text-white' 
+                        : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                    )}
+                  >
+                    Highlight
+                  </button>
+                </div>
+              </div>
+              
+              {/* Underline Color Controls */}
+              {element.props?.textEffect === 'underline' && (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-builder-text-muted">From Color</span>
+                    <ColorPickerPopover
+                      color={(element.props?.underlineFrom as string) || page.settings.primary_color || '#8B5CF6'}
+                      onChange={(c) => handlePropsChange('underlineFrom', c)}
+                    >
+                      <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.underlineFrom as string) || page.settings.primary_color || '#8B5CF6' }} />
+                    </ColorPickerPopover>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-builder-text-muted">To Color</span>
+                    <ColorPickerPopover
+                      color={(element.props?.underlineTo as string) || '#EC4899'}
+                      onChange={(c) => handlePropsChange('underlineTo', c)}
+                    >
+                      <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.underlineTo as string) || '#EC4899'}} />
+                    </ColorPickerPopover>
+                  </div>
+                  {/* Preview */}
+                  <div className="p-2 rounded-md bg-builder-surface-hover/50 mt-2">
+                    <span 
+                      className="text-sm font-medium relative inline-block"
+                      style={{ 
+                        backgroundImage: `linear-gradient(90deg, ${(element.props?.underlineFrom as string) || page.settings.primary_color || '#8B5CF6'}, ${(element.props?.underlineTo as string) || '#EC4899'})`,
+                        backgroundSize: '100% 3px',
+                        backgroundPosition: '0 100%',
+                        backgroundRepeat: 'no-repeat',
+                        paddingBottom: '4px'
+                      }}
+                    >
+                      Preview underline
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Highlight Color Control */}
+              {element.props?.textEffect === 'highlight' && (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-builder-text-muted">Highlight Color</span>
+                    <ColorPickerPopover
+                      color={(element.props?.highlightColor as string) || 'rgba(255,255,0,0.3)'}
+                      onChange={(c) => handlePropsChange('highlightColor', c)}
+                    >
+                      <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.highlightColor as string) || 'rgba(255,255,0,0.3)' }} />
+                    </ColorPickerPopover>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+
           {/* Text Content */}
           <CollapsibleSection title="Content" icon={<Type className="w-4 h-4" />} sectionId="content" isHighlighted={highlightedSection === 'content'}>
             <div className="pt-3">

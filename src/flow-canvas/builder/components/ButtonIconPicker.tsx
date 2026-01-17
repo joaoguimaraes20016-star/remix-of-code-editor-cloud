@@ -128,32 +128,36 @@ interface ButtonIconPickerProps {
   className?: string;
 }
 
-export function ButtonIconPicker({ value, onChange, className }: ButtonIconPickerProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  
-  const SelectedIcon = getButtonIconComponent(value);
-  
-  const filteredIcons = BUTTON_ICON_OPTIONS.filter(icon => 
-    icon.name.toLowerCase().includes(search.toLowerCase())
-  );
+import React from 'react';
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button 
-          className={cn(
-            "flex items-center gap-2 px-2 py-1.5 rounded-md",
-            "bg-builder-surface-hover hover:bg-builder-surface-active",
-            "border border-builder-border",
-            "text-builder-text text-xs transition-colors",
-            className
-          )}
-        >
-          <SelectedIcon className="h-4 w-4" />
-          <span className="truncate max-w-[80px]">{value || "ArrowRight"}</span>
-        </button>
-      </PopoverTrigger>
+export const ButtonIconPicker = React.forwardRef<HTMLButtonElement, ButtonIconPickerProps>(
+  function ButtonIconPicker({ value, onChange, className }, ref) {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    
+    const SelectedIcon = getButtonIconComponent(value);
+    
+    const filteredIcons = BUTTON_ICON_OPTIONS.filter(icon => 
+      icon.name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button 
+            ref={ref}
+            className={cn(
+              "flex items-center gap-2 px-2 py-1.5 rounded-md",
+              "bg-builder-surface-hover hover:bg-builder-surface-active",
+              "border border-builder-border",
+              "text-builder-text text-xs transition-colors",
+              className
+            )}
+          >
+            <SelectedIcon className="h-4 w-4" />
+            <span className="truncate max-w-[80px]">{value || "ArrowRight"}</span>
+          </button>
+        </PopoverTrigger>
       <PopoverContent 
         className="w-64 p-2 bg-builder-surface border-builder-border" 
         align="end"
@@ -195,4 +199,5 @@ export function ButtonIconPicker({ value, onChange, className }: ButtonIconPicke
       </PopoverContent>
     </Popover>
   );
-}
+  }
+);
