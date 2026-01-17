@@ -5,7 +5,7 @@
  * Inspired by InfiniaGrowth, Puppetmaster, and The 2026 Blueprint.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Play, Check, ArrowRight } from 'lucide-react';
 
@@ -379,6 +379,8 @@ export function VideoThumbnail({
   style,
   onClick 
 }: VideoThumbnailProps) {
+  const [thumbnailError, setThumbnailError] = useState(false);
+  
   const aspectClasses = {
     '16:9': 'aspect-video',
     '4:3': 'aspect-[4/3]',
@@ -402,11 +404,12 @@ export function VideoThumbnail({
       onClick={onClick}
     >
       {/* Background */}
-      {thumbnailUrl ? (
+      {thumbnailUrl && !thumbnailError ? (
         <img 
           src={thumbnailUrl} 
           alt="Video thumbnail" 
           className="w-full h-full object-cover"
+          onError={() => setThumbnailError(true)}
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-purple-900 to-pink-900 flex items-center justify-center">
