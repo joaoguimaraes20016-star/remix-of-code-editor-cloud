@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { BooleanToggle, coerceBoolean } from '../BooleanToggle';
 import { Element } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -570,30 +571,10 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           </FieldGroup>
           
           <FieldGroup label="Pause on Hover">
-            <div className="flex gap-1">
-              <button
-                onClick={() => handlePropsChange('pauseOnHover', true)}
-                className={cn(
-                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors',
-                  (element.props?.pauseOnHover ?? true) === true
-                    ? 'bg-builder-accent text-white'
-                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
-                )}
-              >
-                Yes
-              </button>
-              <button
-                onClick={() => handlePropsChange('pauseOnHover', false)}
-                className={cn(
-                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors',
-                  (element.props?.pauseOnHover ?? true) === false
-                    ? 'bg-builder-accent text-white'
-                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
-                )}
-              >
-                No
-              </button>
-            </div>
+            <BooleanToggle
+              value={coerceBoolean(element.props?.pauseOnHover, true)}
+              onValueChange={(v) => handlePropsChange('pauseOnHover', v)}
+            />
           </FieldGroup>
         </Section>
         
@@ -1001,30 +982,10 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
         
         <Section title="Connector" icon={<ListOrdered className="w-4 h-4" />}>
           <FieldGroup label="Show Connector">
-            <div className="flex gap-1">
-              <button
-                onClick={() => handlePropsChange('showConnector', true)}
-                className={cn(
-                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors',
-                  (element.props?.showConnector ?? true) === true
-                    ? 'bg-builder-accent text-white'
-                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
-                )}
-              >
-                Yes
-              </button>
-              <button
-                onClick={() => handlePropsChange('showConnector', false)}
-                className={cn(
-                  'flex-1 px-3 py-1.5 rounded-md text-xs transition-colors',
-                  (element.props?.showConnector ?? true) === false
-                    ? 'bg-builder-accent text-white'
-                    : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
-                )}
-              >
-                No
-              </button>
-            </div>
+            <BooleanToggle
+              value={coerceBoolean(element.props?.showConnector, true)}
+              onValueChange={(v) => handlePropsChange('showConnector', v)}
+            />
           </FieldGroup>
           
           {(element.props?.showConnector ?? true) && (
@@ -1094,32 +1055,20 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Show Play Button</span>
-              <button
-                onClick={() => handlePropsChange('showPlayButton', element.props?.showPlayButton === false)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                  element.props?.showPlayButton !== false
-                    ? 'bg-builder-accent text-white'
-                    : 'bg-builder-surface-hover text-builder-text-muted'
-                )}
-              >
-                {element.props?.showPlayButton !== false ? 'On' : 'Off'}
-              </button>
+              <BooleanToggle
+                value={coerceBoolean(element.props?.showPlayButton, true)}
+                onValueChange={(v) => handlePropsChange('showPlayButton', v)}
+                labels={['On', 'Off']}
+              />
             </div>
             
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Autoplay on Click</span>
-              <button
-                onClick={() => handlePropsChange('autoplayOnClick', element.props?.autoplayOnClick !== false ? false : true)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                  element.props?.autoplayOnClick !== false
-                    ? 'bg-builder-accent text-white'
-                    : 'bg-builder-surface-hover text-builder-text-muted'
-                )}
-              >
-                {element.props?.autoplayOnClick !== false ? 'On' : 'Off'}
-              </button>
+              <BooleanToggle
+                value={coerceBoolean(element.props?.autoplayOnClick, true)}
+                onValueChange={(v) => handlePropsChange('autoplayOnClick', v)}
+                labels={['On', 'Off']}
+              />
             </div>
           </div>
           

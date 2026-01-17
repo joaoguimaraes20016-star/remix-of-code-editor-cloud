@@ -69,11 +69,13 @@ export default function FunnelEditor() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  // Auto-save state
+  // Auto-save state with debounced status updates to prevent flicker
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const currentPageRef = useRef<FlowCanvasPage | null>(null);
+  const lastSaveTimeRef = useRef<number>(0);
 
   // Fetch funnel data from Supabase
   const { data: funnel, isLoading, error } = useQuery({
@@ -114,6 +116,7 @@ export default function FunnelEditor() {
   }, [funnel]);
 
   // Save mutation (silent - no toast on auto-save)
+  // Uses minimum display duration to prevent flicker
   const saveMutation = useMutation({
     mutationFn: async (page: FlowCanvasPage) => {
       const document = flowCanvasToEditorDocument(page);
@@ -129,12 +132,24 @@ export default function FunnelEditor() {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Clear any pending status timeout
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      
       setSaveStatus('saved');
       setLastSavedAt(new Date());
-      // Reset to idle after 2 seconds
-      setTimeout(() => setSaveStatus('idle'), 2000);
+      lastSaveTimeRef.current = Date.now();
+      
+      // Keep "Saved" visible for minimum 1.5 seconds before returning to idle
+      statusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 1500);
     },
     onError: () => {
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
       setSaveStatus('error');
       toast({ title: 'Error saving', variant: 'destructive' });
     },
@@ -167,24 +182,41 @@ export default function FunnelEditor() {
   });
 
   // Handle page changes from the editor with auto-save
+  // Uses debouncing to prevent rapid status flicker
   const handlePageChange = useCallback((updatedPage: FlowCanvasPage) => {
     // Store current page for publish
     currentPageRef.current = updatedPage;
     
-    // Clear existing timeout
+    // Clear existing save timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     
-    // Mark as pending
-    setSaveStatus('pending');
+    // Only show "pending" if we're not already in a saving/saved state
+    // This prevents flicker when user edits during save
+    if (saveStatus === 'idle' || saveStatus === 'error') {
+      // Delay showing "pending" by 300ms to avoid flash for quick edits
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      statusTimeoutRef.current = setTimeout(() => {
+        // Only set pending if we haven't started saving yet
+        if (!saveMutation.isPending) {
+          setSaveStatus('pending');
+        }
+      }, 300);
+    }
     
-    // Debounced auto-save after 2 seconds
+    // Debounced auto-save after 2 seconds of inactivity
     saveTimeoutRef.current = setTimeout(() => {
+      // Clear pending status timeout
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
       setSaveStatus('saving');
       saveMutation.mutate(updatedPage);
     }, 2000);
-  }, [saveMutation]);
+  }, [saveMutation, saveStatus]);
 
   // Handle selection changes
   const handleSelect = useCallback((selection: SelectionState) => {

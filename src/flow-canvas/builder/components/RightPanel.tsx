@@ -244,27 +244,31 @@ const FieldGroup: React.FC<{ label: string; children: React.ReactNode; hint?: st
   </div>
 );
 
-// TogglePill: value=true means first option is active, value=false means second option is active
+// TogglePill: Now uses the deterministic BooleanToggle component
+// This component sets explicit true/false values instead of flipping
+import { BooleanToggle, coerceBoolean } from './BooleanToggle';
+
+// Alias for backwards compatibility in this file
 const TogglePill: React.FC<{ value: boolean; onToggle: () => void; labels?: [string, string] }> = ({ 
   value, 
   onToggle,
   labels = ['Yes', 'No']
-}) => (
-  <div className="toggle-pill">
-    <button 
-      onClick={() => { if (!value) onToggle(); }}
-      className={cn('toggle-pill-option', value ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
-    >
-      {labels[0]}
-    </button>
-    <button 
-      onClick={() => { if (value) onToggle(); }}
-      className={cn('toggle-pill-option', !value ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
-    >
-      {labels[1]}
-    </button>
-  </div>
-);
+}) => {
+  // Convert the legacy "onToggle" (flip) pattern to the new explicit pattern
+  // The value prop should already be the correct boolean
+  return (
+    <BooleanToggle
+      value={value}
+      onValueChange={(newValue) => {
+        // Only call onToggle if the value actually changed
+        if (newValue !== value) {
+          onToggle();
+        }
+      }}
+      labels={labels}
+    />
+  );
+};
 
 // PublishToggle removed - Draft/Live toggle was non-functional and confusing
 // Publish is now handled by the dedicated "Publish Changes" button in SiteInfo
@@ -1593,7 +1597,10 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Required</span>
-                <TogglePill value={element.props?.required as boolean || false} onToggle={() => handlePropsChange('required', !element.props?.required)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.required, false)} 
+                  onValueChange={(v) => handlePropsChange('required', v)} 
+                />
               </div>
             </div>
           </CollapsibleSection>
@@ -1672,7 +1679,10 @@ const ElementInspector: React.FC<{
             </FieldGroup>
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Default Checked</span>
-              <TogglePill value={element.props?.defaultChecked === true} onToggle={() => handlePropsChange('defaultChecked', !element.props?.defaultChecked)} />
+              <BooleanToggle 
+                value={coerceBoolean(element.props?.defaultChecked, false)} 
+                onValueChange={(v) => handlePropsChange('defaultChecked', v)} 
+              />
             </div>
           </div>
         </CollapsibleSection>
@@ -1822,15 +1832,24 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Days</span>
-                <TogglePill value={element.props?.showDays !== false} onToggle={() => handlePropsChange('showDays', element.props?.showDays === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showDays, true)} 
+                  onValueChange={(v) => handlePropsChange('showDays', v)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Seconds</span>
-                <TogglePill value={element.props?.showSeconds !== false} onToggle={() => handlePropsChange('showSeconds', element.props?.showSeconds === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showSeconds, true)} 
+                  onValueChange={(v) => handlePropsChange('showSeconds', v)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Labels</span>
-                <TogglePill value={element.props?.showLabels !== false} onToggle={() => handlePropsChange('showLabels', element.props?.showLabels === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showLabels, true)} 
+                  onValueChange={(v) => handlePropsChange('showLabels', v)} 
+                />
               </div>
             </div>
           </CollapsibleSection>
@@ -1839,7 +1858,10 @@ const ElementInspector: React.FC<{
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Loop Mode</span>
-                <TogglePill value={element.props?.loopMode as boolean || false} onToggle={() => handlePropsChange('loopMode', !element.props?.loopMode)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.loopMode, false)} 
+                  onValueChange={(v) => handlePropsChange('loopMode', v)} 
+                />
               </div>
               {element.props?.loopMode && (
                 <FieldGroup label="Reset Interval" hint="Minutes">
@@ -1866,11 +1888,17 @@ const ElementInspector: React.FC<{
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Animate Digits</span>
-                <TogglePill value={element.props?.animateDigits as boolean || false} onToggle={() => handlePropsChange('animateDigits', !element.props?.animateDigits)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.animateDigits, false)} 
+                  onValueChange={(v) => handlePropsChange('animateDigits', v)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Urgency Pulse</span>
-                <TogglePill value={element.props?.urgencyPulse as boolean || false} onToggle={() => handlePropsChange('urgencyPulse', !element.props?.urgencyPulse)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.urgencyPulse, false)} 
+                  onValueChange={(v) => handlePropsChange('urgencyPulse', v)} 
+                />
               </div>
               <p className="text-[10px] text-builder-text-dim">
                 Urgency pulse adds animation when under 1 minute remaining
@@ -2091,15 +2119,24 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Progress</span>
-                <TogglePill value={element.props?.showProgress !== false} onToggle={() => handlePropsChange('showProgress', element.props?.showProgress === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showProgress, true)} 
+                  onValueChange={(v) => handlePropsChange('showProgress', v)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Percentage</span>
-                <TogglePill value={element.props?.showPercentage !== false} onToggle={() => handlePropsChange('showPercentage', element.props?.showPercentage === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showPercentage, true)} 
+                  onValueChange={(v) => handlePropsChange('showPercentage', v)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Auto Advance</span>
-                <TogglePill value={element.props?.autoAdvance !== false} onToggle={() => handlePropsChange('autoAdvance', element.props?.autoAdvance === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.autoAdvance, true)} 
+                  onValueChange={(v) => handlePropsChange('autoAdvance', v)} 
+                />
               </div>
             </div>
           </CollapsibleSection>
@@ -2228,7 +2265,10 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Autoplay</span>
-                <TogglePill value={element.props?.autoplay as boolean || false} onToggle={() => handlePropsChange('autoplay', !element.props?.autoplay)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.autoplay, false)} 
+                  onValueChange={(v) => handlePropsChange('autoplay', v)} 
+                />
               </div>
               {element.props?.autoplay && (
                 <FieldGroup label="Interval" hint="Seconds between slides">
@@ -2244,7 +2284,10 @@ const ElementInspector: React.FC<{
               )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Loop</span>
-                <TogglePill value={element.props?.loop !== false} onToggle={() => handlePropsChange('loop', element.props?.loop === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.loop, true)} 
+                  onValueChange={(v) => handlePropsChange('loop', v)} 
+                />
               </div>
             </div>
           </CollapsibleSection>
@@ -2314,9 +2357,12 @@ const ElementInspector: React.FC<{
             <div className="pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Animated</span>
-                <TogglePill value={element.props?.animated !== false} onToggle={() => handlePropsChange('animated', element.props?.animated === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.animated, true)} 
+                  onValueChange={(v) => handlePropsChange('animated', v)} 
+                />
               </div>
-              {element.props?.animated !== false && (
+              {coerceBoolean(element.props?.animated, true) && (
                 <>
                   <FieldGroup label="Speed" hint="Seconds for one cycle">
                     <div className="flex items-center gap-2">
@@ -2342,13 +2388,19 @@ const ElementInspector: React.FC<{
                   </FieldGroup>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-builder-text-muted">Pause on Hover</span>
-                    <TogglePill value={element.props?.pauseOnHover !== false} onToggle={() => handlePropsChange('pauseOnHover', element.props?.pauseOnHover === false)} />
+                    <BooleanToggle 
+                      value={coerceBoolean(element.props?.pauseOnHover, true)} 
+                      onValueChange={(v) => handlePropsChange('pauseOnHover', v)} 
+                    />
                   </div>
                 </>
               )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Grayscale</span>
-                <TogglePill value={element.props?.grayscale !== false} onToggle={() => handlePropsChange('grayscale', element.props?.grayscale === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.grayscale, true)} 
+                  onValueChange={(v) => handlePropsChange('grayscale', v)} 
+                />
               </div>
               <FieldGroup label="Logo Height">
                 <div className="flex items-center gap-2">
@@ -2497,7 +2549,10 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Allow Scripts</span>
-                <TogglePill value={element.props?.allowScripts as boolean || false} onToggle={() => handlePropsChange('allowScripts', !element.props?.allowScripts)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.allowScripts, false)} 
+                  onValueChange={(v) => handlePropsChange('allowScripts', v)} 
+                />
               </div>
               {element.props?.allowScripts && (
                 <p className="text-[10px] text-amber-500 flex items-center gap-1">
@@ -2556,11 +2611,17 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Logo</span>
-                <TogglePill value={element.props?.showLogo !== false} onToggle={() => handlePropsChange('showLogo', element.props?.showLogo === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showLogo, true)} 
+                  onValueChange={(v) => handlePropsChange('showLogo', v)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Show Review Count</span>
-                <TogglePill value={element.props?.showReviewCount !== false} onToggle={() => handlePropsChange('showReviewCount', element.props?.showReviewCount === false)} />
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showReviewCount, true)} 
+                  onValueChange={(v) => handlePropsChange('showReviewCount', v)} 
+                />
               </div>
               <FieldGroup label="Link URL" hint="Optional Trustpilot page">
                 <Input
@@ -2920,19 +2981,19 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Autoplay</span>
-                <TogglePill 
-                  value={step.background?.videoAutoplay ?? true} 
-                  onToggle={() => onUpdate({ 
-                    background: { ...step.background, type: 'video', videoAutoplay: !(step.background?.videoAutoplay ?? true) } 
+                <BooleanToggle 
+                  value={coerceBoolean(step.background?.videoAutoplay, true)} 
+                  onValueChange={(v) => onUpdate({ 
+                    background: { ...step.background, type: 'video', videoAutoplay: v } 
                   })}
                 />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Loop</span>
-                <TogglePill 
-                  value={step.background?.videoLoop ?? true} 
-                  onToggle={() => onUpdate({ 
-                    background: { ...step.background, type: 'video', videoLoop: !(step.background?.videoLoop ?? true) } 
+                <BooleanToggle 
+                  value={coerceBoolean(step.background?.videoLoop, true)} 
+                  onValueChange={(v) => onUpdate({ 
+                    background: { ...step.background, type: 'video', videoLoop: v } 
                   })}
                 />
               </div>
@@ -3106,12 +3167,12 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
         <div className="space-y-3 pt-3">
           <div className="flex items-center justify-between">
             <span className="text-xs text-builder-text-muted">Enable Overlay</span>
-            <TogglePill 
-              value={(step.settings as Record<string, unknown>)?.overlayEnabled as boolean || false}
-              onToggle={() => onUpdate({ 
+            <BooleanToggle 
+              value={coerceBoolean((step.settings as Record<string, unknown>)?.overlayEnabled, false)}
+              onValueChange={(v) => onUpdate({ 
                 settings: { 
                   ...step.settings, 
-                  overlayEnabled: !(step.settings as Record<string, unknown>)?.overlayEnabled 
+                  overlayEnabled: v 
                 }
               })}
             />
@@ -3167,12 +3228,12 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
         <div className="space-y-3 pt-3">
           <div className="flex items-center justify-between">
             <span className="text-xs text-builder-text-muted">Glassmorphism</span>
-            <TogglePill 
-              value={(step.settings as Record<string, unknown>)?.glassEnabled as boolean || false}
-              onToggle={() => onUpdate({ 
+            <BooleanToggle 
+              value={coerceBoolean((step.settings as Record<string, unknown>)?.glassEnabled, false)}
+              onValueChange={(v) => onUpdate({ 
                 settings: { 
                   ...step.settings, 
-                  glassEnabled: !(step.settings as Record<string, unknown>)?.glassEnabled 
+                  glassEnabled: v 
                 }
               })}
             />
@@ -3550,9 +3611,9 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
           {(block.props?.direction === 'row') && (
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Wrap Items</span>
-              <TogglePill
-                value={block.props?.wrap === true}
-                onToggle={() => onUpdate({ props: { ...block.props, wrap: !block.props?.wrap } })}
+              <BooleanToggle
+                value={coerceBoolean(block.props?.wrap, false)}
+                onValueChange={(v) => onUpdate({ props: { ...block.props, wrap: v } })}
                 labels={['On', 'Off']}
               />
             </div>
@@ -3666,14 +3727,12 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
                 </button>
               </ColorPickerPopover>
             </div>
-            {/* Gradient Border */}
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Gradient Border</span>
-              <TogglePill 
-                value={block.props?.gradientBorder === true} 
-                onToggle={() => {
-                  const isCurrentlyOn = block.props?.gradientBorder === true;
-                  if (!isCurrentlyOn) {
+              <BooleanToggle 
+                value={coerceBoolean(block.props?.gradientBorder, false)} 
+                onValueChange={(v) => {
+                  if (v) {
                     const defaultGradient = {
                       type: 'linear' as const,
                       angle: 135,
@@ -4670,15 +4729,15 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
               <div className="space-y-2 pt-2 border-t border-builder-border">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Autoplay</span>
-                  <TogglePill 
-                    value={page.settings.page_background?.videoAutoplay ?? true}
-                    onToggle={() => onUpdate({ 
+                  <BooleanToggle 
+                    value={coerceBoolean(page.settings.page_background?.videoAutoplay, true)}
+                    onValueChange={(v) => onUpdate({ 
                       settings: { 
                         ...page.settings, 
                         page_background: { 
                           ...page.settings.page_background,
                           type: 'video',
-                          videoAutoplay: !(page.settings.page_background?.videoAutoplay ?? true)
+                          videoAutoplay: v
                         } 
                       } 
                     })}
@@ -4687,15 +4746,15 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Loop</span>
-                  <TogglePill 
-                    value={page.settings.page_background?.videoLoop ?? true}
-                    onToggle={() => onUpdate({ 
+                  <BooleanToggle 
+                    value={coerceBoolean(page.settings.page_background?.videoLoop, true)}
+                    onValueChange={(v) => onUpdate({ 
                       settings: { 
                         ...page.settings, 
                         page_background: { 
                           ...page.settings.page_background,
                           type: 'video',
-                          videoLoop: !(page.settings.page_background?.videoLoop ?? true)
+                          videoLoop: v
                         } 
                       } 
                     })}
@@ -4704,15 +4763,15 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Muted</span>
-                  <TogglePill 
-                    value={page.settings.page_background?.videoMuted ?? true}
-                    onToggle={() => onUpdate({ 
+                  <BooleanToggle 
+                    value={coerceBoolean(page.settings.page_background?.videoMuted, true)}
+                    onValueChange={(v) => onUpdate({ 
                       settings: { 
                         ...page.settings, 
                         page_background: { 
                           ...page.settings.page_background,
                           type: 'video',
-                          videoMuted: !(page.settings.page_background?.videoMuted ?? true)
+                          videoMuted: v
                         } 
                       } 
                     })}
