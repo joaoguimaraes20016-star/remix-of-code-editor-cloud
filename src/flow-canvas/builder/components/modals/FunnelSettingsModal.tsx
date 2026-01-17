@@ -46,8 +46,8 @@ interface FunnelSettingsModalProps {
     // Theme
     theme?: 'light' | 'dark';
     primary_color?: string;
-    background_color?: string;
     font_family?: string;
+    page_background?: { type: 'solid' | 'gradient' | 'image'; color?: string };
     // Branding
     logo_url?: string;
     favicon_url?: string;
@@ -224,6 +224,13 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
         );
 
       case 'colors':
+        // Determine current theme from page_background
+        const currentBgColor = (settings as any).page_background?.color || '#ffffff';
+        const isDarkBackground = currentBgColor.toLowerCase() === '#111827' || 
+                                  currentBgColor.toLowerCase() === '#0f172a' ||
+                                  currentBgColor.toLowerCase() === '#1f2937';
+        const currentTheme = isDarkBackground ? 'dark' : 'light';
+        
         return (
           <div className="space-y-6">
             <div>
@@ -231,41 +238,63 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
               <p className="text-sm text-builder-text-muted">Customize the look and feel</p>
             </div>
             
-            <div className="space-y-4">
-              {/* Color Mode */}
+            <div className="space-y-6">
+              {/* Canvas Theme */}
               <div className="space-y-3">
-                <Label className="text-builder-text">Color Mode</Label>
+                <div>
+                  <Label className="text-builder-text">Canvas Theme</Label>
+                  <p className="text-xs text-builder-text-muted mt-1">
+                    Sets the default background for your funnel
+                  </p>
+                </div>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => onUpdateSettings('theme', 'light')}
+                    onClick={() => {
+                      onUpdateSettings('page_background', { type: 'solid', color: '#ffffff' });
+                      onUpdateSettings('theme', 'light');
+                    }}
                     className={cn(
-                      'flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all',
-                      settings.theme === 'light' || !settings.theme
+                      'flex-1 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all',
+                      currentTheme === 'light'
                         ? 'border-builder-accent bg-builder-accent/10'
                         : 'border-builder-border hover:border-builder-accent/50'
                     )}
                   >
-                    <Sun className="w-5 h-5 text-amber-500" />
+                    <div className="w-full h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                      <Sun className="w-5 h-5 text-amber-500" />
+                    </div>
                     <span className="text-sm font-medium text-builder-text">Light</span>
+                    <span className="text-xs text-builder-text-muted">#ffffff</span>
                   </button>
                   <button
-                    onClick={() => onUpdateSettings('theme', 'dark')}
+                    onClick={() => {
+                      onUpdateSettings('page_background', { type: 'solid', color: '#111827' });
+                      onUpdateSettings('theme', 'dark');
+                    }}
                     className={cn(
-                      'flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all',
-                      settings.theme === 'dark'
+                      'flex-1 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all',
+                      currentTheme === 'dark'
                         ? 'border-builder-accent bg-builder-accent/10'
                         : 'border-builder-border hover:border-builder-accent/50'
                     )}
                   >
-                    <Moon className="w-5 h-5 text-blue-400" />
+                    <div className="w-full h-12 rounded-lg bg-gray-900 border border-gray-700 flex items-center justify-center">
+                      <Moon className="w-5 h-5 text-blue-400" />
+                    </div>
                     <span className="text-sm font-medium text-builder-text">Dark</span>
+                    <span className="text-xs text-builder-text-muted">#111827</span>
                   </button>
                 </div>
               </div>
 
-              {/* Primary Color */}
+              {/* Button & Accent Color */}
               <div className="space-y-3">
-                <Label className="text-builder-text">Primary Color</Label>
+                <div>
+                  <Label className="text-builder-text">Button & Accent Color</Label>
+                  <p className="text-xs text-builder-text-muted mt-1">
+                    Used for primary buttons and interactive elements
+                  </p>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {presetColors.map((color) => (
                     <button
@@ -296,26 +325,14 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
                 </div>
               </div>
 
-              {/* Background Color */}
-              <div className="space-y-3">
-                <Label className="text-builder-text">Background Color</Label>
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-8 h-8 rounded-lg border border-builder-border" 
-                    style={{ backgroundColor: settings.background_color || '#ffffff' }}
-                  />
-                  <Input
-                    value={settings.background_color || '#ffffff'}
-                    onChange={(e) => onUpdateSettings('background_color', e.target.value)}
-                    className="builder-input flex-1 font-mono text-sm"
-                    placeholder="#ffffff"
-                  />
-                </div>
-              </div>
-
               {/* Font Family */}
               <div className="space-y-3">
-                <Label className="text-builder-text">Font Family</Label>
+                <div>
+                  <Label className="text-builder-text">Font Family</Label>
+                  <p className="text-xs text-builder-text-muted mt-1">
+                    Global typography for your funnel
+                  </p>
+                </div>
                 <Select
                   value={settings.font_family || 'Inter'}
                   onValueChange={(value) => onUpdateSettings('font_family', value)}
