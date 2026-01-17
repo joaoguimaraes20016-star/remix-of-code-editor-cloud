@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Image as ImageIcon, Video } from 'lucide-react';
-import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, cloneGradient } from './modals';
+import { Button } from '@/components/ui/button';
+import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, cloneGradient, StockVideoPicker } from './modals';
 import type { GradientValue } from './modals';
 
 export type BackgroundType = 'solid' | 'gradient' | 'image' | 'video';
@@ -279,12 +280,19 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
         <div className="space-y-3">
           <div className="space-y-2">
             <Label className="text-xs text-builder-text-muted">Video URL</Label>
-            <Input
-              value={value.videoUrl || ''}
-              onChange={(e) => handleVideoChange({ videoUrl: e.target.value })}
-              placeholder="https://youtube.com/watch?v=... or .mp4 URL"
-              className="builder-input text-xs"
-            />
+            <div className="flex gap-2">
+              <Input
+                value={value.videoUrl || ''}
+                onChange={(e) => handleVideoChange({ videoUrl: e.target.value })}
+                placeholder="https://youtube.com/watch?v=... or .mp4 URL"
+                className="builder-input text-xs flex-1"
+              />
+              <StockVideoPicker onSelect={(url) => handleVideoChange({ videoUrl: url })}>
+                <Button variant="outline" size="sm" className="px-2 h-9">
+                  <Video className="w-4 h-4" />
+                </Button>
+              </StockVideoPicker>
+            </div>
             <p className="text-[10px] text-builder-text-dim">
               Supports YouTube, Vimeo, or direct .mp4 URLs
             </p>
