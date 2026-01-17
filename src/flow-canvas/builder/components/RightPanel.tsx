@@ -321,6 +321,7 @@ const ELEMENT_SECTIONS = {
   radio: ['field'],
   divider: ['dividerStyle'],
   spacer: ['spacerStyle'],
+  list: ['listItems', 'listStyle', 'typography'],
   // Premium elements - handled by PremiumElementInspector
   'gradient-text': ['premium'],
   'stat-number': ['premium'],

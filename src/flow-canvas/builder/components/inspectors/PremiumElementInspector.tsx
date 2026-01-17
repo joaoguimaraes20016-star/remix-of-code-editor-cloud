@@ -913,8 +913,8 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           </FieldGroup>
         </Section>
         
-        <Section title="Icon" icon={<Sparkles className="w-4 h-4" />}>
-          <FieldGroup label="Display Mode">
+        <Section title="Badge Content" icon={<Sparkles className="w-4 h-4" />}>
+          <FieldGroup label="Show">
             <Select
               value={(element.props?.icon as string) === 'number' || !element.props?.icon ? 'number' : 'icon'}
               onValueChange={(v) => handlePropsChange('icon', v === 'number' ? 'number' : 'Check')}
@@ -923,8 +923,8 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 <SelectValue placeholder="Display" />
               </SelectTrigger>
               <SelectContent className="bg-background border-border">
-                <SelectItem value="number">Show Number</SelectItem>
-                <SelectItem value="icon">Show Icon</SelectItem>
+                <SelectItem value="number">Step Number</SelectItem>
+                <SelectItem value="icon">Custom Icon</SelectItem>
               </SelectContent>
             </Select>
           </FieldGroup>

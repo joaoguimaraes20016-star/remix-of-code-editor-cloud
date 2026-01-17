@@ -678,10 +678,23 @@ export function FlowCanvasRenderer({
       case 'stat-number':
         const suffix = (element.props?.suffix as string) || '+';
         const statLabel = (element.props?.label as string) || '';
+        const numberColor = (element.props?.numberColor as string);
+        const suffixColor = (element.props?.suffixColor as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';
+        const labelColor = (element.props?.labelColor as string);
         return (
           <div key={element.id} className="text-center">
-            <div className="text-5xl font-bold tracking-tight">{element.content || '0'}{suffix}</div>
-            {statLabel && <div className="text-xs uppercase tracking-wider mt-2 opacity-70">{statLabel}</div>}
+            <div className="text-5xl font-bold tracking-tight">
+              <span style={{ color: numberColor || undefined }}>{element.content || '0'}</span>
+              <span style={{ color: suffixColor }}>{suffix}</span>
+            </div>
+            {statLabel && (
+              <div 
+                className="text-xs uppercase tracking-wider mt-2 opacity-70"
+                style={{ color: labelColor || undefined }}
+              >
+                {statLabel}
+              </div>
+            )}
           </div>
         );
 
@@ -721,6 +734,7 @@ export function FlowCanvasRenderer({
 
       case 'badge':
         const badgeVariant = (element.props?.variant as string) || 'primary';
+        const badgeIcon = element.props?.icon as string;
         const badgeClasses: Record<string, string> = {
           primary: 'bg-purple-500/20 text-purple-400',
           success: 'bg-green-500/20 text-green-400',
@@ -728,7 +742,16 @@ export function FlowCanvasRenderer({
           premium: 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black'
         };
         return (
-          <span key={element.id} className={cn('px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider', badgeClasses[badgeVariant] || badgeClasses.primary)}>
+          <span key={element.id} className={cn('px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5', badgeClasses[badgeVariant] || badgeClasses.primary)}>
+            {badgeIcon && (() => {
+              const iconName = badgeIcon.toLowerCase();
+              // Simple icon mapping for runtime - common badge icons
+              const IconComp = iconName === 'sparkles' ? Sparkles 
+                : iconName === 'rocket' ? Rocket 
+                : iconName === 'star' ? Sparkles // fallback
+                : Sparkles;
+              return <IconComp className="w-3 h-3" />;
+            })()}
             {element.content || 'BADGE'}
           </span>
         );
