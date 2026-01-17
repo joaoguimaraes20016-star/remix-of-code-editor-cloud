@@ -1,6 +1,6 @@
 export { CollaboratorsModal } from './CollaboratorsModal';
 export { SEOSettingsModal } from './SEOSettingsModal';
-export { ThemeCustomizerModal } from './ThemeCustomizerModal';
+export { FunnelSettingsModal } from './FunnelSettingsModal';
 export { ShareModal } from './ShareModal';
 export { ImagePickerModal } from './ImagePickerModal';
 export { EffectsPickerPopover } from './EffectsPickerPopover';

@@ -18,7 +18,7 @@ import {
 import {
   CollaboratorsModal,
   SEOSettingsModal,
-  ThemeCustomizerModal,
+  FunnelSettingsModal,
   ShareModal,
   AnalyticsPanel,
   TextStylesModal,
@@ -152,7 +152,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   // Modal states
   const [isCollaboratorsOpen, setIsCollaboratorsOpen] = useState(false);
   const [isSEOOpen, setIsSEOOpen] = useState(false);
-  const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isTextStylesOpen, setIsTextStylesOpen] = useState(false);
@@ -1400,7 +1400,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         onOpenCollaborators={() => setIsCollaboratorsOpen(true)}
         onOpenSEO={() => setIsSEOOpen(true)}
         onOpenAnalytics={() => setIsAnalyticsOpen(true)}
-        onOpenTheme={() => setIsThemeOpen(true)}
+        onOpenTheme={() => setIsSettingsOpen(true)}
         onOpenShare={() => setIsShareOpen(true)}
         onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
         onRenameProject={handleRenameProject}
@@ -1677,10 +1677,11 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         meta={page.settings.meta || {}}
         onUpdateMeta={handleMetaUpdate}
       />
-      <ThemeCustomizerModal
-        isOpen={isThemeOpen}
-        onClose={() => setIsThemeOpen(false)}
+      <FunnelSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
         settings={page.settings}
+        pageSlug={page.slug}
         onUpdateSettings={handleSettingsUpdate}
       />
       <ShareModal
