@@ -32,7 +32,8 @@ import {
   Film,
   FileIcon,
   Copy,
-  Workflow
+  Workflow,
+  PanelLeftClose
 } from 'lucide-react';
 // ApplicationStepsPanel removed - Application Flow is now a block type
 import { getIntentColorClass } from '../utils/helpers';
@@ -104,6 +105,8 @@ interface LeftPanelProps {
   onRenameStep?: (stepId: string, newName: string) => void;
   onOpenImagePicker?: () => void;
   onOpenBlockPicker?: () => void;
+  /** Callback to close the entire left panel */
+  onClosePanel?: () => void;
 }
 
 const intentIcons: Record<StepIntent, React.ReactNode> = {
@@ -887,6 +890,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onRenameStep,
   onOpenImagePicker,
   onOpenBlockPicker,
+  onClosePanel,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('pages');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -922,9 +926,19 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex flex-col h-full bg-builder-surface border-r border-builder-border">
-        {/* Tab Bar - Simplified: Pages, Layers, Assets */}
+      <div className="flex flex-col h-full bg-builder-surface">
+        {/* Tab Bar with Close Button */}
         <div className="flex items-center border-b border-builder-border">
+          {/* Close Panel Button */}
+          {onClosePanel && (
+            <button
+              onClick={onClosePanel}
+              className="shrink-0 p-2.5 hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors border-r border-builder-border"
+              title="Close panel"
+            >
+              <PanelLeftClose size={14} />
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('pages')}
             className={cn('builder-tab flex-1', activeTab === 'pages' && 'builder-tab-active')}

@@ -5,7 +5,7 @@ import {
   HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow,
   Sparkles, Star, SlidersHorizontal, Shapes, Timer, Loader2, MapPin, Code,
   Upload, MessageSquare, CalendarDays, CreditCard, LayoutGrid, List, Minus, Play,
-  Users, Package, Quote
+  Users, Package, Quote, PanelLeftClose
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '@/flow-canvas/types/infostack';
@@ -57,6 +57,8 @@ interface BlockPickerPanelProps {
   targetStackId?: string | null;
   /** Callback to open AI Generate modal */
   onOpenAIGenerate?: () => void;
+  /** Callback to close the entire left panel */
+  onClosePanel?: () => void;
 }
 
 type ActiveTab = 'blocks' | 'sections';
@@ -1028,6 +1030,7 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   onCreateApplicationFlowWithStep,
   targetStackId,
   onOpenAIGenerate,
+  onClosePanel,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
@@ -1200,22 +1203,34 @@ export const BlockPickerPanel: React.FC<BlockPickerPanelProps> = ({
   return (
     <div className="flex flex-col h-full min-h-0 bg-builder-surface">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2.5 border-b border-builder-border">
-        <div className="flex items-center gap-2">
+      <div className="flex-shrink-0 flex items-center justify-between px-2 py-2 border-b border-builder-border">
+        <div className="flex items-center gap-1.5">
+          {/* Close Panel Button */}
+          {onClosePanel && (
+            <button 
+              onClick={onClosePanel}
+              className="p-1.5 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+              title="Close panel"
+            >
+              <PanelLeftClose size={14} />
+            </button>
+          )}
           <button 
             onClick={onClose}
-            className="p-1 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+            className="p-1.5 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+            title="Back to pages"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={14} />
           </button>
-          <Sparkles className="w-4 h-4 text-builder-accent" />
-          <span className="text-sm font-medium text-builder-text">Add Content</span>
+          <Sparkles className="w-3.5 h-3.5 text-builder-accent" />
+          <span className="text-xs font-medium text-builder-text">Add Content</span>
         </div>
         <button 
           onClick={onClose}
-          className="p-1 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+          className="p-1.5 rounded hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors"
+          title="Close picker"
         >
-          <X size={16} />
+          <X size={14} />
         </button>
       </div>
 
