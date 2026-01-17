@@ -1614,11 +1614,12 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onRenameFrame={handleRenameFrame}
             onOpenBlockPickerInPanel={(stackId) => {
               setBlockPickerTargetStackId(stackId);
+              setBlockPickerMode('blocks');
               setBlockPickerOpen(true);
             }}
             onOpenSectionPicker={() => {
-              setBlockPickerMode('sections');
               setBlockPickerOpen(true);
+              setBlockPickerMode('sections');
             }}
             onNextStep={() => {
               const currentIndex = page.steps.findIndex(s => s.id === activeStepId);
