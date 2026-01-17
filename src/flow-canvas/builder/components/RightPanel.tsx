@@ -101,6 +101,7 @@ import {
   Tablet,
   Smartphone,
   ArrowRight,
+  PanelRightClose,
 } from 'lucide-react';
 import { 
   EffectsPickerPopover, 
@@ -156,6 +157,8 @@ interface RightPanelProps {
   // Element selection within flow steps
   selectedStepElement?: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null;
   onClearStepElement?: () => void;
+  /** Callback to close the entire right panel */
+  onClosePanel?: () => void;
 }
 
 interface CollapsibleSectionProps {
@@ -3260,6 +3263,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   onSelectApplicationStep,
   selectedStepElement,
   onClearStepElement,
+  onClosePanel,
 }) => {
   // Try to find node by path first, then fallback to ID search
   let selectedNode = selection.id ? findNodeByPath(page, selection.path) : null;
@@ -3408,13 +3412,32 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   return (
     <div className="builder-right-panel w-72 bg-builder-surface border-l border-builder-border flex flex-col h-full min-h-0">
       
-      {/* Selection Breadcrumb - shows hierarchy when something is selected */}
-      {breadcrumbItems.length > 0 && (
-        <SelectionBreadcrumb 
-          items={breadcrumbItems}
-          onSelect={handleBreadcrumbSelect}
-        />
-      )}
+      {/* Panel Header with Close Button */}
+      <div className="flex items-center justify-between border-b border-builder-border shrink-0">
+        {/* Close Panel Button - far left */}
+        {onClosePanel && (
+          <button
+            onClick={onClosePanel}
+            className="shrink-0 p-2.5 hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors border-r border-builder-border"
+            title="Close panel"
+          >
+            <PanelRightClose size={14} />
+          </button>
+        )}
+        {/* Selection Breadcrumb - shows hierarchy when something is selected */}
+        {breadcrumbItems.length > 0 ? (
+          <div className="flex-1 min-w-0">
+            <SelectionBreadcrumb 
+              items={breadcrumbItems}
+              onSelect={handleBreadcrumbSelect}
+            />
+          </div>
+        ) : (
+          <div className="flex-1 px-3 py-2.5 text-sm font-medium text-builder-text">
+            Inspector
+          </div>
+        )}
+      </div>
 
       {/* Content - min-h-0 critical for flex scroll */}
       <div className="flex-1 overflow-y-auto builder-scroll min-h-0">

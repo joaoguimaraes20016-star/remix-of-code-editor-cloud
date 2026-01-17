@@ -927,18 +927,8 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex flex-col h-full bg-builder-surface">
-        {/* Tab Bar with Close Button */}
+        {/* Tab Bar with Close Button on far right */}
         <div className="flex items-center border-b border-builder-border">
-          {/* Close Panel Button */}
-          {onClosePanel && (
-            <button
-              onClick={onClosePanel}
-              className="shrink-0 p-2.5 hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors border-r border-builder-border"
-              title="Close panel"
-            >
-              <PanelLeftClose size={14} />
-            </button>
-          )}
           <button
             onClick={() => setActiveTab('pages')}
             className={cn('builder-tab flex-1', activeTab === 'pages' && 'builder-tab-active')}
@@ -957,6 +947,16 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           >
             Assets
           </button>
+          {/* Close Panel Button - far right */}
+          {onClosePanel && (
+            <button
+              onClick={onClosePanel}
+              className="shrink-0 p-2.5 hover:bg-builder-surface-hover text-builder-text-muted hover:text-builder-text transition-colors border-l border-builder-border"
+              title="Close panel"
+            >
+              <PanelLeftClose size={14} />
+            </button>
+          )}
         </div>
 
         {/* Panel Content */}
