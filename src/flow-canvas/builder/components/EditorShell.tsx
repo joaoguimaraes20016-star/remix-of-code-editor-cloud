@@ -837,10 +837,34 @@ export const EditorShell: React.FC<EditorShellProps> = ({
 
   const handleSettingsUpdate = useCallback((key: string, value: any) => {
     const updatedPage = deepClone(page);
+
     updatedPage.settings = {
       ...updatedPage.settings,
       [key]: value,
     };
+
+    // IMPORTANT: Steps currently default to an explicit white background.
+    // That means changing the global `page_background` will not be visible unless a step
+    // background is unset or still at the default. To make "Canvas Theme" feel real and
+    // predictable, we propagate the new page background to steps that are still at the
+    // default background (i.e., not customized).
+    if (key === 'page_background' && value?.type === 'solid' && typeof value?.color === 'string') {
+      const defaultStepBgColor = '#ffffff';
+      updatedPage.steps = (updatedPage.steps || []).map((s) => {
+        const stepBgColor = (s as any)?.background?.color;
+        const stepBgType = (s as any)?.background?.type;
+
+        const isDefaultStepBackground = stepBgType === 'solid' && (stepBgColor || '').toLowerCase() === defaultStepBgColor;
+
+        if (!isDefaultStepBackground) return s;
+
+        return {
+          ...s,
+          background: { type: 'solid', color: value.color },
+        };
+      });
+    }
+
     handlePageUpdate(updatedPage);
   }, [page, handlePageUpdate]);
 
