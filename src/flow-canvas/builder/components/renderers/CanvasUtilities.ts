@@ -234,6 +234,32 @@ export function getPageBackgroundStyles(bg: PageBackground | undefined, isDarkTh
       // Video backgrounds render as transparent - actual video element overlaid separately
       styles.backgroundColor = 'transparent';
       break;
+    case 'pattern':
+      styles.backgroundColor = bg.color || defaultBg;
+      if (bg.pattern) {
+        const p = bg.pattern;
+        const opacity = (p.opacity || 20) / 100;
+        const size = p.size || 20;
+        let svg = '';
+        switch (p.type) {
+          case 'dots':
+            svg = `<circle cx="${size/2}" cy="${size/2}" r="1.5" fill="${p.color}" fill-opacity="${opacity}"/>`;
+            break;
+          case 'grid':
+            svg = `<path d="M ${size} 0 L 0 0 0 ${size}" fill="none" stroke="${p.color}" stroke-opacity="${opacity}" stroke-width="0.5"/>`;
+            break;
+          case 'lines':
+            svg = `<path d="M 0 ${size} L ${size} 0" stroke="${p.color}" stroke-opacity="${opacity}" stroke-width="0.5"/>`;
+            break;
+          case 'noise':
+            svg = `<path d="M 0 ${size} L ${size} 0 M ${size} ${size} L 0 0" stroke="${p.color}" stroke-opacity="${opacity}" stroke-width="0.5"/>`;
+            break;
+        }
+        const encoded = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">${svg}</svg>`);
+        styles.backgroundImage = `url("data:image/svg+xml,${encoded}")`;
+        styles.backgroundRepeat = 'repeat';
+      }
+      break;
     default:
       styles.backgroundColor = defaultBg;
   }
