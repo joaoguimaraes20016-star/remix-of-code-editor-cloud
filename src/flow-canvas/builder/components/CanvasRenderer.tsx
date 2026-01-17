@@ -406,12 +406,62 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
     const base: React.CSSProperties = {};
     
     // Apply base styles from element.styles
-    if (element.styles?.opacity) base.opacity = element.styles.opacity;
+    if (element.styles?.opacity) {
+      const opacityVal = typeof element.styles.opacity === 'string' 
+        ? parseInt(element.styles.opacity) / 100 
+        : element.styles.opacity;
+      base.opacity = opacityVal;
+    }
     if (element.styles?.backgroundColor) base.backgroundColor = element.styles.backgroundColor;
     if (element.styles?.borderRadius) base.borderRadius = element.styles.borderRadius;
     if (element.styles?.cursor) base.cursor = element.styles.cursor;
     if (element.styles?.display) base.display = element.styles.display;
     if (element.styles?.overflow) base.overflow = element.styles.overflow;
+    
+    // NEW: Apply rotation
+    if (element.styles?.rotate) {
+      const rotateVal = typeof element.styles.rotate === 'string' 
+        ? parseInt(element.styles.rotate) 
+        : element.styles.rotate;
+      if (rotateVal && rotateVal !== 0) {
+        base.transform = `rotate(${rotateVal}deg)`;
+      }
+    }
+    
+    // NEW: Apply z-index
+    if (element.styles?.zIndex && element.styles.zIndex !== 'auto') {
+      base.zIndex = Number(element.styles.zIndex);
+    }
+    
+    // NEW: Apply border styles
+    if (element.styles?.borderWidth) base.borderWidth = element.styles.borderWidth;
+    if (element.styles?.borderStyle) base.borderStyle = element.styles.borderStyle as React.CSSProperties['borderStyle'];
+    if (element.styles?.borderColor) base.borderColor = element.styles.borderColor;
+    
+    // NEW: Apply blur and brightness filters
+    const blur = (element.props?.blur as number) ?? 0;
+    const brightness = (element.props?.brightness as number) ?? 100;
+    if (blur > 0 || brightness !== 100) {
+      const filters: string[] = [];
+      if (blur > 0) filters.push(`blur(${blur}px)`);
+      if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
+      base.filter = filters.join(' ');
+    }
+    
+    // NEW: Apply shadow preset
+    const shadowPreset = element.props?.shadowPreset as string;
+    if (shadowPreset && shadowPreset !== 'none') {
+      const shadowMap: Record<string, string> = {
+        'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+        '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+      };
+      if (shadowMap[shadowPreset]) {
+        base.boxShadow = shadowMap[shadowPreset];
+      }
+    }
     
     // Apply state-based overrides (hover, active)
     if (currentInteractionState !== 'base' && element.stateStyles?.[currentInteractionState]) {
@@ -445,13 +495,24 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
     }
     
     return base;
-  }, [element.styles, element.stateStyles, element.responsive, currentInteractionState, deviceMode]);
+  }, [element.styles, element.stateStyles, element.responsive, element.props?.blur, element.props?.brightness, element.props?.shadowPreset, currentInteractionState, deviceMode]);
   
   // Evaluate conditional visibility
   const visibility = element.visibility as VisibilitySettings | undefined;
   if (isPreviewMode && visibility?.conditions && visibility.conditions.length > 0) {
     const isVisible = evaluateVisibility(visibility.conditions, visibility.logic || 'and', formValues);
     if (!isVisible) return null;
+  }
+  
+  // NEW: Responsive visibility - hide on specific device modes
+  const hideOnDesktop = element.props?.hideOnDesktop as boolean;
+  const hideOnTablet = element.props?.hideOnTablet as boolean;
+  const hideOnMobile = element.props?.hideOnMobile as boolean;
+  
+  if (isPreviewMode) {
+    if (deviceMode === 'desktop' && hideOnDesktop) return null;
+    if (deviceMode === 'tablet' && hideOnTablet) return null;
+    if (deviceMode === 'mobile' && hideOnMobile) return null;
   }
 
   const resolvedStyles = resolveElementStyles();
