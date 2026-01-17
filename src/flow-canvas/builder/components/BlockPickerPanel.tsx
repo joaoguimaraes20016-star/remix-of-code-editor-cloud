@@ -5,7 +5,7 @@ import {
   HelpCircle, ListChecks, Video, FileText, X, ArrowLeft, Layers, Calendar, Workflow,
   Sparkles, Star, SlidersHorizontal, Shapes, Timer, Loader2, MapPin, Code,
   Upload, MessageSquare, CalendarDays, CreditCard, LayoutGrid, List, Minus, Play,
-  Users, Package, Quote, PanelLeftClose, Image as ImageIcon, Layout
+  Users, Package, Quote, PanelLeftClose, Image as ImageIcon, Layout, Hash
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Block, ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType } from '@/flow-canvas/types/infostack';
@@ -814,9 +814,199 @@ const flowBlocks: BlockTemplate[] = [
   },
 ];
 
+// ============ PREMIUM ELEMENTS ============
+
+const premiumBlocks: BlockTemplate[] = [
+  {
+    type: 'gradient-text-block',
+    label: 'Gradient Text',
+    icon: <Sparkles size={16} />,
+    description: 'Bold text with gradient fill',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Gradient Text',
+      elements: [{
+        id: generateId(),
+        type: 'gradient-text',
+        content: 'Gradient Text',
+        props: {
+          gradient: {
+            type: 'linear',
+            angle: 135,
+            stops: [
+              { color: '#8B5CF6', position: 0 },
+              { color: '#EC4899', position: 100 }
+            ]
+          },
+          fontSize: '4xl'
+        }
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'stat-number-block',
+    label: 'Stat Number',
+    icon: <Hash size={16} />,
+    description: 'Large animated numbers',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Stat Number',
+      elements: [{
+        id: generateId(),
+        type: 'stat-number',
+        content: '9,943',
+        props: {
+          suffix: '+',
+          label: 'MEMBERS',
+          size: 'xl'
+        }
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'avatar-group-block',
+    label: 'Avatar Group',
+    icon: <Users size={16} />,
+    description: 'Stacked profile avatars',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Avatar Group',
+      elements: [{
+        id: generateId(),
+        type: 'avatar-group',
+        content: '',
+        props: {
+          count: 5,
+          size: 'md'
+        }
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'badge-block',
+    label: 'Badge',
+    icon: <Star size={16} />,
+    description: 'Highlight labels & tags',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Badge',
+      elements: [{
+        id: generateId(),
+        type: 'badge',
+        content: 'FEATURED',
+        props: {
+          variant: 'premium',
+          icon: 'sparkles'
+        }
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'ticker-block',
+    label: 'Ticker',
+    icon: <Minus size={16} />,
+    description: 'Scrolling marquee text',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Ticker',
+      elements: [{
+        id: generateId(),
+        type: 'ticker',
+        content: '',
+        props: {
+          items: ['🔥 Limited spots available', '✨ Join 10,000+ members', '🚀 Start your journey today'],
+          separator: '  •  ',
+          speed: 30
+        }
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'underline-text-block',
+    label: 'Underline Text',
+    icon: <Type size={16} />,
+    description: 'Text with gradient underline',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Underline Text',
+      elements: [{
+        id: generateId(),
+        type: 'underline-text',
+        content: 'Stand out with style',
+        props: {
+          underlineFrom: '#8B5CF6',
+          underlineTo: '#EC4899'
+        }
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'process-step-block',
+    label: 'Process Step',
+    icon: <ListChecks size={16} />,
+    description: 'Numbered step indicator',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Process Step',
+      elements: [{
+        id: generateId(),
+        type: 'process-step',
+        content: 'Complete your profile',
+        props: {
+          step: 1,
+          icon: 'number'
+        }
+      }],
+      props: {},
+    }),
+  },
+  {
+    type: 'video-thumbnail-block',
+    label: 'Video Thumbnail',
+    icon: <Play size={16} />,
+    description: 'Click-to-play video card',
+    template: () => ({
+      id: generateId(),
+      type: 'custom',
+      label: 'Video Thumbnail',
+      elements: [{
+        id: generateId(),
+        type: 'video-thumbnail',
+        content: '',
+        props: {
+          thumbnailUrl: '',
+          videoUrl: '',
+          overlayStyle: 'gradient'
+        }
+      }],
+      props: {},
+    }),
+  },
+];
+
 // ============ BLOCK CATEGORIES ============
 
 const blockCategories: BlockCategory[] = [
+  {
+    id: 'premium',
+    label: 'Premium',
+    hint: 'Gradient text, badges, stats & more',
+    blocks: premiumBlocks,
+    defaultOpen: true,
+  },
   {
     id: 'basic',
     label: 'Basic Blocks',
