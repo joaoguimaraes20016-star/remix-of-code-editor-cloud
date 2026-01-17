@@ -16,6 +16,9 @@ interface ElementWrapperProps {
   onMoveUp?: (nodeId: string) => void;
   onMoveDown?: (nodeId: string) => void;
   onDuplicate?: (nodeId: string) => void;
+  onAddAbove?: (nodeId: string) => void;
+  onAddBelow?: (nodeId: string) => void;
+  onSelectParent?: (nodeId: string) => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   children: ReactNode;
@@ -34,6 +37,9 @@ export function ElementWrapper({
   onMoveUp,
   onMoveDown,
   onDuplicate,
+  onAddAbove,
+  onAddBelow,
+  onSelectParent,
   canMoveUp = true,
   canMoveDown = true,
   children,
@@ -81,6 +87,9 @@ export function ElementWrapper({
           onMoveDown={onMoveDown ? () => onMoveDown(nodeId) : undefined}
           onDuplicate={onDuplicate ? () => onDuplicate(nodeId) : undefined}
           onDelete={onDelete ? () => onDelete(nodeId) : undefined}
+          onAddAbove={onAddAbove ? () => onAddAbove(nodeId) : undefined}
+          onAddBelow={onAddBelow ? () => onAddBelow(nodeId) : undefined}
+          onSelectParent={onSelectParent ? () => onSelectParent(nodeId) : undefined}
           canMoveUp={canMoveUp}
           canMoveDown={canMoveDown}
         />

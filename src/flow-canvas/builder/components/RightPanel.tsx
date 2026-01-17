@@ -2964,6 +2964,57 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
                 </p>
               )}
             </div>
+            
+            {/* Quick Effects Presets */}
+            <div className="space-y-2 pt-2 border-t border-builder-border/50">
+              <span className="text-xs text-builder-text-muted">Quick Effects</span>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => {
+                    handleStyleUpdate('backdropBlur', '12px');
+                    handleStyleUpdate('backgroundColor', 'rgba(255,255,255,0.1)');
+                    handleStyleUpdate('borderWidth', '1px');
+                    handleStyleUpdate('borderColor', 'rgba(255,255,255,0.2)');
+                    handleStyleUpdate('borderRadius', '16px');
+                  }}
+                  className="px-2 py-1.5 text-[10px] rounded-md bg-builder-surface-hover hover:bg-builder-surface-active transition-colors text-builder-text-muted hover:text-builder-text"
+                >
+                  Glassmorphism
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdate({ 
+                      props: { ...block.props, shadow: 'neon', glowColor: '#8b5cf6' }
+                    });
+                    handleStyleUpdate('borderRadius', '12px');
+                  }}
+                  className="px-2 py-1.5 text-[10px] rounded-md bg-builder-surface-hover hover:bg-builder-surface-active transition-colors text-builder-text-muted hover:text-builder-text"
+                >
+                  Neon Glow
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdate({ props: { ...block.props, shadow: 'lg' } });
+                    handleStyleUpdate('backgroundColor', 'rgba(255,255,255,0.95)');
+                    handleStyleUpdate('borderRadius', '16px');
+                    handleStyleUpdate('backdropBlur', '0px');
+                  }}
+                  className="px-2 py-1.5 text-[10px] rounded-md bg-builder-surface-hover hover:bg-builder-surface-active transition-colors text-builder-text-muted hover:text-builder-text"
+                >
+                  Soft Shadow
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdate({ props: { ...block.props, shadow: 'xl' } });
+                    handleStyleUpdate('borderRadius', '20px');
+                    handleStyleUpdate('backgroundColor', 'rgba(255,255,255,0.98)');
+                  }}
+                  className="px-2 py-1.5 text-[10px] rounded-md bg-builder-surface-hover hover:bg-builder-surface-active transition-colors text-builder-text-muted hover:text-builder-text"
+                >
+                  Floating Card
+                </button>
+              </div>
+            </div>
           </div>
         </CollapsibleSection>
       )}

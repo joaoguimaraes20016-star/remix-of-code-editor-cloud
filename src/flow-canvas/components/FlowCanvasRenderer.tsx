@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Loader2, Play, User, Layout, ArrowRight, Sparkles, Search, Calendar, FileText, Rocket, Video } from 'lucide-react';
+import { generateStateStylesCSS } from './RuntimeElementRenderer';
 
 // Helper to convert gradient object to CSS
 function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): string {
@@ -318,29 +319,53 @@ function ButtonRenderer({ element, onClick, isSubmitting }: ButtonRendererProps)
     md: 'px-6 py-3 text-base',
     lg: 'px-8 py-4 text-lg',
   };
+
+  // Generate state styles CSS for hover/active effects
+  const stateStyles = element.props?.stateStyles as Record<string, unknown> | undefined;
+  const stateStylesCSS = useMemo(() => {
+    if (!stateStyles) return '';
+    return generateStateStylesCSS(element.id, stateStyles as any);
+  }, [element.id, stateStyles]);
+  
+  const stateClassName = stateStyles ? `runtime-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
+  
+  // Get custom styles from element
+  const customBackground = element.styles?.backgroundColor || element.props?.backgroundColor as string;
+  const customTextColor = element.props?.textColor as string;
+  const customBorderRadius = element.styles?.borderRadius;
   
   return (
-    <button
-      key={element.id}
-      type="button"
-      onClick={onClick}
-      disabled={isSubmitting}
-      className={cn(
-        'w-full rounded-lg font-semibold transition-all',
-        'bg-primary text-primary-foreground hover:opacity-90',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        sizeClasses[size]
-      )}
-    >
-      {isSubmitting ? (
-        <span className="flex items-center justify-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Submitting...
-        </span>
-      ) : (
-        element.content
-      )}
-    </button>
+    <>
+      {stateStylesCSS && <style>{stateStylesCSS}</style>}
+      <button
+        key={element.id}
+        type="button"
+        onClick={onClick}
+        disabled={isSubmitting}
+        className={cn(
+          'w-full rounded-lg font-semibold transition-all',
+          !customBackground && 'bg-primary',
+          !customTextColor && 'text-primary-foreground',
+          'disabled:opacity-50 disabled:cursor-not-allowed',
+          sizeClasses[size],
+          stateClassName
+        )}
+        style={{
+          backgroundColor: customBackground,
+          color: customTextColor,
+          borderRadius: customBorderRadius,
+        }}
+      >
+        {isSubmitting ? (
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Submitting...
+          </span>
+        ) : (
+          element.content
+        )}
+      </button>
+    </>
   );
 }
 
