@@ -117,7 +117,7 @@ import {
 import { BackgroundEditor, BackgroundValue, backgroundValueToCSS } from './BackgroundEditor';
 import type { GradientValue, ButtonAction, VideoSettings } from './modals';
 import { toast } from 'sonner';
-import { useInlineEdit } from '../contexts/InlineEditContext';
+import { useInlineEdit, useInlineSelectionSync } from '../contexts/InlineEditContext';
 import { ButtonIconPicker } from './ButtonIconPicker';
 import { ApplicationFlowInspector } from './inspectors/ApplicationFlowInspector';
 import { InteractiveBlockInspector } from './inspectors/InteractiveBlockInspector';
@@ -368,8 +368,11 @@ const ElementInspector: React.FC<{
   // When a text element is being edited, route Right Panel fill changes to the selection
   const { applyInlineStyle, hasActiveEditor, getInlineSelectionStyles } = useInlineEdit();
 
-  // Force re-render while selection changes so the inspector reflects the *actual selected span* styles
+   // Force re-render while selection changes so the inspector reflects the *actual selected span* styles
   const [selectionTick, setSelectionTick] = useState(0);
+
+  // Use the new selection sync hook for more reliable updates
+  const contextSelectionTick = useInlineSelectionSync(element.id);
 
    useEffect(() => {
      if (element.type !== 'text' && element.type !== 'heading') return;
@@ -388,9 +391,12 @@ const ElementInspector: React.FC<{
      };
    }, [element.id, element.type, hasActiveEditor]);
 
+  // Combine both ticks for comprehensive reactivity
+  const combinedTick = selectionTick + contextSelectionTick;
+
   const inlineSelectionStyles = useMemo(
     () => getInlineSelectionStyles(element.id),
-    [getInlineSelectionStyles, element.id, selectionTick]
+    [getInlineSelectionStyles, element.id, combinedTick]
   );
 
   // Compute the actual rendered text color from the DOM element when no explicit color is set

@@ -16,11 +16,16 @@ export { BlockActionBar } from './components/BlockActionBar';
 export { InlineTextEditor } from './components/InlineTextEditor';
 export { RichTextToolbar } from './components/RichTextToolbar';
 
+// Contexts
+export { InlineEditProvider, useInlineEdit, useInlineSelectionSync } from './contexts/InlineEditContext';
+
 // Hooks
 export { useHistory } from './hooks/useHistory';
 
 // Utilities
 export * from './utils/helpers';
+export * from './utils/textHighlight';
+export * from './utils/selectionManager';
 
 // Types (re-exported from types folder)
 export type {
