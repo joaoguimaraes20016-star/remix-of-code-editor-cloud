@@ -835,7 +835,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     handlePageUpdate(updatedPage);
   }, [page, handlePageUpdate]);
 
-  const handleSettingsUpdate = useCallback((key: string, value: string) => {
+  const handleSettingsUpdate = useCallback((key: string, value: any) => {
     const updatedPage = deepClone(page);
     updatedPage.settings = {
       ...updatedPage.settings,

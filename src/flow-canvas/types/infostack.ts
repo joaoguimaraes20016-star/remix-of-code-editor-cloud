@@ -387,10 +387,47 @@ export interface Page {
   slug: string;
   steps: Step[];
   settings: {
+    // Theme & styling
     theme?: 'light' | 'dark';
     font_family?: string;
     primary_color?: string;
     page_background?: PageBackground;
+    
+    // Branding
+    logo_url?: string;
+    favicon_url?: string;
+    
+    // SEO
+    seo_title?: string;
+    seo_description?: string;
+    seo_image?: string;
+    
+    // Progress
+    show_progress_bar?: boolean;
+    
+    // Pop-Up Gate
+    popup_optin_enabled?: boolean;
+    popup_optin_headline?: string;
+    popup_optin_subtext?: string;
+    popup_optin_fields?: ('name' | 'email' | 'phone')[];
+    popup_optin_button_text?: string;
+    
+    // Tracking
+    meta_pixel_id?: string;
+    google_analytics_id?: string;
+    google_ads_id?: string;
+    tiktok_pixel_id?: string;
+    
+    // Integrations
+    ghl_webhook_url?: string;
+    zapier_webhook_url?: string;
+    webhook_urls?: string[];
+    
+    // Misc
+    button_text?: string;
+    privacy_policy_url?: string;
+    
+    // Legacy
     meta?: {
       title?: string;
       description?: string;
