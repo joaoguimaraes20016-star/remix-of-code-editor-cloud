@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -29,9 +28,9 @@ interface StockVideo {
   duration?: string;
 }
 
-// Curated list of high-quality free stock videos from various CDNs
+// Curated list of high-quality free stock videos from Pexels
 const STOCK_VIDEOS: StockVideo[] = [
-  // Abstract / Particles
+  // Abstract / Particles (8 videos)
   {
     id: 'abstract-particles-1',
     category: 'abstract',
@@ -43,16 +42,16 @@ const STOCK_VIDEOS: StockVideo[] = [
   {
     id: 'abstract-gradient-1',
     category: 'abstract',
-    thumbnail: 'https://images.pexels.com/videos/4763824/free-video-4763824.jpg?auto=compress&w=200',
-    url: 'https://videos.pexels.com/video-files/4763824/4763824-uhd_2560_1440_25fps.mp4',
+    thumbnail: 'https://images.pexels.com/videos/2873755/free-video-2873755.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/2873755/2873755-uhd_2560_1440_24fps.mp4',
     label: 'Flowing Gradients',
     duration: '0:15'
   },
   {
     id: 'abstract-liquid-1',
     category: 'abstract',
-    thumbnail: 'https://images.pexels.com/videos/6893673/pexels-photo-6893673.jpeg?auto=compress&w=200',
-    url: 'https://videos.pexels.com/video-files/6893673/6893673-uhd_2560_1440_30fps.mp4',
+    thumbnail: 'https://images.pexels.com/videos/4691589/free-video-4691589.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/4691589/4691589-uhd_2560_1440_24fps.mp4',
     label: 'Liquid Motion',
     duration: '0:12'
   },
@@ -64,7 +63,39 @@ const STOCK_VIDEOS: StockVideo[] = [
     label: 'Bokeh Lights',
     duration: '0:08'
   },
-  // Nature
+  {
+    id: 'abstract-neon-1',
+    category: 'abstract',
+    thumbnail: 'https://images.pexels.com/videos/4145356/free-video-4145356.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/4145356/4145356-uhd_2560_1440_25fps.mp4',
+    label: 'Neon Waves',
+    duration: '0:14'
+  },
+  {
+    id: 'abstract-geometric-1',
+    category: 'abstract',
+    thumbnail: 'https://images.pexels.com/videos/5737722/free-video-5737722.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/5737722/5737722-uhd_2560_1440_25fps.mp4',
+    label: 'Geometric Patterns',
+    duration: '0:11'
+  },
+  {
+    id: 'abstract-smoke-color-1',
+    category: 'abstract',
+    thumbnail: 'https://images.pexels.com/videos/4312282/free-video-4312282.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/4312282/4312282-uhd_2560_1440_25fps.mp4',
+    label: 'Color Smoke',
+    duration: '0:09'
+  },
+  {
+    id: 'abstract-light-rays-1',
+    category: 'abstract',
+    thumbnail: 'https://images.pexels.com/videos/5501250/free-video-5501250.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/5501250/5501250-uhd_2560_1440_25fps.mp4',
+    label: 'Light Rays',
+    duration: '0:13'
+  },
+  // Nature (8 videos)
   {
     id: 'nature-ocean-1',
     category: 'nature',
@@ -97,7 +128,39 @@ const STOCK_VIDEOS: StockVideo[] = [
     label: 'Waterfall',
     duration: '0:16'
   },
-  // Technology
+  {
+    id: 'nature-sunset-1',
+    category: 'nature',
+    thumbnail: 'https://images.pexels.com/videos/857195/free-video-857195.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/857195/857195-hd_1920_1080_25fps.mp4',
+    label: 'Sunset Beach',
+    duration: '0:15'
+  },
+  {
+    id: 'nature-mountain-1',
+    category: 'nature',
+    thumbnail: 'https://images.pexels.com/videos/2169880/free-video-2169880.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/2169880/2169880-uhd_2560_1440_24fps.mp4',
+    label: 'Mountain Vista',
+    duration: '0:22'
+  },
+  {
+    id: 'nature-rain-1',
+    category: 'nature',
+    thumbnail: 'https://images.pexels.com/videos/2491284/free-video-2491284.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/2491284/2491284-uhd_2560_1440_24fps.mp4',
+    label: 'Rain on Window',
+    duration: '0:17'
+  },
+  {
+    id: 'nature-aurora-1',
+    category: 'nature',
+    thumbnail: 'https://images.pexels.com/videos/857118/free-video-857118.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/857118/857118-hd_1920_1080_25fps.mp4',
+    label: 'Aurora Borealis',
+    duration: '0:19'
+  },
+  // Technology (8 videos)
   {
     id: 'tech-data-1',
     category: 'technology',
@@ -122,7 +185,47 @@ const STOCK_VIDEOS: StockVideo[] = [
     label: 'Circuit Board',
     duration: '0:15'
   },
-  // Business / City
+  {
+    id: 'tech-server-1',
+    category: 'technology',
+    thumbnail: 'https://images.pexels.com/videos/5380643/free-video-5380643.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/5380643/5380643-uhd_2560_1440_25fps.mp4',
+    label: 'Server Room',
+    duration: '0:11'
+  },
+  {
+    id: 'tech-holographic-1',
+    category: 'technology',
+    thumbnail: 'https://images.pexels.com/videos/6805869/free-video-6805869.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/6805869/6805869-uhd_2560_1440_25fps.mp4',
+    label: 'Holographic Display',
+    duration: '0:14'
+  },
+  {
+    id: 'tech-ai-1',
+    category: 'technology',
+    thumbnail: 'https://images.pexels.com/videos/8721926/free-video-8721926.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/8721926/8721926-uhd_2560_1440_25fps.mp4',
+    label: 'AI Neural Network',
+    duration: '0:13'
+  },
+  {
+    id: 'tech-drone-1',
+    category: 'technology',
+    thumbnail: 'https://images.pexels.com/videos/3155475/free-video-3155475.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/3155475/3155475-uhd_2560_1440_25fps.mp4',
+    label: 'Drone Footage',
+    duration: '0:18'
+  },
+  {
+    id: 'tech-typing-1',
+    category: 'technology',
+    thumbnail: 'https://images.pexels.com/videos/5483071/free-video-5483071.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/5483071/5483071-uhd_2560_1440_25fps.mp4',
+    label: 'Keyboard Typing',
+    duration: '0:09'
+  },
+  // Business / City (8 videos)
   {
     id: 'business-city-1',
     category: 'business',
@@ -147,7 +250,47 @@ const STOCK_VIDEOS: StockVideo[] = [
     label: 'Night City Traffic',
     duration: '0:16'
   },
-  // Textures / Minimal
+  {
+    id: 'business-meeting-1',
+    category: 'business',
+    thumbnail: 'https://images.pexels.com/videos/3252981/free-video-3252981.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/3252981/3252981-uhd_2560_1440_25fps.mp4',
+    label: 'Team Meeting',
+    duration: '0:14'
+  },
+  {
+    id: 'business-coffee-1',
+    category: 'business',
+    thumbnail: 'https://images.pexels.com/videos/4790088/free-video-4790088.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/4790088/4790088-uhd_2560_1440_25fps.mp4',
+    label: 'Coffee Shop',
+    duration: '0:12'
+  },
+  {
+    id: 'business-urban-1',
+    category: 'business',
+    thumbnail: 'https://images.pexels.com/videos/2098989/free-video-2098989.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/2098989/2098989-uhd_2560_1440_24fps.mp4',
+    label: 'Urban Streets',
+    duration: '0:20'
+  },
+  {
+    id: 'business-stock-1',
+    category: 'business',
+    thumbnail: 'https://images.pexels.com/videos/3945044/free-video-3945044.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/3945044/3945044-uhd_2560_1440_25fps.mp4',
+    label: 'Stock Exchange',
+    duration: '0:15'
+  },
+  {
+    id: 'business-handshake-1',
+    category: 'business',
+    thumbnail: 'https://images.pexels.com/videos/3252984/free-video-3252984.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/3252984/3252984-uhd_2560_1440_25fps.mp4',
+    label: 'Business Handshake',
+    duration: '0:10'
+  },
+  // Textures / Minimal (8 videos)
   {
     id: 'texture-smoke-1',
     category: 'textures',
@@ -172,6 +315,46 @@ const STOCK_VIDEOS: StockVideo[] = [
     label: 'Fabric Wave',
     duration: '0:12'
   },
+  {
+    id: 'texture-water-1',
+    category: 'textures',
+    thumbnail: 'https://images.pexels.com/videos/2098988/free-video-2098988.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/2098988/2098988-uhd_2560_1440_24fps.mp4',
+    label: 'Water Ripples',
+    duration: '0:11'
+  },
+  {
+    id: 'texture-paper-1',
+    category: 'textures',
+    thumbnail: 'https://images.pexels.com/videos/4823461/free-video-4823461.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/4823461/4823461-uhd_2560_1440_25fps.mp4',
+    label: 'Paper Texture',
+    duration: '0:09'
+  },
+  {
+    id: 'texture-metal-1',
+    category: 'textures',
+    thumbnail: 'https://images.pexels.com/videos/4424832/free-video-4424832.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/4424832/4424832-uhd_2560_1440_25fps.mp4',
+    label: 'Metal Surface',
+    duration: '0:13'
+  },
+  {
+    id: 'texture-glass-1',
+    category: 'textures',
+    thumbnail: 'https://images.pexels.com/videos/5532774/free-video-5532774.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/5532774/5532774-uhd_2560_1440_25fps.mp4',
+    label: 'Glass Refraction',
+    duration: '0:10'
+  },
+  {
+    id: 'texture-sand-1',
+    category: 'textures',
+    thumbnail: 'https://images.pexels.com/videos/4098192/free-video-4098192.jpg?auto=compress&w=200',
+    url: 'https://videos.pexels.com/video-files/4098192/4098192-uhd_2560_1440_25fps.mp4',
+    label: 'Sand Dunes',
+    duration: '0:14'
+  },
 ];
 
 const CATEGORIES = [
@@ -188,14 +371,15 @@ interface StockVideoPickerProps {
   children: React.ReactNode;
 }
 
-export const StockVideoPicker: React.FC<StockVideoPickerProps> = ({
+export const StockVideoPicker = forwardRef<HTMLButtonElement, StockVideoPickerProps>(({
   onSelect,
   children,
-}) => {
+}, ref) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
+  const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
 
   const filteredVideos = STOCK_VIDEOS.filter(video => {
     const matchesCategory = category === 'all' || video.category === category;
@@ -208,9 +392,13 @@ export const StockVideoPicker: React.FC<StockVideoPickerProps> = ({
     setOpen(false);
   };
 
+  const handleThumbnailError = (videoId: string) => {
+    setFailedThumbnails(prev => new Set([...prev, videoId]));
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild ref={ref}>
         {children}
       </PopoverTrigger>
       <PopoverContent 
@@ -272,11 +460,12 @@ export const StockVideoPicker: React.FC<StockVideoPickerProps> = ({
                 onMouseLeave={() => setHoveredVideo(null)}
                 className="relative aspect-video rounded-lg overflow-hidden border border-border hover:border-primary/50 hover:ring-2 hover:ring-primary/20 transition-all group"
               >
-                {/* Thumbnail */}
+                {/* Thumbnail with fallback */}
                 <img
-                  src={video.thumbnail}
+                  src={failedThumbnails.has(video.id) ? '/placeholder.svg' : video.thumbnail}
                   alt={video.label}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover bg-muted"
+                  onError={() => handleThumbnailError(video.id)}
                 />
                 
                 {/* Hover overlay with video preview hint */}
@@ -317,6 +506,8 @@ export const StockVideoPicker: React.FC<StockVideoPickerProps> = ({
       </PopoverContent>
     </Popover>
   );
-};
+});
+
+StockVideoPicker.displayName = 'StockVideoPicker';
 
 export default StockVideoPicker;
