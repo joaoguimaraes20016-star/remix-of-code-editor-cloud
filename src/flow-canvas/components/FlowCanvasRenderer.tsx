@@ -12,7 +12,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ChevronUp, ChevronDown, Loader2, Play, User } from 'lucide-react';
+import { ChevronUp, ChevronDown, Loader2, Play, User, Layout, ArrowRight, Sparkles, Search, Calendar, FileText, Rocket, Video } from 'lucide-react';
 
 // Helper to convert gradient object to CSS
 function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): string {
@@ -22,6 +22,71 @@ function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<
     return `radial-gradient(circle, ${stops})`;
   }
   return `linear-gradient(${gradient.angle || 135}deg, ${stops})`;
+}
+
+// Helper to shift hue of a color for theme-aware gradients
+function shiftHue(hex: string, shift = 30): string {
+  try {
+    const color = hex.replace('#', '');
+    if (color.length !== 6) return hex;
+    
+    const r = parseInt(color.substr(0, 2), 16);
+    const g = parseInt(color.substr(2, 2), 16);
+    const b = parseInt(color.substr(4, 2), 16);
+    
+    // Convert RGB to HSL
+    const rNorm = r / 255;
+    const gNorm = g / 255;
+    const bNorm = b / 255;
+    
+    const max = Math.max(rNorm, gNorm, bNorm);
+    const min = Math.min(rNorm, gNorm, bNorm);
+    const l = (max + min) / 2;
+    
+    let h = 0;
+    let s = 0;
+    
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      
+      switch (max) {
+        case rNorm: h = ((gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0)) / 6; break;
+        case gNorm: h = ((bNorm - rNorm) / d + 2) / 6; break;
+        case bNorm: h = ((rNorm - gNorm) / d + 4) / 6; break;
+      }
+    }
+    
+    // Shift hue
+    h = (h + shift / 360) % 1;
+    
+    // Convert back to RGB
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    
+    let rOut: number, gOut: number, bOut: number;
+    
+    if (s === 0) {
+      rOut = gOut = bOut = l;
+    } else {
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      rOut = hue2rgb(p, q, h + 1/3);
+      gOut = hue2rgb(p, q, h);
+      bOut = hue2rgb(p, q, h - 1/3);
+    }
+    
+    const toHex = (n: number) => Math.round(n * 255).toString(16).padStart(2, '0');
+    return `#${toHex(rOut)}${toHex(gOut)}${toHex(bOut)}`;
+  } catch {
+    return hex;
+  }
 }
 
 // Types
@@ -554,13 +619,15 @@ export function FlowCanvasRenderer({
       case 'avatar-group':
         const avatarCount = (element.props?.count as number) || 3;
         const avatarBaseColor = (element.props?.gradientFrom as string) || '#8B5CF6';
+        // Theme-aware end color: use user's choice or shift hue from base
+        const avatarEndColor = (element.props?.gradientTo as string) || shiftHue(avatarBaseColor, 40);
         return (
           <div key={element.id} className="flex -space-x-3">
             {Array.from({ length: avatarCount }).map((_, i) => (
               <div 
                 key={i}
                 className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-background"
-                style={{ background: `linear-gradient(${135 + i * 15}deg, ${avatarBaseColor}, #EC4899)` }}
+                style={{ background: `linear-gradient(${135 + i * 15}deg, ${avatarBaseColor}, ${avatarEndColor})` }}
               >
                 <User className="w-5 h-5 text-white" />
               </div>
@@ -599,12 +666,47 @@ export function FlowCanvasRenderer({
 
       case 'process-step':
         const stepNum = (element.props?.step as number) || 1;
+        const stepIcon = element.props?.icon as string;
+        const stepAccentColor = (element.props?.accentColor as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';
+        const stepTextColor = (element.props?.color as string);
+        const stepMutedColor = (element.props?.mutedColor as string);
+        const stepTitle = (element.props?.title as string) || element.content || 'Step Title';
+        const stepDescription = (element.props?.description as string);
+        
+        // Icon mapping matching builder
+        const iconMap: Record<string, React.ReactNode> = {
+          'map': <Layout className="w-7 h-7 text-white" />,
+          'search': <Search className="w-7 h-7 text-white" />,
+          'share-2': <ArrowRight className="w-7 h-7 text-white" />,
+          'rocket': <Rocket className="w-7 h-7 text-white" />,
+          'calendar': <Calendar className="w-7 h-7 text-white" />,
+          'file-text': <FileText className="w-7 h-7 text-white" />,
+        };
+        
         return (
-          <div key={element.id} className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-xl font-bold text-primary">
-              {stepNum}
+          <div key={element.id} className="process-step-item text-center">
+            <div 
+              className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
+              style={{ background: `linear-gradient(135deg, ${stepAccentColor}, ${stepAccentColor}80)` }}
+            >
+              {stepIcon && iconMap[stepIcon] ? iconMap[stepIcon] : (
+                <span className="text-xl font-bold text-white">{stepNum}</span>
+              )}
             </div>
-            <span className="font-medium">{element.content || 'Step Title'}</span>
+            <span 
+              className="text-sm font-semibold uppercase tracking-wider mt-2 block"
+              style={{ color: stepTextColor || undefined }}
+            >
+              {stepTitle}
+            </span>
+            {stepDescription && (
+              <p 
+                className="text-sm mt-1"
+                style={{ color: stepMutedColor || undefined }}
+              >
+                {stepDescription}
+              </p>
+            )}
           </div>
         );
 
@@ -622,8 +724,9 @@ export function FlowCanvasRenderer({
         );
 
       case 'underline-text':
-        const underlineFrom = (element.props?.underlineFrom as string) || '#8B5CF6';
-        const underlineTo = (element.props?.underlineTo as string) || '#EC4899';
+        const underlineFrom = (element.props?.underlineFrom as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';
+        // Theme-aware: shift hue instead of hardcoded pink
+        const underlineTo = (element.props?.underlineTo as string) || shiftHue(underlineFrom, 40);
         return (
           <span key={element.id} className="relative inline-block text-2xl font-bold">
             {element.content || 'Underlined Text'}

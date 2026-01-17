@@ -582,7 +582,8 @@ const sectionCategories: SectionCategory[] = [
               items: ['LIVE EVENT', 'NO REPLAYS', 'JAN 27TH 2PM EST', 'LIMITED SPOTS'],
               speed: 20,
               separator: '  •  ',
-              color: '#ffffff',
+              // Use theme-aware contrast color for gradient backgrounds
+              color: t.isDark ? '#ffffff' : '#ffffff', // White works on urgency gradients (always dark-ish)
             }},
           ],
           props: { className: 'py-3 text-white', style: { background: urgencyGradient(t) } },
