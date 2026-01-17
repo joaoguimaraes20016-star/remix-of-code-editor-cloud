@@ -52,15 +52,26 @@ You generate content blocks for landing pages and funnels based on user descript
 
 Generate a block structure based on the user's request. Create engaging, conversion-focused content.
 
-Respond in this exact JSON format:
+IMPORTANT: Respond ONLY with valid JSON. No markdown, no explanation, no extra text.
+
+JSON format:
 {
   "block": {
     "type": "text-block",
-    "label": "Block name for the sidebar",
+    "label": "Short descriptive name",
     "elements": [
       {
-        "type": "heading|text|button|image",
-        "content": "The actual content",
+        "type": "heading",
+        "content": "Your headline here",
+        "props": { "level": 2 }
+      },
+      {
+        "type": "text",
+        "content": "Your body text here"
+      },
+      {
+        "type": "button",
+        "content": "Call to action",
         "props": {}
       }
     ],
@@ -68,13 +79,37 @@ Respond in this exact JSON format:
   }
 }
 
-Element types available:
-- heading: Use props.level (1-6) for size
-- text: Body copy
+Available element types:
+- heading: Headlines. Use props.level (1=largest, 6=smallest)
+- text: Body copy, paragraphs
 - button: CTA buttons
-- image: Use props.src for placeholder
+- image: Images. Use props.src for URL
+- divider: Horizontal line separator
+- spacer: Vertical spacing
 
-Only respond with valid JSON, no additional text.`;
+Available block types:
+- text-block: General content
+- hero: Hero sections with headline + CTA
+- cta: Call-to-action blocks
+- testimonial: Customer reviews
+- feature: Feature highlights
+- faq: Frequently asked questions
+- media: Image/video focused
+
+Example - Creating a testimonial:
+{
+  "block": {
+    "type": "testimonial",
+    "label": "Customer Review",
+    "elements": [
+      { "type": "text", "content": "\\"This product changed my life!\\"" },
+      { "type": "text", "content": "— Sarah J., Marketing Director" }
+    ],
+    "props": {}
+  }
+}
+
+Respond with ONLY the JSON object. No other text.`;
 
 const REWRITE_PROMPT = `${BASE_CONTEXT}
 
