@@ -1009,16 +1009,12 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
 
           {activeTab === 'assets' && <AssetsPanel />}
 
-          {/* Add Page Button */}
-          <div className="p-3 border-t border-builder-border-subtle">
-            <button 
-              onClick={() => onAddBlankStep?.()}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active text-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Page
-            </button>
-          </div>
+          {/* Hint for rename - shown once */}
+          {activeTab === 'pages' && steps.length > 0 && (
+            <div className="px-3 py-1.5 text-[10px] text-builder-text-dim text-center border-t border-builder-border-subtle">
+              Double-click a page to rename
+            </div>
+          )}
         </div>
       </div>
     </TooltipProvider>

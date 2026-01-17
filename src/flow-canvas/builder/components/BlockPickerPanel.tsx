@@ -389,7 +389,7 @@ const blockCategories: BlockCategory[] = [
     label: 'Content',
     hint: 'Text, images, and media',
     blocks: contentBlocks,
-    defaultOpen: false,
+    defaultOpen: true, // Open by default for better discoverability
   },
   {
     id: 'actions',
