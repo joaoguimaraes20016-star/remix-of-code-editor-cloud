@@ -78,11 +78,39 @@ const getPageBackgroundStyles = (bg: PageBackground | undefined, isDarkTheme: bo
         styles.backgroundColor = defaultBg;
       }
       break;
+    case 'video':
+      // Video backgrounds render as transparent - actual video is a separate element
+      styles.backgroundColor = defaultBg;
+      break;
     default:
       styles.backgroundColor = defaultBg;
   }
   
   return styles;
+};
+
+// Helper to get video embed URL from various platforms
+const getVideoBackgroundUrl = (url: string | undefined): string | null => {
+  if (!url) return null;
+  
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${ytMatch[1]}&controls=0&showinfo=0`;
+  
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1&loop=1&background=1`;
+  
+  // Direct video URL (mp4, webm)
+  if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return url;
+  
+  return null;
+};
+
+// Check if URL is a direct video file
+const isDirectVideoUrl = (url: string | undefined): boolean => {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg)(\?|$)/i.test(url);
 };
 
 // Helper to get overlay styles
@@ -3801,6 +3829,44 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               }
             }}
           >
+            {/* Video Background (from step or page) */}
+            {(() => {
+              const hasStepBackground = step.background && (step.background.type || step.background.color);
+              const bgSource = hasStepBackground ? step.background : pageSettings?.page_background;
+              
+              if (bgSource?.type === 'video' && bgSource.video) {
+                const videoUrl = getVideoBackgroundUrl(bgSource.video);
+                const opacity = (bgSource.videoOpacity ?? 100) / 100;
+                
+                if (videoUrl) {
+                  return (
+                    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                      {isDirectVideoUrl(bgSource.video) ? (
+                        <video
+                          src={videoUrl}
+                          autoPlay={bgSource.videoAutoplay ?? true}
+                          muted={bgSource.videoMuted ?? true}
+                          loop={bgSource.videoLoop ?? true}
+                          playsInline
+                          className="absolute inset-0 w-full h-full object-cover"
+                          style={{ opacity }}
+                        />
+                      ) : (
+                        <iframe
+                          src={videoUrl}
+                          className="absolute inset-0 w-full h-full scale-150"
+                          style={{ opacity }}
+                          allow="autoplay; fullscreen"
+                          frameBorder={0}
+                        />
+                      )}
+                    </div>
+                  );
+                }
+              }
+              return null;
+            })()}
+            
             {/* Background Overlay (from step or page) */}
             {(() => {
               const hasStepBackground = step.background && (step.background.type || step.background.color);
@@ -3808,7 +3874,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               const overlayStyles = getOverlayStyles(bgSource);
               return overlayStyles ? (
                 <div 
-                  className="absolute inset-0 pointer-events-none z-0" 
+                  className="absolute inset-0 pointer-events-none z-[1]" 
                   style={overlayStyles} 
                 />
               ) : null;

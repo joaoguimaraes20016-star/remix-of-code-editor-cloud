@@ -127,6 +127,7 @@ export interface CaptureFlowBackground {
   videoAutoplay?: boolean;
   videoLoop?: boolean;
   videoMuted?: boolean;
+  videoOpacity?: number; // 0-100, default 100
 }
 
 export interface CaptureFlowAppearance {
