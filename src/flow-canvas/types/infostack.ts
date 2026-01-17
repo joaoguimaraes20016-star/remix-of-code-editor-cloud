@@ -203,7 +203,7 @@ export interface ApplicationFlowSettings {
 // Conditional visibility rule
 export interface ConditionalRule {
   field: string;       // Field key of input element
-  operator: 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'isEmpty';
+  operator: 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'isEmpty' | 'greaterThan' | 'lessThan';
   value: string;       // Expected value
   action: 'show' | 'hide';
 }

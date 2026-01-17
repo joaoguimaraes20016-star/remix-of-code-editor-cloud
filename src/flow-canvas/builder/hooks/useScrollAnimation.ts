@@ -164,6 +164,14 @@ export const evaluateVisibility = (
       case 'isEmpty':
         conditionMet = fieldValue.trim().length === 0;
         break;
+      case 'greater_than':
+      case 'greaterThan':
+        conditionMet = Number(fieldValue) > Number(condition.value);
+        break;
+      case 'less_than':
+      case 'lessThan':
+        conditionMet = Number(fieldValue) < Number(condition.value);
+        break;
       default:
         conditionMet = true;
     }
