@@ -3453,7 +3453,18 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   };
 
   // Apply theme settings
-  const isDarkTheme = pageSettings?.theme === 'dark';
+  // IMPORTANT: "dark theme" is derived from the *actual* background, not a saved toggle.
+  // Otherwise we can end up with white text on a light background if theme=dark while bg=white.
+  const backgroundSource = (step.background && (step.background.type || step.background.color))
+    ? step.background
+    : pageSettings?.page_background;
+
+  const isDarkTheme = (() => {
+    if (!backgroundSource || backgroundSource.type !== 'solid') return false;
+    const c = (backgroundSource.color || '').toLowerCase();
+    return c === '#111827' || c === '#0f172a' || c === '#1f2937';
+  })();
+
   const primaryColor = pageSettings?.primary_color || '#8B5CF6';
   const fontFamily = pageSettings?.font_family || 'Inter';
 
