@@ -206,11 +206,8 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
               className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-builder-surface-hover hover:bg-builder-surface-active transition-colors"
             >
               <div 
-                className={cn(
-                  "w-6 h-6 rounded-md border border-builder-border",
-                  (!value.color || value.color === 'transparent') && "bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%278%27 height=%278%27%3E%3Crect width=%278%27 height=%278%27 fill=%27%23fff%27/%3E%3Crect width=%274%27 height=%274%27 fill=%27%23ccc%27/%3E%3Crect x=%274%27 y=%274%27 width=%274%27 height=%274%27 fill=%27%23ccc%27/%3E%3C/svg%3E')]"
-                )}
-                style={{ backgroundColor: value.color && value.color !== 'transparent' ? value.color : undefined }}
+                className="w-6 h-6 rounded-md border border-builder-border bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%278%27 height=%278%27%3E%3Crect width=%278%27 height=%278%27 fill=%27%23fff%27/%3E%3Crect width=%274%27 height=%274%27 fill=%27%23ccc%27/%3E%3Crect x=%274%27 y=%274%27 width=%274%27 height=%274%27 fill=%27%23ccc%27/%3E%3C/svg%3E')]"
+                style={value.color && value.color !== 'transparent' ? { backgroundColor: value.color } : undefined}
               />
               <span className="text-xs text-builder-text font-mono min-w-[60px]">
                 {!value.color || value.color === 'transparent' ? 'None' : value.color}

@@ -150,9 +150,7 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
     return (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <div ref={ref as any} className="inline-block w-full" role="button" tabIndex={0}>
-            {children}
-          </div>
+          {children}
         </PopoverTrigger>
         <PopoverContent 
           ref={contentRef}
