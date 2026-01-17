@@ -1,13 +1,12 @@
 /**
  * Clone Style Edge Function
  * 
- * Phase 14 Enhanced: attempts a closer visual replica by extracting:
- * - real brand colors/fonts (Firecrawl branding)
- * - section order + copy (Firecrawl markdown)
- * - image candidates (Firecrawl html + branding images)
- * 
- * Note: our builder still has limits (no arbitrary DOM/CSS import), so this maps
- * the source into the closest available blocks/stacks.
+ * BRAND EXTRACTION approach - extracts branding, tone, and structure
+ * rather than literal replication. This prevents:
+ * - Icon text injection (emoji/unicode in headlines)
+ * - Broken image URLs
+ * - Overly long content
+ * - Weird formatting artifacts
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -64,29 +63,112 @@ function uniq<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
 }
 
-function extractImgCandidates(html: string): Array<{ src: string; alt?: string }> {
-  if (!html) return [];
+// Supported icon names in our builder
+const SUPPORTED_ICONS = [
+  'check', 'star', 'rocket', 'users', 'clock', 'shield', 'zap', 'target', 
+  'award', 'heart', 'thumbs-up', 'trending-up', 'map', 'share-2', 'search',
+  'calendar', 'file-text', 'play', 'mail', 'phone', 'globe'
+];
 
-  const out: Array<{ src: string; alt?: string }> = [];
-  const imgTagRegex = /<img[^>]+>/gi;
-  const srcRegex = /src\s*=\s*"([^"]+)"/i;
-  const altRegex = /alt\s*=\s*"([^"]*)"/i;
+// Sanitize content to remove emojis and icon text
+function sanitizeContent(text: string | undefined): string {
+  if (!text) return '';
+  
+  // Remove emoji and unicode symbols
+  const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu;
+  let cleaned = text.replace(emojiRegex, '');
+  
+  // Remove common icon patterns
+  cleaned = cleaned.replace(/[✓✔✕✖✗✘★☆●○◆◇■□▲△▼▽►◄→←↑↓↔↕⇒⇐⇑⇓•·‣⁃]/g, '');
+  cleaned = cleaned.replace(/\[icon\]/gi, '');
+  cleaned = cleaned.replace(/\[[^\]]+icon[^\]]*\]/gi, '');
+  
+  // Clean up extra whitespace
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  return cleaned;
+}
 
-  const tags = html.match(imgTagRegex) || [];
-  for (const tag of tags) {
-    const srcMatch = tag.match(srcRegex);
-    if (!srcMatch?.[1]) continue;
+// Normalize icon name to supported icons
+function normalizeIcon(icon: string | undefined): string {
+  if (!icon) return 'check';
+  const lower = icon.toLowerCase().replace(/[^a-z0-9-]/g, '');
+  
+  // Map common variations
+  const iconMap: Record<string, string> = {
+    'checkmark': 'check',
+    'tick': 'check',
+    'verified': 'check',
+    'stars': 'star',
+    'rating': 'star',
+    'user': 'users',
+    'people': 'users',
+    'team': 'users',
+    'time': 'clock',
+    'timer': 'clock',
+    'security': 'shield',
+    'secure': 'shield',
+    'lightning': 'zap',
+    'fast': 'zap',
+    'speed': 'zap',
+    'goal': 'target',
+    'aim': 'target',
+    'love': 'heart',
+    'like': 'thumbs-up',
+    'growth': 'trending-up',
+    'increase': 'trending-up',
+    'location': 'map',
+    'share': 'share-2',
+    'find': 'search',
+    'date': 'calendar',
+    'schedule': 'calendar',
+    'document': 'file-text',
+    'video': 'play',
+    'email': 'mail',
+    'contact': 'phone',
+    'world': 'globe',
+    'web': 'globe',
+  };
+  
+  if (SUPPORTED_ICONS.includes(lower)) return lower;
+  if (iconMap[lower]) return iconMap[lower];
+  
+  // Default fallback
+  return 'check';
+}
 
-    const src = srcMatch[1];
-    if (!src || src.startsWith('data:')) continue;
+// Truncate text with ellipsis if too long
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3) + '...';
+}
 
-    const altMatch = tag.match(altRegex);
-    const alt = altMatch?.[1];
-
-    out.push({ src, alt });
-  }
-
-  return out;
+// Sanitize a section's content
+function sanitizeSection(section: any): GeneratedSection {
+  const content = section.content || {};
+  
+  return {
+    type: section.type || 'text-block',
+    layout: section.layout,
+    media: {
+      // Always use null for images - we'll use placeholders
+      primaryImage: undefined,
+      logos: [],
+    },
+    content: {
+      headline: truncate(sanitizeContent(content.headline), 80) || undefined,
+      subheadline: truncate(sanitizeContent(content.subheadline), 200) || undefined,
+      buttonText: truncate(sanitizeContent(content.buttonText), 30) || undefined,
+      items: Array.isArray(content.items) 
+        ? content.items.slice(0, 6).map((item: any) => ({
+            title: truncate(sanitizeContent(item.title), 60) || undefined,
+            description: truncate(sanitizeContent(item.description), 150) || undefined,
+            icon: normalizeIcon(item.icon),
+            image: undefined, // Never use external image URLs
+          }))
+        : undefined,
+    },
+  };
 }
 
 serve(async (req: Request) => {
@@ -122,9 +204,7 @@ serve(async (req: Request) => {
     }
 
     let pageContent = "";
-    let pageHtml = "";
     let brandingData: any = null;
-    let imageCandidates: Array<{ src: string; alt?: string }> = [];
 
     if (FIRECRAWL_API_KEY) {
       console.log('[clone-style] Scraping page with Firecrawl...');
@@ -137,7 +217,7 @@ serve(async (req: Request) => {
           },
           body: JSON.stringify({
             url,
-            formats: ['markdown', 'branding', 'html'],
+            formats: ['markdown', 'branding'],
             onlyMainContent: true,
             waitFor: 2000,
           }),
@@ -146,11 +226,8 @@ serve(async (req: Request) => {
         if (scrapeResponse.ok) {
           const scrapeData = await scrapeResponse.json();
           pageContent = scrapeData.data?.markdown || scrapeData.markdown || "";
-          pageHtml = scrapeData.data?.html || scrapeData.html || "";
           brandingData = scrapeData.data?.branding || scrapeData.branding || null;
-          imageCandidates = extractImgCandidates(pageHtml);
           console.log('[clone-style] Scraped content length:', pageContent.length);
-          console.log('[clone-style] Extracted images:', imageCandidates.length);
           console.log('[clone-style] Branding data:', brandingData ? 'found' : 'not found');
         } else {
           console.log('[clone-style] Firecrawl scrape failed:', await scrapeResponse.text());
@@ -160,71 +237,68 @@ serve(async (req: Request) => {
       }
     }
 
-    // Build prompt with as much grounded context as possible
-    const brandingImages = brandingData?.images || {};
-    const candidateImages = uniq([
-      ...(brandingImages.logo ? [brandingImages.logo] : []),
-      ...(brandingImages.favicon ? [brandingImages.favicon] : []),
-      ...imageCandidates.map(i => i.src),
-    ]).filter(Boolean).slice(0, 25);
-
+    // BRAND EXTRACTION prompt - focused on extracting essence, not literal copy
     const analysisPrompt = pageContent
-      ? `You are a landing page reverse-engineer. Your job is to recreate the SAME structure in a constrained builder.
+      ? `You are a BRAND ANALYST and funnel strategist, NOT a page cloner.
 
-Constraints (important):
-- You can only use these section types: hero, logo-bar, features, stats, testimonials, pricing, faq, cta, footer, text-block
-- You can optionally mark a hero as layout="split" if there is a hero image.
-- Use image URLs when available (for hero image + logo strips). If unsure, omit.
+Your job is to EXTRACT the essence of this page and ADAPT it for our builder - NOT copy it literally.
 
-PAGE CONTENT (markdown):
-${pageContent.slice(0, 9000)}
+=== WHAT TO EXTRACT ===
+1. BRANDING: Color palette (primary, accent, background), visual style
+2. COPY TONE: Voice, messaging style, urgency level
+3. SECTION TYPES: What sections exist by PURPOSE
+4. LAYOUT PREFERENCES: Centered vs split, grid vs stack
 
-BRANDING (json):
-${brandingData ? JSON.stringify(brandingData, null, 2).slice(0, 4000) : '{}'}
+=== CRITICAL RULES ===
+- NO emoji characters (❌ ✓ 📊 ✨ 🚀) anywhere
+- NO icon text like "[icon]" or "→" or "•"
+- NO external image URLs - leave images empty
+- Headlines must be under 80 characters
+- Descriptions must be under 200 characters
+- Button text must be under 30 characters
+- Only use these icons: check, star, rocket, users, clock, shield, zap, target, award, heart, thumbs-up, trending-up
 
-IMAGE CANDIDATES (use only if clearly relevant):
-${candidateImages.map((u) => `- ${u}`).join('\n')}
+=== PAGE CONTENT ===
+${pageContent.slice(0, 8000)}
 
-Return JSON only:
+=== BRANDING DATA ===
+${brandingData ? JSON.stringify(brandingData, null, 2).slice(0, 3000) : '{}'}
+
+=== AVAILABLE SECTION TYPES ===
+hero, logo-bar, features, stats, testimonials, pricing, faq, cta, footer, text-block
+
+=== OUTPUT JSON ===
 {
   "style": {
     "primaryColor": "#HEX",
     "accentColor": "#HEX",
     "backgroundColor": "#HEX",
-    "headingFont": "Font Name",
-    "bodyFont": "Font Name",
+    "headingFont": "Inter|Space Grotesk|DM Sans|Outfit|Poppins",
+    "bodyFont": "Inter|DM Sans",
     "theme": "dark|light",
-    "style": "minimal|bold|luxury|playful|corporate|editorial|brutalist",
-    "confidence": 0.0
+    "style": "minimal|bold|luxury|playful|corporate",
+    "confidence": 0.0-1.0
   },
   "sections": [
     {
       "type": "hero",
       "layout": "center|split",
-      "media": {
-        "primaryImage": "https://...",
-        "logos": ["https://..."]
-      },
       "content": {
-        "headline": "...",
-        "subheadline": "...",
-        "buttonText": "...",
-        "items": [{"title":"...","description":"..."}]
+        "headline": "Clean headline without emojis",
+        "subheadline": "Brief description",
+        "buttonText": "Action text",
+        "items": [{"title": "Name", "description": "Benefit", "icon": "check"}]
       }
     }
   ]
 }
 
-Rules:
-- Try to match the page's actual order of sections.
-- Put the MOST prominent image into hero.media.primaryImage.
-- Put logo strip images into logo-bar.media.logos.
-- If you can't confidently assign an image, omit it (don't guess).`
-      : `You are a landing page analyzer. Analyze this URL and provide an educated guess about its structure.
+Respond with ONLY valid JSON. No code blocks, no explanation.`
+      : `You are a brand analyst. Based on this URL, make educated guesses about the brand style.
 
 URL: ${url}
 
-Respond with JSON only in the same schema as above, but omit media if unknown.`;
+Respond with JSON only using the schema above. Leave all media fields empty.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -295,13 +369,9 @@ Respond with JSON only in the same schema as above, but omit media if unknown.`;
         confidence: typeof parsed.style?.confidence === 'number' ? parsed.style.confidence : 0.5,
       };
 
+      // Sanitize all sections to remove emojis and fix icons
       const validatedSections: GeneratedSection[] = Array.isArray(parsed.sections)
-        ? parsed.sections.map((s: any) => ({
-            type: s.type || 'text-block',
-            layout: s.layout,
-            media: s.media,
-            content: s.content || {},
-          }))
+        ? parsed.sections.map(sanitizeSection)
         : [{ type: 'hero', content: { headline: 'Welcome', buttonText: 'Get Started' } }];
 
       const result: CloneResult = {

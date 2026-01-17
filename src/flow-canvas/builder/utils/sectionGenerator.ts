@@ -2,6 +2,11 @@
  * Section Generator
  * Converts scraped/AI section definitions into actual Frame stacks/blocks
  * for the flow-canvas builder.
+ * 
+ * Enhanced with content sanitization to prevent:
+ * - Emoji/icon text injection
+ * - Broken external image URLs
+ * - Overly long content
  */
 
 import type { Block, Element, Stack } from '../../types/infostack';
@@ -42,6 +47,91 @@ export interface ClonedStyle {
   style: string;
   confidence: number;
 }
+
+// ========== CONTENT SANITIZATION ==========
+
+// Remove emoji and unicode symbols from text
+function sanitizeText(text: string | undefined): string {
+  if (!text) return '';
+  
+  // Remove emoji and unicode symbols
+  const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu;
+  let cleaned = text.replace(emojiRegex, '');
+  
+  // Remove common icon/symbol patterns
+  cleaned = cleaned.replace(/[✓✔✕✖✗✘★☆●○◆◇■□▲△▼▽►◄→←↑↓↔↕⇒⇐⇑⇓•·‣⁃]/g, '');
+  cleaned = cleaned.replace(/\[icon\]/gi, '');
+  cleaned = cleaned.replace(/\[[^\]]+icon[^\]]*\]/gi, '');
+  
+  // Clean up extra whitespace
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  return cleaned;
+}
+
+// Truncate with ellipsis
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3) + '...';
+}
+
+// Sanitize and limit text length
+function sanitizeAndTruncate(text: string | undefined, maxLength: number): string {
+  return truncateText(sanitizeText(text), maxLength);
+}
+
+// Supported icons in our builder
+const SUPPORTED_ICONS = new Set([
+  'check', 'star', 'rocket', 'users', 'clock', 'shield', 'zap', 'target', 
+  'award', 'heart', 'thumbs-up', 'trending-up', 'map', 'share-2', 'search',
+  'calendar', 'file-text', 'play', 'mail', 'phone', 'globe'
+]);
+
+// Normalize icon to supported set
+function normalizeIcon(icon: string | undefined): string {
+  if (!icon) return 'check';
+  const lower = icon.toLowerCase().replace(/[^a-z0-9-]/g, '');
+  
+  const iconMap: Record<string, string> = {
+    'checkmark': 'check', 'tick': 'check', 'verified': 'check',
+    'stars': 'star', 'rating': 'star',
+    'user': 'users', 'people': 'users', 'team': 'users',
+    'time': 'clock', 'timer': 'clock',
+    'security': 'shield', 'secure': 'shield',
+    'lightning': 'zap', 'fast': 'zap', 'speed': 'zap',
+    'goal': 'target', 'aim': 'target',
+    'love': 'heart', 'like': 'thumbs-up',
+    'growth': 'trending-up', 'increase': 'trending-up',
+    'location': 'map', 'share': 'share-2', 'find': 'search',
+    'date': 'calendar', 'schedule': 'calendar',
+    'document': 'file-text', 'video': 'play',
+    'email': 'mail', 'contact': 'phone', 'world': 'globe', 'web': 'globe',
+  };
+  
+  if (SUPPORTED_ICONS.has(lower)) return lower;
+  if (iconMap[lower]) return iconMap[lower];
+  return 'check';
+}
+
+// Check if URL is from a trusted CDN (not random external site)
+function isTrustedImageUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  const trustedDomains = [
+    'images.unsplash.com',
+    'cdn.lovable.dev',
+    'supabase.co',
+    'cloudinary.com',
+    'imgix.net',
+  ];
+  try {
+    const parsed = new URL(url);
+    return trustedDomains.some(d => parsed.hostname.includes(d));
+  } catch {
+    return false;
+  }
+}
+
+// ========== END SANITIZATION ==========
 
 function createThemeFromStyle(style: ClonedStyle): TemplateTheme {
   const isDark = style.theme === 'dark';
@@ -91,7 +181,7 @@ function heroTextElements(content: GeneratedSection['content'], theme: TemplateT
     elements.push({
       id: generateId(),
       type: 'heading',
-      content: content.headline,
+      content: sanitizeAndTruncate(content.headline, 80),
       props: { level: 1, color: theme.textColor },
     });
   }
@@ -100,7 +190,7 @@ function heroTextElements(content: GeneratedSection['content'], theme: TemplateT
     elements.push({
       id: generateId(),
       type: 'text',
-      content: content.subheadline,
+      content: sanitizeAndTruncate(content.subheadline, 200),
       props: { color: theme.mutedTextColor },
     });
   }
@@ -108,7 +198,7 @@ function heroTextElements(content: GeneratedSection['content'], theme: TemplateT
   elements.push({
     id: generateId(),
     type: 'button',
-    content: content.buttonText || 'Get Started',
+    content: sanitizeAndTruncate(content.buttonText, 30) || 'Get Started',
     props: { variant: 'primary', size: 'xl', backgroundColor: theme.primaryColor },
   });
 
@@ -116,9 +206,10 @@ function heroTextElements(content: GeneratedSection['content'], theme: TemplateT
 }
 
 function generateHeroStack(section: GeneratedSection, theme: TemplateTheme): Stack {
-  const hasImage = !!section.media?.primaryImage;
+  // Only use image if from trusted CDN
+  const hasValidImage = isTrustedImageUrl(section.media?.primaryImage);
 
-  if (section.layout === 'split' || hasImage) {
+  if (section.layout === 'split' || hasValidImage) {
     const left = makeBlock({
       type: 'hero',
       label: 'Hero Copy',
@@ -135,8 +226,10 @@ function generateHeroStack(section: GeneratedSection, theme: TemplateTheme): Sta
           type: 'image',
           content: '',
           props: {
-            src: section.media?.primaryImage,
-            alt: section.content.headline || 'Hero image',
+            // Only use the image if it's from a trusted CDN, otherwise use placeholder
+            src: hasValidImage ? section.media?.primaryImage : undefined,
+            placeholder: !hasValidImage,
+            alt: sanitizeText(section.content.headline) || 'Hero image',
           },
           styles: {
             width: '100%',
@@ -171,8 +264,9 @@ function generateHeroStack(section: GeneratedSection, theme: TemplateTheme): Sta
 }
 
 function generateLogoBarStack(section: GeneratedSection, theme: TemplateTheme): Stack {
-  const headline = section.content.headline || 'Trusted by';
-  const logos = (section.media?.logos || []).slice(0, 10);
+  const headline = sanitizeAndTruncate(section.content.headline, 50) || 'Trusted by';
+  // Only use logos from trusted CDNs
+  const logos = (section.media?.logos || []).filter(isTrustedImageUrl).slice(0, 10);
 
   const headingBlock = makeBlock({
     type: 'text-block',
@@ -231,7 +325,7 @@ function generateFeaturesStack(section: GeneratedSection, theme: TemplateTheme):
   elements.push({
     id: generateId(),
     type: 'heading',
-    content: section.content.headline || 'Why this works',
+    content: sanitizeAndTruncate(section.content.headline, 80) || 'Why this works',
     props: { level: 2, color: theme.textColor },
   });
 
@@ -239,7 +333,7 @@ function generateFeaturesStack(section: GeneratedSection, theme: TemplateTheme):
     elements.push({
       id: generateId(),
       type: 'text',
-      content: section.content.subheadline,
+      content: sanitizeAndTruncate(section.content.subheadline, 200),
       props: { color: theme.mutedTextColor },
     });
   }
@@ -249,10 +343,10 @@ function generateFeaturesStack(section: GeneratedSection, theme: TemplateTheme):
     elements.push({
       id: generateId(),
       type: 'icon-text',
-      content: item.title || 'Feature',
+      content: sanitizeAndTruncate(item.title, 60) || 'Feature',
       props: {
-        icon: item.icon || 'check',
-        description: item.description,
+        icon: normalizeIcon(item.icon),
+        description: sanitizeAndTruncate(item.description, 150),
         color: theme.textColor,
         descriptionColor: theme.mutedTextColor,
       },
@@ -285,7 +379,7 @@ function generateStatsStack(section: GeneratedSection, theme: TemplateTheme): St
           {
             id: generateId(),
             type: 'heading' as const,
-            content: section.content.headline,
+            content: sanitizeAndTruncate(section.content.headline, 80),
             props: { level: 2, color: theme.textColor },
           },
           ...(section.content.subheadline
@@ -293,7 +387,7 @@ function generateStatsStack(section: GeneratedSection, theme: TemplateTheme): St
                 {
                   id: generateId(),
                   type: 'text' as const,
-                  content: section.content.subheadline,
+                  content: sanitizeAndTruncate(section.content.subheadline, 200),
                   props: { color: theme.mutedTextColor },
                 },
               ]
@@ -311,8 +405,8 @@ function generateStatsStack(section: GeneratedSection, theme: TemplateTheme): St
       type: 'stat-number',
       content: '',
       props: {
-        value: s.title || '100+',
-        label: s.description || 'Stat',
+        value: sanitizeText(s.title) || '100+',
+        label: sanitizeAndTruncate(s.description, 50) || 'Stat',
         color: theme.textColor,
         labelColor: theme.mutedTextColor,
       },
@@ -343,23 +437,24 @@ function generateTestimonialsStack(section: GeneratedSection, theme: TemplateThe
     {
       id: generateId(),
       type: 'heading',
-      content: section.content.headline || 'Testimonials',
+      content: sanitizeAndTruncate(section.content.headline, 80) || 'Testimonials',
       props: { level: 2, color: theme.textColor },
     },
   ];
 
   items.forEach((t) => {
+    const desc = sanitizeAndTruncate(t.description, 200);
     elements.push({
       id: generateId(),
       type: 'text',
-      content: t.description ? `"${t.description}"` : '"Amazing results."',
+      content: desc ? `"${desc}"` : '"Amazing results."',
       props: { color: theme.mutedTextColor },
     });
     if (t.title) {
       elements.push({
         id: generateId(),
         type: 'text',
-        content: `— ${t.title}`,
+        content: `— ${sanitizeAndTruncate(t.title, 50)}`,
         props: { color: theme.captionColor, variant: 'caption' },
       });
     }
@@ -385,7 +480,7 @@ function generateCTASTack(section: GeneratedSection, theme: TemplateTheme): Stac
     {
       id: generateId(),
       type: 'heading' as const,
-      content: section.content.headline || 'Ready to start?',
+      content: sanitizeAndTruncate(section.content.headline, 80) || 'Ready to start?',
       props: { level: 2, color: theme.textColor },
     },
   ];
@@ -394,7 +489,7 @@ function generateCTASTack(section: GeneratedSection, theme: TemplateTheme): Stac
     elements.push({
       id: generateId(),
       type: 'text' as const,
-      content: section.content.subheadline,
+      content: sanitizeAndTruncate(section.content.subheadline, 200),
       props: { color: theme.mutedTextColor },
     });
   }
@@ -402,7 +497,7 @@ function generateCTASTack(section: GeneratedSection, theme: TemplateTheme): Stac
   elements.push({
     id: generateId(),
     type: 'button' as const,
-    content: section.content.buttonText || 'Get Started',
+    content: sanitizeAndTruncate(section.content.buttonText, 30) || 'Get Started',
     props: { variant: 'primary', size: 'lg', backgroundColor: theme.primaryColor },
   });
 
@@ -428,7 +523,7 @@ function generateTextStack(section: GeneratedSection, theme: TemplateTheme, labe
     elements.push({
       id: generateId(),
       type: 'heading' as const,
-      content: section.content.headline,
+      content: sanitizeAndTruncate(section.content.headline, 80),
       props: { level: 2, color: theme.textColor },
     });
   }
@@ -437,7 +532,7 @@ function generateTextStack(section: GeneratedSection, theme: TemplateTheme, labe
     elements.push({
       id: generateId(),
       type: 'text' as const,
-      content: section.content.subheadline,
+      content: sanitizeAndTruncate(section.content.subheadline, 200),
       props: { color: theme.mutedTextColor },
     });
   }
