@@ -1,0 +1,210 @@
+/**
+ * Stack Renderer - Renders a stack of blocks with drag-and-drop support
+ */
+
+import React, { useState } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { Plus, LayoutGrid } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { Stack, Block, Element, SelectionState } from '../../../types/infostack';
+import type { DeviceMode } from '../TopToolbar';
+import { BlockDragOverlay } from './BlockDragOverlay';
+
+// Note: SortableBlockRenderer remains in CanvasRenderer.tsx as it's too complex to extract
+// This is a forward reference that will be passed as a render prop
+
+export interface StackRendererProps {
+  stack: Stack;
+  selection: SelectionState;
+  multiSelectedIds?: Set<string>;
+  onSelect: (selection: SelectionState, isShiftHeld?: boolean) => void;
+  path: string[];
+  onReorderBlocks?: (stackId: string, fromIndex: number, toIndex: number) => void;
+  onReorderElements?: (blockId: string, fromIndex: number, toIndex: number) => void;
+  onAddBlock?: (block: Block, position?: { stackId: string; index: number }) => void;
+  onDuplicateBlock?: (blockId: string) => void;
+  onDeleteBlock?: (blockId: string) => void;
+  onUpdateBlock?: (blockId: string, updates: Partial<Block>) => void;
+  onUpdateElement?: (elementId: string, updates: Partial<Element>) => void;
+  onDuplicateElement?: (elementId: string) => void;
+  onDeleteElement?: (elementId: string) => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  canPaste?: boolean;
+  readOnly?: boolean;
+  replayAnimationKey?: number;
+  deviceMode?: DeviceMode;
+  onNextStep?: () => void;
+  onGoToStep?: (stepId: string) => void;
+  onFormSubmit?: (values: Record<string, string>) => void;
+  onOpenBlockPickerInPanel?: (stackId: string) => void;
+  selectedApplicationStepId?: string | null;
+  activeApplicationFlowBlockId?: string | null;
+  selectedStepElement?: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null;
+  onSelectStepElement?: (element: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null) => void;
+  // Render prop for block rendering (since SortableBlockRenderer is complex)
+  renderBlock: (props: {
+    block: Block;
+    blockIndex: number;
+    totalBlocks: number;
+    stackPath: string[];
+    activeBlockId: string | null;
+  }) => React.ReactNode;
+}
+
+export const StackRenderer: React.FC<StackRendererProps> = ({ 
+  stack, 
+  selection,
+  onSelect, 
+  path,
+  onReorderBlocks,
+  onAddBlock,
+  readOnly = false,
+  onOpenBlockPickerInPanel,
+  renderBlock,
+}) => {
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const isSelected = selection.type === 'stack' && selection.id === stack.id;
+  const stackPath = [...path, 'stack', stack.id];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveBlockId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveBlockId(null);
+
+    if (over && active.id !== over.id && onReorderBlocks) {
+      const oldIndex = stack.blocks.findIndex((block) => block.id === active.id);
+      const newIndex = stack.blocks.findIndex((block) => block.id === over.id);
+      onReorderBlocks(stack.id, oldIndex, newIndex);
+    }
+  };
+
+  const activeBlock = activeBlockId 
+    ? stack.blocks.find(b => b.id === activeBlockId) 
+    : null;
+
+  // Extract parent frame ID and path from the received path prop
+  const frameIndex = path.indexOf('frame');
+  const parentFrameId = frameIndex !== -1 && path[frameIndex + 1] ? path[frameIndex + 1] : null;
+  const parentFramePath = frameIndex !== -1 ? path.slice(0, frameIndex + 2) : path;
+
+  // Handler for selecting the parent frame
+  const selectParentFrame = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (parentFrameId && !readOnly) {
+      onSelect({ type: 'frame', id: parentFrameId, path: parentFramePath });
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        'builder-section-selectable group/section p-2 rounded-xl relative',
+        isSelected && 'builder-section-selected',
+        stack.direction === 'horizontal' ? 'flex flex-row gap-4' : 'flex flex-col gap-3'
+      )}
+    >
+      {stack.blocks.length === 0 ? (
+        // Empty state
+        <div 
+          onClick={(e) => {
+            e.stopPropagation();
+            selectParentFrame();
+            onOpenBlockPickerInPanel?.(stack.id);
+          }}
+          className={cn(
+            "relative flex flex-col items-center justify-center py-16 px-8 rounded-xl cursor-pointer transition-all",
+            "border-2 border-dashed border-gray-200 hover:border-gray-300",
+            "bg-gradient-to-b from-gray-50/50 to-transparent",
+            "group/empty"
+          )}
+        >
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center group-hover/empty:border-gray-300 group-hover/empty:shadow-md transition-all">
+              <LayoutGrid className="w-5 h-5 text-gray-400 group-hover/empty:text-gray-600 transition-colors" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-600 group-hover/empty:text-gray-800 transition-colors">
+                Add Block
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Click to add content
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={stack.blocks.map(b => b.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {stack.blocks.map((block, blockIndex) => 
+                renderBlock({
+                  block,
+                  blockIndex,
+                  totalBlocks: stack.blocks.length,
+                  stackPath,
+                  activeBlockId,
+                })
+              )}
+            </SortableContext>
+            <DragOverlay>
+              {activeBlock ? <BlockDragOverlay block={activeBlock} /> : null}
+            </DragOverlay>
+          </DndContext>
+          
+          {/* Add content button */}
+          {!readOnly && stack.blocks.length > 0 && (
+            <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
+                className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <Plus size={14} />
+                <span>Add content</span>
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+StackRenderer.displayName = 'StackRenderer';
