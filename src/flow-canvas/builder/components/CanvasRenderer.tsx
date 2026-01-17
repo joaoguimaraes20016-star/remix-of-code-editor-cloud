@@ -2169,8 +2169,27 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       // ============================================
       
       case 'gradient-text':
-        const gradientColors = (element.props?.gradient as string[]) || ['#8B5CF6', '#EC4899'];
-        const gradientAngle = (element.props?.gradientAngle as number) || 135;
+        // Handle both array format and GradientValue object format
+        const gradientProp = element.props?.gradient;
+        let gradientCSS: string;
+        
+        if (Array.isArray(gradientProp)) {
+          // Legacy array format: ['#8B5CF6', '#EC4899']
+          const gradientAngle = (element.props?.gradientAngle as number) || 135;
+          gradientCSS = `linear-gradient(${gradientAngle}deg, ${gradientProp.join(', ')})`;
+        } else if (gradientProp && typeof gradientProp === 'object' && 'stops' in gradientProp) {
+          // New GradientValue object format
+          const gv = gradientProp as { type: string; angle: number; stops: Array<{ color: string; position: number }> };
+          const stopsStr = gv.stops.sort((a, b) => a.position - b.position).map(s => `${s.color} ${s.position}%`).join(', ');
+          gradientCSS = gv.type === 'radial' 
+            ? `radial-gradient(circle, ${stopsStr})`
+            : `linear-gradient(${gv.angle}deg, ${stopsStr})`;
+        } else {
+          // Default fallback
+          const gradientAngle = (element.props?.gradientAngle as number) || 135;
+          gradientCSS = `linear-gradient(${gradientAngle}deg, #8B5CF6, #EC4899)`;
+        }
+        
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
@@ -2190,7 +2209,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             <span 
               className="text-4xl font-bold bg-clip-text text-transparent"
               style={{ 
-                backgroundImage: `linear-gradient(${gradientAngle}deg, ${gradientColors.join(', ')})`,
+                backgroundImage: gradientCSS,
                 ...getTypographyStyles()
               }}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
