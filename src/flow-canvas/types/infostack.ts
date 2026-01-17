@@ -163,7 +163,7 @@ export interface ApplicationFlowStep {
 
 // Background value type for Application Flow (same structure as BackgroundValue)
 export interface ApplicationFlowBackground {
-  type: 'solid' | 'gradient' | 'image';
+  type: 'solid' | 'gradient' | 'image' | 'video';
   color?: string;
   gradient?: {
     type: 'linear' | 'radial';
@@ -171,6 +171,10 @@ export interface ApplicationFlowBackground {
     stops: Array<{ color: string; position: number }>;
   };
   imageUrl?: string;
+  videoUrl?: string;
+  videoAutoplay?: boolean;
+  videoLoop?: boolean;
+  videoMuted?: boolean;
 }
 
 export interface ApplicationFlowSettings {
@@ -282,7 +286,7 @@ export interface BackgroundPattern {
 
 // Page background settings (Framer-level control)
 export interface PageBackground {
-  type: 'solid' | 'gradient' | 'image' | 'pattern';
+  type: 'solid' | 'gradient' | 'image' | 'pattern' | 'video';
   color?: string;
   gradient?: {
     type: 'linear' | 'radial';
@@ -295,6 +299,11 @@ export interface PageBackground {
   overlayOpacity?: number;
   // Premium pattern overlay
   pattern?: BackgroundPattern;
+  // Video background settings
+  video?: string;
+  videoAutoplay?: boolean;
+  videoLoop?: boolean;
+  videoMuted?: boolean;
 }
 
 // Block animation with stagger support

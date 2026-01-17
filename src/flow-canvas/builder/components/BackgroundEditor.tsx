@@ -1,23 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import { Image as ImageIcon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Image as ImageIcon, Video } from 'lucide-react';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, cloneGradient } from './modals';
 import type { GradientValue } from './modals';
 
-export type BackgroundType = 'solid' | 'gradient' | 'image';
+export type BackgroundType = 'solid' | 'gradient' | 'image' | 'video';
 
 export interface BackgroundValue {
   type: BackgroundType;
   color?: string;
   gradient?: GradientValue;
   imageUrl?: string;
+  // Video background settings
+  videoUrl?: string;
+  videoAutoplay?: boolean;
+  videoLoop?: boolean;
+  videoMuted?: boolean;
 }
 
 interface BackgroundEditorProps {
   value: BackgroundValue;
   onChange: (value: BackgroundValue) => void;
   showImageOption?: boolean;
+  showVideoOption?: boolean;
   className?: string;
 }
 
@@ -63,10 +71,29 @@ const parseGradientString = (gradientStr: string): GradientValue | null => {
   return { type, angle, stops };
 };
 
+// Helper to extract video ID from various platforms
+const getVideoEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${ytMatch[1]}&controls=0&showinfo=0`;
+  
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1&loop=1&background=1`;
+  
+  // Direct video URL (mp4, webm)
+  if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return url;
+  
+  return null;
+};
+
 export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
   value,
   onChange,
   showImageOption = true,
+  showVideoOption = true,
   className
 }) => {
   const [bgType, setBgType] = useState<BackgroundType>(value.type || 'solid');
@@ -89,6 +116,11 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
       newValue.gradient = value.gradient || defaultGradient;
     } else if (newType === 'image') {
       newValue.imageUrl = value.imageUrl || '';
+    } else if (newType === 'video') {
+      newValue.videoUrl = value.videoUrl || '';
+      newValue.videoAutoplay = true;
+      newValue.videoLoop = true;
+      newValue.videoMuted = true;
     }
     
     onChange(newValue);
@@ -107,10 +139,14 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
     onChange({ ...value, type: 'image', imageUrl });
   };
 
+  const handleVideoChange = (updates: Partial<BackgroundValue>) => {
+    onChange({ ...value, type: 'video', ...updates });
+  };
+
   return (
     <div className={cn("space-y-3", className)}>
       {/* Background Type Toggle */}
-      <div className="toggle-pill w-full">
+      <div className="toggle-pill w-full flex-wrap">
         <button 
           onClick={() => handleTypeChange('solid')}
           className={cn(
@@ -138,6 +174,17 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
             )}
           >
             Image
+          </button>
+        )}
+        {showVideoOption && (
+          <button 
+            onClick={() => handleTypeChange('video')}
+            className={cn(
+              'toggle-pill-option flex-1 text-center',
+              bgType === 'video' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive'
+            )}
+          >
+            Video
           </button>
         )}
       </div>
@@ -225,6 +272,81 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
           )}
         </div>
       )}
+
+      {/* Video Background Settings */}
+      {bgType === 'video' && (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label className="text-xs text-builder-text-muted">Video URL</Label>
+            <Input
+              value={value.videoUrl || ''}
+              onChange={(e) => handleVideoChange({ videoUrl: e.target.value })}
+              placeholder="https://youtube.com/watch?v=... or .mp4 URL"
+              className="builder-input text-xs"
+            />
+            <p className="text-[10px] text-builder-text-dim">
+              Supports YouTube, Vimeo, or direct .mp4 URLs
+            </p>
+          </div>
+          
+          {/* Video Preview */}
+          {value.videoUrl && getVideoEmbedUrl(value.videoUrl) && (
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-builder-border bg-gray-900">
+              {getVideoEmbedUrl(value.videoUrl)?.includes('youtube') || getVideoEmbedUrl(value.videoUrl)?.includes('vimeo') ? (
+                <iframe
+                  src={getVideoEmbedUrl(value.videoUrl)!}
+                  className="absolute inset-0 w-full h-full"
+                  allow="autoplay; fullscreen"
+                  frameBorder="0"
+                />
+              ) : (
+                <video
+                  src={getVideoEmbedUrl(value.videoUrl)!}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                />
+              )}
+            </div>
+          )}
+          
+          {!value.videoUrl && (
+            <div className="w-full aspect-video rounded-lg border-2 border-dashed border-builder-border flex items-center justify-center">
+              <div className="text-center">
+                <Video className="w-8 h-8 text-builder-text-muted mx-auto mb-2" />
+                <span className="text-xs text-builder-text-muted">Enter a video URL above</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Video Options */}
+          <div className="space-y-2 pt-2 border-t border-builder-border">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-builder-text-muted">Autoplay</Label>
+              <Switch
+                checked={value.videoAutoplay ?? true}
+                onCheckedChange={(checked) => handleVideoChange({ videoAutoplay: checked })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-builder-text-muted">Loop</Label>
+              <Switch
+                checked={value.videoLoop ?? true}
+                onCheckedChange={(checked) => handleVideoChange({ videoLoop: checked })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-builder-text-muted">Muted</Label>
+              <Switch
+                checked={value.videoMuted ?? true}
+                onCheckedChange={(checked) => handleVideoChange({ videoMuted: checked })}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -240,9 +362,12 @@ export const backgroundValueToCSS = (value: BackgroundValue): string => {
       return value.gradient ? gradientToCSS(value.gradient) : 'linear-gradient(135deg, #667eea, #764ba2)';
     case 'image':
       return value.imageUrl ? `url(${value.imageUrl})` : 'transparent';
+    case 'video':
+      // Video backgrounds are handled specially in render - return transparent for CSS
+      return 'transparent';
     default:
       return 'transparent';
   }
 };
 
-export { parseGradientString };
+export { parseGradientString, getVideoEmbedUrl };

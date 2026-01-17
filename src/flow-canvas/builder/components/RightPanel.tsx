@@ -1635,16 +1635,17 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
   // Previously, useState initialized once and never updated when switching steps, causing
   // the inspector to show stale background type from the previous step.
   const currentBgType = step.background?.type || 'solid';
-  // Filter out 'pattern' since UI doesn't support it yet
+  // Filter out 'pattern' since UI doesn't support it yet, and include 'video'
   const normalizedBgType = currentBgType === 'pattern' ? 'solid' : currentBgType;
-  const [bgType, setBgType] = useState<'solid' | 'gradient' | 'image'>(normalizedBgType);
+  const [bgType, setBgType] = useState<'solid' | 'gradient' | 'image' | 'video'>(normalizedBgType as 'solid' | 'gradient' | 'image' | 'video');
   
   // CRITICAL: Reset local bgType state when the step changes.
   // Without this, switching to a new step would keep the old step's bgType in state,
   // causing visual mismatch and potential data corruption when editing.
   useEffect(() => {
     const type = step.background?.type || 'solid';
-    setBgType(type === 'pattern' ? 'solid' : type);
+    const normalized = type === 'pattern' ? 'solid' : type;
+    setBgType(normalized as 'solid' | 'gradient' | 'image' | 'video');
   }, [step.id, step.background?.type]);
   
   const handleBackgroundTypeChange = (newType: 'solid' | 'gradient' | 'image') => {
@@ -2693,8 +2694,8 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
 }) => {
   // Local state for immediate UI feedback on background type change
   const rawBgType = page.settings.page_background?.type || 'solid';
-  const [localBgType, setLocalBgType] = useState<'solid' | 'gradient' | 'image'>(
-    rawBgType === 'pattern' ? 'solid' : rawBgType
+  const [localBgType, setLocalBgType] = useState<'solid' | 'gradient' | 'image' | 'video'>(
+    rawBgType === 'pattern' ? 'solid' : (rawBgType as 'solid' | 'gradient' | 'image' | 'video')
   );
   
   // Sync local state with external prop changes
@@ -2702,7 +2703,7 @@ const PageInspector: React.FC<{ page: Page; onUpdate: (updates: Partial<Page>) =
     const externalType = page.settings.page_background?.type || 'solid';
     const normalizedType = externalType === 'pattern' ? 'solid' : externalType;
     if (normalizedType !== localBgType) {
-      setLocalBgType(normalizedType);
+      setLocalBgType(normalizedType as 'solid' | 'gradient' | 'image' | 'video');
     }
   }, [page.settings.page_background?.type]);
   
