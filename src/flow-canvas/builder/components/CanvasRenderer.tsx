@@ -2193,17 +2193,13 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             {/* Element drag handle integrated into toolbar */}
             <div 
               className="p-2 flex items-center justify-center"
-              style={{ color: iconColor, fontSize: iconSize }}
+              style={{ color: iconColor }}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              {/* Render icon based on name - using Lucide icons */}
-              {iconName === 'star' && <Sparkles style={{ width: iconSize, height: iconSize }} />}
-              {iconName === 'check' && <Check style={{ width: iconSize, height: iconSize }} />}
-              {iconName === 'arrow-right' && <ArrowRight style={{ width: iconSize, height: iconSize }} />}
-              {iconName === 'play' && <Play style={{ width: iconSize, height: iconSize }} />}
-              {!['star', 'check', 'arrow-right', 'play'].includes(iconName) && (
-                <Sparkles style={{ width: iconSize, height: iconSize }} />
-              )}
+              {(() => {
+                const IconComponent = getButtonIconComponent(element.content || 'Star');
+                return <IconComponent style={{ width: iconSize, height: iconSize }} />;
+              })()}
             </div>
           </div>
         );
@@ -2250,16 +2246,34 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 onDelete={onDelete}
               />
             )}
-            <span 
-              className="text-4xl font-bold bg-clip-text text-transparent"
-              style={{ 
-                backgroundImage: gradientCSS,
-                ...getTypographyStyles()
-              }}
-              onClick={(e) => { e.stopPropagation(); onSelect(); }}
-            >
-              {element.content || 'Gradient Text'}
-            </span>
+            {(() => {
+              const gradientFontSize = (element.props?.fontSize as string) || '4xl';
+              const gradientFontWeight = (element.props?.fontWeight as string) || 'bold';
+              const gradientTextAlign = (element.props?.textAlign as string) || 'left';
+              const fontSizeMap: Record<string, string> = {
+                'xl': '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', 
+                '5xl': '3rem', '6xl': '3.75rem', '7xl': '4.5rem'
+              };
+              const fontWeightMap: Record<string, number> = {
+                normal: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800
+              };
+              return (
+                <div style={{ textAlign: gradientTextAlign as 'left' | 'center' | 'right', width: '100%' }}>
+                  <span 
+                    className="bg-clip-text text-transparent"
+                    style={{ 
+                      backgroundImage: gradientCSS,
+                      fontSize: fontSizeMap[gradientFontSize] || '2.25rem',
+                      fontWeight: fontWeightMap[gradientFontWeight] || 700,
+                      ...getTypographyStyles()
+                    }}
+                    onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                  >
+                    {element.content || 'Gradient Text'}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
         );
       
@@ -2290,9 +2304,23 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 const numberColor = (element.props?.numberColor as string) || (isDarkTheme ? '#ffffff' : '#111827');
                 const suffixColor = (element.props?.suffixColor as string) || primaryColor;
                 const labelColor = (element.props?.labelColor as string) || (isDarkTheme ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)');
+                const statSize = (element.props?.size as string) || 'xl';
+                const statFontWeight = (element.props?.fontWeight as string) || 'bold';
+                const statSizeMap: Record<string, string> = {
+                  'lg': '1.875rem', 'xl': '3rem', '2xl': '3.75rem', '3xl': '4.5rem'
+                };
+                const statWeightMap: Record<string, number> = {
+                  normal: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800
+                };
                 return (
                   <>
-                    <div className="stat-number stat-number-animate text-5xl font-bold tracking-tight">
+                    <div 
+                      className="stat-number stat-number-animate tracking-tight"
+                      style={{ 
+                        fontSize: statSizeMap[statSize] || '3rem',
+                        fontWeight: statWeightMap[statFontWeight] || 700,
+                      }}
+                    >
                       <span style={{ color: numberColor }}>{element.content || '0'}</span>
                       <span style={{ color: suffixColor }}>{statSuffix}</span>
                     </div>
@@ -2530,7 +2558,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           circle: 'rounded-full',
           'rounded-square': 'rounded-2xl',
           square: 'rounded-lg',
+          hexagon: 'clip-path-hexagon',
+          badge: 'clip-path-badge',
         };
+        const showConnector = element.props?.showConnector === true;
+        const connectorStyle = (element.props?.connectorStyle as string) || 'solid';
+        const stepAlignment = (element.props?.alignment as string) || 'center';
         const currentStepSize = stepSizeMap[stepSize] || stepSizeMap.md;
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
@@ -2549,7 +2582,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               />
             )}
             <div 
-              className="process-step-item"
+              className="process-step-item relative"
+              style={{ textAlign: stepAlignment as 'left' | 'center' | 'right' }}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               <div 
@@ -2579,6 +2613,17 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 <p className="text-xs mt-1" style={{ color: stepTextColor, opacity: 0.7 }}>
                   {stepDescription}
                 </p>
+              )}
+              {showConnector && (
+                <div 
+                  className="absolute top-1/2 -right-6 w-6 h-0.5"
+                  style={{
+                    backgroundColor: stepAccentColor,
+                    borderStyle: connectorStyle === 'dotted' ? 'dotted' : connectorStyle === 'dashed' ? 'dashed' : 'solid',
+                    borderWidth: connectorStyle !== 'solid' ? '0 0 2px 0' : undefined,
+                    borderColor: connectorStyle !== 'solid' ? stepAccentColor : undefined,
+                  }}
+                />
               )}
             </div>
           </div>
@@ -2653,8 +2698,9 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       case 'underline-text':
         const underlineFrom = (element.props?.underlineFrom as string) || primaryColor;
         const underlineTo = (element.props?.underlineTo as string) || '#EC4899';
+        const underlineTextAlign = (element.props?.textAlign as string) || 'left';
         return (
-          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative inline-block')} {...stateHandlers}>
+          <div ref={combinedRef} style={{ ...style, textAlign: underlineTextAlign as 'left' | 'center' | 'right' }} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {renderIndicatorBadges()}
             {!readOnly && (

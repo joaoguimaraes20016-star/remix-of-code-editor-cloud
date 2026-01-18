@@ -285,4 +285,14 @@
   .animate-shimmer {
     animation: shimmer 2s infinite;
   }
+
+  /* Hexagon clip-path for process-step shapes */
+  .clip-path-hexagon {
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+
+  /* Badge shape for process-step */
+  .clip-path-badge {
+    border-radius: 9999px 9999px 1rem 1rem;
+  }
 }

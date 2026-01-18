@@ -700,20 +700,41 @@ export function FlowCanvasRenderer({
 
       case 'avatar-group':
         const avatarCount = (element.props?.count as number) || 3;
+        const avatarSize = (element.props?.size as string) || 'md';
+        const avatarAlignment = (element.props?.alignment as string) || 'flex-start';
+        const avatarColorMode = (element.props?.colorMode as string) || 'gradient';
+        const avatarOverlap = (element.props?.overlap as number) || 12;
         const avatarBaseColor = (element.props?.gradientFrom as string) || '#8B5CF6';
-        // Theme-aware end color: use user's choice or shift hue from base
         const avatarEndColor = (element.props?.gradientTo as string) || shiftHue(avatarBaseColor, 40);
+        const avatarSolidColor = (element.props?.solidColor as string) || avatarBaseColor;
+        const variedColors = ['#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'];
+        const avatarSizeMap: Record<string, { wrapper: string; icon: string }> = {
+          xs: { wrapper: 'w-6 h-6', icon: 'w-3 h-3' },
+          sm: { wrapper: 'w-8 h-8', icon: 'w-4 h-4' },
+          md: { wrapper: 'w-10 h-10', icon: 'w-5 h-5' },
+          lg: { wrapper: 'w-12 h-12', icon: 'w-6 h-6' },
+          xl: { wrapper: 'w-14 h-14', icon: 'w-7 h-7' },
+        };
+        const currentAvatarSize = avatarSizeMap[avatarSize] || avatarSizeMap.md;
         return (
-          <div key={element.id} className="flex -space-x-3">
-            {Array.from({ length: avatarCount }).map((_, i) => (
-              <div 
-                key={i}
-                className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-background"
-                style={{ background: `linear-gradient(${135 + i * 15}deg, ${avatarBaseColor}, ${avatarEndColor})` }}
-              >
-                <User className="w-5 h-5 text-white" />
-              </div>
-            ))}
+          <div key={element.id} style={{ display: 'flex', justifyContent: avatarAlignment }}>
+            <div style={{ display: 'flex', flexDirection: 'row-reverse' }}>
+              {Array.from({ length: avatarCount }).map((_, i) => {
+                let bg: string;
+                if (avatarColorMode === 'solid') bg = avatarSolidColor;
+                else if (avatarColorMode === 'varied') bg = variedColors[i % variedColors.length];
+                else bg = `linear-gradient(${135 + i * 15}deg, ${avatarBaseColor}, ${avatarEndColor})`;
+                return (
+                  <div 
+                    key={i}
+                    className={cn(currentAvatarSize.wrapper, 'rounded-full flex items-center justify-center border-2 border-background')}
+                    style={{ background: bg, marginLeft: i > 0 ? `-${avatarOverlap}px` : 0 }}
+                  >
+                    <User className={cn(currentAvatarSize.icon, 'text-white')} />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         );
 
@@ -804,30 +825,58 @@ export function FlowCanvasRenderer({
       case 'process-step':
         const stepNum = (element.props?.step as number) || 1;
         const stepIcon = element.props?.icon as string;
+        const stepShape = (element.props?.shape as string) || 'rounded-square';
+        const stepSize = (element.props?.size as string) || 'md';
         const stepAccentColor = (element.props?.accentColor as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';
         const stepTextColor = (element.props?.color as string);
+        const stepNumberColor = (element.props?.numberColor as string) || '#ffffff';
         const stepMutedColor = (element.props?.mutedColor as string);
         const stepTitle = (element.props?.title as string) || element.content || 'Step Title';
         const stepDescription = (element.props?.description as string);
+        const stepAlignment = (element.props?.alignment as string) || 'center';
+        const showConnector = element.props?.showConnector === true;
+        const connectorStyle = (element.props?.connectorStyle as string) || 'solid';
+        
+        const stepSizeMap: Record<string, { wrapper: string; icon: string; text: string }> = {
+          sm: { wrapper: 'w-10 h-10', icon: 'w-4 h-4', text: 'text-sm' },
+          md: { wrapper: 'w-14 h-14', icon: 'w-6 h-6', text: 'text-lg' },
+          lg: { wrapper: 'w-16 h-16', icon: 'w-7 h-7', text: 'text-xl' },
+          xl: { wrapper: 'w-20 h-20', icon: 'w-8 h-8', text: 'text-2xl' },
+        };
+        const stepShapeMap: Record<string, string> = {
+          circle: 'rounded-full',
+          'rounded-square': 'rounded-2xl',
+          square: 'rounded-lg',
+          hexagon: 'clip-path-hexagon',
+          badge: 'clip-path-badge',
+        };
+        const currentStepSize = stepSizeMap[stepSize] || stepSizeMap.md;
         
         // Icon mapping matching builder
         const iconMap: Record<string, React.ReactNode> = {
-          'map': <Layout className="w-7 h-7 text-white" />,
-          'search': <Search className="w-7 h-7 text-white" />,
-          'share-2': <ArrowRight className="w-7 h-7 text-white" />,
-          'rocket': <Rocket className="w-7 h-7 text-white" />,
-          'calendar': <Calendar className="w-7 h-7 text-white" />,
-          'file-text': <FileText className="w-7 h-7 text-white" />,
+          'map': <Layout className={cn(currentStepSize.icon, 'text-white')} />,
+          'search': <Search className={cn(currentStepSize.icon, 'text-white')} />,
+          'share-2': <ArrowRight className={cn(currentStepSize.icon, 'text-white')} />,
+          'rocket': <Rocket className={cn(currentStepSize.icon, 'text-white')} />,
+          'calendar': <Calendar className={cn(currentStepSize.icon, 'text-white')} />,
+          'file-text': <FileText className={cn(currentStepSize.icon, 'text-white')} />,
         };
         
         return (
-          <div key={element.id} className="process-step-item text-center">
+          <div key={element.id} className="process-step-item relative" style={{ textAlign: stepAlignment as 'left' | 'center' | 'right' }}>
             <div 
-              className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
+              className={cn(
+                currentStepSize.wrapper,
+                stepShapeMap[stepShape] || 'rounded-2xl',
+                stepAlignment === 'center' && 'mx-auto',
+                'flex items-center justify-center'
+              )}
               style={{ background: `linear-gradient(135deg, ${stepAccentColor}, ${stepAccentColor}80)` }}
             >
-              {stepIcon && iconMap[stepIcon] ? iconMap[stepIcon] : (
-                <span className="text-xl font-bold text-white">{stepNum}</span>
+              {stepIcon && iconMap[stepIcon] ? (
+                <span style={{ color: stepNumberColor }}>{iconMap[stepIcon]}</span>
+              ) : (
+                <span className={cn(currentStepSize.text, 'font-bold')} style={{ color: stepNumberColor }}>{stepNum}</span>
               )}
             </div>
             <span 
@@ -843,6 +892,15 @@ export function FlowCanvasRenderer({
               >
                 {stepDescription}
               </p>
+            )}
+            {showConnector && (
+              <div 
+                className="absolute top-1/2 -right-6 w-6 h-0.5"
+                style={{
+                  backgroundColor: stepAccentColor,
+                  borderStyle: connectorStyle === 'dotted' ? 'dotted' : connectorStyle === 'dashed' ? 'dashed' : 'solid',
+                }}
+              />
             )}
           </div>
         );
@@ -886,14 +944,17 @@ export function FlowCanvasRenderer({
         const underlineFrom = (element.props?.underlineFrom as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';
         // Theme-aware: shift hue instead of hardcoded pink
         const underlineTo = (element.props?.underlineTo as string) || shiftHue(underlineFrom, 40);
+        const underlineTextAlign = (element.props?.textAlign as string) || 'left';
         return (
-          <span key={element.id} className="relative inline-block text-2xl font-bold">
-            {element.content || 'Underlined Text'}
-            <span 
-              className="absolute bottom-0 left-0 right-0 h-1 rounded-full"
-              style={{ background: `linear-gradient(90deg, ${underlineFrom}, ${underlineTo})` }}
-            />
-          </span>
+          <div key={element.id} style={{ textAlign: underlineTextAlign as 'left' | 'center' | 'right' }}>
+            <span className="relative inline-block text-2xl font-bold">
+              {element.content || 'Underlined Text'}
+              <span 
+                className="absolute bottom-0 left-0 right-0 h-1 rounded-full"
+                style={{ background: `linear-gradient(90deg, ${underlineFrom}, ${underlineTo})` }}
+              />
+            </span>
+          </div>
         );
         
       // FUNCTIONAL ELEMENT TYPES
