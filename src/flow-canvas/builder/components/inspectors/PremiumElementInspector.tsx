@@ -356,6 +356,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               <ColorPickerPopover
                 color={(element.props?.numberColor as string) || '#ffffff'}
                 onChange={(c) => handlePropsChange('numberColor', c)}
+                showGradientOption={false}
               >
                 <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                   <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.numberColor as string) || '#ffffff' }} />
@@ -368,6 +369,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               <ColorPickerPopover
                 color={(element.props?.suffixColor as string) || '#8B5CF6'}
                 onChange={(c) => handlePropsChange('suffixColor', c)}
+                showGradientOption={false}
               >
                 <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                   <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.suffixColor as string) || '#8B5CF6' }} />
@@ -380,6 +382,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
               <ColorPickerPopover
                 color={(element.props?.labelColor as string) || '#888888'}
                 onChange={(c) => handlePropsChange('labelColor', c)}
+                showGradientOption={false}
               >
                 <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                   <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.labelColor as string) || '#888888' }} />

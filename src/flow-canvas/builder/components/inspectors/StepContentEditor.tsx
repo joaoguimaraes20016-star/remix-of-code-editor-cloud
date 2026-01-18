@@ -607,6 +607,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             <ColorPickerPopover
               color={stepSettings.titleColor || '#000000'}
               onChange={(color) => updateSettings({ titleColor: color })}
+              showGradientOption={false}
             >
               <button className="w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
                 <div 
@@ -643,6 +644,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             <ColorPickerPopover
               color={stepSettings.descriptionColor || '#666666'}
               onChange={(color) => updateSettings({ descriptionColor: color })}
+              showGradientOption={false}
             >
               <button className="w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
                 <div 

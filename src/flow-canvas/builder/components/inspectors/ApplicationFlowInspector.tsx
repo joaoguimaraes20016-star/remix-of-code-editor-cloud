@@ -641,6 +641,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
             <ColorPickerPopover
               color={settings.containerBorderColor || 'transparent'}
               onChange={(color) => onUpdateBlock({ props: { ...settings, containerBorderColor: color } })}
+              showGradientOption={false}
             >
               <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                 <div 
@@ -728,6 +729,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
             <ColorPickerPopover
               color={settings.textColor || '#000000'}
               onChange={(color) => onUpdateBlock({ props: { ...settings, textColor: color } })}
+              showGradientOption={false}
             >
               <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                 <div 
@@ -744,6 +746,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
             <ColorPickerPopover
               color={settings.inputBackground || '#ffffff'}
               onChange={(color) => onUpdateBlock({ props: { ...settings, inputBackground: color } })}
+              showGradientOption={false}
             >
               <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                 <div 
@@ -760,6 +763,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
             <ColorPickerPopover
               color={settings.inputBorderColor || '#e5e7eb'}
               onChange={(color) => onUpdateBlock({ props: { ...settings, inputBorderColor: color } })}
+              showGradientOption={false}
             >
               <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                 <div 

@@ -397,6 +397,7 @@ export const CaptureFlowInspector: React.FC = () => {
             onChange={(color) => updateCaptureFlow({
               appearance: { ...activeCaptureFlow.appearance, textColor: color },
             })}
+            showGradientOption={false}
           >
             <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
               <div 
@@ -417,6 +418,7 @@ export const CaptureFlowInspector: React.FC = () => {
             onChange={(color) => updateCaptureFlow({
               appearance: { ...activeCaptureFlow.appearance, inputBackground: color },
             })}
+            showGradientOption={false}
           >
             <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
               <div 

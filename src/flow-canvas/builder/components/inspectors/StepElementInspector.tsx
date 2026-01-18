@@ -183,6 +183,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           <ColorPickerPopover
             color={stepSettings.titleColor || '#111827'}
             onChange={(color) => updateStepSetting('titleColor', color)}
+            showGradientOption={false}
           >
             <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
               <div 
@@ -231,6 +232,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           <ColorPickerPopover
             color={stepSettings.descriptionColor || '#6B7280'}
             onChange={(color) => updateStepSetting('descriptionColor', color)}
+            showGradientOption={false}
           >
             <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
               <div 
@@ -472,6 +474,7 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
             <ColorPickerPopover
               color={stepSettings.optionSelectedBg || '#000000'}
               onChange={(color) => updateStepSetting('optionSelectedBg', color)}
+              showGradientOption={false}
             >
               <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                 <div 

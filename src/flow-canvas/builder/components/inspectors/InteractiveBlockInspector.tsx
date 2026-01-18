@@ -563,6 +563,7 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                 updateBlockStyles({ backgroundColor: color });
                 // If currently solid, this is the active value
               }}
+              showGradientOption={false}
             >
               <button className={cn(
                 "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors border border-border",

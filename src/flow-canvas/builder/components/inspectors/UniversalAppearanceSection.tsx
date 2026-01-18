@@ -411,6 +411,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <ColorPickerPopover 
               color={(element.styles?.borderColor as string) || '#e5e7eb'}
               onChange={(color) => handleStyleChange('borderColor', color)}
+              showGradientOption={false}
             >
               <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
                 <div 
