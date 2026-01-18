@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Element } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -22,6 +23,8 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Maximize2,
+  Move,
 } from 'lucide-react';
 import { ColorPickerPopover } from '../modals';
 import { CollapsibleSection } from './shared/CollapsibleSection';
@@ -57,8 +60,127 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
   
   return (
     <>
-      {/* ========== LAYOUT SECTION ========== */}
-      <CollapsibleSection title="Layout" icon={<Layout className="w-4 h-4" />}>
+      {/* ========== SIZE & DIMENSIONS SECTION ========== */}
+      <CollapsibleSection title="Size & Dimensions" icon={<Maximize2 className="w-4 h-4" />} defaultOpen>
+        <div className="pt-3 space-y-4">
+          {/* Width control */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Width</span>
+              <span className="text-xs font-mono text-builder-text-dim">
+                {element.styles?.width || 'auto'}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Select
+                value={(element.styles?.width as string)?.includes('px') ? 'custom' : ((element.styles?.width as string) || 'auto')}
+                onValueChange={(v) => {
+                  if (v === 'custom') {
+                    handleStyleChange('width', '200px');
+                  } else {
+                    handleStyleChange('width', v);
+                  }
+                }}
+              >
+                <SelectTrigger className="builder-input text-xs flex-1">
+                  <SelectValue placeholder="Auto" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectItem value="100%">Full Width</SelectItem>
+                  <SelectItem value="75%">75%</SelectItem>
+                  <SelectItem value="50%">50%</SelectItem>
+                  <SelectItem value="fit-content">Fit Content</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+              {(element.styles?.width as string)?.includes('px') && (
+                <Input
+                  type="number"
+                  className="builder-input w-20 text-xs text-center"
+                  value={parseInt((element.styles?.width as string) || '200')}
+                  onChange={(e) => handleStyleChange('width', `${e.target.value}px`)}
+                  min={0}
+                  max={2000}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Height control */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Height</span>
+              <span className="text-xs font-mono text-builder-text-dim">
+                {element.styles?.height || 'auto'}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Select
+                value={(element.styles?.height as string)?.includes('px') ? 'custom' : ((element.styles?.height as string) || 'auto')}
+                onValueChange={(v) => {
+                  if (v === 'custom') {
+                    handleStyleChange('height', '100px');
+                  } else {
+                    handleStyleChange('height', v);
+                  }
+                }}
+              >
+                <SelectTrigger className="builder-input text-xs flex-1">
+                  <SelectValue placeholder="Auto" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectItem value="100%">Full Height</SelectItem>
+                  <SelectItem value="fit-content">Fit Content</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+              {(element.styles?.height as string)?.includes('px') && (
+                <Input
+                  type="number"
+                  className="builder-input w-20 text-xs text-center"
+                  value={parseInt((element.styles?.height as string) || '100')}
+                  onChange={(e) => handleStyleChange('height', `${e.target.value}px`)}
+                  min={0}
+                  max={2000}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Max Width */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Max Width</span>
+            <Input
+              className="builder-input w-24 text-xs text-center"
+              value={(element.styles?.maxWidth as string) || ''}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                handleStyleChange('maxWidth', v ? (/^\d+$/.test(v) ? `${v}px` : v) : '');
+              }}
+              placeholder="none"
+            />
+          </div>
+
+          {/* Min Height */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Min Height</span>
+            <Input
+              className="builder-input w-24 text-xs text-center"
+              value={(element.styles?.minHeight as string) || ''}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                handleStyleChange('minHeight', v ? (/^\d+$/.test(v) ? `${v}px` : v) : '');
+              }}
+              placeholder="none"
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* ========== LAYOUT & SPACING SECTION ========== */}
+      <CollapsibleSection title="Layout & Spacing" icon={<Move className="w-4 h-4" />}>
         <div className="pt-3 space-y-4">
           {/* Alignment within parent */}
           <div className="space-y-2">
@@ -86,29 +208,28 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             </div>
           </div>
 
-          {/* Width control */}
+          {/* Padding */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Width</span>
-              <span className="text-xs font-mono text-builder-text-dim">
-                {element.styles?.width || 'auto'}
-              </span>
+            <span className="text-xs text-builder-text-muted">Padding</span>
+            <div className="grid grid-cols-4 gap-1">
+              {(['Top', 'Right', 'Bottom', 'Left'] as const).map((side) => {
+                const key = `padding${side}` as keyof typeof element.styles;
+                return (
+                  <div key={side} className="flex flex-col items-center gap-1">
+                    <span className="text-[10px] text-builder-text-muted">{side[0]}</span>
+                    <Input 
+                      className="builder-input text-xs text-center h-7 w-full" 
+                      value={(element.styles?.[key] as string) || ''}
+                      onChange={(e) => {
+                        const v = e.target.value.trim();
+                        handleStyleChange(key, v ? (/^\d+$/.test(v) ? `${v}px` : v) : '');
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                );
+              })}
             </div>
-            <Select
-              value={(element.styles?.width as string) || 'auto'}
-              onValueChange={(v) => handleStyleChange('width', v)}
-            >
-              <SelectTrigger className="builder-input text-xs">
-                <SelectValue placeholder="Auto" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                <SelectItem value="auto">Auto</SelectItem>
-                <SelectItem value="100%">Full Width</SelectItem>
-                <SelectItem value="75%">75%</SelectItem>
-                <SelectItem value="50%">50%</SelectItem>
-                <SelectItem value="fit-content">Fit Content</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Margin */}

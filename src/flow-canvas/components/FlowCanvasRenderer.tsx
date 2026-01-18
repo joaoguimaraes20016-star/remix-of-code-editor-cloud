@@ -161,6 +161,59 @@ const stepVariants = {
   exit: { opacity: 0, y: -20, transition: { duration: 0.3, ease: [0.4, 0, 1, 1] as const } },
 };
 
+// Helper to resolve all element styles (dimensions, spacing, appearance)
+function resolveElementStyles(element: FlowCanvasElement): React.CSSProperties {
+  const base: React.CSSProperties = {};
+  const s = element.styles;
+  
+  // Dimensions
+  if (s?.width) base.width = s.width;
+  if (s?.height) base.height = s.height;
+  if (s?.maxWidth) base.maxWidth = s.maxWidth;
+  if (s?.minHeight) base.minHeight = s.minHeight;
+  if (s?.minWidth) base.minWidth = s.minWidth;
+  if (s?.maxHeight) base.maxHeight = s.maxHeight;
+  
+  // Spacing - padding
+  if (s?.padding) base.padding = s.padding;
+  if (s?.paddingTop) base.paddingTop = s.paddingTop;
+  if (s?.paddingRight) base.paddingRight = s.paddingRight;
+  if (s?.paddingBottom) base.paddingBottom = s.paddingBottom;
+  if (s?.paddingLeft) base.paddingLeft = s.paddingLeft;
+  
+  // Spacing - margin
+  if (s?.margin) base.margin = s.margin;
+  if (s?.marginTop) base.marginTop = s.marginTop;
+  if (s?.marginRight) base.marginRight = s.marginRight;
+  if (s?.marginBottom) base.marginBottom = s.marginBottom;
+  if (s?.marginLeft) base.marginLeft = s.marginLeft;
+  
+  // Alignment
+  if (s?.alignSelf) base.alignSelf = s.alignSelf as React.CSSProperties['alignSelf'];
+  
+  // Appearance
+  if (s?.opacity) {
+    const opacityVal = typeof s.opacity === 'string' ? parseInt(s.opacity) / 100 : s.opacity;
+    base.opacity = opacityVal;
+  }
+  if (s?.backgroundColor) base.backgroundColor = s.backgroundColor;
+  if (s?.borderRadius) base.borderRadius = s.borderRadius;
+  if (s?.borderWidth) base.borderWidth = s.borderWidth;
+  if (s?.borderStyle) base.borderStyle = s.borderStyle as React.CSSProperties['borderStyle'];
+  if (s?.borderColor) base.borderColor = s.borderColor;
+  
+  // Transform
+  if (s?.rotate) {
+    const rotateVal = typeof s.rotate === 'string' ? parseInt(s.rotate) : s.rotate;
+    if (rotateVal && rotateVal !== 0) base.transform = `rotate(${rotateVal}deg)`;
+  }
+  
+  // Z-index
+  if (s?.zIndex && s.zIndex !== 'auto') base.zIndex = Number(s.zIndex);
+  
+  return base;
+}
+
 // Element renderers
 function renderHeading(element: FlowCanvasElement) {
   const level = (element.props.level as number) || 2;
@@ -177,8 +230,10 @@ function renderHeading(element: FlowCanvasElement) {
   const stateStylesCSS = stateStyles ? generateStateStylesCSS(element.id, stateStyles as any) : '';
   const stateClassName = stateStyles ? `runtime-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
   
-  // Typography styles
+  // Merge layout styles with typography
+  const layoutStyles = resolveElementStyles(element);
   const typographyStyle: React.CSSProperties = {
+    ...layoutStyles,
     color: element.props?.textColor as string || element.styles?.color,
     fontSize: element.props?.fontSize as string || element.styles?.fontSize,
     fontWeight: element.props?.fontWeight as string || element.styles?.fontWeight,
@@ -216,8 +271,10 @@ function renderText(element: FlowCanvasElement) {
   const stateStylesCSS = stateStyles ? generateStateStylesCSS(element.id, stateStyles as any) : '';
   const stateClassName = stateStyles ? `runtime-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
   
-  // Typography styles
+  // Merge layout styles with typography
+  const layoutStyles = resolveElementStyles(element);
   const typographyStyle: React.CSSProperties = {
+    ...layoutStyles,
     color: element.props?.textColor as string || element.styles?.color,
     fontSize: element.props?.fontSize as string || element.styles?.fontSize,
     fontWeight: element.props?.fontWeight as string || element.styles?.fontWeight,
