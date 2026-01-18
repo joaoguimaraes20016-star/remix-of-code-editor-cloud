@@ -2191,6 +2191,22 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const iconName = element.content || 'star';
         const iconSize = element.styles?.fontSize || '24px';
         const iconColor = element.props?.color as string || (isDarkTheme ? '#9ca3af' : '#6b7280');
+        const iconFillType = (element.props?.fillType as string) || 'solid';
+        const iconGradient = element.props?.gradient as GradientValue;
+        
+        // Build icon style based on fill type
+        const iconStyle: React.CSSProperties = iconFillType === 'gradient' && iconGradient ? {
+          width: iconSize,
+          height: iconSize,
+          background: gradientToCSS(iconGradient),
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        } : {
+          width: iconSize,
+          height: iconSize,
+          color: iconColor,
+        };
         
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
@@ -2220,12 +2236,11 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             {/* Element drag handle integrated into toolbar */}
             <div 
               className="p-2 flex items-center justify-center"
-              style={{ color: iconColor }}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               {(() => {
                 const IconComponent = getButtonIconComponent(element.content || 'Star');
-                return <IconComponent style={{ width: iconSize, height: iconSize }} />;
+                return <IconComponent style={iconStyle} />;
               })()}
             </div>
           </div>
@@ -2479,32 +2494,46 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 onDelete={onDelete}
               />
             )}
-            <div 
-              className="ticker-container w-full py-3"
-              style={{ 
-                '--ticker-speed': `${tickerSpeed}s`,
-                '--ticker-direction': tickerDirection === 'right' ? 'reverse' : 'normal',
-                backgroundColor: tickerBgColor,
-              } as React.CSSProperties}
-              onClick={(e) => { e.stopPropagation(); onSelect(); }}
-            >
-              <div className="ticker-content">
-                {[...tickerItems, ...tickerItems].map((item, i) => (
-                  <span 
-                    key={i} 
-                    className="uppercase tracking-wider"
-                    style={{ 
-                      color: tickerTextColor,
-                      fontSize: tickerFontSizeMap[tickerFontSize] || '12px',
-                      fontWeight: tickerFontWeightMap[tickerFontWeight] || 500,
-                      letterSpacing: `${tickerLetterSpacing}em`,
-                    }}
-                  >
-                    {item}<span style={{ color: tickerSeparatorColor }}>{tickerSeparator}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
+            {(() => {
+              const tickerTextFillType = (element.props?.textFillType as string) || 'solid';
+              const tickerTextGradient = element.props?.textGradient as GradientValue;
+              
+              const tickerTextStyle: React.CSSProperties = tickerTextFillType === 'gradient' && tickerTextGradient ? {
+                background: gradientToCSS(tickerTextGradient),
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              } : { color: tickerTextColor };
+              
+              return (
+                <div 
+                  className="ticker-container w-full py-3"
+                  style={{ 
+                    '--ticker-speed': `${tickerSpeed}s`,
+                    '--ticker-direction': tickerDirection === 'right' ? 'reverse' : 'normal',
+                    backgroundColor: tickerBgColor,
+                  } as React.CSSProperties}
+                  onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                >
+                  <div className="ticker-content">
+                    {[...tickerItems, ...tickerItems].map((item, i) => (
+                      <span 
+                        key={i} 
+                        className="uppercase tracking-wider"
+                        style={{ 
+                          ...tickerTextStyle,
+                          fontSize: tickerFontSizeMap[tickerFontSize] || '12px',
+                          fontWeight: tickerFontWeightMap[tickerFontWeight] || 500,
+                          letterSpacing: `${tickerLetterSpacing}em`,
+                        }}
+                      >
+                        {item}<span style={{ color: tickerSeparatorColor }}>{tickerSeparator}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       

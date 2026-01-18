@@ -633,18 +633,74 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
         
         <Section title="Colors" icon={<Sparkles className="w-4 h-4" />}>
           <div className="space-y-3">
+            {/* Text Fill Type Toggle */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Text</span>
-              <ColorPickerPopover
-                color={(element.props?.textColor as string) || '#ffffff'}
-                onChange={(c) => handlePropsChange('textColor', c)}
-              >
-                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.textColor as string) || '#ffffff' }} />
-                  <span className="text-xs text-builder-text-muted">Edit</span>
+              <span className="text-xs text-builder-text-muted">Text Fill</span>
+              <div className="flex rounded-lg overflow-hidden border border-builder-border">
+                <button
+                  onClick={() => handlePropsChange('textFillType', 'solid')}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium transition-colors",
+                    (element.props?.textFillType || 'solid') === 'solid'
+                      ? 'bg-builder-accent text-white' 
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                  )}
+                >
+                  Solid
                 </button>
-              </ColorPickerPopover>
+                <button
+                  onClick={() => handlePropsChange('textFillType', 'gradient')}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium transition-colors",
+                    element.props?.textFillType === 'gradient'
+                      ? 'bg-builder-accent text-white' 
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                  )}
+                >
+                  Gradient
+                </button>
+              </div>
             </div>
+            
+            {/* Solid Text Color */}
+            {(element.props?.textFillType || 'solid') === 'solid' && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Text Color</span>
+                <ColorPickerPopover
+                  color={(element.props?.textColor as string) || '#ffffff'}
+                  onChange={(c) => handlePropsChange('textColor', c)}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.textColor as string) || '#ffffff' }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            )}
+            
+            {/* Gradient Text Color */}
+            {element.props?.textFillType === 'gradient' && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Text Gradient</span>
+                <GradientPickerPopover
+                  value={(element.props?.textGradient as GradientValue) || defaultGradient}
+                  onChange={(gradient) => handlePropsChange('textGradient', gradient)}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div 
+                      className="w-6 h-6 rounded-md border border-builder-border" 
+                      style={{ 
+                        background: (element.props?.textGradient as GradientValue) 
+                          ? gradientToCSS(element.props.textGradient as GradientValue)
+                          : 'linear-gradient(135deg, #A855F7 0%, #EC4899 100%)'
+                      }} 
+                    />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </GradientPickerPopover>
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Separator</span>
               <ColorPickerPopover

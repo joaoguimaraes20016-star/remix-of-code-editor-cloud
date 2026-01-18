@@ -719,28 +719,104 @@ export function FlowCanvasRenderer({
       case 'spacer':
         return <div key={element.id} style={{ height: element.styles?.height || '48px' }} />;
 
-      // Premium Elements
-      case 'gradient-text':
-        const gradientProps = (element.props?.gradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }) || {};
+      case 'icon': {
+        const iconName = element.content || 'Star';
+        const iconSize = element.styles?.fontSize || '24px';
+        const iconColor = (element.props?.color as string) || '#6b7280';
+        const iconFillType = (element.props?.fillType as string) || 'solid';
+        const iconGradient = element.props?.gradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> };
+        
+        // Dynamic icon resolution
+        const iconComponents: Record<string, React.ComponentType<{ style?: React.CSSProperties; className?: string }>> = {
+          'Star': Sparkles, 'Sparkles': Sparkles, 'sparkles': Sparkles,
+          'Rocket': Rocket, 'rocket': Rocket,
+          'Search': Search, 'search': Search,
+          'Calendar': Calendar, 'calendar': Calendar,
+          'FileText': FileText, 'fileText': FileText,
+          'Play': Play, 'play': Play,
+          'User': User, 'user': User,
+          'Video': Video, 'video': Video,
+          'Layout': Layout, 'layout': Layout,
+          'ArrowRight': ArrowRight, 'arrowRight': ArrowRight,
+        };
+        const IconComp = iconComponents[iconName] || Sparkles;
+        
+        const iconStyle: React.CSSProperties = iconFillType === 'gradient' && iconGradient ? {
+          width: iconSize,
+          height: iconSize,
+          background: gradientToCSS(iconGradient),
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        } : {
+          width: iconSize,
+          height: iconSize,
+          color: iconColor,
+        };
+        
         return (
-          <span 
-            key={element.id}
-            className="text-4xl font-bold bg-clip-text text-transparent"
-            style={{ backgroundImage: gradientToCSS(gradientProps) }}
-          >
-            {element.content || 'Gradient Text'}
-          </span>
+          <div key={element.id} className="flex items-center justify-center p-2">
+            <IconComp style={iconStyle} />
+          </div>
         );
+      }
 
-      case 'stat-number':
+      // Premium Elements
+      case 'gradient-text': {
+        const gradientProps = (element.props?.gradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }) || {};
+        const gradientFontSize = (element.props?.fontSize as string) || '4xl';
+        const gradientFontWeight = (element.props?.fontWeight as string) || 'bold';
+        const gradientTextAlign = (element.props?.textAlign as string) || 'left';
+        
+        const fontSizeMap: Record<string, string> = {
+          'xl': '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', 
+          '5xl': '3rem', '6xl': '3.75rem', '7xl': '4.5rem'
+        };
+        const fontWeightMap: Record<string, number> = {
+          normal: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800
+        };
+        
+        return (
+          <div key={element.id} style={{ textAlign: gradientTextAlign as 'left' | 'center' | 'right', width: '100%' }}>
+            <span 
+              className="bg-clip-text text-transparent"
+              style={{ 
+                backgroundImage: gradientToCSS(gradientProps),
+                fontSize: fontSizeMap[gradientFontSize] || '2.25rem',
+                fontWeight: fontWeightMap[gradientFontWeight] || 700,
+              }}
+            >
+              {element.content || 'Gradient Text'}
+            </span>
+          </div>
+        );
+      }
+
+      case 'stat-number': {
         const suffix = (element.props?.suffix as string) || '+';
         const statLabel = (element.props?.label as string) || '';
         const numberColor = (element.props?.numberColor as string);
         const suffixColor = (element.props?.suffixColor as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';
         const labelColor = (element.props?.labelColor as string);
+        const statSize = (element.props?.size as string) || 'xl';
+        const statFontWeight = (element.props?.fontWeight as string) || 'bold';
+        
+        const statSizeMap: Record<string, string> = {
+          'lg': '1.875rem', 'xl': '3rem', '2xl': '3.75rem', '3xl': '4.5rem'
+        };
+        const statWeightMap: Record<string, number> = {
+          normal: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800
+        };
+        
         return (
           <div key={element.id} className="text-center">
-            <div className="text-5xl font-bold tracking-tight">
+            <div 
+              className="tracking-tight"
+              style={{ 
+                fontSize: statSizeMap[statSize] || '3rem',
+                fontWeight: statWeightMap[statFontWeight] || 700,
+              }}
+            >
               <span style={{ color: numberColor || undefined }}>{element.content || '0'}</span>
               <span style={{ color: suffixColor }}>{suffix}</span>
             </div>
@@ -754,6 +830,7 @@ export function FlowCanvasRenderer({
             )}
           </div>
         );
+      }
 
       case 'avatar-group':
         const avatarCount = (element.props?.count as number) || 3;
@@ -795,7 +872,7 @@ export function FlowCanvasRenderer({
           </div>
         );
 
-      case 'ticker':
+      case 'ticker': {
         const tickerItems = (element.props?.items as string[]) || ['Item 1', 'Item 2', 'Item 3'];
         const tickerSep = (element.props?.separator as string) || '  •  ';
         const tickerSpeed = (element.props?.speed as number) || 30;
@@ -806,8 +883,18 @@ export function FlowCanvasRenderer({
         const tickerFontWeight = (element.props?.fontWeight as string) || 'medium';
         const tickerLetterSpacing = (element.props?.letterSpacing as number) ?? 0.05;
         const tickerDirection = (element.props?.direction as string) || 'left';
+        const tickerTextFillType = (element.props?.textFillType as string) || 'solid';
+        const tickerTextGradient = element.props?.textGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> };
         const tickerFontSizeMap: Record<string, string> = { xs: '10px', sm: '12px', md: '14px', lg: '16px', xl: '18px' };
         const tickerFontWeightMap: Record<string, number> = { normal: 400, medium: 500, semibold: 600, bold: 700 };
+        
+        const tickerTextStyle: React.CSSProperties = tickerTextFillType === 'gradient' && tickerTextGradient ? {
+          background: gradientToCSS(tickerTextGradient),
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        } : { color: tickerTextColor || undefined };
+        
         return (
           <div 
             key={element.id} 
@@ -824,7 +911,7 @@ export function FlowCanvasRenderer({
                   key={i} 
                   className="uppercase tracking-wider"
                   style={{ 
-                    color: tickerTextColor || undefined,
+                    ...tickerTextStyle,
                     fontSize: tickerFontSizeMap[tickerFontSize] || '12px',
                     fontWeight: tickerFontWeightMap[tickerFontWeight] || 500,
                     letterSpacing: `${tickerLetterSpacing}em`,
@@ -836,6 +923,7 @@ export function FlowCanvasRenderer({
             </div>
           </div>
         );
+      }
 
       case 'badge':
         const badgeVariant = (element.props?.variant as string) || 'primary';
@@ -875,11 +963,21 @@ export function FlowCanvasRenderer({
               style={badgeBackgroundStyle}
             >
               {badgeIcon && (() => {
-                const iconName = badgeIcon.toLowerCase();
-                const IconComp = iconName === 'sparkles' ? Sparkles 
-                  : iconName === 'rocket' ? Rocket 
-                  : iconName === 'star' ? Sparkles
-                  : Sparkles;
+                // Dynamic icon resolution - import more icons as needed
+                const iconComponents: Record<string, React.ComponentType<{ className?: string }>> = {
+                  'Sparkles': Sparkles, 'sparkles': Sparkles,
+                  'Rocket': Rocket, 'rocket': Rocket,
+                  'Star': Sparkles, 'star': Sparkles, // Use Sparkles as Star fallback
+                  'Search': Search, 'search': Search,
+                  'Calendar': Calendar, 'calendar': Calendar,
+                  'FileText': FileText, 'fileText': FileText,
+                  'Play': Play, 'play': Play,
+                  'User': User, 'user': User,
+                  'Video': Video, 'video': Video,
+                  'Layout': Layout, 'layout': Layout,
+                  'ArrowRight': ArrowRight, 'arrowRight': ArrowRight,
+                };
+                const IconComp = iconComponents[badgeIcon] || Sparkles;
                 return <IconComp className="w-3 h-3" />;
               })()}
               {element.content || 'BADGE'}
