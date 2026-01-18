@@ -356,16 +356,16 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   }, [isEditing, onChange, disableInlineFormatting]);
 
   // Register close callback so other editors can close this one when they activate
+  // CRITICAL: Must be synchronous to prevent race conditions with multiple toolbars
   useEffect(() => {
     if (!elementId) return;
 
     const unsubscribe = onCloseRequest(elementId, () => {
-      // Use a microtask to avoid React state update conflicts
-      queueMicrotask(() => {
-        if (isEditingRef.current) {
-          exitEditingSession('outside');
-        }
-      });
+      // Synchronous close - no queueMicrotask
+      // This ensures the outgoing editor closes BEFORE the incoming one activates
+      if (isEditingRef.current) {
+        exitEditingSession('outside');
+      }
     });
 
     return unsubscribe;
@@ -1642,7 +1642,43 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         return true;
       }
 
-      // CASE C: No selection and no target span while editing → user must select text first
+      // CASE C: No selection and no target span while editing
+      // For color/gradient changes, apply to WHOLE FIELD (user preference)
+      // For formatting toggles (B/I/U), still require selection
+      const isColorChange = 
+        styleOpts.color !== undefined || 
+        styleOpts.gradient !== undefined ||
+        newStyles.textColor !== undefined ||
+        newStyles.textGradient !== undefined ||
+        newStyles.textFillType !== undefined;
+      
+      if (isColorChange && editorEl) {
+        // Select all content, apply style, then collapse to end
+        const range = document.createRange();
+        range.selectNodeContents(editorEl);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+        
+        // Now apply with the full selection
+        const span = applyStylesToSelection(styleOpts);
+        if (span) {
+          // Collapse selection to end to avoid visual distraction
+          range.selectNodeContents(editorEl);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+          
+          setSessionHasInlineStyles(true);
+          normalizeInlineDom();
+          scheduleInlineHtmlSave();
+          syncToolbarState();
+          notifyStyleChange();
+          return true;
+        }
+      }
+      
+      // For formatting toggles without selection, show toast
       if (import.meta.env.DEV) {
         console.debug('[InlineTextEditor] inline-style ignored (no selection)', {
           elementId,

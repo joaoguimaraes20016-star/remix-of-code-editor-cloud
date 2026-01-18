@@ -90,10 +90,14 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
   
   // Track the most recently active editor for debugging
   const lastActiveElementRef = useRef<string | null>(null);
+  
+  // Track the most recently activated sub-editor ID (for deterministic findBridge)
+  const activeSubEditorRef = useRef<string | null>(null);
 
   const registerEditor = useCallback((elementId: string, bridge: EditorBridge) => {
     editorsRef.current.set(elementId, bridge);
     lastActiveElementRef.current = elementId;
+    activeSubEditorRef.current = elementId; // Track most recent for deterministic targeting
     
     return () => {
       // Only remove if it's still the same bridge (prevents race conditions)
@@ -104,6 +108,9 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
           const remaining = Array.from(editorsRef.current.keys());
           lastActiveElementRef.current = remaining[0] ?? null;
         }
+        if (activeSubEditorRef.current === elementId) {
+          activeSubEditorRef.current = null;
+        }
       }
     };
   }, []);
@@ -111,6 +118,7 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
   /**
    * Find an editor bridge by elementId or any sub-ID matching pattern ${elementId}-*
    * This allows Right Panel to work with sub-element inline editors (e.g., stat-number, badge)
+   * Prefers the most recently activated sub-editor for deterministic targeting.
    */
   const findBridge = useCallback((elementId: string): { bridge: EditorBridge; actualId: string } | null => {
     // Direct match
@@ -119,7 +127,15 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
       return { bridge: directBridge, actualId: elementId };
     }
     
-    // Check for sub-ID matches: look for registered IDs that start with elementId-
+    // Prefer the active sub-editor if it matches the requested elementId prefix
+    if (activeSubEditorRef.current?.startsWith(`${elementId}-`)) {
+      const activeBridge = editorsRef.current.get(activeSubEditorRef.current);
+      if (activeBridge) {
+        return { bridge: activeBridge, actualId: activeSubEditorRef.current };
+      }
+    }
+    
+    // Fall back to first matching sub-ID
     for (const [registeredId, bridge] of editorsRef.current.entries()) {
       if (registeredId.startsWith(`${elementId}-`)) {
         return { bridge, actualId: registeredId };
@@ -243,6 +259,7 @@ export function useInlineEdit() {
 /**
  * Hook to subscribe to selection changes in a specific editor.
  * Re-renders when selection changes occur.
+ * Matches both exact elementId and sub-IDs (e.g., element-123 matches element-123-number).
  */
 export function useInlineSelectionSync(elementId: string): number {
   const { onSelectionChange, hasActiveEditor } = useInlineEdit();
@@ -252,7 +269,8 @@ export function useInlineSelectionSync(elementId: string): number {
     if (!hasActiveEditor(elementId)) return;
 
     const unsubscribe = onSelectionChange((changedId) => {
-      if (changedId === elementId) {
+      // Match exact ID OR any sub-ID (e.g., element-123-number matches element-123)
+      if (changedId === elementId || changedId.startsWith(`${elementId}-`)) {
         setTick(t => t + 1);
       }
     });
