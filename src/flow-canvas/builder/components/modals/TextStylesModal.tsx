@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '../CommitSlider';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -64,14 +64,14 @@ export const TextStylesModal: React.FC<TextStylesModalProps> = ({
     }
   };
 
-  const handleLineHeightChange = (value: number[]) => {
-    setLineHeight(value[0]);
-    onSettingsChange?.({ lineHeight: value[0], letterSpacing });
+  const handleLineHeightCommit = (value: number) => {
+    setLineHeight(value);
+    onSettingsChange?.({ lineHeight: value, letterSpacing });
   };
 
-  const handleLetterSpacingChange = (value: number[]) => {
-    setLetterSpacing(value[0]);
-    onSettingsChange?.({ lineHeight, letterSpacing: value[0] });
+  const handleLetterSpacingCommit = (value: number) => {
+    setLetterSpacing(value);
+    onSettingsChange?.({ lineHeight, letterSpacing: value });
   };
 
   const handleApplySettings = () => {
@@ -146,9 +146,9 @@ export const TextStylesModal: React.FC<TextStylesModalProps> = ({
                 <span className="text-xs text-builder-text-muted">Line Height</span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-builder-text w-8 text-right">{(lineHeight / 100).toFixed(1)}</span>
-                  <Slider 
-                    value={[lineHeight]} 
-                    onValueChange={handleLineHeightChange}
+                  <CommitSlider 
+                    value={lineHeight} 
+                    onValueCommit={handleLineHeightCommit}
                     max={200} 
                     min={100} 
                     step={10} 
@@ -161,9 +161,9 @@ export const TextStylesModal: React.FC<TextStylesModalProps> = ({
                 <span className="text-xs text-builder-text-muted">Letter Spacing</span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-builder-text w-8 text-right">{letterSpacing}px</span>
-                  <Slider 
-                    value={[letterSpacing]} 
-                    onValueChange={handleLetterSpacingChange}
+                  <CommitSlider 
+                    value={letterSpacing} 
+                    onValueCommit={handleLetterSpacingCommit}
                     max={10} 
                     min={-5} 
                     step={1} 

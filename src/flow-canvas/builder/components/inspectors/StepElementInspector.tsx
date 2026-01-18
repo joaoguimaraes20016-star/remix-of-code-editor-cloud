@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '../CommitSlider';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { 
@@ -458,9 +458,9 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           
           <FieldGroup label="Border Radius">
             <div className="flex items-center gap-3">
-              <Slider
-                value={[stepSettings.optionRadius || 8]}
-                onValueChange={([value]) => updateStepSetting('optionRadius', value)}
+              <CommitSlider
+                value={stepSettings.optionRadius || 8}
+                onValueCommit={(value) => updateStepSetting('optionRadius', value)}
                 min={0}
                 max={24}
                 step={2}
@@ -658,9 +658,9 @@ export const StepElementInspector: React.FC<StepElementInspectorProps> = ({
           
           <FieldGroup label="Border Radius">
             <div className="flex items-center gap-3">
-              <Slider
-                value={[stepSettings.inputRadius || 8]}
-                onValueChange={([value]) => updateStepSetting('inputRadius', value)}
+              <CommitSlider
+                value={stepSettings.inputRadius || 8}
+                onValueCommit={(value) => updateStepSetting('inputRadius', value)}
                 min={0}
                 max={24}
                 step={2}
