@@ -59,6 +59,11 @@ interface CompactMobileToolbarProps {
   onDuplicate?: () => void;
   onDelete?: () => void;
   targetRect?: DOMRect | null;
+  /** dnd-kit drag handle props (attributes + listeners) */
+  dragHandleProps?: {
+    attributes?: Record<string, any>;
+    listeners?: Record<string, any>;
+  };
 }
 
 export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
@@ -71,6 +76,7 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
   onDuplicate,
   onDelete,
   targetRect,
+  dragHandleProps,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activePanel, setActivePanel] = useState<'main' | 'font' | 'color' | null>(null);
@@ -169,8 +175,8 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
         <button
           type="button"
           className={cn(btnClass, btnInactive, 'cursor-grab')}
-          {...((styles as any)?.dragHandleProps?.attributes || {})}
-          {...((styles as any)?.dragHandleProps?.listeners || {})}
+          {...(dragHandleProps?.attributes || {})}
+          {...(dragHandleProps?.listeners || {})}
           aria-label="Drag"
         >
           <GripVertical size={16} />
