@@ -330,20 +330,15 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className={cn(btnClass, 'text-builder-text-muted hover:text-builder-text cursor-grab active:cursor-grabbing')}
-              {...(dragHandleProps?.attributes || {})}
-              {...(dragHandleProps?.listeners || {})}
-              aria-label="Drag to reorder"
-            >
-              <GripVertical size={14} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs bg-builder-surface border-builder-border text-builder-text">Drag</TooltipContent>
-        </Tooltip>
+        <button
+          type="button"
+          className={cn(btnClass, 'text-builder-text-muted hover:text-builder-text cursor-grab active:cursor-grabbing')}
+          {...(dragHandleProps?.attributes || {})}
+          {...(dragHandleProps?.listeners || {})}
+          aria-label="Drag to reorder"
+        >
+          <GripVertical size={14} />
+        </button>
         
         <div className="w-px h-4 bg-builder-border-subtle/80 mx-0.5" />
 

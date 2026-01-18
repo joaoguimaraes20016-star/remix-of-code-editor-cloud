@@ -3428,12 +3428,21 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
   );
 
   const handleElementDragStart = (event: DragStartEvent) => {
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('[dnd] element drag start', { activeId: event.active.id, blockId: block.id });
+    }
     setActiveElementId(event.active.id as string);
   };
 
   const handleElementDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveElementId(null);
+
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('[dnd] element drag end', { activeId: active?.id, overId: over?.id, blockId: block.id });
+    }
 
     if (over && active.id !== over.id && onReorderElements) {
       const oldIndex = block.elements.findIndex((el) => el.id === active.id);
