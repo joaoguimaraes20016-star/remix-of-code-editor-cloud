@@ -525,6 +525,17 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             <X size={14} />
           </button>
 
+          {/* Drag handle */}
+          <button
+            type="button"
+            className={cn(btnClass, 'w-8 h-8 min-w-[32px] min-h-[32px]', 'text-builder-text-muted hover:text-builder-text cursor-grab active:cursor-grabbing')}
+            {...(dragHandleProps?.attributes || {})}
+            {...(dragHandleProps?.listeners || {})}
+            aria-label="Drag to reorder"
+          >
+            <GripVertical size={14} />
+          </button>
+
           {showTypography && (
             <>
               <button
