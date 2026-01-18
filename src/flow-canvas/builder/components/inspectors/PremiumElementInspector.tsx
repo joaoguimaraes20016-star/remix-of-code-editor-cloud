@@ -168,6 +168,16 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
   onUpdate,
   primaryColor = '#8B5CF6',
 }) => {
+  // Move sensors to top level to comply with React hooks rules
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const handlePropsChange = (key: string, value: unknown) => {
     onUpdate({ props: { ...element.props, [key]: value } });
   };
@@ -556,16 +566,6 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
     
     // Generate stable IDs for ticker items
     const tickerItems = items.map((item, idx) => ({ id: `ticker-item-${idx}`, value: item, index: idx }));
-    
-    // Drag-and-drop sensors for ticker items reordering
-    const tickerSensors = useSensors(
-      useSensor(PointerSensor, {
-        activationConstraint: { distance: 8 },
-      }),
-      useSensor(KeyboardSensor, {
-        coordinateGetter: sortableKeyboardCoordinates,
-      })
-    );
 
     const handleTickerDragEnd = (event: DragEndEvent) => {
       const { active, over } = event;
@@ -581,7 +581,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
       <div className="space-y-0">
         <Section title="Items" icon={<ListOrdered className="w-4 h-4" />} defaultOpen>
           <DndContext
-            sensors={tickerSensors}
+            sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleTickerDragEnd}
           >
