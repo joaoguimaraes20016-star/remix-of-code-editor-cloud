@@ -160,6 +160,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   // Throttled onStyleChange refs - coalesces rapid style updates from slider drags
   const pendingStyleChangeRef = useRef<Partial<TextStyles> | null>(null);
   const styleChangeTimerRef = useRef<number | null>(null);
+  
+  // Track editing state in a ref for use in callbacks that can't access latest state
+  const isEditingRef = useRef(isEditing);
+  useEffect(() => {
+    isEditingRef.current = isEditing;
+  }, [isEditing]);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -238,12 +244,18 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   }, [isEditing, onEditingChange]);
 
   // Get inline edit context for Right Panel integration
-  const { registerEditor, notifySelectionChange } = useInlineEdit();
+  const { registerEditor, notifySelectionChange, closeOtherEditors, onCloseRequest } = useInlineEdit();
 
   // Handle double click to start editing
   const handleDoubleClick = useCallback(() => {
     if (disabled) return;
     if (isEditing) return;
+
+    // CRITICAL: Close any other active editors before activating this one
+    // This ensures only ONE toolbar is visible at a time
+    if (elementId) {
+      closeOtherEditors(elementId);
+    }
 
     setIsEditing(true);
     setShowToolbar(true);
@@ -284,7 +296,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // Store the initial caret position
       lastCaretRangeRef.current = range.cloneRange();
     }, 0);
-  }, [disabled, isEditing, value]);
+  }, [disabled, isEditing, value, closeOtherEditors, elementId]);
 
   // Helper: exit edit mode and persist content.
   // This is used both for blur and for outside-click dismissal.
@@ -341,7 +353,23 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     if (import.meta.env.DEV) {
       console.debug('[InlineTextEditor] exitEditingSession', { reason });
     }
-  }, [isEditing, onChange]);
+  }, [isEditing, onChange, disableInlineFormatting]);
+
+  // Register close callback so other editors can close this one when they activate
+  useEffect(() => {
+    if (!elementId) return;
+
+    const unsubscribe = onCloseRequest(elementId, () => {
+      // Use a microtask to avoid React state update conflicts
+      queueMicrotask(() => {
+        if (isEditingRef.current) {
+          exitEditingSession('outside');
+        }
+      });
+    });
+
+    return unsubscribe;
+  }, [elementId, onCloseRequest, exitEditingSession]);
 
   // Handle blur to stop editing - only emit content, not styles (styles are emitted on change)
   const handleBlur = useCallback((e: React.FocusEvent) => {
@@ -1700,12 +1728,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   // Use refs to persist state across renders and avoid stale closures
   const unregisterTimerRef = useRef<number | null>(null);
   const registeredElementIdRef = useRef<string | null>(null);
-  const isEditingRef = useRef(isEditing);
-  
-  // Keep ref in sync with state
-  useEffect(() => {
-    isEditingRef.current = isEditing;
-  }, [isEditing]);
   
   useEffect(() => {
     // Clear any pending unregister when effect re-runs
