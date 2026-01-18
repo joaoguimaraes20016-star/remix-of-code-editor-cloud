@@ -186,7 +186,7 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
   // Drag-and-drop sensors for options reordering
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 2 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,

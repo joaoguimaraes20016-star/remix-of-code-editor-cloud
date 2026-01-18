@@ -170,7 +170,7 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
   // Drag-and-drop sensors for checkbox reordering
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 2 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
