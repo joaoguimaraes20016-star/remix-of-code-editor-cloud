@@ -361,8 +361,10 @@ export const getTextShadowCSS = (value: string): string => {
 };
 
 // Convert gradient value to CSS string
+// IMPORTANT: This function is PURE - never mutate the input gradient!
 export const gradientToCSS = (gradient: GradientValue): string => {
-  const stopsStr = gradient.stops
+  // Create a sorted copy - NEVER mutate the original stops array
+  const stopsStr = [...gradient.stops]
     .sort((a, b) => a.position - b.position)
     .map(s => `${s.color} ${s.position}%`)
     .join(', ');

@@ -78,9 +78,10 @@ interface UnifiedElementToolbarProps {
   };
 }
 
-// Hook to get portal container
+// Hook to get portal container with proper cleanup
 function usePortalContainer() {
   const [container, setContainer] = useState<HTMLElement | null>(null);
+  const createdByUsRef = useRef(false);
   
   useEffect(() => {
     let el = document.getElementById('toolbar-portal-root');
@@ -89,8 +90,19 @@ function usePortalContainer() {
       el.id = 'toolbar-portal-root';
       el.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 9999;';
       document.body.appendChild(el);
+      createdByUsRef.current = true;
     }
     setContainer(el);
+    
+    // Cleanup on unmount - only if we created it and no children remain
+    return () => {
+      if (createdByUsRef.current) {
+        const portalEl = document.getElementById('toolbar-portal-root');
+        if (portalEl && portalEl.childNodes.length === 0) {
+          portalEl.remove();
+        }
+      }
+    };
   }, []);
   
   return container;

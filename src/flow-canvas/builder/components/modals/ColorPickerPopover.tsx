@@ -186,9 +186,8 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
         toast.success(`Color picked: ${pickedColor}`);
       } catch (e) {
         // User canceled the eyedropper
-        console.log('Eyedropper canceled');
       }
-    }, [onChange]);
+    }, [restoreSelectionAndApply]);
 
     return (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -366,7 +365,10 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
 
           {/* Transparent Option */}
           <button
-            onClick={() => handlePresetClick('transparent')}
+            onClick={() => {
+              handlePresetClick('transparent');
+              setIsOpen(false);
+            }}
             className={cn(
               'w-full mt-2 py-2 px-3 rounded-lg text-xs font-medium transition-colors border-2 border-dashed',
               color === 'transparent'

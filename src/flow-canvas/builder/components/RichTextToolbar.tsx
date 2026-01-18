@@ -282,8 +282,8 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
     setShadowOpen(false);
   };
 
-  // Handle eyedropper
-  const handleEyedropper = async () => {
+  // Handle eyedropper - uses handleColorChange which properly restores selection
+  const handleEyedropper = useCallback(async () => {
     if ('EyeDropper' in window) {
       try {
         const eyeDropper = new (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper();
@@ -293,7 +293,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         // User cancelled
       }
     }
-  };
+  }, [handleColorChange]);
 
   // Clamp position to viewport bounds using measured toolbar size (prevents "jumping")
   const viewportPadding = 12;

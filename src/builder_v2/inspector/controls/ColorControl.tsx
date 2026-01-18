@@ -20,9 +20,16 @@ import { inspectorColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/ut
 
 export function ColorControl({ value, onChange, label }: ColorControlProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // Local value state for external sync
+  const [localValue, setLocalValue] = useState(value);
   
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Sync local value when external value changes
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
 
   // Manual outside-dismiss logic to allow proper closing when clicking outside
   // IMPORTANT: We use 'pointerdown' (not capture) to let other handlers process first
@@ -77,6 +84,9 @@ export function ColorControl({ value, onChange, label }: ColorControlProps) {
         className="w-64 p-3" 
         align="start" 
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerMove={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
@@ -111,8 +121,11 @@ export function ColorControl({ value, onChange, label }: ColorControlProps) {
             />
             <Input
               type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
+              value={localValue}
+              onChange={(e) => {
+                setLocalValue(e.target.value);
+                onChange(e.target.value);
+              }}
               placeholder="#ffffff"
               className="flex-1 h-8 text-xs font-mono"
             />
