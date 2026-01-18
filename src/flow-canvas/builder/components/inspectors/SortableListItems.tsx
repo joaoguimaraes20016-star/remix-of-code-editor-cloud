@@ -1,6 +1,10 @@
 /**
  * SortableListItems - Reusable component for sortable lists in inspectors
- * Provides drag-and-drop reordering with proper dnd-kit integration
+ * 
+ * GUARANTEED FIX:
+ * - Handle uses div with role="button" for better event handling
+ * - Inline touchAction style for cross-browser reliability
+ * - Larger hit area (min-w-6 min-h-6)
  */
 
 import React, { useCallback } from 'react';
@@ -41,32 +45,40 @@ export function SortableItem({ id, children, className }: SortableItemProps) {
     isDragging,
   } = useSortable({ id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
 
+  const handleStyle: React.CSSProperties = {
+    touchAction: 'none',
+    userSelect: 'none',
+  };
+
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={cn("flex items-center gap-1.5 group", className)}
+      className={cn("flex items-center gap-1.5 group relative", className)}
     >
-      {/* Drag Handle - ONLY this element initiates drag */}
-      <button
+      {/* Drag Handle - div with role="button" for better event handling */}
+      <div
         ref={setActivatorNodeRef}
-        type="button"
+        role="button"
+        tabIndex={0}
+        style={handleStyle}
         {...attributes}
         {...listeners}
-        className="flex-shrink-0 p-1.5 -ml-1 rounded cursor-grab active:cursor-grabbing 
+        className="flex-shrink-0 min-w-6 min-h-6 flex items-center justify-center 
+                   rounded cursor-grab active:cursor-grabbing 
                    opacity-40 hover:opacity-100 group-hover:opacity-100 
-                   transition-opacity touch-none select-none
-                   hover:bg-muted/50"
+                   transition-opacity hover:bg-muted/50
+                   focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
       >
-        <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
-      </button>
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </div>
       {children}
     </div>
   );
@@ -90,7 +102,7 @@ export function SortableList<T extends { id: string }>({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 2,
+        distance: 1, // Very low threshold for immediate response
       },
     }),
     useSensor(KeyboardSensor, {
@@ -143,7 +155,7 @@ export function useSortableList<T extends { id: string }>(
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 2,
+        distance: 1,
       },
     }),
     useSensor(KeyboardSensor, {

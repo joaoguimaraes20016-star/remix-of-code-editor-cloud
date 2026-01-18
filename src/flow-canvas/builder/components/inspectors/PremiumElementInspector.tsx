@@ -147,10 +147,10 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
   onUpdate,
   primaryColor = '#8B5CF6',
 }) => {
-  // Move sensors to top level to comply with React hooks rules
+  // Move sensors to top level - low distance for immediate response
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 2 },
+      activationConstraint: { distance: 1 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,

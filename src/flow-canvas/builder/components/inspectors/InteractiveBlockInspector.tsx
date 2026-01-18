@@ -167,10 +167,10 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
   // MULTI-CHOICE OPTION MANAGEMENT (matches StepContentEditor pattern)
   // ═══════════════════════════════════════════════════════════════
   
-  // Drag-and-drop sensors for checkbox reordering
+  // Drag-and-drop sensors for checkbox reordering - low distance for immediate response
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 2 },
+      activationConstraint: { distance: 1 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,

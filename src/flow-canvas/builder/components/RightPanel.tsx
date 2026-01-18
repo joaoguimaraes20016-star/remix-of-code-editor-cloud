@@ -480,9 +480,9 @@ const ElementInspector: React.FC<{
   const [isVideoEmbedOpen, setIsVideoEmbedOpen] = useState(false);
   const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   
-  // Shared sensors for all sortable lists in this inspector (MUST be at top level, not inside JSX)
+  // Shared sensors for all sortable lists in this inspector - low distance for immediate response
   const inspectorSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 2 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 1 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
