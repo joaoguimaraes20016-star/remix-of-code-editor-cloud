@@ -279,6 +279,7 @@ function renderHeading(element: FlowCanvasElement) {
       WebkitBackgroundClip: 'text',
       WebkitTextFillColor: 'transparent',
       backgroundClip: 'text',
+      display: 'inline',
     } : {}),
   };
   
@@ -332,13 +333,14 @@ function renderText(element: FlowCanvasElement) {
       WebkitBackgroundClip: 'text',
       WebkitTextFillColor: 'transparent',
       backgroundClip: 'text',
+      display: 'inline',
     } : {}),
   };
   
   return (
     <React.Fragment key={element.id}>
       {stateStylesCSS && <style>{stateStylesCSS}</style>}
-      <p 
+      <p
         className={cn(baseClasses, variantClasses[variant] || '', stateClassName)}
         style={typographyStyle}
       >
@@ -804,6 +806,7 @@ export function FlowCanvasRenderer({
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
+          display: 'inline-block',
         } : {
           width: iconSize,
           height: iconSize,
@@ -883,6 +886,7 @@ export function FlowCanvasRenderer({
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
+              display: 'inline',
             } as React.CSSProperties;
           }
           return solidColor ? { color: solidColor } : {};
@@ -978,6 +982,7 @@ export function FlowCanvasRenderer({
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
+          display: 'inline',
         } : { color: tickerTextColor || undefined };
         
         // State for pause on hover

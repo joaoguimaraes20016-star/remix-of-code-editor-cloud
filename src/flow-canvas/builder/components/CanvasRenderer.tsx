@@ -2209,6 +2209,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
+          display: 'inline-block',
         } : {
           width: iconSize,
           height: iconSize,
@@ -2391,6 +2392,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
+                      display: 'inline',
                     } as React.CSSProperties;
                   }
                   return { color: solidColor };
@@ -2575,6 +2577,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
+                display: 'inline',
               } : { color: tickerTextColor };
               
               return (
