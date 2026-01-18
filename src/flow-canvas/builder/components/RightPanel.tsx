@@ -40,6 +40,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SelectionBreadcrumb } from './SelectionBreadcrumb';
 import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from './CommitSlider';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -1160,11 +1161,11 @@ const ElementInspector: React.FC<{
                     {parseFontSize(element.props?.fontSize)}px
                   </span>
                 </div>
-                <Slider 
-                  value={[parseFontSize(element.props?.fontSize)]}
+                <CommitSlider 
+                  value={parseFontSize(element.props?.fontSize)}
                   onValueCommit={(v) => {
                     // Store as direct pixel value string for consistency - only on release
-                    handlePropsChange('fontSize', `${v[0]}px`);
+                    handlePropsChange('fontSize', `${v}px`);
                   }}
                   min={12} max={72} step={1}
                   className="w-full"
@@ -1271,9 +1272,9 @@ const ElementInspector: React.FC<{
                     {(element.props?.letterSpacing as number) ?? 0}px
                   </span>
                 </div>
-                <Slider 
-                  value={[(element.props?.letterSpacing as number) ?? 0]}
-                  onValueCommit={(v) => handlePropsChange('letterSpacing', v[0])}
+                <CommitSlider 
+                  value={(element.props?.letterSpacing as number) ?? 0}
+                  onValueCommit={(v) => handlePropsChange('letterSpacing', v)}
                   min={-2} max={10} step={0.5}
                   className="w-full"
                 />
@@ -1291,9 +1292,9 @@ const ElementInspector: React.FC<{
                     {((element.props?.lineHeight as number) ?? 1.5).toFixed(1)}
                   </span>
                 </div>
-                <Slider 
-                  value={[(element.props?.lineHeight as number) ?? 1.5]}
-                  onValueCommit={(v) => handlePropsChange('lineHeight', v[0])}
+                <CommitSlider 
+                  value={(element.props?.lineHeight as number) ?? 1.5}
+                  onValueCommit={(v) => handlePropsChange('lineHeight', v)}
                   min={1} max={2.5} step={0.1}
                   className="w-full"
                 />
@@ -1697,9 +1698,9 @@ const ElementInspector: React.FC<{
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Radius</span>
                 <div className="flex items-center gap-2">
-                  <Slider 
-                    value={[parseInt(element.styles?.borderRadius as string || '12')]}
-                    onValueCommit={(v) => handleStyleChange('borderRadius', `${v[0]}px`)}
+                  <CommitSlider 
+                    value={parseInt(element.styles?.borderRadius as string || '12')}
+                    onValueCommit={(v) => handleStyleChange('borderRadius', `${v}px`)}
                     min={0} max={24} step={2} className="w-16"
                   />
                   <span className="text-xs text-builder-text w-10">{element.styles?.borderRadius || '12px'}</span>
@@ -1989,9 +1990,9 @@ const ElementInspector: React.FC<{
               {element.props?.loopMode && (
                 <FieldGroup label="Reset Interval" hint="Minutes">
                   <div className="flex items-center gap-2">
-                    <Slider
-                      value={[element.props?.loopInterval as number || 60]}
-                      onValueCommit={([v]) => handlePropsChange('loopInterval', v)}
+                    <CommitSlider
+                      value={element.props?.loopInterval as number || 60}
+                      onValueCommit={(v) => handlePropsChange('loopInterval', v)}
                       min={5} max={180} step={5} className="flex-1"
                     />
                     <span className="text-xs text-builder-text w-12">{String(element.props?.loopInterval || 60)}m</span>
@@ -2001,9 +2002,9 @@ const ElementInspector: React.FC<{
               <div className="flex items-center justify-between">
                 <span className="text-xs text-builder-text-muted">Speed Multiplier</span>
                 <div className="flex items-center gap-2">
-                  <Slider
-                    value={[element.props?.speedMultiplier as number || 1]}
-                    onValueCommit={([v]) => handlePropsChange('speedMultiplier', v)}
+                  <CommitSlider
+                    value={element.props?.speedMultiplier as number || 1}
+                    onValueCommit={(v) => handlePropsChange('speedMultiplier', v)}
                     min={1} max={10} step={0.5} className="w-20"
                   />
                   <span className="text-xs text-builder-text w-8">{String(element.props?.speedMultiplier || 1)}x</span>
@@ -2218,9 +2219,9 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <FieldGroup label="Duration" hint="In seconds">
                 <div className="flex items-center gap-2">
-                  <Slider
-                    value={[(element.props?.duration as number || 3000) / 1000]}
-                    onValueCommit={([v]) => handlePropsChange('duration', v * 1000)}
+                  <CommitSlider
+                    value={(element.props?.duration as number || 3000) / 1000}
+                    onValueCommit={(v) => handlePropsChange('duration', v * 1000)}
                     min={1} max={10} step={0.5} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-10">{((element.props?.duration as number || 3000) / 1000).toFixed(1)}s</span>
@@ -2420,9 +2421,9 @@ const ElementInspector: React.FC<{
               {element.props?.autoplay && (
                 <FieldGroup label="Interval" hint="Seconds between slides">
                   <div className="flex items-center gap-2">
-                    <Slider
-                      value={[(element.props?.autoplayInterval as number || 4000) / 1000]}
-                      onValueCommit={([v]) => handlePropsChange('autoplayInterval', v * 1000)}
+                    <CommitSlider
+                      value={(element.props?.autoplayInterval as number || 4000) / 1000}
+                      onValueCommit={(v) => handlePropsChange('autoplayInterval', v * 1000)}
                       min={2} max={10} step={0.5} className="flex-1"
                     />
                     <span className="text-xs text-builder-text w-10">{((element.props?.autoplayInterval as number || 4000) / 1000).toFixed(1)}s</span>
@@ -2536,9 +2537,9 @@ const ElementInspector: React.FC<{
                 <>
                   <FieldGroup label="Speed" hint="Seconds for one cycle">
                     <div className="flex items-center gap-2">
-                      <Slider
-                        value={[element.props?.speed as number || 30]}
-                        onValueCommit={([v]) => handlePropsChange('speed', v)}
+                      <CommitSlider
+                        value={element.props?.speed as number || 30}
+                        onValueCommit={(v) => handlePropsChange('speed', v)}
                         min={10} max={60} step={5} className="flex-1"
                       />
                       <span className="text-xs text-builder-text w-10">{String(element.props?.speed || 30)}s</span>
@@ -2574,9 +2575,9 @@ const ElementInspector: React.FC<{
               </div>
               <FieldGroup label="Logo Height">
                 <div className="flex items-center gap-2">
-                  <Slider
-                    value={[element.props?.logoHeight as number || 40]}
-                    onValueCommit={([v]) => handlePropsChange('logoHeight', v)}
+                  <CommitSlider
+                    value={element.props?.logoHeight as number || 40}
+                    onValueCommit={(v) => handlePropsChange('logoHeight', v)}
                     min={24} max={80} step={4} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-10">{String(element.props?.logoHeight || 40)}px</span>
@@ -2681,9 +2682,9 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <FieldGroup label="Zoom Level">
                 <div className="flex items-center gap-2">
-                  <Slider
-                    value={[element.props?.zoom as number || 15]}
-                    onValueCommit={([v]) => handlePropsChange('zoom', v)}
+                  <CommitSlider
+                    value={element.props?.zoom as number || 15}
+                    onValueCommit={(v) => handlePropsChange('zoom', v)}
                     min={5} max={20} step={1} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-8">{String(element.props?.zoom || 15)}</span>
@@ -2705,9 +2706,9 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <FieldGroup label="Height">
                 <div className="flex items-center gap-2">
-                  <Slider
-                    value={[parseInt(element.styles?.height as string || '300', 10)]}
-                    onValueCommit={([v]) => handleStyleChange('height', `${v}px`)}
+                  <CommitSlider
+                    value={parseInt(element.styles?.height as string || '300', 10)}
+                    onValueCommit={(v) => handleStyleChange('height', `${v}px`)}
                     min={150} max={600} step={50} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-12">{parseInt(element.styles?.height as string || '300', 10)}px</span>
@@ -2733,9 +2734,9 @@ const ElementInspector: React.FC<{
               </FieldGroup>
               <FieldGroup label="Height">
                 <div className="flex items-center gap-2">
-                  <Slider
-                    value={[parseInt(element.styles?.height as string || '300', 10)]}
-                    onValueCommit={([v]) => handleStyleChange('height', `${v}px`)}
+                  <CommitSlider
+                    value={parseInt(element.styles?.height as string || '300', 10)}
+                    onValueCommit={(v) => handleStyleChange('height', `${v}px`)}
                     min={100} max={600} step={50} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-12">{parseInt(element.styles?.height as string || '300', 10)}px</span>
@@ -2766,9 +2767,9 @@ const ElementInspector: React.FC<{
             <div className="pt-3 space-y-3">
               <FieldGroup label="Rating" hint="1-5 stars">
                 <div className="flex items-center gap-2">
-                  <Slider
-                    value={[element.props?.rating as number || 4.5]}
-                    onValueCommit={([v]) => handlePropsChange('rating', v)}
+                  <CommitSlider
+                    value={element.props?.rating as number || 4.5}
+                    onValueCommit={(v) => handlePropsChange('rating', v)}
                     min={1} max={5} step={0.1} className="flex-1"
                   />
                   <span className="text-xs text-builder-text w-10">{(element.props?.rating as number || 4.5).toFixed(1)}</span>

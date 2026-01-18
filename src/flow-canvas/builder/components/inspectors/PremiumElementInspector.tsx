@@ -28,7 +28,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '../CommitSlider';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -403,9 +403,9 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
         <Section title="Avatars" icon={<Users className="w-4 h-4" />} defaultOpen>
           <FieldGroup label="Count">
             <div className="flex items-center gap-3">
-              <Slider
-                value={[count]}
-                onValueCommit={([v]) => handlePropsChange('count', v)}
+              <CommitSlider
+                value={count}
+                onValueCommit={(v) => handlePropsChange('count', v)}
                 min={1}
                 max={20}
                 step={1}
@@ -459,9 +459,9 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           
           <FieldGroup label="Overlap">
             <div className="flex items-center gap-3">
-              <Slider
-                value={[(element.props?.overlap as number) || 12]}
-                onValueCommit={([v]) => handlePropsChange('overlap', v)}
+              <CommitSlider
+                value={(element.props?.overlap as number) || 12}
+                onValueCommit={(v) => handlePropsChange('overlap', v)}
                 min={0}
                 max={40}
                 step={2}
@@ -640,9 +640,9 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           
           <FieldGroup label="Speed (seconds per loop)">
             <div className="flex items-center gap-3">
-              <Slider
-                value={[speed]}
-                onValueCommit={([v]) => handlePropsChange('speed', v)}
+              <CommitSlider
+                value={speed}
+                onValueCommit={(v) => handlePropsChange('speed', v)}
                 min={5}
                 max={120}
                 step={5}
@@ -698,9 +698,9 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           
           <FieldGroup label="Letter Spacing">
             <div className="flex items-center gap-3">
-              <Slider
-                value={[(element.props?.letterSpacing as number) || 0]}
-                onValueCommit={([v]) => handlePropsChange('letterSpacing', v)}
+              <CommitSlider
+                value={(element.props?.letterSpacing as number) || 0}
+                onValueCommit={(v) => handlePropsChange('letterSpacing', v)}
                 min={-2}
                 max={8}
                 step={0.5}
@@ -1042,9 +1042,9 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
         <Section title="Step" icon={<ListOrdered className="w-4 h-4" />} defaultOpen>
           <FieldGroup label="Step Number">
             <div className="flex items-center gap-3">
-              <Slider
-                value={[(element.props?.step as number) || 1]}
-                onValueCommit={([v]) => handlePropsChange('step', v)}
+              <CommitSlider
+                value={(element.props?.step as number) || 1}
+                onValueCommit={(v) => handlePropsChange('step', v)}
                 min={1}
                 max={99}
                 step={1}
