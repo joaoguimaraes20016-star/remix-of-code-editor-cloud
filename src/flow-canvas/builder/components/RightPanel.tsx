@@ -946,18 +946,14 @@ const ElementInspector: React.FC<{
                       // IMPORTANT: never default to white; let the editor compute a safe fallback.
                       const color = effectiveTextColor;
 
+                      // Try inline selection first
                       const handled = applyInlineStyle(element.id, {
                         textFillType: 'solid',
                         ...(color ? { textColor: color } : {}),
                       } as any);
                       if (handled) return;
 
-                      // If an inline editor is active, do NOT fall back to whole-block.
-                      if (hasActiveEditor(element.id)) {
-                        toast.info('Select text to apply fill');
-                        return;
-                      }
-
+                      // Always fall back to whole-element if no selection was styled
                       handleMultiPropsChange({
                         textFillType: 'solid',
                         ...(color ? { textColor: color } : {}),
@@ -988,18 +984,14 @@ const ElementInspector: React.FC<{
 
                       const cloned = cloneGradient(gradient as GradientValue);
 
+                      // Try inline selection first
                       const handled = applyInlineStyle(element.id, {
                         textFillType: 'gradient',
                         textGradient: cloned,
                       } as any);
                       if (handled) return;
 
-                      // If an inline editor is active, do NOT fall back to whole-block.
-                      if (hasActiveEditor(element.id)) {
-                        toast.info('Select text to apply fill');
-                        return;
-                      }
-
+                      // Always fall back to whole-element if no selection was styled
                       handleMultiPropsChange({
                         textFillType: 'gradient',
                         textGradient: cloned,
