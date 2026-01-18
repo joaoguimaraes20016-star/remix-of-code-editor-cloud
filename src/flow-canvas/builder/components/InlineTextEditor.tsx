@@ -1900,8 +1900,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       // CRITICAL: Set color to transparent to prevent white flash fallback
       inlineStyles.color = 'transparent';
     } else if (styles.textFillType === 'gradient' && !isEditing && !isHtmlContent) {
-      // Even when not editing, if fillType is gradient, ensure no white fallback
-      // (but never do this for HTML content with inline spans, or it can hide unstyled nodes)
+      // When not editing and fillType is gradient, apply full gradient styles to render properly
+      const gradientValue = styles.textGradient || defaultGradient;
+      inlineStyles.backgroundImage = gradientToCSS(gradientValue);
+      inlineStyles.WebkitBackgroundClip = 'text';
+      inlineStyles.WebkitTextFillColor = 'transparent';
+      (inlineStyles as Record<string, string>).backgroundClip = 'text';
       inlineStyles.color = 'transparent';
     } else if (styles.textFillType !== 'gradient') {
       // Text color (only if not gradient)
