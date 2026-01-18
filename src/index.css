@@ -295,4 +295,12 @@
   .clip-path-badge {
     border-radius: 9999px 9999px 1rem 1rem;
   }
+
+  /* Premium badge variant */
+  .premium-badge-premium {
+    background: linear-gradient(135deg, #F59E0B 0%, #EAB308 50%, #FDE047 100%);
+    color: #78350F;
+    border: 1px solid rgba(251, 191, 36, 0.5);
+    box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
+  }
 }

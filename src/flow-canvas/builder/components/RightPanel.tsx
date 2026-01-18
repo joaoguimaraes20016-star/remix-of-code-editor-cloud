@@ -759,6 +759,19 @@ const ElementInspector: React.FC<{
               </button>
             </ColorPickerPopover>
           </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Text Color</span>
+            <ColorPickerPopover
+              color={(element.stateStyles?.[activeState]?.textColor as string) || 'inherit'}
+              onChange={(color) => handleStyleChange('textColor', color)}
+            >
+              <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.stateStyles?.[activeState]?.textColor as string) || '#ffffff' }} />
+                <span className="text-xs text-builder-text-muted">Edit</span>
+              </button>
+            </ColorPickerPopover>
+          </div>
           
           <div className="flex items-center justify-between">
             <span className="text-xs text-builder-text-muted">Scale</span>
@@ -772,6 +785,39 @@ const ElementInspector: React.FC<{
                 <SelectItem value="0.95">Shrink (95%)</SelectItem>
                 <SelectItem value="1.02">Subtle (102%)</SelectItem>
                 <SelectItem value="1.05">Medium (105%)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Opacity</span>
+            <Select 
+              value={(element.stateStyles?.[activeState]?.opacity as string) || 'none'}
+              onValueChange={(value) => handleStyleChange('opacity', value === 'none' ? '' : value)}
+            >
+              <SelectTrigger className="builder-input w-24"><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="0.9">90%</SelectItem>
+                <SelectItem value="0.8">80%</SelectItem>
+                <SelectItem value="0.7">70%</SelectItem>
+                <SelectItem value="0.5">50%</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-builder-text-muted">Shadow</span>
+            <Select 
+              value={(element.stateStyles?.[activeState]?.shadow as string) || 'none'}
+              onValueChange={(value) => handleStyleChange('shadow', value === 'none' ? '' : value)}
+            >
+              <SelectTrigger className="builder-input w-24"><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="0 4px 6px rgba(0,0,0,0.1)">Small</SelectItem>
+                <SelectItem value="0 10px 15px rgba(0,0,0,0.15)">Medium</SelectItem>
+                <SelectItem value="0 20px 25px rgba(0,0,0,0.2)">Large</SelectItem>
               </SelectContent>
             </Select>
           </div>
