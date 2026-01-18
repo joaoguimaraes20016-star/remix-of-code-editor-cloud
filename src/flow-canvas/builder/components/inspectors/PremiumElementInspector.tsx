@@ -5,10 +5,27 @@
  * - badge, process-step, video-thumbnail, underline-text
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { BooleanToggle, coerceBoolean } from '../BooleanToggle';
 import { Element } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -39,7 +56,59 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  GripVertical,
 } from 'lucide-react';
+
+// Sortable Ticker Item component
+interface SortableTickerItemProps {
+  id: string;
+  item: string;
+  index: number;
+  onUpdate: (value: string) => void;
+  onRemove: () => void;
+}
+
+function SortableTickerItem({ id, item, index, onUpdate, onRemove }: SortableTickerItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+      >
+        <GripVertical className="w-3 h-3 text-builder-text-muted" />
+      </div>
+      <Input
+        value={item}
+        onChange={(e) => onUpdate(e.target.value)}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="builder-input text-xs flex-1"
+      />
+      <button
+        onClick={onRemove}
+        className="p-1.5 rounded-md hover:bg-destructive/10 text-builder-text-muted hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
 
 interface PremiumElementInspectorProps {
   element: Element;
@@ -485,42 +554,71 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
     const items = (element.props?.items as string[]) || ['Item 1', 'Item 2', 'Item 3'];
     const speed = (element.props?.speed as number) || 30;
     
+    // Generate stable IDs for ticker items
+    const tickerItems = items.map((item, idx) => ({ id: `ticker-item-${idx}`, value: item, index: idx }));
+    
+    // Drag-and-drop sensors for ticker items reordering
+    const tickerSensors = useSensors(
+      useSensor(PointerSensor, {
+        activationConstraint: { distance: 8 },
+      }),
+      useSensor(KeyboardSensor, {
+        coordinateGetter: sortableKeyboardCoordinates,
+      })
+    );
+
+    const handleTickerDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        const oldIndex = tickerItems.findIndex(item => item.id === active.id);
+        const newIndex = tickerItems.findIndex(item => item.id === over.id);
+        const reordered = arrayMove(items, oldIndex, newIndex);
+        handlePropsChange('items', reordered);
+      }
+    };
+    
     return (
       <div className="space-y-0">
         <Section title="Items" icon={<ListOrdered className="w-4 h-4" />} defaultOpen>
-          <div className="space-y-2">
-            {items.map((item, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input
-                  value={item}
-                  onChange={(e) => {
-                    const newItems = [...items];
-                    newItems[i] = e.target.value;
-                    handlePropsChange('items', newItems);
-                  }}
-                  className="builder-input text-xs flex-1"
-                />
-                <button
-                  onClick={() => {
-                    const newItems = items.filter((_, idx) => idx !== i);
-                    handlePropsChange('items', newItems);
-                  }}
-                  className="p-1.5 rounded-md hover:bg-destructive/10 text-builder-text-muted hover:text-destructive transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePropsChange('items', [...items, `Item ${items.length + 1}`])}
-              className="w-full text-xs"
+          <DndContext
+            sensors={tickerSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleTickerDragEnd}
+          >
+            <SortableContext
+              items={tickerItems.map(item => item.id)}
+              strategy={verticalListSortingStrategy}
             >
-              <Plus className="w-3 h-3 mr-1" />
-              Add Item
-            </Button>
-          </div>
+              <div className="space-y-2">
+                {tickerItems.map((item) => (
+                  <SortableTickerItem
+                    key={item.id}
+                    id={item.id}
+                    item={item.value}
+                    index={item.index}
+                    onUpdate={(value) => {
+                      const newItems = [...items];
+                      newItems[item.index] = value;
+                      handlePropsChange('items', newItems);
+                    }}
+                    onRemove={() => {
+                      const newItems = items.filter((_, idx) => idx !== item.index);
+                      handlePropsChange('items', newItems);
+                    }}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePropsChange('items', [...items, `Item ${items.length + 1}`])}
+            className="w-full text-xs mt-2"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add Item
+          </Button>
           
           <FieldGroup label="Separator">
             <Input
