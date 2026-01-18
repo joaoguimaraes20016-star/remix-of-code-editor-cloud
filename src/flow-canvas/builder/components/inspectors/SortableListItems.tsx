@@ -57,7 +57,7 @@ export function SortableItem({ id, children, className }: SortableItemProps) {
         {...attributes}
         {...listeners}
         className="flex-shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
-        onPointerDown={(e) => e.stopPropagation()}
+        onPointerDownCapture={(e) => e.stopPropagation()}
       >
         <GripVertical className="w-3 h-3 text-muted-foreground" />
       </div>
