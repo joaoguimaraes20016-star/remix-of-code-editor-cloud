@@ -577,6 +577,7 @@ type BaseEditorAction =
   | { type: 'ADD_PAGE'; page: Page }
   | { type: 'DELETE_NODE'; nodeId: string }
   | { type: 'DELETE_PAGE'; pageId: string }
+  | { type: 'REORDER_PAGES'; pageIds: string[] }
   | { type: 'MOVE_NODE_UP'; nodeId: string }
   | { type: 'MOVE_NODE_DOWN'; nodeId: string }
   | { type: 'MOVE_NODE_TO_PARENT'; nodeId: string; targetParentId: string; targetIndex?: number }
@@ -628,6 +629,8 @@ export type EditorStoreContextValue = {
   deleteNode: (nodeId: string) => void;
   /** Delete a page from the funnel */
   deletePage: (pageId: string) => void;
+  /** Persist a new page order */
+  reorderPages: (pageIds: string[]) => void;
   moveNodeUp: (nodeId: string) => void;
   moveNodeDown: (nodeId: string) => void;
   moveNodeToParent: (nodeId: string, targetParentId: string, targetIndex?: number) => void;
@@ -665,6 +668,7 @@ const historyTrackedActions = new Set<BaseEditorAction['type']>([
   'ADD_PAGE',
   'DELETE_NODE',
   'DELETE_PAGE',
+  'REORDER_PAGES',
   'MOVE_NODE_UP',
   'MOVE_NODE_DOWN',
   'MOVE_NODE_TO_PARENT',
@@ -808,6 +812,27 @@ function editorReducer(state: EditorSnapshot, action: BaseEditorAction): EditorS
         pages: [...state.pages, action.page],
         activePageId: action.page.id,
         selectedNodeId: null,
+      };
+    }
+    case 'REORDER_PAGES': {
+      const idToPage = new Map(state.pages.map((p) => [p.id, p] as const));
+      const nextPages: Page[] = action.pageIds
+        .map((id) => idToPage.get(id))
+        .filter(Boolean) as Page[];
+
+      // Safety: preserve any pages not included in the reorder list
+      for (const p of state.pages) {
+        if (!action.pageIds.includes(p.id)) nextPages.push(p);
+      }
+
+      const nextActivePageId = nextPages.some((p) => p.id === state.activePageId)
+        ? state.activePageId
+        : nextPages[0]?.id || state.activePageId;
+
+      return {
+        ...state,
+        pages: nextPages,
+        activePageId: nextActivePageId,
       };
     }
     case 'DELETE_PAGE': {
@@ -1396,6 +1421,11 @@ export function EditorProvider({ children, initialDocument }: EditorProviderProp
     [wrappedDispatch],
   );
 
+  const reorderPages = useCallback(
+    (pageIds: string[]) => wrappedDispatch({ type: 'REORDER_PAGES', pageIds }),
+    [wrappedDispatch],
+  );
+
   const moveNodeUp = useCallback(
     (nodeId: string) => wrappedDispatch({ type: 'MOVE_NODE_UP', nodeId }),
     [wrappedDispatch],
@@ -1471,6 +1501,7 @@ export function EditorProvider({ children, initialDocument }: EditorProviderProp
       addPage,
       deleteNode,
       deletePage,
+      reorderPages,
       moveNodeUp,
       moveNodeDown,
       moveNodeToParent: moveNodeToParentCallback,
@@ -1505,6 +1536,7 @@ export function EditorProvider({ children, initialDocument }: EditorProviderProp
       addPage,
       deleteNode,
       deletePage,
+      reorderPages,
       moveNodeUp,
       moveNodeDown,
       moveNodeToParentCallback,

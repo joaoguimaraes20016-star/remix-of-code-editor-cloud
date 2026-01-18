@@ -37,6 +37,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   useSortable,
+  arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -177,6 +178,7 @@ function EditorShellContent() {
     addPage,
     deletePage,
     updatePageProps,
+    reorderPages,
     moveNodeUp,
     moveNodeDown,
   } = useEditorStore();
@@ -264,8 +266,15 @@ function EditorShellContent() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActivePageDragId(null);
-    // Page reordering would need a reorderPages action in the store
-    // For now, pages are in insertion order
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = pages.findIndex((p) => p.id === active.id);
+    const newIndex = pages.findIndex((p) => p.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(pages, oldIndex, newIndex);
+    reorderPages(reordered.map((p) => p.id));
   };
 
   const getStepIcon = (pageType: string | undefined) => {

@@ -108,7 +108,7 @@ function SortablePageItem({
         {...attributes}
         {...listeners}
         className="opacity-0 group-hover:opacity-40 transition-opacity cursor-grab active:cursor-grabbing touch-none"
-        onPointerDown={(e) => e.stopPropagation()}
+        onPointerDownCapture={(e) => e.stopPropagation()}
       >
         <GripVertical size={12} className="text-slate-400" />
       </div>
