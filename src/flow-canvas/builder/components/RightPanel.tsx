@@ -1153,26 +1153,30 @@ const ElementInspector: React.FC<{
           {/* Typography - Simplified with sliders */}
           <CollapsibleSection title="Typography" icon={<Type className="w-4 h-4" />} defaultOpen>
             <div className="space-y-4 pt-3">
-              {/* Font Size - Direct pixel value slider (no preset mapping) */}
+              {/* Font Size - Extended range with arbitrary input */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Size</span>
-                  <span className="text-xs font-mono text-builder-text-dim">
-                    {parseFontSize(element.props?.fontSize)}px
-                  </span>
+                  <Input
+                    type="number"
+                    className="builder-input w-16 text-xs text-center h-6"
+                    value={parseFontSize(element.props?.fontSize)}
+                    onChange={(e) => handlePropsChange('fontSize', `${e.target.value}px`)}
+                    min={8}
+                    max={400}
+                  />
                 </div>
                 <CommitSlider 
                   value={parseFontSize(element.props?.fontSize)}
                   onValueCommit={(v) => {
-                    // Store as direct pixel value string for consistency - only on release
                     handlePropsChange('fontSize', `${v}px`);
                   }}
-                  min={12} max={72} step={1}
+                  min={8} max={200} step={1}
                   className="w-full"
                 />
                 <div className="flex justify-between text-[9px] text-builder-text-dim">
-                  <span>12px</span>
-                  <span>72px</span>
+                  <span>8px</span>
+                  <span>200px</span>
                 </div>
               </div>
               
@@ -1195,26 +1199,42 @@ const ElementInspector: React.FC<{
                 </Select>
               </div>
               
-              {/* Font Weight - Visual buttons instead of dropdown */}
-              <div className="space-y-1.5">
-                <span className="text-xs text-builder-text-muted">Weight</span>
-                <div className="flex gap-1">
+              {/* Font Weight - Slider for variable fonts + quick presets */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Weight</span>
+                  <span className="text-xs font-mono text-builder-text-dim">
+                    {typeof element.props?.fontWeight === 'number' 
+                      ? element.props.fontWeight 
+                      : { normal: 400, medium: 500, semibold: 600, bold: 700, black: 900 }[element.props?.fontWeight as string] || 400}
+                  </span>
+                </div>
+                <CommitSlider 
+                  value={typeof element.props?.fontWeight === 'number' 
+                    ? element.props.fontWeight 
+                    : { normal: 400, medium: 500, semibold: 600, bold: 700, black: 900 }[element.props?.fontWeight as string] || 400}
+                  onValueCommit={(v) => handlePropsChange('fontWeight', v)}
+                  min={100} max={900} step={100}
+                  className="w-full"
+                />
+                <div className="flex gap-1 pt-1">
                   {[
-                    { value: 'normal', label: 'Aa' },
-                    { value: 'medium', label: 'Aa' },
-                    { value: 'semibold', label: 'Aa' },
-                    { value: 'bold', label: 'Aa' },
-                  ].map((w, i) => (
+                    { value: 400, label: 'Aa' },
+                    { value: 500, label: 'Aa' },
+                    { value: 600, label: 'Aa' },
+                    { value: 700, label: 'Aa' },
+                    { value: 900, label: 'Aa' },
+                  ].map((w) => (
                     <button
                       key={w.value}
                       onClick={() => handlePropsChange('fontWeight', w.value)}
                       className={cn(
-                        'flex-1 py-1.5 rounded text-xs transition-colors',
-                        element.props?.fontWeight === w.value 
+                        'flex-1 py-1 rounded text-[10px] transition-colors',
+                        (typeof element.props?.fontWeight === 'number' ? element.props.fontWeight : { normal: 400, medium: 500, semibold: 600, bold: 700, black: 900 }[element.props?.fontWeight as string] || 400) === w.value 
                           ? 'bg-[hsl(315,85%,58%)] text-white' 
                           : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface-active'
                       )}
-                      style={{ fontWeight: [400, 500, 600, 700][i] }}
+                      style={{ fontWeight: w.value }}
                     >
                       {w.label}
                     </button>
@@ -1330,6 +1350,39 @@ const ElementInspector: React.FC<{
                     </button>
                   ))}
                 </div>
+              </div>
+              
+              {/* Text Stroke/Outline */}
+              <div className="space-y-2 pt-2 border-t border-builder-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Text Stroke</span>
+                  <Input
+                    type="number"
+                    className="builder-input w-14 text-xs text-center h-6"
+                    value={parseInt((element.props?.textStrokeWidth as string) || '0')}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value) || 0;
+                      handlePropsChange('textStrokeWidth', v > 0 ? `${v}px` : '0');
+                    }}
+                    min={0}
+                    max={10}
+                    placeholder="0"
+                  />
+                </div>
+                {parseInt((element.props?.textStrokeWidth as string) || '0') > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-builder-text-dim">Stroke Color</span>
+                    <ColorPickerPopover
+                      color={(element.props?.textStrokeColor as string) || '#000000'}
+                      onChange={(c) => handlePropsChange('textStrokeColor', c)}
+                    >
+                      <button 
+                        className="w-6 h-6 rounded-md border border-builder-border" 
+                        style={{ backgroundColor: (element.props?.textStrokeColor as string) || '#000000' }} 
+                      />
+                    </ColorPickerPopover>
+                  </div>
+                )}
               </div>
             </div>
           </CollapsibleSection>
