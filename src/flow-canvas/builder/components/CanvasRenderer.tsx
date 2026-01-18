@@ -2421,7 +2421,6 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         placeholder="0"
                         disabled={readOnly}
                         elementId={`${element.id}-number`}
-                        disableInlineFormatting={true}
                         initialStyles={{
                           textFillType: (numberColorType as 'solid' | 'gradient') || 'solid',
                           textColor: numberColor,
@@ -2442,7 +2441,6 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                           placeholder="LABEL"
                           disabled={readOnly}
                           elementId={`${element.id}-label`}
-                          disableInlineFormatting={true}
                           initialStyles={{
                             textFillType: (labelColorType as 'solid' | 'gradient') || 'solid',
                             textColor: labelColor,

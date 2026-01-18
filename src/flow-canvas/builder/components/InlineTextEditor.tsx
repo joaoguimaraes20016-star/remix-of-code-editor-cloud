@@ -2076,32 +2076,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       });
     }
     
-    // No highlights - check if gradient should be applied
-    if (styles.textFillType === 'gradient') {
-      // Use existing gradient or fallback to default
-      const gradientValue = styles.textGradient || defaultGradient;
-      return (
-        <span style={{
-          backgroundImage: gradientToCSS(gradientValue),
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          color: 'transparent', // Prevent white fallback
-        } as React.CSSProperties}>
-          {value}
-        </span>
-      );
-    }
-    
-    // Solid color - apply via inline style if set
-    if (styles.textColor) {
-      return (
-        <span style={{ color: styles.textColor }}>
-          {value}
-        </span>
-      );
-    }
-    
+    // PHASE 1 FIX: For plain text without highlights, return raw value.
+    // Gradient/color styling is already applied at container level via getInlineStyles().
+    // Wrapping in a span here caused "double text" rendering when both layers had gradient.
     return value;
   };
   
