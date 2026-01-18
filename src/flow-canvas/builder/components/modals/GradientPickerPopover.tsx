@@ -276,7 +276,7 @@ export const GradientPickerPopover = React.forwardRef<HTMLDivElement, GradientPi
   onChange,
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
-  const triggerRef = useRef<HTMLSpanElement | null>(null);
+  const triggerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   // Manual outside-dismiss so slider drags never close the panel.
@@ -318,10 +318,10 @@ export const GradientPickerPopover = React.forwardRef<HTMLDivElement, GradientPi
       <PopoverTrigger asChild>
         <div 
           ref={(el) => {
-            triggerRef.current = el as HTMLSpanElement;
-            if (typeof ref === 'function') ref(el as any);
-            else if (ref) ref.current = el as any;
-          }} 
+            triggerRef.current = el;
+            if (typeof ref === 'function') ref(el);
+            else if (ref) ref.current = el;
+          }}
           className="inline-block w-full"
           role="button"
           tabIndex={0}
