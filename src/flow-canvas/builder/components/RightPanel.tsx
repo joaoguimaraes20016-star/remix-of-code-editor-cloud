@@ -232,7 +232,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
       )}
     >
       <button 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
         className="inspector-section-header w-full"
       >
         <div className="flex items-center gap-2">
