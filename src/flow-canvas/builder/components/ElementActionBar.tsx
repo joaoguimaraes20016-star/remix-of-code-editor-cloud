@@ -163,7 +163,7 @@ export const ElementActionBar = forwardRef<HTMLDivElement, ElementActionBarProps
         {/* Color Picker */}
         {showColorPicker && (
           <>
-            <ColorPickerPopover color={currentColor || '#8B5CF6'} onChange={(color) => onColorChange?.(color)}>
+            <ColorPickerPopover color={currentColor || '#8B5CF6'} onChange={(color) => onColorChange?.(color)} showGradientOption={false}>
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}

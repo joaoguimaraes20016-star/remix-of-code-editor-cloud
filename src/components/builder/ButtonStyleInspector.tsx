@@ -296,6 +296,7 @@ export const ButtonStyleInspector: React.FC<ButtonStyleInspectorProps> = ({
             <ColorPickerPopover
               color={settings.backgroundColor || primaryColor}
               onChange={(color) => onChange({ backgroundColor: color, preset: 'custom' })}
+              showGradientOption={false}
             >
               <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                 <div 
@@ -337,6 +338,7 @@ export const ButtonStyleInspector: React.FC<ButtonStyleInspectorProps> = ({
           <ColorPickerPopover
             color={settings.textColor || '#ffffff'}
             onChange={(color) => onChange({ textColor: color, preset: 'custom' })}
+            showGradientOption={false}
           >
             <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
               <div 
