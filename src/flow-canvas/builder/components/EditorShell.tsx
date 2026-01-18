@@ -167,6 +167,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   
   // Clipboard state for copy/paste
   const clipboardRef = useRef<{ type: 'element' | 'block'; data: Element | Block } | null>(null);
+  
+  // Style clipboard for copy/paste styles (Phase 7)
+  const styleClipboardRef = useRef<{ styles: Partial<Element['styles']>; props: Partial<Element['props']> } | null>(null);
 
   // Get active step
   const activeStep = page.steps.find(s => s.id === activeStepId) || null;
@@ -1155,6 +1158,83 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
   }, [page, selection]);
 
+  // Copy styles from selected element (Phase 7)
+  const handleCopyStyles = useCallback(() => {
+    if (selection.type !== 'element' || !selection.id) {
+      toast.info('Select an element to copy styles from');
+      return;
+    }
+    
+    for (const step of page.steps) {
+      for (const frame of step.frames) {
+        for (const stack of frame.stacks) {
+          for (const block of stack.blocks) {
+            const element = block.elements.find(el => el.id === selection.id);
+            if (element) {
+              styleClipboardRef.current = {
+                styles: deepClone(element.styles || {}),
+                props: {
+                  // Only copy style-related props
+                  blur: element.props?.blur,
+                  brightness: element.props?.brightness,
+                  contrast: element.props?.contrast,
+                  saturation: element.props?.saturation,
+                  hueRotate: element.props?.hueRotate,
+                  grayscale: element.props?.grayscale,
+                  sepia: element.props?.sepia,
+                  invert: element.props?.invert,
+                  shadowPreset: element.props?.shadowPreset,
+                  shadowLayers: element.props?.shadowLayers ? deepClone(element.props.shadowLayers) : undefined,
+                },
+              };
+              toast.success('Styles copied');
+              return;
+            }
+          }
+        }
+      }
+    }
+  }, [page, selection]);
+
+  // Paste styles to selected element (Phase 7)
+  const handlePasteStyles = useCallback(() => {
+    if (!styleClipboardRef.current) {
+      toast.info('No styles to paste. Copy styles first with ⌘+Shift+C');
+      return;
+    }
+    
+    if (selection.type !== 'element' || !selection.id) {
+      toast.info('Select an element to paste styles to');
+      return;
+    }
+    
+    const updatedPage = deepClone(page);
+    
+    for (const step of updatedPage.steps) {
+      for (const frame of step.frames) {
+        for (const stack of frame.stacks) {
+          for (const block of stack.blocks) {
+            const element = block.elements.find(el => el.id === selection.id);
+            if (element) {
+              // Merge copied styles
+              element.styles = {
+                ...element.styles,
+                ...styleClipboardRef.current.styles,
+              };
+              element.props = {
+                ...element.props,
+                ...styleClipboardRef.current.props,
+              };
+              handlePageUpdate(updatedPage, 'Paste styles');
+              toast.success('Styles applied');
+              return;
+            }
+          }
+        }
+      }
+    }
+  }, [page, selection, handlePageUpdate]);
+
   // Paste from clipboard
   const handlePaste = useCallback(() => {
     if (!clipboardRef.current) {
@@ -1387,17 +1467,29 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       }
       
       // 'C' with modifier - Copy selected element/block
-      if (e.key === 'c' && modifier && !previewMode && !readOnly) {
+      if (e.key === 'c' && modifier && !e.shiftKey && !previewMode && !readOnly) {
         if (selection.type === 'element' || selection.type === 'block') {
           e.preventDefault();
           handleCopy();
         }
       }
       
+      // 'C' with modifier + shift - Copy styles (Phase 7)
+      if (e.key === 'c' && modifier && e.shiftKey && !previewMode && !readOnly) {
+        e.preventDefault();
+        handleCopyStyles();
+      }
+      
       // 'V' with modifier - Paste element/block (different from 'v' alone for select mode)
-      if (e.key === 'v' && modifier && !previewMode && !readOnly) {
+      if (e.key === 'v' && modifier && !e.shiftKey && !previewMode && !readOnly) {
         e.preventDefault();
         handlePaste();
+      }
+      
+      // 'V' with modifier + shift - Paste styles (Phase 7)
+      if (e.key === 'v' && modifier && e.shiftKey && !previewMode && !readOnly) {
+        e.preventDefault();
+        handlePasteStyles();
       }
       // 'G' - Toggle grid
       if (e.key === 'g' && !modifier && !e.shiftKey) {
@@ -1456,7 +1548,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     handleDuplicateBlock,
     handleAddFrame,
     handleCopy,
-    handlePaste
+    handlePaste,
+    handleCopyStyles,
+    handlePasteStyles
   ]);
 
   return (
