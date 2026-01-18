@@ -60,6 +60,11 @@ interface InlineTextEditorProps {
    * Use for stat-number fields where inspector is the single source of truth for styling.
    */
   disableInlineFormatting?: boolean;
+  /**
+   * Callback when inline styles (color/gradient) are applied via the floating toolbar.
+   * Use this to sync toolbar changes back to element props for bidirectional sync with inspector.
+   */
+  onStyleChange?: (styles: Partial<TextStyles>) => void;
 }
 
 // Needs to accept refs because dnd-kit wrappers may clone children and attach a ref.
@@ -75,6 +80,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   elementId,
   style: externalStyle,
   disableInlineFormatting = false,
+  onStyleChange,
 }, forwardedRef) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
@@ -776,6 +782,23 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const editorEl = contentRef.current;
     let didHandleToggle = false;
 
+    // Helper: notify parent when fill styles (color/gradient) are successfully applied inline
+    // This enables bidirectional sync between toolbar and inspector
+    const notifyStyleChange = () => {
+      if (!onStyleChange) return;
+      // Only notify for fill-related changes
+      const hasColorChange = newStyles.textFillType !== undefined || 
+                             newStyles.textColor !== undefined || 
+                             newStyles.textGradient !== undefined;
+      if (hasColorChange) {
+        onStyleChange({
+          textFillType: newStyles.textFillType ?? (newStyles.textGradient ? 'gradient' : 'solid'),
+          textColor: newStyles.textColor,
+          textGradient: newStyles.textGradient,
+        });
+      }
+    };
+
     // When disableInlineFormatting is true, skip color/gradient inline styling entirely
     // The inspector is the single source of truth for styling in this mode
     const hasColorRequest = newStyles.textFillType !== undefined || 
@@ -1416,6 +1439,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               syncToolbarState();
 
               requestAnimationFrame(recomputeFormatState);
+              notifyStyleChange(); // Sync fill changes to element props
               return true;
             }
           } catch {
@@ -1520,6 +1544,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           }
 
           requestAnimationFrame(recomputeFormatState);
+          notifyStyleChange(); // Sync fill changes to element props
           return true;
         }
         
@@ -1557,6 +1582,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         syncToolbarState();
 
         requestAnimationFrame(recomputeFormatState);
+        notifyStyleChange(); // Sync fill changes to element props
         return true;
       }
 
@@ -1635,7 +1661,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const currentValue = contentRef.current?.innerText ?? value;
     onChange(currentValue, clonedStyles);
     return false;
-  }, [styles, value, onChange, scheduleInlineHtmlSave, isEditing]);
+  }, [styles, value, onChange, scheduleInlineHtmlSave, isEditing, onStyleChange, disableInlineFormatting]);
 
   // Register with inline edit context when editing (for Right Panel integration)
   // Use refs to persist state across renders and avoid stale closures

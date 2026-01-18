@@ -2417,6 +2417,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         key={`${element.id}-number-${numberColorType}-${numberColor}-${numberGradient ? gradientToCSS(numberGradient) : 'none'}`}
                         value={element.content || '0'}
                         onChange={(newContent: string) => onUpdate?.({ content: newContent })}
+                        onStyleChange={(styles) => {
+                          // Bidirectional sync: toolbar changes update element props → inspector updates
+                          const updates: Record<string, unknown> = {};
+                          if (styles.textFillType !== undefined) updates.numberColorType = styles.textFillType;
+                          if (styles.textColor !== undefined) updates.numberColor = styles.textColor;
+                          if (styles.textGradient !== undefined) updates.numberGradient = styles.textGradient;
+                          if (Object.keys(updates).length > 0) {
+                            onUpdate?.({ props: { ...element.props, ...updates } });
+                          }
+                        }}
                         elementType="text"
                         placeholder="0"
                         disabled={readOnly}
@@ -2429,7 +2439,32 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         style={{ display: 'inline' }}
                         className="inline"
                       />
-                      <span style={{ ...suffixStyle, display: 'inline' }}>{statSuffix}</span>
+                      <InlineTextEditor
+                        key={`${element.id}-suffix-${suffixColorType}-${suffixColor}-${suffixGradient ? gradientToCSS(suffixGradient) : 'none'}`}
+                        value={statSuffix}
+                        onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, suffix: newContent } })}
+                        onStyleChange={(styles) => {
+                          // Bidirectional sync: toolbar changes update element props → inspector updates
+                          const updates: Record<string, unknown> = {};
+                          if (styles.textFillType !== undefined) updates.suffixColorType = styles.textFillType;
+                          if (styles.textColor !== undefined) updates.suffixColor = styles.textColor;
+                          if (styles.textGradient !== undefined) updates.suffixGradient = styles.textGradient;
+                          if (Object.keys(updates).length > 0) {
+                            onUpdate?.({ props: { ...element.props, ...updates } });
+                          }
+                        }}
+                        elementType="text"
+                        placeholder="+"
+                        disabled={readOnly}
+                        elementId={`${element.id}-suffix`}
+                        initialStyles={{
+                          textFillType: (suffixColorType as 'solid' | 'gradient') || 'solid',
+                          textColor: suffixColor,
+                          textGradient: suffixGradient,
+                        }}
+                        style={{ display: 'inline' }}
+                        className="inline"
+                      />
                     </div>
                     {statLabel && (
                       <div className="text-xs uppercase tracking-wider mt-2">
@@ -2437,6 +2472,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                           key={`${element.id}-label-${labelColorType}-${labelColor}-${labelGradient ? gradientToCSS(labelGradient) : 'none'}`}
                           value={statLabel}
                           onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, label: newContent } })}
+                          onStyleChange={(styles) => {
+                            // Bidirectional sync: toolbar changes update element props → inspector updates
+                            const updates: Record<string, unknown> = {};
+                            if (styles.textFillType !== undefined) updates.labelColorType = styles.textFillType;
+                            if (styles.textColor !== undefined) updates.labelColor = styles.textColor;
+                            if (styles.textGradient !== undefined) updates.labelGradient = styles.textGradient;
+                            if (Object.keys(updates).length > 0) {
+                              onUpdate?.({ props: { ...element.props, ...updates } });
+                            }
+                          }}
                           elementType="text"
                           placeholder="LABEL"
                           disabled={readOnly}
