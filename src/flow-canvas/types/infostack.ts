@@ -250,6 +250,13 @@ export interface AnimationSettings {
   scrollOffset?: number;      // px offset before trigger
   exitAnimation?: boolean;    // animate on exit
   repeat?: boolean;           // repeat on re-entry
+  // Phase 2: Scroll Transform Binding
+  scrollTransform?: {
+    enabled: boolean;
+    property: 'opacity' | 'scale' | 'translateY' | 'translateX' | 'rotate';
+    startValue: number;       // Value at bottom of viewport
+    endValue: number;         // Value at top of viewport
+  };
 }
 
 // State-based styling for Framer-like control
