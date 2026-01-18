@@ -262,6 +262,53 @@ const FieldGroup: React.FC<{ label: string; children: React.ReactNode; hint?: st
   </div>
 );
 
+// ========== SORTABLE ROW COMPONENTS FOR INSPECTOR LISTS ==========
+// Used by Loader Steps, Carousel Slides, and Logo Marquee
+
+interface SortableRowProps {
+  id: string;
+  children: React.ReactNode;
+}
+
+function SortableRow({ id, children }: SortableRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+      >
+        <GripVertical className="w-3 h-3 text-builder-text-muted" />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// Shared sensors for inspector sortable lists
+function useInspectorSortableSensors() {
+  return useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+}
+
 // TogglePill: Now uses the deterministic BooleanToggle component
 // This component sets explicit true/false values instead of flipping
 import { BooleanToggle, coerceBoolean } from './BooleanToggle';
@@ -2253,31 +2300,55 @@ const ElementInspector: React.FC<{
           {element.props?.animationType === 'analyzing' && (
             <CollapsibleSection title="Step Messages" icon={<ListOrdered className="w-4 h-4" />}>
               <div className="pt-3 space-y-2">
-                {((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...']).map((step, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="text-xs text-builder-text-muted w-4">{idx + 1}.</span>
-                    <Input
-                      value={step}
-                      onChange={(e) => {
-                        const steps = [...((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...'])];
-                        steps[idx] = e.target.value;
-                        handlePropsChange('customSteps', steps);
-                      }}
-                      className="builder-input flex-1 text-xs h-8"
-                    />
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => {
-                        const steps = ((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...']).filter((_, i) => i !== idx);
-                        if (steps.length > 0) handlePropsChange('customSteps', steps);
-                      }}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                ))}
+                <DndContext
+                  sensors={useSensors(
+                    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+                    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+                  )}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event) => {
+                    const { active, over } = event;
+                    if (!over || active.id === over.id) return;
+                    const currentSteps = (element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...'];
+                    const oldIndex = currentSteps.findIndex((_, i) => `step-${i}` === active.id);
+                    const newIndex = currentSteps.findIndex((_, i) => `step-${i}` === over.id);
+                    if (oldIndex === -1 || newIndex === -1) return;
+                    const reordered = arrayMove(currentSteps, oldIndex, newIndex);
+                    handlePropsChange('customSteps', reordered);
+                  }}
+                >
+                  <SortableContext
+                    items={((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...']).map((_, i) => `step-${i}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...']).map((step, idx) => (
+                      <SortableRow key={`step-${idx}`} id={`step-${idx}`}>
+                        <span className="text-xs text-builder-text-muted w-4">{idx + 1}.</span>
+                        <Input
+                          value={step}
+                          onChange={(e) => {
+                            const steps = [...((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...'])];
+                            steps[idx] = e.target.value;
+                            handlePropsChange('customSteps', steps);
+                          }}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          className="builder-input flex-1 text-xs h-8"
+                        />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            const steps = ((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...']).filter((_, i) => i !== idx);
+                            if (steps.length > 0) handlePropsChange('customSteps', steps);
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </SortableRow>
+                    ))}
+                  </SortableContext>
+                </DndContext>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -2401,45 +2472,68 @@ const ElementInspector: React.FC<{
           </CollapsibleSection>
           <CollapsibleSection title="Slides" icon={<ImageIcon className="w-4 h-4" />}>
             <div className="pt-3 space-y-2">
-              {((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || []).map((slide, idx) => (
-                <div key={slide.id} className="flex items-center gap-2 p-2 rounded-lg border border-builder-border bg-builder-surface-hover/50">
-                  <div 
-                    className="w-14 h-10 rounded bg-muted flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
-                    onClick={() => {
-                      // Store which slide we're editing and open image picker
-                      (window as any).__editingSlideIndex = idx;
-                      setIsImagePickerOpen(true);
-                    }}
-                  >
-                    {slide.src ? (
-                      <img src={slide.src} alt={slide.alt || ''} className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon className="w-5 h-5 text-muted-foreground/50" />
-                    )}
-                  </div>
-                  <Input 
-                    value={slide.alt || ''} 
-                    onChange={(e) => {
-                      const slides = [...((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || [])];
-                      slides[idx] = { ...slides[idx], alt: e.target.value };
-                      handlePropsChange('slides', slides);
-                    }}
-                    placeholder="Alt text..."
-                    className="builder-input flex-1 text-xs h-8"
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => {
-                      const slides = ((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || []).filter((_, i) => i !== idx);
-                      handlePropsChange('slides', slides);
-                    }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
+              <DndContext
+                sensors={useSensors(
+                  useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+                  useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+                )}
+                collisionDetection={closestCenter}
+                onDragEnd={(event) => {
+                  const { active, over } = event;
+                  if (!over || active.id === over.id) return;
+                  const currentSlides = (element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || [];
+                  const oldIndex = currentSlides.findIndex((s) => s.id === active.id);
+                  const newIndex = currentSlides.findIndex((s) => s.id === over.id);
+                  if (oldIndex === -1 || newIndex === -1) return;
+                  const reordered = arrayMove(currentSlides, oldIndex, newIndex);
+                  handlePropsChange('slides', reordered);
+                }}
+              >
+                <SortableContext
+                  items={((element.props?.slides as Array<{ id: string }>) || []).map((s) => s.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || []).map((slide, idx) => (
+                    <SortableRow key={slide.id} id={slide.id}>
+                      <div 
+                        className="w-14 h-10 rounded bg-muted flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
+                        onClick={() => {
+                          (window as any).__editingSlideIndex = idx;
+                          setIsImagePickerOpen(true);
+                        }}
+                      >
+                        {slide.src ? (
+                          <img src={slide.src} alt={slide.alt || ''} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-5 h-5 text-muted-foreground/50" />
+                        )}
+                      </div>
+                      <Input 
+                        value={slide.alt || ''} 
+                        onChange={(e) => {
+                          const slides = [...((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || [])];
+                          slides[idx] = { ...slides[idx], alt: e.target.value };
+                          handlePropsChange('slides', slides);
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        placeholder="Alt text..."
+                        className="builder-input flex-1 text-xs h-8"
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          const slides = ((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || []).filter((_, i) => i !== idx);
+                          handlePropsChange('slides', slides);
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </SortableRow>
+                  ))}
+                </SortableContext>
+              </DndContext>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -2524,44 +2618,68 @@ const ElementInspector: React.FC<{
           </CollapsibleSection>
           <CollapsibleSection title="Logos" icon={<ImageIcon className="w-4 h-4" />}>
             <div className="pt-3 space-y-2">
-              {((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || []).map((logo, idx) => (
-                <div key={logo.id} className="flex items-center gap-2 p-2 rounded-lg border border-builder-border bg-builder-surface-hover/50">
-                  <div 
-                    className="w-12 h-8 rounded bg-muted flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
-                    onClick={() => {
-                      (window as any).__editingLogoIndex = idx;
-                      setIsImagePickerOpen(true);
-                    }}
-                  >
-                    {logo.src ? (
-                      <img src={logo.src} alt={logo.alt || ''} className="w-full h-full object-contain" />
-                    ) : (
-                      <ImageIcon className="w-4 h-4 text-muted-foreground/50" />
-                    )}
-                  </div>
-                  <Input 
-                    value={logo.url || ''} 
-                    onChange={(e) => {
-                      const logos = [...((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || [])];
-                      logos[idx] = { ...logos[idx], url: e.target.value };
-                      handlePropsChange('logos', logos);
-                    }}
-                    placeholder="Link URL..."
-                    className="builder-input flex-1 text-xs h-8"
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => {
-                      const logos = ((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || []).filter((_, i) => i !== idx);
-                      handlePropsChange('logos', logos);
-                    }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
+              <DndContext
+                sensors={useSensors(
+                  useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+                  useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+                )}
+                collisionDetection={closestCenter}
+                onDragEnd={(event) => {
+                  const { active, over } = event;
+                  if (!over || active.id === over.id) return;
+                  const currentLogos = (element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || [];
+                  const oldIndex = currentLogos.findIndex((l) => l.id === active.id);
+                  const newIndex = currentLogos.findIndex((l) => l.id === over.id);
+                  if (oldIndex === -1 || newIndex === -1) return;
+                  const reordered = arrayMove(currentLogos, oldIndex, newIndex);
+                  handlePropsChange('logos', reordered);
+                }}
+              >
+                <SortableContext
+                  items={((element.props?.logos as Array<{ id: string }>) || []).map((l) => l.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || []).map((logo, idx) => (
+                    <SortableRow key={logo.id} id={logo.id}>
+                      <div 
+                        className="w-12 h-8 rounded bg-muted flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
+                        onClick={() => {
+                          (window as any).__editingLogoIndex = idx;
+                          setIsImagePickerOpen(true);
+                        }}
+                      >
+                        {logo.src ? (
+                          <img src={logo.src} alt={logo.alt || ''} className="w-full h-full object-contain" />
+                        ) : (
+                          <ImageIcon className="w-4 h-4 text-muted-foreground/50" />
+                        )}
+                      </div>
+                      <Input 
+                        value={logo.url || ''} 
+                        onChange={(e) => {
+                          const logos = [...((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || [])];
+                          logos[idx] = { ...logos[idx], url: e.target.value };
+                          handlePropsChange('logos', logos);
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        placeholder="Link URL..."
+                        className="builder-input flex-1 text-xs h-8"
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          const logos = ((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || []).filter((_, i) => i !== idx);
+                          handlePropsChange('logos', logos);
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </SortableRow>
+                  ))}
+                </SortableContext>
+              </DndContext>
               <Button 
                 variant="outline" 
                 size="sm" 
