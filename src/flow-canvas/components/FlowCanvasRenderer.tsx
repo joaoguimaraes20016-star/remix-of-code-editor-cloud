@@ -720,12 +720,39 @@ export function FlowCanvasRenderer({
       case 'ticker':
         const tickerItems = (element.props?.items as string[]) || ['Item 1', 'Item 2', 'Item 3'];
         const tickerSep = (element.props?.separator as string) || '  •  ';
+        const tickerSpeed = (element.props?.speed as number) || 30;
+        const tickerTextColor = (element.props?.textColor as string);
+        const tickerSepColor = (element.props?.separatorColor as string) || tickerTextColor;
+        const tickerBgColor = (element.props?.backgroundColor as string);
+        const tickerFontSize = (element.props?.fontSize as string) || 'sm';
+        const tickerFontWeight = (element.props?.fontWeight as string) || 'medium';
+        const tickerLetterSpacing = (element.props?.letterSpacing as number) ?? 0.05;
+        const tickerDirection = (element.props?.direction as string) || 'left';
+        const tickerFontSizeMap: Record<string, string> = { xs: '10px', sm: '12px', md: '14px', lg: '16px', xl: '18px' };
+        const tickerFontWeightMap: Record<string, number> = { normal: 400, medium: 500, semibold: 600, bold: 700 };
         return (
-          <div key={element.id} className="w-full overflow-hidden py-3">
-            <div className="animate-marquee whitespace-nowrap">
+          <div 
+            key={element.id} 
+            className="ticker-container w-full py-3"
+            style={{ 
+              '--ticker-speed': `${tickerSpeed}s`,
+              '--ticker-direction': tickerDirection === 'right' ? 'reverse' : 'normal',
+              backgroundColor: tickerBgColor || undefined,
+            } as React.CSSProperties}
+          >
+            <div className="ticker-content">
               {[...tickerItems, ...tickerItems].map((item, i) => (
-                <span key={i} className="text-sm font-medium uppercase tracking-wider mx-4">
-                  {item}{tickerSep}
+                <span 
+                  key={i} 
+                  className="uppercase tracking-wider"
+                  style={{ 
+                    color: tickerTextColor || undefined,
+                    fontSize: tickerFontSizeMap[tickerFontSize] || '12px',
+                    fontWeight: tickerFontWeightMap[tickerFontWeight] || 500,
+                    letterSpacing: `${tickerLetterSpacing}em`,
+                  }}
+                >
+                  {item}<span style={{ color: tickerSepColor || undefined }}>{tickerSep}</span>
                 </span>
               ))}
             </div>
@@ -735,25 +762,43 @@ export function FlowCanvasRenderer({
       case 'badge':
         const badgeVariant = (element.props?.variant as string) || 'primary';
         const badgeIcon = element.props?.icon as string;
+        const badgeAlignment = (element.props?.alignment as string) || 'flex-start';
+        const badgeBgColor = (element.props?.bgColor as string) || '#8B5CF6';
+        const badgeTextColor = (element.props?.textColor as string) || '#ffffff';
+        const badgeBorderColor = (element.props?.borderColor as string);
         const badgeClasses: Record<string, string> = {
           primary: 'bg-purple-500/20 text-purple-400',
           success: 'bg-green-500/20 text-green-400',
           warning: 'bg-amber-500/20 text-amber-400',
           premium: 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black'
         };
+        const useCustomBadgeColors = badgeVariant === 'custom';
         return (
-          <span key={element.id} className={cn('px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5', badgeClasses[badgeVariant] || badgeClasses.primary)}>
-            {badgeIcon && (() => {
-              const iconName = badgeIcon.toLowerCase();
-              // Simple icon mapping for runtime - common badge icons
-              const IconComp = iconName === 'sparkles' ? Sparkles 
-                : iconName === 'rocket' ? Rocket 
-                : iconName === 'star' ? Sparkles // fallback
-                : Sparkles;
-              return <IconComp className="w-3 h-3" />;
-            })()}
-            {element.content || 'BADGE'}
-          </span>
+          <div key={element.id} style={{ display: 'flex', justifyContent: badgeAlignment }}>
+            <span 
+              className={cn(
+                'px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5',
+                !useCustomBadgeColors && (badgeClasses[badgeVariant] || badgeClasses.primary)
+              )}
+              style={useCustomBadgeColors ? {
+                backgroundColor: badgeBgColor,
+                color: badgeTextColor,
+                borderColor: badgeBorderColor,
+                borderWidth: badgeBorderColor ? '1px' : '0',
+                borderStyle: 'solid',
+              } : undefined}
+            >
+              {badgeIcon && (() => {
+                const iconName = badgeIcon.toLowerCase();
+                const IconComp = iconName === 'sparkles' ? Sparkles 
+                  : iconName === 'rocket' ? Rocket 
+                  : iconName === 'star' ? Sparkles
+                  : Sparkles;
+                return <IconComp className="w-3 h-3" />;
+              })()}
+              {element.content || 'BADGE'}
+            </span>
+          </div>
         );
 
       case 'process-step':
@@ -804,13 +849,35 @@ export function FlowCanvasRenderer({
 
       case 'video-thumbnail':
         const thumbnailUrl = (element.props?.thumbnailUrl as string);
+        const showPlayButton = element.props?.showPlayButton !== false;
+        const playButtonStyle = (element.props?.playButtonStyle as string) || 'rounded';
+        const overlayStyle = (element.props?.overlayStyle as string) || 'gradient';
+        const playButtonStyleMap: Record<string, string> = {
+          rounded: 'rounded-full bg-white/90',
+          square: 'rounded-lg bg-white/90',
+          minimal: 'bg-transparent border-2 border-white',
+        };
         return (
-          <div key={element.id} className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-            {thumbnailUrl && <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
-                <Play className="w-8 h-8 text-white" />
+          <div key={element.id} className="relative aspect-video rounded-2xl overflow-hidden bg-muted">
+            {thumbnailUrl ? (
+              <img src={thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                <Video className="w-12 h-12 text-muted-foreground/30" />
               </div>
+            )}
+            <div className={cn(
+              "absolute inset-0 flex items-center justify-center",
+              overlayStyle === 'gradient' && "bg-gradient-to-b from-transparent to-black/50"
+            )}>
+              {showPlayButton && (
+                <div className={cn(
+                  "w-16 h-16 flex items-center justify-center backdrop-blur-sm",
+                  playButtonStyleMap[playButtonStyle] || playButtonStyleMap.rounded
+                )}>
+                  <Play className={cn("w-8 h-8 ml-1", playButtonStyle === 'minimal' ? 'text-white' : 'text-gray-900')} />
+                </div>
+              )}
             </div>
           </div>
         );

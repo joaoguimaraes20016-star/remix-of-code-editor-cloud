@@ -2399,6 +2399,15 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const tickerItems = (element.props?.items as string[]) || ['Item 1', 'Item 2', 'Item 3'];
         const tickerSeparator = (element.props?.separator as string) || '  •  ';
         const tickerSpeed = (element.props?.speed as number) || 30;
+        const tickerTextColor = (element.props?.textColor as string) || (isDarkTheme ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)');
+        const tickerSeparatorColor = (element.props?.separatorColor as string) || tickerTextColor;
+        const tickerBgColor = (element.props?.backgroundColor as string) || 'transparent';
+        const tickerFontSize = (element.props?.fontSize as string) || 'sm';
+        const tickerFontWeight = (element.props?.fontWeight as string) || 'medium';
+        const tickerLetterSpacing = (element.props?.letterSpacing as number) ?? 0.05;
+        const tickerDirection = (element.props?.direction as string) || 'left';
+        const tickerFontSizeMap: Record<string, string> = { xs: '10px', sm: '12px', md: '14px', lg: '16px', xl: '18px' };
+        const tickerFontWeightMap: Record<string, number> = { normal: 400, medium: 500, semibold: 600, bold: 700 };
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative w-full')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
@@ -2417,17 +2426,26 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             )}
             <div 
               className="ticker-container w-full py-3"
-              style={{ '--ticker-speed': `${tickerSpeed}s` } as React.CSSProperties}
+              style={{ 
+                '--ticker-speed': `${tickerSpeed}s`,
+                '--ticker-direction': tickerDirection === 'right' ? 'reverse' : 'normal',
+                backgroundColor: tickerBgColor,
+              } as React.CSSProperties}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               <div className="ticker-content">
                 {[...tickerItems, ...tickerItems].map((item, i) => (
                   <span 
                     key={i} 
-                    className="text-sm font-medium uppercase tracking-wider"
-                    style={{ color: isDarkTheme ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)' }}
+                    className="uppercase tracking-wider"
+                    style={{ 
+                      color: tickerTextColor,
+                      fontSize: tickerFontSizeMap[tickerFontSize] || '12px',
+                      fontWeight: tickerFontWeightMap[tickerFontWeight] || 500,
+                      letterSpacing: `${tickerLetterSpacing}em`,
+                    }}
                   >
-                    {item}{tickerSeparator}
+                    {item}<span style={{ color: tickerSeparatorColor }}>{tickerSeparator}</span>
                   </span>
                 ))}
               </div>
@@ -2438,13 +2456,24 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       case 'badge':
         const badgeVariant = (element.props?.variant as string) || 'primary';
         const badgeIcon = element.props?.icon as string;
-        const badgeClasses = {
+        const badgeAlignment = (element.props?.alignment as string) || 'flex-start';
+        const badgeBgColor = (element.props?.bgColor as string) || '#8B5CF6';
+        const badgeTextColor = (element.props?.textColor as string) || '#ffffff';
+        const badgeBorderColor = (element.props?.borderColor as string) || 'transparent';
+        const badgeClasses: Record<string, string> = {
           primary: 'premium-badge-primary',
           warning: 'premium-badge-warning',
           success: 'premium-badge-success',
+          premium: 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black',
         };
+        const useCustomBadgeColors = badgeVariant === 'custom';
         return (
-          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative inline-block')} {...stateHandlers}>
+          <div 
+            ref={combinedRef} 
+            style={{ ...style, display: 'flex', justifyContent: badgeAlignment }} 
+            className={cn(baseClasses, 'relative')} 
+            {...stateHandlers}
+          >
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
             {renderIndicatorBadges()}
             {!readOnly && (
@@ -2460,7 +2489,17 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               />
             )}
             <span 
-              className={cn('premium-badge', badgeClasses[badgeVariant as keyof typeof badgeClasses] || badgeClasses.primary)}
+              className={cn(
+                'premium-badge',
+                !useCustomBadgeColors && (badgeClasses[badgeVariant] || badgeClasses.primary)
+              )}
+              style={useCustomBadgeColors ? {
+                backgroundColor: badgeBgColor,
+                color: badgeTextColor,
+                borderColor: badgeBorderColor,
+                borderWidth: badgeBorderColor !== 'transparent' ? '1px' : '0',
+                borderStyle: 'solid',
+              } : undefined}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               {badgeIcon && (() => {
@@ -2475,6 +2514,24 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       case 'process-step':
         const stepNumber = (element.props?.step as number) || 1;
         const stepIcon = element.props?.icon as string;
+        const stepShape = (element.props?.shape as string) || 'rounded-square';
+        const stepSize = (element.props?.size as string) || 'md';
+        const stepAccentColor = (element.props?.accentColor as string) || primaryColor;
+        const stepTextColor = (element.props?.textColor as string) || (isDarkTheme ? '#ffffff' : '#111827');
+        const stepNumberColor = (element.props?.numberColor as string) || '#ffffff';
+        const stepDescription = (element.props?.description as string);
+        const stepSizeMap: Record<string, { wrapper: string; icon: string; text: string }> = {
+          sm: { wrapper: 'w-10 h-10', icon: 'w-4 h-4', text: 'text-sm' },
+          md: { wrapper: 'w-14 h-14', icon: 'w-6 h-6', text: 'text-lg' },
+          lg: { wrapper: 'w-16 h-16', icon: 'w-7 h-7', text: 'text-xl' },
+          xl: { wrapper: 'w-20 h-20', icon: 'w-8 h-8', text: 'text-2xl' },
+        };
+        const stepShapeMap: Record<string, string> = {
+          circle: 'rounded-full',
+          'rounded-square': 'rounded-2xl',
+          square: 'rounded-lg',
+        };
+        const currentStepSize = stepSizeMap[stepSize] || stepSizeMap.md;
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
@@ -2496,30 +2553,47 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               <div 
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                className={cn(
+                  currentStepSize.wrapper,
+                  stepShapeMap[stepShape] || 'rounded-2xl',
+                  'flex items-center justify-center'
+                )}
                 style={{ 
-                  background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}80)`,
+                  background: `linear-gradient(135deg, ${stepAccentColor}, ${stepAccentColor}80)`,
                 }}
               >
-                {stepIcon === 'map' && <Layout className="w-7 h-7 text-white" />}
-                {stepIcon === 'share-2' && <ArrowRight className="w-7 h-7 text-white" />}
-                {stepIcon === 'rocket' && <Sparkles className="w-7 h-7 text-white" />}
+                {stepIcon === 'map' && <Layout className={cn(currentStepSize.icon)} style={{ color: stepNumberColor }} />}
+                {stepIcon === 'share-2' && <ArrowRight className={cn(currentStepSize.icon)} style={{ color: stepNumberColor }} />}
+                {stepIcon === 'rocket' && <Sparkles className={cn(currentStepSize.icon)} style={{ color: stepNumberColor }} />}
                 {!['map', 'share-2', 'rocket'].includes(stepIcon || '') && (
-                  <span className="text-xl font-bold text-white">{stepNumber}</span>
+                  <span className={cn(currentStepSize.text, 'font-bold')} style={{ color: stepNumberColor }}>{stepNumber}</span>
                 )}
               </div>
               <span 
                 className="text-sm font-semibold uppercase tracking-wider mt-2"
-                style={{ color: isDarkTheme ? '#ffffff' : '#111827' }}
+                style={{ color: stepTextColor }}
               >
                 {element.content || `Step ${stepNumber}`}
               </span>
+              {stepDescription && (
+                <p className="text-xs mt-1" style={{ color: stepTextColor, opacity: 0.7 }}>
+                  {stepDescription}
+                </p>
+              )}
             </div>
           </div>
         );
       
       case 'video-thumbnail':
         const overlayStyle = (element.props?.overlayStyle as string) || 'gradient';
+        const thumbnailUrl = (element.props?.thumbnailUrl as string);
+        const showPlayButton = element.props?.showPlayButton !== false;
+        const playButtonStyle = (element.props?.playButtonStyle as string) || 'rounded';
+        const playButtonStyleMap: Record<string, string> = {
+          rounded: 'rounded-full bg-white/90',
+          square: 'rounded-lg bg-white/90',
+          minimal: 'bg-transparent border-2 border-white',
+        };
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
@@ -2544,21 +2618,33 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               style={{ minHeight: '200px' }}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              {/* Theme-aware placeholder background */}
-              <div className={cn(
-                "absolute inset-0 flex items-center justify-center",
-                isDarkTheme ? "bg-gradient-to-br from-white/10 to-white/5" : "bg-gradient-to-br from-gray-100 to-gray-200"
-              )}>
-                <Video className={cn("w-12 h-12", isDarkTheme ? "text-white/30" : "text-gray-400")} />
-              </div>
+              {thumbnailUrl ? (
+                <img 
+                  src={thumbnailUrl} 
+                  alt="Video thumbnail"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className={cn(
+                  "absolute inset-0 flex items-center justify-center",
+                  isDarkTheme ? "bg-gradient-to-br from-white/10 to-white/5" : "bg-gradient-to-br from-gray-100 to-gray-200"
+                )}>
+                  <Video className={cn("w-12 h-12", isDarkTheme ? "text-white/30" : "text-gray-400")} />
+                </div>
+              )}
               {/* Overlay */}
               <div className={cn(
                 "video-thumbnail-overlay",
                 overlayStyle === 'gradient' && "bg-gradient-to-b from-transparent to-black/50"
               )}>
-                <div className="video-play-button">
-                  <Play className="w-8 h-8 text-gray-900 ml-1" />
-                </div>
+                {showPlayButton && (
+                  <div className={cn(
+                    "w-16 h-16 flex items-center justify-center backdrop-blur-sm",
+                    playButtonStyleMap[playButtonStyle] || playButtonStyleMap.rounded
+                  )}>
+                    <Play className={cn("w-8 h-8 ml-1", playButtonStyle === 'minimal' ? 'text-white' : 'text-gray-900')} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
