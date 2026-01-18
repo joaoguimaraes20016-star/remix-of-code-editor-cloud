@@ -852,8 +852,10 @@ export function FlowCanvasRenderer({
       }
 
       case 'stat-number': {
-        const suffix = (element.props?.suffix as string) || '+';
-        const statLabel = (element.props?.label as string) || '';
+        // Strip HTML to ensure clean display (prevents leakage from InlineTextEditor)
+        const stripHtml = (s: string) => s ? s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() : '';
+        const suffix = stripHtml((element.props?.suffix as string) || '+');
+        const statLabel = stripHtml((element.props?.label as string) || '');
         
         // Color/gradient settings
         const numberColorType = (element.props?.numberColorType as string) || 'solid';
@@ -907,7 +909,7 @@ export function FlowCanvasRenderer({
                 fontWeight: statWeightMap[statFontWeight] || 700,
               }}
             >
-              <span style={{ ...numberStyle, display: 'inline' }}>{element.content || '0'}</span>
+              <span style={{ ...numberStyle, display: 'inline' }}>{stripHtml(element.content || '0')}</span>
               <span style={{ ...suffixStyle, display: 'inline' }}>{suffix}</span>
             </div>
             {statLabel && (

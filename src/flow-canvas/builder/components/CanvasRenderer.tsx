@@ -12,6 +12,7 @@ import { AddSectionPopover } from './AddSectionPopover';
 import { InlineTextEditor, TextStyles } from './InlineTextEditor';
 import { evaluateVisibility } from '../hooks/useScrollAnimation';
 import { gradientToCSS, cloneGradient, GradientValue } from './modals';
+import { stripHtmlToText } from '../utils/textHelpers';
 import { BuilderContextMenu } from './ContextMenu';
 import { ApplicationFlowCard } from './ApplicationFlowCard';
 import { useFlowContainerSafe, buttonActionToIntent, FlowIntent } from '../contexts/FlowContainerContext';
@@ -2338,8 +2339,9 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         );
       
       case 'stat-number':
-        const statSuffix = (element.props?.suffix as string) || '+';
-        const statLabel = (element.props?.label as string) || '';
+        // Use stripHtmlToText to ensure clean display values (prevent HTML leakage)
+        const statSuffix = stripHtmlToText((element.props?.suffix as string) || '+');
+        const statLabel = stripHtmlToText((element.props?.label as string) || '');
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
