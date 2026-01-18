@@ -1,12 +1,29 @@
 /**
- * PagesList - Perspective-style simple numbered page list
+ * PagesList - Perspective-style simple numbered page list with drag-and-drop
  * Clean, minimal, shows page numbers with inline editable names
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Plus, MoreHorizontal, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Page } from '../types';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +38,142 @@ interface PagesListProps {
   onAddPage: () => void;
   onDeletePage: (id: string) => void;
   onRenamePage?: (id: string, name: string) => void;
+  onReorderPages?: (pageIds: string[]) => void;
+}
+
+// Sortable page item component
+interface SortablePageItemProps {
+  page: Page;
+  index: number;
+  isActive: boolean;
+  isEditing: boolean;
+  editValue: string;
+  inputRef: React.RefObject<HTMLInputElement>;
+  onSelect: () => void;
+  onStartEdit: (e: React.MouseEvent) => void;
+  onEditChange: (value: string) => void;
+  onFinishEdit: () => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+  onCancelEdit: () => void;
+  onDelete: () => void;
+  canDelete: boolean;
+}
+
+function SortablePageItem({
+  page,
+  index,
+  isActive,
+  isEditing,
+  editValue,
+  inputRef,
+  onSelect,
+  onStartEdit,
+  onEditChange,
+  onFinishEdit,
+  onKeyDown,
+  onCancelEdit,
+  onDelete,
+  canDelete,
+}: SortablePageItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: page.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={onSelect}
+      className={cn(
+        "group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all",
+        isActive
+          ? "bg-slate-100"
+          : "hover:bg-slate-50"
+      )}
+    >
+      {/* Drag handle - functional */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="opacity-0 group-hover:opacity-40 transition-opacity cursor-grab active:cursor-grabbing touch-none"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <GripVertical size={12} className="text-slate-400" />
+      </div>
+      
+      {/* Page number */}
+      <span className={cn(
+        "text-xs font-medium min-w-[20px]",
+        isActive ? "text-slate-600" : "text-slate-400"
+      )}>
+        {index + 1}
+      </span>
+      
+      {/* Page name - editable */}
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={editValue}
+          onChange={(e) => onEditChange(e.target.value)}
+          onBlur={onFinishEdit}
+          onKeyDown={onKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex-1 text-sm bg-white border border-primary rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-primary"
+        />
+      ) : (
+        <span 
+          className={cn(
+            "flex-1 text-sm truncate",
+            isActive ? "font-medium text-slate-900" : "text-slate-600"
+          )}
+          onDoubleClick={onStartEdit}
+          title="Double-click to rename"
+        >
+          {page.name}
+        </span>
+      )}
+
+      {/* Actions menu */}
+      {canDelete && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
+            >
+              <MoreHorizontal size={14} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 size={14} className="mr-2" />
+              Delete page
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
 }
 
 export function PagesList({ 
@@ -29,7 +182,8 @@ export function PagesList({
   onSelectPage, 
   onAddPage, 
   onDeletePage,
-  onRenamePage 
+  onRenamePage,
+  onReorderPages,
 }: PagesListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -56,14 +210,40 @@ export function PagesList({
     setEditValue('');
   };
 
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditValue('');
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleFinishEdit();
     } else if (e.key === 'Escape') {
-      setEditingId(null);
-      setEditValue('');
+      handleCancelEdit();
     }
   };
+
+  // Drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = pages.findIndex(p => p.id === active.id);
+      const newIndex = pages.findIndex(p => p.id === over.id);
+      const reordered = arrayMove(pages, oldIndex, newIndex);
+      if (onReorderPages) {
+        onReorderPages(reordered.map(p => p.id));
+      }
+    }
+  }, [pages, onReorderPages]);
 
   return (
     <div className="flex flex-col h-full">
@@ -79,86 +259,40 @@ export function PagesList({
         </button>
       </div>
 
-      {/* Pages list */}
+      {/* Pages list with drag-and-drop */}
       <div className="flex-1 overflow-auto p-2">
-        <div className="space-y-0.5">
-          {pages.map((page, index) => (
-            <div
-              key={page.id}
-              onClick={() => onSelectPage(page.id)}
-              className={cn(
-                "group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all",
-                page.id === activePageId
-                  ? "bg-slate-100"
-                  : "hover:bg-slate-50"
-              )}
-            >
-              {/* Drag handle - subtle */}
-              <div className="opacity-0 group-hover:opacity-40 transition-opacity cursor-grab">
-                <GripVertical size={12} className="text-slate-400" />
-              </div>
-              
-              {/* Page number */}
-              <span className={cn(
-                "text-xs font-medium min-w-[20px]",
-                page.id === activePageId ? "text-slate-600" : "text-slate-400"
-              )}>
-                {index + 1}
-              </span>
-              
-              {/* Page name - editable */}
-              {editingId === page.id ? (
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onBlur={handleFinishEdit}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={pages.map(p => p.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-0.5">
+              {pages.map((page, index) => (
+                <SortablePageItem
+                  key={page.id}
+                  page={page}
+                  index={index}
+                  isActive={page.id === activePageId}
+                  isEditing={editingId === page.id}
+                  editValue={editValue}
+                  inputRef={inputRef}
+                  onSelect={() => onSelectPage(page.id)}
+                  onStartEdit={(e) => handleStartEdit(page, e)}
+                  onEditChange={setEditValue}
+                  onFinishEdit={handleFinishEdit}
                   onKeyDown={handleKeyDown}
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1 text-sm bg-white border border-primary rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-primary"
+                  onCancelEdit={handleCancelEdit}
+                  onDelete={() => onDeletePage(page.id)}
+                  canDelete={pages.length > 1}
                 />
-              ) : (
-                <span 
-                  className={cn(
-                    "flex-1 text-sm truncate",
-                    page.id === activePageId ? "font-medium text-slate-900" : "text-slate-600"
-                  )}
-                  onDoubleClick={(e) => handleStartEdit(page, e)}
-                  title="Double-click to rename"
-                >
-                  {page.name}
-                </span>
-              )}
-
-              {/* Actions menu */}
-              {pages.length > 1 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      onClick={(e) => e.stopPropagation()}
-                      className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
-                    >
-                      <MoreHorizontal size={14} />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeletePage(page.id);
-                      }}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 size={14} className="mr-2" />
-                      Delete page
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       </div>
     </div>
   );

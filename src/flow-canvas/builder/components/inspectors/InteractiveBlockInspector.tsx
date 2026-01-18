@@ -16,9 +16,26 @@
  * the same styling system.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Block, Element } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { 
   HelpCircle, 
   Type, 
@@ -47,6 +64,65 @@ import {
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
 import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
 import { CollapsibleSection, FieldGroup } from './shared';
+
+// Sortable checkbox item for drag-and-drop reordering
+interface SortableCheckboxItemProps {
+  element: Element;
+  index: number;
+  onUpdateContent: (content: string) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+}
+
+function SortableCheckboxItem({ element, index, onUpdateContent, onRemove, canRemove }: SortableCheckboxItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: element.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5 group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="w-3 h-3 text-builder-text-dim opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0 touch-none"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-3 h-3" />
+      </div>
+      <Input
+        value={element.content || ''}
+        onChange={(e) => onUpdateContent(e.target.value)}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="h-7 text-xs bg-background border-border flex-1"
+        placeholder={`Option ${index + 1}`}
+      />
+      <button
+        onClick={onRemove}
+        disabled={!canRemove}
+        className={cn(
+          "p-1 rounded transition-all",
+          !canRemove 
+            ? "opacity-30 cursor-not-allowed"
+            : "hover:bg-destructive/10 text-builder-text-dim hover:text-destructive opacity-0 group-hover:opacity-100"
+        )}
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
 
 interface InteractiveBlockInspectorProps {
   block: Block;
@@ -112,6 +188,39 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
   // ═══════════════════════════════════════════════════════════════
   // MULTI-CHOICE OPTION MANAGEMENT (matches StepContentEditor pattern)
   // ═══════════════════════════════════════════════════════════════
+  
+  // Drag-and-drop sensors for checkbox reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleCheckboxDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const checkboxIds = checkboxElements.map(el => el.id);
+      const oldIndex = checkboxIds.indexOf(active.id as string);
+      const newIndex = checkboxIds.indexOf(over.id as string);
+      
+      // Reorder just the checkbox elements while preserving other elements
+      const reorderedCheckboxes = arrayMove(checkboxElements, oldIndex, newIndex);
+      const otherElements = elements.filter(el => el.type !== 'checkbox');
+      
+      // Keep checkboxes in their relative position in the elements array
+      const firstCheckboxIndex = elements.findIndex(el => el.type === 'checkbox');
+      const newElements = [
+        ...elements.slice(0, firstCheckboxIndex).filter(el => el.type !== 'checkbox'),
+        ...reorderedCheckboxes,
+        ...elements.slice(firstCheckboxIndex).filter(el => el.type !== 'checkbox'),
+      ];
+      
+      onUpdateBlock({ elements: newElements });
+    }
+  }, [checkboxElements, elements, onUpdateBlock]);
   
   const addCheckboxOption = () => {
     const newCheckbox: Element = {
@@ -267,36 +376,29 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
         {/* Options Section - for multi-choice blocks with checkbox elements */}
         {isMultiChoiceBlock && (
           <CollapsibleSection title="Options" icon={<ListChecks className="w-3.5 h-3.5" />} defaultOpen>
-            <div className="space-y-1.5">
-              {checkboxElements.map((checkbox, index) => (
-                <div key={checkbox.id} className="flex items-center gap-1.5 group">
-                  <div 
-                    className="w-3 h-3 text-builder-text-dim opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0"
-                    title="Drag to reorder"
-                  >
-                    <GripVertical className="w-3 h-3" />
-                  </div>
-                  <Input
-                    value={checkbox.content || ''}
-                    onChange={(e) => updateCheckboxContent(checkbox.id, e.target.value)}
-                    className="h-7 text-xs bg-background border-border flex-1"
-                    placeholder={`Option ${index + 1}`}
-                  />
-                  <button
-                    onClick={() => removeCheckboxOption(checkbox.id)}
-                    disabled={checkboxElements.length <= 1}
-                    className={cn(
-                      "p-1 rounded transition-all",
-                      checkboxElements.length <= 1 
-                        ? "opacity-30 cursor-not-allowed"
-                        : "hover:bg-destructive/10 text-builder-text-dim hover:text-destructive opacity-0 group-hover:opacity-100"
-                    )}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleCheckboxDragEnd}
+            >
+              <SortableContext
+                items={checkboxElements.map(el => el.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-1.5">
+                  {checkboxElements.map((checkbox, index) => (
+                    <SortableCheckboxItem
+                      key={checkbox.id}
+                      element={checkbox}
+                      index={index}
+                      onUpdateContent={(content) => updateCheckboxContent(checkbox.id, content)}
+                      onRemove={() => removeCheckboxOption(checkbox.id)}
+                      canRemove={checkboxElements.length > 1}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
             <button
               onClick={addCheckboxOption}
               className="flex items-center gap-1.5 text-[10px] text-builder-text-muted hover:text-builder-text mt-2"

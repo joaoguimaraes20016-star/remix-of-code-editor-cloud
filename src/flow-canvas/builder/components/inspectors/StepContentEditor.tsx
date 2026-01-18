@@ -1,6 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ApplicationFlowStep, ApplicationStepType, ApplicationFlowStepSettings, QuestionType, CaptureIconType } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   ArrowLeft,
   Plus,
@@ -50,6 +67,61 @@ import {
 } from '@/components/ui/select';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
 import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
+
+// Sortable Option Item for drag-and-drop reordering
+interface SortableOptionItemProps {
+  id: string;
+  option: string;
+  index: number;
+  onUpdate: (value: string) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+}
+
+function SortableOptionItem({ id, option, index, onUpdate, onRemove, canRemove }: SortableOptionItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5 group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0 touch-none"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-3 h-3" />
+      </div>
+      <Input
+        value={option}
+        onChange={(e) => onUpdate(e.target.value)}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="h-7 text-xs bg-background border-border flex-1"
+      />
+      {canRemove && (
+        <button
+          onClick={onRemove}
+          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 // Icon options for capture fields
 const CAPTURE_ICON_OPTIONS: { value: CaptureIconType; label: string; icon: React.ReactNode }[] = [
@@ -132,6 +204,29 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
       updateSettings({ options: options.filter((_, i) => i !== index) });
     }
   };
+
+  // Drag-and-drop sensors for options reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Generate stable IDs for options (using index as fallback for string arrays)
+  const optionItems = options.map((opt, idx) => ({ id: `option-${idx}`, value: opt, index: idx }));
+
+  const handleOptionsDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = optionItems.findIndex(item => item.id === active.id);
+      const newIndex = optionItems.findIndex(item => item.id === over.id);
+      const reordered = arrayMove(options, oldIndex, newIndex);
+      updateSettings({ options: reordered });
+    }
+  }, [options, optionItems]);
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
@@ -250,33 +345,34 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
             />
           </div>
 
-          {/* Options List (for multiple choice) */}
+          {/* Options List (for multiple choice) - with drag-and-drop reordering */}
           {step.type === 'question' && (questionType === 'multiple-choice' || questionType === 'dropdown') && (
             <div className="space-y-2">
               <Label className="text-[10px] text-muted-foreground uppercase">Options</Label>
-              <div className="space-y-1.5">
-                {options.map((option, index) => (
-                  <div key={index} className="flex items-center gap-1.5 group">
-                    <div 
-                      className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0"
-                      title="Drag to reorder"
-                    >
-                      <GripVertical className="w-3 h-3" />
-                    </div>
-                    <Input
-                      value={option}
-                      onChange={(e) => updateOption(index, e.target.value)}
-                      className="h-7 text-xs bg-background border-border flex-1"
-                    />
-                    <button
-                      onClick={() => removeOption(index)}
-                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleOptionsDragEnd}
+              >
+                <SortableContext
+                  items={optionItems.map(item => item.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-1.5">
+                    {optionItems.map((item) => (
+                      <SortableOptionItem
+                        key={item.id}
+                        id={item.id}
+                        option={item.value}
+                        index={item.index}
+                        onUpdate={(value) => updateOption(item.index, value)}
+                        onRemove={() => removeOption(item.index)}
+                        canRemove={options.length > 1}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
               <button
                 onClick={addOption}
                 className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
