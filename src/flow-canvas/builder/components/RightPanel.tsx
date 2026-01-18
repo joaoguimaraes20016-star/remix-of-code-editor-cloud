@@ -263,43 +263,11 @@ const FieldGroup: React.FC<{ label: string; children: React.ReactNode; hint?: st
 );
 
 // ========== SORTABLE ROW COMPONENTS FOR INSPECTOR LISTS ==========
-// Used by Loader Steps, Carousel Slides, and Logo Marquee
+// Re-export the shared SortableInspectorRow component
+import { SortableInspectorRow } from './inspectors/SortableInspectorRow';
 
-interface SortableRowProps {
-  id: string;
-  children: React.ReactNode;
-}
-
-function SortableRow({ id, children }: SortableRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
-      <div
-        {...attributes}
-        {...listeners}
-        className="flex-shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
-      >
-        <GripVertical className="w-3 h-3 text-builder-text-muted" />
-      </div>
-      {children}
-    </div>
-  );
-}
+// Alias for backward compatibility
+const SortableRow = SortableInspectorRow;
 
 // Note: Sensors are now declared inside ElementInspector to comply with React hooks rules
 

@@ -35,6 +35,7 @@ export function SortableItem({ id, children, className }: SortableItemProps) {
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -53,13 +54,20 @@ export function SortableItem({ id, children, className }: SortableItemProps) {
       style={style} 
       className={cn("flex items-center gap-1.5 group", className)}
     >
-      <div
+      {/* Drag Handle - ONLY this element initiates drag */}
+      <button
+        ref={setActivatorNodeRef}
+        type="button"
         {...attributes}
         {...listeners}
-        className="flex-shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+        className="flex-shrink-0 p-1 -ml-1 rounded cursor-grab active:cursor-grabbing 
+                   opacity-40 hover:opacity-100 group-hover:opacity-100 
+                   transition-opacity touch-none select-none
+                   hover:bg-muted/50"
+        onPointerDownCapture={(e) => e.stopPropagation()}
       >
         <GripVertical className="w-3 h-3 text-muted-foreground" />
-      </div>
+      </button>
       {children}
     </div>
   );

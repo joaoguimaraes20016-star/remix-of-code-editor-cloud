@@ -66,6 +66,8 @@ import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector
 import { CollapsibleSection, FieldGroup } from './shared';
 
 // Sortable checkbox item for drag-and-drop reordering
+import { SortableInspectorRow } from './SortableInspectorRow';
+
 interface SortableCheckboxItemProps {
   element: Element;
   index: number;
@@ -75,32 +77,8 @@ interface SortableCheckboxItemProps {
 }
 
 function SortableCheckboxItem({ element, index, onUpdateContent, onRemove, canRemove }: SortableCheckboxItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: element.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  };
-
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5 group">
-      <div
-        {...attributes}
-        {...listeners}
-        className="w-3 h-3 text-builder-text-dim opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0 touch-none"
-        title="Drag to reorder"
-      >
-        <GripVertical className="w-3 h-3" />
-      </div>
+    <SortableInspectorRow id={element.id}>
       <Input
         value={element.content || ''}
         onChange={(e) => onUpdateContent(e.target.value)}
@@ -120,7 +98,7 @@ function SortableCheckboxItem({ element, index, onUpdateContent, onRemove, canRe
       >
         <Trash2 className="w-3 h-3" />
       </button>
-    </div>
+    </SortableInspectorRow>
   );
 }
 
