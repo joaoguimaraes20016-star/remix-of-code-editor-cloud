@@ -2417,14 +2417,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         key={`${element.id}-number`}
                         value={element.content || '0'}
                         onChange={(newContent: string) => onUpdate?.({ content: newContent })}
-                        onStyleChange={(styles) => {
+                        onStyleChange={(inlineStyles) => {
                           // Bidirectional sync: toolbar changes update element props → inspector updates
+                          // CRITICAL: Do NOT spread element.props here - it creates stale closures
+                          // Only send minimal updates; onUpdate merges at source of truth
                           const updates: Record<string, unknown> = {};
-                          if (styles.textFillType !== undefined) updates.numberColorType = styles.textFillType;
-                          if (styles.textColor !== undefined) updates.numberColor = styles.textColor;
-                          if (styles.textGradient !== undefined) updates.numberGradient = styles.textGradient;
+                          if (inlineStyles.textFillType !== undefined) updates.numberColorType = inlineStyles.textFillType;
+                          if (inlineStyles.textColor !== undefined) updates.numberColor = inlineStyles.textColor;
+                          if (inlineStyles.textGradient !== undefined) updates.numberGradient = inlineStyles.textGradient;
                           if (Object.keys(updates).length > 0) {
-                            onUpdate?.({ props: { ...element.props, ...updates } });
+                            onUpdate?.({ props: updates });
                           }
                         }}
                         elementType="text"
@@ -2442,15 +2444,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                       <InlineTextEditor
                         key={`${element.id}-suffix`}
                         value={statSuffix}
-                        onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, suffix: newContent } })}
-                        onStyleChange={(styles) => {
+                        onChange={(newContent: string) => onUpdate?.({ props: { suffix: newContent } })}
+                        onStyleChange={(inlineStyles) => {
                           // Bidirectional sync: toolbar changes update element props → inspector updates
+                          // CRITICAL: Do NOT spread element.props here - it creates stale closures
                           const updates: Record<string, unknown> = {};
-                          if (styles.textFillType !== undefined) updates.suffixColorType = styles.textFillType;
-                          if (styles.textColor !== undefined) updates.suffixColor = styles.textColor;
-                          if (styles.textGradient !== undefined) updates.suffixGradient = styles.textGradient;
+                          if (inlineStyles.textFillType !== undefined) updates.suffixColorType = inlineStyles.textFillType;
+                          if (inlineStyles.textColor !== undefined) updates.suffixColor = inlineStyles.textColor;
+                          if (inlineStyles.textGradient !== undefined) updates.suffixGradient = inlineStyles.textGradient;
                           if (Object.keys(updates).length > 0) {
-                            onUpdate?.({ props: { ...element.props, ...updates } });
+                            onUpdate?.({ props: updates });
                           }
                         }}
                         elementType="text"
@@ -2471,15 +2474,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         <InlineTextEditor
                           key={`${element.id}-label`}
                           value={statLabel}
-                          onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, label: newContent } })}
-                          onStyleChange={(styles) => {
+                          onChange={(newContent: string) => onUpdate?.({ props: { label: newContent } })}
+                          onStyleChange={(inlineStyles) => {
                             // Bidirectional sync: toolbar changes update element props → inspector updates
+                            // CRITICAL: Do NOT spread element.props here - it creates stale closures
                             const updates: Record<string, unknown> = {};
-                            if (styles.textFillType !== undefined) updates.labelColorType = styles.textFillType;
-                            if (styles.textColor !== undefined) updates.labelColor = styles.textColor;
-                            if (styles.textGradient !== undefined) updates.labelGradient = styles.textGradient;
+                            if (inlineStyles.textFillType !== undefined) updates.labelColorType = inlineStyles.textFillType;
+                            if (inlineStyles.textColor !== undefined) updates.labelColor = inlineStyles.textColor;
+                            if (inlineStyles.textGradient !== undefined) updates.labelGradient = inlineStyles.textGradient;
                             if (Object.keys(updates).length > 0) {
-                              onUpdate?.({ props: { ...element.props, ...updates } });
+                              onUpdate?.({ props: updates });
                             }
                           }}
                           elementType="text"

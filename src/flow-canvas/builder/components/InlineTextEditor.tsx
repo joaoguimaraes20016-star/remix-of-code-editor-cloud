@@ -161,6 +161,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const pendingStyleChangeRef = useRef<Partial<TextStyles> | null>(null);
   const styleChangeTimerRef = useRef<number | null>(null);
   
+  // CRITICAL: Refs for callbacks to ensure debounced timers use latest closures
+  // This prevents stale props from being saved when timers fire after re-renders
+  const onChangeRef = useRef(onChange);
+  const onStyleChangeRef = useRef(onStyleChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  useEffect(() => {
+    onStyleChangeRef.current = onStyleChange;
+  }, [onStyleChange]);
+  
   // Track editing state in a ref for use in callbacks that can't access latest state
   const isEditingRef = useRef(isEditing);
   useEffect(() => {
@@ -722,9 +733,10 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       if (!el) return;
 
       const htmlContent = stripEditingArtifacts(el.innerHTML);
-      onChange(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
+      // CRITICAL: Use ref to get latest onChange, preventing stale closure overwrites
+      onChangeRef.current(htmlContent, { _hasInlineStyles: true } as Partial<TextStyles>);
     }, 150);
-  }, [onChange]);
+  }, []); // No dependencies needed - we use refs
 
   // Handle text selection for toolbar (mouse selection inside the editor)
   const handleSelect = useCallback(() => {
@@ -822,7 +834,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     // This enables bidirectional sync between toolbar and inspector
     // THROTTLED: coalesces rapid slider updates to prevent jitter and excessive re-renders
     const notifyStyleChange = () => {
-      if (!onStyleChange) return;
+      // CRITICAL: Use ref to get latest onStyleChange, preventing stale closure issues
+      if (!onStyleChangeRef.current) return;
       // Only notify for fill-related changes
       const hasColorChange = newStyles.textFillType !== undefined || 
                              newStyles.textColor !== undefined || 
@@ -842,8 +855,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         window.clearTimeout(styleChangeTimerRef.current);
       }
       styleChangeTimerRef.current = window.setTimeout(() => {
-        if (pendingStyleChangeRef.current) {
-          onStyleChange(pendingStyleChangeRef.current);
+        if (pendingStyleChangeRef.current && onStyleChangeRef.current) {
+          onStyleChangeRef.current(pendingStyleChangeRef.current);
           pendingStyleChangeRef.current = null;
         }
         styleChangeTimerRef.current = null;
@@ -1758,7 +1771,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const currentValue = contentRef.current?.innerText ?? value;
     onChange(currentValue, clonedStyles);
     return false;
-  }, [styles, value, onChange, scheduleInlineHtmlSave, isEditing, onStyleChange, disableInlineFormatting]);
+  }, [styles, value, onChange, scheduleInlineHtmlSave, isEditing, disableInlineFormatting]);
 
   // Register with inline edit context when editing (for Right Panel integration)
   // Use refs to persist state across renders and avoid stale closures
