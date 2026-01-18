@@ -240,8 +240,16 @@ export interface AnimationSettings {
   trigger: 'load' | 'scroll' | 'hover';
   delay: number;            // ms
   duration: number;         // ms
-  easing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
+  easing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear' | 'spring';
   threshold: number;        // 0-1, for scroll trigger
+  // Phase 6: Custom spring physics
+  springStiffness?: number;   // 50-500, default 300
+  springDamping?: number;     // 5-50, default 30
+  springMass?: number;        // 0.5-5, default 1
+  // Scroll animation enhancements
+  scrollOffset?: number;      // px offset before trigger
+  exitAnimation?: boolean;    // animate on exit
+  repeat?: boolean;           // repeat on re-entry
 }
 
 // State-based styling for Framer-like control
