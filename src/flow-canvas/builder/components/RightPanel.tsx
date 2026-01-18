@@ -301,13 +301,7 @@ function SortableRow({ id, children }: SortableRowProps) {
   );
 }
 
-// Shared sensors for inspector sortable lists
-function useInspectorSortableSensors() {
-  return useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-}
+// Note: Sensors are now declared inside ElementInspector to comply with React hooks rules
 
 // TogglePill: Now uses the deterministic BooleanToggle component
 // This component sets explicit true/false values instead of flipping
@@ -517,6 +511,12 @@ const ElementInspector: React.FC<{
   const [isButtonActionOpen, setIsButtonActionOpen] = useState(false);
   const [isVideoEmbedOpen, setIsVideoEmbedOpen] = useState(false);
   const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
+  
+  // Shared sensors for all sortable lists in this inspector (MUST be at top level, not inside JSX)
+  const inspectorSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   // Get which sections to show for this element type
   const elementType = element.type as ElementSectionType;
@@ -2301,10 +2301,7 @@ const ElementInspector: React.FC<{
             <CollapsibleSection title="Step Messages" icon={<ListOrdered className="w-4 h-4" />}>
               <div className="pt-3 space-y-2">
                 <DndContext
-                  sensors={useSensors(
-                    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-                    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-                  )}
+                  sensors={inspectorSensors}
                   collisionDetection={closestCenter}
                   onDragEnd={(event) => {
                     const { active, over } = event;
@@ -2473,10 +2470,7 @@ const ElementInspector: React.FC<{
           <CollapsibleSection title="Slides" icon={<ImageIcon className="w-4 h-4" />}>
             <div className="pt-3 space-y-2">
               <DndContext
-                sensors={useSensors(
-                  useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-                  useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-                )}
+                sensors={inspectorSensors}
                 collisionDetection={closestCenter}
                 onDragEnd={(event) => {
                   const { active, over } = event;
@@ -2619,10 +2613,7 @@ const ElementInspector: React.FC<{
           <CollapsibleSection title="Logos" icon={<ImageIcon className="w-4 h-4" />}>
             <div className="pt-3 space-y-2">
               <DndContext
-                sensors={useSensors(
-                  useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-                  useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-                )}
+                sensors={inspectorSensors}
                 collisionDetection={closestCenter}
                 onDragEnd={(event) => {
                   const { active, over } = event;
