@@ -26,7 +26,7 @@ import {
   RectangleHorizontal,
   Maximize,
 } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '../CommitSlider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -516,7 +516,8 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
                 return (
                   <button
                     key={preset}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       const presetSettings = applyPreset(preset);
                       onUpdateBlock({ 
                         props: { 
@@ -588,7 +589,7 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
                 <button
                   key={align.value}
                   type="button"
-                  onClick={() => onUpdateBlock({ props: { ...settings, contentAlign: align.value } })}
+                  onClick={(e) => { e.stopPropagation(); onUpdateBlock({ props: { ...settings, contentAlign: align.value } }); }}
                   className={cn(
                     'flex-1 px-2 py-1.5 transition-colors flex items-center justify-center',
                     (settings.contentAlign || 'center') === align.value
@@ -611,9 +612,9 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               <Label className="text-[10px] text-muted-foreground">Padding</Label>
               <span className="text-[10px] text-muted-foreground">{settings.containerPadding ?? 32}px</span>
             </div>
-            <Slider
-              value={[settings.containerPadding ?? 32]}
-              onValueChange={([value]) => onUpdateBlock({ props: { ...settings, containerPadding: value } })}
+            <CommitSlider
+              value={settings.containerPadding ?? 32}
+              onValueCommit={(value) => onUpdateBlock({ props: { ...settings, containerPadding: value } })}
               min={0}
               max={80}
               step={4}
@@ -626,9 +627,9 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
               <Label className="text-[10px] text-muted-foreground">Radius</Label>
               <span className="text-[10px] text-muted-foreground">{settings.containerRadius ?? 0}px</span>
             </div>
-            <Slider
-              value={[settings.containerRadius ?? 0]}
-              onValueChange={([value]) => onUpdateBlock({ props: { ...settings, containerRadius: value } })}
+            <CommitSlider
+              value={settings.containerRadius ?? 0}
+              onValueCommit={(value) => onUpdateBlock({ props: { ...settings, containerRadius: value } })}
               min={0}
               max={40}
               step={2}
@@ -679,9 +680,9 @@ export const ApplicationFlowInspector: React.FC<ApplicationFlowInspectorProps> =
                 <Label className="text-[10px] text-muted-foreground">Blur</Label>
                 <span className="text-[10px] text-muted-foreground">{settings.backdropBlur ?? 0}px</span>
               </div>
-              <Slider
-                value={[settings.backdropBlur ?? 0]}
-                onValueChange={([value]) => onUpdateBlock({ props: { ...settings, backdropBlur: value } })}
+              <CommitSlider
+                value={settings.backdropBlur ?? 0}
+                onValueCommit={(value) => onUpdateBlock({ props: { ...settings, backdropBlur: value } })}
                 min={0}
                 max={24}
                 step={2}

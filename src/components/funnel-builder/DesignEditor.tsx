@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '@/flow-canvas/builder/components/CommitSlider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { FunnelStep } from '@/lib/funnel/editorTypes';
 import { getPreviewElementOrder } from '@/lib/funnel/stepRegistry';
@@ -438,9 +438,9 @@ export function DesignEditor({ step, design, onUpdateDesign, onOpenImagePicker, 
               <Label className="text-xs">Animation Duration</Label>
               <span className="text-xs text-muted-foreground">{design.buttonAnimationDuration || 300}ms</span>
             </div>
-            <Slider
-              value={[design.buttonAnimationDuration || 300]}
-              onValueChange={([value]) => updateField('buttonAnimationDuration', value)}
+            <CommitSlider
+              value={design.buttonAnimationDuration || 300}
+              onValueCommit={(value) => updateField('buttonAnimationDuration', value)}
               min={100}
               max={800}
               step={50}
@@ -529,9 +529,9 @@ export function DesignEditor({ step, design, onUpdateDesign, onOpenImagePicker, 
               <Label className="text-xs">Border Width</Label>
               <span className="text-xs text-muted-foreground">{design.optionCardBorderWidth || 1}px</span>
             </div>
-            <Slider
-              value={[design.optionCardBorderWidth || 1]}
-              onValueChange={([value]) => updateField('optionCardBorderWidth', value)}
+            <CommitSlider
+              value={design.optionCardBorderWidth || 1}
+              onValueCommit={(value) => updateField('optionCardBorderWidth', value)}
               min={0}
               max={4}
               step={1}
@@ -544,9 +544,9 @@ export function DesignEditor({ step, design, onUpdateDesign, onOpenImagePicker, 
               <Label className="text-xs">Card Roundness</Label>
               <span className="text-xs text-muted-foreground">{design.optionCardRadius || 12}px</span>
             </div>
-            <Slider
-              value={[design.optionCardRadius || 12]}
-              onValueChange={([value]) => updateField('optionCardRadius', value)}
+            <CommitSlider
+              value={design.optionCardRadius || 12}
+              onValueCommit={(value) => updateField('optionCardRadius', value)}
               min={0}
               max={24}
               step={2}
@@ -949,9 +949,9 @@ export function DesignEditor({ step, design, onUpdateDesign, onOpenImagePicker, 
                             {Math.round((design.imageOverlayOpacity || 0.5) * 100)}%
                           </span>
                         </div>
-                        <Slider
-                          value={[(design.imageOverlayOpacity || 0.5) * 100]}
-                          onValueChange={([value]) => updateField('imageOverlayOpacity', value / 100)}
+                        <CommitSlider
+                          value={(design.imageOverlayOpacity || 0.5) * 100}
+                          onValueCommit={(value) => updateField('imageOverlayOpacity', value / 100)}
                           min={0}
                           max={100}
                           step={5}

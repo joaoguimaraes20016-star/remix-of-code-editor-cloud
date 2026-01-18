@@ -84,7 +84,7 @@ export const ShadowEditor: React.FC<ShadowEditorProps> = ({
           {shadowPresets.map((preset) => (
             <button
               key={preset.label}
-              onClick={() => applyPreset(preset)}
+              onClick={(e) => { e.stopPropagation(); applyPreset(preset); }}
               className={cn(
                 "px-2 py-1 text-xs rounded border transition-colors",
                 "border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text-muted))]",

@@ -517,7 +517,8 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
           <FieldGroup label="Background Type">
             <div className="flex rounded-md overflow-hidden border border-border">
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   // Switch to solid: apply backgroundColor, clear background gradient
                   updateBlockStyles({ 
                     backgroundColor: backgroundColor || 'transparent',
@@ -534,7 +535,8 @@ export const InteractiveBlockInspector: React.FC<InteractiveBlockInspectorProps>
                 Solid
               </button>
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   // Switch to gradient: apply gradient, keep backgroundColor preserved
                   if (backgroundGradient) {
                     updateBlockStyles({ background: gradientToCSS(backgroundGradient) });
