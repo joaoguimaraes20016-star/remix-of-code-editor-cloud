@@ -315,6 +315,38 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
     onUpdateBlock({ props: { ...settings, steps: newSteps } });
   };
 
+  // Helper to batch-update multiple step settings at once (for style changes)
+  const updateStepSettings = (stepId: string, updates: Record<string, unknown>) => {
+    if (readOnly) return;
+    const newSteps = steps.map(s => 
+      s.id === stepId 
+        ? { ...s, settings: { ...((s as any).settings || {}), ...updates } }
+        : s
+    );
+    onUpdateBlock({ props: { ...settings, steps: newSteps } });
+  };
+
+  // Handle style changes from InlineTextEditor for step elements
+  const handleTitleStyleChange = (stepId: string, inlineStyles: Record<string, unknown>) => {
+    const updates: Record<string, unknown> = {};
+    if (inlineStyles.textFillType !== undefined) updates.titleColorType = inlineStyles.textFillType;
+    if (inlineStyles.textColor !== undefined) updates.titleColor = inlineStyles.textColor;
+    if (inlineStyles.textGradient !== undefined) updates.titleGradient = inlineStyles.textGradient;
+    if (Object.keys(updates).length > 0) {
+      updateStepSettings(stepId, updates);
+    }
+  };
+
+  const handleDescriptionStyleChange = (stepId: string, inlineStyles: Record<string, unknown>) => {
+    const updates: Record<string, unknown> = {};
+    if (inlineStyles.textFillType !== undefined) updates.descriptionColorType = inlineStyles.textFillType;
+    if (inlineStyles.textColor !== undefined) updates.descriptionColor = inlineStyles.textColor;
+    if (inlineStyles.textGradient !== undefined) updates.descriptionGradient = inlineStyles.textGradient;
+    if (Object.keys(updates).length > 0) {
+      updateStepSettings(stepId, updates);
+    }
+  };
+
   /**
    * EDITING BEHAVIOR (Layout Preset Pattern):
    * - Elements inside steps are DIRECTLY editable (like regular canvas content)
@@ -454,6 +486,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           <InlineTextEditor
             value={s.title || 'Apply Now'}
             onChange={(content) => updateStepSetting(stepId, 'title', content)}
+            onStyleChange={(styles) => handleTitleStyleChange(stepId, styles)}
             placeholder="Apply Now"
             className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
             style={{ color: getElementColor(s, 'titleColor') }}
@@ -473,6 +506,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           <InlineTextEditor
             value={s.description || 'Answer a few quick questions to see if we are a good fit.'}
             onChange={(content) => updateStepSetting(stepId, 'description', content)}
+            onStyleChange={(styles) => handleDescriptionStyleChange(stepId, styles)}
             placeholder="Answer a few quick questions to see if we are a good fit."
             className={cn(getDescriptionSizeClass(s.descriptionSize), 'inline-block opacity-70')}
             style={{ color: getElementColor(s, 'descriptionColor') }}
@@ -542,6 +576,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           <InlineTextEditor
             value={s.title || 'Your question here'}
             onChange={(content) => updateStepSetting(step.id, 'title', content)}
+            onStyleChange={(styles) => handleTitleStyleChange(step.id, styles)}
             placeholder="What's your biggest challenge?"
             className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
             style={{ color: getElementColor(s, 'titleColor') }}
@@ -833,6 +868,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           <InlineTextEditor
             value={s.title || 'What\'s the best way to reach you?'}
             onChange={(content) => updateStepSetting(step.id, 'title', content)}
+            onStyleChange={(styles) => handleTitleStyleChange(step.id, styles)}
             placeholder="What's the best way to reach you?"
             className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
             style={{ color: getElementColor(s, 'titleColor') }}
@@ -966,6 +1002,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
         <InlineTextEditor
           value={s.title || 'Thanks — we\'ll be in touch!'}
           onChange={(content) => updateStepSetting(step.id, 'title', content)}
+          onStyleChange={(styles) => handleTitleStyleChange(step.id, styles)}
           placeholder="Thanks for applying!"
           className={cn(getTitleSizeClass(s.titleSize), 'font-bold inline-block')}
           style={{ color: getElementColor(s, 'titleColor') }}

@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { BooleanToggle, coerceBoolean } from '../BooleanToggle';
+import { useInlineEdit } from '../../contexts/InlineEditContext';
 import { Element } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
 import {
@@ -142,6 +143,102 @@ const defaultGradient: GradientValue = {
     { color: '#A855F7', position: 0 },
     { color: '#EC4899', position: 100 }
   ]
+};
+
+// Selection-aware stat number color section
+// Tries to apply inline styles when text is selected, falls back to whole-field
+interface StatNumberColorSectionProps {
+  element: Element;
+  handlePropsChange: (key: string, value: unknown) => void;
+  handlePropsChangeBatch: (updates: Record<string, unknown>) => void;
+}
+
+const StatNumberColorSection: React.FC<StatNumberColorSectionProps> = ({
+  element,
+  handlePropsChange,
+  handlePropsChangeBatch,
+}) => {
+  const { applyInlineStyle } = useInlineEdit();
+
+  // Try to apply to selection first, fall back to props
+  const handleColorChange = (
+    subId: string, 
+    colorKey: string, 
+    colorTypeKey: string,
+    color: string
+  ) => {
+    const fullSubId = `${element.id}-${subId}`;
+    const handled = applyInlineStyle(fullSubId, { textFillType: 'solid', textColor: color });
+    if (!handled) {
+      handlePropsChange(colorKey, color);
+    }
+  };
+
+  const handleGradientChange = (
+    subId: string,
+    gradientKey: string,
+    colorTypeKey: string,
+    gradient: GradientValue
+  ) => {
+    const fullSubId = `${element.id}-${subId}`;
+    const handled = applyInlineStyle(fullSubId, { textFillType: 'gradient', textGradient: gradient });
+    if (!handled) {
+      handlePropsChange(gradientKey, gradient);
+    }
+  };
+
+  const handleColorTypeChange = (
+    subId: string,
+    colorTypeKey: string,
+    gradientKey: string,
+    type: ColorType
+  ) => {
+    if (type === 'gradient' && !element.props?.[gradientKey]) {
+      handlePropsChangeBatch({ [colorTypeKey]: type, [gradientKey]: defaultGradient });
+    } else {
+      handlePropsChange(colorTypeKey, type);
+    }
+  };
+
+  return (
+    <Section title="Colors" icon={<Sparkles className="w-4 h-4" />}>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-builder-text-muted">Number</Label>
+          <ColorGradientControl
+            colorType={(element.props?.numberColorType as ColorType) || 'solid'}
+            solidColor={(element.props?.numberColor as string) || '#ffffff'}
+            gradient={element.props?.numberGradient as GradientValue | undefined}
+            onColorTypeChange={(type) => handleColorTypeChange('number', 'numberColorType', 'numberGradient', type)}
+            onSolidColorChange={(color) => handleColorChange('number', 'numberColor', 'numberColorType', color)}
+            onGradientChange={(gradient) => handleGradientChange('number', 'numberGradient', 'numberColorType', gradient)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-builder-text-muted">Suffix</Label>
+          <ColorGradientControl
+            colorType={(element.props?.suffixColorType as ColorType) || 'solid'}
+            solidColor={(element.props?.suffixColor as string) || '#8B5CF6'}
+            gradient={element.props?.suffixGradient as GradientValue | undefined}
+            onColorTypeChange={(type) => handleColorTypeChange('suffix', 'suffixColorType', 'suffixGradient', type)}
+            onSolidColorChange={(color) => handleColorChange('suffix', 'suffixColor', 'suffixColorType', color)}
+            onGradientChange={(gradient) => handleGradientChange('suffix', 'suffixGradient', 'suffixColorType', gradient)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-builder-text-muted">Label</Label>
+          <ColorGradientControl
+            colorType={(element.props?.labelColorType as ColorType) || 'solid'}
+            solidColor={(element.props?.labelColor as string) || '#888888'}
+            gradient={element.props?.labelGradient as GradientValue | undefined}
+            onColorTypeChange={(type) => handleColorTypeChange('label', 'labelColorType', 'labelGradient', type)}
+            onSolidColorChange={(color) => handleColorChange('label', 'labelColor', 'labelColorType', color)}
+            onGradientChange={(gradient) => handleGradientChange('label', 'labelGradient', 'labelColorType', gradient)}
+          />
+        </div>
+      </div>
+    </Section>
+  );
 };
 
 export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = ({
@@ -358,62 +455,11 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           </FieldGroup>
         </Section>
         
-        <Section title="Colors" icon={<Sparkles className="w-4 h-4" />}>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-builder-text-muted">Number</Label>
-              <ColorGradientControl
-                colorType={(element.props?.numberColorType as ColorType) || 'solid'}
-                solidColor={(element.props?.numberColor as string) || '#ffffff'}
-                gradient={element.props?.numberGradient as GradientValue | undefined}
-                onColorTypeChange={(type) => {
-                  // When switching to gradient, ensure a default gradient exists
-                  if (type === 'gradient' && !element.props?.numberGradient) {
-                    handlePropsChangeBatch({ numberColorType: type, numberGradient: defaultGradient });
-                  } else {
-                    handlePropsChange('numberColorType', type);
-                  }
-                }}
-                onSolidColorChange={(color) => handlePropsChange('numberColor', color)}
-                onGradientChange={(gradient) => handlePropsChange('numberGradient', gradient)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-builder-text-muted">Suffix</Label>
-              <ColorGradientControl
-                colorType={(element.props?.suffixColorType as ColorType) || 'solid'}
-                solidColor={(element.props?.suffixColor as string) || '#8B5CF6'}
-                gradient={element.props?.suffixGradient as GradientValue | undefined}
-                onColorTypeChange={(type) => {
-                  if (type === 'gradient' && !element.props?.suffixGradient) {
-                    handlePropsChangeBatch({ suffixColorType: type, suffixGradient: defaultGradient });
-                  } else {
-                    handlePropsChange('suffixColorType', type);
-                  }
-                }}
-                onSolidColorChange={(color) => handlePropsChange('suffixColor', color)}
-                onGradientChange={(gradient) => handlePropsChange('suffixGradient', gradient)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-builder-text-muted">Label</Label>
-              <ColorGradientControl
-                colorType={(element.props?.labelColorType as ColorType) || 'solid'}
-                solidColor={(element.props?.labelColor as string) || '#888888'}
-                gradient={element.props?.labelGradient as GradientValue | undefined}
-                onColorTypeChange={(type) => {
-                  if (type === 'gradient' && !element.props?.labelGradient) {
-                    handlePropsChangeBatch({ labelColorType: type, labelGradient: defaultGradient });
-                  } else {
-                    handlePropsChange('labelColorType', type);
-                  }
-                }}
-                onSolidColorChange={(color) => handlePropsChange('labelColor', color)}
-                onGradientChange={(gradient) => handlePropsChange('labelGradient', gradient)}
-              />
-            </div>
-          </div>
-        </Section>
+        <StatNumberColorSection
+          element={element}
+          handlePropsChange={handlePropsChange}
+          handlePropsChangeBatch={handlePropsChangeBatch}
+        />
       </div>
     );
   }
