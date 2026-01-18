@@ -335,7 +335,6 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             <button
               type="button"
               className={cn(btnClass, 'text-builder-text-muted hover:text-builder-text cursor-grab active:cursor-grabbing')}
-              onPointerDown={(e) => e.stopPropagation()}
               {...(dragHandleProps?.attributes || {})}
               {...(dragHandleProps?.listeners || {})}
               aria-label="Drag to reorder"

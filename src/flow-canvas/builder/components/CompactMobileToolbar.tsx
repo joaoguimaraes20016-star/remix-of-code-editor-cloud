@@ -169,7 +169,6 @@ export const CompactMobileToolbar: React.FC<CompactMobileToolbarProps> = ({
         <button
           type="button"
           className={cn(btnClass, btnInactive, 'cursor-grab')}
-          onPointerDown={(e) => e.stopPropagation()}
           {...((styles as any)?.dragHandleProps?.attributes || {})}
           {...((styles as any)?.dragHandleProps?.listeners || {})}
           aria-label="Drag"
