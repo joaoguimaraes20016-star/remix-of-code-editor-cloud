@@ -1791,6 +1791,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1862,6 +1863,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1922,6 +1924,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2007,6 +2010,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2079,6 +2083,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2128,6 +2133,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 styles={{ backgroundColor: dividerColor }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.backgroundColor) {
@@ -2169,6 +2175,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2223,6 +2230,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 styles={{ textColor: iconColor }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.textColor) {
@@ -2284,6 +2292,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2342,6 +2351,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2446,6 +2456,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2520,6 +2531,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2617,6 +2629,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2689,6 +2702,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2788,6 +2802,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2850,6 +2865,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2896,6 +2912,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2946,6 +2963,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -2991,6 +3009,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -3032,6 +3051,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -3073,6 +3093,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -3108,6 +3129,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -3142,6 +3164,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -3177,6 +3200,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
