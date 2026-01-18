@@ -159,9 +159,16 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
     })
   );
 
-  const handlePropsChange = (key: string, value: unknown) => {
-    onUpdate({ props: { ...element.props, [key]: value } });
-  };
+  // CRITICAL: Use minimal prop updates to prevent overwriting concurrent changes
+  // EditorShell.handleUpdateElement will merge these with the latest element.props
+  const handlePropsChange = useCallback((key: string, value: unknown) => {
+    onUpdate({ props: { [key]: value } });
+  }, [onUpdate]);
+  
+  // Batch multiple prop changes together
+  const handlePropsChangeBatch = useCallback((updates: Record<string, unknown>) => {
+    onUpdate({ props: updates });
+  }, [onUpdate]);
 
   const handleContentChange = (content: string) => {
     onUpdate({ content });
@@ -359,7 +366,14 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 colorType={(element.props?.numberColorType as ColorType) || 'solid'}
                 solidColor={(element.props?.numberColor as string) || '#ffffff'}
                 gradient={element.props?.numberGradient as GradientValue | undefined}
-                onColorTypeChange={(type) => handlePropsChange('numberColorType', type)}
+                onColorTypeChange={(type) => {
+                  // When switching to gradient, ensure a default gradient exists
+                  if (type === 'gradient' && !element.props?.numberGradient) {
+                    handlePropsChangeBatch({ numberColorType: type, numberGradient: defaultGradient });
+                  } else {
+                    handlePropsChange('numberColorType', type);
+                  }
+                }}
                 onSolidColorChange={(color) => handlePropsChange('numberColor', color)}
                 onGradientChange={(gradient) => handlePropsChange('numberGradient', gradient)}
               />
@@ -370,7 +384,13 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 colorType={(element.props?.suffixColorType as ColorType) || 'solid'}
                 solidColor={(element.props?.suffixColor as string) || '#8B5CF6'}
                 gradient={element.props?.suffixGradient as GradientValue | undefined}
-                onColorTypeChange={(type) => handlePropsChange('suffixColorType', type)}
+                onColorTypeChange={(type) => {
+                  if (type === 'gradient' && !element.props?.suffixGradient) {
+                    handlePropsChangeBatch({ suffixColorType: type, suffixGradient: defaultGradient });
+                  } else {
+                    handlePropsChange('suffixColorType', type);
+                  }
+                }}
                 onSolidColorChange={(color) => handlePropsChange('suffixColor', color)}
                 onGradientChange={(gradient) => handlePropsChange('suffixGradient', gradient)}
               />
@@ -381,7 +401,13 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 colorType={(element.props?.labelColorType as ColorType) || 'solid'}
                 solidColor={(element.props?.labelColor as string) || '#888888'}
                 gradient={element.props?.labelGradient as GradientValue | undefined}
-                onColorTypeChange={(type) => handlePropsChange('labelColorType', type)}
+                onColorTypeChange={(type) => {
+                  if (type === 'gradient' && !element.props?.labelGradient) {
+                    handlePropsChangeBatch({ labelColorType: type, labelGradient: defaultGradient });
+                  } else {
+                    handlePropsChange('labelColorType', type);
+                  }
+                }}
                 onSolidColorChange={(color) => handlePropsChange('labelColor', color)}
                 onGradientChange={(gradient) => handlePropsChange('labelGradient', gradient)}
               />
