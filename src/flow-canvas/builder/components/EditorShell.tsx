@@ -59,6 +59,13 @@ function useIsMobile() {
   return isMobile;
 }
 
+// Version history entry type
+interface VersionHistoryEntry {
+  snapshot: unknown;
+  timestamp: number;
+  name?: string;
+}
+
 interface EditorShellProps {
   initialState: Page;
   onChange: (updatedState: Page) => void;
@@ -69,6 +76,10 @@ interface EditorShellProps {
   saveStatus?: SaveStatus;
   /** Last saved timestamp */
   lastSavedAt?: Date | null;
+  /** Version history for restore functionality */
+  versionHistory?: VersionHistoryEntry[];
+  /** Handler to restore a previous version */
+  onRestoreVersion?: (snapshot: unknown) => void;
 }
 
 export const EditorShell: React.FC<EditorShellProps> = ({
@@ -79,6 +90,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   readOnly = false,
   saveStatus = 'idle',
   lastSavedAt = null,
+  versionHistory = [],
+  onRestoreVersion,
 }) => {
   const isMobile = useIsMobile();
   
@@ -1895,6 +1908,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         settings={page.settings}
         pageSlug={page.slug}
         onUpdateSettings={handleSettingsUpdate}
+        versionHistory={versionHistory}
+        onRestoreVersion={onRestoreVersion}
       />
       <ShareModal
         isOpen={isShareOpen}

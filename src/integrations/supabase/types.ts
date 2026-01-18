@@ -1153,6 +1153,7 @@ export type Database = {
           status: string
           team_id: string
           updated_at: string
+          version_history: Json | null
           webhook_urls: Json | null
           zapier_webhook_url: string | null
         }
@@ -1170,6 +1171,7 @@ export type Database = {
           status?: string
           team_id: string
           updated_at?: string
+          version_history?: Json | null
           webhook_urls?: Json | null
           zapier_webhook_url?: string | null
         }
@@ -1187,6 +1189,7 @@ export type Database = {
           status?: string
           team_id?: string
           updated_at?: string
+          version_history?: Json | null
           webhook_urls?: Json | null
           zapier_webhook_url?: string | null
         }
