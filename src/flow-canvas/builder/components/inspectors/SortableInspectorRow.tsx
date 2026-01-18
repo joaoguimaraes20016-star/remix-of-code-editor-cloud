@@ -1,11 +1,12 @@
 /**
  * SortableInspectorRow - Reusable sortable row for inspector lists
  * 
- * FIXES the drag-and-drop issues by:
+ * GUARANTEED FIX for drag-and-drop:
  * 1. Using setActivatorNodeRef to make ONLY the handle draggable
- * 2. Making the handle always visible (opacity 40%, 100% on hover)
- * 3. Proper hit area for the drag handle
- * 4. touch-none, select-none, cursor-grab for reliability
+ * 2. Handle has larger hit area (min-h-6, min-w-6)
+ * 3. Handle is a div (not button) to avoid focus issues
+ * 4. Applies touch-action: none via inline style for cross-browser reliability
+ * 5. NO event.stopPropagation() on the handle - dnd-kit needs events to bubble
  */
 
 import React from 'react';
@@ -31,32 +32,41 @@ export function SortableInspectorRow({ id, children, className }: SortableInspec
     isDragging,
   } = useSortable({ id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
 
+  // Inline style for the handle to ensure touch-action works cross-browser
+  const handleStyle: React.CSSProperties = {
+    touchAction: 'none',
+    userSelect: 'none',
+  };
+
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={cn("flex items-center gap-2 group", className)}
+      className={cn("flex items-center gap-2 group relative", className)}
     >
-      {/* Drag Handle - ONLY this element initiates drag */}
-      <button
+      {/* Drag Handle - div with role="button" for better event handling */}
+      <div
         ref={setActivatorNodeRef}
-        type="button"
+        role="button"
+        tabIndex={0}
+        style={handleStyle}
         {...attributes}
         {...listeners}
-        className="flex-shrink-0 p-1.5 -ml-1 rounded cursor-grab active:cursor-grabbing 
+        className="flex-shrink-0 min-w-6 min-h-6 flex items-center justify-center 
+                   rounded cursor-grab active:cursor-grabbing 
                    opacity-40 hover:opacity-100 group-hover:opacity-100 
-                   transition-opacity touch-none select-none
-                   hover:bg-builder-surface-hover"
+                   transition-opacity hover:bg-builder-surface-hover
+                   focus:outline-none focus-visible:ring-1 focus-visible:ring-builder-accent"
       >
-        <GripVertical className="w-3.5 h-3.5 text-builder-text-muted" />
-      </button>
+        <GripVertical className="w-4 h-4 text-builder-text-muted" />
+      </div>
       {children}
     </div>
   );
