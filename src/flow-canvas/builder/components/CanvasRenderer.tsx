@@ -2768,6 +2768,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   showLabels={showLabels}
                   showDays={showDays}
                   showSeconds={showSeconds}
+                  boxSize={(element.props?.boxSize as 'sm' | 'md' | 'lg' | 'xl') || 'md'}
+                  loopMode={element.props?.loopMode as boolean}
+                  speedMultiplier={(element.props?.speedMultiplier as number) || 1}
+                  animateDigits={element.props?.animateDigits as boolean}
+                  urgencyPulse={element.props?.urgencyPulse as boolean}
+                  customLabels={element.props?.customLabels as { days?: string; hours?: string; minutes?: string; seconds?: string }}
                   colors={{
                     background: (element.props?.colors as { background?: string })?.background || element.props?.backgroundColor as string,
                     text: (element.props?.colors as { text?: string })?.text || element.props?.color as string,
@@ -2811,6 +2817,11 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   animationType={animationType}
                   duration={duration}
                   showProgress={element.props?.showProgress !== false}
+                  size={(element.props?.size as 'sm' | 'md' | 'lg') || 'md'}
+                  showPercentage={element.props?.showPercentage !== false}
+                  easing={(element.props?.easing as 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out') || 'ease-out'}
+                  customSteps={element.props?.customSteps as string[] | undefined}
+                  completeText={(element.props?.completeText as string) || 'Complete!'}
                   colors={{
                     primary: (element.props?.colors as { primary?: string })?.primary || element.props?.primaryColor as string || primaryColor,
                     text: (element.props?.colors as { text?: string })?.text || element.props?.color as string,
