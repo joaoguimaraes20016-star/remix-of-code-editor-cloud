@@ -253,7 +253,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <span className="text-xs text-builder-text-muted">Max Width</span>
             <Input
               className="builder-input w-24 text-xs text-center"
-              value={(element.styles?.maxWidth as string) || ''}
+              value={getEffectiveStyle('maxWidth', '')}
               onChange={(e) => {
                 const v = e.target.value.trim();
                 handleStyleChange('maxWidth', v ? (/^\d+$/.test(v) ? `${v}px` : v) : '');
@@ -267,7 +267,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <span className="text-xs text-builder-text-muted">Min Height</span>
             <Input
               className="builder-input w-24 text-xs text-center"
-              value={(element.styles?.minHeight as string) || ''}
+              value={getEffectiveStyle('minHeight', '')}
               onChange={(e) => {
                 const v = e.target.value.trim();
                 handleStyleChange('minHeight', v ? (/^\d+$/.test(v) ? `${v}px` : v) : '');

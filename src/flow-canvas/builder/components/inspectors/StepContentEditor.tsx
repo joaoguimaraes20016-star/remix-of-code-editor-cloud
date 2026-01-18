@@ -92,7 +92,7 @@ function SortableOptionItem({ id, option, index, onUpdate, onRemove, canRemove }
       />
       {canRemove && (
         <button
-          onClick={onRemove}
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
           className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
         >
           <Trash2 className="w-3 h-3" />

@@ -87,7 +87,7 @@ function SortableCheckboxItem({ element, index, onUpdateContent, onRemove, canRe
         placeholder={`Option ${index + 1}`}
       />
       <button
-        onClick={onRemove}
+        onClick={(e) => { e.stopPropagation(); onRemove(); }}
         disabled={!canRemove}
         className={cn(
           "p-1 rounded transition-all",
