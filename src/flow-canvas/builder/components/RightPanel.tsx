@@ -482,7 +482,7 @@ const ElementInspector: React.FC<{
   
   // Shared sensors for all sortable lists in this inspector (MUST be at top level, not inside JSX)
   const inspectorSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 2 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 

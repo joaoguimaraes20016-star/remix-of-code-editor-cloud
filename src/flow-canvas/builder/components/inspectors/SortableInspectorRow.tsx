@@ -50,16 +50,12 @@ export function SortableInspectorRow({ id, children, className }: SortableInspec
         type="button"
         {...attributes}
         {...listeners}
-        className="flex-shrink-0 p-1 -ml-1 rounded cursor-grab active:cursor-grabbing 
+        className="flex-shrink-0 p-1.5 -ml-1 rounded cursor-grab active:cursor-grabbing 
                    opacity-40 hover:opacity-100 group-hover:opacity-100 
                    transition-opacity touch-none select-none
                    hover:bg-builder-surface-hover"
-        onPointerDownCapture={(e) => {
-          // Stop propagation so parent handlers don't interfere
-          e.stopPropagation();
-        }}
       >
-        <GripVertical className="w-3 h-3 text-builder-text-muted" />
+        <GripVertical className="w-3.5 h-3.5 text-builder-text-muted" />
       </button>
       {children}
     </div>

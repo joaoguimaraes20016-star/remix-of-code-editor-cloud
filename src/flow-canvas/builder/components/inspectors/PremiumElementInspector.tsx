@@ -150,7 +150,7 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
   // Move sensors to top level to comply with React hooks rules
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 2 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,

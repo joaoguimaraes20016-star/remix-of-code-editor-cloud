@@ -60,13 +60,12 @@ export function SortableItem({ id, children, className }: SortableItemProps) {
         type="button"
         {...attributes}
         {...listeners}
-        className="flex-shrink-0 p-1 -ml-1 rounded cursor-grab active:cursor-grabbing 
+        className="flex-shrink-0 p-1.5 -ml-1 rounded cursor-grab active:cursor-grabbing 
                    opacity-40 hover:opacity-100 group-hover:opacity-100 
                    transition-opacity touch-none select-none
                    hover:bg-muted/50"
-        onPointerDownCapture={(e) => e.stopPropagation()}
       >
-        <GripVertical className="w-3 h-3 text-muted-foreground" />
+        <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
       </button>
       {children}
     </div>
@@ -91,7 +90,7 @@ export function SortableList<T extends { id: string }>({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 2,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -144,7 +143,7 @@ export function useSortableList<T extends { id: string }>(
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 2,
       },
     }),
     useSensor(KeyboardSensor, {
