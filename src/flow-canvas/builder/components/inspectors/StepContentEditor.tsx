@@ -69,6 +69,8 @@ import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradie
 import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
 
 // Sortable Option Item for drag-and-drop reordering
+import { SortableInspectorRow } from './SortableInspectorRow';
+
 interface SortableOptionItemProps {
   id: string;
   option: string;
@@ -79,32 +81,8 @@ interface SortableOptionItemProps {
 }
 
 function SortableOptionItem({ id, option, index, onUpdate, onRemove, canRemove }: SortableOptionItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  };
-
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5 group">
-      <div
-        {...attributes}
-        {...listeners}
-        className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0 touch-none"
-        title="Drag to reorder"
-      >
-        <GripVertical className="w-3 h-3" />
-      </div>
+    <SortableInspectorRow id={id}>
       <Input
         value={option}
         onChange={(e) => onUpdate(e.target.value)}
@@ -119,7 +97,7 @@ function SortableOptionItem({ id, option, index, onUpdate, onRemove, canRemove }
           <Trash2 className="w-3 h-3" />
         </button>
       )}
-    </div>
+    </SortableInspectorRow>
   );
 }
 

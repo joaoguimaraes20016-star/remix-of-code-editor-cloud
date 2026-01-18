@@ -60,6 +60,8 @@ import {
 } from 'lucide-react';
 
 // Sortable Ticker Item component
+import { SortableInspectorRow } from './SortableInspectorRow';
+
 interface SortableTickerItemProps {
   id: string;
   item: string;
@@ -69,31 +71,8 @@ interface SortableTickerItemProps {
 }
 
 function SortableTickerItem({ id, item, index, onUpdate, onRemove }: SortableTickerItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  };
-
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
-      <div
-        {...attributes}
-        {...listeners}
-        className="flex-shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
-      >
-        <GripVertical className="w-3 h-3 text-builder-text-muted" />
-      </div>
+    <SortableInspectorRow id={id}>
       <Input
         value={item}
         onChange={(e) => onUpdate(e.target.value)}
@@ -106,7 +85,7 @@ function SortableTickerItem({ id, item, index, onUpdate, onRemove }: SortableTic
       >
         <X className="w-3.5 h-3.5" />
       </button>
-    </div>
+    </SortableInspectorRow>
   );
 }
 
