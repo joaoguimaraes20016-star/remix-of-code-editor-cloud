@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Element } from '../../../types/infostack';
 import { cn } from '@/lib/utils';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '../CommitSlider';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -241,9 +241,9 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                   <span className="text-[10px] text-builder-text-dim">Top</span>
                   <span className="text-[10px] font-mono text-builder-text-dim">{marginTop}px</span>
                 </div>
-                <Slider
-                  value={[marginTop]}
-                  onValueCommit={([v]) => handleStyleChange('marginTop', `${v}px`)}
+                <CommitSlider
+                  value={marginTop}
+                  onValueCommit={(v) => handleStyleChange('marginTop', `${v}px`)}
                   min={0} max={100} step={4}
                 />
               </div>
@@ -252,9 +252,9 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                   <span className="text-[10px] text-builder-text-dim">Bottom</span>
                   <span className="text-[10px] font-mono text-builder-text-dim">{marginBottom}px</span>
                 </div>
-                <Slider
-                  value={[marginBottom]}
-                  onValueCommit={([v]) => handleStyleChange('marginBottom', `${v}px`)}
+                <CommitSlider
+                  value={marginBottom}
+                  onValueCommit={(v) => handleStyleChange('marginBottom', `${v}px`)}
                   min={0} max={100} step={4}
                 />
               </div>
@@ -272,9 +272,9 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
               <span className="text-xs text-builder-text-muted">Opacity</span>
               <span className="text-xs font-mono text-builder-text-dim">{opacity}%</span>
             </div>
-            <Slider 
-              value={[opacity]}
-              onValueCommit={(v) => handleStyleChange('opacity', String(v[0]))}
+            <CommitSlider 
+              value={opacity}
+              onValueCommit={(v) => handleStyleChange('opacity', String(v))}
               min={0} max={100} step={5}
               className="w-full"
             />
@@ -289,9 +289,9 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
               </div>
               <span className="text-xs font-mono text-builder-text-dim">{rotation}°</span>
             </div>
-            <Slider 
-              value={[rotation]}
-              onValueCommit={(v) => handleStyleChange('rotate', String(v[0]))}
+            <CommitSlider 
+              value={rotation}
+              onValueCommit={(v) => handleStyleChange('rotate', String(v))}
               min={0} max={360} step={5}
               className="w-full"
             />
@@ -303,9 +303,9 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
               <span className="text-xs text-builder-text-muted">Blur</span>
               <span className="text-xs font-mono text-builder-text-dim">{blur}px</span>
             </div>
-            <Slider 
-              value={[blur]}
-              onValueCommit={(v) => handlePropsChange('blur', v[0])}
+            <CommitSlider 
+              value={blur}
+              onValueCommit={(v) => handlePropsChange('blur', v)}
               min={0} max={20} step={1}
               className="w-full"
             />
@@ -317,9 +317,9 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
               <span className="text-xs text-builder-text-muted">Brightness</span>
               <span className="text-xs font-mono text-builder-text-dim">{brightness}%</span>
             </div>
-            <Slider 
-              value={[brightness]}
-              onValueCommit={(v) => handlePropsChange('brightness', v[0])}
+            <CommitSlider 
+              value={brightness}
+              onValueCommit={(v) => handlePropsChange('brightness', v)}
               min={50} max={150} step={5}
               className="w-full"
             />
@@ -430,9 +430,9 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 {element.styles?.borderRadius || '0px'}
               </span>
             </div>
-            <Slider 
-              value={[parseInt((element.styles?.borderRadius as string) || '0')]}
-              onValueCommit={(v) => handleStyleChange('borderRadius', `${v[0]}px`)}
+            <CommitSlider 
+              value={parseInt((element.styles?.borderRadius as string) || '0')}
+              onValueCommit={(v) => handleStyleChange('borderRadius', `${v}px`)}
               min={0} max={50} step={2}
               className="w-full"
             />
