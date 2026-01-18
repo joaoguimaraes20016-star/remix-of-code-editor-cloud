@@ -16,6 +16,7 @@ import { stripHtmlToText } from '../utils/textHelpers';
 import { BuilderContextMenu } from './ContextMenu';
 import { ApplicationFlowCard } from './ApplicationFlowCard';
 import { useFlowContainerSafe, buttonActionToIntent, FlowIntent } from '../contexts/FlowContainerContext';
+import { CanvasErrorBoundary } from './inspectors/shared/CanvasErrorBoundary';
 import {
   DndContext,
   closestCenter,
@@ -4926,6 +4927,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
   const fontFamily = pageSettings?.font_family || 'Inter';
 
   return (
+    <CanvasErrorBoundary fallbackMessage="Canvas rendering error" onReset={() => onSelect({ type: null, id: null, path: [] })}>
     <ThemeContext.Provider value={{ isDarkTheme, primaryColor }}>
     <FormStateContext.Provider value={{ values: formValues, checkboxValues, setValue, toggleCheckbox, isChecked, isPreviewMode }}>
       <div 
@@ -5238,5 +5240,6 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
       </div>
     </FormStateContext.Provider>
     </ThemeContext.Provider>
+    </CanvasErrorBoundary>
   );
 };

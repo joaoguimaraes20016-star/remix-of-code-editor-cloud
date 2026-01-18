@@ -168,21 +168,52 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
       return;
     }
     
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      toast.error('Please enter a valid URL');
+      return;
+    }
+    
     setWebhookTestStatus(prev => ({ ...prev, [type]: 'testing' }));
     
     try {
-      // Simulate webhook test
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors', // Allow cross-origin requests to external webhooks
+        body: JSON.stringify({
+          test: true,
+          type,
+          source: 'infostack',
+          timestamp: new Date().toISOString(),
+          message: 'This is a test webhook from Infostack',
+        }),
+      });
+      
+      // With no-cors mode, we can't check response.ok, so assume success if no error thrown
       setWebhookTestStatus(prev => ({ ...prev, [type]: 'success' }));
-      toast.success('Webhook test successful!');
+      toast.success('Webhook test sent!', {
+        description: 'The test payload was sent to your webhook endpoint.',
+      });
       
       // Reset after 3 seconds
       setTimeout(() => {
         setWebhookTestStatus(prev => ({ ...prev, [type]: 'idle' }));
       }, 3000);
-    } catch {
+    } catch (error) {
       setWebhookTestStatus(prev => ({ ...prev, [type]: 'error' }));
-      toast.error('Webhook test failed');
+      toast.error('Webhook test failed', {
+        description: error instanceof Error ? error.message : 'Could not reach the webhook URL',
+      });
+      
+      // Reset after 3 seconds
+      setTimeout(() => {
+        setWebhookTestStatus(prev => ({ ...prev, [type]: 'idle' }));
+      }, 3000);
     }
   };
 
