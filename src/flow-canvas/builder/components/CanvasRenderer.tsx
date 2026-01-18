@@ -465,19 +465,46 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
     if (element.styles?.borderStyle) base.borderStyle = element.styles.borderStyle as React.CSSProperties['borderStyle'];
     if (element.styles?.borderColor) base.borderColor = element.styles.borderColor;
     
-    // NEW: Apply blur and brightness filters
+    // NEW: Apply CSS filters (blur, brightness, contrast, saturation, hue-rotate, grayscale, sepia, invert)
     const blur = (element.props?.blur as number) ?? 0;
     const brightness = (element.props?.brightness as number) ?? 100;
-    if (blur > 0 || brightness !== 100) {
-      const filters: string[] = [];
-      if (blur > 0) filters.push(`blur(${blur}px)`);
-      if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
-      base.filter = filters.join(' ');
+    const contrast = (element.props?.contrast as number) ?? 100;
+    const saturation = (element.props?.saturation as number) ?? 100;
+    const hueRotate = (element.props?.hueRotate as number) ?? 0;
+    const grayscale = (element.props?.grayscale as number) ?? 0;
+    const sepia = (element.props?.sepia as number) ?? 0;
+    const invert = (element.props?.invert as number) ?? 0;
+    
+    const filters: string[] = [];
+    if (blur > 0) filters.push(`blur(${blur}px)`);
+    if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
+    if (contrast !== 100) filters.push(`contrast(${contrast}%)`);
+    if (saturation !== 100) filters.push(`saturate(${saturation}%)`);
+    if (hueRotate !== 0) filters.push(`hue-rotate(${hueRotate}deg)`);
+    if (grayscale > 0) filters.push(`grayscale(${grayscale}%)`);
+    if (sepia > 0) filters.push(`sepia(${sepia}%)`);
+    if (invert > 0) filters.push(`invert(${invert}%)`);
+    if (filters.length > 0) base.filter = filters.join(' ');
+    
+    // NEW: Apply blend mode
+    const blendMode = element.styles?.mixBlendMode as string;
+    if (blendMode && blendMode !== 'normal') {
+      base.mixBlendMode = blendMode as React.CSSProperties['mixBlendMode'];
     }
     
-    // NEW: Apply shadow preset
+    // NEW: Apply shadow preset or custom layers
     const shadowPreset = element.props?.shadowPreset as string;
-    if (shadowPreset && shadowPreset !== 'none') {
+    const shadowLayers = element.props?.shadowLayers as Array<{ x: number; y: number; blur: number; spread: number; color: string; inset?: boolean }>;
+    
+    if (shadowLayers && shadowLayers.length > 0) {
+      // Use custom shadow layers
+      base.boxShadow = shadowLayers
+        .map(layer => {
+          const inset = layer.inset ? 'inset ' : '';
+          return `${inset}${layer.x}px ${layer.y}px ${layer.blur}px ${layer.spread}px ${layer.color}`;
+        })
+        .join(', ');
+    } else if (shadowPreset && shadowPreset !== 'none' && shadowPreset !== 'custom') {
       const shadowMap: Record<string, string> = {
         'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',

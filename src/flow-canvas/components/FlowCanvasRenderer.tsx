@@ -222,19 +222,46 @@ function resolveElementStyles(element: FlowCanvasElement): React.CSSProperties {
   // Z-index
   if (s?.zIndex && s.zIndex !== 'auto') base.zIndex = Number(s.zIndex);
   
-  // NEW: Apply blur and brightness filters (from props)
+  // NEW: Apply CSS filters (blur, brightness, contrast, saturation, hue-rotate, grayscale, sepia, invert)
   const blur = (p?.blur as number) ?? 0;
   const brightness = (p?.brightness as number) ?? 100;
-  if (blur > 0 || brightness !== 100) {
-    const filters: string[] = [];
-    if (blur > 0) filters.push(`blur(${blur}px)`);
-    if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
-    base.filter = filters.join(' ');
+  const contrast = (p?.contrast as number) ?? 100;
+  const saturation = (p?.saturation as number) ?? 100;
+  const hueRotate = (p?.hueRotate as number) ?? 0;
+  const grayscale = (p?.grayscale as number) ?? 0;
+  const sepia = (p?.sepia as number) ?? 0;
+  const invert = (p?.invert as number) ?? 0;
+  
+  const filters: string[] = [];
+  if (blur > 0) filters.push(`blur(${blur}px)`);
+  if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
+  if (contrast !== 100) filters.push(`contrast(${contrast}%)`);
+  if (saturation !== 100) filters.push(`saturate(${saturation}%)`);
+  if (hueRotate !== 0) filters.push(`hue-rotate(${hueRotate}deg)`);
+  if (grayscale > 0) filters.push(`grayscale(${grayscale}%)`);
+  if (sepia > 0) filters.push(`sepia(${sepia}%)`);
+  if (invert > 0) filters.push(`invert(${invert}%)`);
+  if (filters.length > 0) base.filter = filters.join(' ');
+  
+  // NEW: Apply blend mode
+  const blendMode = s?.mixBlendMode as string;
+  if (blendMode && blendMode !== 'normal') {
+    base.mixBlendMode = blendMode as React.CSSProperties['mixBlendMode'];
   }
   
-  // NEW: Apply shadow preset (from props)
+  // NEW: Apply shadow preset or custom layers
   const shadowPreset = p?.shadowPreset as string;
-  if (shadowPreset && shadowPreset !== 'none' && shadowPresetCSS[shadowPreset]) {
+  const shadowLayers = p?.shadowLayers as Array<{ x: number; y: number; blur: number; spread: number; color: string; inset?: boolean }>;
+  
+  if (shadowLayers && shadowLayers.length > 0) {
+    // Use custom shadow layers
+    base.boxShadow = shadowLayers
+      .map(layer => {
+        const inset = layer.inset ? 'inset ' : '';
+        return `${inset}${layer.x}px ${layer.y}px ${layer.blur}px ${layer.spread}px ${layer.color}`;
+      })
+      .join(', ');
+  } else if (shadowPreset && shadowPreset !== 'none' && shadowPreset !== 'custom' && shadowPresetCSS[shadowPreset]) {
     base.boxShadow = shadowPresetCSS[shadowPreset];
   }
   

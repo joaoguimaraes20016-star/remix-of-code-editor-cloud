@@ -25,9 +25,13 @@ import {
   AlignRight,
   Maximize2,
   Move,
+  Droplets,
+  Blend,
+  Palette,
 } from 'lucide-react';
-import { ColorPickerPopover } from '../modals';
+import { ColorPickerPopover, ShadowEditor } from '../modals';
 import { CollapsibleSection } from './shared/CollapsibleSection';
+import { blendModeOptions, ShadowLayer, shadowLayersToCSS } from '../../utils/presets';
 
 interface UniversalAppearanceSectionProps {
   element: Element;
@@ -58,6 +62,18 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
   const brightness = (element.props?.brightness as number) ?? 100;
   const marginTop = parseInt((element.styles?.marginTop as string) || '0');
   const marginBottom = parseInt((element.styles?.marginBottom as string) || '0');
+  
+  // Advanced filter values
+  const backdropBlur = parseInt((element.styles?.backdropBlur as string) || '0');
+  const hueRotate = (element.props?.hueRotate as number) ?? 0;
+  const saturation = (element.props?.saturation as number) ?? 100;
+  const contrast = (element.props?.contrast as number) ?? 100;
+  const grayscale = (element.props?.grayscale as number) ?? 0;
+  const sepia = (element.props?.sepia as number) ?? 0;
+  const invert = (element.props?.invert as number) ?? 0;
+  
+  // Multi-layer shadow
+  const shadowLayers = (element.props?.shadowLayers as ShadowLayer[]) || [];
   
   return (
     <>
@@ -298,7 +314,66 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             />
           </div>
           
-          {/* Blur */}
+          {/* Blend Mode */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Blend className="w-3.5 h-3.5 text-builder-text-muted" />
+              <span className="text-xs text-builder-text-muted">Blend Mode</span>
+            </div>
+            <Select 
+              value={(element.styles?.mixBlendMode as string) || 'normal'}
+              onValueChange={(value) => handleStyleChange('mixBlendMode', value)}
+            >
+              <SelectTrigger className="builder-input w-28"><SelectValue placeholder="Normal" /></SelectTrigger>
+              <SelectContent className="bg-background border-border max-h-60">
+                {blendModeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Z-Index */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-builder-text-muted" />
+              <span className="text-xs text-builder-text-muted">Layer (z-index)</span>
+            </div>
+            <Input
+              type="number"
+              className="builder-input w-20 text-xs text-center"
+              value={element.styles?.zIndex === 'auto' ? '' : (element.styles?.zIndex || '')}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                handleStyleChange('zIndex', v ? v : 'auto');
+              }}
+              placeholder="auto"
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* ========== EFFECTS SECTION ========== */}
+      <CollapsibleSection title="Effects" icon={<Sparkles className="w-4 h-4" />}>
+        <div className="pt-3 space-y-4">
+          {/* Backdrop Blur (Glassmorphism) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Droplets className="w-3.5 h-3.5 text-builder-text-muted" />
+                <span className="text-xs text-builder-text-muted">Backdrop Blur</span>
+              </div>
+              <span className="text-xs font-mono text-builder-text-dim">{backdropBlur}px</span>
+            </div>
+            <CommitSlider 
+              value={backdropBlur}
+              onValueCommit={(v) => handleStyleChange('backdropBlur', `${v}px`)}
+              min={0} max={40} step={1}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Element Blur */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Blur</span>
@@ -326,12 +401,110 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             />
           </div>
           
-          {/* Shadow Preset */}
+          {/* Contrast */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Contrast</span>
+              <span className="text-xs font-mono text-builder-text-dim">{contrast}%</span>
+            </div>
+            <CommitSlider 
+              value={contrast}
+              onValueCommit={(v) => handlePropsChange('contrast', v)}
+              min={0} max={200} step={5}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Saturation */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Saturation</span>
+              <span className="text-xs font-mono text-builder-text-dim">{saturation}%</span>
+            </div>
+            <CommitSlider 
+              value={saturation}
+              onValueCommit={(v) => handlePropsChange('saturation', v)}
+              min={0} max={200} step={5}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Hue Rotate */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-builder-text-muted" />
+                <span className="text-xs text-builder-text-muted">Hue Rotate</span>
+              </div>
+              <span className="text-xs font-mono text-builder-text-dim">{hueRotate}°</span>
+            </div>
+            <CommitSlider 
+              value={hueRotate}
+              onValueCommit={(v) => handlePropsChange('hueRotate', v)}
+              min={0} max={360} step={5}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Grayscale */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Grayscale</span>
+              <span className="text-xs font-mono text-builder-text-dim">{grayscale}%</span>
+            </div>
+            <CommitSlider 
+              value={grayscale}
+              onValueCommit={(v) => handlePropsChange('grayscale', v)}
+              min={0} max={100} step={5}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Sepia */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Sepia</span>
+              <span className="text-xs font-mono text-builder-text-dim">{sepia}%</span>
+            </div>
+            <CommitSlider 
+              value={sepia}
+              onValueCommit={(v) => handlePropsChange('sepia', v)}
+              min={0} max={100} step={5}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Invert */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Invert</span>
+              <span className="text-xs font-mono text-builder-text-dim">{invert}%</span>
+            </div>
+            <CommitSlider 
+              value={invert}
+              onValueCommit={(v) => handlePropsChange('invert', v)}
+              min={0} max={100} step={5}
+              className="w-full"
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* ========== SHADOW SECTION ========== */}
+      <CollapsibleSection title="Shadow" icon={<Layers className="w-4 h-4" />}>
+        <div className="pt-3 space-y-3">
+          {/* Quick presets for simple use */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-builder-text-muted">Shadow</span>
+            <span className="text-xs text-builder-text-muted">Quick Preset</span>
             <Select 
               value={(element.props?.shadowPreset as string) || 'none'}
-              onValueChange={(value) => handlePropsChange('shadowPreset', value)}
+              onValueChange={(value) => {
+                handlePropsChange('shadowPreset', value);
+                // Clear custom layers when using preset
+                if (value !== 'custom') {
+                  handlePropsChange('shadowLayers', []);
+                }
+              }}
             >
               <SelectTrigger className="builder-input w-24"><SelectValue placeholder="None" /></SelectTrigger>
               <SelectContent className="bg-background border-border">
@@ -341,27 +514,26 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 <SelectItem value="lg">Large</SelectItem>
                 <SelectItem value="xl">X-Large</SelectItem>
                 <SelectItem value="2xl">2X-Large</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
-          {/* Z-Index - now allows arbitrary values */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-builder-text-muted" />
-              <span className="text-xs text-builder-text-muted">Layer (z-index)</span>
+          {/* Multi-layer shadow editor - shown when custom is selected or layers exist */}
+          {((element.props?.shadowPreset === 'custom') || shadowLayers.length > 0) && (
+            <div className="mt-3 pt-3 border-t border-builder-border">
+              <ShadowEditor
+                value={shadowLayers}
+                onChange={(layers) => {
+                  handlePropsChange('shadowLayers', layers);
+                  if (layers.length > 0) {
+                    handlePropsChange('shadowPreset', 'custom');
+                  }
+                }}
+                compact
+              />
             </div>
-            <Input
-              type="number"
-              className="builder-input w-20 text-xs text-center"
-              value={element.styles?.zIndex === 'auto' ? '' : (element.styles?.zIndex || '')}
-              onChange={(e) => {
-                const v = e.target.value.trim();
-                handleStyleChange('zIndex', v ? v : 'auto');
-              }}
-              placeholder="auto"
-            />
-          </div>
+          )}
         </div>
       </CollapsibleSection>
 
@@ -469,7 +641,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
       </CollapsibleSection>
 
       {/* ========== RESPONSIVE VISIBILITY SECTION ========== */}
-      <CollapsibleSection title="Responsive" icon={<Sparkles className="w-4 h-4" />}>
+      <CollapsibleSection title="Responsive" icon={<Layout className="w-4 h-4" />}>
         <div className="pt-3 space-y-3">
           <p className="text-[10px] text-builder-text-dim">
             Hide this element on specific screen sizes.
