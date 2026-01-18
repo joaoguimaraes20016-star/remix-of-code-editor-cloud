@@ -2388,10 +2388,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 const getTextStyle = (colorType: string, solidColor: string, gradient?: GradientValue): React.CSSProperties => {
                   if (colorType === 'gradient' && gradient) {
                     return {
-                      background: gradientToCSS(gradient),
+                      // Use backgroundImage (NOT background) so we don't reset background-clip back to initial
+                      backgroundImage: gradientToCSS(gradient),
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
+                      color: 'transparent',
                       display: 'inline',
                     } as React.CSSProperties;
                   }
@@ -2411,18 +2413,22 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         fontWeight: statWeightMap[statFontWeight] || 700,
                       }}
                     >
-                      <span style={{ ...numberStyle, display: 'inline' }}>
-                        <InlineTextEditor
-                          value={element.content || '0'}
-                          onChange={(newContent: string) => onUpdate?.({ content: newContent })}
-                          elementType="text"
-                          placeholder="0"
-                          disabled={readOnly}
-                          elementId={`${element.id}-number`}
-                          style={{ display: 'inline' }}
-                          className="inline"
-                        />
-                      </span>
+                      <InlineTextEditor
+                        key={`${element.id}-number-${numberColorType}-${numberColor}-${numberGradient ? gradientToCSS(numberGradient) : 'none'}`}
+                        value={element.content || '0'}
+                        onChange={(newContent: string) => onUpdate?.({ content: newContent })}
+                        elementType="text"
+                        placeholder="0"
+                        disabled={readOnly}
+                        elementId={`${element.id}-number`}
+                        initialStyles={{
+                          textFillType: (numberColorType as 'solid' | 'gradient') || 'solid',
+                          textColor: numberColor,
+                          textGradient: numberGradient,
+                        }}
+                        style={{ display: 'inline' }}
+                        className="inline"
+                      />
                       <span style={{ ...suffixStyle, display: 'inline' }}>{statSuffix}</span>
                     </div>
                     {statLabel && (
