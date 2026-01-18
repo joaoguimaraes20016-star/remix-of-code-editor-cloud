@@ -582,6 +582,40 @@ export const alignItemsOptions = [
 ];
 
 // ===========================================
+// GRID LAYOUT PRESETS
+// ===========================================
+
+export const displayModeOptions = [
+  { value: 'block', label: 'Block' },
+  { value: 'flex', label: 'Flex' },
+  { value: 'grid', label: 'Grid' },
+];
+
+export const gridColumnsOptions = [
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4' },
+  { value: '5', label: '5' },
+  { value: '6', label: '6' },
+  { value: '12', label: '12' },
+];
+
+export const gridAlignItemsOptions = [
+  { value: 'start', label: 'Start' },
+  { value: 'center', label: 'Center' },
+  { value: 'end', label: 'End' },
+  { value: 'stretch', label: 'Stretch' },
+];
+
+export const gridJustifyItemsOptions = [
+  { value: 'start', label: 'Start' },
+  { value: 'center', label: 'Center' },
+  { value: 'end', label: 'End' },
+  { value: 'stretch', label: 'Stretch' },
+];
+
+// ===========================================
 // BORDER RADIUS PRESETS
 // ===========================================
 

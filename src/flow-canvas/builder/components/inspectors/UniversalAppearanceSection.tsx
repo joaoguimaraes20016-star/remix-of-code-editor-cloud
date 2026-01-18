@@ -46,6 +46,10 @@ import {
   flexWrapOptions,
   justifyContentOptions,
   alignItemsOptions,
+  displayModeOptions,
+  gridColumnsOptions,
+  gridAlignItemsOptions,
+  gridJustifyItemsOptions,
 } from '../../utils/presets';
 
 interface UniversalAppearanceSectionProps {
@@ -363,119 +367,241 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
         </div>
       </CollapsibleSection>
 
-      {/* ========== FLEXBOX SECTION (for containers) ========== */}
-      <CollapsibleSection title="Flexbox" icon={<Layout className="w-4 h-4" />}>
+      {/* ========== LAYOUT MODE SECTION (flex/grid for containers) ========== */}
+      <CollapsibleSection title="Layout Mode" icon={<Layout className="w-4 h-4" />}>
         <div className="pt-3 space-y-4">
-          <p className="text-[10px] text-builder-text-dim">
-            Controls for container elements with flex display.
-          </p>
-          
-          {/* Flex Direction */}
+          {/* Display Mode Toggle */}
           <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-builder-text-muted" />
-              <span className="text-xs text-builder-text-muted">Direction</span>
+            <span className="text-xs text-builder-text-muted">Display</span>
+            <div className="flex gap-1">
+              {displayModeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleStyleChange('display', opt.value)}
+                  className={cn(
+                    'flex-1 px-3 py-1.5 rounded text-xs font-medium transition-colors',
+                    (element.styles?.display || 'block') === opt.value
+                      ? 'bg-builder-accent text-white'
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:text-builder-text'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-            <Select
-              value={(element.styles?.flexDirection as string) || 'column'}
-              onValueChange={(v) => handleStyleChange('flexDirection', v)}
-            >
-              <SelectTrigger className="builder-input text-xs">
-                <SelectValue placeholder="Column" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                {flexDirectionOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
-          {/* Flex Wrap */}
-          <div className="space-y-2">
-            <span className="text-xs text-builder-text-muted">Wrap</span>
-            <Select
-              value={(element.styles?.flexWrap as string) || 'nowrap'}
-              onValueChange={(v) => handleStyleChange('flexWrap', v)}
-            >
-              <SelectTrigger className="builder-input text-xs">
-                <SelectValue placeholder="No Wrap" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                {flexWrapOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Flex-specific controls */}
+          {(element.styles?.display === 'flex' || !element.styles?.display) && (
+            <>
+              {/* Flex Direction */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-builder-text-muted" />
+                  <span className="text-xs text-builder-text-muted">Direction</span>
+                </div>
+                <Select
+                  value={(element.styles?.flexDirection as string) || 'column'}
+                  onValueChange={(v) => handleStyleChange('flexDirection', v)}
+                >
+                  <SelectTrigger className="builder-input text-xs">
+                    <SelectValue placeholder="Column" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    {flexDirectionOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Justify Content */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <AlignHorizontalJustifyCenter className="w-3.5 h-3.5 text-builder-text-muted" />
-              <span className="text-xs text-builder-text-muted">Justify Content</span>
-            </div>
-            <Select
-              value={(element.styles?.justifyContent as string) || 'flex-start'}
-              onValueChange={(v) => handleStyleChange('justifyContent', v)}
-            >
-              <SelectTrigger className="builder-input text-xs">
-                <SelectValue placeholder="Start" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                {justifyContentOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              {/* Flex Wrap */}
+              <div className="space-y-2">
+                <span className="text-xs text-builder-text-muted">Wrap</span>
+                <Select
+                  value={(element.styles?.flexWrap as string) || 'nowrap'}
+                  onValueChange={(v) => handleStyleChange('flexWrap', v)}
+                >
+                  <SelectTrigger className="builder-input text-xs">
+                    <SelectValue placeholder="No Wrap" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    {flexWrapOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Align Items */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <AlignVerticalJustifyCenter className="w-3.5 h-3.5 text-builder-text-muted" />
-              <span className="text-xs text-builder-text-muted">Align Items</span>
-            </div>
-            <Select
-              value={(element.styles?.alignItems as string) || 'stretch'}
-              onValueChange={(v) => handleStyleChange('alignItems', v)}
-            >
-              <SelectTrigger className="builder-input text-xs">
-                <SelectValue placeholder="Stretch" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                {alignItemsOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              {/* Justify Content */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <AlignHorizontalJustifyCenter className="w-3.5 h-3.5 text-builder-text-muted" />
+                  <span className="text-xs text-builder-text-muted">Justify Content</span>
+                </div>
+                <Select
+                  value={(element.styles?.justifyContent as string) || 'flex-start'}
+                  onValueChange={(v) => handleStyleChange('justifyContent', v)}
+                >
+                  <SelectTrigger className="builder-input text-xs">
+                    <SelectValue placeholder="Start" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    {justifyContentOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Flex Grow/Shrink */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Grow</span>
-              <Input
-                type="number"
-                className="builder-input w-14 text-xs text-center"
-                value={(element.styles?.flexGrow as string) || '0'}
-                onChange={(e) => handleStyleChange('flexGrow', e.target.value)}
-                min={0}
-                max={10}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Shrink</span>
-              <Input
-                type="number"
-                className="builder-input w-14 text-xs text-center"
-                value={(element.styles?.flexShrink as string) || '1'}
-                onChange={(e) => handleStyleChange('flexShrink', e.target.value)}
-                min={0}
-                max={10}
-              />
-            </div>
-          </div>
+              {/* Align Items */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <AlignVerticalJustifyCenter className="w-3.5 h-3.5 text-builder-text-muted" />
+                  <span className="text-xs text-builder-text-muted">Align Items</span>
+                </div>
+                <Select
+                  value={(element.styles?.alignItems as string) || 'stretch'}
+                  onValueChange={(v) => handleStyleChange('alignItems', v)}
+                >
+                  <SelectTrigger className="builder-input text-xs">
+                    <SelectValue placeholder="Stretch" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    {alignItemsOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Flex Grow/Shrink */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Grow</span>
+                  <Input
+                    type="number"
+                    className="builder-input w-14 text-xs text-center"
+                    value={(element.styles?.flexGrow as string) || '0'}
+                    onChange={(e) => handleStyleChange('flexGrow', e.target.value)}
+                    min={0}
+                    max={10}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Shrink</span>
+                  <Input
+                    type="number"
+                    className="builder-input w-14 text-xs text-center"
+                    value={(element.styles?.flexShrink as string) || '1'}
+                    onChange={(e) => handleStyleChange('flexShrink', e.target.value)}
+                    min={0}
+                    max={10}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Grid-specific controls */}
+          {element.styles?.display === 'grid' && (
+            <>
+              {/* Grid Columns */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Grid3X3 className="w-3.5 h-3.5 text-builder-text-muted" />
+                  <span className="text-xs text-builder-text-muted">Columns</span>
+                </div>
+                <Select
+                  value={(element.styles?.gridTemplateColumns as string)?.match(/repeat\((\d+)/)?.[1] || '2'}
+                  onValueChange={(v) => handleStyleChange('gridTemplateColumns', `repeat(${v}, 1fr)`)}
+                >
+                  <SelectTrigger className="builder-input text-xs">
+                    <SelectValue placeholder="2" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    {gridColumnsOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label} Column{opt.value !== '1' ? 's' : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Column Gap */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Column Gap</span>
+                  <span className="text-xs font-mono text-builder-text-dim">
+                    {parseInt((element.styles?.columnGap as string) || '16')}px
+                  </span>
+                </div>
+                <CommitSlider 
+                  value={parseInt((element.styles?.columnGap as string) || '16')}
+                  onValueCommit={(v) => handleStyleChange('columnGap', `${v}px`)}
+                  min={0} max={64} step={4}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Row Gap */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-builder-text-muted">Row Gap</span>
+                  <span className="text-xs font-mono text-builder-text-dim">
+                    {parseInt((element.styles?.rowGap as string) || '16')}px
+                  </span>
+                </div>
+                <CommitSlider 
+                  value={parseInt((element.styles?.rowGap as string) || '16')}
+                  onValueCommit={(v) => handleStyleChange('rowGap', `${v}px`)}
+                  min={0} max={64} step={4}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Align Items (Grid) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <AlignVerticalJustifyCenter className="w-3.5 h-3.5 text-builder-text-muted" />
+                  <span className="text-xs text-builder-text-muted">Align Items</span>
+                </div>
+                <Select
+                  value={(element.styles?.alignItems as string) || 'stretch'}
+                  onValueChange={(v) => handleStyleChange('alignItems', v)}
+                >
+                  <SelectTrigger className="builder-input text-xs">
+                    <SelectValue placeholder="Stretch" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    {gridAlignItemsOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Justify Items (Grid) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <AlignHorizontalJustifyCenter className="w-3.5 h-3.5 text-builder-text-muted" />
+                  <span className="text-xs text-builder-text-muted">Justify Items</span>
+                </div>
+                <Select
+                  value={(element.styles?.justifyItems as string) || 'stretch'}
+                  onValueChange={(v) => handleStyleChange('justifyItems', v)}
+                >
+                  <SelectTrigger className="builder-input text-xs">
+                    <SelectValue placeholder="Stretch" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    {gridJustifyItemsOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
       </CollapsibleSection>
       

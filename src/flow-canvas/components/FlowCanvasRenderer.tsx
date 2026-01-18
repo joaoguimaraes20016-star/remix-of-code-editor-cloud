@@ -219,6 +219,13 @@ function resolveElementStyles(element: FlowCanvasElement): React.CSSProperties {
   if (s?.flexGrow) base.flexGrow = Number(s.flexGrow);
   if (s?.flexShrink) base.flexShrink = Number(s.flexShrink);
   
+  // CSS Grid styles
+  if (s?.gridTemplateColumns) base.gridTemplateColumns = s.gridTemplateColumns;
+  if (s?.gridTemplateRows) base.gridTemplateRows = s.gridTemplateRows as string;
+  if (s?.columnGap) base.columnGap = s.columnGap;
+  if (s?.rowGap) base.rowGap = s.rowGap;
+  if (s?.justifyItems) base.justifyItems = s.justifyItems as React.CSSProperties['justifyItems'];
+  
   // Appearance
   if (s?.opacity) {
     const opacityVal = typeof s.opacity === 'string' ? parseInt(s.opacity) / 100 : s.opacity;
