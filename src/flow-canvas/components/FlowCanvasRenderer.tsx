@@ -161,10 +161,21 @@ const stepVariants = {
   exit: { opacity: 0, y: -20, transition: { duration: 0.3, ease: [0.4, 0, 1, 1] as const } },
 };
 
+// Shadow preset to CSS mapping (matches CanvasRenderer)
+const shadowPresetCSS: Record<string, string> = {
+  'none': 'none',
+  'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+  'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+  'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+};
+
 // Helper to resolve all element styles (dimensions, spacing, appearance)
 function resolveElementStyles(element: FlowCanvasElement): React.CSSProperties {
   const base: React.CSSProperties = {};
   const s = element.styles;
+  const p = element.props;
   
   // Dimensions
   if (s?.width) base.width = s.width;
@@ -211,6 +222,22 @@ function resolveElementStyles(element: FlowCanvasElement): React.CSSProperties {
   // Z-index
   if (s?.zIndex && s.zIndex !== 'auto') base.zIndex = Number(s.zIndex);
   
+  // NEW: Apply blur and brightness filters (from props)
+  const blur = (p?.blur as number) ?? 0;
+  const brightness = (p?.brightness as number) ?? 100;
+  if (blur > 0 || brightness !== 100) {
+    const filters: string[] = [];
+    if (blur > 0) filters.push(`blur(${blur}px)`);
+    if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
+    base.filter = filters.join(' ');
+  }
+  
+  // NEW: Apply shadow preset (from props)
+  const shadowPreset = p?.shadowPreset as string;
+  if (shadowPreset && shadowPreset !== 'none' && shadowPresetCSS[shadowPreset]) {
+    base.boxShadow = shadowPresetCSS[shadowPreset];
+  }
+  
   return base;
 }
 
@@ -230,17 +257,29 @@ function renderHeading(element: FlowCanvasElement) {
   const stateStylesCSS = stateStyles ? generateStateStylesCSS(element.id, stateStyles as any) : '';
   const stateClassName = stateStyles ? `runtime-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
   
+  // Check for text gradient
+  const textFillType = (element.props?.textFillType as string) || 'solid';
+  const textGradient = element.props?.textGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> };
+  const hasGradient = textFillType === 'gradient' && textGradient?.stops?.length >= 2;
+  
   // Merge layout styles with typography
   const layoutStyles = resolveElementStyles(element);
   const typographyStyle: React.CSSProperties = {
     ...layoutStyles,
-    color: element.props?.textColor as string || element.styles?.color,
+    color: hasGradient ? undefined : (element.props?.textColor as string || element.styles?.color),
     fontSize: element.props?.fontSize as string || element.styles?.fontSize,
     fontWeight: element.props?.fontWeight as string || element.styles?.fontWeight,
     letterSpacing: element.props?.letterSpacing as string || element.styles?.letterSpacing,
     lineHeight: element.props?.lineHeight as string || element.styles?.lineHeight,
     textTransform: (element.props?.textTransform || element.styles?.textTransform) as React.CSSProperties['textTransform'],
     textAlign: (element.props?.textAlign || element.styles?.textAlign) as React.CSSProperties['textAlign'],
+    // Apply gradient styles if enabled
+    ...(hasGradient ? {
+      background: gradientToCSS(textGradient),
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+    } : {}),
   };
   
   return (
@@ -271,17 +310,29 @@ function renderText(element: FlowCanvasElement) {
   const stateStylesCSS = stateStyles ? generateStateStylesCSS(element.id, stateStyles as any) : '';
   const stateClassName = stateStyles ? `runtime-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
   
+  // Check for text gradient
+  const textFillType = (element.props?.textFillType as string) || 'solid';
+  const textGradient = element.props?.textGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> };
+  const hasGradient = textFillType === 'gradient' && textGradient?.stops?.length >= 2;
+  
   // Merge layout styles with typography
   const layoutStyles = resolveElementStyles(element);
   const typographyStyle: React.CSSProperties = {
     ...layoutStyles,
-    color: element.props?.textColor as string || element.styles?.color,
+    color: hasGradient ? undefined : (element.props?.textColor as string || element.styles?.color),
     fontSize: element.props?.fontSize as string || element.styles?.fontSize,
     fontWeight: element.props?.fontWeight as string || element.styles?.fontWeight,
     letterSpacing: element.props?.letterSpacing as string || element.styles?.letterSpacing,
     lineHeight: element.props?.lineHeight as string || element.styles?.lineHeight,
     textTransform: (element.props?.textTransform || element.styles?.textTransform) as React.CSSProperties['textTransform'],
     textAlign: (element.props?.textAlign || element.styles?.textAlign) as React.CSSProperties['textAlign'],
+    // Apply gradient styles if enabled
+    ...(hasGradient ? {
+      background: gradientToCSS(textGradient),
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+    } : {}),
   };
   
   return (
@@ -943,15 +994,19 @@ export function FlowCanvasRenderer({
         const useCustomBadgeColors = badgeVariant === 'custom';
         
         // Build badge background style with gradient support
-        const badgeBackgroundStyle: React.CSSProperties = useCustomBadgeColors ? {
-          ...(badgeBgType === 'gradient' && badgeBgGradient 
+        // Apply border color for ALL variants if specified
+        const badgeBackgroundStyle: React.CSSProperties = {
+          ...(useCustomBadgeColors ? (badgeBgType === 'gradient' && badgeBgGradient 
             ? { background: `${badgeBgGradient.type === 'radial' ? 'radial-gradient(circle' : `linear-gradient(${badgeBgGradient.angle}deg`}, ${badgeBgGradient.stops.map(s => `${s.color} ${s.position}%`).join(', ')})` }
-            : { backgroundColor: badgeBgColor }),
-          color: badgeTextColor,
-          borderColor: badgeBorderColor,
-          borderWidth: badgeBorderColor ? '1px' : '0',
-          borderStyle: 'solid',
-        } : undefined;
+            : { backgroundColor: badgeBgColor }) : {}),
+          ...(useCustomBadgeColors ? { color: badgeTextColor } : {}),
+          // Apply border color for ANY variant if specified
+          ...(badgeBorderColor ? { 
+            borderColor: badgeBorderColor,
+            borderWidth: '1px',
+            borderStyle: 'solid',
+          } : {}),
+        };
         
         return (
           <div key={element.id} style={{ display: 'flex', justifyContent: badgeAlignment }}>
@@ -1104,18 +1159,57 @@ export function FlowCanvasRenderer({
           </div>
         );
 
-      case 'video-thumbnail':
+      case 'video-thumbnail': {
         const thumbnailUrl = (element.props?.thumbnailUrl as string);
+        const videoUrl = (element.props?.videoUrl as string);
         const showPlayButton = element.props?.showPlayButton !== false;
         const playButtonStyle = (element.props?.playButtonStyle as string) || 'rounded';
         const overlayStyle = (element.props?.overlayStyle as string) || 'gradient';
+        const autoplayOnClick = element.props?.autoplayOnClick !== false;
         const playButtonStyleMap: Record<string, string> = {
           rounded: 'rounded-full bg-white/90',
           square: 'rounded-lg bg-white/90',
           minimal: 'bg-transparent border-2 border-white',
         };
+        
+        // State for video playback (using a simple approach for SSR compatibility)
+        const [isPlaying, setIsPlaying] = React.useState(false);
+        
+        const handlePlayClick = () => {
+          if (autoplayOnClick && videoUrl) {
+            setIsPlaying(true);
+          }
+        };
+        
+        // If playing, render the video
+        if (isPlaying && videoUrl) {
+          const embedUrl = videoUrl.includes('youtube') 
+            ? videoUrl.replace('watch?v=', 'embed/').split('&')[0] + '?autoplay=1'
+            : videoUrl.includes('vimeo') 
+              ? `https://player.vimeo.com/video/${videoUrl.split('/').pop()}?autoplay=1`
+              : videoUrl;
+          
+          return (
+            <div key={element.id} className="relative aspect-video rounded-2xl overflow-hidden bg-muted">
+              <iframe 
+                src={embedUrl} 
+                className="absolute inset-0 w-full h-full" 
+                allow="autoplay; fullscreen; encrypted-media"
+                allowFullScreen
+              />
+            </div>
+          );
+        }
+        
         return (
-          <div key={element.id} className="relative aspect-video rounded-2xl overflow-hidden bg-muted">
+          <div 
+            key={element.id} 
+            className={cn(
+              "relative aspect-video rounded-2xl overflow-hidden bg-muted",
+              autoplayOnClick && videoUrl && "cursor-pointer"
+            )}
+            onClick={handlePlayClick}
+          >
             {thumbnailUrl ? (
               <img src={thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
             ) : (
@@ -1129,7 +1223,7 @@ export function FlowCanvasRenderer({
             )}>
               {showPlayButton && (
                 <div className={cn(
-                  "w-16 h-16 flex items-center justify-center backdrop-blur-sm",
+                  "w-16 h-16 flex items-center justify-center backdrop-blur-sm transition-transform hover:scale-110",
                   playButtonStyleMap[playButtonStyle] || playButtonStyleMap.rounded
                 )}>
                   <Play className={cn("w-8 h-8 ml-1", playButtonStyle === 'minimal' ? 'text-white' : 'text-gray-900')} />
@@ -1138,6 +1232,7 @@ export function FlowCanvasRenderer({
             </div>
           </div>
         );
+      }
 
       case 'underline-text':
         const underlineFrom = (element.props?.underlineFrom as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';

@@ -93,21 +93,52 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
     };
   }, []);
 
+  /**
+   * Find an editor bridge by elementId or any sub-ID matching pattern ${elementId}-*
+   * This allows Right Panel to work with sub-element inline editors (e.g., stat-number, badge)
+   */
+  const findBridge = useCallback((elementId: string): { bridge: EditorBridge; actualId: string } | null => {
+    // Direct match
+    const directBridge = editorsRef.current.get(elementId);
+    if (directBridge) {
+      return { bridge: directBridge, actualId: elementId };
+    }
+    
+    // Check for sub-ID matches: look for registered IDs that start with elementId-
+    for (const [registeredId, bridge] of editorsRef.current.entries()) {
+      if (registeredId.startsWith(`${elementId}-`)) {
+        return { bridge, actualId: registeredId };
+      }
+    }
+    
+    return null;
+  }, []);
+
   const applyInlineStyle = useCallback((elementId: string, styles: Partial<TextStyles>): boolean => {
-    const bridge = editorsRef.current.get(elementId);
-    if (bridge) {
-      return bridge.apply(styles);
+    const found = findBridge(elementId);
+    if (found) {
+      return found.bridge.apply(styles);
     }
     return false;
-  }, []);
+  }, [findBridge]);
 
   const getInlineSelectionStyles = useCallback((elementId: string): Partial<TextStyles> | null => {
-    const bridge = editorsRef.current.get(elementId);
-    return bridge?.getSelectionStyles?.() ?? null;
-  }, []);
+    const found = findBridge(elementId);
+    return found?.bridge.getSelectionStyles?.() ?? null;
+  }, [findBridge]);
 
   const hasActiveEditor = useCallback((elementId: string): boolean => {
-    return editorsRef.current.has(elementId);
+    // Direct match
+    if (editorsRef.current.has(elementId)) return true;
+    
+    // Check for sub-ID matches
+    for (const registeredId of editorsRef.current.keys()) {
+      if (registeredId.startsWith(`${elementId}-`)) {
+        return true;
+      }
+    }
+    
+    return false;
   }, []);
 
   const getActiveElementId = useCallback((): string | null => {

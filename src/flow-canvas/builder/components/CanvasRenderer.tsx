@@ -4221,8 +4221,32 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
         return { className: 'bg-white shadow-lg' };
       case 'dark':
         return { className: 'bg-gray-900 shadow-lg' };
-      case 'glass':
-        return { className: 'backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg' };
+      case 'glass': {
+        // Use glassTint and glassBlur from frame.glass if available, otherwise defaults
+        const glassSettings = (frame as any).glass as { backdropBlur?: number; glassTint?: string; glassTintOpacity?: number } | undefined;
+        const glassTint = glassSettings?.glassTint || 'rgba(255,255,255,0.1)';
+        const glassBlur = glassSettings?.backdropBlur || 12;
+        const glassTintOpacity = glassSettings?.glassTintOpacity;
+        
+        // If glassTint is a hex color, convert to rgba with opacity
+        let tintColor = glassTint;
+        if (glassTint.startsWith('#') && glassTintOpacity !== undefined) {
+          const hex = glassTint.replace('#', '');
+          const r = parseInt(hex.substr(0, 2), 16);
+          const g = parseInt(hex.substr(2, 2), 16);
+          const b = parseInt(hex.substr(4, 2), 16);
+          tintColor = `rgba(${r}, ${g}, ${b}, ${glassTintOpacity / 100})`;
+        }
+        
+        return { 
+          className: 'border border-white/20 shadow-lg',
+          style: {
+            backdropFilter: `blur(${glassBlur}px)`,
+            WebkitBackdropFilter: `blur(${glassBlur}px)`,
+            backgroundColor: tintColor,
+          }
+        };
+      }
       case 'custom':
         return {
           className: 'shadow-lg',
