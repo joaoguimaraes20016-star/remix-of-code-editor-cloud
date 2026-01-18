@@ -48,6 +48,7 @@ export function EditorStoreAdapter({ children }: { children: ReactNode }) {
       addPage: (multiDocStore as any).addPage ?? (() => {}),
       deleteNode: multiDocStore.deleteNode,
       deletePage: (multiDocStore as any).deletePage ?? (() => {}),
+      reorderPages: (multiDocStore as any).reorderPages ?? (() => {}),
       moveNodeUp: multiDocStore.moveNodeUp,
       moveNodeDown: multiDocStore.moveNodeDown,
       moveNodeToParent: multiDocStore.moveNodeToParent,
