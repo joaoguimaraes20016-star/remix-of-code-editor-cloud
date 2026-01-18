@@ -60,15 +60,29 @@ export const useScrollAnimation = (options: UseScrollAnimationOptions): UseScrol
 
     const element = ref.current;
     const threshold = settings.threshold ?? 0.1;
+    const scrollOffset = settings.scrollOffset ?? 0;
+    const shouldRepeat = settings.repeat ?? false;
+    const shouldExitAnimate = settings.exitAnimation ?? false;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated) {
-          setIsVisible(true);
-          setHasAnimated(true);
+        if (entry.isIntersecting) {
+          // Only animate if not yet animated, or if repeat is enabled
+          if (!hasAnimated || shouldRepeat) {
+            setIsVisible(true);
+            if (!shouldRepeat) {
+              setHasAnimated(true);
+            }
+          }
+        } else if (shouldExitAnimate && isVisible) {
+          // Reset visibility when exiting viewport (for exit animations)
+          setIsVisible(false);
         }
       },
-      { threshold, rootMargin: '0px' }
+      { 
+        threshold, 
+        rootMargin: `${scrollOffset}px 0px ${scrollOffset}px 0px` 
+      }
     );
 
     observer.observe(element);
@@ -76,7 +90,7 @@ export const useScrollAnimation = (options: UseScrollAnimationOptions): UseScrol
     return () => {
       observer.disconnect();
     };
-  }, [settings, previewMode, hasAnimated]);
+  }, [settings, previewMode, hasAnimated, isVisible]);
 
   // Get animation class
   const getAnimationClass = useCallback(() => {
@@ -115,7 +129,25 @@ export const useScrollAnimation = (options: UseScrollAnimationOptions): UseScrol
     }
     
     if (settings.easing) {
-      style.animationTimingFunction = settings.easing;
+      // Handle spring easing with custom cubic-bezier approximation
+      if (settings.easing === 'spring') {
+        const stiffness = settings.springStiffness ?? 300;
+        const damping = settings.springDamping ?? 30;
+        // Approximate spring with cubic-bezier based on stiffness/damping ratio
+        const ratio = damping / Math.sqrt(stiffness);
+        if (ratio < 0.5) {
+          // Underdamped - bouncy
+          style.animationTimingFunction = 'cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        } else if (ratio < 1) {
+          // Slightly underdamped
+          style.animationTimingFunction = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+        } else {
+          // Critically damped or overdamped
+          style.animationTimingFunction = 'cubic-bezier(0.22, 1, 0.36, 1)';
+        }
+      } else {
+        style.animationTimingFunction = settings.easing;
+      }
     }
     
     // For scroll animations that haven't triggered yet

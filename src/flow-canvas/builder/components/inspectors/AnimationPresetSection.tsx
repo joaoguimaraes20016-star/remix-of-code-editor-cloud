@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Element, AnimationSettings } from '@/flow-canvas/types/infostack';
 import { cn } from '@/lib/utils';
-import { Sparkles, Play, ChevronRight, ChevronDown, X } from 'lucide-react';
+import { Sparkles, Play, ChevronRight, ChevronDown, X, Zap, RotateCcw } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -12,6 +12,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 
 interface AnimationPreset {
   id: string;
@@ -139,8 +140,17 @@ const easingOptions = [
   { value: 'ease-out', label: 'Ease Out' },
   { value: 'ease-in', label: 'Ease In' },
   { value: 'ease-in-out', label: 'Ease In/Out' },
-  { value: 'spring', label: 'Spring' },
+  { value: 'spring', label: 'Spring (Custom)' },
   { value: 'linear', label: 'Linear' },
+];
+
+// Spring physics presets
+const springPresets = [
+  { label: 'Gentle', stiffness: 120, damping: 20, mass: 1 },
+  { label: 'Default', stiffness: 300, damping: 30, mass: 1 },
+  { label: 'Snappy', stiffness: 400, damping: 25, mass: 0.8 },
+  { label: 'Bouncy', stiffness: 200, damping: 15, mass: 1.2 },
+  { label: 'Stiff', stiffness: 500, damping: 40, mass: 0.5 },
 ];
 
 interface AnimationPresetSectionProps {
@@ -166,6 +176,18 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
   const currentDuration = element.animation?.duration || 500;
   const currentDelay = element.animation?.delay || 0;
   const currentEasing = element.animation?.easing || 'ease-out';
+  
+  // Spring physics values
+  const springStiffness = element.animation?.springStiffness ?? 300;
+  const springDamping = element.animation?.springDamping ?? 30;
+  const springMass = element.animation?.springMass ?? 1;
+  
+  // Scroll animation options
+  const scrollOffset = element.animation?.scrollOffset ?? 0;
+  const exitAnimation = element.animation?.exitAnimation ?? false;
+  const repeatAnimation = element.animation?.repeat ?? false;
+  
+  const [showSpringAdvanced, setShowSpringAdvanced] = useState(false);
   
   const currentPreset = animationPresets.find(p => p.id === currentEffect || p.animation.type === currentEffect);
   
@@ -349,6 +371,164 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Spring Physics Controls - shown when easing is spring */}
+              {currentEasing === 'spring' && (
+                <div className="space-y-3 pt-2 border-t border-builder-border/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-[hsl(315,85%,58%)]" />
+                      <span className="text-xs font-medium text-builder-text">Spring Physics</span>
+                    </div>
+                    <button
+                      onClick={() => setShowSpringAdvanced(!showSpringAdvanced)}
+                      className="text-[10px] text-builder-text-muted hover:text-builder-text"
+                    >
+                      {showSpringAdvanced ? 'Simple' : 'Advanced'}
+                    </button>
+                  </div>
+                  
+                  {/* Spring Presets */}
+                  {!showSpringAdvanced && (
+                    <div className="flex flex-wrap gap-1">
+                      {springPresets.map((preset) => (
+                        <button
+                          key={preset.label}
+                          onClick={() => handleAnimationChange({
+                            springStiffness: preset.stiffness,
+                            springDamping: preset.damping,
+                            springMass: preset.mass,
+                          })}
+                          className={cn(
+                            "px-2 py-1 text-[10px] rounded border transition-colors",
+                            springStiffness === preset.stiffness && 
+                            springDamping === preset.damping && 
+                            springMass === preset.mass
+                              ? "border-[hsl(315,85%,58%)] bg-[hsl(315,85%,58%)]/10 text-[hsl(315,85%,58%)]"
+                              : "border-builder-border text-builder-text-muted hover:text-builder-text"
+                          )}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Advanced Spring Controls */}
+                  {showSpringAdvanced && (
+                    <div className="space-y-2">
+                      {/* Stiffness */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-builder-text-muted">Stiffness</span>
+                          <span className="text-[10px] font-mono text-builder-text-dim">{springStiffness}</span>
+                        </div>
+                        <Slider
+                          value={[springStiffness]}
+                          onValueChange={([v]) => handleAnimationChange({ springStiffness: v })}
+                          min={50}
+                          max={500}
+                          step={10}
+                          className="w-full"
+                        />
+                      </div>
+                      
+                      {/* Damping */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-builder-text-muted">Damping</span>
+                          <span className="text-[10px] font-mono text-builder-text-dim">{springDamping}</span>
+                        </div>
+                        <Slider
+                          value={[springDamping]}
+                          onValueChange={([v]) => handleAnimationChange({ springDamping: v })}
+                          min={5}
+                          max={50}
+                          step={1}
+                          className="w-full"
+                        />
+                      </div>
+                      
+                      {/* Mass */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-builder-text-muted">Mass</span>
+                          <span className="text-[10px] font-mono text-builder-text-dim">{springMass.toFixed(1)}</span>
+                        </div>
+                        <Slider
+                          value={[springMass * 10]}
+                          onValueChange={([v]) => handleAnimationChange({ springMass: v / 10 })}
+                          min={5}
+                          max={50}
+                          step={1}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Scroll Animation Options - shown when trigger is scroll */}
+              {currentTrigger === 'scroll' && (
+                <div className="space-y-3 pt-2 border-t border-builder-border/50">
+                  <div className="flex items-center gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5 text-builder-text-muted" />
+                    <span className="text-xs text-builder-text-muted">Scroll Options</span>
+                  </div>
+                  
+                  {/* Threshold */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-builder-text-muted">Trigger Threshold</span>
+                      <span className="text-[10px] font-mono text-builder-text-dim">{Math.round((element.animation?.threshold ?? 0.1) * 100)}%</span>
+                    </div>
+                    <Slider
+                      value={[(element.animation?.threshold ?? 0.1) * 100]}
+                      onValueChange={([v]) => handleAnimationChange({ threshold: v / 100 })}
+                      min={0}
+                      max={100}
+                      step={5}
+                      className="w-full"
+                    />
+                  </div>
+                  
+                  {/* Scroll Offset */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-builder-text-muted">Offset</span>
+                      <span className="text-[10px] font-mono text-builder-text-dim">{scrollOffset}px</span>
+                    </div>
+                    <Slider
+                      value={[scrollOffset]}
+                      onValueChange={([v]) => handleAnimationChange({ scrollOffset: v })}
+                      min={-200}
+                      max={200}
+                      step={10}
+                      className="w-full"
+                    />
+                  </div>
+                  
+                  {/* Toggle Options */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-builder-text-muted">Animate on exit</span>
+                    <Switch
+                      checked={exitAnimation}
+                      onCheckedChange={(v) => handleAnimationChange({ exitAnimation: v })}
+                      className="scale-75"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-builder-text-muted">Repeat on re-entry</span>
+                    <Switch
+                      checked={repeatAnimation}
+                      onCheckedChange={(v) => handleAnimationChange({ repeat: v })}
+                      className="scale-75"
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
