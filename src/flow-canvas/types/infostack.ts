@@ -114,8 +114,20 @@ export interface ApplicationFlowStepSettings {
   inputStyle?: 'default' | 'minimal' | 'rounded' | 'square' | 'pill';
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   titleColor?: string;
+  titleColorType?: 'solid' | 'gradient';
+  titleGradient?: {
+    type: 'linear' | 'radial';
+    angle: number;
+    stops: Array<{ color: string; position: number }>;
+  };
   descriptionSize?: 'xs' | 'sm' | 'base' | 'lg';
   descriptionColor?: string;
+  descriptionColorType?: 'solid' | 'gradient';
+  descriptionGradient?: {
+    type: 'linear' | 'radial';
+    angle: number;
+    stops: Array<{ color: string; position: number }>;
+  };
   // Scale question type settings
   scaleMax?: number;
   scaleMinLabel?: string;

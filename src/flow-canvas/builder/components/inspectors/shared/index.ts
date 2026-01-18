@@ -8,3 +8,11 @@
 export { CollapsibleSection, type CollapsibleSectionProps } from './CollapsibleSection';
 export { FieldGroup, type FieldGroupProps } from './FieldGroup';
 export { CanvasErrorBoundary, withErrorBoundary } from './CanvasErrorBoundary';
+export { 
+  ColorGradientControl, 
+  getColorOrGradientCSS, 
+  getTextColorStyle, 
+  getBackgroundStyle,
+  type ColorType,
+  type ColorGradientControlProps 
+} from './ColorGradientControl';

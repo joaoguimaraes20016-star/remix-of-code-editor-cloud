@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS } from '../modals';
 import type { GradientValue } from '../modals';
+import { ColorGradientControl, type ColorType } from './shared';
 import { ButtonIconPicker } from '../ButtonIconPicker';
 import {
   Sparkles,
@@ -351,44 +352,38 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
         
         <Section title="Colors" icon={<Sparkles className="w-4 h-4" />}>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Number</span>
-              <ColorPickerPopover
-                color={(element.props?.numberColor as string) || '#ffffff'}
-                onChange={(c) => handlePropsChange('numberColor', c)}
-                showGradientOption={false}
-              >
-                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.numberColor as string) || '#ffffff' }} />
-                  <span className="text-xs text-builder-text-muted">Edit</span>
-                </button>
-              </ColorPickerPopover>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-builder-text-muted">Number</Label>
+              <ColorGradientControl
+                colorType={(element.props?.numberColorType as ColorType) || 'solid'}
+                solidColor={(element.props?.numberColor as string) || '#ffffff'}
+                gradient={element.props?.numberGradient as GradientValue | undefined}
+                onColorTypeChange={(type) => handlePropsChange('numberColorType', type)}
+                onSolidColorChange={(color) => handlePropsChange('numberColor', color)}
+                onGradientChange={(gradient) => handlePropsChange('numberGradient', gradient)}
+              />
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Suffix</span>
-              <ColorPickerPopover
-                color={(element.props?.suffixColor as string) || '#8B5CF6'}
-                onChange={(c) => handlePropsChange('suffixColor', c)}
-                showGradientOption={false}
-              >
-                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.suffixColor as string) || '#8B5CF6' }} />
-                  <span className="text-xs text-builder-text-muted">Edit</span>
-                </button>
-              </ColorPickerPopover>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-builder-text-muted">Suffix</Label>
+              <ColorGradientControl
+                colorType={(element.props?.suffixColorType as ColorType) || 'solid'}
+                solidColor={(element.props?.suffixColor as string) || '#8B5CF6'}
+                gradient={element.props?.suffixGradient as GradientValue | undefined}
+                onColorTypeChange={(type) => handlePropsChange('suffixColorType', type)}
+                onSolidColorChange={(color) => handlePropsChange('suffixColor', color)}
+                onGradientChange={(gradient) => handlePropsChange('suffixGradient', gradient)}
+              />
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Label</span>
-              <ColorPickerPopover
-                color={(element.props?.labelColor as string) || '#888888'}
-                onChange={(c) => handlePropsChange('labelColor', c)}
-                showGradientOption={false}
-              >
-                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.labelColor as string) || '#888888' }} />
-                  <span className="text-xs text-builder-text-muted">Edit</span>
-                </button>
-              </ColorPickerPopover>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-builder-text-muted">Label</Label>
+              <ColorGradientControl
+                colorType={(element.props?.labelColorType as ColorType) || 'solid'}
+                solidColor={(element.props?.labelColor as string) || '#888888'}
+                gradient={element.props?.labelGradient as GradientValue | undefined}
+                onColorTypeChange={(type) => handlePropsChange('labelColorType', type)}
+                onSolidColorChange={(color) => handlePropsChange('labelColor', color)}
+                onGradientChange={(gradient) => handlePropsChange('labelGradient', gradient)}
+              />
             </div>
           </div>
         </Section>
