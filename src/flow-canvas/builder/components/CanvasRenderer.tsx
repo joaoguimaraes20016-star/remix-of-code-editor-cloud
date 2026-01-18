@@ -419,6 +419,31 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
     if (element.styles?.display) base.display = element.styles.display;
     if (element.styles?.overflow) base.overflow = element.styles.overflow;
     
+    // Apply dimension properties
+    if (element.styles?.width) base.width = element.styles.width;
+    if (element.styles?.height) base.height = element.styles.height;
+    if (element.styles?.maxWidth) base.maxWidth = element.styles.maxWidth;
+    if (element.styles?.minHeight) base.minHeight = element.styles.minHeight;
+    if (element.styles?.minWidth) base.minWidth = element.styles.minWidth;
+    if (element.styles?.maxHeight) base.maxHeight = element.styles.maxHeight;
+    
+    // Apply spacing/padding properties
+    if (element.styles?.padding) base.padding = element.styles.padding;
+    if (element.styles?.paddingTop) base.paddingTop = element.styles.paddingTop;
+    if (element.styles?.paddingRight) base.paddingRight = element.styles.paddingRight;
+    if (element.styles?.paddingBottom) base.paddingBottom = element.styles.paddingBottom;
+    if (element.styles?.paddingLeft) base.paddingLeft = element.styles.paddingLeft;
+    
+    // Apply margin properties
+    if (element.styles?.margin) base.margin = element.styles.margin;
+    if (element.styles?.marginTop) base.marginTop = element.styles.marginTop;
+    if (element.styles?.marginRight) base.marginRight = element.styles.marginRight;
+    if (element.styles?.marginBottom) base.marginBottom = element.styles.marginBottom;
+    if (element.styles?.marginLeft) base.marginLeft = element.styles.marginLeft;
+    
+    // Apply alignment
+    if (element.styles?.alignSelf) base.alignSelf = element.styles.alignSelf as React.CSSProperties['alignSelf'];
+    
     // NEW: Apply rotation
     if (element.styles?.rotate) {
       const rotateVal = typeof element.styles.rotate === 'string' 
