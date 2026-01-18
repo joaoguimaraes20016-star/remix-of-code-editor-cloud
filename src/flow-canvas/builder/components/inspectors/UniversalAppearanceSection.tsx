@@ -23,15 +23,30 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignHorizontalJustifyCenter,
+  AlignVerticalJustifyCenter,
   Maximize2,
   Move,
   Droplets,
   Blend,
   Palette,
+  ArrowUpDown,
+  ArrowLeftRight,
+  Grid3X3,
+  Anchor,
 } from 'lucide-react';
 import { ColorPickerPopover, ShadowEditor } from '../modals';
 import { CollapsibleSection } from './shared/CollapsibleSection';
-import { blendModeOptions, ShadowLayer, shadowLayersToCSS } from '../../utils/presets';
+import { 
+  blendModeOptions, 
+  ShadowLayer, 
+  shadowLayersToCSS,
+  positionOptions,
+  flexDirectionOptions,
+  flexWrapOptions,
+  justifyContentOptions,
+  alignItemsOptions,
+} from '../../utils/presets';
 
 interface UniversalAppearanceSectionProps {
   element: Element;
@@ -196,17 +211,68 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
         </div>
       </CollapsibleSection>
 
+      {/* ========== POSITION SECTION ========== */}
+      <CollapsibleSection title="Position" icon={<Anchor className="w-4 h-4" />}>
+        <div className="pt-3 space-y-4">
+          {/* Position Mode */}
+          <div className="space-y-2">
+            <span className="text-xs text-builder-text-muted">Position</span>
+            <Select
+              value={(element.styles?.position as string) || 'static'}
+              onValueChange={(v) => handleStyleChange('position', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Static" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                {positionOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Position offsets - shown for non-static positions */}
+          {element.styles?.position && element.styles.position !== 'static' && (
+            <div className="space-y-2">
+              <span className="text-xs text-builder-text-dim">Offsets</span>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'top', label: 'Top' },
+                  { key: 'right', label: 'Right' },
+                  { key: 'bottom', label: 'Bottom' },
+                  { key: 'left', label: 'Left' },
+                ].map(({ key, label }) => (
+                  <div key={key} className="flex items-center gap-1">
+                    <span className="text-[10px] text-builder-text-dim w-10">{label}</span>
+                    <Input
+                      className="builder-input text-xs text-center h-6 flex-1"
+                      value={(element.styles?.[key as keyof typeof element.styles] as string) || ''}
+                      onChange={(e) => {
+                        const v = e.target.value.trim();
+                        handleStyleChange(key, v ? (/^\d+$/.test(v) ? `${v}px` : v) : '');
+                      }}
+                      placeholder="auto"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
       {/* ========== LAYOUT & SPACING SECTION ========== */}
       <CollapsibleSection title="Layout & Spacing" icon={<Move className="w-4 h-4" />}>
         <div className="pt-3 space-y-4">
-          {/* Alignment within parent */}
+          {/* Align Self */}
           <div className="space-y-2">
             <span className="text-xs text-builder-text-muted">Align Self</span>
             <div className="flex gap-1">
               {[
-                { value: 'flex-start', icon: AlignLeft, label: 'Left' },
+                { value: 'flex-start', icon: AlignLeft, label: 'Start' },
                 { value: 'center', icon: AlignCenter, label: 'Center' },
-                { value: 'flex-end', icon: AlignRight, label: 'Right' },
+                { value: 'flex-end', icon: AlignRight, label: 'End' },
               ].map(({ value, icon: Icon, label }) => (
                 <button
                   key={value}
@@ -223,6 +289,23 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Gap */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Grid3X3 className="w-3.5 h-3.5 text-builder-text-muted" />
+              <span className="text-xs text-builder-text-muted">Gap</span>
+            </div>
+            <Input
+              type="number"
+              className="builder-input w-20 text-xs text-center"
+              value={parseInt((element.styles?.gap as string) || '0')}
+              onChange={(e) => handleStyleChange('gap', `${e.target.value}px`)}
+              min={0}
+              max={200}
+              placeholder="0"
+            />
           </div>
 
           {/* Padding */}
@@ -275,6 +358,122 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                   min={0} max={500} step={4}
                 />
               </div>
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* ========== FLEXBOX SECTION (for containers) ========== */}
+      <CollapsibleSection title="Flexbox" icon={<Layout className="w-4 h-4" />}>
+        <div className="pt-3 space-y-4">
+          <p className="text-[10px] text-builder-text-dim">
+            Controls for container elements with flex display.
+          </p>
+          
+          {/* Flex Direction */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <ArrowLeftRight className="w-3.5 h-3.5 text-builder-text-muted" />
+              <span className="text-xs text-builder-text-muted">Direction</span>
+            </div>
+            <Select
+              value={(element.styles?.flexDirection as string) || 'column'}
+              onValueChange={(v) => handleStyleChange('flexDirection', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Column" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                {flexDirectionOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Flex Wrap */}
+          <div className="space-y-2">
+            <span className="text-xs text-builder-text-muted">Wrap</span>
+            <Select
+              value={(element.styles?.flexWrap as string) || 'nowrap'}
+              onValueChange={(v) => handleStyleChange('flexWrap', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="No Wrap" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                {flexWrapOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Justify Content */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <AlignHorizontalJustifyCenter className="w-3.5 h-3.5 text-builder-text-muted" />
+              <span className="text-xs text-builder-text-muted">Justify Content</span>
+            </div>
+            <Select
+              value={(element.styles?.justifyContent as string) || 'flex-start'}
+              onValueChange={(v) => handleStyleChange('justifyContent', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Start" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                {justifyContentOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Align Items */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <AlignVerticalJustifyCenter className="w-3.5 h-3.5 text-builder-text-muted" />
+              <span className="text-xs text-builder-text-muted">Align Items</span>
+            </div>
+            <Select
+              value={(element.styles?.alignItems as string) || 'stretch'}
+              onValueChange={(v) => handleStyleChange('alignItems', v)}
+            >
+              <SelectTrigger className="builder-input text-xs">
+                <SelectValue placeholder="Stretch" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                {alignItemsOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Flex Grow/Shrink */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Grow</span>
+              <Input
+                type="number"
+                className="builder-input w-14 text-xs text-center"
+                value={(element.styles?.flexGrow as string) || '0'}
+                onChange={(e) => handleStyleChange('flexGrow', e.target.value)}
+                min={0}
+                max={10}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Shrink</span>
+              <Input
+                type="number"
+                className="builder-input w-14 text-xs text-center"
+                value={(element.styles?.flexShrink as string) || '1'}
+                onChange={(e) => handleStyleChange('flexShrink', e.target.value)}
+                min={0}
+                max={10}
+              />
             </div>
           </div>
         </div>

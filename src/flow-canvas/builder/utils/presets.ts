@@ -540,6 +540,48 @@ export const blendModeOptions = [
 ];
 
 // ===========================================
+// POSITION & LAYOUT PRESETS
+// ===========================================
+
+export const positionOptions = [
+  { value: 'static', label: 'Static' },
+  { value: 'relative', label: 'Relative' },
+  { value: 'absolute', label: 'Absolute' },
+  { value: 'fixed', label: 'Fixed' },
+  { value: 'sticky', label: 'Sticky' },
+];
+
+export const flexDirectionOptions = [
+  { value: 'row', label: 'Row →' },
+  { value: 'row-reverse', label: 'Row ←' },
+  { value: 'column', label: 'Column ↓' },
+  { value: 'column-reverse', label: 'Column ↑' },
+];
+
+export const flexWrapOptions = [
+  { value: 'nowrap', label: 'No Wrap' },
+  { value: 'wrap', label: 'Wrap' },
+  { value: 'wrap-reverse', label: 'Wrap Reverse' },
+];
+
+export const justifyContentOptions = [
+  { value: 'flex-start', label: 'Start' },
+  { value: 'center', label: 'Center' },
+  { value: 'flex-end', label: 'End' },
+  { value: 'space-between', label: 'Between' },
+  { value: 'space-around', label: 'Around' },
+  { value: 'space-evenly', label: 'Evenly' },
+];
+
+export const alignItemsOptions = [
+  { value: 'flex-start', label: 'Start' },
+  { value: 'center', label: 'Center' },
+  { value: 'flex-end', label: 'End' },
+  { value: 'stretch', label: 'Stretch' },
+  { value: 'baseline', label: 'Baseline' },
+];
+
+// ===========================================
 // BORDER RADIUS PRESETS
 // ===========================================
 

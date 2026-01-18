@@ -202,6 +202,23 @@ function resolveElementStyles(element: FlowCanvasElement): React.CSSProperties {
   // Alignment
   if (s?.alignSelf) base.alignSelf = s.alignSelf as React.CSSProperties['alignSelf'];
   
+  // Position styles
+  if (s?.position) base.position = s.position as React.CSSProperties['position'];
+  if (s?.top) base.top = s.top;
+  if (s?.right) base.right = s.right;
+  if (s?.bottom) base.bottom = s.bottom;
+  if (s?.left) base.left = s.left;
+  
+  // Flexbox styles (for container elements)
+  if (s?.display) base.display = s.display as React.CSSProperties['display'];
+  if (s?.flexDirection) base.flexDirection = s.flexDirection as React.CSSProperties['flexDirection'];
+  if (s?.flexWrap) base.flexWrap = s.flexWrap as React.CSSProperties['flexWrap'];
+  if (s?.justifyContent) base.justifyContent = s.justifyContent as React.CSSProperties['justifyContent'];
+  if (s?.alignItems) base.alignItems = s.alignItems as React.CSSProperties['alignItems'];
+  if (s?.gap) base.gap = s.gap;
+  if (s?.flexGrow) base.flexGrow = Number(s.flexGrow);
+  if (s?.flexShrink) base.flexShrink = Number(s.flexShrink);
+  
   // Appearance
   if (s?.opacity) {
     const opacityVal = typeof s.opacity === 'string' ? parseInt(s.opacity) / 100 : s.opacity;

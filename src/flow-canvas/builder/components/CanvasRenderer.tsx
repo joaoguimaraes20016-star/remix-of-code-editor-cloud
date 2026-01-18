@@ -445,6 +445,23 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
     // Apply alignment
     if (element.styles?.alignSelf) base.alignSelf = element.styles.alignSelf as React.CSSProperties['alignSelf'];
     
+    // NEW: Apply position styles
+    if (element.styles?.position) base.position = element.styles.position as React.CSSProperties['position'];
+    if (element.styles?.top) base.top = element.styles.top;
+    if (element.styles?.right) base.right = element.styles.right;
+    if (element.styles?.bottom) base.bottom = element.styles.bottom;
+    if (element.styles?.left) base.left = element.styles.left;
+    
+    // NEW: Apply flexbox styles (for container elements)
+    if (element.styles?.display) base.display = element.styles.display as React.CSSProperties['display'];
+    if (element.styles?.flexDirection) base.flexDirection = element.styles.flexDirection as React.CSSProperties['flexDirection'];
+    if (element.styles?.flexWrap) base.flexWrap = element.styles.flexWrap as React.CSSProperties['flexWrap'];
+    if (element.styles?.justifyContent) base.justifyContent = element.styles.justifyContent as React.CSSProperties['justifyContent'];
+    if (element.styles?.alignItems) base.alignItems = element.styles.alignItems as React.CSSProperties['alignItems'];
+    if (element.styles?.gap) base.gap = element.styles.gap;
+    if (element.styles?.flexGrow) base.flexGrow = Number(element.styles.flexGrow);
+    if (element.styles?.flexShrink) base.flexShrink = Number(element.styles.flexShrink);
+    
     // NEW: Apply rotation
     if (element.styles?.rotate) {
       const rotateVal = typeof element.styles.rotate === 'string' 
