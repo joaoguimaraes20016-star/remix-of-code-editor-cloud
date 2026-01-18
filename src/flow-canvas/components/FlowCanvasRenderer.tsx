@@ -882,10 +882,12 @@ export function FlowCanvasRenderer({
         const getTextStyle = (colorType: string, solidColor: string | undefined, gradient?: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): React.CSSProperties => {
           if (colorType === 'gradient' && gradient) {
             return {
-              background: gradientToCSS(gradient),
+              // Use backgroundImage (NOT background) so we don't reset background-clip back to initial
+              backgroundImage: gradientToCSS(gradient),
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
+              color: 'transparent',
               display: 'inline',
             } as React.CSSProperties;
           }
