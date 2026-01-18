@@ -54,6 +54,12 @@ interface InlineTextEditorProps {
   elementId?: string;
   /** Additional inline styles for the container */
   style?: React.CSSProperties;
+  /**
+   * Disable inline formatting (color/gradient via toolbar selection).
+   * When true, only text content can be edited - styling is controlled by inspector only.
+   * Use for stat-number fields where inspector is the single source of truth for styling.
+   */
+  disableInlineFormatting?: boolean;
 }
 
 // Needs to accept refs because dnd-kit wrappers may clone children and attach a ref.
@@ -68,6 +74,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   onEditingChange,
   elementId,
   style: externalStyle,
+  disableInlineFormatting = false,
 }, forwardedRef) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
@@ -299,15 +306,22 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       }
     });
 
-    // Check if content has inline styled spans - if so, preserve HTML
-    const hasInlineStyles = el.querySelector('span[style]') !== null;
-
-    if (hasInlineStyles) {
-      const htmlContent = sanitizeStyledHTML(el.innerHTML);
-      onChange(htmlContent);
-    } else {
+    // When disableInlineFormatting is true, ALWAYS save plain text only (no HTML spans)
+    // This ensures the inspector remains the single source of truth for styling
+    if (disableInlineFormatting) {
       const newValue = el.innerText;
       onChange(newValue);
+    } else {
+      // Check if content has inline styled spans - if so, preserve HTML
+      const hasInlineStyles = el.querySelector('span[style]') !== null;
+
+      if (hasInlineStyles) {
+        const htmlContent = sanitizeStyledHTML(el.innerHTML);
+        onChange(htmlContent);
+      } else {
+        const newValue = el.innerText;
+        onChange(newValue);
+      }
     }
 
     if (import.meta.env.DEV) {
@@ -762,6 +776,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     const editorEl = contentRef.current;
     let didHandleToggle = false;
 
+    // When disableInlineFormatting is true, skip color/gradient inline styling entirely
+    // The inspector is the single source of truth for styling in this mode
+    const hasColorRequest = newStyles.textFillType !== undefined || 
+                            newStyles.textColor !== undefined || 
+                            newStyles.textGradient !== undefined;
+    
+    if (disableInlineFormatting && hasColorRequest) {
+      // Skip inline color/gradient - let inspector handle it
+      return false;
+    }
+
     const shouldApplyInline =
       newStyles.textColor !== undefined ||
       newStyles.textGradient !== undefined ||
@@ -773,11 +798,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     // Build style options for inline span styling
     const buildStyleOptions = (): SelectionStyleOptions | null => {
       const opts: SelectionStyleOptions = {};
-
-      // Check if user explicitly requested a color/gradient change
-      const hasColorRequest = newStyles.textFillType !== undefined || 
-                              newStyles.textColor !== undefined || 
-                              newStyles.textGradient !== undefined;
 
       // Check if this is a formatting-only change (bold/italic/underline)
       const isFormattingOnly = !hasColorRequest && (
@@ -2282,6 +2302,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           onChange={handleToolbarStyleChange}
           position={toolbarPosition}
           onClose={() => setShowToolbar(false)}
+          hideColorControls={disableInlineFormatting}
         />
       )}
 

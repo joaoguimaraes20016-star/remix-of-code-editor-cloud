@@ -2416,14 +2416,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                       <InlineTextEditor
                         key={`${element.id}-number-${numberColorType}-${numberColor}-${numberGradient ? gradientToCSS(numberGradient) : 'none'}`}
                         value={element.content || '0'}
-                        onChange={(newContent: string) => {
-                          const plain = newContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
-                          onUpdate?.({ content: plain });
-                        }}
+                        onChange={(newContent: string) => onUpdate?.({ content: newContent })}
                         elementType="text"
                         placeholder="0"
                         disabled={readOnly}
                         elementId={`${element.id}-number`}
+                        disableInlineFormatting={true}
                         initialStyles={{
                           textFillType: (numberColorType as 'solid' | 'gradient') || 'solid',
                           textColor: numberColor,
@@ -2439,14 +2437,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         <InlineTextEditor
                           key={`${element.id}-label-${labelColorType}-${labelColor}-${labelGradient ? gradientToCSS(labelGradient) : 'none'}`}
                           value={statLabel}
-                          onChange={(newContent: string) => {
-                            const plain = newContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
-                            onUpdate?.({ props: { ...element.props, label: plain } });
-                          }}
+                          onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, label: newContent } })}
                           elementType="text"
                           placeholder="LABEL"
                           disabled={readOnly}
                           elementId={`${element.id}-label`}
+                          disableInlineFormatting={true}
                           initialStyles={{
                             textFillType: (labelColorType as 'solid' | 'gradient') || 'solid',
                             textColor: labelColor,
