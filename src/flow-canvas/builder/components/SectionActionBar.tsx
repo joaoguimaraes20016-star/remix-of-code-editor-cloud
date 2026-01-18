@@ -119,6 +119,7 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleFinishEdit}
               onKeyDown={handleKeyDown}
+              onFocus={(e) => e.stopPropagation()}
               className="bg-transparent border-none outline-none text-[hsl(var(--builder-text))] text-xs font-medium w-20"
               autoFocus
               onClick={(e) => e.stopPropagation()}

@@ -71,13 +71,7 @@ export function SortableItem({ id, children, className }: SortableItemProps) {
         style={handleStyle}
         {...attributes}
         {...listeners}
-        onPointerDown={(e) => {
-          // Debug: Log pointer events to verify handle is receiving clicks
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[inspector-dnd] SortableItem handle pointer down:', id, e.target);
-          }
-          // IMPORTANT: Do NOT stop propagation - dnd-kit needs events to bubble
-        }}
+        // IMPORTANT: Do NOT stop propagation - dnd-kit needs events to bubble
         className="flex-shrink-0 min-w-6 min-h-6 flex items-center justify-center 
                    rounded cursor-grab active:cursor-grabbing 
                    opacity-40 hover:opacity-100 group-hover:opacity-100 
