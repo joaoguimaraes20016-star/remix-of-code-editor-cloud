@@ -38,12 +38,13 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
   element,
   onUpdate,
 }) => {
+  // Use minimal updates - EditorShell merges with existing values
   const handleStyleChange = (key: string, value: string) => {
-    onUpdate({ styles: { ...element.styles, [key]: value } });
+    onUpdate({ styles: { [key]: value } });
   };
 
   const handlePropsChange = (key: string, value: unknown) => {
-    onUpdate({ props: { ...element.props, [key]: value } });
+    onUpdate({ props: { [key]: value } });
   };
 
   // Parse numeric values from styles

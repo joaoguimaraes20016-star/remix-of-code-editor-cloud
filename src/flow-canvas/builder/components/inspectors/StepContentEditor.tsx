@@ -164,8 +164,9 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
   const questionDescription = stepSettings.description || '';
   const buttonText = stepSettings.buttonText || 'Continue';
 
+  // Use minimal updates - parent merges with existing settings
   const updateSettings = (updates: Partial<StepSettings>) => {
-    onUpdate({ settings: { ...stepSettings, ...updates } } as any);
+    onUpdate({ settings: updates } as any);
   };
 
   const addOption = () => {

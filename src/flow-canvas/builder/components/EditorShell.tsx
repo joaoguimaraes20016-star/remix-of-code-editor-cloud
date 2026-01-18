@@ -618,12 +618,19 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           for (const block of stack.blocks) {
             const element = block.elements.find(el => el.id === elementId);
             if (element) {
-              // CRITICAL: Merge props instead of replacing to prevent stale closure overwrites
+              // CRITICAL: Merge props AND styles instead of replacing to prevent stale closure overwrites
               // When updates.props is provided, merge it with existing element.props
               if (updates.props && element.props) {
                 updates = {
                   ...updates,
                   props: { ...element.props, ...updates.props }
+                };
+              }
+              // Also merge styles to prevent style overwrites
+              if (updates.styles && element.styles) {
+                updates = {
+                  ...updates,
+                  styles: { ...element.styles, ...updates.styles }
                 };
               }
               Object.assign(element, updates);
