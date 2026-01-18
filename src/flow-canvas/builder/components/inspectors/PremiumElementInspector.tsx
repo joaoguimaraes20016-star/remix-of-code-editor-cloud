@@ -147,10 +147,10 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
   onUpdate,
   primaryColor = '#8B5CF6',
 }) => {
-  // Move sensors to top level - low distance for immediate response
+  // Move sensors to top level - zero distance for immediate response
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 1 },
+      activationConstraint: { distance: 0 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -562,7 +562,12 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragEnd={handleTickerDragEnd}
+            onDragStart={(event) => console.log('[inspector-dnd] Ticker drag start:', event.active.id)}
+            onDragEnd={(event) => {
+              console.log('[inspector-dnd] Ticker drag end:', event.active.id, '->', event.over?.id);
+              handleTickerDragEnd(event);
+            }}
+            onDragCancel={() => console.log('[inspector-dnd] Ticker drag cancelled')}
           >
             <SortableContext
               items={tickerItems.map(item => item.id)}
