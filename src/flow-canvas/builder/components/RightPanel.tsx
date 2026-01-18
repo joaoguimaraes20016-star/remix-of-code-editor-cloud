@@ -480,9 +480,9 @@ const ElementInspector: React.FC<{
   const [isVideoEmbedOpen, setIsVideoEmbedOpen] = useState(false);
   const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   
-  // Shared sensors for all sortable lists in this inspector - low distance for immediate response
+  // Shared sensors for all sortable lists in this inspector - zero distance for immediate response
   const inspectorSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 1 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 0 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -2271,7 +2271,9 @@ const ElementInspector: React.FC<{
                 <DndContext
                   sensors={inspectorSensors}
                   collisionDetection={closestCenter}
+                  onDragStart={(event) => console.log('[inspector-dnd] Step Messages drag start:', event.active.id)}
                   onDragEnd={(event) => {
+                    console.log('[inspector-dnd] Step Messages drag end:', event.active.id, '->', event.over?.id);
                     const { active, over } = event;
                     if (!over || active.id === over.id) return;
                     const currentSteps = (element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...'];
@@ -2281,6 +2283,7 @@ const ElementInspector: React.FC<{
                     const reordered = arrayMove(currentSteps, oldIndex, newIndex);
                     handlePropsChange('customSteps', reordered);
                   }}
+                  onDragCancel={() => console.log('[inspector-dnd] Step Messages drag cancelled')}
                 >
                   <SortableContext
                     items={((element.props?.customSteps as string[]) || ['Analyzing your responses...', 'Calculating results...', 'Preparing your personalized report...']).map((_, i) => `step-${i}`)}
@@ -2440,7 +2443,9 @@ const ElementInspector: React.FC<{
               <DndContext
                 sensors={inspectorSensors}
                 collisionDetection={closestCenter}
+                onDragStart={(event) => console.log('[inspector-dnd] Slides drag start:', event.active.id)}
                 onDragEnd={(event) => {
+                  console.log('[inspector-dnd] Slides drag end:', event.active.id, '->', event.over?.id);
                   const { active, over } = event;
                   if (!over || active.id === over.id) return;
                   const currentSlides = (element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || [];
@@ -2450,6 +2455,7 @@ const ElementInspector: React.FC<{
                   const reordered = arrayMove(currentSlides, oldIndex, newIndex);
                   handlePropsChange('slides', reordered);
                 }}
+                onDragCancel={() => console.log('[inspector-dnd] Slides drag cancelled')}
               >
                 <SortableContext
                   items={((element.props?.slides as Array<{ id: string }>) || []).map((s) => s.id)}
@@ -2583,7 +2589,9 @@ const ElementInspector: React.FC<{
               <DndContext
                 sensors={inspectorSensors}
                 collisionDetection={closestCenter}
+                onDragStart={(event) => console.log('[inspector-dnd] Logos drag start:', event.active.id)}
                 onDragEnd={(event) => {
+                  console.log('[inspector-dnd] Logos drag end:', event.active.id, '->', event.over?.id);
                   const { active, over } = event;
                   if (!over || active.id === over.id) return;
                   const currentLogos = (element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || [];
@@ -2593,6 +2601,7 @@ const ElementInspector: React.FC<{
                   const reordered = arrayMove(currentLogos, oldIndex, newIndex);
                   handlePropsChange('logos', reordered);
                 }}
+                onDragCancel={() => console.log('[inspector-dnd] Logos drag cancelled')}
               >
                 <SortableContext
                   items={((element.props?.logos as Array<{ id: string }>) || []).map((l) => l.id)}
