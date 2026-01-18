@@ -2400,9 +2400,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   return { color: solidColor };
                 };
                 
-                const numberStyle = getTextStyle(numberColorType, numberColor, numberGradient);
                 const suffixStyle = getTextStyle(suffixColorType, suffixColor, suffixGradient);
-                const labelStyle = getTextStyle(labelColorType, labelColor, labelGradient);
                 
                 return (
                   <>
@@ -2416,7 +2414,10 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                       <InlineTextEditor
                         key={`${element.id}-number-${numberColorType}-${numberColor}-${numberGradient ? gradientToCSS(numberGradient) : 'none'}`}
                         value={element.content || '0'}
-                        onChange={(newContent: string) => onUpdate?.({ content: newContent })}
+                        onChange={(newContent: string) => {
+                          const plain = newContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+                          onUpdate?.({ content: plain });
+                        }}
                         elementType="text"
                         placeholder="0"
                         disabled={readOnly}
@@ -2432,14 +2433,14 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                       <span style={{ ...suffixStyle, display: 'inline' }}>{statSuffix}</span>
                     </div>
                     {statLabel && (
-                      <div 
-                        className="text-xs uppercase tracking-wider mt-2"
-                        style={{ ...labelStyle, display: labelColorType === 'gradient' ? 'inline-block' : undefined }}
-                      >
+                      <div className="text-xs uppercase tracking-wider mt-2">
                         <InlineTextEditor
                           key={`${element.id}-label-${labelColorType}-${labelColor}-${labelGradient ? gradientToCSS(labelGradient) : 'none'}`}
                           value={statLabel}
-                          onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, label: newContent } })}
+                          onChange={(newContent: string) => {
+                            const plain = newContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+                            onUpdate?.({ props: { ...element.props, label: plain } });
+                          }}
                           elementType="text"
                           placeholder="LABEL"
                           disabled={readOnly}
@@ -2449,7 +2450,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                             textColor: labelColor,
                             textGradient: labelGradient,
                           }}
-                          style={{}}
+                          style={{ display: 'inline-block' }}
+                          className="inline-block"
                         />
                       </div>
                     )}

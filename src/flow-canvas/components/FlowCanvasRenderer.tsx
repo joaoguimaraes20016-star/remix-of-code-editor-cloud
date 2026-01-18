@@ -911,11 +911,8 @@ export function FlowCanvasRenderer({
               <span style={{ ...suffixStyle, display: 'inline' }}>{suffix}</span>
             </div>
             {statLabel && (
-              <div 
-                className="text-xs uppercase tracking-wider mt-2 opacity-70"
-                style={{ ...labelStyle, display: labelColorType === 'gradient' ? 'inline-block' : undefined }}
-              >
-                {statLabel}
+              <div className="text-xs uppercase tracking-wider mt-2 opacity-70">
+                <span style={{ ...labelStyle, display: 'inline-block' }}>{statLabel}</span>
               </div>
             )}
           </div>
