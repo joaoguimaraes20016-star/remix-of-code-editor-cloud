@@ -359,6 +359,9 @@ function InputRenderer({ element, value, onChange }: InputRendererProps) {
   const placeholder = (element.props.placeholder as string) || '';
   const required = element.props.required as boolean;
   const icon = element.props.icon as string;
+  // NEW: Apply min/max length validation
+  const minLength = element.props.minLength as number | undefined;
+  const maxLength = element.props.maxLength as number | undefined;
   
   return (
     <div key={element.id} className="relative">
@@ -375,6 +378,8 @@ function InputRenderer({ element, value, onChange }: InputRendererProps) {
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
+        minLength={minLength}
+        maxLength={maxLength}
         className={cn(
           'w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground',
           'focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
@@ -936,6 +941,7 @@ export function FlowCanvasRenderer({
         const tickerDirection = (element.props?.direction as string) || 'left';
         const tickerTextFillType = (element.props?.textFillType as string) || 'solid';
         const tickerTextGradient = element.props?.textGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> };
+        const tickerPauseOnHover = element.props?.pauseOnHover !== false; // Default true
         const tickerFontSizeMap: Record<string, string> = { xs: '10px', sm: '12px', md: '14px', lg: '16px', xl: '18px' };
         const tickerFontWeightMap: Record<string, number> = { normal: 400, medium: 500, semibold: 600, bold: 700 };
         
@@ -946,6 +952,9 @@ export function FlowCanvasRenderer({
           backgroundClip: 'text',
         } : { color: tickerTextColor || undefined };
         
+        // State for pause on hover
+        const [isPaused, setIsPaused] = React.useState(false);
+        
         return (
           <div 
             key={element.id} 
@@ -955,8 +964,13 @@ export function FlowCanvasRenderer({
               '--ticker-direction': tickerDirection === 'right' ? 'reverse' : 'normal',
               backgroundColor: tickerBgColor || undefined,
             } as React.CSSProperties}
+            onMouseEnter={() => tickerPauseOnHover && setIsPaused(true)}
+            onMouseLeave={() => tickerPauseOnHover && setIsPaused(false)}
           >
-            <div className="ticker-content">
+            <div 
+              className="ticker-content"
+              style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
+            >
               {[...tickerItems, ...tickerItems].map((item, i) => (
                 <span 
                   key={i} 

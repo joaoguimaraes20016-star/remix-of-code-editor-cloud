@@ -2501,8 +2501,13 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const tickerFontWeight = (element.props?.fontWeight as string) || 'medium';
         const tickerLetterSpacing = (element.props?.letterSpacing as number) ?? 0.05;
         const tickerDirection = (element.props?.direction as string) || 'left';
+        const tickerPauseOnHover = element.props?.pauseOnHover !== false; // Default true
         const tickerFontSizeMap: Record<string, string> = { xs: '10px', sm: '12px', md: '14px', lg: '16px', xl: '18px' };
         const tickerFontWeightMap: Record<string, number> = { normal: 400, medium: 500, semibold: 600, bold: 700 };
+        
+        // State for pause on hover in builder
+        const [tickerPaused, setTickerPaused] = useState(false);
+        
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative w-full')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
@@ -2539,8 +2544,13 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                     backgroundColor: tickerBgColor,
                   } as React.CSSProperties}
                   onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                  onMouseEnter={() => tickerPauseOnHover && setTickerPaused(true)}
+                  onMouseLeave={() => tickerPauseOnHover && setTickerPaused(false)}
                 >
-                  <div className="ticker-content">
+                  <div 
+                    className="ticker-content"
+                    style={{ animationPlayState: tickerPaused ? 'paused' : 'running' }}
+                  >
                     {[...tickerItems, ...tickerItems].map((item, i) => (
                       <span 
                         key={i} 
