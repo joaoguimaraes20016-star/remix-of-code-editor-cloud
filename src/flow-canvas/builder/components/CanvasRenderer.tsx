@@ -2361,9 +2361,19 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               {(() => {
+                // Color/gradient settings
+                const numberColorType = (element.props?.numberColorType as string) || 'solid';
                 const numberColor = (element.props?.numberColor as string) || (isDarkTheme ? '#ffffff' : '#111827');
+                const numberGradient = element.props?.numberGradient as GradientValue | undefined;
+                
+                const suffixColorType = (element.props?.suffixColorType as string) || 'solid';
                 const suffixColor = (element.props?.suffixColor as string) || primaryColor;
+                const suffixGradient = element.props?.suffixGradient as GradientValue | undefined;
+                
+                const labelColorType = (element.props?.labelColorType as string) || 'solid';
                 const labelColor = (element.props?.labelColor as string) || (isDarkTheme ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)');
+                const labelGradient = element.props?.labelGradient as GradientValue | undefined;
+                
                 const statSize = (element.props?.size as string) || 'xl';
                 const statFontWeight = (element.props?.fontWeight as string) || 'bold';
                 const statSizeMap: Record<string, string> = {
@@ -2372,6 +2382,24 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 const statWeightMap: Record<string, number> = {
                   normal: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800
                 };
+                
+                // Helper function for text gradient styles
+                const getTextStyle = (colorType: string, solidColor: string, gradient?: GradientValue): React.CSSProperties => {
+                  if (colorType === 'gradient' && gradient) {
+                    return {
+                      background: gradientToCSS(gradient),
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    } as React.CSSProperties;
+                  }
+                  return { color: solidColor };
+                };
+                
+                const numberStyle = getTextStyle(numberColorType, numberColor, numberGradient);
+                const suffixStyle = getTextStyle(suffixColorType, suffixColor, suffixGradient);
+                const labelStyle = getTextStyle(labelColorType, labelColor, labelGradient);
+                
                 return (
                   <>
                     <div 
@@ -2381,22 +2409,24 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         fontWeight: statWeightMap[statFontWeight] || 700,
                       }}
                     >
-                      <InlineTextEditor
-                        value={element.content || '0'}
-                        onChange={(newContent: string) => onUpdate?.({ content: newContent })}
-                        elementType="text"
-                        placeholder="0"
-                        disabled={readOnly}
-                        elementId={`${element.id}-number`}
-                        style={{ color: numberColor, display: 'inline' }}
-                        className="inline"
-                      />
-                      <span style={{ color: suffixColor }}>{statSuffix}</span>
+                      <span style={{ ...numberStyle, display: 'inline' }}>
+                        <InlineTextEditor
+                          value={element.content || '0'}
+                          onChange={(newContent: string) => onUpdate?.({ content: newContent })}
+                          elementType="text"
+                          placeholder="0"
+                          disabled={readOnly}
+                          elementId={`${element.id}-number`}
+                          style={{ display: 'inline' }}
+                          className="inline"
+                        />
+                      </span>
+                      <span style={suffixStyle}>{statSuffix}</span>
                     </div>
                     {statLabel && (
                       <div 
                         className="text-xs uppercase tracking-wider mt-2"
-                        style={{ color: labelColor }}
+                        style={labelStyle}
                       >
                         <InlineTextEditor
                           value={statLabel}
@@ -2405,7 +2435,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                           placeholder="LABEL"
                           disabled={readOnly}
                           elementId={`${element.id}-label`}
-                          style={{ color: labelColor }}
+                          style={{}}
                         />
                       </div>
                     )}

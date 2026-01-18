@@ -66,6 +66,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ColorPickerPopover, GradientPickerPopover, gradientToCSS, defaultGradient, GradientValue } from '../modals';
+import { ColorGradientControl, type ColorType } from './shared';
 import { ButtonActionSelector, type ButtonAction } from '../ButtonActionSelector';
 
 // Sortable Option Item for drag-and-drop reordering
@@ -604,19 +605,14 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           {/* Title Color */}
           <div className="space-y-1.5">
             <Label className="text-[10px] text-muted-foreground uppercase">Title Color</Label>
-            <ColorPickerPopover
-              color={stepSettings.titleColor || '#000000'}
-              onChange={(color) => updateSettings({ titleColor: color })}
-              showGradientOption={false}
-            >
-              <button className="w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                <div 
-                  className="w-5 h-5 rounded border border-border"
-                  style={{ backgroundColor: stepSettings.titleColor || '#000000' }}
-                />
-                <span className="text-xs text-foreground font-mono">{stepSettings.titleColor || '#000000'}</span>
-              </button>
-            </ColorPickerPopover>
+            <ColorGradientControl
+              colorType={(stepSettings.titleColorType as ColorType) || 'solid'}
+              solidColor={stepSettings.titleColor || '#000000'}
+              gradient={stepSettings.titleGradient as GradientValue | undefined}
+              onColorTypeChange={(type) => updateSettings({ titleColorType: type })}
+              onSolidColorChange={(color) => updateSettings({ titleColor: color })}
+              onGradientChange={(gradient) => updateSettings({ titleGradient: gradient })}
+            />
           </div>
 
           {/* Description Size */}
@@ -641,19 +637,14 @@ export const StepContentEditor: React.FC<StepContentEditorProps> = ({
           {/* Description Color */}
           <div className="space-y-1.5">
             <Label className="text-[10px] text-muted-foreground uppercase">Description Color</Label>
-            <ColorPickerPopover
-              color={stepSettings.descriptionColor || '#666666'}
-              onChange={(color) => updateSettings({ descriptionColor: color })}
-              showGradientOption={false}
-            >
-              <button className="w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md bg-muted/50 hover:bg-muted transition-colors border border-border">
-                <div 
-                  className="w-5 h-5 rounded border border-border"
-                  style={{ backgroundColor: stepSettings.descriptionColor || '#666666' }}
-                />
-                <span className="text-xs text-foreground font-mono">{stepSettings.descriptionColor || '#666666'}</span>
-              </button>
-            </ColorPickerPopover>
+            <ColorGradientControl
+              colorType={(stepSettings.descriptionColorType as ColorType) || 'solid'}
+              solidColor={stepSettings.descriptionColor || '#666666'}
+              gradient={stepSettings.descriptionGradient as GradientValue | undefined}
+              onColorTypeChange={(type) => updateSettings({ descriptionColorType: type })}
+              onSolidColorChange={(color) => updateSettings({ descriptionColor: color })}
+              onGradientChange={(gradient) => updateSettings({ descriptionGradient: gradient })}
+            />
           </div>
 
           {/* Text Alignment */}

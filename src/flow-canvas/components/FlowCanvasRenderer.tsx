@@ -851,9 +851,20 @@ export function FlowCanvasRenderer({
       case 'stat-number': {
         const suffix = (element.props?.suffix as string) || '+';
         const statLabel = (element.props?.label as string) || '';
+        
+        // Color/gradient settings
+        const numberColorType = (element.props?.numberColorType as string) || 'solid';
         const numberColor = (element.props?.numberColor as string);
+        const numberGradient = element.props?.numberGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> } | undefined;
+        
+        const suffixColorType = (element.props?.suffixColorType as string) || 'solid';
         const suffixColor = (element.props?.suffixColor as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';
+        const suffixGradient = element.props?.suffixGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> } | undefined;
+        
+        const labelColorType = (element.props?.labelColorType as string) || 'solid';
         const labelColor = (element.props?.labelColor as string);
+        const labelGradient = element.props?.labelGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> } | undefined;
+        
         const statSize = (element.props?.size as string) || 'xl';
         const statFontWeight = (element.props?.fontWeight as string) || 'bold';
         
@@ -864,6 +875,23 @@ export function FlowCanvasRenderer({
           normal: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800
         };
         
+        // Helper function for text gradient styles
+        const getTextStyle = (colorType: string, solidColor: string | undefined, gradient?: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): React.CSSProperties => {
+          if (colorType === 'gradient' && gradient) {
+            return {
+              background: gradientToCSS(gradient),
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            } as React.CSSProperties;
+          }
+          return solidColor ? { color: solidColor } : {};
+        };
+        
+        const numberStyle = getTextStyle(numberColorType, numberColor, numberGradient);
+        const suffixStyle = getTextStyle(suffixColorType, suffixColor, suffixGradient);
+        const labelStyle = getTextStyle(labelColorType, labelColor, labelGradient);
+        
         return (
           <div key={element.id} className="text-center">
             <div 
@@ -873,13 +901,13 @@ export function FlowCanvasRenderer({
                 fontWeight: statWeightMap[statFontWeight] || 700,
               }}
             >
-              <span style={{ color: numberColor || undefined }}>{element.content || '0'}</span>
-              <span style={{ color: suffixColor }}>{suffix}</span>
+              <span style={numberStyle}>{element.content || '0'}</span>
+              <span style={suffixStyle}>{suffix}</span>
             </div>
             {statLabel && (
               <div 
                 className="text-xs uppercase tracking-wider mt-2 opacity-70"
-                style={{ color: labelColor || undefined }}
+                style={labelStyle}
               >
                 {statLabel}
               </div>
