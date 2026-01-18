@@ -119,10 +119,10 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
 
   // Parse numeric values from styles
   const opacity = typeof element.styles?.opacity === 'string' 
-    ? parseInt(element.styles.opacity) 
+    ? parseInt(element.styles.opacity, 10) || 100
     : (element.styles?.opacity as number) ?? 100;
   const rotation = typeof element.styles?.rotate === 'string'
-    ? parseInt(element.styles.rotate)
+    ? parseInt(element.styles.rotate, 10) || 0
     : (element.styles?.rotate as number) ?? 0;
   const blur = (element.props?.blur as number) ?? 0;
   const brightness = (element.props?.brightness as number) ?? 100;
@@ -157,7 +157,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <div className="flex gap-2">
               <Select
                 value={(() => {
-                  const w = (element.styles?.width as string) || 'auto';
+                  const w = getEffectiveStyle('width', 'auto');
                   const presets = ['auto', '100%', '75%', '50%', 'fit-content'];
                   return presets.includes(w) ? w : 'custom';
                 })()}
@@ -181,11 +181,15 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                   <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
-              {(element.styles?.width as string)?.includes('px') && (
+              {(() => {
+                const w = getEffectiveStyle('width', '');
+                const presets = ['auto', '100%', '75%', '50%', 'fit-content', ''];
+                return !presets.includes(w);
+              })() && (
                 <Input
                   type="number"
                   className="builder-input w-20 text-xs text-center"
-                  value={parseInt((element.styles?.width as string) || '200') || 200}
+                  value={parseInt(getEffectiveStyle('width', '200'), 10) || 200}
                   onChange={(e) => handleStyleChange('width', `${e.target.value}px`)}
                   min={0}
                   max={10000}
@@ -205,7 +209,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <div className="flex gap-2">
               <Select
                 value={(() => {
-                  const h = (element.styles?.height as string) || 'auto';
+                  const h = getEffectiveStyle('height', 'auto');
                   const presets = ['auto', '100%', 'fit-content'];
                   return presets.includes(h) ? h : 'custom';
                 })()}
@@ -227,11 +231,15 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                   <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
-              {(element.styles?.height as string)?.includes('px') && (
+              {(() => {
+                const h = getEffectiveStyle('height', '');
+                const presets = ['auto', '100%', 'fit-content', ''];
+                return !presets.includes(h);
+              })() && (
                 <Input
                   type="number"
                   className="builder-input w-20 text-xs text-center"
-                  value={parseInt((element.styles?.height as string) || '100') || 100}
+                  value={parseInt(getEffectiveStyle('height', '100'), 10) || 100}
                   onChange={(e) => handleStyleChange('height', `${e.target.value}px`)}
                   min={0}
                   max={10000}

@@ -281,15 +281,25 @@ const effectClasses: Record<string, string> = {
   'blur-in': 'effect-blur-in',
 };
 
-// Convert video URL to embed URL
-const getEmbedUrl = (url: string, platform: string): string => {
+// Convert video URL to embed URL with optional settings
+const getEmbedUrl = (url: string, platform: string, settings?: { autoplay?: boolean; muted?: boolean; loop?: boolean }): string => {
+  const autoplay = settings?.autoplay !== false ? 1 : 0;
+  const mute = settings?.muted !== false ? 1 : 0;
+  const loop = settings?.loop ? 1 : 0;
+  
   if (platform === 'youtube') {
     const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-    if (match) return `https://www.youtube.com/embed/${match[1]}`;
+    if (match) {
+      const params = new URLSearchParams({ autoplay: String(autoplay), mute: String(mute), loop: String(loop), playlist: match[1] });
+      return `https://www.youtube.com/embed/${match[1]}?${params.toString()}`;
+    }
   }
   if (platform === 'vimeo') {
     const match = url.match(/vimeo\.com\/(\d+)/);
-    if (match) return `https://player.vimeo.com/video/${match[1]}`;
+    if (match) {
+      const params = new URLSearchParams({ autoplay: String(autoplay), muted: String(mute), loop: String(loop), background: '1' });
+      return `https://player.vimeo.com/video/${match[1]}?${params.toString()}`;
+    }
   }
   if (platform === 'loom') {
     const match = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
@@ -1827,7 +1837,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               />
             )}
             {/* Element drag handle is now integrated into UnifiedElementToolbar */}
-            <div onClick={(e) => { if (!isPreviewMode) { e.stopPropagation(); onSelect(); } }}>
+            <div>
               {/* Dynamic CSS for placeholder, focus, and hover states */}
               <style>{`
                 .input-${element.id}::placeholder {
@@ -1867,7 +1877,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                     }
                   }}
                   onClick={(e) => {
-                    if (isPreviewMode) e.stopPropagation();
+                    e.stopPropagation();
+                    if (!isPreviewMode) onSelect();
                   }}
                 />
               </div>
@@ -2067,7 +2078,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const imageStyles: React.CSSProperties = {
           width: element.styles?.width || defaultImageWidth,
           height: element.styles?.height || 'auto',
-          maxWidth: element.styles?.maxWidth || (isLogoImage ? '180px' : 'none'),
+          maxWidth: element.styles?.maxWidth !== undefined ? element.styles.maxWidth : (isLogoImage ? '180px' : 'none'),
           borderRadius: element.styles?.borderRadius || '0px',
           objectFit: (element.props?.objectFit as React.CSSProperties['objectFit']) || 'cover',
         };
@@ -2141,7 +2152,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               <div 
                 className={cn(
                   "rounded-xl flex flex-col items-center justify-center border-2 border-dashed transition-colors cursor-pointer",
-                  isLogoImage ? "aspect-[3/1]" : "aspect-video",
+                  // Only apply aspect ratio if no custom height is set
+                  !element.styles?.height && (isLogoImage ? "aspect-[3/1]" : "aspect-video"),
                   isDarkTheme ? "bg-gray-800 border-gray-600 hover:border-gray-500" : "bg-gray-100 border-gray-300 hover:border-gray-400"
                 )}
                 style={{ 
@@ -2205,7 +2217,11 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             {videoUrl ? (
               <div style={videoContainerStyles} onClick={(e) => { e.stopPropagation(); onSelect(); }}>
                 <iframe
-                  src={getEmbedUrl(videoUrl, videoPlatform)}
+                  src={getEmbedUrl(videoUrl, videoPlatform, {
+                    autoplay: videoSettings?.autoplay,
+                    muted: videoSettings?.muted,
+                    loop: (videoSettings as { loop?: boolean })?.loop,
+                  })}
                   className="w-full h-full"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
