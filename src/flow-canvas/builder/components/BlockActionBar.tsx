@@ -93,16 +93,26 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
     setMobileExpanded(false);
   }, [blockId]);
 
-  const portalContainer = useMemo(() => {
+  const [portalContainer, didCreate] = useMemo(() => {
     let el = document.getElementById('toolbar-portal-root');
+    const created = !el;
     if (!el) {
       el = document.createElement('div');
       el.id = 'toolbar-portal-root';
       el.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 9999;';
       document.body.appendChild(el);
     }
-    return el;
+    return [el, created] as const;
   }, []);
+
+  // Cleanup portal container on unmount if we created it
+  useEffect(() => {
+    return () => {
+      if (didCreate && portalContainer && !portalContainer.hasChildNodes()) {
+        portalContainer.parentNode?.removeChild(portalContainer);
+      }
+    };
+  }, [didCreate, portalContainer]);
 
   if (!isSelected) return null;
 

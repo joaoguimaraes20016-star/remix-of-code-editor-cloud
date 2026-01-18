@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import { CommitSlider } from '../CommitSlider';
 
 // Import unified presets from single source of truth
 import { 
@@ -161,9 +161,9 @@ export const ShadowEditor: React.FC<ShadowEditorProps> = ({
                     <span className="text-xs text-[hsl(var(--builder-text-muted))]">X Offset</span>
                     <span className="text-xs text-[hsl(var(--builder-text))]">{layer.x}px</span>
                   </div>
-                  <Slider
-                    value={[layer.x]}
-                    onValueChange={([v]) => updateLayer(index, { x: v })}
+                  <CommitSlider
+                    value={layer.x}
+                    onValueCommit={(v) => updateLayer(index, { x: v })}
                     min={-50}
                     max={50}
                     step={1}
@@ -176,9 +176,9 @@ export const ShadowEditor: React.FC<ShadowEditorProps> = ({
                     <span className="text-xs text-[hsl(var(--builder-text-muted))]">Y Offset</span>
                     <span className="text-xs text-[hsl(var(--builder-text))]">{layer.y}px</span>
                   </div>
-                  <Slider
-                    value={[layer.y]}
-                    onValueChange={([v]) => updateLayer(index, { y: v })}
+                  <CommitSlider
+                    value={layer.y}
+                    onValueCommit={(v) => updateLayer(index, { y: v })}
                     min={-50}
                     max={50}
                     step={1}
@@ -191,9 +191,9 @@ export const ShadowEditor: React.FC<ShadowEditorProps> = ({
                     <span className="text-xs text-[hsl(var(--builder-text-muted))]">Blur</span>
                     <span className="text-xs text-[hsl(var(--builder-text))]">{layer.blur}px</span>
                   </div>
-                  <Slider
-                    value={[layer.blur]}
-                    onValueChange={([v]) => updateLayer(index, { blur: v })}
+                  <CommitSlider
+                    value={layer.blur}
+                    onValueCommit={(v) => updateLayer(index, { blur: v })}
                     min={0}
                     max={100}
                     step={1}
@@ -206,9 +206,9 @@ export const ShadowEditor: React.FC<ShadowEditorProps> = ({
                     <span className="text-xs text-[hsl(var(--builder-text-muted))]">Spread</span>
                     <span className="text-xs text-[hsl(var(--builder-text))]">{layer.spread}px</span>
                   </div>
-                  <Slider
-                    value={[layer.spread]}
-                    onValueChange={([v]) => updateLayer(index, { spread: v })}
+                  <CommitSlider
+                    value={layer.spread}
+                    onValueCommit={(v) => updateLayer(index, { spread: v })}
                     min={-25}
                     max={25}
                     step={1}

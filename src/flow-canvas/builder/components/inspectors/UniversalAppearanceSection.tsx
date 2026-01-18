@@ -151,12 +151,16 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Width</span>
               <span className="text-xs font-mono text-builder-text-dim">
-                {element.styles?.width || 'auto'}
+                {getEffectiveStyle('width', 'auto')}
               </span>
             </div>
             <div className="flex gap-2">
               <Select
-                value={(element.styles?.width as string)?.includes('px') ? 'custom' : ((element.styles?.width as string) || 'auto')}
+                value={(() => {
+                  const w = (element.styles?.width as string) || 'auto';
+                  const presets = ['auto', '100%', '75%', '50%', 'fit-content'];
+                  return presets.includes(w) ? w : 'custom';
+                })()}
                 onValueChange={(v) => {
                   if (v === 'custom') {
                     handleStyleChange('width', '200px');
@@ -181,7 +185,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 <Input
                   type="number"
                   className="builder-input w-20 text-xs text-center"
-                  value={parseInt((element.styles?.width as string) || '200')}
+                  value={parseInt((element.styles?.width as string) || '200') || 200}
                   onChange={(e) => handleStyleChange('width', `${e.target.value}px`)}
                   min={0}
                   max={10000}
@@ -195,12 +199,16 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Height</span>
               <span className="text-xs font-mono text-builder-text-dim">
-                {element.styles?.height || 'auto'}
+                {getEffectiveStyle('height', 'auto')}
               </span>
             </div>
             <div className="flex gap-2">
               <Select
-                value={(element.styles?.height as string)?.includes('px') ? 'custom' : ((element.styles?.height as string) || 'auto')}
+                value={(() => {
+                  const h = (element.styles?.height as string) || 'auto';
+                  const presets = ['auto', '100%', 'fit-content'];
+                  return presets.includes(h) ? h : 'custom';
+                })()}
                 onValueChange={(v) => {
                   if (v === 'custom') {
                     handleStyleChange('height', '100px');
@@ -223,7 +231,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 <Input
                   type="number"
                   className="builder-input w-20 text-xs text-center"
-                  value={parseInt((element.styles?.height as string) || '100')}
+                  value={parseInt((element.styles?.height as string) || '100') || 100}
                   onChange={(e) => handleStyleChange('height', `${e.target.value}px`)}
                   min={0}
                   max={10000}
@@ -351,7 +359,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <Input
               type="number"
               className="builder-input w-20 text-xs text-center"
-              value={parseInt((element.styles?.gap as string) || '0')}
+              value={parseInt((element.styles?.gap as string) || '0') || 0}
               onChange={(e) => handleStyleChange('gap', `${e.target.value}px`)}
               min={0}
               max={200}
@@ -579,11 +587,11 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Column Gap</span>
                   <span className="text-xs font-mono text-builder-text-dim">
-                    {parseInt((element.styles?.columnGap as string) || '16')}px
+                    {parseInt((element.styles?.columnGap as string) || '16') || 16}px
                   </span>
                 </div>
                 <CommitSlider 
-                  value={parseInt((element.styles?.columnGap as string) || '16')}
+                  value={parseInt((element.styles?.columnGap as string) || '16') || 16}
                   onValueCommit={(v) => handleStyleChange('columnGap', `${v}px`)}
                   min={0} max={64} step={4}
                   className="w-full"
@@ -595,11 +603,11 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Row Gap</span>
                   <span className="text-xs font-mono text-builder-text-dim">
-                    {parseInt((element.styles?.rowGap as string) || '16')}px
+                    {parseInt((element.styles?.rowGap as string) || '16') || 16}px
                   </span>
                 </div>
                 <CommitSlider 
-                  value={parseInt((element.styles?.rowGap as string) || '16')}
+                  value={parseInt((element.styles?.rowGap as string) || '16') || 16}
                   onValueCommit={(v) => handleStyleChange('rowGap', `${v}px`)}
                   min={0} max={64} step={4}
                   className="w-full"
@@ -922,7 +930,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <Input
               type="number"
               className="builder-input w-20 text-xs text-center"
-              value={parseInt((element.styles?.borderWidth as string) || '0')}
+              value={parseInt((element.styles?.borderWidth as string) || '0') || 0}
               onChange={(e) => handleStyleChange('borderWidth', `${e.target.value}px`)}
               min={0}
               max={50}
@@ -971,14 +979,14 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
               <Input
                 type="number"
                 className="builder-input w-16 text-xs text-center h-6"
-                value={parseInt((element.styles?.borderRadius as string) || '0')}
+                value={parseInt((element.styles?.borderRadius as string) || '0') || 0}
                 onChange={(e) => handleStyleChange('borderRadius', `${e.target.value}px`)}
                 min={0}
                 max={999}
               />
             </div>
             <CommitSlider 
-              value={parseInt((element.styles?.borderRadius as string) || '0')}
+              value={parseInt((element.styles?.borderRadius as string) || '0') || 0}
               onValueCommit={(v) => handleStyleChange('borderRadius', `${v}px`)}
               min={0} max={200} step={1}
               className="w-full"
@@ -1000,7 +1008,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                   <Input
                     type="number"
                     className="builder-input text-xs text-center h-6 flex-1"
-                    value={parseInt((element.styles?.[key as keyof typeof element.styles] as string) || '')}
+                    value={(element.styles?.[key as keyof typeof element.styles] as string)?.replace('px', '') || ''}
                     onChange={(e) => {
                       const v = e.target.value.trim();
                       handleStyleChange(key, v ? `${v}px` : '');
