@@ -1851,6 +1851,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   };
 
   // Get base gradient styles (for direct application to text)
+  // CRITICAL: Always include display: 'inline' to prevent layout shifts
   const getGradientStyles = (): React.CSSProperties => {
     if (styles.textFillType === 'gradient' && styles.textGradient) {
       return {
@@ -1859,6 +1860,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
+        display: 'inline', // Prevent layout shift
       } as React.CSSProperties;
     }
     // Fallback: if fillType is gradient but no gradient exists, use default
@@ -1868,6 +1870,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
+        display: 'inline', // Prevent layout shift
       } as React.CSSProperties;
     }
     return {};
@@ -2329,8 +2332,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               // Buttons handle their own surface; inner content must be transparent
               'bg-transparent'
             : // TEXT/HEADING MODE: Show editing indicators
+              // CRITICAL: Removed px-1 -mx-1 to prevent layout shift when editing (gradient alignment bug)
               isEditing
-                ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded px-1 -mx-1 bg-[hsl(var(--builder-accent)/0.1)]'
+                ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded bg-[hsl(var(--builder-accent)/0.05)]'
                 : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
           }
           ${!value && !isEditing ? 'text-gray-400' : ''}

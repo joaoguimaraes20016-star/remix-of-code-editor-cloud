@@ -18,6 +18,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
+import { stripHtmlToText } from '../../utils/textHelpers';
 import {
   arrayMove,
   SortableContext,
@@ -287,8 +288,8 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
         <Section title="Content" icon={<Hash className="w-4 h-4" />} defaultOpen>
           <FieldGroup label="Number Value">
             <Input
-              value={element.content || '0'}
-              onChange={(e) => handleContentChange(e.target.value)}
+              value={stripHtmlToText(element.content || '0')}
+              onChange={(e) => handleContentChange(stripHtmlToText(e.target.value))}
               placeholder="9,943"
               className="builder-input text-xs"
             />
@@ -296,8 +297,8 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           
           <FieldGroup label="Suffix">
             <Input
-              value={(element.props?.suffix as string) || ''}
-              onChange={(e) => handlePropsChange('suffix', e.target.value)}
+              value={stripHtmlToText((element.props?.suffix as string) || '')}
+              onChange={(e) => handlePropsChange('suffix', stripHtmlToText(e.target.value))}
               placeholder="+ or K or B"
               className="builder-input text-xs"
             />
@@ -305,8 +306,8 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           
           <FieldGroup label="Label">
             <Input
-              value={(element.props?.label as string) || ''}
-              onChange={(e) => handlePropsChange('label', e.target.value)}
+              value={stripHtmlToText((element.props?.label as string) || '')}
+              onChange={(e) => handlePropsChange('label', stripHtmlToText(e.target.value))}
               placeholder="MEMBERS"
               className="builder-input text-xs"
             />
