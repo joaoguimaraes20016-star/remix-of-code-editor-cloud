@@ -899,8 +899,13 @@ export function FlowCanvasRenderer({
         const stepTitle = (element.props?.title as string) || element.content || 'Step Title';
         const stepDescription = (element.props?.description as string);
         const stepAlignment = (element.props?.alignment as string) || 'center';
-        const showConnector = element.props?.showConnector === true;
+        const showConnector = element.props?.showConnector !== false; // Default to true
         const connectorStyle = (element.props?.connectorStyle as string) || 'solid';
+        const accentType = (element.props?.accentType as string) || 'solid';
+        const accentGradient = element.props?.accentGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> };
+        const stepBadgeBackground = accentType === 'gradient' && accentGradient 
+          ? gradientToCSS(accentGradient)
+          : `linear-gradient(135deg, ${stepAccentColor}, ${stepAccentColor}80)`;
         
         const stepSizeMap: Record<string, { wrapper: string; icon: string; text: string }> = {
           sm: { wrapper: 'w-10 h-10', icon: 'w-4 h-4', text: 'text-sm' },
@@ -917,29 +922,48 @@ export function FlowCanvasRenderer({
         };
         const currentStepSize = stepSizeMap[stepSize] || stepSizeMap.md;
         
-        // Icon mapping matching builder
-        const iconMap: Record<string, React.ReactNode> = {
-          'map': <Layout className={cn(currentStepSize.icon, 'text-white')} />,
-          'search': <Search className={cn(currentStepSize.icon, 'text-white')} />,
-          'share-2': <ArrowRight className={cn(currentStepSize.icon, 'text-white')} />,
-          'rocket': <Rocket className={cn(currentStepSize.icon, 'text-white')} />,
-          'calendar': <Calendar className={cn(currentStepSize.icon, 'text-white')} />,
-          'file-text': <FileText className={cn(currentStepSize.icon, 'text-white')} />,
+        // Dynamic icon resolution - maps any icon name from ButtonIconPicker
+        const getIconForStep = (iconName: string | undefined): React.ReactNode => {
+          if (!iconName || iconName === 'number') return null;
+          
+          // Map of common icon names to components (subset for runtime)
+          const iconComponents: Record<string, React.ComponentType<{ className?: string }>> = {
+            'Layout': Layout, 'Search': Search, 'ArrowRight': ArrowRight, 
+            'Rocket': Rocket, 'Calendar': Calendar, 'FileText': FileText,
+            'Sparkles': Sparkles, 'Play': Play, 'User': User, 'Video': Video,
+            // Lowercase versions for compatibility
+            'layout': Layout, 'search': Search, 'arrowRight': ArrowRight,
+            'rocket': Rocket, 'calendar': Calendar, 'fileText': FileText,
+            'sparkles': Sparkles, 'play': Play, 'user': User, 'video': Video,
+            // Legacy names
+            'map': Layout, 'share-2': ArrowRight,
+          };
+          
+          const IconComp = iconComponents[iconName] || Sparkles;
+          return <IconComp className={cn(currentStepSize.icon)} />;
         };
         
         return (
-          <div key={element.id} className="process-step-item relative" style={{ textAlign: stepAlignment as 'left' | 'center' | 'right' }}>
+          <div 
+            key={element.id} 
+            className="process-step-item relative"
+            style={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: stepAlignment === 'center' ? 'center' : stepAlignment === 'flex-end' ? 'flex-end' : 'flex-start',
+              textAlign: stepAlignment === 'center' ? 'center' : stepAlignment === 'flex-end' ? 'right' : 'left'
+            }}
+          >
             <div 
               className={cn(
                 currentStepSize.wrapper,
                 stepShapeMap[stepShape] || 'rounded-2xl',
-                stepAlignment === 'center' && 'mx-auto',
                 'flex items-center justify-center'
               )}
-              style={{ background: `linear-gradient(135deg, ${stepAccentColor}, ${stepAccentColor}80)` }}
+              style={{ background: stepBadgeBackground }}
             >
-              {stepIcon && iconMap[stepIcon] ? (
-                <span style={{ color: stepNumberColor }}>{iconMap[stepIcon]}</span>
+              {stepIcon && stepIcon !== 'number' ? (
+                <span style={{ color: stepNumberColor }}>{getIconForStep(stepIcon)}</span>
               ) : (
                 <span className={cn(currentStepSize.text, 'font-bold')} style={{ color: stepNumberColor }}>{stepNum}</span>
               )}
@@ -959,13 +983,25 @@ export function FlowCanvasRenderer({
               </p>
             )}
             {showConnector && (
-              <div 
-                className="absolute top-1/2 -right-6 w-6 h-0.5"
-                style={{
-                  backgroundColor: stepAccentColor,
-                  borderStyle: connectorStyle === 'dotted' ? 'dotted' : connectorStyle === 'dashed' ? 'dashed' : 'solid',
-                }}
-              />
+              connectorStyle === 'arrow' ? (
+                <div className="absolute top-1/2 -right-6 flex items-center -translate-y-1/2">
+                  <div className="w-4 h-0.5" style={{ backgroundColor: stepAccentColor }} />
+                  <svg width="8" height="12" viewBox="0 0 8 12" className="-ml-1" style={{ color: stepAccentColor }}>
+                    <path d="M1 1L6 6L1 11" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              ) : (
+                <div 
+                  className="absolute top-1/2 -right-6 w-6 -translate-y-1/2"
+                  style={{
+                    height: connectorStyle === 'solid' ? '2px' : undefined,
+                    backgroundColor: connectorStyle === 'solid' ? stepAccentColor : undefined,
+                    borderTopWidth: connectorStyle !== 'solid' ? '2px' : undefined,
+                    borderTopStyle: connectorStyle === 'dotted' ? 'dotted' : connectorStyle === 'dashed' ? 'dashed' : undefined,
+                    borderTopColor: connectorStyle !== 'solid' ? stepAccentColor : undefined,
+                  }}
+                />
+              )
             )}
           </div>
         );

@@ -698,11 +698,36 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
                 <SelectValue placeholder="Variant" />
               </SelectTrigger>
               <SelectContent className="bg-background border-border">
-                <SelectItem value="primary">Primary (Purple)</SelectItem>
-                <SelectItem value="success">Success (Green)</SelectItem>
-                <SelectItem value="warning">Warning (Orange)</SelectItem>
-                <SelectItem value="premium">Premium (Gold)</SelectItem>
-                <SelectItem value="custom">Custom Colors</SelectItem>
+                <SelectItem value="primary">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full bg-purple-500" />
+                    <span>Primary (Purple)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="success">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full bg-green-500" />
+                    <span>Success (Green)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="warning">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full bg-orange-500" />
+                    <span>Warning (Orange)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="premium">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400" />
+                    <span>Premium (Gold)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="custom">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-dashed border-gray-400" />
+                    <span>Custom Colors</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </FieldGroup>
@@ -1007,18 +1032,64 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
         
         <Section title="Colors" icon={<Award className="w-4 h-4" />}>
           <div className="space-y-3">
+            {/* Accent Type Toggle */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-builder-text-muted">Accent Color</span>
-              <ColorPickerPopover
-                color={(element.props?.accentColor as string) || primaryColor}
-                onChange={(c) => handlePropsChange('accentColor', c)}
-              >
-                <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
-                  <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.accentColor as string) || primaryColor }} />
-                  <span className="text-xs text-builder-text-muted">Edit</span>
+              <span className="text-xs text-builder-text-muted">Accent Type</span>
+              <div className="flex rounded-lg overflow-hidden border border-builder-border">
+                <button
+                  onClick={() => handlePropsChange('accentType', 'solid')}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium transition-colors",
+                    (element.props?.accentType || 'solid') === 'solid'
+                      ? 'bg-builder-accent text-white' 
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                  )}
+                >
+                  Solid
                 </button>
-              </ColorPickerPopover>
+                <button
+                  onClick={() => handlePropsChange('accentType', 'gradient')}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium transition-colors",
+                    element.props?.accentType === 'gradient'
+                      ? 'bg-builder-accent text-white' 
+                      : 'bg-builder-surface-hover text-builder-text-muted hover:bg-builder-surface'
+                  )}
+                >
+                  Gradient
+                </button>
+              </div>
             </div>
+            
+            {(element.props?.accentType || 'solid') === 'solid' ? (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Accent Color</span>
+                <ColorPickerPopover
+                  color={(element.props?.accentColor as string) || primaryColor}
+                  onChange={(c) => handlePropsChange('accentColor', c)}
+                  showGradientOption
+                  onGradientClick={() => handlePropsChange('accentType', 'gradient')}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: (element.props?.accentColor as string) || primaryColor }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </ColorPickerPopover>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Accent Gradient</span>
+                <GradientPickerPopover
+                  value={(element.props?.accentGradient as GradientValue) || { type: 'linear', angle: 135, stops: [{ color: '#8B5CF6', position: 0 }, { color: '#D946EF', position: 100 }] }}
+                  onChange={(g) => handlePropsChange('accentGradient', g)}
+                >
+                  <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-builder-surface-hover transition-colors">
+                    <div className="w-6 h-6 rounded-md border border-builder-border" style={{ background: gradientToCSS((element.props?.accentGradient as GradientValue) || { type: 'linear', angle: 135, stops: [{ color: '#8B5CF6', position: 0 }, { color: '#D946EF', position: 100 }] }) }} />
+                    <span className="text-xs text-builder-text-muted">Edit</span>
+                  </button>
+                </GradientPickerPopover>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Text Color</span>
               <ColorPickerPopover
@@ -1057,14 +1128,14 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
           {(element.props?.showConnector ?? true) && (
             <FieldGroup label="Connector Style">
               <Select
-                value={(element.props?.connectorStyle as string) || 'line'}
+                value={(element.props?.connectorStyle as string) || 'solid'}
                 onValueChange={(v) => handlePropsChange('connectorStyle', v)}
               >
                 <SelectTrigger className="builder-input text-xs">
                   <SelectValue placeholder="Style" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border-border">
-                  <SelectItem value="line">Solid Line</SelectItem>
+                  <SelectItem value="solid">Solid Line</SelectItem>
                   <SelectItem value="dotted">Dotted</SelectItem>
                   <SelectItem value="dashed">Dashed</SelectItem>
                   <SelectItem value="arrow">Arrow</SelectItem>
