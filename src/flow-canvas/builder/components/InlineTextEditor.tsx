@@ -265,9 +265,58 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     }, 0);
   }, [disabled, isEditing, value]);
 
+  // Helper: exit edit mode and persist content.
+  // This is used both for blur and for outside-click dismissal.
+  const exitEditingSession = useCallback((reason: 'blur' | 'outside' | 'escape' | 'enter' = 'blur') => {
+    if (!isEditing) return;
+
+    // Clear any pending inline-style save timer (we'll save now)
+    if (inlineSaveTimerRef.current) {
+      window.clearTimeout(inlineSaveTimerRef.current);
+      inlineSaveTimerRef.current = null;
+    }
+
+    // DON'T clear activeInlineSpanRef or lastSelectionRangeRef here!
+    // They need to persist so RightPanel can still use them after exit.
+    setIsEditing(false);
+    setShowToolbar(false);
+    // Clear selection fill on exit so next edit session starts fresh
+    setSelectionFill({});
+
+    const el = contentRef.current;
+    if (!el) return;
+
+    // Clean up adjacent spans with same styles
+    mergeAdjacentStyledSpans(el);
+
+    // Clean up caret host markers before saving - they're only needed during live editing
+    const caretHosts = el.querySelectorAll('span[data-caret-host]');
+    caretHosts.forEach((node) => {
+      node.removeAttribute('data-caret-host');
+      // If the span only contains ZWSP and nothing else, remove it entirely
+      if (node.textContent === '\u200B') {
+        node.parentNode?.removeChild(node);
+      }
+    });
+
+    // Check if content has inline styled spans - if so, preserve HTML
+    const hasInlineStyles = el.querySelector('span[style]') !== null;
+
+    if (hasInlineStyles) {
+      const htmlContent = sanitizeStyledHTML(el.innerHTML);
+      onChange(htmlContent);
+    } else {
+      const newValue = el.innerText;
+      onChange(newValue);
+    }
+
+    if (import.meta.env.DEV) {
+      console.debug('[InlineTextEditor] exitEditingSession', { reason });
+    }
+  }, [isEditing, onChange]);
+
   // Handle blur to stop editing - only emit content, not styles (styles are emitted on change)
   const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Check if clicking on toolbar (including portaled popovers)
     const relatedTarget = e.relatedTarget as HTMLElement | null;
 
     // Don't blur if clicking on the toolbar itself
@@ -277,7 +326,6 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     if (relatedTarget?.closest('.builder-right-panel')) return;
 
     // Don't blur if clicking on Radix portaled content (popovers, selects, etc.)
-    // These are rendered to document.body but have data attributes we can check
     if (relatedTarget?.closest('[data-radix-popper-content-wrapper]')) return;
     if (relatedTarget?.closest('[data-radix-select-content]')) return;
     if (relatedTarget?.closest('[data-radix-popover-content]')) return;
@@ -292,14 +340,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     if (!relatedTarget && (lastPointerDownInInspectorRef.current || lastPointerDownInToolbarRef.current)) {
       return;
     }
-    
+
     // If pointer is still down on toolbar/inspector, don't exit (slider drag in progress)
     if (isPointerDownRef.current && (pointerDownContextRef.current === 'toolbar' || pointerDownContextRef.current === 'inspector')) {
       return;
     }
-    
-    // SAFETY NET: If we VERY recently interacted with the toolbar (within 500ms),
-    // prevent blur. This handles edge cases where focus collapses before style is applied.
+
+    // SAFETY NET: If we VERY recently interacted with the toolbar (within 500ms), prevent blur.
     if (!relatedTarget && Date.now() - lastToolbarInteractionAtRef.current < 500) {
       return;
     }
@@ -311,49 +358,9 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
       );
       if (openPopover) return;
     }
-    
-    // Clear any pending inline-style save timer (we'll save now)
-    if (inlineSaveTimerRef.current) {
-      window.clearTimeout(inlineSaveTimerRef.current);
-      inlineSaveTimerRef.current = null;
-    }
-    
-    // DON'T clear activeInlineSpanRef or lastSelectionRangeRef here!
-    // They need to persist so RightPanel can still use them after blur
 
-    setIsEditing(false);
-    setShowToolbar(false);
-    // Clear selection fill on exit so next edit session starts fresh
-    setSelectionFill({});
-    
-    if (contentRef.current) {
-      // Clean up adjacent spans with same styles
-      mergeAdjacentStyledSpans(contentRef.current);
-      
-      // Clean up caret host markers before saving - they're only needed during live editing
-      const caretHosts = contentRef.current.querySelectorAll('span[data-caret-host]');
-      caretHosts.forEach(el => {
-        el.removeAttribute('data-caret-host');
-        // If the span only contains ZWSP and nothing else, remove it entirely
-        if (el.textContent === '\u200B') {
-          el.parentNode?.removeChild(el);
-        }
-      });
-      
-      // Check if content has inline styled spans - if so, preserve HTML
-      const hasInlineStyles = contentRef.current.querySelector('span[style]') !== null;
-      
-      if (hasInlineStyles) {
-        // Save sanitized HTML to preserve inline styling
-        const htmlContent = sanitizeStyledHTML(contentRef.current.innerHTML);
-        onChange(htmlContent);
-      } else {
-        // Plain text - just save the text content
-        const newValue = contentRef.current.innerText;
-        onChange(newValue);
-      }
-    }
-  }, [onChange]);
+    exitEditingSession('blur');
+  }, [exitEditingSession]);
 
   // Track pointerdown target so the editor doesn't exit when adjusting Right Panel or Toolbar controls
   // Also maintains TRUE pointer-lock state for arbitrarily long slider drags
@@ -362,20 +369,20 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
     const handlePointerDown = (ev: PointerEvent) => {
       const target = ev.target as HTMLElement | null;
-      const isInspector = !!target?.closest('.builder-right-panel') ||
-                          !!target?.closest('[data-radix-popper-content-wrapper]') ||
-                          !!target?.closest('[data-radix-popover-content]');
-      lastPointerDownInInspectorRef.current = isInspector;
-      if (isInspector) lastInspectorInteractionAtRef.current = Date.now();
 
-      const toolbarHit =
-        !!target?.closest('.rich-text-toolbar') ||
+      const isRadixPortal =
         !!target?.closest('[data-radix-popper-content-wrapper]') ||
         !!target?.closest('[data-radix-popover-content]') ||
         !!target?.closest('[data-radix-select-content]');
+
+      const isInspector = !!target?.closest('.builder-right-panel') || isRadixPortal;
+      lastPointerDownInInspectorRef.current = isInspector;
+      if (isInspector) lastInspectorInteractionAtRef.current = Date.now();
+
+      const toolbarHit = !!target?.closest('.rich-text-toolbar') || isRadixPortal;
       lastPointerDownInToolbarRef.current = toolbarHit;
       if (toolbarHit) lastToolbarInteractionAtRef.current = Date.now();
-      
+
       // Set pointer-lock state for long drags
       isPointerDownRef.current = true;
       if (toolbarHit) {
@@ -384,6 +391,15 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         pointerDownContextRef.current = 'inspector';
       } else {
         pointerDownContextRef.current = null;
+      }
+
+      // CRITICAL: clicking outside the editor should close the toolbar + end editing.
+      // Clicking non-focusable canvas elements does not trigger blur, so we handle it here.
+      const root = containerRef.current;
+      const clickedInsideEditor = !!(root && target && root.contains(target));
+      const shouldClose = !clickedInsideEditor && !toolbarHit && !isInspector && !isRadixPortal;
+      if (shouldClose) {
+        exitEditingSession('outside');
       }
     };
     
@@ -2294,14 +2310,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           }
 
           if (e.key === 'Escape') {
-            setIsEditing(false);
-            setShowToolbar(false);
+            e.preventDefault();
+            exitEditingSession('escape');
             contentRef.current?.blur();
           }
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            setIsEditing(false);
-            setShowToolbar(false);
+            exitEditingSession('enter');
             contentRef.current?.blur();
           }
         }}
