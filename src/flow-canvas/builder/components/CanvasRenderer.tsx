@@ -2487,7 +2487,9 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const badgeVariant = (element.props?.variant as string) || 'primary';
         const badgeIcon = element.props?.icon as string;
         const badgeAlignment = (element.props?.alignment as string) || 'flex-start';
+        const badgeBgType = (element.props?.bgType as string) || 'solid';
         const badgeBgColor = (element.props?.bgColor as string) || '#8B5CF6';
+        const badgeBgGradient = element.props?.bgGradient as { type: string; angle: number; stops: Array<{ color: string; position: number }> } | undefined;
         const badgeTextColor = (element.props?.textColor as string) || '#ffffff';
         const badgeBorderColor = (element.props?.borderColor as string) || 'transparent';
         const badgeClasses: Record<string, string> = {
@@ -2497,6 +2499,18 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           premium: 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black',
         };
         const useCustomBadgeColors = badgeVariant === 'custom';
+        
+        // Build badge background style
+        const badgeBackgroundStyle: React.CSSProperties = useCustomBadgeColors ? {
+          ...(badgeBgType === 'gradient' && badgeBgGradient 
+            ? { background: gradientToCSS(badgeBgGradient as GradientValue) }
+            : { backgroundColor: badgeBgColor }),
+          color: badgeTextColor,
+          borderColor: badgeBorderColor,
+          borderWidth: badgeBorderColor !== 'transparent' ? '1px' : '0',
+          borderStyle: 'solid',
+        } : undefined;
+        
         return (
           <div 
             ref={combinedRef} 
@@ -2523,13 +2537,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 'premium-badge',
                 !useCustomBadgeColors && (badgeClasses[badgeVariant] || badgeClasses.primary)
               )}
-              style={useCustomBadgeColors ? {
-                backgroundColor: badgeBgColor,
-                color: badgeTextColor,
-                borderColor: badgeBorderColor,
-                borderWidth: badgeBorderColor !== 'transparent' ? '1px' : '0',
-                borderStyle: 'solid',
-              } : undefined}
+              style={badgeBackgroundStyle}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               {badgeIcon && (() => {
