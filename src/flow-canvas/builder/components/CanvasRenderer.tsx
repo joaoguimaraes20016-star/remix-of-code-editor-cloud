@@ -2596,10 +2596,15 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           hexagon: 'clip-path-hexagon',
           badge: 'clip-path-badge',
         };
-        const showConnector = element.props?.showConnector === true;
+        const showConnector = element.props?.showConnector !== false; // Default to true
         const connectorStyle = (element.props?.connectorStyle as string) || 'solid';
         const stepAlignment = (element.props?.alignment as string) || 'center';
         const currentStepSize = stepSizeMap[stepSize] || stepSizeMap.md;
+        const accentType = (element.props?.accentType as string) || 'solid';
+        const accentGradient = element.props?.accentGradient as GradientValue;
+        const stepBadgeBackground = accentType === 'gradient' && accentGradient 
+          ? gradientToCSS(accentGradient)
+          : `linear-gradient(135deg, ${stepAccentColor}, ${stepAccentColor}80)`;
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
@@ -2618,7 +2623,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             )}
             <div 
               className="process-step-item relative"
-              style={{ textAlign: stepAlignment as 'left' | 'center' | 'right' }}
+              style={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: stepAlignment === 'center' ? 'center' : stepAlignment === 'flex-end' ? 'flex-end' : 'flex-start',
+                textAlign: stepAlignment === 'center' ? 'center' : stepAlignment === 'flex-end' ? 'right' : 'left'
+              }}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
               <div 
@@ -2627,14 +2637,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   stepShapeMap[stepShape] || 'rounded-2xl',
                   'flex items-center justify-center'
                 )}
-                style={{ 
-                  background: `linear-gradient(135deg, ${stepAccentColor}, ${stepAccentColor}80)`,
-                }}
+                style={{ background: stepBadgeBackground }}
               >
-                {stepIcon === 'map' && <Layout className={cn(currentStepSize.icon)} style={{ color: stepNumberColor }} />}
-                {stepIcon === 'share-2' && <ArrowRight className={cn(currentStepSize.icon)} style={{ color: stepNumberColor }} />}
-                {stepIcon === 'rocket' && <Sparkles className={cn(currentStepSize.icon)} style={{ color: stepNumberColor }} />}
-                {!['map', 'share-2', 'rocket'].includes(stepIcon || '') && (
+                {stepIcon && stepIcon !== 'number' ? (() => {
+                  const IconComponent = getButtonIconComponent(stepIcon);
+                  return <IconComponent className={cn(currentStepSize.icon)} style={{ color: stepNumberColor }} />;
+                })() : (
                   <span className={cn(currentStepSize.text, 'font-bold')} style={{ color: stepNumberColor }}>{stepNumber}</span>
                 )}
               </div>
@@ -2650,15 +2658,25 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 </p>
               )}
               {showConnector && (
-                <div 
-                  className="absolute top-1/2 -right-6 w-6 h-0.5"
-                  style={{
-                    backgroundColor: stepAccentColor,
-                    borderStyle: connectorStyle === 'dotted' ? 'dotted' : connectorStyle === 'dashed' ? 'dashed' : 'solid',
-                    borderWidth: connectorStyle !== 'solid' ? '0 0 2px 0' : undefined,
-                    borderColor: connectorStyle !== 'solid' ? stepAccentColor : undefined,
-                  }}
-                />
+                connectorStyle === 'arrow' ? (
+                  <div className="absolute top-1/2 -right-6 flex items-center -translate-y-1/2">
+                    <div className="w-4 h-0.5" style={{ backgroundColor: stepAccentColor }} />
+                    <svg width="8" height="12" viewBox="0 0 8 12" className="-ml-1" style={{ color: stepAccentColor }}>
+                      <path d="M1 1L6 6L1 11" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                ) : (
+                  <div 
+                    className="absolute top-1/2 -right-6 w-6 -translate-y-1/2"
+                    style={{
+                      height: connectorStyle === 'solid' ? '2px' : undefined,
+                      backgroundColor: connectorStyle === 'solid' ? stepAccentColor : undefined,
+                      borderTopWidth: connectorStyle !== 'solid' ? '2px' : undefined,
+                      borderTopStyle: connectorStyle === 'dotted' ? 'dotted' : connectorStyle === 'dashed' ? 'dashed' : undefined,
+                      borderTopColor: connectorStyle !== 'solid' ? stepAccentColor : undefined,
+                    }}
+                  />
+                )
               )}
             </div>
           </div>
