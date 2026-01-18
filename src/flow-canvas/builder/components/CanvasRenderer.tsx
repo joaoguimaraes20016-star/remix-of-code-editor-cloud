@@ -2375,7 +2375,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 return (
                   <>
                     <div 
-                      className="stat-number stat-number-animate tracking-tight"
+                      className="stat-number stat-number-animate tracking-tight inline-flex items-baseline"
                       style={{ 
                         fontSize: statSizeMap[statSize] || '3rem',
                         fontWeight: statWeightMap[statFontWeight] || 700,

@@ -867,7 +867,7 @@ export function FlowCanvasRenderer({
         return (
           <div key={element.id} className="text-center">
             <div 
-              className="tracking-tight"
+              className="tracking-tight inline-flex items-baseline"
               style={{ 
                 fontSize: statSizeMap[statSize] || '3rem',
                 fontWeight: statWeightMap[statFontWeight] || 700,
