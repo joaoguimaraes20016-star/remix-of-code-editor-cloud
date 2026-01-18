@@ -5,7 +5,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '../CommitSlider';
 import { cn } from '@/lib/utils';
 
 interface Overlay {
@@ -141,9 +141,9 @@ export const OverlayPickerPopover: React.FC<OverlayPickerPopoverProps> = ({
             <span className="text-xs text-builder-text-muted">Opacity</span>
             <span className="text-xs text-builder-text font-mono">{opacity}%</span>
           </div>
-          <Slider
-            value={[opacity]}
-            onValueChange={([value]) => {
+          <CommitSlider
+            value={opacity}
+            onValueCommit={(value) => {
               setOpacity(value);
               // Emit opacity change if an overlay is already selected
               if (currentOverlay) {

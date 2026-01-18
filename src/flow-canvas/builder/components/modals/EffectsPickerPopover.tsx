@@ -21,7 +21,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '../CommitSlider';
 import { cn } from '@/lib/utils';
 
 interface Effect {
@@ -234,9 +234,9 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-xs text-builder-text-muted">Duration</span>
             <div className="flex items-center gap-2">
-              <Slider 
-                value={[duration * 10]} 
-                onValueChange={([v]) => setDuration(v / 10)}
+              <CommitSlider 
+                value={duration * 10} 
+                onValueCommit={(v) => setDuration(v / 10)}
                 max={30}
                 step={1}
                 className="w-20"
@@ -247,9 +247,9 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-xs text-builder-text-muted">Delay</span>
             <div className="flex items-center gap-2">
-              <Slider 
-                value={[delay * 10]} 
-                onValueChange={([v]) => setDelay(v / 10)}
+              <CommitSlider 
+                value={delay * 10} 
+                onValueCommit={(v) => setDelay(v / 10)}
                 max={20}
                 step={1}
                 className="w-20"
@@ -265,7 +265,7 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
               {EASING_OPTIONS.slice(0, 4).map((opt) => (
                 <button
                   key={opt.value}
-                  onClick={() => setEasing(opt.value)}
+                  onClick={(e) => { e.stopPropagation(); setEasing(opt.value); }}
                   className={cn(
                     'px-2 py-1 text-[10px] rounded transition-colors',
                     easing === opt.value
@@ -286,7 +286,7 @@ export const EffectsPickerPopover: React.FC<EffectsPickerPopoverProps> = ({
               {REPEAT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  onClick={() => setRepeat(opt.value)}
+                  onClick={(e) => { e.stopPropagation(); setRepeat(opt.value); }}
                   className={cn(
                     'flex items-center gap-1 px-2 py-1 text-[10px] rounded transition-colors',
                     repeat === opt.value

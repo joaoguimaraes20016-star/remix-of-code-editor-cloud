@@ -85,9 +85,9 @@ interface TopToolbarProps {
 }
 
 const deviceWidths: Record<DeviceMode, number> = {
-  desktop: 1200,
+  desktop: 1024,
   tablet: 768,
-  mobile: 375,
+  mobile: 390,
 };
 
 // Helper component for toolbar buttons with proper disabled state and tooltips
