@@ -314,6 +314,17 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   const exitEditingSession = useCallback((reason: 'blur' | 'outside' | 'escape' | 'enter' = 'blur') => {
     if (!isEditing) return;
 
+    // CRITICAL: Flush any pending style change IMMEDIATELY before closing
+    // This ensures "click color then click out" persists the change
+    if (styleChangeTimerRef.current) {
+      window.clearTimeout(styleChangeTimerRef.current);
+      styleChangeTimerRef.current = null;
+    }
+    if (pendingStyleChangeRef.current && onStyleChangeRef.current) {
+      onStyleChangeRef.current(pendingStyleChangeRef.current);
+      pendingStyleChangeRef.current = null;
+    }
+
     // Clear any pending inline-style save timer (we'll save now)
     if (inlineSaveTimerRef.current) {
       window.clearTimeout(inlineSaveTimerRef.current);
@@ -347,24 +358,27 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
     // This ensures the inspector remains the single source of truth for styling
     if (disableInlineFormatting) {
       const newValue = el.innerText;
-      onChange(newValue);
+      // Use ref to prevent stale closure
+      onChangeRef.current(newValue);
     } else {
       // Check if content has inline styled spans - if so, preserve HTML
       const hasInlineStyles = el.querySelector('span[style]') !== null;
 
       if (hasInlineStyles) {
         const htmlContent = sanitizeStyledHTML(el.innerHTML);
-        onChange(htmlContent);
+        // Use ref to prevent stale closure
+        onChangeRef.current(htmlContent);
       } else {
         const newValue = el.innerText;
-        onChange(newValue);
+        // Use ref to prevent stale closure
+        onChangeRef.current(newValue);
       }
     }
 
     if (import.meta.env.DEV) {
       console.debug('[InlineTextEditor] exitEditingSession', { reason });
     }
-  }, [isEditing, onChange, disableInlineFormatting]);
+  }, [isEditing, disableInlineFormatting]); // Removed onChange dep - using ref
 
   // Register close callback so other editors can close this one when they activate
   // CRITICAL: Must be synchronous to prevent race conditions with multiple toolbars
@@ -832,8 +846,8 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
     // Helper: notify parent when fill styles (color/gradient) are successfully applied inline
     // This enables bidirectional sync between toolbar and inspector
-    // THROTTLED: coalesces rapid slider updates to prevent jitter and excessive re-renders
-    const notifyStyleChange = () => {
+    // For discrete changes (swatch clicks), emit immediately. For continuous (drags), throttle.
+    const notifyStyleChange = (immediate = false) => {
       // CRITICAL: Use ref to get latest onStyleChange, preventing stale closure issues
       if (!onStyleChangeRef.current) return;
       // Only notify for fill-related changes
@@ -848,19 +862,29 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         textColor: newStyles.textColor,
         textGradient: newStyles.textGradient,
       };
-      pendingStyleChangeRef.current = stylePayload;
       
-      // Throttle: only emit after a short delay (coalesces rapid slider drags)
+      // Clear any pending timer
       if (styleChangeTimerRef.current) {
         window.clearTimeout(styleChangeTimerRef.current);
-      }
-      styleChangeTimerRef.current = window.setTimeout(() => {
-        if (pendingStyleChangeRef.current && onStyleChangeRef.current) {
-          onStyleChangeRef.current(pendingStyleChangeRef.current);
-          pendingStyleChangeRef.current = null;
-        }
         styleChangeTimerRef.current = null;
-      }, 60); // 60ms debounce - fast enough to feel instant, slow enough to coalesce drags
+      }
+      
+      // Discrete changes (swatch clicks, type toggles) → emit immediately for instant feedback
+      // Continuous changes (slider drags) → throttle to prevent jitter
+      if (immediate || !isSliderDraggingRef.current) {
+        pendingStyleChangeRef.current = null;
+        onStyleChangeRef.current(stylePayload);
+      } else {
+        // Throttle for drag operations
+        pendingStyleChangeRef.current = stylePayload;
+        styleChangeTimerRef.current = window.setTimeout(() => {
+          if (pendingStyleChangeRef.current && onStyleChangeRef.current) {
+            onStyleChangeRef.current(pendingStyleChangeRef.current);
+            pendingStyleChangeRef.current = null;
+          }
+          styleChangeTimerRef.current = null;
+        }, 60);
+      }
     };
 
     // When disableInlineFormatting is true, skip color/gradient inline styling entirely
@@ -1503,7 +1527,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               syncToolbarState();
 
               requestAnimationFrame(recomputeFormatState);
-              notifyStyleChange(); // Sync fill changes to element props
+              notifyStyleChange(!isContinuousDrag); // Immediate for discrete clicks, throttled for drags
               return true;
             }
           } catch {
@@ -1608,7 +1632,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           }
 
           requestAnimationFrame(recomputeFormatState);
-          notifyStyleChange(); // Sync fill changes to element props
+          notifyStyleChange(!isContinuousDrag); // Immediate for discrete clicks, throttled for drags
           return true;
         }
         
@@ -1651,7 +1675,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
         syncToolbarState();
 
         requestAnimationFrame(recomputeFormatState);
-        notifyStyleChange(); // Sync fill changes to element props
+        notifyStyleChange(!isContinuousDrag); // Immediate for discrete clicks, throttled for drags
         return true;
       }
 
@@ -1686,7 +1710,7 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           normalizeInlineDom();
           scheduleInlineHtmlSave();
           syncToolbarState();
-          notifyStyleChange();
+          notifyStyleChange(!isContinuousDrag); // Immediate for discrete clicks, throttled for drags
           return true;
         }
       }
