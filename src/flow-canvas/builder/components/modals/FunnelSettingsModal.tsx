@@ -15,7 +15,9 @@ import {
   Check,
   AlertCircle,
   Upload,
-  Trash2
+  Trash2,
+  History,
+  RotateCcw
 } from 'lucide-react';
 import {
   Dialog,
@@ -38,6 +40,13 @@ import {
 import { cn } from '@/lib/utils';
 import { ImagePickerModal } from './ImagePickerModal';
 import { toast } from 'sonner';
+
+// Version history entry type
+interface VersionHistoryEntry {
+  snapshot: unknown;
+  timestamp: number;
+  name?: string;
+}
 
 interface FunnelSettingsModalProps {
   isOpen: boolean;
@@ -80,6 +89,9 @@ interface FunnelSettingsModalProps {
   };
   pageSlug?: string;
   onUpdateSettings: (key: string, value: any) => void;
+  // Version history props
+  versionHistory?: VersionHistoryEntry[];
+  onRestoreVersion?: (snapshot: unknown) => void;
 }
 
 type SettingsSection = 
@@ -90,7 +102,8 @@ type SettingsSection =
   | 'progress' 
   | 'popup' 
   | 'tracking' 
-  | 'integrations';
+  | 'integrations'
+  | 'history';
 
 const sidebarItems: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: Settings },
@@ -101,6 +114,7 @@ const sidebarItems: { id: SettingsSection; label: string; icon: React.ElementTyp
   { id: 'popup', label: 'Pop-Up Gate', icon: Bell },
   { id: 'tracking', label: 'Tracking', icon: BarChart3 },
   { id: 'integrations', label: 'Integrations', icon: Webhook },
+  { id: 'history', label: 'Version History', icon: History },
 ];
 
 // Import unified presets from single source of truth
@@ -115,10 +129,38 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
   settings,
   pageSlug = '',
   onUpdateSettings,
+  versionHistory = [],
+  onRestoreVersion,
 }) => {
   const [activeSection, setActiveSection] = useState<SettingsSection>('overview');
   const [imagePickerTarget, setImagePickerTarget] = useState<'logo' | 'favicon' | 'social' | null>(null);
   const [webhookTestStatus, setWebhookTestStatus] = useState<Record<string, 'idle' | 'testing' | 'success' | 'error'>>({});
+  const [restoringVersion, setRestoringVersion] = useState<number | null>(null);
+
+  const handleRestoreVersion = async (entry: VersionHistoryEntry, index: number) => {
+    if (!onRestoreVersion) return;
+    setRestoringVersion(index);
+    try {
+      await onRestoreVersion(entry.snapshot);
+      toast.success('Version restored successfully');
+      onClose();
+    } catch (error) {
+      toast.error('Failed to restore version');
+    } finally {
+      setRestoringVersion(null);
+    }
+  };
+
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
 
   const handleTestWebhook = async (url: string, type: string) => {
     if (!url) {
@@ -742,6 +784,77 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
                   View integration documentation
                 </a>
               </div>
+            </div>
+          </div>
+        );
+
+      case 'history':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-builder-text mb-1">Version History</h3>
+              <p className="text-sm text-builder-text-muted">Restore previous published versions of your funnel</p>
+            </div>
+            
+            {versionHistory.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-12 h-12 rounded-full bg-builder-surface-hover flex items-center justify-center mb-4">
+                  <History className="w-6 h-6 text-builder-text-muted" />
+                </div>
+                <p className="text-builder-text-muted text-sm">No previous versions yet</p>
+                <p className="text-builder-text-dim text-xs mt-1">
+                  Previous versions will appear here after you publish updates
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {versionHistory.map((entry, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between p-4 rounded-lg border border-builder-border bg-builder-bg hover:bg-builder-surface-hover transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-builder-surface-hover flex items-center justify-center">
+                        <History className="w-5 h-5 text-builder-text-muted" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-builder-text">
+                          {entry.name || `Version ${versionHistory.length - index}`}
+                        </p>
+                        <p className="text-xs text-builder-text-muted">
+                          {formatTimestamp(entry.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRestoreVersion(entry, index)}
+                      disabled={restoringVersion !== null}
+                      className="gap-2"
+                    >
+                      {restoringVersion === index ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          Restoring...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-4 h-4" />
+                          Restore
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="pt-4 border-t border-builder-border">
+              <p className="text-xs text-builder-text-dim">
+                <AlertCircle className="w-3 h-3 inline mr-1" />
+                Restoring a version will replace your current draft. The current live version will remain published until you publish again.
+              </p>
             </div>
           </div>
         );

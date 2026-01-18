@@ -21,6 +21,13 @@ import type { EditorDocument } from '@/builder_v2/state/persistence';
 import '@/flow-canvas/index.css';
 
 // Types
+// Version history entry type
+type VersionHistoryEntry = {
+  snapshot: unknown;
+  timestamp: number;
+  name?: string;
+};
+
 type FunnelRow = {
   id: string;
   team_id: string;
@@ -29,6 +36,7 @@ type FunnelRow = {
   status: string;
   settings: Record<string, unknown>;
   builder_document: EditorDocument | null;
+  version_history: VersionHistoryEntry[] | null;
   updated_at: string;
 };
 
@@ -83,7 +91,7 @@ export default function FunnelEditor() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('funnels')
-        .select('id, team_id, name, slug, status, settings, builder_document, updated_at')
+        .select('id, team_id, name, slug, status, settings, builder_document, version_history, updated_at')
         .eq('id', funnelId)
         .single();
       if (error) throw error;
@@ -155,17 +163,40 @@ export default function FunnelEditor() {
     },
   });
 
-  // Publish mutation
+  // Publish mutation - now stores version history
   const publishMutation = useMutation({
     mutationFn: async (page: FlowCanvasPage) => {
       const document = flowCanvasToEditorDocument(page);
+      const publishedSnapshot = { 
+        ...document, 
+        publishedAt: Date.now() 
+      };
+      
+      // First fetch current version_history
+      const { data: currentFunnel } = await supabase
+        .from('funnels')
+        .select('version_history, published_document_snapshot')
+        .eq('id', funnelId)
+        .single();
+      
+      // Build new history entry (only if there's an existing published version)
+      const existingHistory = (currentFunnel?.version_history as Array<{snapshot: unknown; timestamp: number; name?: string}>) || [];
+      const newHistory = currentFunnel?.published_document_snapshot 
+        ? [
+            { 
+              snapshot: currentFunnel.published_document_snapshot, 
+              timestamp: (currentFunnel.published_document_snapshot as any)?.publishedAt || Date.now(),
+              name: `Version ${existingHistory.length + 1}`
+            },
+            ...existingHistory
+          ].slice(0, 20) // Keep max 20 versions
+        : existingHistory;
+      
       const { error } = await supabase
         .from('funnels')
         .update({
-          published_document_snapshot: { 
-            ...document, 
-            publishedAt: Date.now() 
-          } as unknown as Json,
+          published_document_snapshot: publishedSnapshot as unknown as Json,
+          version_history: newHistory as unknown as Json,
           status: 'published',
           updated_at: new Date().toISOString(),
         })
@@ -259,6 +290,16 @@ export default function FunnelEditor() {
     return <LoadingState message="Preparing editor..." />;
   }
 
+  // Handle version restore
+  const handleRestoreVersion = useCallback(async (snapshot: unknown) => {
+    if (!snapshot) return;
+    // Convert the snapshot back to flow-canvas format and update the page
+    const restoredPage = editorDocumentToFlowCanvas(snapshot as EditorDocument, funnel?.slug || 'untitled');
+    if (restoredPage) {
+      handlePageChange(restoredPage);
+    }
+  }, [funnel?.slug, handlePageChange]);
+
   return (
     <EditorShell
       initialState={initialFlowCanvasPage}
@@ -267,6 +308,8 @@ export default function FunnelEditor() {
       onPublish={handlePublish}
       saveStatus={saveStatus}
       lastSavedAt={lastSavedAt}
+      versionHistory={funnel?.version_history || []}
+      onRestoreVersion={handleRestoreVersion}
     />
   );
 }
