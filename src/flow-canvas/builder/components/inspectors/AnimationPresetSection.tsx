@@ -293,9 +293,9 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
             </Select>
           </div>
           
+          {/* Entrance animation settings - only show if animation is set */}
           {currentEffect && currentEffect !== 'none' && (
             <>
-              {/* Trigger */}
               <div className="flex items-center gap-2">
                 <Select 
                   value={currentTrigger} 
@@ -530,8 +530,12 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
                   </div>
                 </div>
               )}
+            </>
+          )}
 
-              {/* Scroll Transform Binding - Phase 2 */}
+          {/* ============================================= */}
+          {/* SCROLL TRANSFORM - Independent of entrance animation */}
+          {/* ============================================= */}
               <div className="space-y-3 pt-2 border-t border-builder-border/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -679,10 +683,8 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
                       Binds property to scroll position. Preview in runtime.
                     </p>
                   </div>
-                )}
-              </div>
-            </>
-          )}
+              )}
+            </div>
         </div>
       )}
     </div>

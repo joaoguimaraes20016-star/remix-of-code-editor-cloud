@@ -126,11 +126,11 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
     : (element.styles?.rotate as number) ?? 0;
   const blur = (element.props?.blur as number) ?? 0;
   const brightness = (element.props?.brightness as number) ?? 100;
-  const marginTop = parseInt((element.styles?.marginTop as string) || '0');
-  const marginBottom = parseInt((element.styles?.marginBottom as string) || '0');
+  const marginTop = parseFloat((element.styles?.marginTop as string) || '0') || 0;
+  const marginBottom = parseFloat((element.styles?.marginBottom as string) || '0') || 0;
   
   // Advanced filter values
-  const backdropBlur = parseInt((element.styles?.backdropBlur as string) || '0');
+  const backdropBlur = parseFloat((element.styles?.backdropBlur as string) || '0') || 0;
   const hueRotate = (element.props?.hueRotate as number) ?? 0;
   const saturation = (element.props?.saturation as number) ?? 100;
   const contrast = (element.props?.contrast as number) ?? 100;
@@ -869,7 +869,12 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
           <div className="flex items-center justify-between">
             <span className="text-xs text-builder-text-muted">Quick Preset</span>
             <Select 
-              value={(element.props?.shadowPreset as string) || 'none'}
+              value={
+                // Show "custom" if we have custom layers, else show the preset
+                shadowLayers.length > 0 
+                  ? 'custom' 
+                  : ((element.props?.shadowPreset as string) || 'none')
+              }
               onValueChange={(value) => {
                 handlePropsChange('shadowPreset', value);
                 // Clear custom layers when using preset
@@ -898,9 +903,8 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 value={shadowLayers}
                 onChange={(layers) => {
                   handlePropsChange('shadowLayers', layers);
-                  if (layers.length > 0) {
-                    handlePropsChange('shadowPreset', 'custom');
-                  }
+                  // Auto-set to custom when adding layers, auto-clear when removing all
+                  handlePropsChange('shadowPreset', layers.length > 0 ? 'custom' : 'none');
                 }}
                 compact
               />
