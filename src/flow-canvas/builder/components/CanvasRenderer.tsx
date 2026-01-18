@@ -1202,11 +1202,13 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         if (textEffect === 'underline') {
           const underlineFrom = (element.props?.underlineFrom as string) || '#8B5CF6';
           const underlineTo = (element.props?.underlineTo as string) || '#EC4899';
+          const underlineHeight = (element.props?.underlineHeight as number) || 3;
+          const underlineOffset = (element.props?.underlineOffset as number) || 4;
           textEffectStyles.backgroundImage = `linear-gradient(90deg, ${underlineFrom}, ${underlineTo})`;
-          textEffectStyles.backgroundSize = '100% 3px';
-          textEffectStyles.backgroundPosition = '0 100%';
+          textEffectStyles.backgroundSize = `100% ${underlineHeight}px`;
+          textEffectStyles.backgroundPosition = `0 calc(100% - ${underlineOffset}px)`;
           textEffectStyles.backgroundRepeat = 'no-repeat';
-          textEffectStyles.paddingBottom = '4px';
+          textEffectStyles.paddingBottom = `${underlineOffset + underlineHeight}px`;
           textEffectStyles.display = 'inline';
         } else if (textEffect === 'highlight') {
           const highlightColor = (element.props?.highlightColor as string) || 'rgba(255,255,0,0.3)';
@@ -2699,6 +2701,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const underlineFrom = (element.props?.underlineFrom as string) || primaryColor;
         const underlineTo = (element.props?.underlineTo as string) || '#EC4899';
         const underlineTextAlign = (element.props?.textAlign as string) || 'left';
+        const underlineHeight = (element.props?.underlineHeight as number) || 4;
+        const underlineOffset = (element.props?.underlineOffset as number) || 2;
         return (
           <div ref={combinedRef} style={{ ...style, textAlign: underlineTextAlign as 'left' | 'center' | 'right' }} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {stateStylesCSS && <style>{stateStylesCSS}</style>}
@@ -2720,6 +2724,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               style={{ 
                 '--underline-from': underlineFrom,
                 '--underline-to': underlineTo,
+                '--underline-height': `${underlineHeight}px`,
+                '--underline-offset': `${underlineOffset}px`,
                 color: isDarkTheme ? '#ffffff' : '#111827',
                 ...getTypographyStyles()
               } as React.CSSProperties}

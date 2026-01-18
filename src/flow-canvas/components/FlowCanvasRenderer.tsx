@@ -945,13 +945,19 @@ export function FlowCanvasRenderer({
         // Theme-aware: shift hue instead of hardcoded pink
         const underlineTo = (element.props?.underlineTo as string) || shiftHue(underlineFrom, 40);
         const underlineTextAlign = (element.props?.textAlign as string) || 'left';
+        const underlineHeight = (element.props?.underlineHeight as number) || 4;
+        const underlineOffset = (element.props?.underlineOffset as number) || 2;
         return (
           <div key={element.id} style={{ textAlign: underlineTextAlign as 'left' | 'center' | 'right' }}>
-            <span className="relative inline-block text-2xl font-bold">
+            <span className="relative inline-block text-2xl font-bold" style={{ paddingBottom: `${underlineOffset + underlineHeight}px` }}>
               {element.content || 'Underlined Text'}
               <span 
-                className="absolute bottom-0 left-0 right-0 h-1 rounded-full"
-                style={{ background: `linear-gradient(90deg, ${underlineFrom}, ${underlineTo})` }}
+                className="absolute left-0 right-0 rounded-full"
+                style={{ 
+                  background: `linear-gradient(90deg, ${underlineFrom}, ${underlineTo})`,
+                  height: `${underlineHeight}px`,
+                  bottom: `${underlineOffset}px`
+                }}
               />
             </span>
           </div>

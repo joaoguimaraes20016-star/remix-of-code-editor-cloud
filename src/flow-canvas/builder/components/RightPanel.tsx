@@ -3454,7 +3454,16 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
   onUpdate 
 }) => {
   // Convert block styles to BackgroundValue
+  // IMPROVED: Read gradient from props.backgroundGradient object first to avoid parsing losses
   const getBlockBackgroundValue = (): BackgroundValue => {
+    // Check if we have a stored gradient object (preferred)
+    if (block.props?.backgroundGradient) {
+      return { 
+        type: 'gradient', 
+        gradient: cloneGradient(block.props.backgroundGradient as GradientValue) 
+      };
+    }
+    // Fallback: parse from CSS string (legacy)
     const hasGradient = block.styles?.background?.includes('gradient');
     if (hasGradient && block.styles?.background) {
       const gradient = parseGradientString(block.styles.background);
@@ -3472,7 +3481,11 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
           ...block.styles, 
           backgroundColor: value.color,
           background: undefined
-        } 
+        },
+        props: {
+          ...block.props,
+          backgroundGradient: undefined // Clear gradient object
+        }
       });
     } else if (value.type === 'gradient' && value.gradient) {
       const css = gradientToCSS(value.gradient);
@@ -3481,7 +3494,11 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
           ...block.styles, 
           background: css,
           backgroundColor: undefined
-        } 
+        },
+        props: {
+          ...block.props,
+          backgroundGradient: cloneGradient(value.gradient) // Store gradient object for lossless retrieval
+        }
       });
     }
   };

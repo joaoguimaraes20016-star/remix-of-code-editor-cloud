@@ -1127,10 +1127,10 @@
 .underline-gradient::after {
   content: '';
   position: absolute;
-  bottom: -4px;
+  bottom: var(--underline-offset, -4px);
   left: 0;
   right: 0;
-  height: 3px;
+  height: var(--underline-height, 3px);
   background: linear-gradient(90deg, var(--underline-from, #8B5CF6), var(--underline-to, #EC4899));
   border-radius: 999px;
 }
