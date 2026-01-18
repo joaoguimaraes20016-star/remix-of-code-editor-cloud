@@ -1157,11 +1157,11 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   if (newStyles.backgroundOpacity !== undefined) propUpdates.backgroundOpacity = newStyles.backgroundOpacity;
                   
                   const updates: Partial<Element> = {};
-                  if (Object.keys(propUpdates).length > 0) updates.props = { ...element.props, ...propUpdates };
-                  if (Object.keys(styleUpdates).length > 0) updates.styles = { ...element.styles, ...styleUpdates } as Record<string, string>;
+                  if (Object.keys(propUpdates).length > 0) updates.props = propUpdates;
+                  if (Object.keys(styleUpdates).length > 0) updates.styles = styleUpdates as Record<string, string>;
                   if (Object.keys(updates).length > 0) onUpdate?.(updates);
                 }}
-                onAlignChange={(align) => onUpdate?.({ props: { ...element.props, textAlign: align } })}
+                onAlignChange={(align) => onUpdate?.({ props: { textAlign: align } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
                 hidden={isInlineEditing}
@@ -1349,11 +1349,11 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   if (newStyles.backgroundOpacity !== undefined) propUpdates.backgroundOpacity = newStyles.backgroundOpacity;
                   
                   const updates: Partial<Element> = {};
-                  if (Object.keys(propUpdates).length > 0) updates.props = { ...element.props, ...propUpdates };
-                  if (Object.keys(styleUpdates).length > 0) updates.styles = { ...element.styles, ...styleUpdates } as Record<string, string>;
+                  if (Object.keys(propUpdates).length > 0) updates.props = propUpdates;
+                  if (Object.keys(styleUpdates).length > 0) updates.styles = styleUpdates as Record<string, string>;
                   if (Object.keys(updates).length > 0) onUpdate?.(updates);
                 }}
-                onAlignChange={(align) => onUpdate?.({ props: { ...element.props, textAlign: align } })}
+                onAlignChange={(align) => onUpdate?.({ props: { textAlign: align } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
                 hidden={isInlineEditing}
@@ -1547,19 +1547,23 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   gradient: element.props?.gradient as GradientValue,
                 }}
                 onStyleChange={(newStyles) => {
-                  const updates: Partial<Element> = {};
+                  const propUpdates: Record<string, unknown> = {};
+                  const styleUpdates: Record<string, string> = {};
                   if (newStyles.backgroundColor) {
-                    updates.styles = { ...element.styles, backgroundColor: newStyles.backgroundColor };
+                    styleUpdates.backgroundColor = newStyles.backgroundColor;
                   }
                   if (newStyles.fillType) {
-                    updates.props = { ...element.props, fillType: newStyles.fillType };
+                    propUpdates.fillType = newStyles.fillType;
                   }
                   if (newStyles.gradient) {
-                    updates.props = { ...element.props, ...updates.props, gradient: newStyles.gradient };
+                    propUpdates.gradient = newStyles.gradient;
                   }
+                  const updates: Partial<Element> = {};
+                  if (Object.keys(propUpdates).length > 0) updates.props = propUpdates;
+                  if (Object.keys(styleUpdates).length > 0) updates.styles = styleUpdates;
                   if (Object.keys(updates).length > 0) onUpdate?.(updates);
                 }}
-                onAlignChange={(align) => onUpdate?.({ styles: { ...element.styles, textAlign: align } })}
+                onAlignChange={(align) => onUpdate?.({ styles: { textAlign: align } })}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
               />
@@ -1703,12 +1707,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.backgroundColor) {
-                    onUpdate?.({ styles: { ...element.styles, backgroundColor: newStyles.backgroundColor } });
+                    onUpdate?.({ styles: { backgroundColor: newStyles.backgroundColor } });
                   }
                 }}
                 onAlignChange={(align) => {
                   const margin = align === 'center' ? '0 auto' : align === 'right' ? '0 0 0 auto' : '';
-                  onUpdate?.({ styles: { ...element.styles, margin, display: 'block' } });
+                  onUpdate?.({ styles: { margin, display: 'block' } });
                 }}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
@@ -2138,7 +2142,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 styles={{ backgroundColor: dividerColor }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.backgroundColor) {
-                    onUpdate?.({ styles: { ...element.styles, borderColor: newStyles.backgroundColor } });
+                    onUpdate?.({ styles: { borderColor: newStyles.backgroundColor } });
                   }
                 }}
                 onDuplicate={onDuplicate}
@@ -2236,7 +2240,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 styles={{ textColor: iconColor }}
                 onStyleChange={(newStyles) => {
                   if (newStyles.textColor) {
-                    onUpdate?.({ props: { ...element.props, color: newStyles.textColor } });
+                    onUpdate?.({ props: { color: newStyles.textColor } });
                   }
                 }}
                 onDuplicate={onDuplicate}

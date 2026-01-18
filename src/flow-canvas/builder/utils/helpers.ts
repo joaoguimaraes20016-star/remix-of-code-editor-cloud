@@ -136,6 +136,16 @@ export const updateNodeByPath = (
   
   const node = findNodeByPath(newPage, path);
   if (node) {
+    // Merge props, styles, and settings instead of replacing to prevent stale closure overwrites
+    if (updates.props && (node as any).props) {
+      updates = { ...updates, props: { ...(node as any).props, ...updates.props } };
+    }
+    if (updates.styles && (node as any).styles) {
+      updates = { ...updates, styles: { ...(node as any).styles, ...updates.styles } };
+    }
+    if (updates.settings && (node as any).settings) {
+      updates = { ...updates, settings: { ...(node as any).settings, ...updates.settings } };
+    }
     Object.assign(node, updates);
   }
   
