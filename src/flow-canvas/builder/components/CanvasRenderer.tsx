@@ -2300,19 +2300,27 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 normal: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800
               };
               return (
-                <div style={{ textAlign: gradientTextAlign as 'left' | 'center' | 'right', width: '100%' }}>
-                  <span 
-                    className="bg-clip-text text-transparent"
+                <div 
+                  style={{ textAlign: gradientTextAlign as 'left' | 'center' | 'right', width: '100%' }}
+                  onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                >
+                  <InlineTextEditor
+                    value={element.content || 'Gradient Text'}
+                    onChange={handleContentChange}
+                    elementType="heading"
+                    placeholder="Gradient text..."
+                    disabled={readOnly}
+                    elementId={element.id}
                     style={{ 
                       backgroundImage: gradientCSS,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
                       fontSize: fontSizeMap[gradientFontSize] || '2.25rem',
                       fontWeight: fontWeightMap[gradientFontWeight] || 700,
                       ...getTypographyStyles()
                     }}
-                    onClick={(e) => { e.stopPropagation(); onSelect(); }}
-                  >
-                    {element.content || 'Gradient Text'}
-                  </span>
+                  />
                 </div>
               );
             })()}
@@ -2363,7 +2371,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         fontWeight: statWeightMap[statFontWeight] || 700,
                       }}
                     >
-                      <span style={{ color: numberColor }}>{element.content || '0'}</span>
+                      <InlineTextEditor
+                        value={element.content || '0'}
+                        onChange={(newContent: string) => onUpdate?.({ content: newContent })}
+                        elementType="text"
+                        placeholder="0"
+                        disabled={readOnly}
+                        elementId={`${element.id}-number`}
+                        style={{ color: numberColor, display: 'inline' }}
+                        className="inline"
+                      />
                       <span style={{ color: suffixColor }}>{statSuffix}</span>
                     </div>
                     {statLabel && (
@@ -2371,7 +2388,15 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         className="text-xs uppercase tracking-wider mt-2"
                         style={{ color: labelColor }}
                       >
-                        {statLabel}
+                        <InlineTextEditor
+                          value={statLabel}
+                          onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, label: newContent } })}
+                          elementType="text"
+                          placeholder="LABEL"
+                          disabled={readOnly}
+                          elementId={`${element.id}-label`}
+                          style={{ color: labelColor }}
+                        />
                       </div>
                     )}
                   </>
@@ -2598,7 +2623,15 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 const IconComponent = getButtonIconComponent(badgeIcon);
                 return <IconComponent className="w-3 h-3" />;
               })()}
-              {element.content || 'BADGE'}
+              <InlineTextEditor
+                value={element.content || 'BADGE'}
+                onChange={handleContentChange}
+                elementType="text"
+                placeholder="BADGE"
+                disabled={readOnly}
+                elementId={element.id}
+                className="inline uppercase"
+              />
             </span>
           </div>
         );
@@ -2675,17 +2708,29 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   <span className={cn(currentStepSize.text, 'font-bold')} style={{ color: stepNumberColor }}>{stepNumber}</span>
                 )}
               </div>
-              <span 
-                className="text-sm font-semibold uppercase tracking-wider mt-2"
-                style={{ color: stepTextColor }}
-              >
-                {element.content || `Step ${stepNumber}`}
-              </span>
-              {stepDescription && (
-                <p className="text-xs mt-1" style={{ color: stepTextColor, opacity: 0.7 }}>
-                  {stepDescription}
-                </p>
-              )}
+              <div className="text-sm font-semibold uppercase tracking-wider mt-2" style={{ color: stepTextColor }}>
+                <InlineTextEditor
+                  value={element.content || `Step ${stepNumber}`}
+                  onChange={handleContentChange}
+                  elementType="text"
+                  placeholder="Step title..."
+                  disabled={readOnly}
+                  elementId={`${element.id}-title`}
+                  style={{ color: stepTextColor }}
+                  className="uppercase tracking-wider"
+                />
+              </div>
+              <div className="text-xs mt-1" style={{ color: stepTextColor, opacity: 0.7 }}>
+                <InlineTextEditor
+                  value={stepDescription || ''}
+                  onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, description: newContent } })}
+                  elementType="text"
+                  placeholder="Optional description..."
+                  disabled={readOnly}
+                  elementId={`${element.id}-desc`}
+                  style={{ color: stepTextColor, opacity: 0.7 }}
+                />
+              </div>
               {showConnector && (
                 connectorStyle === 'arrow' ? (
                   <div className="absolute top-1/2 -right-6 flex items-center -translate-y-1/2">
