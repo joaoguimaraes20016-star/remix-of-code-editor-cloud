@@ -362,8 +362,8 @@ function resolveElementStyles(element: FlowCanvasElement, deviceMode: 'desktop' 
   return base;
 }
 
-// Element renderers
-function renderHeading(element: FlowCanvasElement) {
+// Element renderers - accept deviceMode for responsive styles
+function renderHeading(element: FlowCanvasElement, deviceMode: 'desktop' | 'tablet' | 'mobile' = 'desktop') {
   const level = (element.props.level as number) || 2;
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
   const sizeClasses: Record<number, string> = {
@@ -383,8 +383,8 @@ function renderHeading(element: FlowCanvasElement) {
   const textGradient = element.props?.textGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> };
   const hasGradient = textFillType === 'gradient' && textGradient?.stops?.length >= 2;
   
-  // Merge layout styles with typography
-  const layoutStyles = resolveElementStyles(element);
+  // Merge layout styles with typography - now uses deviceMode
+  const layoutStyles = resolveElementStyles(element, deviceMode);
   const typographyStyle: React.CSSProperties = {
     ...layoutStyles,
     color: hasGradient ? undefined : (element.props?.textColor as string || element.styles?.color),
@@ -417,7 +417,7 @@ function renderHeading(element: FlowCanvasElement) {
   );
 }
 
-function renderText(element: FlowCanvasElement) {
+function renderText(element: FlowCanvasElement, deviceMode: 'desktop' | 'tablet' | 'mobile' = 'desktop') {
   const variant = element.props.variant as string;
   const baseClasses = 'text-muted-foreground';
   const variantClasses: Record<string, string> = {
@@ -437,8 +437,8 @@ function renderText(element: FlowCanvasElement) {
   const textGradient = element.props?.textGradient as { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> };
   const hasGradient = textFillType === 'gradient' && textGradient?.stops?.length >= 2;
   
-  // Merge layout styles with typography
-  const layoutStyles = resolveElementStyles(element);
+  // Merge layout styles with typography - now uses deviceMode
+  const layoutStyles = resolveElementStyles(element, deviceMode);
   const typographyStyle: React.CSSProperties = {
     ...layoutStyles,
     color: hasGradient ? undefined : (element.props?.textColor as string || element.styles?.color),
@@ -664,6 +664,7 @@ export function FlowCanvasRenderer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [leadId, setLeadId] = useState<string | null>(null);
+  const deviceMode = useRuntimeDeviceMode();
 
   const steps = page.steps || [];
   const currentStep = steps[currentStepIndex];
@@ -821,10 +822,10 @@ export function FlowCanvasRenderer({
   const renderElement = useCallback((element: FlowCanvasElement, block: FlowCanvasBlock) => {
     switch (element.type) {
       case 'heading':
-        return renderHeading(element);
+        return renderHeading(element, deviceMode);
         
       case 'text':
-        return renderText(element);
+        return renderText(element, deviceMode);
         
       case 'input':
         const fieldKey = (element.props.fieldKey as string) || element.id;

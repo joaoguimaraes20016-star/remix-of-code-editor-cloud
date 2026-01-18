@@ -34,23 +34,35 @@ export function ScrollTransformWrapper({
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number>();
+  // Cache rect values to avoid layout thrashing
+  const cachedRectRef = useRef<{ top: number; bottom: number; height: number } | null>(null);
+  const lastScrollY = useRef<number>(0);
 
   const updateProgress = useCallback(() => {
     if (!ref.current) return;
     
-    const rect = ref.current.getBoundingClientRect();
+    // Only recalculate rect if scroll position changed significantly
+    // This reduces layout thrashing from getBoundingClientRect
+    const scrollDelta = Math.abs(window.scrollY - lastScrollY.current);
+    if (scrollDelta > 2 || !cachedRectRef.current) {
+      const rect = ref.current.getBoundingClientRect();
+      cachedRectRef.current = { top: rect.top, bottom: rect.bottom, height: rect.height };
+      lastScrollY.current = window.scrollY;
+    }
+    
+    const { top, bottom, height } = cachedRectRef.current;
     const windowHeight = window.innerHeight;
     
     // Check if in view
-    const isInView = rect.bottom > 0 && rect.top < windowHeight;
+    const isInView = bottom > 0 && top < windowHeight;
     
     if (!isInView) {
-      setProgress(rect.bottom <= 0 ? 1 : 0);
+      setProgress(bottom <= 0 ? 1 : 0);
       return;
     }
     
     // Calculate progress based on element center position
-    const elementCenter = rect.top + rect.height / 2;
+    const elementCenter = top + height / 2;
     const rawProgress = (windowHeight - elementCenter) / windowHeight;
     setProgress(Math.max(0, Math.min(1, rawProgress)));
   }, []);
