@@ -2437,12 +2437,18 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         style={{ ...labelStyle, display: labelColorType === 'gradient' ? 'inline-block' : undefined }}
                       >
                         <InlineTextEditor
+                          key={`${element.id}-label-${labelColorType}-${labelColor}-${labelGradient ? gradientToCSS(labelGradient) : 'none'}`}
                           value={statLabel}
                           onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, label: newContent } })}
                           elementType="text"
                           placeholder="LABEL"
                           disabled={readOnly}
                           elementId={`${element.id}-label`}
+                          initialStyles={{
+                            textFillType: (labelColorType as 'solid' | 'gradient') || 'solid',
+                            textColor: labelColor,
+                            textGradient: labelGradient,
+                          }}
                           style={{}}
                         />
                       </div>
