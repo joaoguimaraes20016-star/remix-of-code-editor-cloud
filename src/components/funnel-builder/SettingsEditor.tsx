@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '@/flow-canvas/builder/components/CommitSlider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { FunnelStep } from '@/lib/funnel/editorTypes';
 
@@ -112,9 +112,9 @@ export function SettingsEditor({ step, settings, onUpdateSettings }: SettingsEdi
             <Label className="text-xs">Duration</Label>
             <span className="text-xs text-muted-foreground">{settings.animationDuration ?? 300}ms</span>
           </div>
-          <Slider
-            value={[settings.animationDuration ?? 300]}
-            onValueChange={([value]) => updateField('animationDuration', value)}
+          <CommitSlider
+            value={settings.animationDuration ?? 300}
+            onValueCommit={(value) => updateField('animationDuration', value)}
             min={100}
             max={800}
             step={50}

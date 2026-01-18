@@ -17,7 +17,7 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '@/flow-canvas/builder/components/CommitSlider';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { 
@@ -391,9 +391,9 @@ export const ButtonStyleInspector: React.FC<ButtonStyleInspectorProps> = ({
         {/* Border Radius */}
         <FieldGroup label="Corner Radius">
           <div className="flex items-center gap-3">
-            <Slider
-              value={[settings.borderRadius ?? 12]}
-              onValueChange={([value]) => onChange({ borderRadius: value })}
+            <CommitSlider
+              value={settings.borderRadius ?? 12}
+              onValueCommit={(value) => onChange({ borderRadius: value })}
               min={0}
               max={50}
               step={2}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '@/flow-canvas/builder/components/CommitSlider';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -210,9 +210,9 @@ export function BackgroundEditor({ settings, onChange }: BackgroundEditorProps) 
                     {Math.round((settings.image?.overlayOpacity || 0.5) * 100)}%
                   </span>
                 </div>
-                <Slider
-                  value={[settings.image?.overlayOpacity || 0.5]}
-                  onValueChange={([value]) => updateSettings({
+                <CommitSlider
+                  value={settings.image?.overlayOpacity || 0.5}
+                  onValueCommit={(value) => updateSettings({
                     image: { ...settings.image!, overlayOpacity: value }
                   })}
                   min={0}
