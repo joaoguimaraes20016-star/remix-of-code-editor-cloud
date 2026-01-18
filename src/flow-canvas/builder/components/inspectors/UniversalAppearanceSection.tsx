@@ -102,7 +102,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                   value={parseInt((element.styles?.width as string) || '200')}
                   onChange={(e) => handleStyleChange('width', `${e.target.value}px`)}
                   min={0}
-                  max={2000}
+                  max={10000}
                 />
               )}
             </div>
@@ -144,7 +144,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                   value={parseInt((element.styles?.height as string) || '100')}
                   onChange={(e) => handleStyleChange('height', `${e.target.value}px`)}
                   min={0}
-                  max={2000}
+                  max={10000}
                 />
               )}
             </div>
@@ -245,7 +245,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 <CommitSlider
                   value={marginTop}
                   onValueCommit={(v) => handleStyleChange('marginTop', `${v}px`)}
-                  min={0} max={100} step={4}
+                  min={0} max={500} step={4}
                 />
               </div>
               <div className="space-y-1">
@@ -256,7 +256,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
                 <CommitSlider
                   value={marginBottom}
                   onValueCommit={(v) => handleStyleChange('marginBottom', `${v}px`)}
-                  min={0} max={100} step={4}
+                  min={0} max={500} step={4}
                 />
               </div>
             </div>
@@ -276,7 +276,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <CommitSlider 
               value={opacity}
               onValueCommit={(v) => handleStyleChange('opacity', String(v))}
-              min={0} max={100} step={5}
+              min={0} max={100} step={1}
               className="w-full"
             />
           </div>
@@ -293,7 +293,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <CommitSlider 
               value={rotation}
               onValueCommit={(v) => handleStyleChange('rotate', String(v))}
-              min={0} max={360} step={5}
+              min={0} max={360} step={1}
               className="w-full"
             />
           </div>
@@ -307,7 +307,7 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             <CommitSlider 
               value={blur}
               onValueCommit={(v) => handlePropsChange('blur', v)}
-              min={0} max={20} step={1}
+              min={0} max={100} step={1}
               className="w-full"
             />
           </div>
@@ -345,26 +345,22 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             </Select>
           </div>
           
-          {/* Z-Index */}
+          {/* Z-Index - now allows arbitrary values */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-builder-text-muted" />
-              <span className="text-xs text-builder-text-muted">Layer</span>
+              <span className="text-xs text-builder-text-muted">Layer (z-index)</span>
             </div>
-            <Select 
-              value={String(element.styles?.zIndex || 'auto')}
-              onValueChange={(value) => handleStyleChange('zIndex', value)}
-            >
-              <SelectTrigger className="builder-input w-20"><SelectValue placeholder="Auto" /></SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                <SelectItem value="auto">Auto</SelectItem>
-                <SelectItem value="0">0</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="30">30</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              type="number"
+              className="builder-input w-20 text-xs text-center"
+              value={element.styles?.zIndex === 'auto' ? '' : (element.styles?.zIndex || '')}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                handleStyleChange('zIndex', v ? v : 'auto');
+              }}
+              placeholder="auto"
+            />
           </div>
         </div>
       </CollapsibleSection>
@@ -372,22 +368,18 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
       {/* ========== BORDER SECTION ========== */}
       <CollapsibleSection title="Border" icon={<Square className="w-4 h-4" />}>
         <div className="pt-3 space-y-3">
-          {/* Border Width */}
+          {/* Border Width - now allows arbitrary values */}
           <div className="flex items-center justify-between">
             <span className="text-xs text-builder-text-muted">Width</span>
-            <Select 
-              value={(element.styles?.borderWidth as string) || '0px'}
-              onValueChange={(value) => handleStyleChange('borderWidth', value)}
-            >
-              <SelectTrigger className="builder-input w-20"><SelectValue placeholder="0px" /></SelectTrigger>
-              <SelectContent className="bg-background border-border">
-                <SelectItem value="0px">None</SelectItem>
-                <SelectItem value="1px">1px</SelectItem>
-                <SelectItem value="2px">2px</SelectItem>
-                <SelectItem value="3px">3px</SelectItem>
-                <SelectItem value="4px">4px</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              type="number"
+              className="builder-input w-20 text-xs text-center"
+              value={parseInt((element.styles?.borderWidth as string) || '0')}
+              onChange={(e) => handleStyleChange('borderWidth', `${e.target.value}px`)}
+              min={0}
+              max={50}
+              placeholder="0"
+            />
           </div>
           
           {/* Border Style */}
@@ -424,20 +416,54 @@ export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProp
             </ColorPickerPopover>
           </div>
           
-          {/* Border Radius */}
+          {/* Border Radius - expanded to allow pill/circle shapes */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs text-builder-text-muted">Radius</span>
-              <span className="text-xs font-mono text-builder-text-dim">
-                {element.styles?.borderRadius || '0px'}
-              </span>
+              <Input
+                type="number"
+                className="builder-input w-16 text-xs text-center h-6"
+                value={parseInt((element.styles?.borderRadius as string) || '0')}
+                onChange={(e) => handleStyleChange('borderRadius', `${e.target.value}px`)}
+                min={0}
+                max={999}
+              />
             </div>
             <CommitSlider 
               value={parseInt((element.styles?.borderRadius as string) || '0')}
               onValueCommit={(v) => handleStyleChange('borderRadius', `${v}px`)}
-              min={0} max={50} step={2}
+              min={0} max={200} step={1}
               className="w-full"
             />
+          </div>
+          
+          {/* Per-side Border Radius (advanced) */}
+          <div className="space-y-2">
+            <span className="text-xs text-builder-text-dim">Per-corner Radius</span>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: 'borderTopLeftRadius', label: 'TL' },
+                { key: 'borderTopRightRadius', label: 'TR' },
+                { key: 'borderBottomLeftRadius', label: 'BL' },
+                { key: 'borderBottomRightRadius', label: 'BR' },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-1">
+                  <span className="text-[10px] text-builder-text-dim w-5">{label}</span>
+                  <Input
+                    type="number"
+                    className="builder-input text-xs text-center h-6 flex-1"
+                    value={parseInt((element.styles?.[key as keyof typeof element.styles] as string) || '')}
+                    onChange={(e) => {
+                      const v = e.target.value.trim();
+                      handleStyleChange(key, v ? `${v}px` : '');
+                    }}
+                    placeholder="—"
+                    min={0}
+                    max={999}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </CollapsibleSection>
