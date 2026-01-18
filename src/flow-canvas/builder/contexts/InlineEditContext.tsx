@@ -62,6 +62,18 @@ interface InlineEditContextValue {
    * Called by InlineTextEditor when selection changes.
    */
   notifySelectionChange: (elementId: string) => void;
+
+  /**
+   * Close all other active editors except the one with the given ID.
+   * Call this when a new editor is about to activate.
+   */
+  closeOtherEditors: (exceptElementId: string) => void;
+
+  /**
+   * Subscribe to "close me" requests.
+   * Returns an unsubscribe function.
+   */
+  onCloseRequest: (elementId: string, callback: () => void) => () => void;
 }
 
 const InlineEditContext = createContext<InlineEditContextValue | null>(null);
@@ -72,6 +84,9 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
   
   // Track selection change listeners
   const selectionListenersRef = useRef<Set<(elementId: string) => void>>(new Set());
+  
+  // Track close request listeners (for single-active-editor enforcement)
+  const closeListenersRef = useRef<Map<string, () => void>>(new Map());
   
   // Track the most recently active editor for debugging
   const lastActiveElementRef = useRef<string | null>(null);
@@ -162,6 +177,33 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
     });
   }, []);
 
+  /**
+   * Close all other active editors except the one with the given ID.
+   * This enforces single-active-editor behavior.
+   */
+  const closeOtherEditors = useCallback((exceptElementId: string): void => {
+    closeListenersRef.current.forEach((callback, registeredId) => {
+      if (registeredId !== exceptElementId) {
+        try {
+          callback();
+        } catch (err) {
+          console.error('[InlineEditContext] Close listener error:', err);
+        }
+      }
+    });
+  }, []);
+
+  /**
+   * Register a close request callback for a specific element.
+   * Returns an unsubscribe function.
+   */
+  const onCloseRequest = useCallback((elementId: string, callback: () => void): (() => void) => {
+    closeListenersRef.current.set(elementId, callback);
+    return () => {
+      closeListenersRef.current.delete(elementId);
+    };
+  }, []);
+
   return (
     <InlineEditContext.Provider value={{ 
       registerEditor, 
@@ -171,6 +213,8 @@ export function InlineEditProvider({ children }: { children: React.ReactNode }) 
       getActiveElementId,
       onSelectionChange,
       notifySelectionChange,
+      closeOtherEditors,
+      onCloseRequest,
     }}>
       {children}
     </InlineEditContext.Provider>
@@ -189,6 +233,8 @@ export function useInlineEdit() {
       getActiveElementId: () => null,
       onSelectionChange: () => () => {},
       notifySelectionChange: () => {},
+      closeOtherEditors: () => {},
+      onCloseRequest: () => () => {},
     };
   }
   return ctx;
