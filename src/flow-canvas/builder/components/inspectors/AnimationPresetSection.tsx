@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Element, AnimationSettings } from '@/flow-canvas/types/infostack';
 import { cn } from '@/lib/utils';
-import { Sparkles, Play, ChevronRight, ChevronDown, X, Zap, RotateCcw } from 'lucide-react';
+import { Sparkles, Play, ChevronRight, ChevronDown, X, Zap, RotateCcw, MousePointer2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -13,6 +13,7 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { scrollTransformPresets } from '../../hooks/useScrollTransform';
 
 interface AnimationPreset {
   id: string;
@@ -529,6 +530,157 @@ export const AnimationPresetSection: React.FC<AnimationPresetSectionProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Scroll Transform Binding - Phase 2 */}
+              <div className="space-y-3 pt-2 border-t border-builder-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <MousePointer2 className="w-3.5 h-3.5 text-builder-text-muted" />
+                    <span className="text-xs text-builder-text-muted">Scroll Transform</span>
+                  </div>
+                  <Switch
+                    checked={element.animation?.scrollTransform?.enabled ?? false}
+                    onCheckedChange={(enabled) => handleAnimationChange({ 
+                      scrollTransform: { 
+                        ...element.animation?.scrollTransform,
+                        enabled,
+                        property: element.animation?.scrollTransform?.property || 'opacity',
+                        startValue: element.animation?.scrollTransform?.startValue ?? 0,
+                        endValue: element.animation?.scrollTransform?.endValue ?? 100,
+                      } 
+                    })}
+                    className="scale-75"
+                  />
+                </div>
+
+                {element.animation?.scrollTransform?.enabled && (
+                  <div className="space-y-3 pl-2">
+                    {/* Preset Selection */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-builder-text-muted">Preset</span>
+                      <Select
+                        value={
+                          scrollTransformPresets.find(p => 
+                            p.property === element.animation?.scrollTransform?.property &&
+                            p.startValue === element.animation?.scrollTransform?.startValue &&
+                            p.endValue === element.animation?.scrollTransform?.endValue
+                          )?.id || 'custom'
+                        }
+                        onValueChange={(id) => {
+                          const preset = scrollTransformPresets.find(p => p.id === id);
+                          if (preset) {
+                            handleAnimationChange({ 
+                              scrollTransform: {
+                                enabled: true,
+                                property: preset.property,
+                                startValue: preset.startValue,
+                                endValue: preset.endValue,
+                              }
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-full h-7 text-xs bg-builder-surface border-builder-border">
+                          <SelectValue placeholder="Select preset" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border-border">
+                          {scrollTransformPresets.map((preset) => (
+                            <SelectItem key={preset.id} value={preset.id} className="text-xs">
+                              {preset.label}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="custom" className="text-xs">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Property Selection */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-builder-text-muted">Property</span>
+                      <Select
+                        value={element.animation?.scrollTransform?.property || 'opacity'}
+                        onValueChange={(property: 'opacity' | 'scale' | 'translateY' | 'translateX' | 'rotate') => 
+                          handleAnimationChange({ 
+                            scrollTransform: { 
+                              ...element.animation?.scrollTransform!,
+                              property 
+                            } 
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-full h-7 text-xs bg-builder-surface border-builder-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border-border">
+                          <SelectItem value="opacity" className="text-xs">Opacity</SelectItem>
+                          <SelectItem value="scale" className="text-xs">Scale</SelectItem>
+                          <SelectItem value="translateY" className="text-xs">Move Y</SelectItem>
+                          <SelectItem value="translateX" className="text-xs">Move X</SelectItem>
+                          <SelectItem value="rotate" className="text-xs">Rotate</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Start Value */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-builder-text-muted">Start Value</span>
+                        <span className="text-[10px] font-mono text-builder-text-dim">
+                          {element.animation?.scrollTransform?.startValue ?? 0}
+                          {element.animation?.scrollTransform?.property === 'opacity' || 
+                           element.animation?.scrollTransform?.property === 'scale' ? '%' : 
+                           element.animation?.scrollTransform?.property === 'rotate' ? '°' : 'px'}
+                        </span>
+                      </div>
+                      <Slider
+                        value={[element.animation?.scrollTransform?.startValue ?? 0]}
+                        onValueChange={([v]) => handleAnimationChange({ 
+                          scrollTransform: { 
+                            ...element.animation?.scrollTransform!,
+                            startValue: v 
+                          } 
+                        })}
+                        min={element.animation?.scrollTransform?.property === 'rotate' ? -180 : -200}
+                        max={element.animation?.scrollTransform?.property === 'rotate' ? 180 : 200}
+                        step={element.animation?.scrollTransform?.property === 'opacity' || 
+                              element.animation?.scrollTransform?.property === 'scale' ? 5 : 10}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* End Value */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-builder-text-muted">End Value</span>
+                        <span className="text-[10px] font-mono text-builder-text-dim">
+                          {element.animation?.scrollTransform?.endValue ?? 100}
+                          {element.animation?.scrollTransform?.property === 'opacity' || 
+                           element.animation?.scrollTransform?.property === 'scale' ? '%' : 
+                           element.animation?.scrollTransform?.property === 'rotate' ? '°' : 'px'}
+                        </span>
+                      </div>
+                      <Slider
+                        value={[element.animation?.scrollTransform?.endValue ?? 100]}
+                        onValueChange={([v]) => handleAnimationChange({ 
+                          scrollTransform: { 
+                            ...element.animation?.scrollTransform!,
+                            endValue: v 
+                          } 
+                        })}
+                        min={element.animation?.scrollTransform?.property === 'rotate' ? -180 : -200}
+                        max={element.animation?.scrollTransform?.property === 'rotate' ? 180 : 200}
+                        step={element.animation?.scrollTransform?.property === 'opacity' || 
+                              element.animation?.scrollTransform?.property === 'scale' ? 5 : 10}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <p className="text-[9px] text-builder-text-dim italic">
+                      Binds property to scroll position. Preview in runtime.
+                    </p>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>

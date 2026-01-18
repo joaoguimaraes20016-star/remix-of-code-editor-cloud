@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Loader2, Play, User, Layout, ArrowRight, Sparkles, Search, Calendar, FileText, Rocket, Video } from 'lucide-react';
 import { generateStateStylesCSS } from './RuntimeElementRenderer';
+import { ScrollTransformWrapper } from './ScrollTransformWrapper';
 
 // Helper to convert gradient object to CSS
 function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): string {
@@ -106,6 +107,15 @@ interface FlowCanvasElement {
   content?: string;
   props: Record<string, unknown>;
   styles?: Record<string, string>;
+  animation?: {
+    scrollTransform?: {
+      enabled: boolean;
+      property: 'opacity' | 'scale' | 'translateY' | 'translateX' | 'rotate';
+      startValue: number;
+      endValue: number;
+    };
+    [key: string]: unknown;
+  };
 }
 
 interface FlowCanvasStep {
@@ -1612,7 +1622,21 @@ export function FlowCanvasRenderer({
             <div className="space-y-4">
               {currentBlocks.map(block => (
                 <div key={block.id} className="space-y-3">
-                  {block.elements.map(element => renderElement(element, block))}
+                  {block.elements.map(element => {
+                    const rendered = renderElement(element, block);
+                    // Wrap with scroll transform if enabled
+                    if (element.animation?.scrollTransform?.enabled) {
+                      return (
+                        <ScrollTransformWrapper
+                          key={`scroll-${element.id}`}
+                          config={element.animation.scrollTransform}
+                        >
+                          {rendered}
+                        </ScrollTransformWrapper>
+                      );
+                    }
+                    return rendered;
+                  })}
                 </div>
               ))}
             </div>
