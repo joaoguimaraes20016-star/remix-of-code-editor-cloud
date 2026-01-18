@@ -905,13 +905,13 @@ export function FlowCanvasRenderer({
                 fontWeight: statWeightMap[statFontWeight] || 700,
               }}
             >
-              <span style={numberStyle}>{element.content || '0'}</span>
-              <span style={suffixStyle}>{suffix}</span>
+              <span style={{ ...numberStyle, display: 'inline' }}>{element.content || '0'}</span>
+              <span style={{ ...suffixStyle, display: 'inline' }}>{suffix}</span>
             </div>
             {statLabel && (
               <div 
                 className="text-xs uppercase tracking-wider mt-2 opacity-70"
-                style={labelStyle}
+                style={{ ...labelStyle, display: labelColorType === 'gradient' ? 'inline-block' : undefined }}
               >
                 {statLabel}
               </div>

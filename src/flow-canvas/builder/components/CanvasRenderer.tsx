@@ -2423,12 +2423,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                           className="inline"
                         />
                       </span>
-                      <span style={suffixStyle}>{statSuffix}</span>
+                      <span style={{ ...suffixStyle, display: 'inline' }}>{statSuffix}</span>
                     </div>
                     {statLabel && (
                       <div 
                         className="text-xs uppercase tracking-wider mt-2"
-                        style={labelStyle}
+                        style={{ ...labelStyle, display: labelColorType === 'gradient' ? 'inline-block' : undefined }}
                       >
                         <InlineTextEditor
                           value={statLabel}
