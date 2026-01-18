@@ -395,7 +395,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             {/* Bold */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <button onClick={toggleBold} className={cn(btnClass, (styles.fontWeight === 'bold' || styles.fontWeight === 'black') ? btnActive : btnInactive)}>
+                <button onClick={(e) => { e.stopPropagation(); toggleBold(); }} className={cn(btnClass, (styles.fontWeight === 'bold' || styles.fontWeight === 'black') ? btnActive : btnInactive)}>
                   <Bold size={15} strokeWidth={2.5} />
                 </button>
               </TooltipTrigger>
@@ -405,7 +405,7 @@ export const UnifiedElementToolbar = forwardRef<HTMLDivElement, UnifiedElementTo
             {/* Italic */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <button onClick={toggleItalic} className={cn(btnClass, styles.fontStyle === 'italic' ? btnActive : btnInactive)}>
+                <button onClick={(e) => { e.stopPropagation(); toggleItalic(); }} className={cn(btnClass, styles.fontStyle === 'italic' ? btnActive : btnInactive)}>
                   <Italic size={15} strokeWidth={2.5} />
                 </button>
               </TooltipTrigger>
