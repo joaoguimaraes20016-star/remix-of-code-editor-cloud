@@ -40,6 +40,8 @@ interface RichTextToolbarProps {
   onChange: (styles: Partial<TextStyles>) => void;
   position: { top: number; left: number };
   onClose: () => void;
+  /** Hide color/gradient controls. Used when inline formatting is disabled (inspector is sole style source). */
+  hideColorControls?: boolean;
 }
 export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(({
   styles,
@@ -47,6 +49,7 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
   onChange,
   position,
   onClose,
+  hideColorControls = false,
 }, ref) => {
   const [fontOpen, setFontOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
@@ -469,10 +472,13 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         <Underline size={14} />
       </button>
 
-      <div className="w-px h-5 bg-[hsl(var(--builder-border))] mx-0.5" />
+      {/* Only show color/gradient controls when hideColorControls is false */}
+      {!hideColorControls && (
+        <>
+          <div className="w-px h-5 bg-[hsl(var(--builder-border))] mx-0.5" />
 
-      {/* Text Color / Gradient - Inline Tab UI (no nested popovers) */}
-      <Popover open={colorOpen} onOpenChange={setColorOpen}>
+          {/* Text Color / Gradient - Inline Tab UI (no nested popovers) */}
+          <Popover open={colorOpen} onOpenChange={setColorOpen}>
         <PopoverTrigger asChild>
           <button 
             ref={colorTriggerRef}
@@ -603,10 +609,13 @@ export const RichTextToolbar = forwardRef<HTMLDivElement, RichTextToolbarProps>(
         </PopoverContent>
       </Popover>
 
+        </>
+      )}
+
       {/* Text Shadow */}
       <Popover open={shadowOpen} onOpenChange={setShadowOpen}>
         <PopoverTrigger asChild>
-          <button 
+          <button
             className={cn(
               "p-1.5 rounded-lg transition-colors",
               styles.textShadow && styles.textShadow !== 'none'
