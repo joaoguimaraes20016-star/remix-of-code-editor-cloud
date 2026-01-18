@@ -152,6 +152,14 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
   // Slider interaction lock - prevents selection overwrites during rapid slider updates
   const isSliderDraggingRef = useRef(false);
   const sliderDragTimeoutRef = useRef<number | null>(null);
+  
+  // Toast cooldown refs - prevents spam when selection is repeatedly lost
+  const lastNoSelectionToastAtRef = useRef<number>(0);
+  const TOAST_COOLDOWN_MS = 2000; // 2 seconds between identical toasts
+  
+  // Throttled onStyleChange refs - coalesces rapid style updates from slider drags
+  const pendingStyleChangeRef = useRef<Partial<TextStyles> | null>(null);
+  const styleChangeTimerRef = useRef<number | null>(null);
 
   // Deep compare for gradient objects
   const gradientEquals = (a: GradientValue | undefined, b: GradientValue | undefined): boolean => {
@@ -784,19 +792,34 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
 
     // Helper: notify parent when fill styles (color/gradient) are successfully applied inline
     // This enables bidirectional sync between toolbar and inspector
+    // THROTTLED: coalesces rapid slider updates to prevent jitter and excessive re-renders
     const notifyStyleChange = () => {
       if (!onStyleChange) return;
       // Only notify for fill-related changes
       const hasColorChange = newStyles.textFillType !== undefined || 
                              newStyles.textColor !== undefined || 
                              newStyles.textGradient !== undefined;
-      if (hasColorChange) {
-        onStyleChange({
-          textFillType: newStyles.textFillType ?? (newStyles.textGradient ? 'gradient' : 'solid'),
-          textColor: newStyles.textColor,
-          textGradient: newStyles.textGradient,
-        });
+      if (!hasColorChange) return;
+      
+      // Store pending style change
+      const stylePayload: Partial<TextStyles> = {
+        textFillType: newStyles.textFillType ?? (newStyles.textGradient ? 'gradient' : 'solid'),
+        textColor: newStyles.textColor,
+        textGradient: newStyles.textGradient,
+      };
+      pendingStyleChangeRef.current = stylePayload;
+      
+      // Throttle: only emit after a short delay (coalesces rapid slider drags)
+      if (styleChangeTimerRef.current) {
+        window.clearTimeout(styleChangeTimerRef.current);
       }
+      styleChangeTimerRef.current = window.setTimeout(() => {
+        if (pendingStyleChangeRef.current) {
+          onStyleChange(pendingStyleChangeRef.current);
+          pendingStyleChangeRef.current = null;
+        }
+        styleChangeTimerRef.current = null;
+      }, 60); // 60ms debounce - fast enough to feel instant, slow enough to coalesce drags
     };
 
     // When disableInlineFormatting is true, skip color/gradient inline styling entirely
@@ -1560,7 +1583,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
               hasSelection,
             });
           }
-          toast.info('Could not apply style to selection. Please reselect text.');
+          // Toast with cooldown to prevent spam during rapid re-mounts
+          const now = Date.now();
+          if (now - lastNoSelectionToastAtRef.current > TOAST_COOLDOWN_MS) {
+            lastNoSelectionToastAtRef.current = now;
+            toast.info('Could not apply style to selection. Please reselect text.', { id: 'inline-style-reselect' });
+          }
           return false;
         }
       }
@@ -1594,7 +1622,12 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
           hasSavedSelection: !!lastSelectionRangeRef.current,
         });
       }
-      toast.info('Select text to apply styling');
+      // Toast with cooldown to prevent spam during rapid re-mounts
+      const now = Date.now();
+      if (now - lastNoSelectionToastAtRef.current > TOAST_COOLDOWN_MS) {
+        lastNoSelectionToastAtRef.current = now;
+        toast.info('Select text to apply styling', { id: 'inline-style-select' });
+      }
       return false;
     }
 

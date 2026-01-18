@@ -2414,7 +2414,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                       }}
                     >
                       <InlineTextEditor
-                        key={`${element.id}-number-${numberColorType}-${numberColor}-${numberGradient ? gradientToCSS(numberGradient) : 'none'}`}
+                        key={`${element.id}-number`}
                         value={element.content || '0'}
                         onChange={(newContent: string) => onUpdate?.({ content: newContent })}
                         onStyleChange={(styles) => {
@@ -2440,7 +2440,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                         className="inline"
                       />
                       <InlineTextEditor
-                        key={`${element.id}-suffix-${suffixColorType}-${suffixColor}-${suffixGradient ? gradientToCSS(suffixGradient) : 'none'}`}
+                        key={`${element.id}-suffix`}
                         value={statSuffix}
                         onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, suffix: newContent } })}
                         onStyleChange={(styles) => {
@@ -2469,7 +2469,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                     {statLabel && (
                       <div className="text-xs uppercase tracking-wider mt-2">
                         <InlineTextEditor
-                          key={`${element.id}-label-${labelColorType}-${labelColor}-${labelGradient ? gradientToCSS(labelGradient) : 'none'}`}
+                          key={`${element.id}-label`}
                           value={statLabel}
                           onChange={(newContent: string) => onUpdate?.({ props: { ...element.props, label: newContent } })}
                           onStyleChange={(styles) => {
