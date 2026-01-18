@@ -52,22 +52,69 @@ import {
   gridJustifyItemsOptions,
 } from '../../utils/presets';
 
+type DeviceMode = 'desktop' | 'tablet' | 'mobile';
+
 interface UniversalAppearanceSectionProps {
   element: Element;
   onUpdate: (updates: Partial<Element>) => void;
+  currentDeviceMode?: DeviceMode;
 }
 
 export const UniversalAppearanceSection: React.FC<UniversalAppearanceSectionProps> = ({
   element,
   onUpdate,
+  currentDeviceMode = 'desktop',
 }) => {
-  // Use minimal updates - EditorShell merges with existing values
+  const isResponsiveMode = currentDeviceMode !== 'desktop';
+  
+  // Route style changes through responsive overrides when in tablet/mobile mode
   const handleStyleChange = (key: string, value: string) => {
-    onUpdate({ styles: { [key]: value } });
+    if (isResponsiveMode) {
+      const currentResponsive = element.responsive || {};
+      onUpdate({
+        responsive: {
+          ...currentResponsive,
+          [currentDeviceMode]: {
+            ...(currentResponsive[currentDeviceMode] || {}),
+            [key]: value
+          }
+        }
+      });
+    } else {
+      onUpdate({ styles: { [key]: value } });
+    }
   };
 
   const handlePropsChange = (key: string, value: unknown) => {
-    onUpdate({ props: { [key]: value } });
+    if (isResponsiveMode) {
+      const currentResponsive = element.responsive || {};
+      onUpdate({
+        responsive: {
+          ...currentResponsive,
+          [currentDeviceMode]: {
+            ...(currentResponsive[currentDeviceMode] || {}),
+            [key]: value
+          }
+        }
+      });
+    } else {
+      onUpdate({ props: { [key]: value } });
+    }
+  };
+  
+  // Get effective value - check responsive override first, then base
+  const getEffectiveStyle = (key: string, defaultValue: string = ''): string => {
+    if (isResponsiveMode && element.responsive?.[currentDeviceMode]?.[key] !== undefined) {
+      return String(element.responsive[currentDeviceMode][key]);
+    }
+    return String(element.styles?.[key] ?? defaultValue);
+  };
+  
+  const getEffectiveProp = <T,>(key: string, defaultValue: T): T => {
+    if (isResponsiveMode && element.responsive?.[currentDeviceMode]?.[key] !== undefined) {
+      return element.responsive[currentDeviceMode][key] as T;
+    }
+    return (element.props?.[key] as T) ?? defaultValue;
   };
 
   // Parse numeric values from styles

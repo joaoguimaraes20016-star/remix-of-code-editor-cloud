@@ -299,17 +299,88 @@ export interface ElementStyles {
 // Responsive styling per device
 export type DeviceModeType = 'desktop' | 'tablet' | 'mobile';
 
-// Extended responsive overrides with typography
-export interface ResponsiveTypography {
+// Comprehensive responsive overrides for all style properties
+export interface ResponsiveStyleOverrides {
+  // Typography
   fontSize?: string;
   lineHeight?: string;
   letterSpacing?: string;
+  textAlign?: string;
+  fontWeight?: string;
+  
+  // Colors (from ElementStateStyles)
+  backgroundColor?: string;
+  textColor?: string;
+  borderColor?: string;
+  opacity?: number | string;
+  
+  // Sizing
+  width?: string;
+  height?: string;
+  minWidth?: string;
+  maxWidth?: string;
+  minHeight?: string;
+  maxHeight?: string;
+  
+  // Spacing - Padding
+  padding?: string;
+  paddingTop?: string;
+  paddingBottom?: string;
+  paddingLeft?: string;
+  paddingRight?: string;
+  
+  // Spacing - Margin
+  margin?: string;
+  marginTop?: string;
+  marginBottom?: string;
+  marginLeft?: string;
+  marginRight?: string;
+  
+  // Layout - Flexbox
+  display?: string;
+  flexDirection?: string;
+  flexWrap?: string;
+  justifyContent?: string;
+  alignItems?: string;
+  gap?: string;
+  flexGrow?: number;
+  flexShrink?: number;
+  
+  // Layout - Grid
+  gridTemplateColumns?: string;
+  gridTemplateRows?: string;
+  columnGap?: string;
+  rowGap?: string;
+  justifyItems?: string;
+  
+  // Borders
+  borderWidth?: string;
+  borderRadius?: string;
+  borderStyle?: string;
+  
+  // Position
+  position?: string;
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
+  zIndex?: number;
+  
+  // Transform
+  transform?: string;
+  scale?: number;
+  
+  // Allow arbitrary additional properties
+  [key: string]: unknown;
 }
 
+// Legacy alias for backward compatibility
+export type ResponsiveTypography = Pick<ResponsiveStyleOverrides, 'fontSize' | 'lineHeight' | 'letterSpacing'>;
+
 export interface ResponsiveOverrides {
-  desktop?: Partial<ElementStateStyles> & ResponsiveTypography;
-  tablet?: Partial<ElementStateStyles> & ResponsiveTypography;
-  mobile?: Partial<ElementStateStyles> & ResponsiveTypography;
+  desktop?: ResponsiveStyleOverrides;
+  tablet?: ResponsiveStyleOverrides;
+  mobile?: ResponsiveStyleOverrides;
 }
 
 // Background pattern configuration for premium designs
