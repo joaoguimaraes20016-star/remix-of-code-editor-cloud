@@ -189,6 +189,7 @@ export const getTextColorStyle = (
       WebkitBackgroundClip: 'text',
       WebkitTextFillColor: 'transparent',
       backgroundClip: 'text',
+      display: 'inline',
     };
   }
   return { color: solidColor };
