@@ -6,7 +6,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
+import { CommitSlider } from '../CommitSlider';
 import {
   Select,
   SelectContent,
@@ -227,9 +227,9 @@ export const GradientEditor = React.forwardRef<HTMLDivElement, GradientEditorPro
               />
             </div>
             <div className="flex-1">
-              <Slider
-                value={[stop.position]}
-                onValueChange={([v]) => updateStop(index, { position: v })}
+              <CommitSlider
+                value={stop.position}
+                onValueCommit={(v) => updateStop(index, { position: v })}
                 max={100}
                 step={1}
                 className="w-full"

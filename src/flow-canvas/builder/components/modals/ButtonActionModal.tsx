@@ -193,7 +193,7 @@ export const ButtonActionModal: React.FC<ButtonActionModalProps> = ({
     return (
       <button
         key={option.type}
-        onClick={() => handleTypeSelect(option.type)}
+        onClick={(e) => { e.stopPropagation(); handleTypeSelect(option.type); }}
         className={cn(
           'p-3 rounded-lg border text-left transition-all relative',
           selectedType === option.type

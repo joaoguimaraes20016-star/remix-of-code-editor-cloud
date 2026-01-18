@@ -24,7 +24,7 @@ export const CollapsibleSection = React.forwardRef<HTMLDivElement, CollapsibleSe
     return (
       <div ref={ref} className={cn("border-b border-builder-border", className)}>
         <button 
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
           className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
           type="button"
         >
