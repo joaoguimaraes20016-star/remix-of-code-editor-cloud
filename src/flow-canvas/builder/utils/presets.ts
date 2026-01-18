@@ -256,7 +256,7 @@ export const fontSizeOptions = [
   { label: '5XL', value: '5xl' as const },
 ];
 
-// Font size options in pixels for inspector
+// Font size options in pixels for inspector (extended range)
 export const inspectorFontSizes = [
   { label: 'XS', value: '12px' },
   { label: 'SM', value: '14px' },
@@ -267,6 +267,50 @@ export const inspectorFontSizes = [
   { label: '3XL', value: '30px' },
   { label: '4XL', value: '36px' },
   { label: '5XL', value: '48px' },
+  { label: '6XL', value: '60px' },
+  { label: '7XL', value: '72px' },
+  { label: '8XL', value: '96px' },
+];
+
+// Letter spacing presets
+export const letterSpacingOptions = [
+  { label: 'Tight', value: '-0.05em' },
+  { label: 'Snug', value: '-0.025em' },
+  { label: 'Normal', value: '0em' },
+  { label: 'Wide', value: '0.025em' },
+  { label: 'Wider', value: '0.05em' },
+  { label: 'Widest', value: '0.1em' },
+  { label: 'Ultra', value: '0.2em' },
+];
+
+// Line height presets
+export const lineHeightOptions = [
+  { label: 'None', value: '1' },
+  { label: 'Tight', value: '1.25' },
+  { label: 'Snug', value: '1.375' },
+  { label: 'Normal', value: '1.5' },
+  { label: 'Relaxed', value: '1.625' },
+  { label: 'Loose', value: '2' },
+];
+
+// Text transform options
+export const textTransformOptions = [
+  { label: 'None', value: 'none' as const },
+  { label: 'UPPER', value: 'uppercase' as const },
+  { label: 'lower', value: 'lowercase' as const },
+  { label: 'Title', value: 'capitalize' as const },
+];
+
+// Font weight numeric values for variable fonts (slider)
+export const fontWeightNumericOptions = [
+  { label: 'Thin', value: 100 },
+  { label: 'Light', value: 300 },
+  { label: 'Regular', value: 400 },
+  { label: 'Medium', value: 500 },
+  { label: 'Semibold', value: 600 },
+  { label: 'Bold', value: 700 },
+  { label: 'Extra Bold', value: 800 },
+  { label: 'Black', value: 900 },
 ];
 
 // Display fonts for hyper-expressive headlines

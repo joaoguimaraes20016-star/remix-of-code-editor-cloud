@@ -559,8 +559,8 @@ export interface AICopilotProps {
 
 // Text styling for inline editor (extended for Framer-level features)
 export interface TextStyles {
-  fontSize: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
-  fontWeight: 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
+  fontSize: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | string;
+  fontWeight: 'normal' | 'medium' | 'semibold' | 'bold' | 'black' | number;
   fontStyle: 'normal' | 'italic';
   textDecoration: 'none' | 'underline';
   textAlign: 'left' | 'center' | 'right';
@@ -580,6 +580,12 @@ export interface TextStyles {
     stops: Array<{ color: string; position: number }>;
   };
   highlightUseGradient?: boolean;
+  // Phase 3: Advanced typography controls
+  letterSpacing?: string; // e.g., '-0.02em', '0.1em'
+  lineHeight?: string | number; // e.g., '1.5', '2'
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textStrokeWidth?: string; // e.g., '1px', '2px'
+  textStrokeColor?: string;
 }
 
 // Block action operations
