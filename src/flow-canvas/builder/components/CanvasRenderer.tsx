@@ -553,14 +553,17 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       if (stateOverrides?.scale) base.transform = `scale(${stateOverrides.scale})`;
     }
     
-    // Apply responsive overrides based on deviceMode
+    // Apply responsive overrides based on deviceMode - comprehensive property support
     if (deviceMode !== 'desktop' && element.responsive?.[deviceMode]) {
       const deviceOverrides = element.responsive[deviceMode];
+      
+      // Colors
       if (deviceOverrides?.backgroundColor) base.backgroundColor = deviceOverrides.backgroundColor;
       if (deviceOverrides?.textColor) base.color = deviceOverrides.textColor;
       if (deviceOverrides?.borderColor) base.borderColor = deviceOverrides.borderColor;
-      if (deviceOverrides?.opacity) base.opacity = deviceOverrides.opacity;
-      // Responsive typography
+      if (deviceOverrides?.opacity !== undefined) base.opacity = deviceOverrides.opacity;
+      
+      // Typography
       if (deviceOverrides?.fontSize) {
         const sizeMap: Record<string, string> = { sm: '0.875rem', md: '1rem', lg: '1.125rem', xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem' };
         base.fontSize = sizeMap[deviceOverrides.fontSize] || deviceOverrides.fontSize;
@@ -570,6 +573,60 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const spacingMap: Record<string, string> = { tighter: '-0.05em', tight: '-0.025em', normal: '0', wide: '0.025em', wider: '0.05em' };
         base.letterSpacing = spacingMap[deviceOverrides.letterSpacing] || '0';
       }
+      if (deviceOverrides?.textAlign) base.textAlign = deviceOverrides.textAlign as React.CSSProperties['textAlign'];
+      if (deviceOverrides?.fontWeight) base.fontWeight = deviceOverrides.fontWeight;
+      
+      // Sizing
+      if (deviceOverrides?.width) base.width = deviceOverrides.width;
+      if (deviceOverrides?.height) base.height = deviceOverrides.height;
+      if (deviceOverrides?.minWidth) base.minWidth = deviceOverrides.minWidth;
+      if (deviceOverrides?.maxWidth) base.maxWidth = deviceOverrides.maxWidth;
+      if (deviceOverrides?.minHeight) base.minHeight = deviceOverrides.minHeight;
+      if (deviceOverrides?.maxHeight) base.maxHeight = deviceOverrides.maxHeight;
+      
+      // Spacing - Padding
+      if (deviceOverrides?.padding) base.padding = deviceOverrides.padding;
+      if (deviceOverrides?.paddingTop) base.paddingTop = deviceOverrides.paddingTop;
+      if (deviceOverrides?.paddingBottom) base.paddingBottom = deviceOverrides.paddingBottom;
+      if (deviceOverrides?.paddingLeft) base.paddingLeft = deviceOverrides.paddingLeft;
+      if (deviceOverrides?.paddingRight) base.paddingRight = deviceOverrides.paddingRight;
+      
+      // Spacing - Margin
+      if (deviceOverrides?.margin) base.margin = deviceOverrides.margin;
+      if (deviceOverrides?.marginTop) base.marginTop = deviceOverrides.marginTop;
+      if (deviceOverrides?.marginBottom) base.marginBottom = deviceOverrides.marginBottom;
+      if (deviceOverrides?.marginLeft) base.marginLeft = deviceOverrides.marginLeft;
+      if (deviceOverrides?.marginRight) base.marginRight = deviceOverrides.marginRight;
+      
+      // Layout - Flexbox
+      if (deviceOverrides?.display) base.display = deviceOverrides.display;
+      if (deviceOverrides?.flexDirection) base.flexDirection = deviceOverrides.flexDirection as React.CSSProperties['flexDirection'];
+      if (deviceOverrides?.flexWrap) base.flexWrap = deviceOverrides.flexWrap as React.CSSProperties['flexWrap'];
+      if (deviceOverrides?.justifyContent) base.justifyContent = deviceOverrides.justifyContent;
+      if (deviceOverrides?.alignItems) base.alignItems = deviceOverrides.alignItems;
+      if (deviceOverrides?.gap) base.gap = deviceOverrides.gap;
+      if (deviceOverrides?.flexGrow !== undefined) base.flexGrow = deviceOverrides.flexGrow;
+      if (deviceOverrides?.flexShrink !== undefined) base.flexShrink = deviceOverrides.flexShrink;
+      
+      // Layout - Grid
+      if (deviceOverrides?.gridTemplateColumns) base.gridTemplateColumns = deviceOverrides.gridTemplateColumns;
+      if (deviceOverrides?.gridTemplateRows) base.gridTemplateRows = deviceOverrides.gridTemplateRows;
+      if (deviceOverrides?.columnGap) base.columnGap = deviceOverrides.columnGap;
+      if (deviceOverrides?.rowGap) base.rowGap = deviceOverrides.rowGap;
+      if (deviceOverrides?.justifyItems) base.justifyItems = deviceOverrides.justifyItems;
+      
+      // Borders
+      if (deviceOverrides?.borderWidth) base.borderWidth = deviceOverrides.borderWidth;
+      if (deviceOverrides?.borderRadius) base.borderRadius = deviceOverrides.borderRadius;
+      if (deviceOverrides?.borderStyle) base.borderStyle = deviceOverrides.borderStyle;
+      
+      // Position
+      if (deviceOverrides?.position) base.position = deviceOverrides.position as React.CSSProperties['position'];
+      if (deviceOverrides?.top) base.top = deviceOverrides.top;
+      if (deviceOverrides?.bottom) base.bottom = deviceOverrides.bottom;
+      if (deviceOverrides?.left) base.left = deviceOverrides.left;
+      if (deviceOverrides?.right) base.right = deviceOverrides.right;
+      if (deviceOverrides?.zIndex !== undefined) base.zIndex = deviceOverrides.zIndex;
     }
     
     return base;

@@ -101,12 +101,22 @@ interface FlowCanvasBlock {
   styles?: Record<string, string>;
 }
 
+// Responsive style overrides type (matching infostack.ts)
+interface ResponsiveStyleOverrides {
+  [key: string]: unknown;
+}
+
 interface FlowCanvasElement {
   id: string;
   type: string;
   content?: string;
   props: Record<string, unknown>;
   styles?: Record<string, string>;
+  responsive?: {
+    desktop?: ResponsiveStyleOverrides;
+    tablet?: ResponsiveStyleOverrides;
+    mobile?: ResponsiveStyleOverrides;
+  };
   animation?: {
     scrollTransform?: {
       enabled: boolean;
@@ -116,6 +126,31 @@ interface FlowCanvasElement {
     };
     [key: string]: unknown;
   };
+}
+
+// Hook to detect current device mode based on viewport width
+function useRuntimeDeviceMode(): 'desktop' | 'tablet' | 'mobile' {
+  const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>(() => {
+    if (typeof window === 'undefined') return 'desktop';
+    const width = window.innerWidth;
+    if (width < 768) return 'mobile';
+    if (width < 1024) return 'tablet';
+    return 'desktop';
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 768) setDeviceMode('mobile');
+      else if (width < 1024) setDeviceMode('tablet');
+      else setDeviceMode('desktop');
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return deviceMode;
 }
 
 interface FlowCanvasStep {
@@ -181,8 +216,8 @@ const shadowPresetCSS: Record<string, string> = {
   '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
 };
 
-// Helper to resolve all element styles (dimensions, spacing, appearance)
-function resolveElementStyles(element: FlowCanvasElement): React.CSSProperties {
+// Helper to resolve all element styles with responsive overrides
+function resolveElementStyles(element: FlowCanvasElement, deviceMode: 'desktop' | 'tablet' | 'mobile' = 'desktop'): React.CSSProperties {
   const base: React.CSSProperties = {};
   const s = element.styles;
   const p = element.props;
@@ -297,6 +332,31 @@ function resolveElementStyles(element: FlowCanvasElement): React.CSSProperties {
       .join(', ');
   } else if (shadowPreset && shadowPreset !== 'none' && shadowPreset !== 'custom' && shadowPresetCSS[shadowPreset]) {
     base.boxShadow = shadowPresetCSS[shadowPreset];
+  }
+  
+  // Apply responsive overrides based on deviceMode
+  if (deviceMode !== 'desktop' && element.responsive?.[deviceMode]) {
+    const o = element.responsive[deviceMode];
+    // Apply all overrides dynamically
+    if (o?.width) base.width = o.width as string;
+    if (o?.height) base.height = o.height as string;
+    if (o?.padding) base.padding = o.padding as string;
+    if (o?.paddingTop) base.paddingTop = o.paddingTop as string;
+    if (o?.paddingBottom) base.paddingBottom = o.paddingBottom as string;
+    if (o?.paddingLeft) base.paddingLeft = o.paddingLeft as string;
+    if (o?.paddingRight) base.paddingRight = o.paddingRight as string;
+    if (o?.margin) base.margin = o.margin as string;
+    if (o?.marginTop) base.marginTop = o.marginTop as string;
+    if (o?.marginBottom) base.marginBottom = o.marginBottom as string;
+    if (o?.marginLeft) base.marginLeft = o.marginLeft as string;
+    if (o?.marginRight) base.marginRight = o.marginRight as string;
+    if (o?.display) base.display = o.display as React.CSSProperties['display'];
+    if (o?.flexDirection) base.flexDirection = o.flexDirection as React.CSSProperties['flexDirection'];
+    if (o?.gap) base.gap = o.gap as string;
+    if (o?.fontSize) base.fontSize = o.fontSize as string;
+    if (o?.textAlign) base.textAlign = o.textAlign as React.CSSProperties['textAlign'];
+    if (o?.opacity !== undefined) base.opacity = o.opacity as number;
+    if (o?.backgroundColor) base.backgroundColor = o.backgroundColor as string;
   }
   
   return base;

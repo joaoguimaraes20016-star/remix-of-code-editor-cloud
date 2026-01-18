@@ -2885,7 +2885,11 @@ const ElementInspector: React.FC<{
       )}
 
       {/* ========== UNIVERSAL APPEARANCE/BORDER/RESPONSIVE SECTIONS ========== */}
-      <UniversalAppearanceSection element={element} onUpdate={onUpdate} />
+      <UniversalAppearanceSection 
+        element={element} 
+        onUpdate={onUpdate} 
+        currentDeviceMode={currentDeviceMode}
+      />
 
       {/* ========== UNIVERSAL VISIBILITY SECTION (for all non-premium elements) ========== */}
       <CollapsibleSection title="Visibility" icon={<Eye className="w-4 h-4" />}>
