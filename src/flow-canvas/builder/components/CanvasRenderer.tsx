@@ -462,6 +462,13 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
     if (element.styles?.flexGrow) base.flexGrow = Number(element.styles.flexGrow);
     if (element.styles?.flexShrink) base.flexShrink = Number(element.styles.flexShrink);
     
+    // NEW: Apply CSS Grid styles
+    if (element.styles?.gridTemplateColumns) base.gridTemplateColumns = element.styles.gridTemplateColumns;
+    if (element.styles?.gridTemplateRows) base.gridTemplateRows = element.styles.gridTemplateRows as string;
+    if (element.styles?.columnGap) base.columnGap = element.styles.columnGap;
+    if (element.styles?.rowGap) base.rowGap = element.styles.rowGap;
+    if (element.styles?.justifyItems) base.justifyItems = element.styles.justifyItems as React.CSSProperties['justifyItems'];
+    
     // NEW: Apply rotation
     if (element.styles?.rotate) {
       const rotateVal = typeof element.styles.rotate === 'string' 
