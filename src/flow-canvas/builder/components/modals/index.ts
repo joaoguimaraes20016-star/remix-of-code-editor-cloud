@@ -2,6 +2,7 @@ export { CollaboratorsModal } from './CollaboratorsModal';
 export { SEOSettingsModal } from './SEOSettingsModal';
 export { FunnelSettingsModal } from './FunnelSettingsModal';
 export { ShareModal } from './ShareModal';
+export { PublishModal } from './PublishModal';
 export { ImagePickerModal } from './ImagePickerModal';
 export { EffectsPickerPopover } from './EffectsPickerPopover';
 export { OverlayPickerPopover } from './OverlayPickerPopover';
