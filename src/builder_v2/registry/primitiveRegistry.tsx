@@ -326,16 +326,22 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
         { id: 'opt2', label: 'Option B', emoji: '🚀' },
       ],
       autoAdvance: true,
+      fieldName: 'selection',
+      layout: 'grid-2',
     },
     render: (props) => (
       <OptionGrid 
         options={props.options as Array<{ id: string; label: string; emoji?: string }>}
         autoAdvance={props.autoAdvance as boolean}
+        layout={props.layout as 'grid-2' | 'grid-3' | 'stack'}
+        borderRadius={props.borderRadius as number}
+        backgroundColor={props.backgroundColor as string}
       />
     ),
     inspectorSchema: [
       { label: 'Field Name', propKey: 'fieldName', inputType: 'text' },
       { label: 'Auto Advance', propKey: 'autoAdvance', inputType: 'checkbox' },
+      { label: 'Layout', propKey: 'layout', inputType: 'text' },
     ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'input',

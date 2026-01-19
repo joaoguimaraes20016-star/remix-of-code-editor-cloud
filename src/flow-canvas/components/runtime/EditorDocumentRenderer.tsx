@@ -20,7 +20,8 @@ import {
   isDirectVideoUrl,
   type PageBackground,
 } from './backgroundUtils';
-import { FunnelRuntimeProvider } from './FunnelRuntimeContext';
+import { FunnelRuntimeProvider, useFunnelRuntimeOptional } from './FunnelRuntimeContext';
+import { RuntimeSuccessOverlay } from '@/builder_v2/runtime/RuntimeSuccessOverlay';
 
 // Import builder_v2 CSS for proper node styling
 import '@/builder_v2/canvas/canvas.css';
@@ -146,6 +147,31 @@ function CanvasContent({ node }: { node: CanvasNode }) {
 }
 
 /**
+ * Wrapper component that shows success overlay when form is complete
+ */
+function RuntimeContentWrapper({ 
+  page, 
+  redirectUrl 
+}: { 
+  page: Page; 
+  redirectUrl?: string;
+}) {
+  const runtimeContext = useFunnelRuntimeOptional();
+  const isComplete = runtimeContext?.state?.isComplete;
+
+  // Show success overlay if form is complete and no redirect URL
+  if (isComplete && !redirectUrl) {
+    return <RuntimeSuccessOverlay />;
+  }
+
+  return (
+    <PageFrame page={page}>
+      <CanvasContent node={page.canvasRoot} />
+    </PageFrame>
+  );
+}
+
+/**
  * Main runtime renderer for EditorDocument format
  */
 export function EditorDocumentRenderer({
@@ -197,6 +223,25 @@ export function EditorDocumentRenderer({
     redirectUrl: redirectUrl,
   } : null;
 
+  // Wrap with FunnelRuntimeProvider if we have config (enables form submission)
+  if (runtimeConfig) {
+    return (
+      <FunnelRuntimeProvider 
+        config={runtimeConfig} 
+        totalSteps={document.pages.length}
+      >
+        <main
+          className="min-h-screen w-full"
+          data-funnel-id={funnelId}
+          data-version={document.version}
+        >
+          <RuntimeContentWrapper page={activePage} redirectUrl={redirectUrl} />
+        </main>
+      </FunnelRuntimeProvider>
+    );
+  }
+
+  // Preview mode without runtime (no submission capability)
   const content = (
     <main
       className="min-h-screen w-full"
@@ -208,20 +253,6 @@ export function EditorDocumentRenderer({
       </PageFrame>
     </main>
   );
-
-  // Wrap with FunnelRuntimeProvider if we have config (enables form submission)
-  if (runtimeConfig) {
-    return (
-      <FunnelRuntimeProvider 
-        config={runtimeConfig} 
-        totalSteps={document.pages.length}
-      >
-        {content}
-      </FunnelRuntimeProvider>
-    );
-  }
-
-  // Preview mode without runtime (no submission capability)
   return content;
 }
 
