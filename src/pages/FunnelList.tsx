@@ -11,7 +11,7 @@ import {
   LayoutGrid, List, Link2, MoreHorizontal, Star, BarChart3,
   MessageSquare, Calendar, Download, TrendingUp, TrendingDown,
   Phone, Mail, CheckCircle, ArrowLeft, Globe, Plug, Settings,
-  ChevronRight, Archive, AppWindow, FolderInput
+  ChevronRight, Archive, AppWindow, FolderInput, FileText
 } from 'lucide-react';
 import { DomainsSection } from '@/components/funnel-builder/DomainsSection';
 import { IntegrationsSection } from '@/components/funnel-builder/IntegrationsSection';
@@ -26,6 +26,7 @@ import { FunnelDropOffChart } from '@/components/funnel-analytics/FunnelDropOffC
 import { LeadsVsVisitorsChart } from '@/components/funnel-analytics/LeadsVsVisitorsChart';
 import { ExpandableLeadRow } from '@/components/funnel-analytics/ExpandableLeadRow';
 import { ContactDetailDrawer } from '@/components/funnel-analytics/ContactDetailDrawer';
+import { FormSubmissionsSection } from '@/components/funnel-analytics/FormSubmissionsSection';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -124,7 +125,7 @@ interface Contact {
   updated_at: string;
 }
 
-type TabType = 'funnels' | 'performance' | 'contacts' | 'domains' | 'integrations';
+type TabType = 'funnels' | 'performance' | 'submissions' | 'contacts' | 'domains' | 'integrations';
 type ViewMode = 'grid' | 'list';
 
 export default function FunnelList() {
@@ -615,6 +616,7 @@ export default function FunnelList() {
   const tabs = [
     { id: 'funnels' as const, label: 'Funnels', icon: LayoutGrid, adminOnly: false },
     { id: 'performance' as const, label: 'Performance', icon: BarChart3, adminOnly: false },
+    { id: 'submissions' as const, label: 'Submissions', icon: FileText, adminOnly: false },
     { id: 'contacts' as const, label: 'Contacts', icon: Users, adminOnly: false },
     { id: 'domains' as const, label: 'Domains', icon: Globe, adminOnly: true },
     { id: 'integrations' as const, label: 'Integrations', icon: Plug, adminOnly: true },
@@ -1229,6 +1231,19 @@ export default function FunnelList() {
                 </div>
               )}
             </div>
+          </>
+        )}
+
+        {/* Submissions Tab */}
+        {activeTab === 'submissions' && teamId && funnels && (
+          <>
+            <div className="flex items-center justify-between mb-8">
+              <h1 className="text-2xl font-bold text-foreground">Form Submissions</h1>
+            </div>
+            <FormSubmissionsSection 
+              teamId={teamId} 
+              funnels={funnels.map(f => ({ id: f.id, name: f.name }))} 
+            />
           </>
         )}
 
