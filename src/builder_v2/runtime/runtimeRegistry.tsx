@@ -41,6 +41,24 @@ import { Container } from '../components/Container';
 import { Hero } from '../components/Hero';
 import { Text } from '../components/Text';
 
+// ============================================================================
+// IMPORT VALIDATION - Log any missing critical components at module load
+// ============================================================================
+
+const CRITICAL_IMPORTS = {
+  Frame, Section, Heading, Paragraph, Spacer, Divider,
+  VideoEmbed, CalendarEmbed, Icon, InfoCard, ImageBlock,
+  HeaderBar, ContentCard, Container, Hero, Text,
+  RuntimeTextInput, RuntimeEmailInput, RuntimePhoneInput,
+  RuntimeCtaButton, RuntimeOptionGrid, RuntimeConsentCheckbox,
+};
+
+for (const [name, component] of Object.entries(CRITICAL_IMPORTS)) {
+  if (typeof component !== 'function') {
+    console.error(`[RuntimeRegistry] Critical import failed: ${name}`, typeof component);
+  }
+}
+
 /**
  * Runtime registry - combines static components with runtime interactive versions
  */
@@ -514,12 +532,19 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
 
 /**
  * Fallback component for unknown types
+ * Logs usage for debugging production issues
  */
 export const runtimeFallbackComponent: ComponentDefinition = {
   type: 'fallback',
   displayName: 'Fallback',
   defaultProps: {},
-  render: (_, children) => <div className="runtime-fallback">{children}</div>,
+  render: (props, children) => {
+    // Log fallback usage to help debug unknown component types in production
+    if (typeof window !== 'undefined') {
+      console.warn('[RuntimeRegistry] Using fallback for unknown component type', props);
+    }
+    return <div className="runtime-fallback">{children}</div>;
+  },
   inspectorSchema: [],
   constraints: { canHaveChildren: true },
 };
