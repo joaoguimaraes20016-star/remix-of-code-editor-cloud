@@ -178,11 +178,20 @@ export default function PublicFunnel() {
 
   // NEW: EditorDocument format - use WYSIWYG renderer (no lossy conversion)
   if (isEditorDocumentFormat) {
+    // Extract webhook URLs from settings or funnel config
+    const webhookUrls: string[] = [];
+    if (activeFunnel.settings.ghl_webhook_url) {
+      webhookUrls.push(activeFunnel.settings.ghl_webhook_url);
+    }
+
     return (
       <EditorDocumentRenderer
         document={snapshot as any}
         settings={activeFunnel.settings}
         funnelId={activeFunnel.id}
+        teamId={activeFunnel.team_id}
+        funnelSlug={activeFunnel.slug}
+        webhookUrls={webhookUrls}
       />
     );
   }
