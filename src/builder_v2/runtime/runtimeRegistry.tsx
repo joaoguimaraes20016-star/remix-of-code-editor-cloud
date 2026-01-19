@@ -27,6 +27,7 @@ import {
 // Runtime primitives (form inputs, buttons, consent - need interactivity)
 import {
   RuntimeTextInput,
+  RuntimeTextareaInput,
   RuntimeEmailInput,
   RuntimePhoneInput,
   RuntimeCtaButton,
@@ -373,6 +374,25 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
       <RuntimePhoneInput 
         placeholder={props.placeholder as string}
         fieldName={props.fieldName as string}
+        borderRadius={props.borderRadius as number}
+        backgroundColor={props.backgroundColor as string}
+        color={props.color as string}
+      />
+    ),
+    inspectorSchema: [],
+    constraints: { canHaveChildren: false },
+  },
+
+  textarea_input: {
+    type: 'textarea_input',
+    displayName: 'Textarea',
+    defaultProps: { placeholder: 'Enter your message...', fieldName: 'message', required: false, rows: 4 },
+    render: (props) => (
+      <RuntimeTextareaInput 
+        placeholder={props.placeholder as string}
+        fieldName={props.fieldName as string}
+        required={props.required as boolean}
+        rows={props.rows as number}
         borderRadius={props.borderRadius as number}
         backgroundColor={props.backgroundColor as string}
         color={props.color as string}

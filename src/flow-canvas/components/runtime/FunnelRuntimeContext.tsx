@@ -35,7 +35,7 @@ interface FunnelRuntimeActions {
   /** Go to previous step */
   prevStep: () => void;
   /** Go to specific step */
-  goToStep: (step: number) => void;
+  goToStep: (stepOrId: number | string) => void;
   /** Submit the form */
   submitForm: () => Promise<void>;
   /** Handle button click based on action type */
@@ -50,12 +50,19 @@ interface FunnelRuntimeActions {
   clearFieldError: (fieldKey: string) => void;
 }
 
+interface PageInfo {
+  id: string;
+  type?: string;
+}
+
 interface FunnelRuntimeConfig {
   funnelId: string;
   teamId: string;
   funnelSlug: string;
   webhookUrls?: string[];
   redirectUrl?: string;
+  /** Page info for multi-page navigation (id → index resolution) */
+  pages?: PageInfo[];
 }
 
 interface FunnelRuntimeContextValue {
@@ -129,9 +136,24 @@ export function FunnelRuntimeProvider({
     setCurrentStep(prev => Math.max(prev - 1, 0));
   }, []);
 
-  const goToStep = useCallback((step: number) => {
-    setCurrentStep(Math.max(0, Math.min(step, totalSteps - 1)));
-  }, [totalSteps]);
+  const goToStep = useCallback((stepOrId: number | string) => {
+    if (typeof stepOrId === 'number') {
+      setCurrentStep(Math.max(0, Math.min(stepOrId, totalSteps - 1)));
+    } else {
+      // Resolve page ID to index
+      const pages = config.pages || [];
+      const index = pages.findIndex(p => p.id === stepOrId);
+      if (index !== -1) {
+        setCurrentStep(index);
+      } else {
+        // Try parsing as number
+        const parsed = parseInt(stepOrId, 10);
+        if (!isNaN(parsed)) {
+          setCurrentStep(Math.max(0, Math.min(parsed, totalSteps - 1)));
+        }
+      }
+    }
+  }, [totalSteps, config.pages]);
 
   const toggleConsent = useCallback(() => {
     setHasConsent(prev => !prev);
@@ -240,11 +262,10 @@ export function FunnelRuntimeProvider({
         }
         break;
       case 'goToStep':
-        // value is the step ID - find its index
-        // For now, treat it as a step index if numeric
-        const stepIndex = parseInt(value || '0', 10);
-        if (!isNaN(stepIndex)) {
-          goToStep(stepIndex);
+      case 'go-to-step':
+        // value can be page ID or step index
+        if (value) {
+          goToStep(value);
         }
         break;
       case 'phone':

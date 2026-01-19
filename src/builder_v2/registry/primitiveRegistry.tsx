@@ -15,6 +15,7 @@ import {
   Spacer,
   Divider,
   TextInput,
+  TextareaInput,
   EmailInput,
   PhoneInput,
   VideoEmbed,
@@ -249,6 +250,30 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
     ),
     inspectorSchema: [
       { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
+    ],
+    constraints: { canHaveChildren: false },
+    presenceCategory: 'input',
+  },
+
+  textarea_input: {
+    type: 'textarea_input',
+    displayName: 'Textarea',
+    defaultProps: { placeholder: 'Enter your message...', fieldName: 'message', required: false, rows: 4 },
+    render: (props) => (
+      <TextareaInput 
+        placeholder={props.placeholder as string}
+        fieldName={props.fieldName as string}
+        required={props.required as boolean}
+        rows={props.rows as number}
+        borderRadius={props.borderRadius as number}
+        backgroundColor={props.backgroundColor as string}
+        color={props.color as string}
+      />
+    ),
+    inspectorSchema: [
+      { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
+      { label: 'Field Name', propKey: 'fieldName', inputType: 'text' },
+      { label: 'Rows', propKey: 'rows', inputType: 'number' },
     ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'input',
