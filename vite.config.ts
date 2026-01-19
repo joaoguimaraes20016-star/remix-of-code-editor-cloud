@@ -42,18 +42,7 @@ export default defineConfig(({ mode }) => {
     cssMinify: false,
     reportCompressedSize: false,
     chunkSizeWarningLimit: 2000,
-    rollupOptions: {
-      output: {
-        manualChunks(id: string) {
-          if (!id.includes("node_modules")) return;
-          // Don't split React or Radix - they must bundle together to avoid createContext race conditions
-          // Only split truly independent libraries that don't use React contexts at module load
-          if (id.includes("lucide-react")) return "icons";
-          if (id.includes("date-fns")) return "date";
-          return undefined;
-        },
-      },
-    },
+    rollupOptions: undefined,
   } as const;
 
   const lowMemoryBuild = {
