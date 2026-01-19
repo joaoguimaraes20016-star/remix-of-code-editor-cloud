@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { 
   Type, 
   Palette, 
@@ -18,12 +18,14 @@ import {
   Underline,
   Link,
   Sparkles,
+  MousePointer2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEditorStore } from '../state/editorStore';
 import { ComponentRegistry, fallbackComponent } from '../registry/componentRegistry';
-import type { CanvasNode, LayoutPersonality } from '../types';
+import type { CanvasNode, LayoutPersonality, Page } from '../types';
 import { ButtonStyleInspector, type ButtonStyleSettings } from '@/components/builder/ButtonStyleInspector';
+import { ButtonActionSelector, type ButtonAction } from '@/flow-canvas/builder/components/ButtonActionSelector';
 import './enhanced-inspector.css';
 
 type InspectorTab = 'content' | 'design' | 'blocks' | 'settings';
@@ -439,6 +441,58 @@ function OptionsEditor({
   );
 }
 
+// Button Action Section for unified action configuration
+function ButtonActionSection({ 
+  nodeProps, 
+  onPropChange,
+  pages,
+  activePageId 
+}: { 
+  nodeProps: Record<string, any>;
+  onPropChange: (key: string, value: any) => void;
+  pages: Page[];
+  activePageId: string;
+}) {
+  // Build available steps from pages
+  const availableSteps = useMemo(() => {
+    return pages
+      .filter(p => p.id !== activePageId)
+      .map(p => ({ id: p.id, name: p.name }));
+  }, [pages, activePageId]);
+
+  // Determine step type from page type - maps PageType to ButtonActionSelector stepType
+  const currentPage = pages.find(p => p.id === activePageId);
+  const getStepType = (): 'welcome' | 'question' | 'capture' | 'ending' | undefined => {
+    if (!currentPage) return undefined;
+    const pageType = currentPage.type;
+    // Map PageType to step type for button action filtering
+    if (pageType === 'thank_you') return 'ending';
+    if (pageType === 'optin') return 'capture';
+    if (pageType === 'appointment') return 'capture';
+    if (pageType === 'landing') return 'welcome';
+    return 'question';
+  };
+
+  // Get current action from node props
+  const currentAction: ButtonAction | undefined = nodeProps.buttonAction;
+
+  const handleActionChange = (action: ButtonAction | undefined) => {
+    onPropChange('buttonAction', action);
+  };
+
+  return (
+    <InspectorSection title="On Click" icon={<MousePointer2 size={14} />}>
+      <ButtonActionSelector
+        action={currentAction}
+        onChange={handleActionChange}
+        availableSteps={availableSteps}
+        stepType={getStepType()}
+        compact
+      />
+    </InspectorSection>
+  );
+}
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -664,13 +718,17 @@ export function EnhancedInspector() {
                   onChange={(v) => handlePropChange('buttonText', v)}
                   label="Button Label"
                 />
-                <TextField
-                  value={nodeProps.buttonUrl || ''}
-                  onChange={(v) => handlePropChange('buttonUrl', v)}
-                  label="Link URL"
-                  placeholder="https://..."
-                />
               </InspectorSection>
+            )}
+            
+            {/* Button Action - for button/cta_button types */}
+            {(nodeType === 'button' || nodeType === 'cta_button' || nodeProps.buttonText !== undefined) && (
+              <ButtonActionSection 
+                nodeProps={nodeProps}
+                onPropChange={handlePropChange}
+                pages={pages}
+                activePageId={activePageId}
+              />
             )}
 
             {/* Input Fields */}

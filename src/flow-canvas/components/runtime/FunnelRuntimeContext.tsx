@@ -63,6 +63,8 @@ interface FunnelRuntimeConfig {
   redirectUrl?: string;
   /** Page info for multi-page navigation (id → index resolution) */
   pages?: PageInfo[];
+  /** Required fields that must be filled before submission */
+  requiredFields?: string[];
 }
 
 interface FunnelRuntimeContextValue {
@@ -160,6 +162,33 @@ export function FunnelRuntimeProvider({
   }, []);
 
   const submitForm = useCallback(async () => {
+    // Phase 3: Pre-submission validation for required fields
+    const requiredFields = config.requiredFields || [];
+    const validationErrors: Record<string, string> = {};
+    
+    for (const field of requiredFields) {
+      const value = formData[field] || '';
+      if (!value.trim()) {
+        validationErrors[field] = 'This field is required';
+      }
+    }
+    
+    // Also validate email format if email field is required
+    if (formData.email || formData.Email) {
+      const emailValue = formData.email || formData.Email;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailValue)) {
+        validationErrors['email'] = 'Please enter a valid email';
+      }
+    }
+    
+    // Block submission if there are validation errors
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(prev => ({ ...prev, ...validationErrors }));
+      setError('Please fill in all required fields');
+      return;
+    }
+    
     setIsSubmitting(true);
     setError(null);
 
