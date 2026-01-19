@@ -193,12 +193,17 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
     type: 'video_embed',
     displayName: 'Video',
     defaultProps: { url: '' },
-    render: (props) => (
-      <VideoEmbed 
-        url={props.url as string}
-        placeholder={props.placeholder as string}
-      />
-    ),
+    render: (props) => {
+      const url = props.url as string;
+      // Don't render empty embeds in published mode
+      if (!url) return null;
+      return (
+        <VideoEmbed 
+          url={url}
+          placeholder={props.placeholder as string}
+        />
+      );
+    },
     inspectorSchema: [],
     constraints: { canHaveChildren: false },
   },
@@ -207,12 +212,17 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
     type: 'calendar_embed',
     displayName: 'Calendar',
     defaultProps: { url: '' },
-    render: (props) => (
-      <CalendarEmbed 
-        url={props.url as string}
-        placeholder={props.placeholder as string}
-      />
-    ),
+    render: (props) => {
+      const url = props.url as string;
+      // Don't render empty embeds in published mode
+      if (!url) return null;
+      return (
+        <CalendarEmbed 
+          url={url}
+          placeholder={props.placeholder as string}
+        />
+      );
+    },
     inspectorSchema: [],
     constraints: { canHaveChildren: false },
   },

@@ -361,7 +361,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
           <Button
             variant="outline"
             onClick={onClose}
-            className="flex-1 border-builder-border text-builder-text hover:bg-builder-surface-hover"
+            className="flex-1 min-w-0 border-builder-border text-builder-text hover:bg-builder-surface-hover"
           >
             Cancel
           </Button>
@@ -369,7 +369,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
             onClick={handlePublish}
             disabled={isPublishing}
             className={cn(
-              "flex-1 text-white transition-all",
+              "flex-1 min-w-0 text-white transition-all",
               isPublished && !hasUnpublishedChanges
                 ? "bg-emerald-600 hover:bg-emerald-500"
                 : "bg-builder-accent hover:brightness-110"
