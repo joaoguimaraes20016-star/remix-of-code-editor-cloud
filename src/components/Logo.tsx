@@ -5,9 +5,10 @@ interface LogoProps {
   size?: "small" | "medium" | "large" | "xlarge";
   className?: string;
   showText?: boolean;
+  gradientText?: boolean;
 }
 
-export const Logo = ({ size = "medium", className, showText = false }: LogoProps) => {
+export const Logo = ({ size = "medium", className, showText = false, gradientText = true }: LogoProps) => {
   const sizeClasses = {
     small: "h-5 w-5 sm:h-6 sm:w-6",
     medium: "h-6 w-6 sm:h-8 sm:w-8",
@@ -19,7 +20,7 @@ export const Logo = ({ size = "medium", className, showText = false }: LogoProps
     <div className={cn("flex items-center gap-1.5 sm:gap-2", className)}>
       <div className={cn(
         sizeClasses[size],
-        "bg-black rounded-md sm:rounded-lg flex items-center justify-center p-0.5 sm:p-1"
+        "bg-gradient-brand rounded-md sm:rounded-lg flex items-center justify-center p-0.5 sm:p-1"
       )}>
         <img 
           src={logo} 
@@ -28,7 +29,12 @@ export const Logo = ({ size = "medium", className, showText = false }: LogoProps
         />
       </div>
       {showText && (
-        <span className="font-bold text-sm sm:text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <span className={cn(
+          "font-bold text-sm sm:text-lg",
+          gradientText 
+            ? "text-gradient-brand" 
+            : "text-foreground"
+        )}>
           GRWTH OP
         </span>
       )}
