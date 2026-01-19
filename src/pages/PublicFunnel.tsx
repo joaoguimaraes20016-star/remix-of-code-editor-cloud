@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FunnelRenderer } from '@/components/funnel-public/FunnelRenderer';
 import { FlowCanvasRenderer } from '@/flow-canvas/components/FlowCanvasRenderer';
-import { editorDocumentToFlowCanvas } from '@/lib/funnel/dataConverter';
+import { EditorDocumentRenderer } from '@/flow-canvas/components/runtime/EditorDocumentRenderer';
 
 interface FunnelStep {
   id: string;
@@ -152,23 +152,24 @@ export default function PublicFunnel() {
   const snapshot = activeFunnel?.published_document_snapshot;
   const isEditorDocumentFormat = snapshot?.version && snapshot?.pages?.length > 0;
   const isFlowCanvasFormat = snapshot?.steps?.length > 0;
-  const isFlowCanvasFunnel = isEditorDocumentFormat || isFlowCanvasFormat;
 
-  if (isFlowCanvasFunnel) {
-    // Convert EditorDocument format to FlowCanvasPage if needed
-    let flowCanvasPage = snapshot;
-    
-    if (isEditorDocumentFormat) {
-      flowCanvasPage = editorDocumentToFlowCanvas(
-        snapshot as any,
-        activeFunnel.slug
-      );
-    }
-    
+  // NEW: EditorDocument format - use WYSIWYG renderer (no lossy conversion)
+  if (isEditorDocumentFormat) {
+    return (
+      <EditorDocumentRenderer
+        document={snapshot as any}
+        settings={activeFunnel.settings}
+        funnelId={activeFunnel.id}
+      />
+    );
+  }
+
+  // FlowCanvas format (legacy new builder) - use FlowCanvasRenderer
+  if (isFlowCanvasFormat) {
     return (
       <FlowCanvasRenderer
         funnelId={activeFunnel.id}
-        page={flowCanvasPage}
+        page={snapshot}
         settings={activeFunnel.settings}
       />
     );

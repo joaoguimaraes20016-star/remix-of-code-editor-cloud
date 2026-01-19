@@ -1,0 +1,224 @@
+/**
+ * EditorDocumentRenderer - WYSIWYG Runtime Renderer
+ * 
+ * Renders EditorDocument snapshots exactly as they appear in the editor.
+ * This is the "publish what you see" renderer - no lossy conversions.
+ * 
+ * Used for:
+ * - Public funnel pages (published funnels)
+ * - Preview mode in editor
+ * - Custom domain rendering
+ */
+
+import { useMemo } from 'react';
+import { renderTree } from '@/builder_v2/canvas/renderNode';
+import type { CanvasNode, Page } from '@/builder_v2/types';
+import {
+  getPageBackgroundStyles,
+  getOverlayStyles,
+  getVideoBackgroundUrl,
+  isDirectVideoUrl,
+  type PageBackground,
+} from './backgroundUtils';
+
+// Import builder_v2 CSS for proper node styling
+import '@/builder_v2/canvas/canvas.css';
+// Import runtime-specific overrides
+import './runtime.css';
+
+interface EditorDocument {
+  version: number;
+  pages: Page[];
+  activePageId?: string;
+}
+
+interface FunnelSettings {
+  logo_url?: string;
+  primary_color?: string;
+  background_color?: string;
+  button_text?: string;
+  ghl_webhook_url?: string;
+  privacy_policy_url?: string;
+  show_progress_bar?: boolean;
+}
+
+interface EditorDocumentRendererProps {
+  /** The published EditorDocument snapshot */
+  document: EditorDocument;
+  /** Optional page ID to render (defaults to first page) */
+  pageId?: string;
+  /** Funnel settings for theming */
+  settings?: FunnelSettings;
+  /** Funnel ID for analytics */
+  funnelId?: string;
+}
+
+/**
+ * Page wrapper that handles background, overlay, and video backgrounds
+ */
+function PageFrame({
+  page,
+  children,
+}: {
+  page: Page;
+  children: React.ReactNode;
+}) {
+  // Extract background from page's canvasRoot props
+  const pageBackground = (page.canvasRoot?.props?.background as PageBackground) || null;
+  
+  const backgroundStyles = useMemo(() => {
+    return getPageBackgroundStyles(pageBackground, true);
+  }, [pageBackground]);
+
+  const overlayStyles = useMemo(() => {
+    return getOverlayStyles(pageBackground);
+  }, [pageBackground]);
+
+  // Handle video backgrounds
+  const videoUrl = pageBackground?.type === 'video' ? pageBackground.video : null;
+  const embedUrl = getVideoBackgroundUrl(videoUrl);
+  const isDirectVideo = isDirectVideoUrl(videoUrl);
+
+  return (
+    <section
+      className="relative min-h-screen w-full overflow-hidden"
+      style={backgroundStyles}
+      data-page-id={page.id}
+      data-page-type={page.type}
+    >
+      {/* Video Background */}
+      {embedUrl && (
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          {isDirectVideo ? (
+            <video
+              src={embedUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <iframe
+              src={embedUrl}
+              allow="autoplay; fullscreen"
+              className="absolute top-1/2 left-1/2 w-[200%] h-[200%] -translate-x-1/2 -translate-y-1/2 border-0 pointer-events-none"
+              style={{ minWidth: '200%', minHeight: '200%' }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Overlay */}
+      {overlayStyles && (
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none"
+          style={overlayStyles}
+        />
+      )}
+
+      {/* Content */}
+      <div className="relative z-[2] min-h-screen">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Renders the canvas node tree using the v2 registry
+ */
+function CanvasContent({ node }: { node: CanvasNode }) {
+  return (
+    <div className="builder-v2-runtime">
+      {renderTree(node, { readonly: true })}
+    </div>
+  );
+}
+
+/**
+ * Main runtime renderer for EditorDocument format
+ */
+export function EditorDocumentRenderer({
+  document,
+  pageId,
+  settings,
+  funnelId,
+}: EditorDocumentRendererProps) {
+  // Find the page to render
+  const activePage = useMemo(() => {
+    if (!document?.pages?.length) return null;
+
+    // Try to find the requested page, fall back to activePageId, then first page
+    if (pageId) {
+      const found = document.pages.find((p) => p.id === pageId);
+      if (found) return found;
+    }
+
+    if (document.activePageId) {
+      const found = document.pages.find((p) => p.id === document.activePageId);
+      if (found) return found;
+    }
+
+    return document.pages[0];
+  }, [document, pageId]);
+
+  // No page to render
+  if (!activePage || !activePage.canvasRoot) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-white/60">
+          <p>No content to display</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <main
+      className="min-h-screen w-full"
+      data-funnel-id={funnelId}
+      data-version={document.version}
+    >
+      <PageFrame page={activePage}>
+        <CanvasContent node={activePage.canvasRoot} />
+      </PageFrame>
+    </main>
+  );
+}
+
+/**
+ * Multi-page scrollable renderer (for future use)
+ * Renders all pages as a single scrollable document
+ */
+export function EditorDocumentScrollRenderer({
+  document,
+  settings,
+  funnelId,
+}: Omit<EditorDocumentRendererProps, 'pageId'>) {
+  if (!document?.pages?.length) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-white/60">
+          <p>No content to display</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <main
+      className="w-full"
+      data-funnel-id={funnelId}
+      data-version={document.version}
+    >
+      {document.pages.map((page) => (
+        <PageFrame key={page.id} page={page}>
+          <CanvasContent node={page.canvasRoot} />
+        </PageFrame>
+      ))}
+    </main>
+  );
+}
+
+export default EditorDocumentRenderer;
