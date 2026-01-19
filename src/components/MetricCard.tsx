@@ -11,18 +11,17 @@ interface MetricCardProps {
 
 export function MetricCard({ title, value, icon: Icon, trend, trendUp }: MetricCardProps) {
   return (
-    <Card className="card-hover group relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <Card className="group relative overflow-hidden hover:border-primary/30 transition-colors">
       <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-2 sm:px-6 pt-2 sm:pt-6">
-        <CardTitle className="text-[9px] sm:text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+        <CardTitle className="text-[9px] sm:text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <div className="p-1 sm:p-2 rounded-md sm:rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+        <div className="p-1 sm:p-2 rounded-md sm:rounded-lg bg-primary/10">
           <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
         </div>
       </CardHeader>
       <CardContent className="relative px-2 sm:px-6 pb-2 sm:pb-6">
-        <div className="text-sm sm:text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+        <div className="text-sm sm:text-2xl font-bold text-foreground">
           {value}
         </div>
         {trend && (
