@@ -314,6 +314,24 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
     constraints: { canHaveChildren: false },
   },
 
+  name_input: {
+    type: 'name_input',
+    displayName: 'Name Input',
+    defaultProps: { placeholder: 'Your name', fieldName: 'name', required: true },
+    render: (props) => (
+      <RuntimeTextInput 
+        placeholder={props.placeholder as string}
+        fieldName={props.fieldName as string || 'name'}
+        required={props.required as boolean}
+        borderRadius={props.borderRadius as number}
+        backgroundColor={props.backgroundColor as string}
+        color={props.color as string}
+      />
+    ),
+    inspectorSchema: [],
+    constraints: { canHaveChildren: false },
+  },
+
   email_input: {
     type: 'email_input',
     displayName: 'Email Input',
@@ -361,6 +379,7 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
       <RuntimeCtaButton 
         label={typeof props.label === 'string' ? props.label : 'Button'} 
         action={props.action as any}
+        buttonAction={props.buttonAction as any}
         linkUrl={props.linkUrl as string}
       />
     ),
@@ -377,6 +396,7 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
         label={props.label as string} 
         variant={props.variant as 'primary' | 'secondary' | 'outline'} 
         action={props.action as 'next' | 'submit' | 'link' | 'prev'}
+        buttonAction={props.buttonAction as any}
         linkUrl={props.linkUrl as string}
         size={props.size as 'sm' | 'default' | 'lg'}
         fullWidth={props.fullWidth as boolean}
