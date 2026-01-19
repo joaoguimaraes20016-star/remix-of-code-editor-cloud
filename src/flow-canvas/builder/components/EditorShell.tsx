@@ -19,6 +19,7 @@ import {
   SEOSettingsModal,
   FunnelSettingsModal,
   ShareModal,
+  PublishModal,
   AnalyticsPanel,
   TextStylesModal,
   AIGenerateModal,
@@ -86,6 +87,10 @@ interface EditorShellProps {
   teamId?: string;
   /** Currently linked domain ID */
   currentDomainId?: string | null;
+  /** Funnel publish status */
+  funnelStatus?: string;
+  /** Whether publish is in progress */
+  isPublishing?: boolean;
 }
 
 export const EditorShell: React.FC<EditorShellProps> = ({
@@ -101,6 +106,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   funnelId,
   teamId,
   currentDomainId,
+  funnelStatus = 'draft',
+  isPublishing = false,
 }) => {
   const isMobile = useIsMobile();
   
@@ -174,6 +181,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [isSEOOpen, setIsSEOOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isTextStylesOpen, setIsTextStylesOpen] = useState(false);
   const [isAIGenerateOpen, setIsAIGenerateOpen] = useState(false);
@@ -978,10 +986,15 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
   }, [handleAddStep, selection]);
 
-  // Publish handler
-  const handlePublish = useCallback(() => {
+  // Publish handler - opens modal instead of publishing directly
+  const handlePublishClick = useCallback(() => {
+    setIsPublishOpen(true);
+  }, []);
+
+  // Actual publish action (called from modal)
+  const handleDoPublish = useCallback(() => {
     onPublish?.(page);
-    toast.success('Page published successfully!');
+    setIsPublishOpen(false);
   }, [page, onPublish]);
 
   // Add frame handler
@@ -1594,7 +1607,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         onDeviceModeChange={setDeviceMode}
         previewMode={previewMode}
         onPreviewToggle={() => setPreviewMode(!previewMode)}
-        onPublish={onPublish ? handlePublish : undefined}
+        onPublish={onPublish ? handlePublishClick : undefined}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={handleUndo}
@@ -1842,7 +1855,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onUpdateNode={handleUpdateNode}
             onClearSelection={handleClearSelection}
             onSelect={handleSelect}
-            onPublish={handlePublish}
+            onPublish={handlePublishClick}
             onDuplicateElement={handleDuplicateElement}
             onDeleteElement={handleDeleteElement}
             onMoveElement={handleMoveElement}
