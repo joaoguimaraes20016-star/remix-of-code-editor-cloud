@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Your Lovable app's base URL - this is where the React SPA is hosted
-const APP_BASE_URL = Deno.env.get('SITE_URL') || 'https://usestackit.co';
+const APP_BASE_URL = Deno.env.get('SITE_URL') || 'https://code-hug-hub.lovable.app';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
