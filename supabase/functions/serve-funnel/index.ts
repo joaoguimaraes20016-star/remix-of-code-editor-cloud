@@ -9,6 +9,12 @@ const corsHeaders = {
 // Your Lovable app's base URL - this is where the React SPA is hosted
 const APP_BASE_URL = Deno.env.get('SITE_URL') || 'https://code-hug-hub.lovable.app';
 
+// Build timestamp for cache-busting
+const BUILD_TIMESTAMP = Date.now().toString();
+
+// Log on cold start
+console.log(`[serve-funnel] Cold start - APP_BASE_URL: ${APP_BASE_URL}, BUILD: ${BUILD_TIMESTAMP}`);
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,6 +26,9 @@ serve(async (req) => {
     const xForwardedHost = req.headers.get('x-forwarded-host');
     const hostHeader = req.headers.get('host');
     
+    const debugMode = url.searchParams.get('debug') === '1';
+    
+    console.log(`[serve-funnel] APP_BASE_URL: ${APP_BASE_URL}`);
     console.log(`[serve-funnel] Full URL: ${req.url}`);
     console.log(`[serve-funnel] Request method: ${req.method}`);
     console.log(`[serve-funnel] Query param domain: ${domain}`);
@@ -144,10 +153,15 @@ serve(async (req) => {
     const metaDescription = settings?.seo?.description || snapshot?.settings?.seo?.description || '';
     const ogImage = settings?.seo?.ogImage || snapshot?.settings?.seo?.ogImage || '';
 
+    // Debug comment for troubleshooting
+    const debugComment = debugMode 
+      ? `<!-- serve-funnel DEBUG: APP_BASE_URL=${APP_BASE_URL} BUILD=${BUILD_TIMESTAMP} DOMAIN=${cleanDomain} -->\n  ` 
+      : '';
+
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  ${debugComment}<meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${pageTitle}</title>
   ${metaDescription ? `<meta name="description" content="${metaDescription}">` : ''}
@@ -162,9 +176,9 @@ serve(async (req) => {
     window.__INFOSTACK_DOMAIN__ = "${cleanDomain}";
   </script>
   
-  <!-- Load the SPA assets -->
-  <script type="module" crossorigin src="${APP_BASE_URL}/assets/index.js"></script>
-  <link rel="stylesheet" crossorigin href="${APP_BASE_URL}/assets/index.css">
+  <!-- Load the SPA assets with cache-busting -->
+  <script type="module" crossorigin src="${APP_BASE_URL}/assets/index.js?v=${BUILD_TIMESTAMP}"></script>
+  <link rel="stylesheet" crossorigin href="${APP_BASE_URL}/assets/index.css?v=${BUILD_TIMESTAMP}">
   
   <style>
     /* Critical CSS for loading state */
@@ -196,12 +210,25 @@ serve(async (req) => {
 
     console.log(`[serve-funnel] Serving inline funnel HTML for: ${cleanDomain}`);
 
+    // CSP that allows our assets and inline scripts
+    const cspHeader = [
+      `default-src 'self' ${APP_BASE_URL}`,
+      `script-src 'self' 'unsafe-inline' ${APP_BASE_URL} https://*.calendly.com`,
+      `style-src 'self' 'unsafe-inline' ${APP_BASE_URL} https://fonts.googleapis.com`,
+      `font-src 'self' ${APP_BASE_URL} https://fonts.gstatic.com`,
+      `img-src 'self' ${APP_BASE_URL} data: blob: https:`,
+      `connect-src 'self' ${APP_BASE_URL} https://*.supabase.co https://*.calendly.com`,
+      `frame-src https://*.calendly.com https://*.youtube.com https://*.vimeo.com`,
+    ].join('; ');
+
     return new Response(html, {
       status: 200,
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=60, s-maxage=300',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Content-Security-Policy': cspHeader,
+        'X-Frame-Options': 'SAMEORIGIN',
       },
     });
 
