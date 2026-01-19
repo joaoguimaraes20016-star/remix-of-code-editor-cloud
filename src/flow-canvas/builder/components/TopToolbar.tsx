@@ -23,7 +23,8 @@ import {
   Share2,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  Check
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -539,14 +540,18 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
                 disabled={isPublishing}
                 className={cn(
                   "btn-publish relative",
-                  isPublished && !hasUnpublishedChanges && "bg-emerald-600 hover:bg-emerald-500",
                   isPublishing && "opacity-70 cursor-wait"
                 )}
               >
                 {isPublishing ? (
                   'Publishing...'
                 ) : isPublished ? (
-                  hasUnpublishedChanges ? 'Update' : 'Published'
+                  hasUnpublishedChanges ? 'Update' : (
+                    <span className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5" />
+                      Published
+                    </span>
+                  )
                 ) : (
                   'Publish'
                 )}
