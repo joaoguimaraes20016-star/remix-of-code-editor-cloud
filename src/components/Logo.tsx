@@ -24,7 +24,7 @@ export const Logo = ({ size = "medium", className, showText = false, gradientTex
       )}>
         <img 
           src={logo} 
-          alt="Stackit Logo" 
+          alt="StackIt Logo" 
           className="w-full h-full object-contain"
         />
       </div>
@@ -35,7 +35,7 @@ export const Logo = ({ size = "medium", className, showText = false, gradientTex
             ? "text-gradient-brand" 
             : "text-foreground"
         )}>
-          Stackit
+          StackIt
         </span>
       )}
     </div>

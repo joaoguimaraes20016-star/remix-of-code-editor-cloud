@@ -1,6 +1,6 @@
-# Stackit
+# StackIt
 
-This repository contains the Stackit frontend application (Vite + React + TypeScript).
+This repository contains the StackIt frontend application (Vite + React + TypeScript).
 
 ## Editing locally
 
