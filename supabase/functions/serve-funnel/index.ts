@@ -17,11 +17,30 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     let domain: string | null = url.searchParams.get('domain');
+    const xForwardedHost = req.headers.get('x-forwarded-host');
+    const hostHeader = req.headers.get('host');
     
+    console.log(`[serve-funnel] Full URL: ${req.url}`);
     console.log(`[serve-funnel] Request method: ${req.method}`);
     console.log(`[serve-funnel] Query param domain: ${domain}`);
-    console.log(`[serve-funnel] X-Forwarded-Host: ${req.headers.get('x-forwarded-host')}`);
-    console.log(`[serve-funnel] Host: ${req.headers.get('host')}`);
+    console.log(`[serve-funnel] X-Forwarded-Host: ${xForwardedHost}`);
+    console.log(`[serve-funnel] Host: ${hostHeader}`);
+    console.log(`[serve-funnel] All headers:`, JSON.stringify(Object.fromEntries(req.headers.entries())));
+
+    // Test endpoint for debugging Caddy routing
+    if (url.searchParams.get('test') === 'true') {
+      const cleanDomainTest = domain?.toLowerCase().replace(/^www\./, '').split(':')[0] || null;
+      return new Response(JSON.stringify({
+        detectedDomain: cleanDomainTest,
+        source: domain ? 'query_param' : (xForwardedHost ? 'x-forwarded-host' : 'host'),
+        rawQueryParam: domain,
+        xForwardedHost,
+        host: hostHeader,
+        timestamp: new Date().toISOString(),
+      }, null, 2), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
     
     if (!domain) {
       domain = req.headers.get('x-forwarded-host') || req.headers.get('host');
