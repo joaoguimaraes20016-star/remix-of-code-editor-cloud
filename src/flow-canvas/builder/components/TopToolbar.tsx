@@ -82,6 +82,10 @@ interface TopToolbarProps {
   // Save status
   saveStatus?: SaveStatus;
   lastSavedAt?: Date | null;
+  // Publish status
+  isPublished?: boolean;
+  hasUnpublishedChanges?: boolean;
+  isPublishing?: boolean;
 }
 
 const deviceWidths: Record<DeviceMode, number> = {
@@ -168,6 +172,9 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   onCanvasThemeToggle,
   saveStatus = 'idle',
   lastSavedAt = null,
+  isPublished = false,
+  hasUnpublishedChanges = false,
+  isPublishing = false,
 }) => {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
@@ -526,12 +533,29 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           </button>
 
           {onPublish && (
-            <button
-              onClick={onPublish}
-              className="btn-publish"
-            >
-              Publish
-            </button>
+            <div className="relative">
+              <button
+                onClick={onPublish}
+                disabled={isPublishing}
+                className={cn(
+                  "btn-publish relative",
+                  isPublished && !hasUnpublishedChanges && "bg-emerald-600 hover:bg-emerald-500",
+                  isPublishing && "opacity-70 cursor-wait"
+                )}
+              >
+                {isPublishing ? (
+                  'Publishing...'
+                ) : isPublished ? (
+                  hasUnpublishedChanges ? 'Update' : 'Published'
+                ) : (
+                  'Publish'
+                )}
+              </button>
+              {/* Orange dot indicator for unpublished changes */}
+              {isPublished && hasUnpublishedChanges && !isPublishing && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-builder-surface animate-pulse" />
+              )}
+            </div>
           )}
         </div>
       </header>

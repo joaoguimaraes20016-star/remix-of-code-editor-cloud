@@ -25,7 +25,6 @@ serve(async (req) => {
     console.log(`[serve-funnel] Query param domain: ${domain}`);
     console.log(`[serve-funnel] X-Forwarded-Host: ${xForwardedHost}`);
     console.log(`[serve-funnel] Host: ${hostHeader}`);
-    console.log(`[serve-funnel] All headers:`, JSON.stringify(Object.fromEntries(req.headers.entries())));
 
     // Test endpoint for debugging Caddy routing
     if (url.searchParams.get('test') === 'true') {
@@ -89,10 +88,10 @@ serve(async (req) => {
       });
     }
 
-    // 2. Get linked published funnel
+    // 2. Get linked published funnel with full snapshot
     const { data: funnel, error: funnelError } = await supabase
       .from('funnels')
-      .select('id, slug, status')
+      .select('id, name, slug, status, settings, published_document_snapshot, team_id')
       .eq('domain_id', domainRecord.id)
       .eq('status', 'published')
       .single();
@@ -121,17 +120,88 @@ serve(async (req) => {
     queryParams.delete('domain'); // Remove internal param
     const queryString = queryParams.toString();
     
-    // 4. Build redirect URL
-    const redirectUrl = `${APP_BASE_URL}/f/${funnel.slug}${queryString ? `?${queryString}` : ''}`;
-    
-    console.log(`[serve-funnel] 302 Redirect: ${cleanDomain} → ${redirectUrl}`);
+    console.log(`[serve-funnel] Found funnel: ${funnel.name} (${funnel.slug}) for domain: ${cleanDomain}`);
 
-    return new Response(null, {
-      status: 302,
+    // 4. Serve HTML shell that embeds funnel data directly
+    // This allows the SPA to render without a redirect - URL stays on custom domain
+    const funnelData = JSON.stringify({
+      funnel: {
+        id: funnel.id,
+        team_id: funnel.team_id,
+        name: funnel.name,
+        slug: funnel.slug,
+        settings: funnel.settings,
+        published_document_snapshot: funnel.published_document_snapshot,
+      },
+      domain: cleanDomain,
+      queryParams: queryString ? Object.fromEntries(queryParams) : {},
+    }).replace(/</g, '\\u003c'); // Escape < for script safety
+
+    // Extract page title and meta from settings or snapshot
+    const pageTitle = funnel.name || 'Funnel';
+    const settings = funnel.settings as any;
+    const snapshot = funnel.published_document_snapshot as any;
+    const metaDescription = settings?.seo?.description || snapshot?.settings?.seo?.description || '';
+    const ogImage = settings?.seo?.ogImage || snapshot?.settings?.seo?.ogImage || '';
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${pageTitle}</title>
+  ${metaDescription ? `<meta name="description" content="${metaDescription}">` : ''}
+  ${ogImage ? `<meta property="og:image" content="${ogImage}">` : ''}
+  <meta property="og:title" content="${pageTitle}">
+  ${metaDescription ? `<meta property="og:description" content="${metaDescription}">` : ''}
+  <link rel="canonical" href="https://${cleanDomain}${queryString ? `?${queryString}` : ''}">
+  
+  <!-- Inject funnel data for client-side rendering -->
+  <script>
+    window.__INFOSTACK_FUNNEL__ = ${funnelData};
+    window.__INFOSTACK_DOMAIN__ = "${cleanDomain}";
+  </script>
+  
+  <!-- Load the SPA assets -->
+  <script type="module" crossorigin src="${APP_BASE_URL}/assets/index.js"></script>
+  <link rel="stylesheet" crossorigin href="${APP_BASE_URL}/assets/index.css">
+  
+  <style>
+    /* Critical CSS for loading state */
+    body { margin: 0; padding: 0; background: #000; }
+    #root { min-height: 100vh; }
+    .funnel-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #000;
+    }
+    .funnel-loading::after {
+      content: '';
+      width: 32px;
+      height: 32px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="root" class="funnel-loading"></div>
+</body>
+</html>`;
+
+    console.log(`[serve-funnel] Serving inline funnel HTML for: ${cleanDomain}`);
+
+    return new Response(html, {
+      status: 200,
       headers: {
         ...corsHeaders,
-        'Location': redirectUrl,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=60, s-maxage=300',
       },
     });
 

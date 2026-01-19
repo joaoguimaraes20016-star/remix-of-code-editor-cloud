@@ -1634,6 +1634,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         onCanvasThemeToggle={() => {
           setEditorTheme(prev => prev === 'dark' ? 'light' : 'dark');
         }}
+        isPublished={funnelStatus === 'published'}
+        hasUnpublishedChanges={saveStatus === 'pending' || saveStatus === 'saving'}
+        isPublishing={isPublishing}
       />
 
       {/* Main Content */}
@@ -1957,6 +1960,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         currentDomainId={currentDomainId}
         isPublishing={isPublishing}
         funnelStatus={funnelStatus}
+        hasUnpublishedChanges={saveStatus === 'pending' || saveStatus === 'saving'}
       />
       <AnalyticsPanel
         isOpen={isAnalyticsOpen}
