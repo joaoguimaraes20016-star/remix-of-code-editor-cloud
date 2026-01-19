@@ -63,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate reset link
-    const resetLink = `${Deno.env.get("SITE_URL") || "https://stackit.app"}/reset-password?token=${token}`;
+    const resetLink = `${Deno.env.get("SITE_URL") || "https://usestackit.co"}/reset-password?token=${token}`;
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
@@ -87,7 +87,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <!-- Logo Header -->
                     <tr>
                       <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #000000; border-radius: 12px 12px 0 0;">
-                        <img src="https://stackit.app/logo.png" alt="Stackit Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
+                        <img src="https://usestackit.co/logo.png" alt="Stackit Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
                         <h1 style="margin: 0; color: #ffc107; font-size: 32px; font-weight: 700; text-shadow: 0 0 20px rgba(255, 193, 7, 0.3);">Reset Your Password</h1>
                       </td>
                     </tr>

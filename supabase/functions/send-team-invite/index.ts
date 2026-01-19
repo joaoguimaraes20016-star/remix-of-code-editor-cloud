@@ -57,7 +57,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Use custom domain for invite URLs - point directly to auth page
-    const inviteUrl = `https://stackit.app/auth?invite=${inviteToken}`;
+    const inviteUrl = `${Deno.env.get("SITE_URL") || "https://usestackit.co"}/auth?invite=${inviteToken}`;
     
     console.log('Generated invite URL:', inviteUrl);
     
@@ -93,7 +93,7 @@ const handler = async (req: Request): Promise<Response> => {
                           <!-- Logo Header -->
                           <tr>
                             <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #000000; border-radius: 12px 12px 0 0;">
-                              <img src="https://stackit.app/logo.png" alt="Stackit Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
+                              <img src="https://usestackit.co/logo.png" alt="Stackit Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
                               <h1 style="margin: 0; color: #ffc107; font-size: 32px; font-weight: 700; text-shadow: 0 0 20px rgba(255, 193, 7, 0.3);">You're Invited!</h1>
                             </td>
                           </tr>
