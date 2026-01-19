@@ -11,20 +11,29 @@ serve(async (req) => {
   const domain = url.searchParams.get("domain")?.toLowerCase();
 
   if (!domain) {
+    console.log("[caddy-verify-domain] Missing domain parameter");
     return new Response("missing domain", { status: 400 });
   }
 
-  // 🔓 AUTO-ALLOW + AUTO-CREATE
-  await supabase
-    .from("funnel_domains")
-    .upsert(
-      {
-        domain,
-        status: "pending",
-      },
-      { onConflict: "domain" },
-    );
+  console.log(`[caddy-verify-domain] Checking domain: ${domain}`);
 
-  // ✅ ALWAYS ALLOW TLS
+  // Only allow TLS for domains that are registered in our system with a team
+  const { data: existingDomain, error } = await supabase
+    .from("funnel_domains")
+    .select("id, status, team_id")
+    .eq("domain", domain)
+    .single();
+
+  if (error || !existingDomain) {
+    console.log(`[caddy-verify-domain] Domain not registered: ${domain}`);
+    return new Response("domain not registered", { status: 404 });
+  }
+
+  if (!existingDomain.team_id) {
+    console.log(`[caddy-verify-domain] Domain has no team: ${domain}`);
+    return new Response("domain not configured", { status: 404 });
+  }
+
+  console.log(`[caddy-verify-domain] Allowing TLS for: ${domain} (status: ${existingDomain.status})`);
   return new Response("ok", { status: 200 });
 });
