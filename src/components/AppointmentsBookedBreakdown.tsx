@@ -1162,7 +1162,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
               {/* Stale Leads */}
               {member.accountability.staleLeads.length > 0 && (
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 hover:bg-primary/20 transition-colors">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                       <span className="font-semibold text-orange-600 dark:text-orange-400">Stale Leads (48h+)</span>
@@ -1446,7 +1446,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
               {/* Stale Leads */}
               {member.accountability.staleLeads.length > 0 && (
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 hover:bg-primary/20 transition-colors">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                       <span className="font-semibold text-orange-600 dark:text-orange-400">Stale Leads (48h+)</span>

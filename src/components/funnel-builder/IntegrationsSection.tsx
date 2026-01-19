@@ -743,7 +743,7 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
             <Button 
               onClick={connectZapier} 
               disabled={connectMutation.isPending}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-primary hover:bg-primary/90"
             >
               {connectMutation.isPending ? 'Connecting...' : 'Connect Zapier'}
             </Button>
