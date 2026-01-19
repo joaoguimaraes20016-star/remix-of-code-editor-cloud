@@ -177,9 +177,9 @@ serve(async (req) => {
     window.__INFOSTACK_DOMAIN__ = "${cleanDomain}";
   </script>
   
-  <!-- Load the SPA assets with cache-busting -->
-  <script type="module" crossorigin src="${APP_BASE_URL}/assets/index.js?v=${BUILD_TIMESTAMP}"></script>
-  <link rel="stylesheet" crossorigin href="${APP_BASE_URL}/assets/index.css?v=${BUILD_TIMESTAMP}">
+  <!-- Load the SPA assets with cache-busting (relative paths for Caddy proxy) -->
+  <script type="module" src="/assets/index.js?v=${BUILD_TIMESTAMP}"></script>
+  <link rel="stylesheet" href="/assets/index.css?v=${BUILD_TIMESTAMP}">
   
   <style>
     /* Critical CSS for loading state */
