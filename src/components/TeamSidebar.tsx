@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface TeamSidebarProps {
   teamName: string;
@@ -69,12 +70,12 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
           "w-full justify-start gap-3 h-11 transition-all",
           collapsed && "justify-center px-0",
           active 
-            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
+            ? "bg-gradient-brand text-white font-medium shadow-md" 
             : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
         )}
         onClick={() => handleNavigation(item.path)}
       >
-        <item.icon className={cn("h-5 w-5 shrink-0", active && "text-primary")} />
+        <item.icon className={cn("h-5 w-5 shrink-0", active && "text-white")} />
         {!collapsed && <span>{item.label}</span>}
       </Button>
     );
@@ -109,7 +110,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
       )}>
         <Avatar className="h-10 w-10 shrink-0">
           <AvatarImage src={teamLogo || undefined} alt={teamName} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+          <AvatarFallback className="bg-gradient-brand text-white text-sm font-semibold">
             {getInitials(teamName)}
           </AvatarFallback>
         </Avatar>
@@ -122,55 +123,71 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex-1 p-2 space-y-1">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {mainNavItems.map((item) => renderNavButton(item, isActive(item.path)))}
-        
-        {/* Divider */}
-        <div className="my-3 border-t border-sidebar-border" />
-        
-        {/* Personal Settings (all users) */}
-        {renderNavButton(
-          { id: "profile", label: "Settings", icon: UserCircle, path: "/profile" },
-          isActive("/profile")
-        )}
-        
-        {/* Workflows (admin only) */}
-        {isAdmin && renderNavButton(
-          { id: "workflows", label: "Workflows", icon: Workflow, path: "/workflows" },
-          isActive("/workflows")
-        )}
-        
-        {/* Team Settings (admin only) */}
-        {isAdmin && renderNavButton(
-          { id: "team-settings", label: "Team Settings", icon: Settings2, path: "/settings" },
-          isActive("/settings")
-        )}
       </nav>
 
-      {/* Footer */}
-      <div className="p-2 border-t border-sidebar-border space-y-1">
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-3 h-11 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
-            collapsed && "justify-center px-0"
+      {/* Bottom Section */}
+      <div className="p-3 border-t border-sidebar-border space-y-1">
+        {/* Theme Toggle */}
+        <div className={cn("mb-2", collapsed && "flex justify-center")}>
+          {collapsed ? (
+            <ThemeToggle variant="icon" />
+          ) : (
+            <ThemeToggle />
           )}
-          onClick={() => navigate("/")}
-        >
-          <LogOut className="h-5 w-5 shrink-0" />
-          {!collapsed && <span>Exit Team</span>}
-        </Button>
-        
+        </div>
+
+        {/* Profile Settings */}
+        {renderNavButton(
+          { id: "settings", label: "Profile Settings", icon: UserCircle, path: "/settings" },
+          isActive("/settings")
+        )}
+
+        {/* Admin-only links */}
+        {isAdmin && (
+          <>
+            {renderNavButton(
+              { id: "automations", label: "Workflows", icon: Workflow, path: "/automations" },
+              isActive("/automations")
+            )}
+            {renderNavButton(
+              { id: "team-settings", label: "Team Settings", icon: Settings2, path: "/team-settings" },
+              isActive("/team-settings")
+            )}
+          </>
+        )}
+
+        {/* Collapse toggle */}
         <Button
           variant="ghost"
-          size="icon"
           className={cn(
-            "w-full h-9 text-sidebar-foreground/50 hover:text-sidebar-foreground",
-            collapsed && "justify-center"
+            "w-full justify-start gap-3 h-10 text-sidebar-foreground/60 hover:text-sidebar-foreground",
+            collapsed && "justify-center px-0"
           )}
           onClick={() => setCollapsed(!collapsed)}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {collapsed ? (
+            <ChevronRight className="h-5 w-5" />
+          ) : (
+            <>
+              <ChevronLeft className="h-5 w-5" />
+              <span>Collapse</span>
+            </>
+          )}
+        </Button>
+
+        {/* Exit Team */}
+        <Button
+          variant="ghost"
+          className={cn(
+            "w-full justify-start gap-3 h-10 text-destructive hover:text-destructive hover:bg-destructive/10",
+            collapsed && "justify-center px-0"
+          )}
+          onClick={() => navigate("/login")}
+        >
+          <LogOut className="h-5 w-5" />
+          {!collapsed && <span>Exit Team</span>}
         </Button>
       </div>
     </aside>
