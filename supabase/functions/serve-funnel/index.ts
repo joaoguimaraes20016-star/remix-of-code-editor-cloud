@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Your Lovable app's base URL - this is where the React SPA is hosted
-const APP_BASE_URL = 'https://closers-portal-7f79c.lovable.app';
+const APP_BASE_URL = 'https://code-hug-hub.lovable.app';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -53,9 +53,20 @@ serve(async (req) => {
 
     if (domainError || !domainRecord) {
       console.log(`[serve-funnel] Domain not found or not verified: ${cleanDomain}`);
-      return new Response('Domain not configured', { 
+      const html = `<!DOCTYPE html>
+<html>
+<head><title>Domain Not Configured</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f9fafb;">
+  <div style="text-align: center; padding: 2rem;">
+    <h1 style="color: #111827; margin-bottom: 0.5rem;">Domain Not Configured</h1>
+    <p style="color: #6b7280; margin-bottom: 1.5rem;">The domain <strong>${cleanDomain}</strong> is not connected to any published funnel.</p>
+    <a href="${APP_BASE_URL}" style="color: #6366f1; text-decoration: none;">Go to Infostack →</a>
+  </div>
+</body>
+</html>`;
+      return new Response(html, { 
         status: 404, 
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' } 
       });
     }
 
@@ -69,9 +80,20 @@ serve(async (req) => {
 
     if (funnelError || !funnel) {
       console.log(`[serve-funnel] No published funnel for domain: ${cleanDomain}`);
-      return new Response('No funnel configured', { 
+      const html = `<!DOCTYPE html>
+<html>
+<head><title>No Funnel Published</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f9fafb;">
+  <div style="text-align: center; padding: 2rem;">
+    <h1 style="color: #111827; margin-bottom: 0.5rem;">No Funnel Published</h1>
+    <p style="color: #6b7280; margin-bottom: 1.5rem;">The domain <strong>${cleanDomain}</strong> doesn't have a published funnel yet.</p>
+    <a href="${APP_BASE_URL}" style="color: #6366f1; text-decoration: none;">Go to Infostack →</a>
+  </div>
+</body>
+</html>`;
+      return new Response(html, { 
         status: 404, 
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' } 
       });
     }
 

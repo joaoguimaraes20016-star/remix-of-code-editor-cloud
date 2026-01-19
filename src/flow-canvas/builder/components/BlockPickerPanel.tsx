@@ -324,7 +324,7 @@ const basicBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'text-block',
       label: 'Text',
-      elements: [{ id: generateId(), type: 'text', content: 'Your supporting text goes here. Keep it short and persuasive.', props: {} }],
+      elements: [{ id: generateId(), type: 'text', content: '', props: { placeholder: 'Click to add text...' } }],
       props: {},
     }),
   },

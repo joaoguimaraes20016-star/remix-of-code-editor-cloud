@@ -166,16 +166,18 @@ function makeStack(partial: Omit<Stack, 'id'>): Stack {
   return { id: generateId(), ...partial };
 }
 
-function heroTextElements(content: GeneratedSection['content'], theme: TemplateTheme): Element[] {
+function heroTextElements(content: GeneratedSection['content'], theme: TemplateTheme, options?: { showBadge?: boolean; badgeText?: string }): Element[] {
   const elements: Element[] = [];
 
-  // Keep badge lightweight; many pages use one
-  elements.push({
-    id: generateId(),
-    type: 'badge',
-    content: 'NEW',
-    props: { variant: 'premium', backgroundColor: theme.badgeBg, textColor: theme.badgeText },
-  });
+  // Only add badge if explicitly requested
+  if (options?.showBadge && options?.badgeText) {
+    elements.push({
+      id: generateId(),
+      type: 'badge',
+      content: options.badgeText,
+      props: { variant: 'premium', backgroundColor: theme.badgeBg, textColor: theme.badgeText },
+    });
+  }
 
   if (content.headline) {
     elements.push({
@@ -213,7 +215,7 @@ function generateHeroStack(section: GeneratedSection, theme: TemplateTheme): Sta
     const left = makeBlock({
       type: 'hero',
       label: 'Hero Copy',
-      elements: heroTextElements(section.content, theme),
+      elements: heroTextElements(section.content, theme, { showBadge: false }),
       props: { alignment: 'left' },
     });
 
@@ -251,7 +253,7 @@ function generateHeroStack(section: GeneratedSection, theme: TemplateTheme): Sta
   const block = makeBlock({
     type: 'hero',
     label: 'Hero',
-    elements: heroTextElements(section.content, theme),
+    elements: heroTextElements(section.content, theme, { showBadge: false }),
     props: { alignment: 'center' },
   });
 
