@@ -23,6 +23,8 @@ interface FunnelRuntimeState {
   isComplete: boolean;
   /** Consent checkbox state */
   hasConsent: boolean;
+  /** Field-level validation errors */
+  fieldErrors: Record<string, string>;
 }
 
 interface FunnelRuntimeActions {
@@ -42,6 +44,10 @@ interface FunnelRuntimeActions {
   toggleConsent: () => void;
   /** Reset the form */
   reset: () => void;
+  /** Validate a specific field */
+  validateField: (fieldKey: string, value: string, rules?: { required?: boolean; type?: 'email' | 'phone' }) => string | null;
+  /** Clear field error */
+  clearFieldError: (fieldKey: string) => void;
 }
 
 interface FunnelRuntimeConfig {
@@ -79,11 +85,41 @@ export function FunnelRuntimeProvider({
   const [error, setError] = useState<string | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [hasConsent, setHasConsent] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateField = useCallback((fieldKey: string, value: string, rules?: { required?: boolean; type?: 'email' | 'phone' }): string | null => {
+    if (rules?.required && !value?.trim()) {
+      return 'This field is required';
+    }
+    if (rules?.type === 'email' && value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        return 'Please enter a valid email';
+      }
+    }
+    if (rules?.type === 'phone' && value) {
+      const phoneRegex = /^[\d\s\-+()]{7,}$/;
+      if (!phoneRegex.test(value)) {
+        return 'Please enter a valid phone number';
+      }
+    }
+    return null;
+  }, []);
+
+  const clearFieldError = useCallback((fieldKey: string) => {
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      delete next[fieldKey];
+      return next;
+    });
+  }, []);
 
   const updateField = useCallback((fieldKey: string, value: string) => {
     setFormData(prev => ({ ...prev, [fieldKey]: value }));
     setError(null);
-  }, []);
+    // Clear error when user starts typing
+    clearFieldError(fieldKey);
+  }, [clearFieldError]);
 
   const nextStep = useCallback(() => {
     setCurrentStep(prev => Math.min(prev + 1, totalSteps - 1));
@@ -252,6 +288,7 @@ export function FunnelRuntimeProvider({
     setError(null);
     setIsComplete(false);
     setHasConsent(false);
+    setFieldErrors({});
   }, []);
 
   const state: FunnelRuntimeState = useMemo(() => ({
@@ -262,7 +299,8 @@ export function FunnelRuntimeProvider({
     error,
     isComplete,
     hasConsent,
-  }), [formData, currentStep, totalSteps, isSubmitting, error, isComplete, hasConsent]);
+    fieldErrors,
+  }), [formData, currentStep, totalSteps, isSubmitting, error, isComplete, hasConsent, fieldErrors]);
 
   const actions: FunnelRuntimeActions = useMemo(() => ({
     updateField,
@@ -273,7 +311,9 @@ export function FunnelRuntimeProvider({
     handleButtonClick,
     toggleConsent,
     reset,
-  }), [updateField, nextStep, prevStep, goToStep, submitForm, handleButtonClick, toggleConsent, reset]);
+    validateField,
+    clearFieldError,
+  }), [updateField, nextStep, prevStep, goToStep, submitForm, handleButtonClick, toggleConsent, reset, validateField, clearFieldError]);
 
   const value = useMemo(() => ({
     state,

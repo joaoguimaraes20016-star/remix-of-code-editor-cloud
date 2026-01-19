@@ -252,7 +252,12 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
   info_card: {
     type: 'info_card',
     displayName: 'Info Card',
-    defaultProps: { items: [] },
+    defaultProps: { 
+      items: [
+        { icon: '📧', text: 'Check your inbox' },
+        { icon: '📅', text: 'Save the date' },
+      ] 
+    },
     render: (props) => (
       <InfoCard items={props.items as Array<{ icon: string; text: string }>} />
     ),

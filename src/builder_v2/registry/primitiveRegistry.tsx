@@ -144,7 +144,8 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
     ),
     inspectorSchema: [
       { label: 'Label', propKey: 'label', inputType: 'text' },
-      { label: 'Variant', propKey: 'variant', inputType: 'text' },
+      { label: 'Size', propKey: 'size', inputType: 'text' },
+      { label: 'Full Width', propKey: 'fullWidth', inputType: 'checkbox' },
     ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'button',
@@ -332,7 +333,10 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
         autoAdvance={props.autoAdvance as boolean}
       />
     ),
-    inspectorSchema: [],
+    inspectorSchema: [
+      { label: 'Field Name', propKey: 'fieldName', inputType: 'text' },
+      { label: 'Auto Advance', propKey: 'autoAdvance', inputType: 'checkbox' },
+    ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'input',
   },
