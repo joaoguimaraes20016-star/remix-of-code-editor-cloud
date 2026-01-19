@@ -132,8 +132,28 @@ serve(async (req) => {
     
     console.log(`[serve-funnel] Found funnel: ${funnel.name} (${funnel.slug}) for domain: ${cleanDomain}`);
 
-    // 4. Serve HTML shell that embeds funnel data directly
-    // This allows the SPA to render without a redirect - URL stays on custom domain
+    // 4. Fetch the actual index.html from the Lovable app (has correct hashed asset URLs)
+    console.log(`[serve-funnel] Fetching index.html from ${APP_BASE_URL}/index.html`);
+    
+    const appIndexResponse = await fetch(`${APP_BASE_URL}/index.html`, {
+      headers: {
+        'Accept': 'text/html',
+        'User-Agent': 'Infostack-Funnel-Server/1.0',
+      },
+    });
+
+    if (!appIndexResponse.ok) {
+      console.error(`[serve-funnel] Failed to fetch app index.html: ${appIndexResponse.status}`);
+      return new Response('Failed to load application', { 
+        status: 502, 
+        headers: corsHeaders 
+      });
+    }
+
+    let appHtml = await appIndexResponse.text();
+    console.log(`[serve-funnel] Fetched index.html (${appHtml.length} bytes)`);
+
+    // 5. Inject funnel data into the HTML
     const funnelData = JSON.stringify({
       funnel: {
         id: funnel.id,
@@ -147,88 +167,45 @@ serve(async (req) => {
       queryParams: queryString ? Object.fromEntries(queryParams) : {},
     }).replace(/</g, '\\u003c'); // Escape < for script safety
 
-    // Extract page title and meta from settings or snapshot
-    const pageTitle = funnel.name || 'Funnel';
+    const injectionScript = `<script>
+    window.__INFOSTACK_FUNNEL__ = ${funnelData};
+    window.__INFOSTACK_DOMAIN__ = "${cleanDomain}";
+  </script>`;
+
+    // Inject before the closing </head> tag
+    appHtml = appHtml.replace('</head>', `${injectionScript}\n</head>`);
+
+    // Update page title if funnel has a name
+    if (funnel.name) {
+      appHtml = appHtml.replace(/<title>.*?<\/title>/, `<title>${funnel.name}</title>`);
+    }
+
+    // Add canonical URL for the custom domain
+    const canonicalTag = `<link rel="canonical" href="https://${cleanDomain}${queryString ? `?${queryString}` : ''}">`;
+    appHtml = appHtml.replace('</head>', `${canonicalTag}\n</head>`);
+
+    // Add meta description and OG tags if available
     const settings = funnel.settings as any;
     const snapshot = funnel.published_document_snapshot as any;
     const metaDescription = settings?.seo?.description || snapshot?.settings?.seo?.description || '';
     const ogImage = settings?.seo?.ogImage || snapshot?.settings?.seo?.ogImage || '';
-
-    // Debug comment for troubleshooting
-    const debugComment = debugMode 
-      ? `<!-- serve-funnel DEBUG: APP_BASE_URL=${APP_BASE_URL} BUILD=${BUILD_TIMESTAMP} DOMAIN=${cleanDomain} -->\n  ` 
-      : '';
-
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  ${debugComment}<meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${pageTitle}</title>
-  ${metaDescription ? `<meta name="description" content="${metaDescription}">` : ''}
-  ${ogImage ? `<meta property="og:image" content="${ogImage}">` : ''}
-  <meta property="og:title" content="${pageTitle}">
-  ${metaDescription ? `<meta property="og:description" content="${metaDescription}">` : ''}
-  <link rel="canonical" href="https://${cleanDomain}${queryString ? `?${queryString}` : ''}">
-  
-  <!-- Inject funnel data for client-side rendering -->
-  <script>
-    window.__INFOSTACK_FUNNEL__ = ${funnelData};
-    window.__INFOSTACK_DOMAIN__ = "${cleanDomain}";
-  </script>
-  
-  <!-- Load the SPA assets with cache-busting (relative paths for Caddy proxy) -->
-  <script type="module" src="/assets/index.js?v=${BUILD_TIMESTAMP}"></script>
-  <link rel="stylesheet" href="/assets/index.css?v=${BUILD_TIMESTAMP}">
-  
-  <style>
-    /* Critical CSS for loading state */
-    body { margin: 0; padding: 0; background: #000; }
-    #root { min-height: 100vh; }
-    .funnel-loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background: #000;
+    
+    if (metaDescription) {
+      appHtml = appHtml.replace('</head>', `<meta name="description" content="${metaDescription}">\n<meta property="og:description" content="${metaDescription}">\n</head>`);
     }
-    .funnel-loading::after {
-      content: '';
-      width: 32px;
-      height: 32px;
-      border: 2px solid rgba(255,255,255,0.1);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    if (ogImage) {
+      appHtml = appHtml.replace('</head>', `<meta property="og:image" content="${ogImage}">\n</head>`);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-</head>
-<body>
-  <div id="root" class="funnel-loading"></div>
-</body>
-</html>`;
+    appHtml = appHtml.replace('</head>', `<meta property="og:title" content="${funnel.name || 'Funnel'}">\n</head>`);
 
-    console.log(`[serve-funnel] Serving inline funnel HTML for: ${cleanDomain}`);
+    console.log(`[serve-funnel] Serving proxied HTML for: ${cleanDomain}`);
 
-    // CSP that allows our assets and inline scripts
-    const cspHeader = [
-      `default-src 'self' ${APP_BASE_URL}`,
-      `script-src 'self' 'unsafe-inline' ${APP_BASE_URL} https://*.calendly.com`,
-      `style-src 'self' 'unsafe-inline' ${APP_BASE_URL} https://fonts.googleapis.com`,
-      `font-src 'self' ${APP_BASE_URL} https://fonts.gstatic.com`,
-      `img-src 'self' ${APP_BASE_URL} data: blob: https:`,
-      `connect-src 'self' ${APP_BASE_URL} https://*.supabase.co https://*.calendly.com`,
-      `frame-src https://*.calendly.com https://*.youtube.com https://*.vimeo.com`,
-    ].join('; ');
-
-    return new Response(html, {
+    return new Response(appHtml, {
       status: 200,
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Content-Security-Policy': cspHeader,
         'X-Frame-Options': 'SAMEORIGIN',
       },
     });
