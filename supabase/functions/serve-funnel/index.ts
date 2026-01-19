@@ -7,7 +7,8 @@ const corsHeaders = {
 };
 
 // Your Lovable app's base URL - this is where the React SPA is hosted
-const APP_BASE_URL = Deno.env.get('SITE_URL') || 'https://code-hug-hub.lovable.app';
+// HARDCODED to ensure correct asset loading - secrets were not propagating correctly
+const APP_BASE_URL = 'https://code-hug-hub.lovable.app';
 
 // Build timestamp for cache-busting
 const BUILD_TIMESTAMP = Date.now().toString();
