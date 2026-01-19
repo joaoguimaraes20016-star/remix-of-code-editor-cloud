@@ -351,6 +351,32 @@ export function RuntimeCtaButton(props: RuntimeCtaButtonProps) {
     runtime.actions.handleButtonClick(resolved.action, resolved.value, resolved.openNewTab);
   };
 
+  // Guard: If UnifiedButton import failed, render a fallback button
+  if (typeof UnifiedButton !== 'function') {
+    console.error('[RuntimeCtaButton] UnifiedButton is not available - using fallback');
+    return (
+      <button
+        type="button"
+        className={cn(
+          'builder-cta-button fallback-button w-full py-3 px-6 rounded-lg font-medium',
+          variant === 'primary' && 'bg-primary text-primary-foreground',
+          variant === 'secondary' && 'bg-secondary text-secondary-foreground',
+          variant === 'outline' && 'border border-input bg-background',
+          className
+        )}
+        style={{
+          backgroundColor: backgroundColor || undefined,
+          color: color || undefined,
+          borderRadius: borderRadius ? `${borderRadius}px` : undefined,
+        }}
+        onClick={runtime ? handleClick : undefined}
+        disabled={isLoading}
+      >
+        {label}
+      </button>
+    );
+  }
+
   return (
     <UnifiedButton
       variant={presetToVariant(variant)}

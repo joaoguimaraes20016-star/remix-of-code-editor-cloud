@@ -6,6 +6,7 @@
  * - No selection highlighting or hover toolbars
  * - Full event handlers for form submission
  * - Optimized for published page performance
+ * - Includes defensive error handling for production stability
  */
 
 import type { CanvasNode } from '../types';
@@ -13,30 +14,82 @@ import { RuntimeRegistry, runtimeFallbackComponent } from './runtimeRegistry';
 
 /**
  * Recursively renders a canvas node using runtime components
+ * Includes try-catch for graceful degradation on production
  */
 export function renderRuntimeNode(node: CanvasNode, depth = 0): JSX.Element {
-  const children = node.children.map((child) =>
-    renderRuntimeNode(child, depth + 1)
-  );
-  
-  const definition = RuntimeRegistry[node.type] ?? runtimeFallbackComponent;
-  const safeChildren = definition.constraints.canHaveChildren ? children : [];
-  
-  const props = {
-    ...definition.defaultProps,
-    ...node.props,
-  };
+  try {
+    const children = node.children.map((child) =>
+      renderRuntimeNode(child, depth + 1)
+    );
+    
+    const definition = RuntimeRegistry[node.type] ?? runtimeFallbackComponent;
+    
+    // Guard: Ensure definition.render is a valid function
+    if (!definition || typeof definition.render !== 'function') {
+      console.error(`[RuntimeRegistry] Invalid render function for type: ${node.type}`, {
+        nodeId: node.id,
+        definitionExists: !!definition,
+        renderType: definition ? typeof definition.render : 'undefined',
+      });
+      return (
+        <div
+          key={node.id}
+          className="runtime-node runtime-node--error"
+          data-node-id={node.id}
+          data-node-type={node.type}
+        >
+          <div className="runtime-fallback">{children}</div>
+        </div>
+      );
+    }
+    
+    const safeChildren = definition.constraints?.canHaveChildren ? children : [];
+    
+    const props = {
+      ...definition.defaultProps,
+      ...node.props,
+    };
 
-  return (
-    <div
-      key={node.id}
-      className="runtime-node"
-      data-node-id={node.id}
-      data-node-type={node.type}
-    >
-      {definition.render(props, safeChildren)}
-    </div>
-  );
+    const rendered = definition.render(props, safeChildren);
+    
+    // Guard: Check that render returned a valid React element
+    if (rendered === undefined) {
+      console.warn(`[RuntimeRegistry] Render returned undefined for type: ${node.type}`);
+      return (
+        <div
+          key={node.id}
+          className="runtime-node"
+          data-node-id={node.id}
+          data-node-type={node.type}
+        />
+      );
+    }
+
+    return (
+      <div
+        key={node.id}
+        className="runtime-node"
+        data-node-id={node.id}
+        data-node-type={node.type}
+      >
+        {rendered}
+      </div>
+    );
+  } catch (error) {
+    console.error(`[RuntimeRegistry] Error rendering node ${node.id} (${node.type}):`, error);
+    return (
+      <div
+        key={node.id}
+        className="runtime-node runtime-node--error"
+        data-node-id={node.id}
+        data-node-type={node.type}
+      >
+        <div className="runtime-error-placeholder" style={{ padding: '8px', color: '#666', fontSize: '12px' }}>
+          Component failed to load
+        </div>
+      </div>
+    );
+  }
 }
 
 /**
