@@ -147,16 +147,18 @@ function CanvasContent({ node }: { node: CanvasNode }) {
 }
 
 /**
- * Wrapper component that shows success overlay when form is complete
+ * Wrapper component that renders the correct page based on currentStep
+ * and shows success overlay when form is complete
  */
-function RuntimeContentWrapper({ 
-  page, 
+function RuntimePageRouter({ 
+  document, 
   redirectUrl 
 }: { 
-  page: Page; 
+  document: EditorDocument; 
   redirectUrl?: string;
 }) {
   const runtimeContext = useFunnelRuntimeOptional();
+  const currentStep = runtimeContext?.state?.currentStep || 0;
   const isComplete = runtimeContext?.state?.isComplete;
 
   // Show success overlay if form is complete and no redirect URL
@@ -164,9 +166,16 @@ function RuntimeContentWrapper({
     return <RuntimeSuccessOverlay />;
   }
 
+  // Get the page for the current step
+  const activePage = document.pages[currentStep] || document.pages[0];
+  
+  if (!activePage?.canvasRoot) {
+    return null;
+  }
+
   return (
-    <PageFrame page={page}>
-      <CanvasContent node={page.canvasRoot} />
+    <PageFrame page={activePage}>
+      <CanvasContent node={activePage.canvasRoot} />
     </PageFrame>
   );
 }
@@ -221,6 +230,8 @@ export function EditorDocumentRenderer({
     funnelSlug: funnelSlug || '',
     webhookUrls: webhookUrls || (settings?.ghl_webhook_url ? [settings.ghl_webhook_url] : []),
     redirectUrl: redirectUrl,
+    // Pass page info for multi-page navigation
+    pages: document.pages.map(p => ({ id: p.id, type: p.type })),
   } : null;
 
   // Wrap with FunnelRuntimeProvider if we have config (enables form submission)
@@ -235,7 +246,7 @@ export function EditorDocumentRenderer({
           data-funnel-id={funnelId}
           data-version={document.version}
         >
-          <RuntimeContentWrapper page={activePage} redirectUrl={redirectUrl} />
+          <RuntimePageRouter document={document} redirectUrl={redirectUrl} />
         </main>
       </FunnelRuntimeProvider>
     );

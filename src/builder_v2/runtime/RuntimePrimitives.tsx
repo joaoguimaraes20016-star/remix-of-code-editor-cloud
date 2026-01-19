@@ -70,6 +70,64 @@ export function RuntimeTextInput({
 }
 
 // ============================================================================
+// RUNTIME TEXTAREA INPUT
+// ============================================================================
+
+interface RuntimeTextareaInputProps {
+  placeholder?: string;
+  fieldName?: string;
+  required?: boolean;
+  className?: string;
+  rows?: number;
+  borderRadius?: number;
+  backgroundColor?: string;
+  color?: string;
+}
+
+export function RuntimeTextareaInput({ 
+  placeholder = 'Enter your message...', 
+  fieldName = 'message',
+  required = false,
+  className,
+  rows = 4,
+  borderRadius,
+  backgroundColor,
+  color,
+}: RuntimeTextareaInputProps) {
+  const runtime = useFunnelRuntimeOptional();
+  
+  const style: CSSProperties = {};
+  if (borderRadius !== undefined) style.borderRadius = `${borderRadius}px`;
+  if (backgroundColor && backgroundColor !== 'transparent') style.backgroundColor = backgroundColor;
+  if (color) style.color = color;
+
+  const value = runtime?.state.formData[fieldName] || '';
+  const fieldError = runtime?.state.fieldErrors?.[fieldName];
+  const hasError = Boolean(fieldError);
+
+  return (
+    <div className="builder-input-field">
+      <textarea
+        placeholder={placeholder}
+        className={cn('builder-input builder-input--textarea w-full resize-none', hasError && 'builder-input--error', className)}
+        style={style}
+        rows={rows}
+        value={value}
+        onChange={(e) => runtime?.actions.updateField(fieldName, e.target.value)}
+        onBlur={() => {
+          if (required && runtime) {
+            runtime.actions.validateField(fieldName, value, { required });
+          }
+        }}
+        required={required}
+        readOnly={!runtime}
+      />
+      {hasError && <span className="builder-input-error">{fieldError}</span>}
+    </div>
+  );
+}
+
+// ============================================================================
 // RUNTIME EMAIL INPUT
 // ============================================================================
 

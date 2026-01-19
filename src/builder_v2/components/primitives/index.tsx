@@ -330,6 +330,47 @@ export function TextInput({
 }
 
 // ============================================================================
+// TEXTAREA INPUT - Multi-line text field
+// ============================================================================
+
+interface TextareaInputProps {
+  placeholder?: string;
+  fieldName?: string;
+  required?: boolean;
+  className?: string;
+  rows?: number;
+  borderRadius?: number;
+  backgroundColor?: string;
+  color?: string;
+}
+
+export function TextareaInput({ 
+  placeholder = 'Enter your message...', 
+  fieldName = 'message',
+  className,
+  rows = 4,
+  borderRadius,
+  backgroundColor,
+  color,
+}: TextareaInputProps) {
+  const style: CSSProperties = {};
+  if (borderRadius !== undefined) style.borderRadius = `${borderRadius}px`;
+  if (backgroundColor && backgroundColor !== 'transparent') style.backgroundColor = backgroundColor;
+  if (color) style.color = color;
+
+  return (
+    <textarea
+      placeholder={placeholder}
+      className={cn('builder-input builder-input--textarea w-full resize-none', className)}
+      style={style}
+      rows={rows}
+      readOnly
+      data-field-name={fieldName}
+    />
+  );
+}
+
+// ============================================================================
 // EMAIL INPUT - Email field with icon
 // ============================================================================
 
