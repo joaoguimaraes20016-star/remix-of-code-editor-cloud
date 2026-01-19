@@ -1,6 +1,6 @@
-# grwth-op
+# Stackit
 
-This repository contains the grwth-op frontend application (Vite + React + TypeScript).
+This repository contains the Stackit frontend application (Vite + React + TypeScript).
 
 ## Editing locally
 

@@ -63,20 +63,20 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate reset link
-    const resetLink = `${Deno.env.get("SITE_URL") || "https://grwthop.com"}/reset-password?token=${token}`;
+    const resetLink = `${Deno.env.get("SITE_URL") || "https://stackit.app"}/reset-password?token=${token}`;
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "GRWTH OP <noreply@notifications.grwthengine.org>",
+      from: "Stackit <noreply@notifications.stackit.app>",
       to: [email],
-      subject: "Reset Your GRWTH OP Password",
+      subject: "Reset Your Stackit Password",
       html: `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Reset Your Password - GRWTH OP</title>
+            <title>Reset Your Password - Stackit</title>
           </head>
           <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
             <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
@@ -87,7 +87,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <!-- Logo Header -->
                     <tr>
                       <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #000000; border-radius: 12px 12px 0 0;">
-                        <img src="https://grwthop.com/logo.png" alt="GRWTH OP Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
+                        <img src="https://stackit.app/logo.png" alt="Stackit Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
                         <h1 style="margin: 0; color: #ffc107; font-size: 32px; font-weight: 700; text-shadow: 0 0 20px rgba(255, 193, 7, 0.3);">Reset Your Password</h1>
                       </td>
                     </tr>
@@ -96,7 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td style="padding: 20px 40px 40px 40px; background-color: #000000;">
                         <p style="margin: 0 0 20px 0; color: #e0e0e0; font-size: 17px; line-height: 26px;">
-                          We received a request to reset your password for your GRWTH OP account.
+                          We received a request to reset your password for your Stackit account.
                         </p>
                         <p style="margin: 0 0 30px 0; color: #b0b0b0; font-size: 16px; line-height: 24px;">
                           Click the button below to reset your password:
@@ -136,10 +136,10 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td style="padding: 30px 40px 40px 40px; border-top: 2px solid #ffc107; background-color: #000000; border-radius: 0 0 12px 12px;">
                         <p style="margin: 0 0 10px 0; color: #ffc107; font-size: 16px; line-height: 24px; text-align: center; font-weight: 600;">
-                          GRWTH OP
+                          Stackit
                         </p>
                         <p style="margin: 0; color: #606060; font-size: 12px; line-height: 18px; text-align: center;">
-                          © ${new Date().getFullYear()} GRWTH OP. All rights reserved.
+                          © ${new Date().getFullYear()} Stackit. All rights reserved.
                         </p>
                       </td>
                     </tr>

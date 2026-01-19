@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* InfoStack design system - Orange/Purple gradient branding, Light mode default */
+/* Stackit design system - Orange/Purple gradient branding, Light mode default */
 
 @layer base {
   :root {
