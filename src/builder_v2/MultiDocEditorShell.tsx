@@ -14,17 +14,19 @@
  * while adding document-level management on top.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 import './EditorLayout.css';
 import { CanvasEditor } from './canvas/CanvasEditor';
 import { PreviewCanvas } from './canvas/PreviewCanvas';
+import { DraftPreviewCanvas } from './canvas/DraftPreviewCanvas';
 import { DocumentSwitcher } from './components/DocumentSwitcher';
 import { editorModes } from './editorMode';
 import { Inspector } from './inspector/Inspector';
 import { EditorStoreAdapter } from './state/editorStoreAdapter';
 import { MultiDocumentProvider, useMultiDocumentStore } from './state/multiDocStore';
 import { StructureTree } from './structure/StructureTree';
+import { useKeyboardShortcuts } from './state/useKeyboardShortcuts';
 
 /**
  * Main editor shell with multi-document support.
@@ -49,6 +51,8 @@ function MultiDocEditorShellContent() {
     setMode,
     setActivePage,
     selectNode,
+    deleteNode,
+    dispatch,
     undo,
     redo,
     canUndo,
@@ -67,6 +71,17 @@ function MultiDocEditorShellContent() {
   
   // Phase 14: Determine if we're in preview mode
   const isPreviewMode = mode === 'preview';
+  
+  // Phase 4: Keyboard shortcuts for Delete, Cmd+D, Escape
+  useKeyboardShortcuts({
+    selectedNodeId: editorState.selectedNodeId,
+    activePageId,
+    pages,
+    deleteNode,
+    selectNode,
+    dispatch,
+    enabled: !isPreviewMode,
+  });
 
   // Prevent body scroll when editor is mounted
   useEffect(() => {
@@ -273,9 +288,15 @@ function MultiDocEditorShellContent() {
             )}
           </div>
           
-          {/* Phase 14: Preview mode - renders published snapshot only */}
+          {/* Phase 14 + Phase 2: Preview mode - now renders draft with runtime interactivity */}
           <div className={isPreviewMode ? '' : 'builder-v2-hidden'}>
-            <PreviewCanvas publishedSnapshot={publishedSnapshot} />
+            <DraftPreviewCanvas 
+              pages={pages} 
+              activePageId={activePageId}
+              funnelId={currentDocument.id}
+              teamId="preview"
+              showProgressBar={pages.length > 1}
+            />
           </div>
           
           {/* Structure mode - canvas hidden */}
