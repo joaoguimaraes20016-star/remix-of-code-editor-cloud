@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
   const isLowMemory =
     process.env.CODESPACES === "true" || process.env.VITE_LOW_MEMORY === "true";
 
-  const baseBuild = {
+const baseBuild = {
     minify: false,
     sourcemap: false,
     cssMinify: false,
@@ -46,18 +46,20 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       output: {
         inlineDynamicImports: true,
+        // Fixed filenames for custom domain serving (serve-funnel expects these exact paths)
+        entryFileNames: 'assets/index.js',
+        assetFileNames: (assetInfo: { name?: string }) => {
+          if (assetInfo.name?.endsWith('.css')) {
+            return 'assets/index.css';
+          }
+          return 'assets/[name][extname]';
+        },
       },
     },
   } as const;
 
   const lowMemoryBuild = {
     ...baseBuild,
-    // Disable heavy graph/chunk work in low-memory environments
-    rollupOptions: {
-      output: {
-        inlineDynamicImports: true,
-      },
-    },
   };
 
   return {
