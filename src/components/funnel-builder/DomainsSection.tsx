@@ -69,7 +69,7 @@ const VPS_IP = '143.198.103.189';
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
   pending: {
     label: 'Add DNS Records',
-    color: 'border-amber-500/50 text-amber-600 bg-amber-50 dark:bg-amber-500/10',
+    color: 'border-primary/50 text-primary bg-primary/10',
     icon: <Clock className="h-3 w-3 mr-1" />,
     description: 'Configure your DNS settings'
   },
@@ -404,8 +404,8 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                 <div key={domain.id} className="border-b last:border-b-0">
                   <div className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${isActive ? 'bg-emerald-500/10' : isPending ? 'bg-amber-500/10' : isPartial ? 'bg-blue-500/10' : isOffline ? 'bg-red-500/10' : 'bg-blue-500/10'}`}>
-                        <Globe className={`h-5 w-5 ${isActive ? 'text-emerald-500' : isPending ? 'text-amber-500' : isPartial ? 'text-blue-500' : isOffline ? 'text-red-500' : 'text-blue-500'}`} />
+                      <div className={`p-2 rounded-lg ${isActive ? 'bg-emerald-500/10' : isPending ? 'bg-primary/10' : isPartial ? 'bg-blue-500/10' : isOffline ? 'bg-red-500/10' : 'bg-blue-500/10'}`}>
+                        <Globe className={`h-5 w-5 ${isActive ? 'text-emerald-500' : isPending ? 'text-primary' : isPartial ? 'text-blue-500' : isOffline ? 'text-red-500' : 'text-blue-500'}`} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -440,7 +440,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                               Serves <span className="font-medium">{linkedFunnel.name}</span>
                             </p>
                           ) : (
-                            <p className="text-sm text-amber-600">
+                            <p className="text-sm text-primary">
                               Not linked to any funnel
                             </p>
                           )}
