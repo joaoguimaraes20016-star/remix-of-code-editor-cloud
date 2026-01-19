@@ -37,9 +37,11 @@ if (import.meta.env.DEV) {
 function isCustomDomain(): boolean {
   if (typeof window === 'undefined') return false;
   const hostname = window.location.hostname;
-  // Not a custom domain if it's localhost, preview, or .app domains
+  // Not a custom domain if it's localhost, preview, or Lovable domains
   return !hostname.includes('localhost') && 
          !hostname.includes('.app') && 
+         !hostname.includes('.lovable.') &&
+         !hostname.includes('lovableproject.com') &&
          !hostname.includes('127.0.0.1');
 }
 

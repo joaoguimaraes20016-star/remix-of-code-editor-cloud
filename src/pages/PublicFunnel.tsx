@@ -45,6 +45,8 @@ function isCustomDomain(): boolean {
   const hostname = window.location.hostname;
   return !hostname.includes('localhost') && 
          !hostname.includes('.app') && 
+         !hostname.includes('.lovable.') &&
+         !hostname.includes('lovableproject.com') &&
          !hostname.includes('127.0.0.1');
 }
 
