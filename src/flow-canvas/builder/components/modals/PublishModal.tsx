@@ -116,179 +116,179 @@ export const PublishModal: React.FC<PublishModalProps> = ({
     onOpenSettings();
   };
 
+  const displayTitle = pageTitle?.trim() || 'Funnel';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-builder-surface border-builder-border max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-builder-text flex items-center gap-2">
-            <Globe className="w-5 h-5 text-builder-accent" />
-            {isPublished ? 'Update' : 'Publish'} "{pageTitle}"
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="bg-builder-surface border-builder-border sm:max-w-md p-0 gap-0 overflow-hidden">
+        {/* Header */}
+        <div className="p-6 pb-0">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-builder-text">
+              {isPublished ? 'Update' : 'Publish'} {displayTitle}
+            </DialogTitle>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-6 py-2">
+        <div className="p-6 space-y-5">
           {/* Status indicator */}
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-builder-bg border border-builder-border">
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-md bg-builder-bg/50">
             {isPublished ? (
               <>
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span className="text-sm text-builder-text">
                   Your funnel is <span className="font-medium text-emerald-500">live</span>
                 </span>
               </>
             ) : (
               <>
-                <AlertCircle className="w-4 h-4 text-amber-500" />
+                <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
                 <span className="text-sm text-builder-text">
-                  Your funnel is <span className="font-medium text-amber-500">not published</span>
+                  Your funnel is <span className="font-medium text-amber-500">unpublished</span>
                 </span>
               </>
             )}
           </div>
 
-          {/* URLs Section */}
-          <div className="space-y-4">
-            {/* Slug URL - Always shown */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-builder-text-muted uppercase tracking-wide">
-                Funnel URL
-              </label>
-              <div className="flex items-center gap-2 p-3 bg-builder-bg border border-builder-border rounded-lg">
-                <Link2 className="w-4 h-4 text-builder-text-muted shrink-0" />
-                <span className="flex-1 text-sm text-builder-text truncate font-mono">
-                  {slugUrl}
-                </span>
-                <Button
-                  onClick={handleCopySlug}
-                  size="sm"
-                  variant="ghost"
-                  className="shrink-0 h-8 w-8 p-0 text-builder-text-muted hover:text-builder-text"
-                >
-                  {copiedSlug ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
-                <Button
-                  onClick={() => handleOpenInNewTab(slugUrl)}
-                  size="sm"
-                  variant="ghost"
-                  className="shrink-0 h-8 w-8 p-0 text-builder-text-muted hover:text-builder-text"
-                  disabled={!isPublished}
-                  title={!isPublished ? 'Publish first to preview' : 'Open in new tab'}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </div>
+          {/* Slug URL */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-builder-text-muted uppercase tracking-wider">
+              Funnel URL
+            </label>
+            <div className="flex items-center gap-1 p-2 bg-builder-bg border border-builder-border rounded-md">
+              <Link2 className="w-4 h-4 text-builder-text-muted shrink-0 ml-1" />
+              <input
+                readOnly
+                value={slugUrl}
+                className="flex-1 text-sm text-builder-text bg-transparent border-none outline-none font-mono truncate px-2"
+              />
+              <Button
+                onClick={handleCopySlug}
+                size="icon"
+                variant="ghost"
+                className="shrink-0 h-7 w-7 text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover"
+              >
+                {copiedSlug ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              </Button>
+              <Button
+                onClick={() => handleOpenInNewTab(slugUrl)}
+                size="icon"
+                variant="ghost"
+                className="shrink-0 h-7 w-7 text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover"
+                disabled={!isPublished}
+                title={!isPublished ? 'Publish first to preview' : 'Open in new tab'}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Button>
             </div>
+          </div>
 
-            {/* Custom Domain Section */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-builder-text-muted uppercase tracking-wide">
-                Custom Domain
-              </label>
-              
-              {domainLoading ? (
-                <div className="flex items-center gap-2 p-3 bg-builder-bg border border-builder-border rounded-lg">
-                  <Loader2 className="w-4 h-4 text-builder-text-muted animate-spin" />
-                  <span className="text-sm text-builder-text-muted">Loading...</span>
-                </div>
-              ) : linkedDomain ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 p-3 bg-builder-bg border border-builder-border rounded-lg">
-                    <Globe className="w-4 h-4 text-builder-accent shrink-0" />
-                    <span className="flex-1 text-sm text-builder-text truncate font-mono">
-                      {domainUrl}
+          {/* Custom Domain Section */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-builder-text-muted uppercase tracking-wider">
+              Custom Domain
+            </label>
+            
+            {domainLoading ? (
+              <div className="flex items-center gap-2 p-3 bg-builder-bg border border-builder-border rounded-md">
+                <Loader2 className="w-4 h-4 text-builder-text-muted animate-spin" />
+                <span className="text-sm text-builder-text-muted">Loading...</span>
+              </div>
+            ) : linkedDomain ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1 p-2 bg-builder-bg border border-builder-border rounded-md">
+                  <Globe className="w-4 h-4 text-builder-accent shrink-0 ml-1" />
+                  <input
+                    readOnly
+                    value={domainUrl || ''}
+                    className="flex-1 text-sm text-builder-text bg-transparent border-none outline-none font-mono truncate px-2"
+                  />
+                  {isDomainActive ? (
+                    <>
+                      <Button
+                        onClick={handleCopyDomain}
+                        size="icon"
+                        variant="ghost"
+                        className="shrink-0 h-7 w-7 text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover"
+                      >
+                        {copiedDomain ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      </Button>
+                      <Button
+                        onClick={() => handleOpenInNewTab(domainUrl!)}
+                        size="icon"
+                        variant="ghost"
+                        className="shrink-0 h-7 w-7 text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover"
+                        disabled={!isPublished}
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-amber-500 font-medium px-2 py-0.5 bg-amber-500/10 rounded mr-1">
+                      Pending
                     </span>
-                    {isDomainActive ? (
-                      <>
-                        <Button
-                          onClick={handleCopyDomain}
-                          size="sm"
-                          variant="ghost"
-                          className="shrink-0 h-8 w-8 p-0 text-builder-text-muted hover:text-builder-text"
-                        >
-                          {copiedDomain ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                        <Button
-                          onClick={() => handleOpenInNewTab(domainUrl!)}
-                          size="sm"
-                          variant="ghost"
-                          className="shrink-0 h-8 w-8 p-0 text-builder-text-muted hover:text-builder-text"
-                          disabled={!isPublished}
-                          title={!isPublished ? 'Publish first to preview' : 'Open in new tab'}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <span className="text-xs text-amber-500 font-medium px-2 py-1 bg-amber-500/10 rounded">
-                        Pending verification
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Domain status badge */}
-                  {isDomainActive && (
-                    <div className="flex items-center gap-2 text-xs text-emerald-500">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>Domain verified & SSL active</span>
-                    </div>
                   )}
                 </div>
-              ) : (
+                
+                {isDomainActive && (
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-500 pl-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Domain verified & SSL active</span>
+                  </div>
+                )}
+                
                 <button
                   onClick={handleManageDomain}
-                  className="flex items-center gap-3 p-3 w-full bg-builder-bg border border-dashed border-builder-border rounded-lg hover:border-builder-accent/50 hover:bg-builder-surface-hover transition-colors group"
+                  className="text-xs text-builder-text-muted hover:text-builder-accent transition-colors pl-1"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-builder-accent/10 flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-builder-accent" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-builder-text group-hover:text-builder-accent transition-colors">
-                      Connect Custom Domain
-                    </p>
-                    <p className="text-xs text-builder-text-muted">
-                      Use your own domain like yourbrand.com
-                    </p>
-                  </div>
-                  <Settings className="w-4 h-4 text-builder-text-muted group-hover:text-builder-accent transition-colors" />
+                  Manage domain →
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleManageDomain}
+                className="flex items-center gap-3 p-3 w-full bg-builder-bg/50 border border-dashed border-builder-border rounded-md hover:border-builder-accent/50 hover:bg-builder-surface-hover transition-colors group"
+              >
+                <div className="w-8 h-8 rounded-md bg-builder-accent/10 flex items-center justify-center shrink-0">
+                  <Globe className="w-4 h-4 text-builder-accent" />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="text-sm font-medium text-builder-text group-hover:text-builder-accent transition-colors">
+                    Connect Custom Domain
+                  </p>
+                  <p className="text-xs text-builder-text-muted truncate">
+                    Use your own domain like yourbrand.com
+                  </p>
+                </div>
+                <Settings className="w-4 h-4 text-builder-text-muted group-hover:text-builder-accent transition-colors shrink-0" />
+              </button>
+            )}
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 border-builder-border text-builder-text hover:bg-builder-surface-hover"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handlePublish}
-              disabled={isPublishing}
-              className="flex-1 bg-builder-accent text-white hover:brightness-110"
-            >
-              {isPublishing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {isPublished ? 'Updating...' : 'Publishing...'}
-                </>
-              ) : (
-                isPublished ? 'Update' : 'Publish'
-              )}
-            </Button>
-          </div>
-
-          {/* Manage domain link */}
-          {linkedDomain && (
-            <button
-              onClick={handleManageDomain}
-              className="w-full text-center text-xs text-builder-text-muted hover:text-builder-accent transition-colors"
-            >
-              Manage domain settings →
-            </button>
-          )}
+        {/* Footer with actions */}
+        <div className="flex items-center gap-3 p-4 border-t border-builder-border bg-builder-bg/30">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 border-builder-border text-builder-text hover:bg-builder-surface-hover"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handlePublish}
+            disabled={isPublishing}
+            className="flex-1 bg-builder-accent text-white hover:brightness-110"
+          >
+            {isPublishing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {isPublished ? 'Updating...' : 'Publishing...'}
+              </>
+            ) : (
+              isPublished ? 'Update' : 'Publish'
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
