@@ -37,7 +37,7 @@ import { PrimitiveRegistry } from './primitiveRegistry';
 export type InspectorField = {
   label: string;
   propKey: string;
-  inputType: 'text' | 'textarea' | 'color' | 'number';
+  inputType: 'text' | 'textarea' | 'color' | 'number' | 'checkbox';
   optional?: boolean;
 };
 

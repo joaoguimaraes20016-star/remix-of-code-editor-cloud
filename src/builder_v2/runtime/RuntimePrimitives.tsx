@@ -41,18 +41,31 @@ export function RuntimeTextInput({
   if (color) style.color = color;
 
   const value = runtime?.state.formData[fieldName] || '';
+  const fieldError = runtime?.state.fieldErrors?.[fieldName];
+  const hasError = Boolean(fieldError);
 
   return (
-    <input
-      type="text"
-      placeholder={placeholder}
-      className={cn('builder-input builder-input--text', className)}
-      style={style}
-      value={value}
-      onChange={(e) => runtime?.actions.updateField(fieldName, e.target.value)}
-      required={required}
-      readOnly={!runtime}
-    />
+    <div className="builder-input-field">
+      <input
+        type="text"
+        placeholder={placeholder}
+        className={cn('builder-input builder-input--text', hasError && 'builder-input--error', className)}
+        style={style}
+        value={value}
+        onChange={(e) => runtime?.actions.updateField(fieldName, e.target.value)}
+        onBlur={() => {
+          if (required && runtime) {
+            const error = runtime.actions.validateField(fieldName, value, { required });
+            if (error) {
+              // Trigger validation on blur
+            }
+          }
+        }}
+        required={required}
+        readOnly={!runtime}
+      />
+      {hasError && <span className="builder-input-error">{fieldError}</span>}
+    </div>
   );
 }
 
@@ -87,20 +100,31 @@ export function RuntimeEmailInput({
   if (color) style.color = color;
 
   const value = runtime?.state.formData[fieldName] || '';
+  const fieldError = runtime?.state.fieldErrors?.[fieldName];
+  const hasError = Boolean(fieldError);
 
   return (
-    <div className={cn('builder-input-wrapper', className)}>
-      <Mail className="builder-input-icon" size={18} />
-      <input
-        type="email"
-        placeholder={placeholder}
-        className="builder-input builder-input--email"
-        style={style}
-        value={value}
-        onChange={(e) => runtime?.actions.updateField(fieldName, e.target.value)}
-        required={required}
-        readOnly={!runtime}
-      />
+    <div className="builder-input-field">
+      <div className={cn('builder-input-wrapper', hasError && 'builder-input-wrapper--error', className)}>
+        <Mail className="builder-input-icon" size={18} />
+        <input
+          type="email"
+          placeholder={placeholder}
+          className="builder-input builder-input--email"
+          style={style}
+          value={value}
+          onChange={(e) => runtime?.actions.updateField(fieldName, e.target.value)}
+          onBlur={() => {
+            if (runtime) {
+              const error = runtime.actions.validateField(fieldName, value, { required, type: 'email' });
+              // Error will be set in the state
+            }
+          }}
+          required={required}
+          readOnly={!runtime}
+        />
+      </div>
+      {hasError && <span className="builder-input-error">{fieldError}</span>}
     </div>
   );
 }
@@ -134,6 +158,8 @@ export function RuntimePhoneInput({
   if (color) style.color = color;
 
   const value = runtime?.state.formData[fieldName] || '';
+  const fieldError = runtime?.state.fieldErrors?.[fieldName];
+  const hasError = Boolean(fieldError);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Basic phone formatting
@@ -151,17 +177,20 @@ export function RuntimePhoneInput({
   };
 
   return (
-    <div className={cn('builder-input-wrapper', className)}>
-      <Phone className="builder-input-icon" size={18} />
-      <input
-        type="tel"
-        placeholder={placeholder}
-        className="builder-input builder-input--phone"
-        style={style}
-        value={value}
-        onChange={handleChange}
-        readOnly={!runtime}
-      />
+    <div className="builder-input-field">
+      <div className={cn('builder-input-wrapper', hasError && 'builder-input-wrapper--error', className)}>
+        <Phone className="builder-input-icon" size={18} />
+        <input
+          type="tel"
+          placeholder={placeholder}
+          className="builder-input builder-input--phone"
+          style={style}
+          value={value}
+          onChange={handleChange}
+          readOnly={!runtime}
+        />
+      </div>
+      {hasError && <span className="builder-input-error">{fieldError}</span>}
     </div>
   );
 }

@@ -5,7 +5,7 @@ type InspectorFieldProps = {
   field: InspectorFieldDefinition;
   value: unknown;
   defaultValue: unknown;
-  onChange: (value: string | number) => void;
+  onChange: (value: string | number | boolean) => void;
   onReset: () => void;
 };
 
@@ -85,6 +85,34 @@ export function InspectorField({
           placeholder={field.optional ? 'Optional' : undefined}
           rows={3}
         />
+      </div>
+    );
+  }
+
+  // Checkbox for boolean values
+  if (field.inputType === 'checkbox') {
+    const isChecked = value === true || value === 'true';
+    return (
+      <div className="builder-field builder-field--checkbox">
+        <label className="builder-field-checkbox-wrapper">
+          <input
+            type="checkbox"
+            className="builder-field-checkbox"
+            checked={isChecked}
+            onChange={(e) => onChange(e.target.checked)}
+          />
+          <span className="builder-field-label">{field.label}</span>
+        </label>
+        {isDirty && (
+          <button
+            type="button"
+            className="builder-field-reset"
+            onClick={onReset}
+            aria-label="Reset"
+          >
+            ↺
+          </button>
+        )}
       </div>
     );
   }

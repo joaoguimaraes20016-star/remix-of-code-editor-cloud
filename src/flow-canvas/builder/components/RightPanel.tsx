@@ -871,7 +871,7 @@ const ElementInspector: React.FC<{
       )}
 
       {/* ========== BUTTON SECTIONS (UNIFIED) ========== */}
-      {element.type === 'button' && (
+      {(element.type === 'button' || (element.type as string) === 'cta_button') && (
         <>
           {/* On Click Action - Using shared ButtonActionSelector */}
           <CollapsibleSection title="On Click" icon={<MousePointer2 className="w-4 h-4" />} defaultOpen sectionId="action" isHighlighted={highlightedSection === 'action'}>

@@ -187,6 +187,26 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
+/* Error states */
+.builder-input--error,
+.builder-input-wrapper--error .builder-input {
+  border-color: rgba(239, 68, 68, 0.7) !important;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.builder-input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.builder-input-error {
+  color: #ef4444;
+  font-size: 12px;
+  padding-left: 4px;
+}
+
 .builder-input-wrapper .builder-input {
   padding-left: 44px;
 }
