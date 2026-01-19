@@ -274,7 +274,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
                     <path d="M8 14l-2 8h3l3-5 3 5h3l-2-8H8z" />
                   </svg>
                 </div>
-                <span className="text-gradient font-semibold text-lg">StackIt</span>
+                <span className="text-gradient font-semibold text-lg">Stackit</span>
                 <ChevronDown className="w-4 h-4 text-builder-text-muted" />
               </button>
             </DropdownMenuTrigger>
