@@ -379,7 +379,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
             Connect custom domains to your funnels
           </p>
         </div>
-        <Button onClick={() => setShowConnectDialog(true)} className="bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={() => setShowConnectDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Domain
         </Button>
@@ -572,7 +572,7 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
           <p className="text-muted-foreground mb-4">
             Add a custom domain to serve your funnels on your own URL
           </p>
-          <Button onClick={() => setShowConnectDialog(true)} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={() => setShowConnectDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Domain
           </Button>
@@ -584,8 +584,8 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <Globe className="h-5 w-5 text-emerald-500" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Globe className="h-5 w-5 text-primary" />
               </div>
               <DialogTitle>Add your domain</DialogTitle>
             </div>
@@ -608,7 +608,6 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
             <Button 
               onClick={handleContinue} 
               disabled={addDomainMutation.isPending}
-              className="bg-emerald-600 hover:bg-emerald-700"
             >
               {addDomainMutation.isPending ? 'Adding...' : 'Continue'}
             </Button>
@@ -621,8 +620,8 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <Link2 className="h-5 w-5 text-emerald-500" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Link2 className="h-5 w-5 text-primary" />
               </div>
               <DialogTitle>Link Funnel to Domain</DialogTitle>
             </div>
@@ -639,11 +638,15 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                   <SelectValue placeholder="Select a funnel" />
                 </SelectTrigger>
                 <SelectContent>
-                  {funnels.map((funnel) => (
-                    <SelectItem key={funnel.id} value={funnel.id}>
-                      {funnel.name}
-                    </SelectItem>
-                  ))}
+                  {funnels.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">No funnels available</div>
+                  ) : (
+                    funnels.map((funnel) => (
+                      <SelectItem key={funnel.id} value={funnel.id}>
+                        {funnel.name || funnel.slug || 'Untitled Funnel'}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -663,7 +666,6 @@ export function DomainsSection({ teamId }: DomainsSectionProps) {
                 }
               }}
               disabled={!selectedFunnelId || linkFunnelMutation.isPending}
-              className="bg-emerald-600 hover:bg-emerald-700"
             >
               {linkFunnelMutation.isPending ? 'Linking...' : 'Link Funnel'}
             </Button>
