@@ -170,10 +170,15 @@ export function RuntimePhoneInput({
 // RUNTIME CTA BUTTON
 // ============================================================================
 
+import type { ButtonAction, ButtonActionType } from '@/flow-canvas/shared/types/buttonAction';
+
 interface RuntimeCtaButtonProps {
   label?: string;
   variant?: 'primary' | 'secondary' | 'outline';
+  /** Legacy action prop (simple string) */
   action?: 'next' | 'submit' | 'link' | 'prev';
+  /** New ButtonAction object from ButtonActionSelector */
+  buttonAction?: ButtonAction;
   linkUrl?: string;
   size?: 'sm' | 'default' | 'lg';
   fullWidth?: boolean;
@@ -184,26 +189,64 @@ interface RuntimeCtaButtonProps {
   shadow?: string;
 }
 
-export function RuntimeCtaButton({ 
-  label = 'Continue', 
-  variant = 'primary', 
-  action = 'next',
-  linkUrl,
-  size = 'default',
-  fullWidth = true,
-  className,
-  backgroundColor,
-  color,
-  borderRadius,
-  shadow,
-}: RuntimeCtaButtonProps) {
-  const runtime = useFunnelRuntimeOptional();
+/**
+ * Resolve action from either legacy `action` string or new `buttonAction` object
+ * Maps ButtonActionType (kebab-case) to runtime action strings
+ */
+function resolveButtonAction(props: RuntimeCtaButtonProps): { 
+  action: string; 
+  value?: string; 
+  openNewTab?: boolean;
+} {
+  // Prefer buttonAction if present (new format from ButtonActionSelector)
+  if (props.buttonAction?.type) {
+    const typeMapping: Record<ButtonActionType, string> = {
+      'next-step': 'next',
+      'prev-step': 'prev',
+      'go-to-step': 'goToStep',
+      'submit': 'submit',
+      'url': 'url',
+      'scroll': 'scroll',
+      'phone': 'phone',
+      'email': 'email',
+      'download': 'download',
+    };
+    return {
+      action: typeMapping[props.buttonAction.type] || 'next',
+      value: props.buttonAction.value || props.linkUrl,
+      openNewTab: props.buttonAction.openNewTab,
+    };
+  }
   
-  const isLoading = runtime?.state.isSubmitting && (action === 'submit' || action === 'next');
+  // Fallback to legacy action prop
+  return { 
+    action: props.action || 'next', 
+    value: props.linkUrl,
+  };
+}
+
+export function RuntimeCtaButton(props: RuntimeCtaButtonProps) {
+  const { 
+    label = 'Continue', 
+    variant = 'primary', 
+    size = 'default',
+    fullWidth = true,
+    className,
+    backgroundColor,
+    color,
+    borderRadius,
+    shadow,
+  } = props;
+  
+  const runtime = useFunnelRuntimeOptional();
+  const resolved = resolveButtonAction(props);
+  
+  const isLoading = runtime?.state.isSubmitting && 
+    (resolved.action === 'submit' || resolved.action === 'next');
   
   const handleClick = () => {
     if (!runtime) return;
-    runtime.actions.handleButtonClick(action, linkUrl);
+    runtime.actions.handleButtonClick(resolved.action, resolved.value, resolved.openNewTab);
   };
 
   return (
@@ -222,7 +265,7 @@ export function RuntimeCtaButton({
       {isLoading ? (
         <span className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>{action === 'submit' ? 'Submitting...' : label}</span>
+          <span>{resolved.action === 'submit' ? 'Submitting...' : label}</span>
         </span>
       ) : (
         label

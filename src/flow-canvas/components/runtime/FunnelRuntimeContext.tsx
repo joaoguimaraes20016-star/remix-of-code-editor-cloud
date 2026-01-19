@@ -37,7 +37,7 @@ interface FunnelRuntimeActions {
   /** Submit the form */
   submitForm: () => Promise<void>;
   /** Handle button click based on action type */
-  handleButtonClick: (action: string, linkUrl?: string) => void;
+  handleButtonClick: (action: string, value?: string, openNewTab?: boolean) => void;
   /** Toggle consent checkbox */
   toggleConsent: () => void;
   /** Reset the form */
@@ -178,7 +178,7 @@ export function FunnelRuntimeProvider({
     }
   }, [formData, config, hasConsent, onComplete]);
 
-  const handleButtonClick = useCallback((action: string, linkUrl?: string) => {
+  const handleButtonClick = useCallback((action: string, value?: string, openNewTab?: boolean) => {
     switch (action) {
       case 'next':
         if (currentStep < totalSteps - 1) {
@@ -190,13 +190,50 @@ export function FunnelRuntimeProvider({
       case 'submit':
         submitForm();
         break;
-      case 'link':
-        if (linkUrl) {
-          window.open(linkUrl, '_blank');
-        }
-        break;
       case 'prev':
         prevStep();
+        break;
+      case 'link':
+      case 'url':
+        if (value) {
+          if (openNewTab) {
+            window.open(value, '_blank', 'noopener,noreferrer');
+          } else {
+            window.location.href = value;
+          }
+        }
+        break;
+      case 'goToStep':
+        // value is the step ID - find its index
+        // For now, treat it as a step index if numeric
+        const stepIndex = parseInt(value || '0', 10);
+        if (!isNaN(stepIndex)) {
+          goToStep(stepIndex);
+        }
+        break;
+      case 'phone':
+        if (value) {
+          window.location.href = `tel:${value.replace(/\D/g, '')}`;
+        }
+        break;
+      case 'email':
+        if (value) {
+          window.location.href = `mailto:${value}`;
+        }
+        break;
+      case 'scroll':
+        if (value) {
+          const target = document.getElementById(value) || document.querySelector(value);
+          target?.scrollIntoView({ behavior: 'smooth' });
+        }
+        break;
+      case 'download':
+        if (value) {
+          const link = document.createElement('a');
+          link.href = value;
+          link.download = '';
+          link.click();
+        }
         break;
       default:
         // Default to next/submit
@@ -206,7 +243,7 @@ export function FunnelRuntimeProvider({
           submitForm();
         }
     }
-  }, [currentStep, totalSteps, nextStep, prevStep, submitForm]);
+  }, [currentStep, totalSteps, nextStep, prevStep, goToStep, submitForm]);
 
   const reset = useCallback(() => {
     setFormData({});

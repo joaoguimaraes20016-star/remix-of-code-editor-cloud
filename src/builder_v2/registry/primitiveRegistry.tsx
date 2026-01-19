@@ -199,6 +199,25 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
     presenceCategory: 'input',
   },
 
+  name_input: {
+    type: 'name_input',
+    displayName: 'Name Input',
+    defaultProps: { placeholder: 'Your name', fieldName: 'name', required: true },
+    render: (props) => (
+      <TextInput 
+        placeholder={props.placeholder as string}
+        fieldName={props.fieldName as string}
+        required={props.required as boolean}
+      />
+    ),
+    inspectorSchema: [
+      { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
+      { label: 'Field Name', propKey: 'fieldName', inputType: 'text' },
+    ],
+    constraints: { canHaveChildren: false },
+    presenceCategory: 'input',
+  },
+
   email_input: {
     type: 'email_input',
     displayName: 'Email Input',
