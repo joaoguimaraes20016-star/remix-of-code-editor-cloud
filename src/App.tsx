@@ -33,7 +33,23 @@ if (import.meta.env.DEV) {
   DevFunnelTest = React.lazy(() => import("./pages/__dev/FunnelTest"));
 }
 
+// Check if we're on a custom domain (for serving funnels at root)
+function isCustomDomain(): boolean {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname;
+  // Not a custom domain if it's localhost, preview, or .app domains
+  return !hostname.includes('localhost') && 
+         !hostname.includes('.app') && 
+         !hostname.includes('127.0.0.1');
+}
+
+// Check if funnel data was injected by serve-funnel edge function
+function hasInjectedFunnelData(): boolean {
+  return typeof window !== 'undefined' && !!(window as any).__INFOSTACK_FUNNEL__;
+}
+
 import { TeamLayout } from "./layouts/TeamLayout";
+
 import { TeamHubOverview } from "./pages/TeamHubOverview";
 import { TeamChatPage } from "./pages/TeamChat";
 import AppsPortal from "./pages/AppsPortal";
@@ -82,8 +98,12 @@ const App = () => (
               />
             )}
 
-            {/* Auth routes */}
-            <Route path="/" element={<Auth />} />
+            {/* Auth routes - but check if we're on custom domain first */}
+            <Route path="/" element={
+              (isCustomDomain() || hasInjectedFunnelData()) 
+                ? <PublicFunnel /> 
+                : <Auth />
+            } />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/confirm" element={<AuthCallback />} />

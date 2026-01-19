@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,14 @@ interface Funnel {
   published_document_snapshot?: Record<string, any> | null;
 }
 
+// Check if funnel data was injected by serve-funnel (custom domain serving)
+function getInjectedFunnelData(): { funnel: Funnel; domain: string; queryParams: Record<string, string> } | null {
+  if (typeof window !== 'undefined' && (window as any).__INFOSTACK_FUNNEL__) {
+    return (window as any).__INFOSTACK_FUNNEL__;
+  }
+  return null;
+}
+
 // Check if we're on a custom domain (not localhost or preview domains)
 function isCustomDomain(): boolean {
   const hostname = window.location.hostname;
@@ -52,8 +60,23 @@ export default function PublicFunnel() {
   const utmMedium = searchParams.get('utm_medium');
   const utmCampaign = searchParams.get('utm_campaign');
 
-  // Check for custom domain resolution
+  // Check for injected funnel data (served inline by serve-funnel)
+  const injectedData = useMemo(() => getInjectedFunnelData(), []);
+
+  // If we have injected data, use it immediately (custom domain inline serving)
   useEffect(() => {
+    if (injectedData) {
+      setCustomDomainFunnel(injectedData.funnel);
+      // No steps for new format - they come from snapshot
+      setCustomDomainSteps([]);
+    }
+  }, [injectedData]);
+
+  // Fallback: Check for custom domain resolution via edge function
+  useEffect(() => {
+    // Skip if we already have injected data
+    if (injectedData) return;
+    
     if (isCustomDomain() && !slug) {
       // We're on a custom domain without a slug, resolve the domain
       setCustomDomainLoading(true);
@@ -83,7 +106,7 @@ export default function PublicFunnel() {
         console.error('Domain resolution error:', err);
       });
     }
-  }, [slug]);
+  }, [slug, injectedData]);
 
   // Slug-based funnel query (when we have a slug)
   const { data: funnel, isLoading: funnelLoading, error: funnelError } = useQuery({
@@ -103,7 +126,7 @@ export default function PublicFunnel() {
         published_document_snapshot: data.published_document_snapshot as Record<string, any> | null,
       } as Funnel;
     },
-    enabled: !!slug,
+    enabled: !!slug && !injectedData,
   });
 
   const { data: steps, isLoading: stepsLoading } = useQuery({
@@ -118,13 +141,13 @@ export default function PublicFunnel() {
       if (error) throw error;
       return data as FunnelStep[];
     },
-    enabled: !!funnel?.id,
+    enabled: !!funnel?.id && !injectedData,
   });
 
   // Determine which funnel data to use
   const activeFunnel = customDomainFunnel || funnel;
   const activeSteps = customDomainSteps || steps;
-  const isLoading = customDomainLoading || funnelLoading || stepsLoading;
+  const isLoading = !injectedData && (customDomainLoading || funnelLoading || stepsLoading);
   const hasError = customDomainError || funnelError;
 
   if (isLoading) {
