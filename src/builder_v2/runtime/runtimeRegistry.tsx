@@ -118,28 +118,48 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
     type: 'text',
     displayName: 'Text',
     defaultProps: { text: 'Text' },
-    render: (props) => <Text text={typeof props.text === 'string' ? props.text : undefined} />,
+    render: (props) => {
+      // Support both 'text' (new format) and 'content' (FlowCanvas format)
+      const textContent = (props.text ?? props.content) as string | undefined;
+      return <Text text={typeof textContent === 'string' ? textContent : undefined} />;
+    },
     inspectorSchema: [],
     constraints: { canHaveChildren: false },
+  },
+
+  // Text block container (FlowCanvas format)
+  'text-block': {
+    type: 'text-block',
+    displayName: 'Text Block',
+    defaultProps: {},
+    render: (props, children) => (
+      <div className="builder-text-block">{children}</div>
+    ),
+    inspectorSchema: [],
+    constraints: { canHaveChildren: true },
   },
 
   heading: {
     type: 'heading',
     displayName: 'Heading',
     defaultProps: { text: 'Heading', level: 'h1' },
-    render: (props) => (
-      <Heading 
-        text={props.text as string} 
-        level={props.level as 'h1' | 'h2' | 'h3'}
-        color={props.color as string}
-        textAlign={props.textAlign as any}
-        fontSize={props.fontSize as string}
-        fontWeight={props.fontWeight as string}
-        backgroundColor={props.backgroundColor as string}
-        borderRadius={props.borderRadius as number}
-        shadow={props.shadow as string}
-      />
-    ),
+    render: (props) => {
+      // Support both 'text' (new format) and 'content' (FlowCanvas format)
+      const textContent = (props.text ?? props.content) as string;
+      return (
+        <Heading 
+          text={textContent} 
+          level={props.level as 'h1' | 'h2' | 'h3'}
+          color={props.color as string}
+          textAlign={props.textAlign as any}
+          fontSize={props.fontSize as string}
+          fontWeight={props.fontWeight as string}
+          backgroundColor={props.backgroundColor as string}
+          borderRadius={props.borderRadius as number}
+          shadow={props.shadow as string}
+        />
+      );
+    },
     inspectorSchema: [],
     constraints: { canHaveChildren: false },
   },
@@ -148,18 +168,22 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
     type: 'paragraph',
     displayName: 'Paragraph',
     defaultProps: { text: 'Paragraph text' },
-    render: (props) => (
-      <Paragraph 
-        text={props.text as string}
-        color={props.color as string}
-        textAlign={props.textAlign as any}
-        fontSize={props.fontSize as string}
-        fontWeight={props.fontWeight as string}
-        backgroundColor={props.backgroundColor as string}
-        borderRadius={props.borderRadius as number}
-        shadow={props.shadow as string}
-      />
-    ),
+    render: (props) => {
+      // Support both 'text' (new format) and 'content' (FlowCanvas format)
+      const textContent = (props.text ?? props.content) as string;
+      return (
+        <Paragraph 
+          text={textContent}
+          color={props.color as string}
+          textAlign={props.textAlign as any}
+          fontSize={props.fontSize as string}
+          fontWeight={props.fontWeight as string}
+          backgroundColor={props.backgroundColor as string}
+          borderRadius={props.borderRadius as number}
+          shadow={props.shadow as string}
+        />
+      );
+    },
     inspectorSchema: [],
     constraints: { canHaveChildren: false },
   },
