@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FunnelRenderer } from '@/components/funnel-public/FunnelRenderer';
 import { FlowCanvasRenderer } from '@/flow-canvas/components/FlowCanvasRenderer';
+import { editorDocumentToFlowCanvas } from '@/lib/funnel/dataConverter';
 
 interface FunnelStep {
   id: string;
@@ -147,12 +148,22 @@ export default function PublicFunnel() {
     );
   }
 
-  // Check if this is a flow-canvas funnel (has published_document_snapshot with steps array)
-  const isFlowCanvasFunnel = activeFunnel?.published_document_snapshot?.steps?.length > 0;
+  // Detect format: new EditorDocument (has pages) OR old FlowCanvas (has steps)
+  const snapshot = activeFunnel?.published_document_snapshot;
+  const isEditorDocumentFormat = snapshot?.version && snapshot?.pages?.length > 0;
+  const isFlowCanvasFormat = snapshot?.steps?.length > 0;
+  const isFlowCanvasFunnel = isEditorDocumentFormat || isFlowCanvasFormat;
 
   if (isFlowCanvasFunnel) {
-    // Use FlowCanvasRenderer for flow-canvas funnels
-    const flowCanvasPage = activeFunnel.published_document_snapshot;
+    // Convert EditorDocument format to FlowCanvasPage if needed
+    let flowCanvasPage = snapshot;
+    
+    if (isEditorDocumentFormat) {
+      flowCanvasPage = editorDocumentToFlowCanvas(
+        snapshot as any,
+        activeFunnel.slug
+      );
+    }
     
     return (
       <FlowCanvasRenderer
