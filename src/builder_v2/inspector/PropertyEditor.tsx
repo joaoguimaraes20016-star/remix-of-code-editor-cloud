@@ -63,7 +63,7 @@ interface PropertyFieldProps {
 function PropertyField({ label, children }: PropertyFieldProps) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-slate-600">{label}</Label>
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       {children}
     </div>
   );
@@ -81,12 +81,12 @@ function PropertySection({ title, icon, defaultOpen = true, children }: Property
   
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 px-1 hover:bg-slate-50 rounded transition-colors">
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 px-1 hover:bg-primary/5 rounded transition-colors">
         <div className="flex items-center gap-2">
-          {icon && <span className="text-slate-400">{icon}</span>}
-          <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">{title}</span>
+          {icon && <span className="text-muted-foreground">{icon}</span>}
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">{title}</span>
         </div>
-        <ChevronRight className={cn('h-4 w-4 text-slate-400 transition-transform', open && 'rotate-90')} />
+        <ChevronRight className={cn('h-4 w-4 text-muted-foreground transition-transform', open && 'rotate-90')} />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-3 pb-3">
         {children}
@@ -306,7 +306,7 @@ function ButtonProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (pro
               checked={(node.props.fullWidth as boolean) ?? true}
               onCheckedChange={(checked) => onUpdate({ fullWidth: checked })}
             />
-            <span className="text-sm text-slate-600">Stretch to container</span>
+            <span className="text-sm text-muted-foreground">Stretch to container</span>
           </div>
         </PropertyField>
       </PropertySection>
@@ -365,7 +365,7 @@ function InputProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
               checked={(node.props.required as boolean) || false}
               onCheckedChange={(checked) => onUpdate({ required: checked })}
             />
-            <span className="text-sm text-slate-600">This field is required</span>
+            <span className="text-sm text-muted-foreground">This field is required</span>
           </div>
         </PropertyField>
       </PropertySection>
@@ -422,7 +422,7 @@ function VideoProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
             {!isValid && urlInput && (
               <p className="text-xs text-destructive">Please enter a valid video URL</p>
             )}
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10px] text-muted-foreground">
               Supports YouTube, Vimeo, Loom, and Wistia
             </p>
           </div>
@@ -513,7 +513,7 @@ function OptionGridProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: 
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-slate-400 hover:text-red-500"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
                 onClick={() => removeOption(index)}
               >
                 <Trash2 size={14} />
@@ -532,7 +532,7 @@ function OptionGridProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: 
               checked={(node.props.autoAdvance as boolean) || false}
               onCheckedChange={(checked) => onUpdate({ autoAdvance: checked })}
             />
-            <span className="text-sm text-slate-600">Go to next page on selection</span>
+            <span className="text-sm text-muted-foreground">Go to next page on selection</span>
           </div>
         </PropertyField>
         <PropertyField label="Layout">
@@ -630,7 +630,7 @@ function ImageProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
         <PropertyField label="Image">
           <div className="space-y-2">
             {node.props.src && (
-              <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 border">
+              <div className="relative aspect-video rounded-lg overflow-hidden bg-secondary border">
                 <img 
                   src={node.props.src as string} 
                   alt={node.props.alt as string || 'Preview'} 
@@ -664,7 +664,7 @@ function ImageProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (prop
               className="hidden"
             />
             
-            <div className="flex items-center gap-1 text-[10px] text-slate-400">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
               <Link size={10} />
               <span>Or paste URL:</span>
             </div>
@@ -749,7 +749,7 @@ function ConsentProperties({ node, onUpdate }: { node: CanvasNode; onUpdate: (pr
               checked={(node.props.required as boolean) || false}
               onCheckedChange={(checked) => onUpdate({ required: checked })}
             />
-            <span className="text-sm text-slate-600">User must agree</span>
+            <span className="text-sm text-muted-foreground">User must agree</span>
           </div>
         </PropertyField>
       </PropertySection>
@@ -786,7 +786,7 @@ function getPropertyEditor(node: CanvasNode, onUpdate: (props: Record<string, un
       return <ConsentProperties node={node} onUpdate={onUpdate} />;
     default:
       return (
-        <div className="text-sm text-slate-500 text-center py-4">
+        <div className="text-sm text-muted-foreground text-center py-4">
           No editable properties for this element type.
         </div>
       );
@@ -867,11 +867,11 @@ export function PropertyEditor({
   if (!selectedNode) {
     return (
       <div className="h-full flex flex-col bg-white">
-        <div className="px-4 py-3 border-b border-slate-200">
-          <h2 className="text-sm font-semibold text-slate-900">Properties</h2>
+        <div className="px-4 py-3 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">Properties</h2>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-sm text-slate-500 text-center">
+          <p className="text-sm text-muted-foreground text-center">
             Click an element in the preview to edit its properties
           </p>
         </div>
@@ -886,10 +886,10 @@ export function PropertyEditor({
   const isFrame = selectedNode.type === 'frame';
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      <div className="px-4 py-3 border-b border-slate-200">
+    <div className="h-full flex flex-col bg-background">
+      <div className="px-4 py-3 border-b border-border">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">
+          <h2 className="text-sm font-semibold text-foreground">
             {getElementDisplayName(selectedNode.type)}
           </h2>
           {!isFrame && (
@@ -897,7 +897,7 @@ export function PropertyEditor({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-slate-500 hover:text-slate-900"
+                className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                 onClick={() => onMoveNode(selectedNode.id, 'up')}
               >
                 <ChevronUp size={14} />
@@ -905,7 +905,7 @@ export function PropertyEditor({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-slate-500 hover:text-slate-900"
+                className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
                 onClick={() => onMoveNode(selectedNode.id, 'down')}
               >
                 <ChevronDown size={14} />
@@ -913,7 +913,7 @@ export function PropertyEditor({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-slate-500 hover:text-red-500"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 onClick={() => onDeleteNode(selectedNode.id)}
               >
                 <Trash2 size={14} />

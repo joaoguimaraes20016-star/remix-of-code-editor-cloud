@@ -79,16 +79,16 @@ export function EditorHeader({
   ];
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-background px-4">
       {/* Left section - Back and name */}
       <div className="flex items-center gap-4">
         <button 
           onClick={onBack} 
-          className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
         >
           <ArrowLeft size={18} />
         </button>
-        <h1 className="text-sm font-semibold text-slate-900">{funnelName}</h1>
+        <h1 className="text-sm font-semibold text-foreground">{funnelName}</h1>
       </div>
 
       {/* Center section - Tabs */}
@@ -100,8 +100,8 @@ export function EditorHeader({
             className={cn(
               "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
               activeTab === tab.id
-                ? "bg-slate-100 text-slate-900"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/5"
             )}
           >
             <tab.icon size={14} />
@@ -113,7 +113,7 @@ export function EditorHeader({
       {/* Right section - Controls */}
       <div className="flex items-center gap-2">
         {/* Device switcher */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg border border-border bg-secondary p-0.5">
           {devices.map(({ type, icon: Icon }) => (
             <button
               key={type}
@@ -121,8 +121,8 @@ export function EditorHeader({
               className={cn(
                 "rounded-md p-1.5 transition-all",
                 device === type
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-primary"
               )}
             >
               <Icon size={16} />
@@ -130,17 +130,17 @@ export function EditorHeader({
           ))}
         </div>
 
-        <div className="h-5 w-px bg-slate-200 mx-1" />
+        <div className="h-5 w-px bg-border mx-1" />
 
         {/* Edit/Preview toggle */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg border border-border bg-secondary p-0.5">
           <button
             onClick={() => onModeChange('edit')}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
               mode === 'edit'
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-primary"
             )}
           >
             Edit
@@ -150,8 +150,8 @@ export function EditorHeader({
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
               mode === 'preview'
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-primary"
             )}
           >
             <Eye size={12} />
@@ -159,16 +159,16 @@ export function EditorHeader({
           </button>
         </div>
 
-        <div className="h-5 w-px bg-slate-200 mx-1" />
+        <div className="h-5 w-px bg-border mx-1" />
 
         {/* Undo/Redo */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg border border-border bg-secondary p-0.5">
           <button
             onClick={onUndo}
             disabled={!canUndo}
             className={cn(
               "rounded-md p-1.5",
-              canUndo ? "text-slate-600 hover:bg-white" : "text-slate-300"
+              canUndo ? "text-muted-foreground hover:bg-primary/10 hover:text-primary" : "text-muted-foreground/40"
             )}
             title="Undo"
           >
@@ -179,7 +179,7 @@ export function EditorHeader({
             disabled={!canRedo}
             className={cn(
               "rounded-md p-1.5",
-              canRedo ? "text-slate-600 hover:bg-white" : "text-slate-300"
+              canRedo ? "text-muted-foreground hover:bg-primary/10 hover:text-primary" : "text-muted-foreground/40"
             )}
             title="Redo"
           >
@@ -190,18 +190,18 @@ export function EditorHeader({
         {/* Settings and preview buttons */}
         <button
           onClick={onSettings}
-          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+          className="rounded-lg p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
         >
           <Settings size={16} />
         </button>
         <button
           onClick={onPreview}
-          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+          className="rounded-lg p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
         >
           <ExternalLink size={16} />
         </button>
 
-        <div className="h-5 w-px bg-slate-200 mx-1" />
+        <div className="h-5 w-px bg-border mx-1" />
 
         {/* Save and Publish */}
         <Button

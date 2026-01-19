@@ -6,14 +6,25 @@ interface InitializeDefaultStagesProps {
   teamId: string;
 }
 
+// Semantic stage colors using HSL values that match design system
+const STAGE_COLORS = {
+  primary: 'hsl(217, 91%, 60%)',      // Primary blue - booked
+  warning: 'hsl(24, 94%, 53%)',        // Orange - no show
+  muted: 'hsl(220, 9%, 46%)',          // Gray - canceled
+  amber: 'hsl(45, 93%, 47%)',          // Yellow - rescheduled
+  teal: 'hsl(173, 80%, 40%)',          // Teal - deposit
+  success: 'hsl(142, 71%, 45%)',       // Green - won
+  destructive: 'hsl(0, 84%, 60%)',     // Red - disqualified
+} as const;
+
 const DEFAULT_STAGES = [
-  { stage_id: 'booked', stage_label: 'Appointment Booked', stage_color: '#3b82f6', order_index: 0 },
-  { stage_id: 'no_show', stage_label: 'No-Show', stage_color: '#f97316', order_index: 1 },
-  { stage_id: 'canceled', stage_label: 'Canceled', stage_color: '#6b7280', order_index: 2 },
-  { stage_id: 'rescheduled', stage_label: 'Rescheduled', stage_color: '#eab308', order_index: 3 },
-  { stage_id: 'deposit', stage_label: 'Deposit Collected', stage_color: '#14b8a6', order_index: 4 },
-  { stage_id: 'won', stage_label: 'Closed', stage_color: '#22c55e', order_index: 5 },
-  { stage_id: 'disqualified', stage_label: 'Disqualified', stage_color: '#ef4444', order_index: 6 },
+  { stage_id: 'booked', stage_label: 'Appointment Booked', stage_color: STAGE_COLORS.primary, order_index: 0 },
+  { stage_id: 'no_show', stage_label: 'No-Show', stage_color: STAGE_COLORS.warning, order_index: 1 },
+  { stage_id: 'canceled', stage_label: 'Canceled', stage_color: STAGE_COLORS.muted, order_index: 2 },
+  { stage_id: 'rescheduled', stage_label: 'Rescheduled', stage_color: STAGE_COLORS.amber, order_index: 3 },
+  { stage_id: 'deposit', stage_label: 'Deposit Collected', stage_color: STAGE_COLORS.teal, order_index: 4 },
+  { stage_id: 'won', stage_label: 'Closed', stage_color: STAGE_COLORS.success, order_index: 5 },
+  { stage_id: 'disqualified', stage_label: 'Disqualified', stage_color: STAGE_COLORS.destructive, order_index: 6 },
 ];
 
 export function InitializeDefaultStages({ teamId }: InitializeDefaultStagesProps) {

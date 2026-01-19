@@ -181,9 +181,9 @@ export const PublishModal: React.FC<PublishModalProps> = ({
     }
     return {
       icon: CheckCircle2,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/10',
-      borderColor: 'border-emerald-500/20',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+      borderColor: 'border-primary/20',
       label: 'Live',
       description: lastPublishedAt ? `Last published ${formatRelativeTime(lastPublishedAt)}` : 'Your funnel is live',
     };
@@ -217,7 +217,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                   {statusConfig.label}
                 </span>
                 {isPublished && !hasUnpublishedChanges && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-500 font-medium">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
                     ✓ Up to date
                   </span>
                 )}
@@ -261,10 +261,10 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                 onClick={handleCopyPrimary}
                 size="icon"
                 variant="ghost"
-                className="shrink-0 h-7 w-7 text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover"
+                className="shrink-0 h-7 w-7 text-builder-text-muted hover:text-primary hover:bg-primary/10"
               >
                 {(isDomainActive ? copiedDomain : copiedSlug) ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <Check className="w-3.5 h-3.5 text-primary" />
                 ) : (
                   <Copy className="w-3.5 h-3.5" />
                 )}
@@ -283,14 +283,14 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                 <span className="flex-1 text-xs text-builder-text-muted font-mono truncate px-2">
                   {slugUrl}
                 </span>
-                <Button
+              <Button
                   onClick={handleCopySlug}
                   size="icon"
                   variant="ghost"
-                  className="shrink-0 h-6 w-6 text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover"
+                  className="shrink-0 h-6 w-6 text-builder-text-muted hover:text-primary hover:bg-primary/10"
                 >
                   {copiedSlug ? (
-                    <Check className="w-3 h-3 text-emerald-500" />
+                    <Check className="w-3 h-3 text-primary" />
                   ) : (
                     <Copy className="w-3 h-3" />
                   )}
@@ -342,13 +342,13 @@ export const PublishModal: React.FC<PublishModalProps> = ({
           {/* Domain active indicator */}
           {isDomainActive && (
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5 text-emerald-500">
+              <div className="flex items-center gap-1.5 text-primary">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Domain verified & SSL active</span>
               </div>
               <button
                 onClick={handleManageDomain}
-                className="text-builder-text-muted hover:text-builder-accent transition-colors"
+                className="text-builder-text-muted hover:text-primary transition-colors"
               >
                 Manage →
               </button>
@@ -368,12 +368,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
           <Button
             onClick={handlePublish}
             disabled={isPublishing}
-            className={cn(
-              "flex-1 min-w-0 text-white transition-all",
-              isPublished && !hasUnpublishedChanges
-                ? "bg-emerald-600 hover:bg-emerald-500"
-                : "bg-builder-accent hover:brightness-110"
-            )}
+            className="flex-1 min-w-0 text-white transition-all bg-primary hover:bg-primary/90"
           >
             {isPublishing ? (
               <>
