@@ -26,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending onboarding email to ${clientEmail} for ${teamName}`);
 
     const emailResponse = await resend.emails.send({
-      from: "Client Onboarding <onboarding@notifications.grwthengine.org>",
+      from: "Client Onboarding <onboarding@notifications.stackit.app>",
       to: [clientEmail],
       subject: `Complete Your Onboarding - ${teamName}`,
       html: `
@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Complete Your Onboarding - GRWTH OP</title>
+            <title>Complete Your Onboarding - Stackit</title>
           </head>
           <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
             <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
@@ -46,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <!-- Logo Header -->
                     <tr>
                       <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #000000; border-radius: 12px 12px 0 0;">
-                        <img src="https://grwthop.com/logo.png" alt="GRWTH OP Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
+                        <img src="https://stackit.app/logo.png" alt="Stackit Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
                         <h1 style="margin: 0; color: #ffc107; font-size: 32px; font-weight: 700; text-shadow: 0 0 20px rgba(255, 193, 7, 0.3);">Welcome, ${clientName}!</h1>
                       </td>
                     </tr>

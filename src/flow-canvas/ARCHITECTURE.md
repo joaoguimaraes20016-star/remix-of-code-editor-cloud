@@ -1,4 +1,4 @@
-# Flow Canvas Builder - Architecture Documentation
+# Stackit Flow Canvas Builder - Architecture Documentation
 
 ## Overview
 
@@ -7,7 +7,7 @@ The Flow Canvas Builder is a modular, component-based system for creating funnel
 ## Phase Summary
 
 ### Phase 1: Core Type Consolidation
-- Unified type definitions in `types/infostack.ts`
+- Unified type definitions in `types/stackit.ts` (formerly infostack.ts)
 - Consistent interfaces across all components
 - Clear type hierarchy: Page → Step → Frame → Stack → Block → Element
 

@@ -377,7 +377,7 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
         body: JSON.stringify({
           test: true,
           type,
-          source: 'infostack',
+          source: 'stackit',
           timestamp: new Date().toISOString(),
           message: 'This is a test webhook from Infostack',
         }),

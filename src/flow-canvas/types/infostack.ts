@@ -1,4 +1,4 @@
-// InfoStack Data Contract - The single source of truth for the builder
+// Stackit Data Contract - The single source of truth for the builder
 
 // Import shared types
 import type { ButtonAction } from '@/flow-canvas/shared/types/buttonAction';
