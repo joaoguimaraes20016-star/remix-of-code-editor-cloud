@@ -270,6 +270,16 @@ export default function FunnelEditor() {
     });
   }, [saveMutation, publishMutation]);
 
+  // Handle version restore - must be before any early returns
+  const handleRestoreVersion = useCallback(async (snapshot: unknown) => {
+    if (!snapshot || !funnel?.slug) return;
+    // Convert the snapshot back to flow-canvas format and update the page
+    const restoredPage = editorDocumentToFlowCanvas(snapshot as EditorDocument, funnel.slug);
+    if (restoredPage) {
+      handlePageChange(restoredPage);
+    }
+  }, [funnel?.slug, handlePageChange]);
+
   // Loading state
   if (isLoading) {
     return <LoadingState message="Loading funnel..." />;
@@ -289,16 +299,6 @@ export default function FunnelEditor() {
   if (!initialFlowCanvasPage) {
     return <LoadingState message="Preparing editor..." />;
   }
-
-  // Handle version restore
-  const handleRestoreVersion = useCallback(async (snapshot: unknown) => {
-    if (!snapshot) return;
-    // Convert the snapshot back to flow-canvas format and update the page
-    const restoredPage = editorDocumentToFlowCanvas(snapshot as EditorDocument, funnel?.slug || 'untitled');
-    if (restoredPage) {
-      handlePageChange(restoredPage);
-    }
-  }, [funnel?.slug, handlePageChange]);
 
   return (
     <EditorShell
