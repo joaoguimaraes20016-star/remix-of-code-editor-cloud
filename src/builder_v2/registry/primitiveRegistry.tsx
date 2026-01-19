@@ -147,6 +147,9 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
       { label: 'Label', propKey: 'label', inputType: 'text' },
       { label: 'Size', propKey: 'size', inputType: 'text' },
       { label: 'Full Width', propKey: 'fullWidth', inputType: 'checkbox' },
+      { label: 'Background', propKey: 'backgroundColor', inputType: 'color' },
+      { label: 'Text Color', propKey: 'color', inputType: 'color' },
+      { label: 'Border Radius', propKey: 'borderRadius', inputType: 'number' },
     ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'button',
@@ -194,8 +197,9 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
       />
     ),
     inspectorSchema: [
-      { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
       { label: 'Field Name', propKey: 'fieldName', inputType: 'text' },
+      { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
+      { label: 'Required', propKey: 'required', inputType: 'checkbox' },
     ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'input',
@@ -213,8 +217,9 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
       />
     ),
     inspectorSchema: [
-      { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
       { label: 'Field Name', propKey: 'fieldName', inputType: 'text' },
+      { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
+      { label: 'Required', propKey: 'required', inputType: 'checkbox' },
     ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'input',
@@ -232,7 +237,9 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
       />
     ),
     inspectorSchema: [
+      { label: 'Field Name', propKey: 'fieldName', inputType: 'text' },
       { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
+      { label: 'Required', propKey: 'required', inputType: 'checkbox' },
     ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'input',
@@ -249,7 +256,9 @@ export const PrimitiveRegistry: Record<string, ComponentDefinition> = {
       />
     ),
     inspectorSchema: [
+      { label: 'Field Name', propKey: 'fieldName', inputType: 'text' },
       { label: 'Placeholder', propKey: 'placeholder', inputType: 'text' },
+      { label: 'Required', propKey: 'required', inputType: 'checkbox' },
     ],
     constraints: { canHaveChildren: false },
     presenceCategory: 'input',
