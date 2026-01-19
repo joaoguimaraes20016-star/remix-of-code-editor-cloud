@@ -277,6 +277,28 @@ button[data-role="primary-cta"]:active,
    9. FORM ELEMENTS (for optin steps)
    ============================================================================ */
 
+/* Input field container */
+.builder-input-field {
+  position: relative;
+  width: 100%;
+}
+
+/* Required field indicator */
+.builder-input-label-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 16px;
+  margin-bottom: 4px;
+}
+
+.builder-input-required {
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .builder-page input[type="text"],
 .builder-page input[type="email"],
 .builder-page input[type="tel"],
@@ -303,6 +325,19 @@ button[data-role="primary-cta"]:active,
 .builder-page input::placeholder,
 .builder-page textarea::placeholder {
   color: rgba(255, 255, 255, 0.4);
+}
+
+/* Error state for inputs */
+.builder-input--error,
+.builder-input-wrapper--error {
+  border-color: #ef4444 !important;
+}
+
+.builder-input-error {
+  display: block;
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 /* ============================================================================

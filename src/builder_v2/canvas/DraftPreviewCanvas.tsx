@@ -7,7 +7,7 @@
  */
 
 import type { CSSProperties } from 'react';
-import type { Page } from '../types';
+import type { Page, CanvasNode } from '../types';
 
 import { resolveFunnelLayout } from '../layout/funnelLayout';
 import { resolvePageIntent, generateIntentVariables } from '../layout/stepIntentResolver';
@@ -34,6 +34,27 @@ type DraftPreviewCanvasProps = {
   /** Show progress bar */
   showProgressBar?: boolean;
 };
+
+/**
+ * Extract required fields from a canvas tree by walking the node structure
+ */
+function extractRequiredFields(node: CanvasNode): string[] {
+  const fields: string[] = [];
+  
+  // Check if this node is an input with required prop
+  const inputTypes = ['email_input', 'phone_input', 'text_input', 'name_input', 'textarea_input', 'consent_checkbox'];
+  if (inputTypes.includes(node.type) && node.props?.required) {
+    const fieldName = (node.props.fieldName as string) || node.type.replace('_input', '').replace('_checkbox', '');
+    fields.push(fieldName);
+  }
+  
+  // Recurse into children
+  for (const child of node.children || []) {
+    fields.push(...extractRequiredFields(child));
+  }
+  
+  return fields;
+}
 
 /**
  * Empty state shown when no pages exist.
@@ -138,9 +159,10 @@ export function DraftPreviewCanvas({
     return <NoPageState />;
   }
 
-  // Calculate required fields from pages (look for input components with required prop)
-  const requiredFields: string[] = [];
-  // TODO: Extract required fields from page tree if needed
+  // Extract required fields from all pages
+  const requiredFields = pages.flatMap(page => 
+    page.canvasRoot ? extractRequiredFields(page.canvasRoot) : []
+  );
 
   // Create runtime config for draft preview
   const runtimeConfig = {

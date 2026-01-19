@@ -46,6 +46,9 @@ export function RuntimeTextInput({
 
   return (
     <div className="builder-input-field">
+      <div className="builder-input-label-row">
+        {required && <span className="builder-input-required">*</span>}
+      </div>
       <input
         type="text"
         placeholder={placeholder}
@@ -107,6 +110,9 @@ export function RuntimeTextareaInput({
 
   return (
     <div className="builder-input-field">
+      <div className="builder-input-label-row">
+        {required && <span className="builder-input-required">*</span>}
+      </div>
       <textarea
         placeholder={placeholder}
         className={cn('builder-input builder-input--textarea w-full resize-none', hasError && 'builder-input--error', className)}
@@ -163,6 +169,9 @@ export function RuntimeEmailInput({
 
   return (
     <div className="builder-input-field">
+      <div className="builder-input-label-row">
+        {required && <span className="builder-input-required">*</span>}
+      </div>
       <div className={cn('builder-input-wrapper', hasError && 'builder-input-wrapper--error', className)}>
         <Mail className="builder-input-icon" size={18} />
         <input
@@ -194,6 +203,7 @@ export function RuntimeEmailInput({
 interface RuntimePhoneInputProps {
   placeholder?: string;
   fieldName?: string;
+  required?: boolean;
   className?: string;
   borderRadius?: number;
   backgroundColor?: string;
@@ -203,6 +213,7 @@ interface RuntimePhoneInputProps {
 export function RuntimePhoneInput({ 
   placeholder = '(555) 123-4567', 
   fieldName = 'phone',
+  required = false,
   className,
   borderRadius,
   backgroundColor,
@@ -236,6 +247,9 @@ export function RuntimePhoneInput({
 
   return (
     <div className="builder-input-field">
+      <div className="builder-input-label-row">
+        {required && <span className="builder-input-required">*</span>}
+      </div>
       <div className={cn('builder-input-wrapper', hasError && 'builder-input-wrapper--error', className)}>
         <Phone className="builder-input-icon" size={18} />
         <input
@@ -245,6 +259,7 @@ export function RuntimePhoneInput({
           style={style}
           value={value}
           onChange={handleChange}
+          required={required}
           readOnly={!runtime}
         />
       </div>
