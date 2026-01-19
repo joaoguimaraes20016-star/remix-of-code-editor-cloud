@@ -42,13 +42,22 @@ export default defineConfig(({ mode }) => {
     cssMinify: false,
     reportCompressedSize: false,
     chunkSizeWarningLimit: 2000,
-    rollupOptions: undefined,
+    // Force a single JS bundle to avoid React initialization / chunk order issues
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+      },
+    },
   } as const;
 
   const lowMemoryBuild = {
     ...baseBuild,
     // Disable heavy graph/chunk work in low-memory environments
-    rollupOptions: undefined,
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+      },
+    },
   };
 
   return {
