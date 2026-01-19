@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react';
-import { renderTree } from '@/builder_v2/canvas/renderNode';
+import { renderRuntimeTree } from '@/builder_v2/runtime/renderRuntimeTree';
 import type { CanvasNode, Page } from '@/builder_v2/types';
 import {
   getPageBackgroundStyles,
@@ -20,6 +20,7 @@ import {
   isDirectVideoUrl,
   type PageBackground,
 } from './backgroundUtils';
+import { FunnelRuntimeProvider } from './FunnelRuntimeContext';
 
 // Import builder_v2 CSS for proper node styling
 import '@/builder_v2/canvas/canvas.css';
@@ -49,8 +50,16 @@ interface EditorDocumentRendererProps {
   pageId?: string;
   /** Funnel settings for theming */
   settings?: FunnelSettings;
-  /** Funnel ID for analytics */
+  /** Funnel ID for analytics and submission */
   funnelId?: string;
+  /** Team ID for lead submission */
+  teamId?: string;
+  /** Funnel slug for analytics */
+  funnelSlug?: string;
+  /** Webhook URLs for submission notification */
+  webhookUrls?: string[];
+  /** Redirect URL after submission */
+  redirectUrl?: string;
 }
 
 /**
@@ -126,12 +135,12 @@ function PageFrame({
 }
 
 /**
- * Renders the canvas node tree using the v2 registry
+ * Renders the canvas node tree using the runtime registry
  */
 function CanvasContent({ node }: { node: CanvasNode }) {
   return (
     <div className="builder-v2-runtime">
-      {renderTree(node, { readonly: true })}
+      {renderRuntimeTree(node)}
     </div>
   );
 }
@@ -144,6 +153,10 @@ export function EditorDocumentRenderer({
   pageId,
   settings,
   funnelId,
+  teamId,
+  funnelSlug,
+  webhookUrls,
+  redirectUrl,
 }: EditorDocumentRendererProps) {
   // Find the page to render
   const activePage = useMemo(() => {
@@ -174,7 +187,17 @@ export function EditorDocumentRenderer({
     );
   }
 
-  return (
+  // Build runtime config - only enable if we have the required IDs
+  const hasRuntimeConfig = funnelId && teamId;
+  const runtimeConfig = hasRuntimeConfig ? {
+    funnelId: funnelId!,
+    teamId: teamId!,
+    funnelSlug: funnelSlug || '',
+    webhookUrls: webhookUrls || (settings?.ghl_webhook_url ? [settings.ghl_webhook_url] : []),
+    redirectUrl: redirectUrl,
+  } : null;
+
+  const content = (
     <main
       className="min-h-screen w-full"
       data-funnel-id={funnelId}
@@ -185,6 +208,21 @@ export function EditorDocumentRenderer({
       </PageFrame>
     </main>
   );
+
+  // Wrap with FunnelRuntimeProvider if we have config (enables form submission)
+  if (runtimeConfig) {
+    return (
+      <FunnelRuntimeProvider 
+        config={runtimeConfig} 
+        totalSteps={document.pages.length}
+      >
+        {content}
+      </FunnelRuntimeProvider>
+    );
+  }
+
+  // Preview mode without runtime (no submission capability)
+  return content;
 }
 
 /**
