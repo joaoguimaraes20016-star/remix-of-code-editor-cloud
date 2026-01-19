@@ -70,12 +70,12 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
           "w-full justify-start gap-3 h-11 transition-all",
           collapsed && "justify-center px-0",
           active 
-            ? "bg-gradient-brand text-white font-medium shadow-md" 
-            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            ? "bg-primary/10 text-primary font-medium" 
+            : "text-sidebar-foreground/70 hover:text-primary hover:bg-primary/10"
         )}
         onClick={() => handleNavigation(item.path)}
       >
-        <item.icon className={cn("h-5 w-5 shrink-0", active && "text-white")} />
+        <item.icon className={cn("h-5 w-5 shrink-0", active && "text-primary")} />
         {!collapsed && <span>{item.label}</span>}
       </Button>
     );
