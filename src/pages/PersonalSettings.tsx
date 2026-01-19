@@ -12,9 +12,10 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { 
   Camera, Loader2, Save, Phone, User, Mail, Bell, 
-  Video, Calendar, Link2, CheckCircle2, XCircle, Settings
+  Video, Calendar, Link2, CheckCircle2, XCircle, Settings, Moon, Sun, Monitor
 } from "lucide-react";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 // Integration logos
 import calendlyLogo from "@/assets/integrations/calendly.svg";
@@ -293,6 +294,26 @@ export default function PersonalSettings() {
                 </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Appearance Section */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-2">
+              <Sun className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Appearance</CardTitle>
+            </div>
+            <CardDescription>Customize how the app looks</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Theme</Label>
+                <p className="text-xs text-muted-foreground">Choose between light and dark mode</p>
+              </div>
+              <ThemeToggle />
+            </div>
           </CardContent>
         </Card>
 

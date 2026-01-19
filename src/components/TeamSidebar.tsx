@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface TeamSidebarProps {
   teamName: string;
@@ -129,14 +128,6 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
 
       {/* Bottom Section */}
       <div className="p-3 border-t border-sidebar-border space-y-1">
-        {/* Theme Toggle */}
-        <div className={cn("mb-2", collapsed && "flex justify-center")}>
-          {collapsed ? (
-            <ThemeToggle variant="icon" />
-          ) : (
-            <ThemeToggle />
-          )}
-        </div>
 
         {/* Profile Settings */}
         {renderNavButton(
