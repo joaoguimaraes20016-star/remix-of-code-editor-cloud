@@ -115,7 +115,7 @@ export default function Schedule() {
     >
       <div className={cn(
         "flex items-center justify-center w-10 h-10 rounded-full shrink-0",
-        item.type === "appointment" ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-500"
+        item.type === "appointment" ? "bg-primary/10 text-primary" : "bg-primary/10 text-primary"
       )}>
         {item.type === "appointment" ? (
           <Video className="h-5 w-5" />
