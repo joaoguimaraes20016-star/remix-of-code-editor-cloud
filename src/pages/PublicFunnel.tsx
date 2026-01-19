@@ -73,6 +73,7 @@ export default function PublicFunnel() {
           name: data.funnel.name,
           slug: data.funnel.slug,
           settings: data.funnel.settings as FunnelSettings,
+          published_document_snapshot: data.funnel.published_document_snapshot,
         });
         setCustomDomainSteps(data.steps);
       }).catch((err) => {

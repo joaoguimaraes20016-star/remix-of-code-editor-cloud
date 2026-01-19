@@ -37,6 +37,7 @@ type FunnelRow = {
   settings: Record<string, unknown>;
   builder_document: EditorDocument | null;
   version_history: VersionHistoryEntry[] | null;
+  domain_id: string | null;
   updated_at: string;
 };
 
@@ -91,7 +92,7 @@ export default function FunnelEditor() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('funnels')
-        .select('id, team_id, name, slug, status, settings, builder_document, version_history, updated_at')
+        .select('id, team_id, name, slug, status, settings, builder_document, version_history, domain_id, updated_at')
         .eq('id', funnelId)
         .single();
       if (error) throw error;
@@ -310,6 +311,9 @@ export default function FunnelEditor() {
       lastSavedAt={lastSavedAt}
       versionHistory={funnel?.version_history || []}
       onRestoreVersion={handleRestoreVersion}
+      funnelId={funnelId}
+      teamId={teamId}
+      currentDomainId={funnel?.domain_id || null}
     />
   );
 }

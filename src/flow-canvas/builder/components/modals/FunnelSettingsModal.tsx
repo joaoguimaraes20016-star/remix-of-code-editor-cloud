@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Settings, 
   Palette, 
@@ -17,7 +19,14 @@ import {
   Upload,
   Trash2,
   History,
-  RotateCcw
+  RotateCcw,
+  Globe,
+  RefreshCw,
+  Copy,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Link2
 } from 'lucide-react';
 import {
   Dialog,
@@ -30,6 +39,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -92,10 +102,26 @@ interface FunnelSettingsModalProps {
   // Version history props
   versionHistory?: VersionHistoryEntry[];
   onRestoreVersion?: (snapshot: unknown) => void;
+  // Domain management props
+  funnelId?: string;
+  teamId?: string;
+  currentDomainId?: string | null;
+  onDomainChange?: (domainId: string | null) => void;
+}
+
+// Domain record type
+interface DomainRecord {
+  id: string;
+  domain: string;
+  status: string;
+  ssl_provisioned: boolean | null;
+  verified_at: string | null;
+  created_at: string;
 }
 
 type SettingsSection = 
   | 'overview' 
+  | 'domain'
   | 'colors' 
   | 'branding' 
   | 'social' 
@@ -107,6 +133,7 @@ type SettingsSection =
 
 const sidebarItems: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: Settings },
+  { id: 'domain', label: 'Custom Domain', icon: Globe },
   { id: 'colors', label: 'Colors & Style', icon: Palette },
   { id: 'branding', label: 'Branding', icon: ImageIcon },
   { id: 'social', label: 'Social Preview', icon: Share2 },
@@ -131,11 +158,173 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
   onUpdateSettings,
   versionHistory = [],
   onRestoreVersion,
+  funnelId,
+  teamId,
+  currentDomainId,
+  onDomainChange,
 }) => {
+  const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<SettingsSection>('overview');
   const [imagePickerTarget, setImagePickerTarget] = useState<'logo' | 'favicon' | 'social' | null>(null);
   const [webhookTestStatus, setWebhookTestStatus] = useState<Record<string, 'idle' | 'testing' | 'success' | 'error'>>({});
   const [restoringVersion, setRestoringVersion] = useState<number | null>(null);
+  
+  // Domain management state
+  const [newDomainInput, setNewDomainInput] = useState('');
+  const [selectedExistingDomain, setSelectedExistingDomain] = useState<string>('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [copiedDNS, setCopiedDNS] = useState(false);
+
+  // Fetch team's domains
+  const { data: domains = [], isLoading: domainsLoading } = useQuery({
+    queryKey: ['funnel-domains', teamId],
+    queryFn: async () => {
+      if (!teamId) return [];
+      const { data, error } = await supabase
+        .from('funnel_domains')
+        .select('*')
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as DomainRecord[];
+    },
+    enabled: !!teamId && activeSection === 'domain',
+  });
+
+  // Get currently linked domain
+  const linkedDomain = useMemo(() => 
+    domains.find(d => d.id === currentDomainId), 
+    [domains, currentDomainId]
+  );
+
+  // Available domains (verified, not linked to another funnel)
+  const availableDomains = useMemo(() => 
+    domains.filter(d => d.id !== currentDomainId),
+    [domains, currentDomainId]
+  );
+
+  // Link domain to funnel mutation
+  const linkDomainMutation = useMutation({
+    mutationFn: async (domainId: string) => {
+      if (!funnelId) throw new Error('No funnel ID');
+      const { error } = await supabase
+        .from('funnels')
+        .update({ domain_id: domainId })
+        .eq('id', funnelId);
+      if (error) throw error;
+    },
+    onSuccess: (_, domainId) => {
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['funnel-editor', funnelId] });
+      onDomainChange?.(domainId);
+      toast.success('Domain linked successfully!');
+    },
+    onError: () => {
+      toast.error('Failed to link domain');
+    },
+  });
+
+  // Unlink domain from funnel mutation
+  const unlinkDomainMutation = useMutation({
+    mutationFn: async () => {
+      if (!funnelId) throw new Error('No funnel ID');
+      const { error } = await supabase
+        .from('funnels')
+        .update({ domain_id: null })
+        .eq('id', funnelId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['funnel-editor', funnelId] });
+      onDomainChange?.(null);
+      toast.success('Domain unlinked');
+    },
+    onError: () => {
+      toast.error('Failed to unlink domain');
+    },
+  });
+
+  // Add new domain mutation
+  const addDomainMutation = useMutation({
+    mutationFn: async (domain: string) => {
+      if (!teamId) throw new Error('No team ID');
+      const cleanDomain = domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+      const { data, error } = await supabase
+        .from('funnel_domains')
+        .insert({
+          team_id: teamId,
+          domain: cleanDomain,
+          status: 'pending',
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as DomainRecord;
+    },
+    onSuccess: (data) => {
+      setNewDomainInput('');
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+      // Auto-link to current funnel
+      linkDomainMutation.mutate(data.id);
+      toast.success('Domain added! Configure your DNS settings below.');
+    },
+    onError: (error: any) => {
+      if (error.message?.includes('duplicate')) {
+        toast.error('This domain is already registered');
+      } else {
+        toast.error('Failed to add domain');
+      }
+    },
+  });
+
+  // Verify domain
+  const handleVerifyDomain = async (domain: DomainRecord) => {
+    setIsVerifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-domain', {
+        body: { domainId: domain.id, domain: domain.domain }
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+      
+      if (error) throw error;
+      
+      if (data?.status === 'verified') {
+        toast.success('Domain verified! Your funnel is now live.');
+      } else if (data?.status === 'partial') {
+        toast.info('Partial DNS configuration detected. Please check all records.');
+      } else {
+        toast.info('DNS not yet configured. Please check your DNS settings.');
+      }
+    } catch (err) {
+      toast.error('Verification failed');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Copy DNS instructions
+  const handleCopyDNS = () => {
+    const dnsText = `Type: A | Name: @ | Value: 143.198.103.189\nType: A | Name: www | Value: 143.198.103.189`;
+    navigator.clipboard.writeText(dnsText);
+    setCopiedDNS(true);
+    toast.success('DNS records copied to clipboard');
+    setTimeout(() => setCopiedDNS(false), 2000);
+  };
+
+  // Get status badge config
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'verified':
+        return { label: 'Verified', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 };
+      case 'partial':
+        return { label: 'Partial', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: AlertCircle };
+      case 'pending':
+      default:
+        return { label: 'Pending DNS', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock };
+    }
+  };
 
   const handleRestoreVersion = async (entry: VersionHistoryEntry, index: number) => {
     if (!onRestoreVersion) return;
@@ -275,6 +464,255 @@ export const FunnelSettingsModal: React.FC<FunnelSettingsModalProps> = ({
                 />
               </div>
             </div>
+          </div>
+        );
+
+      case 'domain':
+        const statusConfig = linkedDomain ? getStatusConfig(linkedDomain.status) : null;
+        const StatusIcon = statusConfig?.icon || Clock;
+        
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-builder-text mb-1">Custom Domain</h3>
+              <p className="text-sm text-builder-text-muted">
+                Connect your own domain to this funnel
+              </p>
+            </div>
+            
+            {!funnelId || !teamId ? (
+              <div className="p-4 rounded-lg border border-builder-border bg-builder-bg">
+                <p className="text-sm text-builder-text-muted">
+                  Save the funnel first to manage custom domains.
+                </p>
+              </div>
+            ) : linkedDomain ? (
+              /* Currently Linked Domain Display */
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg border border-builder-border bg-builder-surface">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-builder-accent/10 flex items-center justify-center">
+                        <Globe className="h-5 w-5 text-builder-accent" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-builder-text">{linkedDomain.domain}</p>
+                        <Badge variant="outline" className={cn('mt-1', statusConfig?.color)}>
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {statusConfig?.label}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => unlinkDomainMutation.mutate()}
+                      disabled={unlinkDomainMutation.isPending}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {linkedDomain.status === 'verified' ? (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      <span className="text-sm text-emerald-600">
+                        Your funnel is live at <a 
+                          href={`https://${linkedDomain.domain}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="font-medium underline"
+                        >
+                          {linkedDomain.domain}
+                        </a>
+                      </span>
+                      <ExternalLink className="h-3 w-3 text-emerald-500 ml-auto" />
+                    </div>
+                  ) : (
+                    /* DNS Setup Instructions */
+                    <div className="mt-4 space-y-4">
+                      <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-amber-600">DNS Configuration Required</p>
+                            <p className="text-xs text-amber-600/80 mt-1">
+                              Add the following DNS records at your domain registrar to verify ownership.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-builder-text text-sm">DNS Records</Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCopyDNS}
+                            className="h-7 text-xs"
+                          >
+                            {copiedDNS ? (
+                              <>
+                                <Check className="h-3 w-3 mr-1" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <div className="bg-builder-bg p-3 rounded-lg border border-builder-border font-mono text-xs space-y-1.5">
+                          <div className="flex gap-4">
+                            <span className="text-builder-text-muted w-12">Type:</span>
+                            <span className="text-builder-text">A</span>
+                            <span className="text-builder-text-muted ml-4">Name:</span>
+                            <span className="text-builder-text">@</span>
+                            <span className="text-builder-text-muted ml-4">Value:</span>
+                            <span className="text-builder-accent">143.198.103.189</span>
+                          </div>
+                          <div className="flex gap-4">
+                            <span className="text-builder-text-muted w-12">Type:</span>
+                            <span className="text-builder-text">A</span>
+                            <span className="text-builder-text-muted ml-4">Name:</span>
+                            <span className="text-builder-text">www</span>
+                            <span className="text-builder-text-muted ml-4">Value:</span>
+                            <span className="text-builder-accent">143.198.103.189</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => handleVerifyDomain(linkedDomain)}
+                        disabled={isVerifying}
+                        className="w-full"
+                      >
+                        {isVerifying ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Checking DNS...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Verify DNS Configuration
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* No Domain Linked - Show Connect Options */
+              <div className="space-y-6">
+                {/* Connect Existing Domain */}
+                {availableDomains.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-builder-text">Link Existing Domain</Label>
+                    <p className="text-xs text-builder-text-muted">
+                      Select from your team's existing domains
+                    </p>
+                    <div className="flex gap-2">
+                      <Select 
+                        value={selectedExistingDomain} 
+                        onValueChange={setSelectedExistingDomain}
+                      >
+                        <SelectTrigger className="builder-input flex-1">
+                          <SelectValue placeholder="Select a domain..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border-border">
+                          {availableDomains.map(d => (
+                            <SelectItem key={d.id} value={d.id}>
+                              <div className="flex items-center gap-2">
+                                <span>{d.domain}</span>
+                                {d.status === 'verified' && (
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        onClick={() => {
+                          if (selectedExistingDomain) {
+                            linkDomainMutation.mutate(selectedExistingDomain);
+                            setSelectedExistingDomain('');
+                          }
+                        }}
+                        disabled={!selectedExistingDomain || linkDomainMutation.isPending}
+                      >
+                        <Link2 className="h-4 w-4 mr-2" />
+                        Link
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Divider if both options exist */}
+                {availableDomains.length > 0 && (
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-builder-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-builder-surface px-2 text-builder-text-muted">Or</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Add New Domain */}
+                <div className="space-y-3">
+                  <Label className="text-builder-text">Add New Domain</Label>
+                  <p className="text-xs text-builder-text-muted">
+                    Enter your custom domain to connect it to this funnel
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newDomainInput}
+                      onChange={(e) => setNewDomainInput(e.target.value)}
+                      placeholder="yourdomain.com"
+                      className="builder-input flex-1"
+                    />
+                    <Button
+                      onClick={() => {
+                        if (newDomainInput.trim()) {
+                          addDomainMutation.mutate(newDomainInput.trim());
+                        }
+                      }}
+                      disabled={!newDomainInput.trim() || addDomainMutation.isPending}
+                    >
+                      {addDomainMutation.isPending ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Add'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* DNS Instructions Preview */}
+                <div className="p-4 rounded-lg border border-builder-border bg-builder-bg">
+                  <h4 className="font-medium text-builder-text mb-2 flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-builder-text-muted" />
+                    DNS Setup Preview
+                  </h4>
+                  <p className="text-xs text-builder-text-muted mb-3">
+                    After adding a domain, you'll need to configure these DNS records at your registrar:
+                  </p>
+                  <div className="bg-builder-surface p-3 rounded font-mono text-xs space-y-1">
+                    <p className="text-builder-text-muted">A Record: @ → 143.198.103.189</p>
+                    <p className="text-builder-text-muted">A Record: www → 143.198.103.189</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 

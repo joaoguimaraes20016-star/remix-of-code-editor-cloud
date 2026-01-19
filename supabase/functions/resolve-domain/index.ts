@@ -66,7 +66,8 @@ serve(async (req) => {
         slug,
         status,
         settings,
-        team_id
+        team_id,
+        published_document_snapshot
       `)
       .eq('domain_id', domainRecord.id)
       .eq('status', 'published')
@@ -106,7 +107,8 @@ serve(async (req) => {
           slug: funnel.slug,
           name: funnel.name,
           settings: funnel.settings,
-          team_id: funnel.team_id
+          team_id: funnel.team_id,
+          published_document_snapshot: funnel.published_document_snapshot
         },
         steps: steps || [],
         ssl: {

@@ -80,6 +80,12 @@ interface EditorShellProps {
   versionHistory?: VersionHistoryEntry[];
   /** Handler to restore a previous version */
   onRestoreVersion?: (snapshot: unknown) => void;
+  /** Funnel ID for domain management */
+  funnelId?: string;
+  /** Team ID for domain management */
+  teamId?: string;
+  /** Currently linked domain ID */
+  currentDomainId?: string | null;
 }
 
 export const EditorShell: React.FC<EditorShellProps> = ({
@@ -92,6 +98,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   lastSavedAt = null,
   versionHistory = [],
   onRestoreVersion,
+  funnelId,
+  teamId,
+  currentDomainId,
 }) => {
   const isMobile = useIsMobile();
   
@@ -1910,6 +1919,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         onUpdateSettings={handleSettingsUpdate}
         versionHistory={versionHistory}
         onRestoreVersion={onRestoreVersion}
+        funnelId={funnelId}
+        teamId={teamId}
+        currentDomainId={currentDomainId}
       />
       <ShareModal
         isOpen={isShareOpen}
