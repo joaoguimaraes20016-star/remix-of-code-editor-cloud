@@ -8,7 +8,7 @@
  * - Pixel event firing
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -701,36 +701,117 @@ export function FlowCanvasRenderer({
     });
   }, []);
 
-  // Submit lead data
-  const submitLead = useCallback(async () => {
+  // Ref to prevent duplicate submissions
+  const pendingSaveRef = useRef(false);
+
+  // Extract identity fields from formData
+  const extractIdentity = useCallback(() => {
+    const name = (formData.name || formData.full_name || formData.contact_name || null) as string | null;
+    const email = (formData.email || formData.email_address || formData.contact_email || null) as string | null;
+    const phone = (formData.phone || formData.phone_number || formData.contact_phone || null) as string | null;
+    return { name, email, phone };
+  }, [formData]);
+
+  // Submit lead data - properly sends all required parameters
+  const submitLead = useCallback(async (options?: { 
+    stepId?: string; 
+    stepType?: string; 
+    submitMode?: 'draft' | 'submit' 
+  }) => {
+    if (pendingSaveRef.current) {
+      console.log('[FlowCanvasRenderer] Ignoring duplicate submission');
+      return false;
+    }
+    pendingSaveRef.current = true;
+
     try {
       setIsSubmitting(true);
+      
+      const mode = options?.submitMode || 'submit';
+      
+      // Generate idempotent request ID for submits
+      let clientRequestId: string;
+      if (mode === 'submit') {
+        const key = `submitReq:${funnelId}:${currentStepIndex}`;
+        const existing = sessionStorage.getItem(key);
+        clientRequestId = existing || crypto.randomUUID();
+        if (!existing) sessionStorage.setItem(key, clientRequestId);
+      } else {
+        clientRequestId = crypto.randomUUID();
+      }
+      
+      const { name, email, phone } = extractIdentity();
+      
+      console.log(`[FlowCanvasRenderer] Submitting lead: mode=${mode}, funnelId=${funnelId}, leadId=${leadId}`);
       
       const { data, error } = await supabase.functions.invoke('submit-funnel-lead', {
         body: {
           funnel_id: funnelId,
           team_id: teamId,
+          lead_id: leadId,  // Track existing lead for updates
           answers: formData,
-          name: formData.name || null,
-          email: formData.email || null,
-          phone: formData.phone || null,
+          name,
+          email,
+          phone,
           utm_source: utmSource,
           utm_medium: utmMedium,
           utm_campaign: utmCampaign,
+          // CRITICAL: These were missing before
+          submitMode: mode,
+          clientRequestId,
+          step_id: options?.stepId || steps[currentStepIndex]?.id,
+          step_type: options?.stepType || 'flow-canvas',
+          step_intent: 'capture',
+          last_step_index: currentStepIndex,
         },
       });
 
       if (error) throw error;
       
-      setLeadId(data?.lead_id || null);
+      // Extract lead ID from response (handle various response shapes)
+      const returnedLeadId = data?.lead_id || data?.lead?.id || data?.leadId || data?.id;
+      if (returnedLeadId) {
+        setLeadId(returnedLeadId);
+        console.log(`[FlowCanvasRenderer] Lead saved: ${returnedLeadId}`);
+      }
       return true;
     } catch (err) {
-      console.error('Failed to submit lead:', err);
+      console.error('[FlowCanvasRenderer] Failed to submit lead:', err);
       return false;
     } finally {
       setIsSubmitting(false);
+      pendingSaveRef.current = false;
     }
-  }, [funnelId, teamId, formData, utmSource, utmMedium, utmCampaign]);
+  }, [funnelId, teamId, leadId, formData, utmSource, utmMedium, utmCampaign, currentStepIndex, steps, extractIdentity]);
+
+  // Save draft on step navigation (for drop-off tracking)
+  const saveDraft = useCallback(async () => {
+    const { name, email, phone } = extractIdentity();
+    
+    try {
+      const { data } = await supabase.functions.invoke('submit-funnel-lead', {
+        body: {
+          funnel_id: funnelId,
+          team_id: teamId,
+          lead_id: leadId,
+          answers: formData,
+          name,
+          email,
+          phone,
+          submitMode: 'draft',  // Draft = no automations triggered
+          step_id: steps[currentStepIndex]?.id,
+          step_type: 'flow-canvas',
+          last_step_index: currentStepIndex,
+        },
+      });
+      
+      if (data?.lead_id) {
+        setLeadId(data.lead_id);
+      }
+    } catch (err) {
+      console.warn('[FlowCanvasRenderer] Draft save failed:', err);
+    }
+  }, [funnelId, teamId, leadId, formData, currentStepIndex, steps, extractIdentity]);
 
   // Handle button click
   const handleButtonClick = useCallback(async (element: FlowCanvasElement) => {
@@ -745,11 +826,14 @@ export function FlowCanvasRenderer({
 
     switch (action) {
       case 'next-step':
+        // Save draft before moving to track progress
+        saveDraft();
+        
         if (!isLastStep) {
           setCurrentStepIndex(prev => prev + 1);
         } else {
           // Last step - submit and show complete
-          const success = await submitLead();
+          const success = await submitLead({ submitMode: 'submit' });
           if (success) {
             setIsComplete(true);
           }
@@ -757,7 +841,7 @@ export function FlowCanvasRenderer({
         break;
         
       case 'submit':
-        const success = await submitLead();
+        const success = await submitLead({ submitMode: 'submit' });
         if (success) {
           if (redirectUrl) {
             window.location.href = redirectUrl;
@@ -828,7 +912,22 @@ export function FlowCanvasRenderer({
         return renderText(element, deviceMode);
         
       case 'input':
-        const fieldKey = (element.props.fieldKey as string) || element.id;
+        // Detect semantic field type from placeholder/type for identity mapping
+        const rawFieldKey = (element.props.fieldKey as string) || element.id;
+        const placeholder = ((element.props.placeholder as string) || '').toLowerCase();
+        const inputType = ((element.props.type as string) || 'text').toLowerCase();
+        
+        // Auto-detect identity fields by placeholder or input type
+        let fieldKey = rawFieldKey;
+        if (inputType === 'email' || placeholder.includes('email')) {
+          fieldKey = 'email';
+        } else if (inputType === 'tel' || placeholder.includes('phone') || placeholder.includes('mobile')) {
+          fieldKey = 'phone';
+        } else if ((placeholder.includes('name') && !placeholder.includes('company') && !placeholder.includes('business')) || 
+                   placeholder.includes('full name') || placeholder.includes('your name')) {
+          fieldKey = 'name';
+        }
+        
         return (
           <InputRenderer
             key={element.id}
