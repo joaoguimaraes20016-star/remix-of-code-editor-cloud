@@ -1942,6 +1942,22 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         pageSlug={page.slug}
         pageTitle={page.name}
       />
+      <PublishModal
+        isOpen={isPublishOpen}
+        onClose={() => setIsPublishOpen(false)}
+        onPublish={handleDoPublish}
+        onOpenSettings={() => {
+          setIsPublishOpen(false);
+          setIsSettingsOpen(true);
+        }}
+        pageSlug={page.slug}
+        pageTitle={page.name}
+        funnelId={funnelId}
+        teamId={teamId}
+        currentDomainId={currentDomainId}
+        isPublishing={isPublishing}
+        funnelStatus={funnelStatus}
+      />
       <AnalyticsPanel
         isOpen={isAnalyticsOpen}
         onClose={() => setIsAnalyticsOpen(false)}

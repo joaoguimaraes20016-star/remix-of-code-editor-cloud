@@ -314,6 +314,8 @@ export default function FunnelEditor() {
       funnelId={funnelId}
       teamId={teamId}
       currentDomainId={funnel?.domain_id || null}
+      funnelStatus={funnel?.status || 'draft'}
+      isPublishing={publishMutation.isPending}
     />
   );
 }
