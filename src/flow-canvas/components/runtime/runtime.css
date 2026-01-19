@@ -1,0 +1,196 @@
+/**
+ * Runtime-specific styles for EditorDocument rendering
+ * 
+ * These styles ensure published funnels render cleanly without any
+ * editor-specific chrome (selection overlays, hover toolbars, etc.)
+ */
+
+/* Reset all editor-specific behaviors in runtime */
+.builder-v2-runtime .builder-v2-node {
+  cursor: default !important;
+  pointer-events: auto;
+}
+
+.builder-v2-runtime .builder-v2-node--readonly {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hide all editor overlays and toolbars */
+.builder-v2-runtime .builder-v2-node-overlay,
+.builder-v2-runtime .builder-v2-hover-toolbar {
+  display: none !important;
+}
+
+/* Remove selection states */
+.builder-v2-runtime .builder-v2-node[data-selected='true'] .builder-v2-node-overlay,
+.builder-v2-runtime .builder-v2-node:hover .builder-v2-node-overlay {
+  display: none !important;
+}
+
+/* Remove focus mode fading */
+.builder-v2-runtime .builder-v2-canvas:has(.builder-v2-node[data-selected='true']) .builder-v2-node:not([data-selected='true']) {
+  opacity: 1;
+  filter: none;
+}
+
+/* Ensure full width content */
+.builder-v2-runtime {
+  width: 100%;
+  min-height: 100%;
+}
+
+.builder-v2-runtime .builder-v2-node-surface {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Frame primitives should be full-width in runtime */
+.builder-v2-runtime [data-node-type="Frame"],
+.builder-v2-runtime [data-node-type="Section"] {
+  width: 100%;
+}
+
+/* Section content container */
+.builder-v2-runtime .primitive-section {
+  width: 100%;
+  min-height: auto;
+}
+
+/* Hero sections should be at least viewport height */
+.builder-v2-runtime .primitive-section--hero,
+.builder-v2-runtime .primitive-section--hero-card {
+  min-height: 100vh;
+}
+
+/* Forms should work in runtime */
+.builder-v2-runtime input,
+.builder-v2-runtime button,
+.builder-v2-runtime select,
+.builder-v2-runtime textarea {
+  pointer-events: auto;
+  cursor: auto;
+}
+
+.builder-v2-runtime button {
+  cursor: pointer;
+}
+
+/* Ensure buttons are interactive */
+.builder-v2-runtime .builder-v2-component--button,
+.builder-v2-runtime .primitive-cta-button {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 200ms ease, filter 200ms ease, box-shadow 200ms ease;
+}
+
+.builder-v2-runtime .builder-v2-component--button:hover,
+.builder-v2-runtime .primitive-cta-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.builder-v2-runtime .builder-v2-component--button:active,
+.builder-v2-runtime .primitive-cta-button:active {
+  transform: translateY(0);
+}
+
+/* Option grids should be interactive */
+.builder-v2-runtime .primitive-option-card {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Links should work */
+.builder-v2-runtime a {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Video embeds should be visible and interactive */
+.builder-v2-runtime iframe,
+.builder-v2-runtime video {
+  pointer-events: auto;
+}
+
+/* Calendar embeds need to be interactive */
+.builder-v2-runtime .primitive-calendar-embed iframe {
+  pointer-events: auto;
+}
+
+/* Typography improvements for production */
+.builder-v2-runtime .builder-v2-component--text,
+.builder-v2-runtime .primitive-heading,
+.builder-v2-runtime .primitive-paragraph {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Form field styling */
+.builder-v2-runtime .primitive-input {
+  pointer-events: auto;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.builder-v2-runtime .primitive-input:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Consent checkbox */
+.builder-v2-runtime .primitive-consent-checkbox {
+  pointer-events: auto;
+}
+
+.builder-v2-runtime .primitive-consent-checkbox input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* Remove any debug attributes styling */
+.builder-v2-runtime [data-node-id],
+.builder-v2-runtime [data-node-type] {
+  /* Keep the attributes but don't style based on them */
+}
+
+/* Smooth scrolling for the page */
+.builder-v2-runtime {
+  scroll-behavior: smooth;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .builder-v2-runtime .builder-v2-node-surface {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  .builder-v2-runtime .primitive-section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .builder-v2-runtime .builder-v2-node-surface {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* Animation optimizations */
+.builder-v2-runtime * {
+  will-change: auto;
+}
+
+/* Prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .builder-v2-runtime * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
