@@ -577,7 +577,7 @@
   }
 
   .toggle-pill-option-active {
-    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-mid)));
+    background: hsl(var(--builder-accent));
     @apply text-white;
   }
 
