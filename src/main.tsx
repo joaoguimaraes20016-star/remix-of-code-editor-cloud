@@ -1,6 +1,7 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+import App from "./App";
 
 function escapeHtml(input: string) {
   return input
@@ -85,20 +86,13 @@ async function bootstrap() {
   });
 
   try {
-    const { default: App } = await import("./App.tsx");
-
-    try {
-      const rootEl = document.getElementById("root")!;
-      const root = createRoot(rootEl);
-      (window as any).__INFOSTACK_REACT_ROOT__ = root;
-      root.render(<App />);
-    } catch (err) {
-      console.error("[Boot] render failed", err);
-      renderBootError("React render failed", err);
-    }
+    const rootEl = document.getElementById("root")!;
+    const root = createRoot(rootEl);
+    (window as any).__INFOSTACK_REACT_ROOT__ = root;
+    root.render(<App />);
   } catch (err) {
-    console.error("[Boot] bootstrap import failed", err);
-    renderBootError("App bootstrap failed", err);
+    console.error("[Boot] render failed", err);
+    renderBootError("React render failed", err);
   }
 }
 
