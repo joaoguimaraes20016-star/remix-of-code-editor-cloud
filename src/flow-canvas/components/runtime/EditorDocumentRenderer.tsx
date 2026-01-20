@@ -65,6 +65,10 @@ interface EditorDocumentRendererProps {
 
 /**
  * Page wrapper that handles background, overlay, and video backgrounds
+ *
+ * Phase 38 parity: uses the canonical viewport frame structure
+ * (.builder-root -> .builder-canvas-frame -> .builder-page)
+ * so runtime matches editor/preview.
  */
 function PageFrame({
   page,
@@ -74,8 +78,8 @@ function PageFrame({
   children: React.ReactNode;
 }) {
   // Extract background from page's canvasRoot props
-  const pageBackground = (page.canvasRoot?.props?.background as PageBackground) || null;
-  
+  const pageBackground = (page.canvasRoot?.props?.background as PageBackground) || undefined;
+
   const backgroundStyles = useMemo(() => {
     return getPageBackgroundStyles(pageBackground, true);
   }, [pageBackground]);
@@ -90,48 +94,42 @@ function PageFrame({
   const isDirectVideo = isDirectVideoUrl(videoUrl);
 
   return (
-    <section
-      className="relative min-h-screen w-full overflow-hidden"
-      style={backgroundStyles}
-      data-page-id={page.id}
-      data-page-type={page.type}
-    >
-      {/* Video Background */}
-      {embedUrl && (
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          {isDirectVideo ? (
-            <video
-              src={embedUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <iframe
-              src={embedUrl}
-              allow="autoplay; fullscreen"
-              className="absolute top-1/2 left-1/2 w-[200%] h-[200%] -translate-x-1/2 -translate-y-1/2 border-0 pointer-events-none"
-              style={{ minWidth: '200%', minHeight: '200%' }}
-            />
+    <div className="builder-root" data-mode="runtime" data-page-id={page.id} data-page-type={page.type}>
+      <div className="builder-canvas-frame">
+        <div className="builder-page relative min-h-screen w-full overflow-hidden" style={backgroundStyles}>
+          {/* Video Background */}
+          {embedUrl && (
+            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+              {isDirectVideo ? (
+                <video
+                  src={embedUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <iframe
+                  src={embedUrl}
+                  allow="autoplay; fullscreen"
+                  className="absolute top-1/2 left-1/2 w-[200%] h-[200%] -translate-x-1/2 -translate-y-1/2 border-0 pointer-events-none"
+                  style={{ minWidth: '200%', minHeight: '200%' }}
+                />
+              )}
+            </div>
           )}
+
+          {/* Overlay */}
+          {overlayStyles && (
+            <div className="absolute inset-0 z-[1] pointer-events-none" style={overlayStyles} />
+          )}
+
+          {/* Content */}
+          <div className="relative z-[2] min-h-screen">{children}</div>
         </div>
-      )}
-
-      {/* Overlay */}
-      {overlayStyles && (
-        <div
-          className="absolute inset-0 z-[1] pointer-events-none"
-          style={overlayStyles}
-        />
-      )}
-
-      {/* Content */}
-      <div className="relative z-[2] min-h-screen">
-        {children}
       </div>
-    </section>
+    </div>
   );
 }
 
