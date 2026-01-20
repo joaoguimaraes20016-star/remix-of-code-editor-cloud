@@ -553,3 +553,72 @@
   --tw-ring-opacity: 0 !important;
   --tw-ring-color: transparent !important;
 }
+
+/* ========================================
+   ADDITIONAL: Catch-all hover outline disabling
+   ======================================== */
+
+/* Disable ALL hover outlines within preview/runtime - global reset */
+.flowcanvas-runtime *:hover,
+.builder-v2-canvas--preview *:hover {
+  outline-color: transparent !important;
+}
+
+/* Disable pointer-events on chrome overlays but allow content interaction */
+.flowcanvas-runtime .builder-click-target,
+.builder-v2-canvas--preview .builder-click-target {
+  cursor: default !important;
+}
+
+/* Group hover states - common pattern in builder */
+.flowcanvas-runtime .group:hover .group-hover\:ring-2,
+.flowcanvas-runtime .group:hover .group-hover\:ring-white\/20,
+.flowcanvas-runtime .group\/element:hover,
+.flowcanvas-runtime .group\/block:hover,
+.flowcanvas-runtime .group\/section:hover,
+.builder-v2-canvas--preview .group:hover .group-hover\:ring-2,
+.builder-v2-canvas--preview .group:hover .group-hover\:ring-white\/20,
+.builder-v2-canvas--preview .group\/element:hover,
+.builder-v2-canvas--preview .group\/block:hover,
+.builder-v2-canvas--preview .group\/section:hover {
+  --tw-ring-opacity: 0 !important;
+  outline: none !important;
+}
+
+/* Disable any element with builder prefix from showing outlines on hover */
+.flowcanvas-runtime [class*="builder-"]:hover,
+.builder-v2-canvas--preview [class*="builder-"]:hover {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Hero block specific hover states */
+.flowcanvas-runtime .block-type-hero:hover,
+.flowcanvas-runtime [data-block-type="hero"]:hover,
+.builder-v2-canvas--preview .block-type-hero:hover,
+.builder-v2-canvas--preview [data-block-type="hero"]:hover {
+  outline: none !important;
+}
+
+/* Frame/section wrappers */
+.flowcanvas-runtime .frame-wrapper:hover,
+.flowcanvas-runtime .section-wrapper:hover,
+.builder-v2-canvas--preview .frame-wrapper:hover,
+.builder-v2-canvas--preview .section-wrapper:hover {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* StepPreview hover rings (from StepPreview.tsx) */
+.flowcanvas-runtime .hover\:ring-2:hover,
+.flowcanvas-runtime .hover\:ring-primary\/50:hover,
+.builder-v2-canvas--preview .hover\:ring-2:hover,
+.builder-v2-canvas--preview .hover\:ring-primary\/50:hover {
+  --tw-ring-opacity: 0 !important;
+  --tw-ring-color: transparent !important;
+}
+
+/* Canvas grid background - hide in preview */
+.builder-v2-canvas--preview.canvas-grid {
+  background: transparent !important;
+}
