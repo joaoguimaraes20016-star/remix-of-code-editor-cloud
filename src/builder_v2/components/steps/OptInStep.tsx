@@ -86,7 +86,7 @@ export function OptInStep({
           textColor={d.buttonTextColor}
           borderRadiusPx={d.borderRadius}
           fullWidth={(d as any).buttonFullWidth ?? false}
-          className="mt-4 builder-element-selectable"
+          className="mt-4"
         >
           {content.button_text || 'Submit'}
         </UnifiedButton>

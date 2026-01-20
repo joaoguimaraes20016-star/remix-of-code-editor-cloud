@@ -60,7 +60,7 @@ export function TextQuestionStep({
           borderRadiusPx={d.borderRadius}
           fullWidth={(d as any).buttonFullWidth ?? false}
           size={sizes.button === 'text-sm' ? 'sm' : sizes.button === 'text-lg' ? 'lg' : 'md'}
-          className="mt-4 builder-element-selectable"
+          className="mt-4"
         >
           {content.button_text || 'Continue'}
         </UnifiedButton>

@@ -1710,7 +1710,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             <button
               className={cn(
                 `btn-${element.id}`,
-                'builder-element-selectable',
+                // Only add editor chrome classes when NOT in readOnly mode
+                !readOnly && 'builder-element-selectable',
                 useSizeClass && buttonSizeClasses[buttonSize],
                 buttonWeightClass[buttonFontWeight],
                 isNavPill && 'rounded-full',
@@ -1720,8 +1721,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 "inline-flex items-center justify-center gap-2",
                 // Only apply shadowClass if not outline mode (prevents class/style conflict)
                 !isOutlineMode && shadowClass,
-                // Apply selection ring to the actual button element
-                isSelected && 'builder-element-selected',
+                // Apply selection ring to the actual button element (editor only)
+                !readOnly && isSelected && 'builder-element-selected',
                 // Disabled state styling - visual feedback from FlowContainer
                 isButtonDisabled && 'opacity-50 cursor-not-allowed'
               )}
@@ -4279,8 +4280,10 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   return (
     <div
       className={cn(
-        'builder-section-selectable group/section p-2 rounded-xl relative',
-        isSelected && 'builder-section-selected',
+        'p-2 rounded-xl relative',
+        // Only add editor chrome classes when NOT in readOnly mode
+        !readOnly && 'builder-section-selectable group/section',
+        !readOnly && isSelected && 'builder-section-selected',
         stack.direction === 'horizontal' ? 'flex flex-row gap-4' : 'flex flex-col gap-3'
       )}
       // No onClick here - clicking bubbles up to FrameRenderer which handles frame selection

@@ -537,9 +537,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           }}
           isDisabled={isButtonDisabled(s)}
           className={cn(
-            'mt-4 builder-element-selectable',
-            !isPreviewMode && 'cursor-pointer',
-            isElementSelected(stepId, 'button') && 'ring-2 ring-primary ring-offset-2'
+            'mt-4',
+            !isPreviewMode && 'builder-element-selectable cursor-pointer',
+            !isPreviewMode && isElementSelected(stepId, 'button') && 'ring-2 ring-primary ring-offset-2'
           )}
         >
           {s.buttonText || 'Start Application →'}
@@ -795,9 +795,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           }}
           isDisabled={isButtonDisabled(s)}
           className={cn(
-            'mt-4 builder-element-selectable',
-            !isPreviewMode && 'cursor-pointer',
-            isElementSelected(step.id, 'button') && 'ring-2 ring-primary ring-offset-2'
+            'mt-4',
+            !isPreviewMode && 'builder-element-selectable cursor-pointer',
+            !isPreviewMode && isElementSelected(step.id, 'button') && 'ring-2 ring-primary ring-offset-2'
           )}
         >
           {s.buttonText || 'Continue'}
@@ -974,9 +974,9 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           }}
           isDisabled={isButtonDisabled(s)}
           className={cn(
-            'mt-4 builder-element-selectable',
-            !isPreviewMode && 'cursor-pointer',
-            isElementSelected(step.id, 'button') && 'ring-2 ring-primary ring-offset-2'
+            'mt-4',
+            !isPreviewMode && 'builder-element-selectable cursor-pointer',
+            !isPreviewMode && isElementSelected(step.id, 'button') && 'ring-2 ring-primary ring-offset-2'
           )}
         >
           {s.buttonText || getDefaultButtonText('capture')}
