@@ -110,14 +110,25 @@ export function AutomationsList({ teamId }: AutomationsListProps) {
     navigate(`/team/${teamId}/workflows/new/edit`);
   };
 
-  const triggerTypeLabels: Record<TriggerType, string> = {
+  const triggerTypeLabels: Partial<Record<TriggerType, string>> = {
     lead_created: "Lead Created",
     lead_tag_added: "Tag Added",
+    lead_tag_removed: "Tag Removed",
+    form_submitted: "Form Submitted",
     appointment_booked: "Appointment Booked",
     appointment_rescheduled: "Rescheduled",
     appointment_no_show: "No Show",
     appointment_completed: "Completed",
+    appointment_canceled: "Canceled",
+    stage_changed: "Stage Changed",
+    deal_created: "Deal Created",
+    deal_won: "Deal Won",
+    deal_lost: "Deal Lost",
     payment_received: "Payment Received",
+    payment_failed: "Payment Failed",
+    webhook_received: "Webhook",
+    manual_trigger: "Manual",
+    scheduled_trigger: "Scheduled",
     time_delay: "Time Delay",
   };
 
