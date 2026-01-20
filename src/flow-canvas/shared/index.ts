@@ -11,12 +11,26 @@ export { ApplicationStepRenderer } from './components/ApplicationStepRenderer';
 export { useConsentRequired, stepRequiresConsent, anyStepRequiresConsent } from './hooks/useConsentRequired';
 export { 
   useApplicationSubmit, 
-  extractIdentityFromAnswers, 
-  createSubmitPayload,
+  extractIdentityFromAnswers as extractIdentityFromAnswersLegacy, 
+  createSubmitPayload as createSubmitPayloadLegacy,
   type ApplicationSubmitPayload,
   type ApplicationSubmitOptions,
   type UseApplicationSubmitReturn,
 } from './hooks/useApplicationSubmit';
+
+// Unified lead submission hook (preferred for all new code)
+export {
+  useUnifiedLeadSubmit,
+  extractIdentityFromAnswers,
+  createUnifiedPayload,
+  type UnifiedSubmitPayload,
+  type UnifiedLeadSubmitOptions,
+  type UnifiedLeadSubmitReturn,
+  type LeadIdentity,
+  type LeadConsent,
+  type LeadSource,
+  type LeadMetadata,
+} from './hooks/useUnifiedLeadSubmit';
 
 // Adapters (for legacy compatibility)
 export { 
