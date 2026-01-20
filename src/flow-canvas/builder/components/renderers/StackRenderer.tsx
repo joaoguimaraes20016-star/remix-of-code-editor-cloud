@@ -128,8 +128,10 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
   return (
     <div
       className={cn(
-        'builder-section-selectable group/section p-2 rounded-xl relative',
-        isSelected && 'builder-section-selected',
+        'p-2 rounded-xl relative',
+        // Only add editor chrome classes when NOT in readOnly mode
+        !readOnly && 'builder-section-selectable group/section',
+        !readOnly && isSelected && 'builder-section-selected',
         stack.direction === 'horizontal' ? 'flex flex-row gap-4' : 'flex flex-col gap-3'
       )}
     >

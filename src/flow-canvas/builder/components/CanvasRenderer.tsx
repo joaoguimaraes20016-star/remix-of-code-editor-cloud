@@ -770,10 +770,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
   }, [element.stateStyles, stateStyleClass]);
 
   const baseClasses = cn(
-    'builder-element-selectable builder-click-target rounded-lg group/element relative',
+    'rounded-lg relative',
+    // Only add editor chrome classes when NOT in readOnly mode
+    !readOnly && 'builder-element-selectable builder-click-target group/element',
     stateStyleClass,
-    isSelected && 'builder-element-selected',
-    isMultiSelected && !isSelected && 'builder-multi-selected',
+    !readOnly && isSelected && 'builder-element-selected',
+    !readOnly && isMultiSelected && !isSelected && 'builder-multi-selected',
     isDragging && 'opacity-50 z-50',
     animationKey >= 0 && effectClass // Include key to force re-render
   );
@@ -1635,10 +1637,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         // SINGLE SURFACE: Wrapper is for layout/selection ONLY - no visual styles
         // The button element is the ONLY visual surface
         const wrapperClasses = cn(
-          'builder-element-selectable builder-click-target group/element relative',
+          'relative',
+          // Only add editor chrome classes when NOT in readOnly mode
+          !readOnly && 'builder-element-selectable builder-click-target group/element',
           // NO rounded-lg, NO background, NO border on wrapper
           stateStyleClass,
-          isMultiSelected && !isSelected && 'builder-multi-selected',
+          !readOnly && isMultiSelected && !isSelected && 'builder-multi-selected',
           isDragging && 'opacity-50 z-50',
           animationKey >= 0 && effectClass
         );
@@ -3736,9 +3740,11 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           transition,
         }}
         className={cn(
-          'builder-block-selectable builder-click-target group/block relative p-4',
-          isSelected && 'builder-block-selected',
-          isMultiSelected && !isSelected && 'builder-multi-selected',
+          'relative p-4',
+          // Only add editor chrome classes when NOT in readOnly mode
+          !readOnly && 'builder-block-selectable builder-click-target group/block',
+          !readOnly && isSelected && 'builder-block-selected',
+          !readOnly && isMultiSelected && !isSelected && 'builder-multi-selected',
           isDragging && 'opacity-50 z-50'
         )}
         onClick={(e) => {
@@ -3834,13 +3840,15 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         display: 'block',
       }}
       className={cn(
-        'builder-block-selectable builder-click-target group/block relative',
+        'relative',
+        // Only add editor chrome classes when NOT in readOnly mode
+        !readOnly && 'builder-block-selectable builder-click-target group/block',
         // Only apply default padding if the user hasn't set ANY padding styles (check for truthy non-empty values)
         !hasCustomPadding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
-        isSelected && 'builder-block-selected',
-        isMultiSelected && !isSelected && 'builder-multi-selected',
+        !readOnly && isSelected && 'builder-block-selected',
+        !readOnly && isMultiSelected && !isSelected && 'builder-multi-selected',
         // Parent highlight when child element is selected
-        hasSelectedChild && !isSelected && 'builder-parent-of-selected',
+        !readOnly && hasSelectedChild && !isSelected && 'builder-parent-of-selected',
         block.type === 'hero' && !hasCustomPadding && 'text-center py-12',
         block.type === 'cta' && 'justify-center',
         isDragging && 'opacity-50 z-50',
