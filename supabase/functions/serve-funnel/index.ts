@@ -178,13 +178,12 @@ serve(async (req) => {
       queryParams: queryString ? Object.fromEntries(queryParams) : {},
     }).replace(/</g, '\\u003c'); // Escape < for script safety
 
-    const injectionScript = `<script>
-    window.__INFOSTACK_FUNNEL__ = ${funnelData};
-    window.__INFOSTACK_DOMAIN__ = "${cleanDomain}";
-  </script>`;
+    // Inject BEFORE the main bundle script so data is available at boot
+    // We use the body (not head) to avoid conflicts with next-themes and other head-manipulating libs
+    const injectionScript = `<script>window.__INFOSTACK_FUNNEL__=${funnelData};window.__INFOSTACK_DOMAIN__="${cleanDomain}";</script>`;
 
-    // Inject before the closing </head> tag
-    appHtml = appHtml.replace('</head>', `${injectionScript}\n</head>`);
+    // Inject at the very start of <body> — before any other scripts
+    appHtml = appHtml.replace(/<body[^>]*>/, (match) => `${match}\n${injectionScript}`);
 
     // Update page title if funnel has a name
     if (funnel.name) {
