@@ -153,6 +153,17 @@ serve(async (req) => {
     let appHtml = await appIndexResponse.text();
     console.log(`[serve-funnel] Fetched index.html (${appHtml.length} bytes)`);
 
+    // Cache-bust asset URLs to ensure latest bundle is loaded
+    // This prevents stale JS/CSS from being served on custom domains
+    appHtml = appHtml.replace(
+      /\/assets\/index\.js/g,
+      `/assets/index.js?v=${BUILD_TIMESTAMP}`
+    );
+    appHtml = appHtml.replace(
+      /\/assets\/index\.css/g,
+      `/assets/index.css?v=${BUILD_TIMESTAMP}`
+    );
+
     // 5. Inject funnel data into the HTML
     const funnelData = JSON.stringify({
       funnel: {
