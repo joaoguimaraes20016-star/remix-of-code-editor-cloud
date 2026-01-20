@@ -165,12 +165,15 @@ export default function FunnelEditor() {
   });
 
   // Publish mutation - now stores version history
+  // IMPORTANT: Include page.settings in the snapshot for runtime background/theme rendering
   const publishMutation = useMutation({
     mutationFn: async (page: FlowCanvasPage) => {
       const document = flowCanvasToEditorDocument(page);
       const publishedSnapshot = { 
         ...document, 
-        publishedAt: Date.now() 
+        publishedAt: Date.now(),
+        // Include page-level settings (background, theme, fonts) for runtime rendering
+        settings: page.settings || {},
       };
       
       // First fetch current version_history
