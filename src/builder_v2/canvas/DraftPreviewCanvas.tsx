@@ -111,19 +111,38 @@ function DraftPreviewContent({
     return <NoPageState />;
   }
 
-  // Extract page settings for background (cast to access settings not in builder_v2 Page type)
-  const pageSettings = (pageToRender as any).settings as {
-    theme?: 'light' | 'dark';
-    font_family?: string;
-    primary_color?: string;
-    page_background?: PageBackground;
-  } | undefined;
-  const pageBackground = pageSettings?.page_background;
+  // Resolve background/theme tokens with the same priority chain as EditorDocumentRenderer:
+  // 1) page.canvasRoot.props.background (builder_v2)
+  // 2) page.settings.page_background (legacy)
+  const pageAny = pageToRender as any;
+
+  const pageBackground = useMemo(() => {
+    if (pageAny?.canvasRoot?.props?.background) {
+      return pageAny.canvasRoot.props.background as PageBackground;
+    }
+    if (pageAny?.settings?.page_background) {
+      return pageAny.settings.page_background as PageBackground;
+    }
+    return undefined;
+  }, [pageAny]);
+
+  const pageTheme = (pageAny?.canvasRoot?.props?.theme ?? pageAny?.settings?.theme) as
+    | 'light'
+    | 'dark'
+    | undefined;
+
+  const fontFamily =
+    (pageAny?.canvasRoot?.props?.font_family ?? pageAny?.settings?.font_family) ||
+    'Inter, system-ui, sans-serif';
+
+  const primaryColor =
+    (pageAny?.canvasRoot?.props?.primary_color ?? pageAny?.settings?.primary_color) ||
+    '#8B5CF6';
 
   // Compute isDarkTheme based on background luminance (matching FlowCanvasRenderer)
   const isDarkTheme = useMemo(() => {
     const bgSource = pageBackground;
-    
+
     if (bgSource?.type === 'solid' && bgSource.color) {
       const lum = calcLuminance(bgSource.color);
       if (lum !== null) return lum < 0.5;
@@ -137,35 +156,25 @@ function DraftPreviewContent({
         return avgLuminance < 0.5;
       }
     }
-    
+
     // Fall back to theme setting
-    if (pageSettings?.theme === 'dark') return true;
-    if (pageSettings?.theme === 'light') return false;
+    if (pageTheme === 'dark') return true;
+    if (pageTheme === 'light') return false;
     return false;
-  }, [pageBackground, pageSettings?.theme]);
+  }, [pageBackground, pageTheme]);
 
   // Generate background styles using shared utility (exact parity with runtime)
-  const backgroundStyles = useMemo(() => 
-    getPageBackgroundStyles(pageBackground, isDarkTheme),
-    [pageBackground, isDarkTheme]
-  );
-  
+  const backgroundStyles = useMemo(() => getPageBackgroundStyles(pageBackground, isDarkTheme), [pageBackground, isDarkTheme]);
+
   // Overlay styles for backgrounds
-  const overlayStyles = useMemo(() => 
-    getOverlayStyles(pageBackground),
-    [pageBackground]
-  );
-  
+  const overlayStyles = useMemo(() => getOverlayStyles(pageBackground), [pageBackground]);
+
   // Video background handling
-  const videoBackgroundUrl = useMemo(() => 
-    pageBackground?.type === 'video' ? getVideoBackgroundUrl(pageBackground.video) : null,
+  const videoBackgroundUrl = useMemo(
+    () => (pageBackground?.type === 'video' ? getVideoBackgroundUrl(pageBackground.video) : null),
     [pageBackground]
   );
   const isDirectVideo = videoBackgroundUrl ? isDirectVideoUrl(videoBackgroundUrl) : false;
-
-  // Extract font and primary color
-  const fontFamily = pageSettings?.font_family || 'Inter, system-ui, sans-serif';
-  const primaryColor = pageSettings?.primary_color || '#8B5CF6';
 
   const layout = resolveFunnelLayout(pageToRender);
   const resolvedIntent = resolvePageIntent(pageToRender, {
