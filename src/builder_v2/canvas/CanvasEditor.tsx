@@ -253,7 +253,8 @@ export function CanvasEditor({
           }
         }}
       >
-        <div className="builder-v2-node-overlay" aria-hidden="true" />
+        {/* Node overlay - only render in editor mode, not in preview */}
+        {!isPreview && <div className="builder-v2-node-overlay" aria-hidden="true" />}
         <div className="builder-v2-node-surface">
           {frameDef.render(frameProps, page.canvasRoot.children.map((section) => (
             <SortableSection
