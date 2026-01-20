@@ -1,104 +1,44 @@
 // supabase/functions/automation-trigger/index.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type {
+  TriggerType,
+  ActionType,
+  AutomationCondition,
+  AutomationStep,
+  AutomationDefinition,
+  AutomationContext,
+  StepExecutionLog,
+  TriggerRequest,
+  TriggerResponse,
+} from "./types.ts";
+import { logStepExecution, executeWithRetry } from "./step-logger.ts";
+import { checkRateLimit, isWithinBusinessHours } from "./rate-limiter.ts";
+import { executeSendMessage } from "./actions/send-message.ts";
+import { executeTimeDelay, calculateWaitUntilTime } from "./actions/time-delay.ts";
+import {
+  executeAddTag,
+  executeRemoveTag,
+  executeCreateContact,
+  executeUpdateContact,
+  executeAddNote,
+  executeAssignOwner,
+  executeUpdateStage,
+} from "./actions/crm-actions.ts";
+import {
+  executeAddTask,
+  executeNotifyTeam,
+  executeCustomWebhook,
+  executeRunWorkflow,
+  executeStopWorkflow,
+  executeGoTo,
+} from "./actions/workflow-actions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Types mirrored from src/lib/automations/types.ts
-type TriggerType =
-  | "lead_created"
-  | "lead_tag_added"
-  | "appointment_booked"
-  | "appointment_rescheduled"
-  | "appointment_no_show"
-  | "appointment_completed"
-  | "payment_received"
-  | "time_delay";
-
-type ActionType =
-  | "send_message"
-  | "add_task"
-  | "add_tag"
-  | "notify_team"
-  | "enqueue_dialer"
-  | "time_delay"
-  | "custom_webhook"
-  | "assign_owner"
-  | "update_stage";
-
-type CrmEntity = "lead" | "deal";
-
-interface AutomationCondition {
-  field: string;
-  operator: "equals" | "not_equals" | "contains" | "gt" | "lt" | "in";
-  value: string | number | string[];
-}
-
-interface AutomationStep {
-  id: string;
-  order: number;
-  type: ActionType;
-  config: Record<string, any>;
-  conditions?: AutomationCondition[];
-}
-
-interface AutomationDefinition {
-  id: string;
-  teamId: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  trigger: {
-    type: TriggerType;
-    config: Record<string, any>;
-  };
-  steps: AutomationStep[];
-  triggerType?: TriggerType;
-}
-
-interface AutomationContext {
-  teamId: string;
-  triggerType: TriggerType;
-  now: string;
-  lead?: Record<string, any> | null;
-  appointment?: Record<string, any> | null;
-  payment?: Record<string, any> | null;
-  deal?: Record<string, any> | null;
-  meta?: Record<string, any> | null;
-}
-
-interface TriggerRequest {
-  triggerType: TriggerType;
-  teamId: string;
-  eventPayload: Record<string, any>;
-}
-
-interface StepExecutionLog {
-  stepId: string;
-  actionType: ActionType;
-  channel?: string;
-  provider?: string;
-  templateVariables?: Record<string, any>;
-  skipped: boolean;
-  skipReason?: string;
-  entity?: CrmEntity;
-  ownerId?: string;
-  stageId?: string;
-  error?: string;
-  to?: string;
-  messageId?: string;
-  renderedBody?: string;
-}
-
-interface TriggerResponse {
-  status: "ok" | "error";
-  triggerType: TriggerType;
-  automationsRun: string[];
-  stepsExecuted: StepExecutionLog[];
-  error?: string;
-}
+type CrmEntity = "lead" | "deal" | "appointment";
 
 // --- Supabase Client ---
 function getSupabaseClient() {
