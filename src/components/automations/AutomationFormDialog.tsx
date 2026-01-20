@@ -12,16 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import type { TriggerType } from "@/lib/automations/types";
+import { AutomationVisualBuilder } from "./builder/AutomationVisualBuilder";
+import type { AutomationDefinition, TriggerType } from "@/lib/automations/types";
 
 interface AutomationFormDialogProps {
   open: boolean;
@@ -36,18 +30,7 @@ interface AutomationFormDialogProps {
   } | null;
 }
 
-const TRIGGER_TYPES: { value: TriggerType; label: string }[] = [
-  { value: "lead_created", label: "Lead Created" },
-  { value: "lead_tag_added", label: "Lead Tag Added" },
-  { value: "appointment_booked", label: "Appointment Booked" },
-  { value: "appointment_rescheduled", label: "Appointment Rescheduled" },
-  { value: "appointment_no_show", label: "Appointment No Show" },
-  { value: "appointment_completed", label: "Appointment Completed" },
-  { value: "payment_received", label: "Payment Received" },
-  { value: "time_delay", label: "Time Delay" },
-];
-
-const SAMPLE_DEFINITION = {
+const DEFAULT_DEFINITION: AutomationDefinition = {
   id: "",
   teamId: "",
   name: "",
@@ -57,17 +40,7 @@ const SAMPLE_DEFINITION = {
     type: "appointment_booked",
     config: {},
   },
-  steps: [
-    {
-      id: "step-1",
-      order: 1,
-      type: "send_message",
-      config: {
-        channel: "sms",
-        template: "Hey {{lead.first_name}}, your appointment is confirmed!",
-      },
-    },
-  ],
+  steps: [],
 };
 
 export function AutomationFormDialog({
@@ -81,40 +54,47 @@ export function AutomationFormDialog({
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [triggerType, setTriggerType] = useState<TriggerType>("appointment_booked");
-  const [definitionJson, setDefinitionJson] = useState("");
+  const [definition, setDefinition] = useState<AutomationDefinition>(DEFAULT_DEFINITION);
 
   useEffect(() => {
     if (automation) {
       setName(automation.name);
       setDescription(automation.description || "");
-      setTriggerType(automation.trigger_type as TriggerType);
-      setDefinitionJson(JSON.stringify(automation.definition, null, 2));
+      // Parse existing definition or create default
+      const existingDef = automation.definition as AutomationDefinition;
+      setDefinition({
+        ...DEFAULT_DEFINITION,
+        ...existingDef,
+        id: automation.id,
+        teamId,
+        name: automation.name,
+        description: automation.description || "",
+        trigger: existingDef?.trigger || {
+          type: automation.trigger_type as TriggerType,
+          config: {},
+        },
+        steps: existingDef?.steps || [],
+      });
     } else {
       setName("");
       setDescription("");
-      setTriggerType("appointment_booked");
-      setDefinitionJson(JSON.stringify(SAMPLE_DEFINITION, null, 2));
+      setDefinition({
+        ...DEFAULT_DEFINITION,
+        id: crypto.randomUUID(),
+        teamId,
+      });
     }
-  }, [automation, open]);
+  }, [automation, open, teamId]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      let parsedDefinition: Record<string, any>;
-      try {
-        parsedDefinition = JSON.parse(definitionJson);
-      } catch {
-        throw new Error("Invalid JSON in definition");
-      }
-
-      // Update the definition with form values
-      parsedDefinition.id = automation?.id || crypto.randomUUID();
-      parsedDefinition.teamId = teamId;
-      parsedDefinition.name = name;
-      parsedDefinition.description = description;
-      parsedDefinition.trigger = {
-        ...parsedDefinition.trigger,
-        type: triggerType,
+      // Build the complete definition
+      const finalDefinition: AutomationDefinition = {
+        ...definition,
+        id: automation?.id || definition.id,
+        teamId,
+        name,
+        description,
       };
 
       if (isEditing && automation) {
@@ -123,8 +103,8 @@ export function AutomationFormDialog({
           .update({
             name,
             description,
-            trigger_type: triggerType,
-            definition: parsedDefinition,
+            trigger_type: finalDefinition.trigger.type,
+            definition: finalDefinition as unknown as Record<string, any>,
             updated_at: new Date().toISOString(),
           })
           .eq("id", automation.id);
@@ -135,8 +115,8 @@ export function AutomationFormDialog({
           team_id: teamId,
           name,
           description,
-          trigger_type: triggerType,
-          definition: parsedDefinition,
+          trigger_type: finalDefinition.trigger.type,
+          definition: finalDefinition as unknown as Record<string, any>,
           is_active: true,
         });
 
@@ -160,6 +140,10 @@ export function AutomationFormDialog({
       toast.error("Name is required");
       return;
     }
+    if (definition.steps.length === 0) {
+      toast.error("Add at least one action step");
+      return;
+    }
     saveMutation.mutate();
   };
 
@@ -172,59 +156,37 @@ export function AutomationFormDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Welcome SMS for new leads"
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Info */}
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Welcome SMS for new appointments"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (optional)</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What does this automation do?"
+                rows={2}
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description..."
-              rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="trigger">Trigger Type</Label>
-            <Select value={triggerType} onValueChange={(v) => setTriggerType(v as TriggerType)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TRIGGER_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="definition">
-              Definition (JSON)
-              <span className="text-xs text-muted-foreground ml-2">
-                Full AutomationDefinition structure
-              </span>
-            </Label>
-            <Textarea
-              id="definition"
-              value={definitionJson}
-              onChange={(e) => setDefinitionJson(e.target.value)}
-              className="font-mono text-sm"
-              rows={12}
-            />
-          </div>
+          {/* Visual Builder */}
+          <AutomationVisualBuilder
+            teamId={teamId}
+            value={definition}
+            onChange={setDefinition}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
