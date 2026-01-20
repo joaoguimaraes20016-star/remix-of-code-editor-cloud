@@ -180,6 +180,7 @@ interface FlowCanvasPage {
   settings?: {
     theme?: 'light' | 'dark';
     primary_color?: string;
+    font_family?: string;
     page_background?: PageBackground;
   };
 }
@@ -209,6 +210,24 @@ const stepVariants = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] as const } },
   exit: { opacity: 0, y: -20, transition: { duration: 0.3, ease: [0.4, 0, 1, 1] as const } },
 };
+
+// Device width classes matching editor CanvasRenderer exactly
+const deviceWidths: Record<'desktop' | 'tablet' | 'mobile', string> = {
+  desktop: 'max-w-5xl',
+  tablet: 'max-w-2xl',
+  mobile: 'max-w-sm',
+};
+
+// Theme context for runtime (matching editor's ThemeContext)
+interface RuntimeThemeContextValue {
+  isDarkTheme: boolean;
+  primaryColor: string;
+}
+
+const RuntimeThemeContext = React.createContext<RuntimeThemeContextValue>({
+  isDarkTheme: false,
+  primaryColor: '#8B5CF6',
+});
 
 // Shadow preset to CSS mapping (matches CanvasRenderer)
 const shadowPresetCSS: Record<string, string> = {
@@ -675,37 +694,80 @@ export function FlowCanvasRenderer({
   const isLastStep = currentStepIndex === steps.length - 1;
   const totalSteps = steps.length;
 
-  // Resolve page background from settings (gradient, solid, image, video, pattern)
+  // Resolve page settings and theme
   const pageSettings = (page as FlowCanvasPage).settings;
-  const isDarkTheme = pageSettings?.theme !== 'light';
+  const primaryColor = pageSettings?.primary_color || settings?.primary_color || '#8B5CF6';
+  const fontFamily = pageSettings?.font_family || 'Inter';
   const pageBackground = pageSettings?.page_background;
+  
+  // Compute isDarkTheme based on background luminance (matching editor logic)
+  const isDarkTheme = useMemo(() => {
+    // Helper to calculate luminance from hex color
+    const calcLuminance = (color: string | undefined): number | null => {
+      if (!color || !color.startsWith('#') || color.length < 7) return null;
+      const r = parseInt(color.slice(1, 3), 16) / 255;
+      const g = parseInt(color.slice(3, 5), 16) / 255;
+      const b = parseInt(color.slice(5, 7), 16) / 255;
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    
+    // Check step background first, then page background
+    const stepBg = (currentStep?.settings as any)?.background;
+    const bgSource = (stepBg && (stepBg.type || stepBg.color)) ? stepBg : pageBackground;
+    
+    if (bgSource?.type === 'solid' && bgSource.color) {
+      const lum = calcLuminance(bgSource.color);
+      if (lum !== null) return lum < 0.5;
+    }
+    if (bgSource?.type === 'gradient' && bgSource.gradient?.stops?.length >= 2) {
+      const luminances = bgSource.gradient.stops
+        .map((s: { color: string }) => calcLuminance(s.color))
+        .filter((l: number | null): l is number => l !== null);
+      if (luminances.length > 0) {
+        const avgLuminance = luminances.reduce((a: number, b: number) => a + b, 0) / luminances.length;
+        return avgLuminance < 0.5;
+      }
+    }
+    
+    // Fall back to theme setting
+    if (pageSettings?.theme === 'dark') return true;
+    if (pageSettings?.theme === 'light') return false;
+    return false;
+  }, [currentStep?.settings, pageBackground, pageSettings?.theme]);
+  
+  // Resolve background: step.background takes precedence over page.settings.page_background
+  const effectiveBackground = useMemo(() => {
+    const stepBg = (currentStep?.settings as any)?.background as PageBackground | undefined;
+    if (stepBg && (stepBg.type || stepBg.color)) return stepBg;
+    return pageBackground;
+  }, [currentStep?.settings, pageBackground]);
   
   // Generate background styles using shared utility (exact parity with editor)
   const backgroundStyles = useMemo(() => 
-    getPageBackgroundStyles(pageBackground, isDarkTheme),
-    [pageBackground, isDarkTheme]
+    getPageBackgroundStyles(effectiveBackground, isDarkTheme),
+    [effectiveBackground, isDarkTheme]
   );
   
   // Overlay styles for backgrounds
   const overlayStyles = useMemo(() => 
-    getOverlayStyles(pageBackground),
-    [pageBackground]
+    getOverlayStyles(effectiveBackground),
+    [effectiveBackground]
   );
   
   // Video background handling
   const videoBackgroundUrl = useMemo(() => {
-    if (pageBackground?.type === 'video' && pageBackground.video) {
-      return getVideoBackgroundUrl(pageBackground.video);
+    if (effectiveBackground?.type === 'video' && effectiveBackground.video) {
+      return getVideoBackgroundUrl(effectiveBackground.video);
     }
     return null;
-  }, [pageBackground]);
+  }, [effectiveBackground]);
   
   const isDirectVideo = useMemo(() => {
-    if (pageBackground?.type === 'video' && pageBackground.video) {
-      return isDirectVideoUrl(pageBackground.video);
+    if (effectiveBackground?.type === 'video' && effectiveBackground.video) {
+      return isDirectVideoUrl(effectiveBackground.video);
     }
     return false;
-  }, [pageBackground]);
+  }, [effectiveBackground]);
 
   // Get all blocks from current step
   const currentBlocks = useMemo(() => {
@@ -1809,175 +1871,203 @@ export function FlowCanvasRenderer({
   // Complete state
   if (isComplete) {
     return (
-      <div className="min-h-screen relative flex items-center justify-center p-4" style={backgroundStyles}>
-        {/* Video background for complete state */}
-        {videoBackgroundUrl && (
-          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-            {isDirectVideo ? (
-              <video
-                src={videoBackgroundUrl}
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <iframe
-                src={videoBackgroundUrl}
-                className="absolute inset-0 w-full h-full scale-150"
-                allow="autoplay; fullscreen"
-                frameBorder={0}
-              />
-            )}
-          </div>
-        )}
-        {/* Overlay */}
-        {overlayStyles && (
-          <div className="absolute inset-0 z-[1]" style={overlayStyles} />
-        )}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center max-w-md relative z-10"
+      <RuntimeThemeContext.Provider value={{ isDarkTheme, primaryColor }}>
+        <div 
+          className={cn("min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
+          style={{ fontFamily: fontFamily, '--primary-color': primaryColor } as React.CSSProperties}
         >
-          <div className="text-6xl mb-4">🎉</div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">You're All Set!</h1>
-          <p className="text-muted-foreground">
-            We've received your application. Check your inbox for next steps.
-          </p>
-        </motion.div>
-      </div>
+          <div className={cn('mx-auto px-4 md:px-8 pb-8 pt-4', deviceWidths[deviceMode])}>
+            <div 
+              className={cn('device-frame relative min-h-[calc(100vh-32px)] overflow-hidden rounded-lg flex items-center justify-center', isDarkTheme && 'dark-theme')}
+              style={backgroundStyles}
+            >
+              {/* Video background for complete state */}
+              {videoBackgroundUrl && (
+                <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                  {isDirectVideo ? (
+                    <video src={videoBackgroundUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <iframe src={videoBackgroundUrl} className="absolute inset-0 w-full h-full scale-150" allow="autoplay; fullscreen" frameBorder={0} />
+                  )}
+                </div>
+              )}
+              {overlayStyles && <div className="absolute inset-0 z-[1] pointer-events-none" style={overlayStyles} />}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center max-w-md relative z-10 p-8"
+              >
+                <div className="text-6xl mb-4">🎉</div>
+                <h1 className={cn("text-2xl font-bold mb-2", isDarkTheme ? 'text-white' : 'text-gray-900')}>You're All Set!</h1>
+                <p className={cn(isDarkTheme ? 'text-white/70' : 'text-gray-600')}>
+                  We've received your application. Check your inbox for next steps.
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </RuntimeThemeContext.Provider>
     );
   }
 
   // No steps
   if (steps.length === 0) {
     return (
-      <div className="min-h-screen relative flex items-center justify-center" style={backgroundStyles}>
-        {overlayStyles && (
-          <div className="absolute inset-0 z-[1]" style={overlayStyles} />
-        )}
-        <p className="text-muted-foreground relative z-10">No content available</p>
-      </div>
+      <RuntimeThemeContext.Provider value={{ isDarkTheme, primaryColor }}>
+        <div 
+          className={cn("min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
+          style={{ fontFamily: fontFamily, '--primary-color': primaryColor } as React.CSSProperties}
+        >
+          <div className={cn('mx-auto px-4 md:px-8 pb-8 pt-4', deviceWidths[deviceMode])}>
+            <div 
+              className={cn('device-frame relative min-h-[calc(100vh-32px)] overflow-hidden rounded-lg flex items-center justify-center', isDarkTheme && 'dark-theme')}
+              style={backgroundStyles}
+            >
+              {overlayStyles && <div className="absolute inset-0 z-[1] pointer-events-none" style={overlayStyles} />}
+              <p className={cn("relative z-10", isDarkTheme ? 'text-white/70' : 'text-gray-500')}>No content available</p>
+            </div>
+          </div>
+        </div>
+      </RuntimeThemeContext.Provider>
     );
   }
 
   return (
-    <div className="min-h-screen relative" style={backgroundStyles}>
-      {/* Video background */}
-      {videoBackgroundUrl && (
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          {isDirectVideo ? (
-            <video
-              src={videoBackgroundUrl}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <iframe
-              src={videoBackgroundUrl}
-              className="absolute inset-0 w-full h-full scale-150"
-              allow="autoplay; fullscreen"
-              frameBorder={0}
-            />
-          )}
-        </div>
-      )}
-      
-      {/* Background overlay */}
-      {overlayStyles && (
-        <div className="absolute inset-0 z-[1]" style={overlayStyles} />
-      )}
-
-      {/* Progress bar */}
-      {totalSteps > 1 && (
-        <div className="fixed top-0 left-0 right-0 h-1 bg-muted/50 z-50">
-          <motion.div
-            className="h-full bg-primary"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-      )}
-
-      {/* Navigation arrows */}
-      {totalSteps > 1 && (
-        <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
-          <button
-            onClick={() => setCurrentStepIndex(prev => Math.max(0, prev - 1))}
-            disabled={currentStepIndex === 0}
+    <RuntimeThemeContext.Provider value={{ isDarkTheme, primaryColor }}>
+      <div 
+        className={cn("min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
+        style={{ 
+          fontFamily: fontFamily,
+          '--primary-color': primaryColor,
+        } as React.CSSProperties}
+      >
+        {/* Device Frame Container - matches editor's mx-auto px-8 pb-8 structure */}
+        <div className={cn('mx-auto px-4 md:px-8 pb-8 pt-4', deviceWidths[deviceMode])}>
+          {/* Device Frame - Apply background at this level like editor */}
+          <div 
             className={cn(
-              'p-2 rounded-full transition-all',
-              currentStepIndex === 0
-                ? 'text-muted-foreground/30 cursor-not-allowed'
-                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+              'device-frame relative min-h-[calc(100vh-32px)] overflow-hidden rounded-lg',
+              isDarkTheme && 'dark-theme'
             )}
+            style={backgroundStyles}
           >
-            <ChevronUp className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setCurrentStepIndex(prev => Math.min(totalSteps - 1, prev + 1))}
-            disabled={currentStepIndex === totalSteps - 1}
-            className={cn(
-              'p-2 rounded-full transition-all',
-              currentStepIndex === totalSteps - 1
-                ? 'text-muted-foreground/30 cursor-not-allowed'
-                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+            {/* Video background */}
+            {videoBackgroundUrl && (
+              <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                {isDirectVideo ? (
+                  <video
+                    src={videoBackgroundUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <iframe
+                    src={videoBackgroundUrl}
+                    className="absolute inset-0 w-full h-full scale-150"
+                    allow="autoplay; fullscreen"
+                    frameBorder={0}
+                  />
+                )}
+              </div>
             )}
-          >
-            <ChevronDown className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+            
+            {/* Background overlay */}
+            {overlayStyles && (
+              <div className="absolute inset-0 z-[1] pointer-events-none" style={overlayStyles} />
+            )}
 
-      {/* Step content */}
-      <div className="flex items-center justify-center min-h-screen p-4 pt-8 relative z-10">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep?.id || currentStepIndex}
-            variants={stepVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="w-full max-w-lg"
-          >
-            <div className="space-y-4">
-              {currentBlocks.map(block => (
-                <div key={block.id} className="space-y-3">
-                  {block.elements.map(element => {
-                    const rendered = renderElement(element, block);
-                    // Wrap with scroll transform if enabled
-                    if (element.animation?.scrollTransform?.enabled) {
-                      return (
-                        <ScrollTransformWrapper
-                          key={`scroll-${element.id}`}
-                          config={element.animation.scrollTransform}
-                        >
-                          {rendered}
-                        </ScrollTransformWrapper>
-                      );
-                    }
-                    return rendered;
-                  })}
-                </div>
-              ))}
+            {/* Progress bar */}
+            {totalSteps > 1 && (
+              <div className="absolute top-0 left-0 right-0 h-1 bg-muted/50 z-50">
+                <motion.div
+                  className="h-full"
+                  style={{ backgroundColor: primaryColor }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+            )}
+
+            {/* Navigation arrows */}
+            {totalSteps > 1 && (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
+                <button
+                  onClick={() => setCurrentStepIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentStepIndex === 0}
+                  className={cn(
+                    'p-2 rounded-full transition-all',
+                    currentStepIndex === 0
+                      ? 'text-muted-foreground/30 cursor-not-allowed'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  )}
+                >
+                  <ChevronUp className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setCurrentStepIndex(prev => Math.min(totalSteps - 1, prev + 1))}
+                  disabled={currentStepIndex === totalSteps - 1}
+                  className={cn(
+                    'p-2 rounded-full transition-all',
+                    currentStepIndex === totalSteps - 1
+                      ? 'text-muted-foreground/30 cursor-not-allowed'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  )}
+                >
+                  <ChevronDown className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
+            {/* Step content */}
+            <div className="flex items-center justify-center min-h-[calc(100vh-32px)] p-4 pt-8 relative z-10">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentStep?.id || currentStepIndex}
+                  variants={stepVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  className="w-full max-w-2xl"
+                >
+                  <div className="space-y-4">
+                    {currentBlocks.map(block => (
+                      <div key={block.id} className="space-y-3">
+                        {block.elements.map(element => {
+                          const rendered = renderElement(element, block);
+                          // Wrap with scroll transform if enabled
+                          if (element.animation?.scrollTransform?.enabled) {
+                            return (
+                              <ScrollTransformWrapper
+                                key={`scroll-${element.id}`}
+                                config={element.animation.scrollTransform}
+                              >
+                                {rendered}
+                              </ScrollTransformWrapper>
+                            );
+                          }
+                          return rendered;
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
 
-      {/* Step counter */}
-      {totalSteps > 1 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground z-40">
-          {currentStepIndex + 1} / {totalSteps}
+            {/* Step counter */}
+            {totalSteps > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground z-40">
+                {currentStepIndex + 1} / {totalSteps}
+              </div>
+            )}
+          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </RuntimeThemeContext.Provider>
   );
 }
 

@@ -279,3 +279,69 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ========================================
+   FlowCanvas Runtime Parity
+   Match editor device frame structure exactly
+   ======================================== */
+
+/* Device frame in FlowCanvas runtime - match editor styling */
+.device-frame {
+  position: relative;
+  overflow: hidden;
+}
+
+.device-frame.dark-theme {
+  /* Dark theme context */
+}
+
+/* FlowCanvas content wrapper - match editor's step container */
+.flowcanvas-step-content {
+  position: relative;
+  z-index: 10;
+}
+
+/* Primary color CSS variable usage */
+.flowcanvas-runtime [style*='--primary-color'] {
+  /* Allow --primary-color to be consumed by descendant elements */
+}
+
+/* Typography parity - match editor's font rendering */
+.flowcanvas-runtime,
+.flowcanvas-runtime * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Form elements in FlowCanvas runtime */
+.flowcanvas-runtime input,
+.flowcanvas-runtime select,
+.flowcanvas-runtime textarea {
+  font-family: inherit;
+  background-color: hsl(var(--muted) / 0.5);
+  border: 1px solid hsl(var(--border));
+  color: inherit;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.flowcanvas-runtime input:focus,
+.flowcanvas-runtime select:focus,
+.flowcanvas-runtime textarea:focus {
+  outline: none;
+  border-color: var(--primary-color, hsl(var(--primary)));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, hsl(var(--primary))) 20%, transparent);
+}
+
+/* Button hover states in FlowCanvas - match editor preview */
+.flowcanvas-runtime button:not(:disabled) {
+  transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease;
+}
+
+.flowcanvas-runtime button:not(:disabled):hover {
+  filter: brightness(1.05);
+}
+
+.flowcanvas-runtime button:not(:disabled):active {
+  transform: scale(0.98);
+}
