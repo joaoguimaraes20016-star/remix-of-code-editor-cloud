@@ -15,6 +15,13 @@ import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Loader2, Play, User, Layout, ArrowRight, Sparkles, Search, Calendar, FileText, Rocket, Video } from 'lucide-react';
 import { generateStateStylesCSS } from './RuntimeElementRenderer';
 import { ScrollTransformWrapper } from './ScrollTransformWrapper';
+import { 
+  getPageBackgroundStyles, 
+  getOverlayStyles, 
+  getVideoBackgroundUrl, 
+  isDirectVideoUrl,
+  type PageBackground 
+} from './runtime/backgroundUtils';
 
 // Helper to convert gradient object to CSS
 function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): string {
@@ -173,10 +180,7 @@ interface FlowCanvasPage {
   settings?: {
     theme?: 'light' | 'dark';
     primary_color?: string;
-    page_background?: {
-      type: string;
-      color?: string;
-    };
+    page_background?: PageBackground;
   };
 }
 
@@ -670,6 +674,38 @@ export function FlowCanvasRenderer({
   const currentStep = steps[currentStepIndex];
   const isLastStep = currentStepIndex === steps.length - 1;
   const totalSteps = steps.length;
+
+  // Resolve page background from settings (gradient, solid, image, video, pattern)
+  const pageSettings = (page as FlowCanvasPage).settings;
+  const isDarkTheme = pageSettings?.theme !== 'light';
+  const pageBackground = pageSettings?.page_background;
+  
+  // Generate background styles using shared utility (exact parity with editor)
+  const backgroundStyles = useMemo(() => 
+    getPageBackgroundStyles(pageBackground, isDarkTheme),
+    [pageBackground, isDarkTheme]
+  );
+  
+  // Overlay styles for backgrounds
+  const overlayStyles = useMemo(() => 
+    getOverlayStyles(pageBackground),
+    [pageBackground]
+  );
+  
+  // Video background handling
+  const videoBackgroundUrl = useMemo(() => {
+    if (pageBackground?.type === 'video' && pageBackground.video) {
+      return getVideoBackgroundUrl(pageBackground.video);
+    }
+    return null;
+  }, [pageBackground]);
+  
+  const isDirectVideo = useMemo(() => {
+    if (pageBackground?.type === 'video' && pageBackground.video) {
+      return isDirectVideoUrl(pageBackground.video);
+    }
+    return false;
+  }, [pageBackground]);
 
   // Get all blocks from current step
   const currentBlocks = useMemo(() => {
@@ -1687,6 +1723,80 @@ export function FlowCanvasRenderer({
           </React.Suspense>
         );
       }
+
+      // Missing element types - basic fallback renderers
+      case 'select': {
+        const selectName = (element.props.name as string) || element.id;
+        const options = (element.props.options as Array<{ label: string; value: string }>) || [];
+        return (
+          <select
+            key={element.id}
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border text-foreground"
+            value={(formData[selectName] as string) || ''}
+            onChange={(e) => handleInputChange(selectName, e.target.value)}
+          >
+            <option value="">{(element.props.placeholder as string) || 'Select an option'}</option>
+            {options.map((opt, i) => (
+              <option key={i} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        );
+      }
+
+      case 'link': {
+        const href = (element.props.href as string) || '#';
+        return (
+          <a
+            key={element.id}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:text-primary/80 transition-colors"
+            style={resolveElementStyles(element, deviceMode)}
+          >
+            {element.content || 'Link'}
+          </a>
+        );
+      }
+
+      case 'icon-text': {
+        const iconTextColor = (element.props?.textColor as string) || 'currentColor';
+        return (
+          <div key={element.id} className="flex items-center gap-3">
+            <Sparkles className="w-5 h-5 flex-shrink-0" style={{ color: iconTextColor }} />
+            <span style={{ color: iconTextColor }}>{element.content || 'Icon text'}</span>
+          </div>
+        );
+      }
+
+      case 'single-choice':
+      case 'multiple-choice': {
+        const choiceName = (element.props.name as string) || element.id;
+        const choices = (element.props.options as Array<{ label: string; value: string }>) || [];
+        const isMultiple = element.type === 'multiple-choice';
+        return (
+          <div key={element.id} className="space-y-2">
+            {choices.map((choice, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => isMultiple 
+                  ? handleCheckboxToggle(choiceName, choice.value, !((formData[choiceName] as string[]) || []).includes(choice.value))
+                  : handleRadioSelect(choiceName, choice.value)
+                }
+                className={cn(
+                  'w-full p-3 rounded-lg border text-left transition-all',
+                  (isMultiple ? ((formData[choiceName] as string[]) || []).includes(choice.value) : formData[choiceName] === choice.value)
+                    ? 'border-primary bg-primary/10 text-foreground'
+                    : 'border-border bg-muted text-muted-foreground hover:border-primary/50'
+                )}
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+        );
+      }
         
       default:
         return null;
@@ -1699,11 +1809,37 @@ export function FlowCanvasRenderer({
   // Complete state
   if (isComplete) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen relative flex items-center justify-center p-4" style={backgroundStyles}>
+        {/* Video background for complete state */}
+        {videoBackgroundUrl && (
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            {isDirectVideo ? (
+              <video
+                src={videoBackgroundUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <iframe
+                src={videoBackgroundUrl}
+                className="absolute inset-0 w-full h-full scale-150"
+                allow="autoplay; fullscreen"
+                frameBorder={0}
+              />
+            )}
+          </div>
+        )}
+        {/* Overlay */}
+        {overlayStyles && (
+          <div className="absolute inset-0 z-[1]" style={overlayStyles} />
+        )}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center max-w-md"
+          className="text-center max-w-md relative z-10"
         >
           <div className="text-6xl mb-4">🎉</div>
           <h1 className="text-2xl font-bold text-foreground mb-2">You're All Set!</h1>
@@ -1718,17 +1854,48 @@ export function FlowCanvasRenderer({
   // No steps
   if (steps.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">No content available</p>
+      <div className="min-h-screen relative flex items-center justify-center" style={backgroundStyles}>
+        {overlayStyles && (
+          <div className="absolute inset-0 z-[1]" style={overlayStyles} />
+        )}
+        <p className="text-muted-foreground relative z-10">No content available</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative" style={backgroundStyles}>
+      {/* Video background */}
+      {videoBackgroundUrl && (
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          {isDirectVideo ? (
+            <video
+              src={videoBackgroundUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <iframe
+              src={videoBackgroundUrl}
+              className="absolute inset-0 w-full h-full scale-150"
+              allow="autoplay; fullscreen"
+              frameBorder={0}
+            />
+          )}
+        </div>
+      )}
+      
+      {/* Background overlay */}
+      {overlayStyles && (
+        <div className="absolute inset-0 z-[1]" style={overlayStyles} />
+      )}
+
       {/* Progress bar */}
       {totalSteps > 1 && (
-        <div className="fixed top-0 left-0 right-0 h-1 bg-muted z-50">
+        <div className="fixed top-0 left-0 right-0 h-1 bg-muted/50 z-50">
           <motion.div
             className="h-full bg-primary"
             initial={{ width: 0 }}
@@ -1748,7 +1915,7 @@ export function FlowCanvasRenderer({
               'p-2 rounded-full transition-all',
               currentStepIndex === 0
                 ? 'text-muted-foreground/30 cursor-not-allowed'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
             )}
           >
             <ChevronUp className="w-5 h-5" />
@@ -1760,7 +1927,7 @@ export function FlowCanvasRenderer({
               'p-2 rounded-full transition-all',
               currentStepIndex === totalSteps - 1
                 ? 'text-muted-foreground/30 cursor-not-allowed'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
             )}
           >
             <ChevronDown className="w-5 h-5" />
@@ -1769,7 +1936,7 @@ export function FlowCanvasRenderer({
       )}
 
       {/* Step content */}
-      <div className="flex items-center justify-center min-h-screen p-4 pt-8">
+      <div className="flex items-center justify-center min-h-screen p-4 pt-8 relative z-10">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep?.id || currentStepIndex}
@@ -1806,7 +1973,7 @@ export function FlowCanvasRenderer({
 
       {/* Step counter */}
       {totalSteps > 1 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground z-40">
           {currentStepIndex + 1} / {totalSteps}
         </div>
       )}
