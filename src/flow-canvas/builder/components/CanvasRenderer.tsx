@@ -3859,8 +3859,10 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
         onSelect({ type: 'block', id: block.id, path: blockPath }, e.shiftKey);
       }}
     >
-      {/* Block Type Badge - Shows on hover with blue styling */}
-      <span className={cn('block-type-badge block-type-badge-block', getBlockBadgeClass())}>{blockTypeLabel}</span>
+      {/* Block Type Badge - Shows on hover with blue styling (editor only) */}
+      {!readOnly && (
+        <span className={cn('block-type-badge block-type-badge-block', getBlockBadgeClass())}>{blockTypeLabel}</span>
+      )}
       
       {/* Block Action Bar - shows on selection with smooth animation */}
       {!readOnly && (
@@ -3997,11 +3999,13 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           borderRadius: `calc(${effectiveBorderRadius} - 2px)`,
         }}
         className={cn(
-          'builder-block-selectable builder-click-target group/block relative',
+          // Only add editor chrome classes when NOT in readOnly mode
+          !readOnly && 'builder-block-selectable builder-click-target group/block',
+          'relative',
           !hasCustomPadding && (isNavbar ? 'py-4 px-8' : isFooter ? 'py-12 px-12' : 'p-6'),
-          isSelected && 'builder-block-selected',
-          isMultiSelected && !isSelected && 'builder-multi-selected',
-          hasSelectedChild && !isSelected && 'builder-parent-of-selected',
+          !readOnly && isSelected && 'builder-block-selected',
+          !readOnly && isMultiSelected && !isSelected && 'builder-multi-selected',
+          !readOnly && hasSelectedChild && !isSelected && 'builder-parent-of-selected',
           block.type === 'hero' && !hasCustomPadding && 'text-center py-12',
           block.type === 'cta' && 'justify-center',
           isDragging && 'opacity-50 z-50',
@@ -4012,7 +4016,10 @@ const SortableBlockRenderer: React.FC<SortableBlockRendererProps> = ({
           onSelect({ type: 'block', id: block.id, path: blockPath }, e.shiftKey);
         }}
       >
-        <span className={cn('block-type-badge', getBlockBadgeClass())}>{blockTypeLabel}</span>
+        {/* Block Type Badge (editor only) */}
+        {!readOnly && (
+          <span className={cn('block-type-badge', getBlockBadgeClass())}>{blockTypeLabel}</span>
+        )}
         
         {!readOnly && (
           <BlockActionBar
@@ -4977,19 +4984,21 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
 
         {/* Canvas Container with Device Frame */}
         <div className={cn('mx-auto px-8 pb-8 overflow-x-hidden', deviceWidths[deviceMode])}>
-          {/* Device Frame - Apply theme settings and step/page background */}
+          {/* Device Frame - Apply theme settings and step/page background
+              In readOnly mode (preview/runtime), DO NOT apply background here - 
+              the root container already has the background for full-bleed effect */}
           <div 
             className={cn('device-frame relative min-h-[600px] overflow-x-hidden', isDarkTheme && 'dark-theme')}
             style={{ 
               fontFamily: fontFamily,
               '--primary-color': primaryColor,
-              // Use step.background only if it has meaningful content, otherwise fall back to page background
-              ...getPageBackgroundStyles(
+              // Only apply background in editor mode - runtime/preview use root background
+              ...(readOnly ? {} : getPageBackgroundStyles(
                 (step.background && (step.background.type || step.background.color)) 
                   ? step.background 
                   : pageSettings?.page_background, 
                 isDarkTheme
-              ),
+              )),
             } as React.CSSProperties}
             onClick={(e) => {
               // Click on empty device frame = clear selection (don't open settings panel)
@@ -4998,8 +5007,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               }
             }}
           >
-            {/* Video Background (from step or page) */}
-            {(() => {
+            {/* Video Background (from step or page) - editor only, runtime uses root */}
+            {!readOnly && (() => {
               const hasStepBackground = step.background && (step.background.type || step.background.color);
               const bgSource = hasStepBackground ? step.background : pageSettings?.page_background;
               
@@ -5036,8 +5045,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               return null;
             })()}
             
-            {/* Background Overlay (from step or page) */}
-            {(() => {
+            {/* Background Overlay (from step or page) - editor only, runtime uses root */}
+            {!readOnly && (() => {
               const hasStepBackground = step.background && (step.background.type || step.background.color);
               const bgSource = hasStepBackground ? step.background : pageSettings?.page_background;
               const overlayStyles = getOverlayStyles(bgSource);
@@ -5063,9 +5072,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                 <div className="min-h-[600px] relative z-10 group/canvas">
                   {step.frames.map((frame, frameIndex) => (
                     <React.Fragment key={frame.id}>
-                      {/* Section Divider - always visible between frames for clarity */}
-                      {/* Simple divider line between sections */}
-                      {frameIndex > 0 && (
+                      {/* Section Divider - visible between frames in editor only */}
+                      {!readOnly && frameIndex > 0 && (
                         <div className="relative h-4 flex items-center px-4">
                           <div className="flex-1 h-[1px] bg-[hsl(var(--builder-border-subtle))]" />
                         </div>
