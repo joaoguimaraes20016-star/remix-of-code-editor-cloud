@@ -84,8 +84,8 @@ interface UseCaptureFlowStateOptions {
   captureFlow: CaptureFlow;
   onComplete?: (answers: CaptureFlowAnswers) => void;
   onNodeChange?: (nodeId: string) => void;
-  /** External submit handler - called instead of local fake submit */
-  onSubmit?: (answers: CaptureFlowAnswers) => Promise<{ success: boolean; leadId?: string; error?: string }>;
+  /** External submit handler - called instead of local fake submit. Receives currentNodeId for step tracking. */
+  onSubmit?: (answers: CaptureFlowAnswers, currentNodeId: string) => Promise<{ success: boolean; leadId?: string; error?: string }>;
 }
 
 interface UseCaptureFlowStateReturn {
@@ -103,7 +103,7 @@ interface UseCaptureFlowStateReturn {
   
   // Navigation
   goToNode: (nodeId: string) => boolean;
-  advance: () => boolean;
+  advance: () => Promise<boolean>;
   goBack: () => boolean;
   canGoBack: boolean;
   canAdvance: boolean;
@@ -232,61 +232,13 @@ export function useCaptureFlowState({
     return true;
   }, [captureFlow.nodes, onNodeChange]);
   
-  // Advance to next node
-  const advance = useCallback((): boolean => {
-    if (!validateCurrentNode()) return false;
-    if (!currentNode) return false;
-    
-    const navigation = currentNode.navigation;
-    
-    // Handle conditional navigation
-    if (navigation.action === 'conditional' && navigation.conditionalRoutes) {
-      const answer = state.answers[currentNode.fieldKey];
-      const route = navigation.conditionalRoutes.find(r => {
-        if (Array.isArray(answer)) {
-          return answer.includes(r.choiceId);
-        }
-        return answer === r.choiceId;
-      });
-      
-      if (route?.targetNodeId) {
-        return goToNode(route.targetNodeId);
-      }
-    }
-    
-    // Handle go-to-node
-    if (navigation.action === 'go-to-node' && navigation.targetNodeId) {
-      return goToNode(navigation.targetNodeId);
-    }
-    
-    // Handle submit
-    if (navigation.action === 'submit') {
-      submit();
-      return true;
-    }
-    
-    // Default: go to next node
-    if (currentNodeIndex < totalNodes - 1) {
-      const nextNode = captureFlow.nodes[currentNodeIndex + 1];
-      return goToNode(nextNode.id);
-    }
-    
-    // No more nodes, submit
-    submit();
-    return true;
-  }, [currentNode, currentNodeIndex, totalNodes, captureFlow.nodes, state.answers, validateCurrentNode, goToNode]);
-  
-  // Go back to previous node
-  const goBack = useCallback((): boolean => {
-    if (!canGoBack) return false;
-    
-    const prevNode = captureFlow.nodes[currentNodeIndex - 1];
-    return goToNode(prevNode.id);
-  }, [canGoBack, captureFlow.nodes, currentNodeIndex, goToNode]);
-  
   // Submit the flow
   const submit = useCallback(async (): Promise<boolean> => {
     if (!validateAll()) return false;
+    
+    // Get current node ID for accurate step tracking
+    const submitNodeId = state.currentNodeId;
+    if (!submitNodeId) return false;
     
     setState(prev => ({ ...prev, isSubmitting: true }));
     setSubmitError(null);
@@ -294,7 +246,7 @@ export function useCaptureFlowState({
     try {
       // Use external submit handler if provided (unified lead submission)
       if (onSubmit) {
-        const result = await onSubmit(state.answers);
+        const result = await onSubmit(state.answers, submitNodeId);
         
         if (result.success) {
           if (result.leadId) {
@@ -329,7 +281,57 @@ export function useCaptureFlowState({
       setState(prev => ({ ...prev, isSubmitting: false }));
       return false;
     }
-  }, [validateAll, state.answers, onComplete, onSubmit]);
+  }, [validateAll, state.answers, state.currentNodeId, onComplete, onSubmit]);
+  
+  // Advance to next node
+  const advance = useCallback(async (): Promise<boolean> => {
+    if (!validateCurrentNode()) return false;
+    if (!currentNode) return false;
+    
+    const navigation = currentNode.navigation;
+    
+    // Handle conditional navigation
+    if (navigation.action === 'conditional' && navigation.conditionalRoutes) {
+      const answer = state.answers[currentNode.fieldKey];
+      const route = navigation.conditionalRoutes.find(r => {
+        if (Array.isArray(answer)) {
+          return answer.includes(r.choiceId);
+        }
+        return answer === r.choiceId;
+      });
+      
+      if (route?.targetNodeId) {
+        return goToNode(route.targetNodeId);
+      }
+    }
+    
+    // Handle go-to-node
+    if (navigation.action === 'go-to-node' && navigation.targetNodeId) {
+      return goToNode(navigation.targetNodeId);
+    }
+    
+    // Handle submit - await and return result to prevent advancing on failure
+    if (navigation.action === 'submit') {
+      return await submit();
+    }
+    
+    // Default: go to next node
+    if (currentNodeIndex < totalNodes - 1) {
+      const nextNode = captureFlow.nodes[currentNodeIndex + 1];
+      return goToNode(nextNode.id);
+    }
+    
+    // No more nodes, submit - await and return result
+    return await submit();
+  }, [currentNode, currentNodeIndex, totalNodes, captureFlow.nodes, state.answers, validateCurrentNode, goToNode, submit]);
+  
+  // Go back to previous node
+  const goBack = useCallback((): boolean => {
+    if (!canGoBack) return false;
+    
+    const prevNode = captureFlow.nodes[currentNodeIndex - 1];
+    return goToNode(prevNode.id);
+  }, [canGoBack, captureFlow.nodes, currentNodeIndex, goToNode]);
   
   // Reset state
   const reset = useCallback(() => {
