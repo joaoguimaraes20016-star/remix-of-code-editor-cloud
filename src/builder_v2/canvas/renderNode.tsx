@@ -82,7 +82,8 @@ export function renderNode(
       data-depth={depth}
       style={surfaceStyle}
     >
-      <div className="builder-v2-node-overlay" aria-hidden="true" />
+      {/* Node overlay - only render in editor mode, not in readonly/preview/runtime */}
+      {!readonly && <div className="builder-v2-node-overlay" aria-hidden="true" />}
       
       {/* Hover toolbar for leaf elements */}
       {showHoverToolbar && (

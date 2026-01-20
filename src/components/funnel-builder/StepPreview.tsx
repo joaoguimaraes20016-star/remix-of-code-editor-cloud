@@ -175,10 +175,8 @@ function ElementWrapper({
   return (
     <div
       className={cn(
-        "relative transition-all duration-100 w-full cursor-pointer group active:scale-[0.99]",
-        isSelected 
-          ? "ring-2 ring-primary rounded-md shadow-lg shadow-primary/20" 
-          : "hover:ring-2 hover:ring-primary/50 rounded-md"
+        "relative transition-all duration-100 w-full cursor-pointer group active:scale-[0.99] rounded-md",
+        isSelected && "ring-2 ring-primary shadow-lg shadow-primary/20"
       )}
       onClick={(e) => { e.stopPropagation(); onSelect(); }}
       title={`Click to edit ${getElementLabel(id)}`}
