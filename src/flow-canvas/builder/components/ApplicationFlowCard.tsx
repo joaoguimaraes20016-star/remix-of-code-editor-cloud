@@ -608,7 +608,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                   key={i} 
                   className={cn(
                     'group flex items-center gap-3 px-4 py-3 text-left text-sm cursor-pointer transition-all duration-150',
-                    isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-2'
+                    !isPreviewMode && isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-2'
                   )}
                   style={{ 
                     ...optionStyles,
@@ -750,7 +750,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
                 className={cn(
                   'flex items-center gap-3 px-4 py-3 text-left text-sm cursor-pointer transition-all duration-150',
                   !isPreviewMode && 'hover:opacity-80 hover:scale-[1.01]',
-                  isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-2'
+                  !isPreviewMode && isElementSelected(step.id, 'option', i) && 'ring-2 ring-primary ring-offset-2'
                 )}
                 style={{ 
                   ...getOptionStyles(s),
@@ -1074,7 +1074,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
       align={contentAlign}
       className={cn(
         'transition-all duration-200',
-        isSelected && 'ring-1 ring-primary/30 rounded-lg'
+        !isPreviewMode && isSelected && 'ring-1 ring-primary/30 rounded-lg'
       )}
     >
       {/* StepLayout handles ALL visual styling */}
