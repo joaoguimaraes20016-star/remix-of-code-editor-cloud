@@ -135,7 +135,8 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
         stack.direction === 'horizontal' ? 'flex flex-row gap-4' : 'flex flex-col gap-3'
       )}
     >
-      {stack.blocks.length === 0 ? (
+      {/* Empty state - only show in editor mode */}
+      {stack.blocks.length === 0 && !readOnly ? (
         // Empty state
         <div 
           onClick={(e) => {
@@ -164,6 +165,9 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
             </div>
           </div>
         </div>
+      ) : stack.blocks.length === 0 && readOnly ? (
+        // Empty state in runtime - render nothing
+        null
       ) : (
         <>
           <DndContext

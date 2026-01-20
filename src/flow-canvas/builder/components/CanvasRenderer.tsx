@@ -4577,11 +4577,14 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
   return (
     <div
       className={cn(
-        'overflow-visible transition-all relative group/frame cursor-pointer',
+        'overflow-visible transition-all relative',
+        // Only add editor chrome when NOT in readOnly mode
+        !readOnly && 'group/frame cursor-pointer',
         // Apply rounded corners and centering only for contained layout
         !isFullWidth && 'rounded-2xl mx-auto',
         frameStyles.className,
-        isSelected && 'ring-2 ring-builder-accent shadow-[0_0_0_4px_hsl(var(--builder-accent)/0.15)]'
+        // Selection ring only in editor mode
+        !readOnly && isSelected && 'ring-2 ring-builder-accent shadow-[0_0_0_4px_hsl(var(--builder-accent)/0.15)]'
       )}
       style={{
         ...frameStyles.style,
