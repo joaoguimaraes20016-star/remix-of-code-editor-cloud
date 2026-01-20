@@ -281,29 +281,16 @@
 }
 
 /* ========================================
-   FlowCanvas Runtime Parity
-   Match editor device frame structure exactly
+   FlowCanvas Runtime - Full-Bleed Parity
+   Background is applied to viewport root,
+   content is constrained by deviceWidths
    ======================================== */
 
-/* Device frame in FlowCanvas runtime - match editor styling */
-.device-frame {
-  position: relative;
-  overflow: hidden;
-}
-
-.device-frame.dark-theme {
-  /* Dark theme context */
-}
-
-/* FlowCanvas content wrapper - match editor's step container */
-.flowcanvas-step-content {
-  position: relative;
-  z-index: 10;
-}
-
-/* Primary color CSS variable usage */
-.flowcanvas-runtime [style*='--primary-color'] {
-  /* Allow --primary-color to be consumed by descendant elements */
+/* Runtime root - full-bleed background */
+.flowcanvas-runtime {
+  /* Background applied via inline styles */
+  min-height: 100vh;
+  width: 100%;
 }
 
 /* Typography parity - match editor's font rendering */
@@ -312,6 +299,11 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Primary color CSS variable usage */
+.flowcanvas-runtime [style*='--primary-color'] {
+  /* Allow --primary-color to be consumed by descendant elements */
 }
 
 /* Form elements in FlowCanvas runtime */
@@ -344,4 +336,16 @@
 
 .flowcanvas-runtime button:not(:disabled):active {
   transform: scale(0.98);
+}
+
+/* Content container - constrained width (matches editor's mx-auto px-8) */
+.flowcanvas-runtime .max-w-5xl,
+.flowcanvas-runtime .max-w-2xl,
+.flowcanvas-runtime .max-w-sm {
+  /* These classes provide the constraint; no overrides needed */
+}
+
+/* Step content wrapper */
+.flowcanvas-runtime .max-w-2xl {
+  /* Inner content constraint within the device-width container */
 }

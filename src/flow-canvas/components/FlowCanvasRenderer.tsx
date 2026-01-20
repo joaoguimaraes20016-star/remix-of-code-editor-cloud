@@ -1868,64 +1868,64 @@ export function FlowCanvasRenderer({
   // Progress indicator
   const progressPercent = ((currentStepIndex + 1) / totalSteps) * 100;
 
-  // Complete state
+  // Complete state - full-bleed background
   if (isComplete) {
     return (
       <RuntimeThemeContext.Provider value={{ isDarkTheme, primaryColor }}>
         <div 
-          className={cn("min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
-          style={{ fontFamily: fontFamily, '--primary-color': primaryColor } as React.CSSProperties}
+          className={cn("flowcanvas-runtime min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
+          style={{ 
+            fontFamily: fontFamily, 
+            '--primary-color': primaryColor,
+            ...backgroundStyles 
+          } as React.CSSProperties}
         >
-          <div className={cn('mx-auto px-4 md:px-8 pb-8 pt-4', deviceWidths[deviceMode])}>
-            <div 
-              className={cn('device-frame relative min-h-[calc(100vh-32px)] overflow-hidden rounded-lg flex items-center justify-center', isDarkTheme && 'dark-theme')}
-              style={backgroundStyles}
-            >
-              {/* Video background for complete state */}
-              {videoBackgroundUrl && (
-                <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                  {isDirectVideo ? (
-                    <video src={videoBackgroundUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <iframe src={videoBackgroundUrl} className="absolute inset-0 w-full h-full scale-150" allow="autoplay; fullscreen" frameBorder={0} />
-                  )}
-                </div>
+          {/* Video background - full bleed */}
+          {videoBackgroundUrl && (
+            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+              {isDirectVideo ? (
+                <video src={videoBackgroundUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <iframe src={videoBackgroundUrl} className="absolute inset-0 w-full h-full scale-150" allow="autoplay; fullscreen" frameBorder={0} />
               )}
-              {overlayStyles && <div className="absolute inset-0 z-[1] pointer-events-none" style={overlayStyles} />}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center max-w-md relative z-10 p-8"
-              >
-                <div className="text-6xl mb-4">🎉</div>
-                <h1 className={cn("text-2xl font-bold mb-2", isDarkTheme ? 'text-white' : 'text-gray-900')}>You're All Set!</h1>
-                <p className={cn(isDarkTheme ? 'text-white/70' : 'text-gray-600')}>
-                  We've received your application. Check your inbox for next steps.
-                </p>
-              </motion.div>
             </div>
+          )}
+          {overlayStyles && <div className="fixed inset-0 z-[1] pointer-events-none" style={overlayStyles} />}
+          
+          {/* Constrained content */}
+          <div className={cn('mx-auto px-8 pb-8 pt-4 relative z-10 min-h-screen flex items-center justify-center', deviceWidths[deviceMode])}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center max-w-md p-8"
+            >
+              <div className="text-6xl mb-4">🎉</div>
+              <h1 className={cn("text-2xl font-bold mb-2", isDarkTheme ? 'text-white' : 'text-gray-900')}>You're All Set!</h1>
+              <p className={cn(isDarkTheme ? 'text-white/70' : 'text-gray-600')}>
+                We've received your application. Check your inbox for next steps.
+              </p>
+            </motion.div>
           </div>
         </div>
       </RuntimeThemeContext.Provider>
     );
   }
 
-  // No steps
+  // No steps - full-bleed background
   if (steps.length === 0) {
     return (
       <RuntimeThemeContext.Provider value={{ isDarkTheme, primaryColor }}>
         <div 
-          className={cn("min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
-          style={{ fontFamily: fontFamily, '--primary-color': primaryColor } as React.CSSProperties}
+          className={cn("flowcanvas-runtime min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
+          style={{ 
+            fontFamily: fontFamily, 
+            '--primary-color': primaryColor,
+            ...backgroundStyles 
+          } as React.CSSProperties}
         >
-          <div className={cn('mx-auto px-4 md:px-8 pb-8 pt-4', deviceWidths[deviceMode])}>
-            <div 
-              className={cn('device-frame relative min-h-[calc(100vh-32px)] overflow-hidden rounded-lg flex items-center justify-center', isDarkTheme && 'dark-theme')}
-              style={backgroundStyles}
-            >
-              {overlayStyles && <div className="absolute inset-0 z-[1] pointer-events-none" style={overlayStyles} />}
-              <p className={cn("relative z-10", isDarkTheme ? 'text-white/70' : 'text-gray-500')}>No content available</p>
-            </div>
+          {overlayStyles && <div className="fixed inset-0 z-[1] pointer-events-none" style={overlayStyles} />}
+          <div className={cn('mx-auto px-8 pb-8 pt-4 relative z-10 min-h-screen flex items-center justify-center', deviceWidths[deviceMode])}>
+            <p className={cn(isDarkTheme ? 'text-white/70' : 'text-gray-500')}>No content available</p>
           </div>
         </div>
       </RuntimeThemeContext.Provider>
@@ -1935,65 +1935,58 @@ export function FlowCanvasRenderer({
   return (
     <RuntimeThemeContext.Provider value={{ isDarkTheme, primaryColor }}>
       <div 
-        className={cn("min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
+        className={cn("flowcanvas-runtime min-h-screen relative overflow-x-hidden", isDarkTheme && 'dark')}
         style={{ 
           fontFamily: fontFamily,
           '--primary-color': primaryColor,
+          ...backgroundStyles,
         } as React.CSSProperties}
       >
-        {/* Device Frame Container - matches editor's mx-auto px-8 pb-8 structure */}
-        <div className={cn('mx-auto px-4 md:px-8 pb-8 pt-4', deviceWidths[deviceMode])}>
-          {/* Device Frame - Apply background at this level like editor */}
-          <div 
-            className={cn(
-              'device-frame relative min-h-[calc(100vh-32px)] overflow-hidden rounded-lg',
-              isDarkTheme && 'dark-theme'
+        {/* Video background - FULL BLEED */}
+        {videoBackgroundUrl && (
+          <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+            {isDirectVideo ? (
+              <video
+                src={videoBackgroundUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <iframe
+                src={videoBackgroundUrl}
+                className="absolute inset-0 w-full h-full scale-150"
+                allow="autoplay; fullscreen"
+                frameBorder={0}
+              />
             )}
-            style={backgroundStyles}
-          >
-            {/* Video background */}
-            {videoBackgroundUrl && (
-              <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                {isDirectVideo ? (
-                  <video
-                    src={videoBackgroundUrl}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
-                  <iframe
-                    src={videoBackgroundUrl}
-                    className="absolute inset-0 w-full h-full scale-150"
-                    allow="autoplay; fullscreen"
-                    frameBorder={0}
-                  />
-                )}
-              </div>
-            )}
-            
-            {/* Background overlay */}
-            {overlayStyles && (
-              <div className="absolute inset-0 z-[1] pointer-events-none" style={overlayStyles} />
-            )}
+          </div>
+        )}
+        
+        {/* Background overlay - FULL BLEED */}
+        {overlayStyles && (
+          <div className="fixed inset-0 z-[1] pointer-events-none" style={overlayStyles} />
+        )}
 
-            {/* Progress bar */}
-            {totalSteps > 1 && (
-              <div className="absolute top-0 left-0 right-0 h-1 bg-muted/50 z-50">
-                <motion.div
-                  className="h-full"
-                  style={{ backgroundColor: primaryColor }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercent}%` }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-            )}
+        {/* Progress bar - fixed to top */}
+        {totalSteps > 1 && (
+          <div className="fixed top-0 left-0 right-0 h-1 bg-muted/50 z-50">
+            <motion.div
+              className="h-full"
+              style={{ backgroundColor: primaryColor }}
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        )}
 
-            {/* Navigation arrows */}
-            {totalSteps > 1 && (
+        {/* Constrained content container - matches editor spacing exactly */}
+        <div className={cn('mx-auto px-8 pb-8 pt-4 relative z-10 min-h-screen', deviceWidths[deviceMode])}>
+          {/* Navigation arrows */}
+          {totalSteps > 1 && (
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
                 <button
                   onClick={() => setCurrentStepIndex(prev => Math.max(0, prev - 1))}
@@ -2064,7 +2057,6 @@ export function FlowCanvasRenderer({
                 {currentStepIndex + 1} / {totalSteps}
               </div>
             )}
-          </div>
         </div>
       </div>
     </RuntimeThemeContext.Provider>
