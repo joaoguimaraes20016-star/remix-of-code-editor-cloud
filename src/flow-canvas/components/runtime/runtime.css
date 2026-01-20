@@ -106,6 +106,37 @@
   min-height: 100vh;
 }
 
+/* ========================================
+   CRITICAL: Strip card styling from Hero in runtime
+   The Hero component should inherit page background, not show dark card
+   ======================================== */
+
+.builder-v2-runtime .builder-v2-component--hero,
+.builder-v2-runtime .builder-v2-component--hero-transparent {
+  /* Remove card-frame styling */
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 24px 16px !important;
+  /* Inherit text color from context or use light */
+  color: inherit;
+}
+
+/* Ensure hero content is still styled correctly */
+.builder-v2-runtime .builder-v2-component--hero-headline {
+  color: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.builder-v2-runtime .builder-v2-component--hero-subheadline {
+  color: inherit;
+  opacity: 0.75;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
 /* Forms should work in runtime */
 .builder-v2-runtime input,
 .builder-v2-runtime button,
