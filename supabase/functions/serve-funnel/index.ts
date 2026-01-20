@@ -168,6 +168,9 @@ serve(async (req) => {
     );
 
     // 5. Inject funnel data into the HTML
+    const snapshot = funnel.published_document_snapshot as any;
+    const settings = funnel.settings as any;
+
     const funnelData = JSON.stringify({
       funnel: {
         id: funnel.id,
@@ -189,9 +192,9 @@ serve(async (req) => {
       domain: cleanDomain,
       funnelId: funnel.id,
       snapshot: {
-        version: (snapshot as any)?.version ?? null,
-        pages: Array.isArray((snapshot as any)?.pages) ? (snapshot as any).pages.length : 0,
-        steps: Array.isArray((snapshot as any)?.steps) ? (snapshot as any).steps.length : 0,
+        version: snapshot?.version ?? null,
+        pages: Array.isArray(snapshot?.pages) ? snapshot.pages.length : 0,
+        steps: Array.isArray(snapshot?.steps) ? snapshot.steps.length : 0,
       },
     }).replace(/</g, '\\u003c');
 
@@ -217,8 +220,6 @@ serve(async (req) => {
     appHtml = appHtml.replace('</head>', `${canonicalTag}\n</head>`);
 
     // Add meta description and OG tags if available
-    const settings = funnel.settings as any;
-    const snapshot = funnel.published_document_snapshot as any;
     const metaDescription = settings?.seo?.description || snapshot?.settings?.seo?.description || '';
     const ogImage = settings?.seo?.ogImage || snapshot?.settings?.seo?.ogImage || '';
     
