@@ -2483,11 +2483,13 @@ export const InlineTextEditor = forwardRef<HTMLDivElement, InlineTextEditorProps
             ? // BUTTON MODE: Pure layout container - NO visual styles
               // Buttons handle their own surface; inner content must be transparent
               'bg-transparent'
-            : // TEXT/HEADING MODE: Show editing indicators
-              // CRITICAL: Removed px-1 -mx-1 to prevent layout shift when editing (gradient alignment bug)
-              isEditing
-                ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded bg-[hsl(var(--builder-accent)/0.05)]'
-                : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
+            : // TEXT/HEADING MODE: Show editing indicators ONLY when not disabled (readOnly)
+              // CRITICAL: When disabled, render NO hover rings, NO cursor-pointer to strip builder chrome from preview/runtime
+              disabled
+                ? '' // No chrome at all in readOnly/disabled mode
+                : isEditing
+                  ? 'ring-2 ring-[hsl(var(--builder-accent))] rounded bg-[hsl(var(--builder-accent)/0.05)]'
+                  : 'cursor-pointer hover:ring-1 hover:ring-[hsl(var(--builder-accent-muted))] rounded'
           }
           ${!value && !isEditing ? 'text-gray-400' : ''}
           ${className}

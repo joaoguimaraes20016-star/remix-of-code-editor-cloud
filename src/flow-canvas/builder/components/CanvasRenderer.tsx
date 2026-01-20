@@ -4289,40 +4289,43 @@ const StackRenderer: React.FC<StackRendererProps> = ({
       // No onClick here - clicking bubbles up to FrameRenderer which handles frame selection
     >
       {/* Content area - no badge, clicking selects parent frame */}
+      {/* CRITICAL: Empty state is ONLY for editor - never render in readOnly (preview/runtime) */}
       {stack.blocks.length === 0 ? (
-        // Polished empty state - matches the original "Add Block" design
-        <div 
-          onClick={(e) => {
-            e.stopPropagation();
-            // First select the parent frame, then open block picker
-            selectParentFrame();
-            onOpenBlockPickerInPanel?.(stack.id);
-          }}
-          className="w-full py-16 flex items-center justify-center cursor-pointer"
-        >
-          <div className="group flex flex-col items-center justify-center py-20 px-8 w-full max-w-2xl border-2 border-dashed border-purple-300/50 rounded-2xl bg-white hover:border-purple-400/60 transition-all duration-200">
-            {/* Icon container */}
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
-              <Layers size={32} className="text-gray-400" />
+        !readOnly ? (
+          // Polished empty state - matches the original "Add Block" design
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              // First select the parent frame, then open block picker
+              selectParentFrame();
+              onOpenBlockPickerInPanel?.(stack.id);
+            }}
+            className="w-full py-16 flex items-center justify-center cursor-pointer"
+          >
+            <div className="group flex flex-col items-center justify-center py-20 px-8 w-full max-w-2xl border-2 border-dashed border-purple-300/50 rounded-2xl bg-white hover:border-purple-400/60 transition-all duration-200">
+              {/* Icon container */}
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
+                <Layers size={32} className="text-gray-400" />
+              </div>
+              
+              {/* Title */}
+              <span className="text-lg font-semibold text-gray-800 mb-1">
+                Add content to this section
+              </span>
+              
+              {/* Subtitle */}
+              <span className="text-sm text-gray-400 mb-6">
+                Capture forms, questions, buttons & more
+              </span>
+              
+              {/* Dark button */}
+              <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
+                <Plus size={18} />
+                <span>Insert Content</span>
+              </span>
             </div>
-            
-            {/* Title */}
-            <span className="text-lg font-semibold text-gray-800 mb-1">
-              Add content to this section
-            </span>
-            
-            {/* Subtitle */}
-            <span className="text-sm text-gray-400 mb-6">
-              Capture forms, questions, buttons & more
-            </span>
-            
-            {/* Dark button */}
-            <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
-              <Plus size={18} />
-              <span>Insert Content</span>
-            </span>
           </div>
-        </div>
+        ) : null /* Empty stacks render nothing in readOnly mode */
       ) : (
         <>
           <DndContext

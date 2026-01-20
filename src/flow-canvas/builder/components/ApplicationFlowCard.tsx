@@ -492,6 +492,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             style={{ color: getElementColor(s, 'titleColor') }}
             elementType="heading"
             elementId={`step-${stepId}-title`}
+            disabled={isPreviewMode}
           />
         </div>
         {/* Subline – inline editable, selectable for inspector */}
@@ -512,6 +513,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             style={{ color: getElementColor(s, 'descriptionColor') }}
             elementType="text"
             elementId={`step-${stepId}-desc`}
+            disabled={isPreviewMode}
           />
         </div>
         {/* CTA button – UNIFIED Button component - NO WRAPPER STYLING */}
@@ -582,6 +584,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             style={{ color: getElementColor(s, 'titleColor') }}
             elementType="heading"
             elementId={`step-${step.id}-title`}
+            disabled={isPreviewMode}
           />
         </div>
         {s.description && (
@@ -874,6 +877,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
             style={{ color: getElementColor(s, 'titleColor') }}
             elementType="heading"
             elementId={`step-${step.id}-title`}
+            disabled={isPreviewMode}
           />
         </div>
         {s.description && (
@@ -1008,6 +1012,7 @@ export const ApplicationFlowCard: React.FC<ApplicationFlowCardProps> = ({
           style={{ color: getElementColor(s, 'titleColor') }}
           elementType="heading"
           elementId={`step-${step.id}-title`}
+          disabled={isPreviewMode}
         />
         {s.description && (
           <div 
