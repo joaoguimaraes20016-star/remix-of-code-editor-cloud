@@ -125,6 +125,12 @@ const ACTION_META: Record<ActionType, ActionMeta> = {
     color: "border-l-red-500",
     getSummary: () => "Add to power dialer queue",
   },
+  condition: {
+    label: "If / Else",
+    icon: <ArrowRightLeft className="h-4 w-4" />,
+    color: "border-l-amber-500",
+    getSummary: (config) => config?.conditions?.length ? `${config.conditions.length} condition(s)` : "No conditions set",
+  },
 };
 
 export function StepCard({ step, onUpdate, onDelete, teamId }: StepCardProps) {

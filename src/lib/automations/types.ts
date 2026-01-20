@@ -19,7 +19,8 @@ export type ActionType =
   | 'time_delay'          // wait before next action
   | 'custom_webhook'
   | 'assign_owner'        // set owner_id on lead or deal
-  | 'update_stage';       // set stage_id on lead or deal
+  | 'update_stage'        // set stage_id on lead or deal
+  | 'condition';          // if/else branching
 
 export type CrmEntity = 'lead' | 'deal';
 
