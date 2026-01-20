@@ -153,28 +153,8 @@ export default function PublicFunnel() {
   const isLoading = !injectedData && (customDomainLoading || funnelLoading || stepsLoading);
   const hasError = customDomainError || funnelError;
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (hasError || !activeFunnel) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Funnel Not Found</h1>
-          <p className="text-white/60">
-            {customDomainError || "This funnel doesn't exist or is not published"}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Detect format: new EditorDocument (has pages) OR old FlowCanvas (has steps)
+  // NOTE: Must compute these before any early returns to keep hook order stable
   const snapshot = activeFunnel?.published_document_snapshot;
   const isEditorDocumentFormat =
     typeof (snapshot as any)?.version === 'number' &&
@@ -183,6 +163,7 @@ export default function PublicFunnel() {
   const isFlowCanvasFormat = Array.isArray((snapshot as any)?.steps) && (snapshot as any).steps.length > 0;
 
   // Debug: expose which runtime path was chosen
+  // CRITICAL: This hook MUST be before any early returns to maintain consistent hook order
   useEffect(() => {
     if (!debug) return;
 
@@ -210,6 +191,28 @@ export default function PublicFunnel() {
       delete document.documentElement.dataset.infostackRenderer;
     };
   }, [debug, slug, activeFunnel?.id, injectedData, isEditorDocumentFormat, isFlowCanvasFormat, snapshot]);
+
+  // Early returns AFTER all hooks
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (hasError || !activeFunnel) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-2">Funnel Not Found</h1>
+          <p className="text-white/60">
+            {customDomainError || "This funnel doesn't exist or is not published"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // NEW: EditorDocument format - use WYSIWYG renderer (no lossy conversion)
   if (isEditorDocumentFormat) {
