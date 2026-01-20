@@ -2076,82 +2076,81 @@ export function FlowCanvasRenderer({
           </div>
         )}
 
-        {/* Constrained content container - matches editor spacing exactly */}
-        <div className={cn('mx-auto px-8 pb-8 pt-4 relative z-10 min-h-screen', deviceWidths[deviceMode])}>
-          {/* Navigation arrows */}
-          {totalSteps > 1 && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
-                <button
-                  onClick={() => setCurrentStepIndex(prev => Math.max(0, prev - 1))}
-                  disabled={currentStepIndex === 0}
-                  className={cn(
-                    'p-2 rounded-full transition-all',
-                    currentStepIndex === 0
-                      ? 'text-muted-foreground/30 cursor-not-allowed'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                  )}
-                >
-                  <ChevronUp className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setCurrentStepIndex(prev => Math.min(totalSteps - 1, prev + 1))}
-                  disabled={currentStepIndex === totalSteps - 1}
-                  className={cn(
-                    'p-2 rounded-full transition-all',
-                    currentStepIndex === totalSteps - 1
-                      ? 'text-muted-foreground/30 cursor-not-allowed'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                  )}
-                >
-                  <ChevronDown className="w-5 h-5" />
-                </button>
-              </div>
-            )}
+        {/* Navigation arrows - fixed to viewport */}
+        {totalSteps > 1 && (
+          <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
+            <button
+              onClick={() => setCurrentStepIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentStepIndex === 0}
+              className={cn(
+                'p-2 rounded-full transition-all',
+                currentStepIndex === 0
+                  ? 'text-muted-foreground/30 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+              )}
+            >
+              <ChevronUp className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setCurrentStepIndex(prev => Math.min(totalSteps - 1, prev + 1))}
+              disabled={currentStepIndex === totalSteps - 1}
+              className={cn(
+                'p-2 rounded-full transition-all',
+                currentStepIndex === totalSteps - 1
+                  ? 'text-muted-foreground/30 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+              )}
+            >
+              <ChevronDown className="w-5 h-5" />
+            </button>
+          </div>
+        )}
 
-            {/* Step content - uses CanvasRenderer in readOnly mode for pixel-perfect parity */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep?.id || currentStepIndex}
-                variants={stepVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="w-full relative z-10"
-              >
-                <FlowContainerProvider
-                  initialSteps={steps.map(s => ({ id: s.id, name: s.name }))}
-                  initialStepId={currentStep?.id}
-                  isPreviewMode={true}
-                  onStepChange={(stepId, index) => setCurrentStepIndex(index)}
-                  onSubmit={async (values) => {
-                    // Handle form submission
-                    setIsSubmitting(true);
-                    try {
-                      await handleFormSubmit(values as Record<string, string>);
-                    } finally {
-                      setIsSubmitting(false);
-                    }
-                  }}
-                >
-                  <CanvasRenderer
-                    step={runtimeStep}
-                    selection={noSelection}
-                    onSelect={() => {}}
-                    deviceMode={deviceMode}
-                    readOnly={true}
-                    pageSettings={canvasPageSettings as any}
-                  />
-                </FlowContainerProvider>
-              </motion.div>
-            </AnimatePresence>
+        {/* Step content - uses CanvasRenderer in readOnly mode for pixel-perfect parity.
+            CanvasRenderer provides its own mx-auto + deviceWidths constraint internally.
+            We do NOT wrap it in another constrained container to avoid double-nesting. */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep?.id || currentStepIndex}
+            variants={stepVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="w-full min-h-screen relative z-10"
+          >
+            <FlowContainerProvider
+              initialSteps={steps.map(s => ({ id: s.id, name: s.name }))}
+              initialStepId={currentStep?.id}
+              isPreviewMode={true}
+              onStepChange={(stepId, index) => setCurrentStepIndex(index)}
+              onSubmit={async (values) => {
+                // Handle form submission
+                setIsSubmitting(true);
+                try {
+                  await handleFormSubmit(values as Record<string, string>);
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+            >
+              <CanvasRenderer
+                step={runtimeStep}
+                selection={noSelection}
+                onSelect={() => {}}
+                deviceMode={deviceMode}
+                readOnly={true}
+                pageSettings={canvasPageSettings as any}
+              />
+            </FlowContainerProvider>
+          </motion.div>
+        </AnimatePresence>
 
-            {/* Step counter */}
-            {totalSteps > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground z-40">
-                {currentStepIndex + 1} / {totalSteps}
-              </div>
-            )}
-        </div>
+        {/* Step counter - fixed to bottom */}
+        {totalSteps > 1 && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground z-40">
+            {currentStepIndex + 1} / {totalSteps}
+          </div>
+        )}
       </div>
     </RuntimeThemeContext.Provider>
   );

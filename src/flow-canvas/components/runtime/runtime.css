@@ -344,23 +344,43 @@
 /* ========================================
    CRITICAL: Strip CanvasRenderer editor chrome in runtime
    When CanvasRenderer is used with readOnly=true inside
-   .flowcanvas-runtime, we strip all editor-specific styling.
+   .flowcanvas-runtime, we strip all editor-specific styling
+   while preserving layout constraints for alignment parity.
    ======================================== */
 
-/* Remove canvas grid background in runtime */
+/* Remove canvas grid background - make it transparent */
 .flowcanvas-runtime .canvas-grid {
   background: transparent !important;
+  /* Keep flex-1 and overflow behavior for layout */
 }
 
-/* Remove device-frame card styling (rounded corners, shadow) in runtime */
-.flowcanvas-runtime .device-frame {
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-
-/* Remove builder scroll and panel backgrounds */
+/* Remove builder-scroll background */
 .flowcanvas-runtime .builder-scroll {
   background: transparent !important;
+}
+
+/* CRITICAL: Device-frame becomes transparent in runtime
+   Background is already on .flowcanvas-runtime root (full-bleed)
+   Device-frame should NOT add its own background or chrome */
+.flowcanvas-runtime .device-frame {
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Remove the pt-4 spacer in runtime (we have our own spacing) */
+.flowcanvas-runtime .canvas-grid > .pt-4 {
+  display: none !important;
+}
+
+/* The mx-auto px-8 pb-8 container from CanvasRenderer should NOT add centering
+   It provides width constraints only - alignment comes from stack/element settings */
+.flowcanvas-runtime .canvas-grid > div[class*="mx-auto"] {
+  /* Keep max-width and horizontal padding for alignment parity */
+  /* But remove any vertical padding that would interfere */
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 /* Hide section action bars and add-block buttons */
@@ -372,8 +392,13 @@
   display: none !important;
 }
 
-/* Hide grid overlay */
+/* Hide grid overlay that shows on hover */
 .flowcanvas-runtime [style*="background-image: linear-gradient(to right"] {
+  display: none !important;
+}
+
+/* Hide section divider lines in runtime */
+.flowcanvas-runtime .bg-\[hsl\(var\(--builder-border-subtle\)\)\] {
   display: none !important;
 }
 
@@ -392,7 +417,12 @@
   box-shadow: none !important;
 }
 
-/* Ensure bg-canvas-bg is transparent in runtime */
+/* Make bg-canvas-bg transparent */
 .flowcanvas-runtime .bg-canvas-bg {
+  background: transparent !important;
+}
+
+/* Ensure dark-theme class on device-frame doesn't add dark background */
+.flowcanvas-runtime .device-frame.dark-theme {
   background: transparent !important;
 }
