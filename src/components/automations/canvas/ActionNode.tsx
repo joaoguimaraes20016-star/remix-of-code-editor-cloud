@@ -48,7 +48,7 @@ interface ActionMeta {
   getSummary: (config: Record<string, any>) => string;
 }
 
-const ACTION_META: Record<ActionType, ActionMeta> = {
+const ACTION_META: Partial<Record<ActionType, ActionMeta>> = {
   send_message: {
     label: "Send Message",
     icon: <MessageSquare className="h-4 w-4" />,
