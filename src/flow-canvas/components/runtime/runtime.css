@@ -283,7 +283,10 @@
 /* ========================================
    FlowCanvas Runtime - Full-Bleed Parity
    Background is applied to viewport root,
-   content is constrained by deviceWidths
+   content is constrained by deviceWidths.
+   
+   CanvasRenderer is now used in readOnly mode
+   to achieve pixel-perfect alignment parity.
    ======================================== */
 
 /* Runtime root - full-bleed background */
@@ -338,14 +341,58 @@
   transform: scale(0.98);
 }
 
-/* Content container - constrained width (matches editor's mx-auto px-8) */
-.flowcanvas-runtime .max-w-5xl,
-.flowcanvas-runtime .max-w-2xl,
-.flowcanvas-runtime .max-w-sm {
-  /* These classes provide the constraint; no overrides needed */
+/* ========================================
+   CRITICAL: Strip CanvasRenderer editor chrome in runtime
+   When CanvasRenderer is used with readOnly=true inside
+   .flowcanvas-runtime, we strip all editor-specific styling.
+   ======================================== */
+
+/* Remove canvas grid background in runtime */
+.flowcanvas-runtime .canvas-grid {
+  background: transparent !important;
 }
 
-/* Step content wrapper */
-.flowcanvas-runtime .max-w-2xl {
-  /* Inner content constraint within the device-width container */
+/* Remove device-frame card styling (rounded corners, shadow) in runtime */
+.flowcanvas-runtime .device-frame {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Remove builder scroll and panel backgrounds */
+.flowcanvas-runtime .builder-scroll {
+  background: transparent !important;
+}
+
+/* Hide section action bars and add-block buttons */
+.flowcanvas-runtime .section-action-bar,
+.flowcanvas-runtime .block-action-bar,
+.flowcanvas-runtime .add-section-button,
+.flowcanvas-runtime [class*="SectionActionBar"],
+.flowcanvas-runtime [class*="BlockActionBar"] {
+  display: none !important;
+}
+
+/* Hide grid overlay */
+.flowcanvas-runtime [style*="background-image: linear-gradient(to right"] {
+  display: none !important;
+}
+
+/* Ensure builder-section-selectable loses its editor hover/selection chrome */
+.flowcanvas-runtime .builder-section-selectable {
+  cursor: default !important;
+}
+
+.flowcanvas-runtime .builder-section-selectable:hover {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.flowcanvas-runtime .builder-section-selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure bg-canvas-bg is transparent in runtime */
+.flowcanvas-runtime .bg-canvas-bg {
+  background: transparent !important;
 }

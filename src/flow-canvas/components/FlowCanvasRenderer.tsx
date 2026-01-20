@@ -22,6 +22,10 @@ import {
   isDirectVideoUrl,
   type PageBackground 
 } from './runtime/backgroundUtils';
+// Import CanvasRenderer for pixel-perfect rendering parity with editor
+import { CanvasRenderer } from '@/flow-canvas/builder/components/CanvasRenderer';
+import { FlowContainerProvider } from '@/flow-canvas/builder/contexts/FlowContainerContext';
+import type { Step, Page, SelectionState } from '@/flow-canvas/types/infostack';
 
 // Helper to convert gradient object to CSS
 function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): string {
@@ -1868,6 +1872,95 @@ export function FlowCanvasRenderer({
   // Progress indicator
   const progressPercent = ((currentStepIndex + 1) / totalSteps) * 100;
 
+  // ============================================================================
+  // CanvasRenderer Integration for Pixel-Perfect Parity
+  // ============================================================================
+  
+  // Empty selection state for read-only mode (no selection in runtime)
+  const noSelection: SelectionState = useMemo(() => ({ 
+    type: null, 
+    id: null, 
+    path: [] 
+  }), []);
+  
+  // Convert FlowCanvas step format to CanvasRenderer's Step type
+  const runtimeStep: Step | null = useMemo(() => {
+    if (!currentStep) return null;
+    
+    return {
+      id: currentStep.id,
+      name: currentStep.name,
+      step_type: 'content' as const,
+      step_intent: 'capture' as const,
+      submit_mode: 'next' as const,
+      frames: currentStep.frames.map(frame => ({
+        id: frame.id,
+        label: (frame as any).label || 'Frame',
+        stacks: frame.stacks.map(stack => ({
+          id: stack.id,
+          label: (stack as any).label || 'Stack',
+          direction: 'vertical' as const,
+          blocks: stack.blocks.map(block => ({
+            id: block.id,
+            type: block.type as any,
+            label: block.label,
+            elements: block.elements.map(el => ({
+              id: el.id,
+              type: el.type as any,
+              content: el.content,
+              props: el.props,
+              styles: el.styles,
+              responsive: el.responsive,
+              animation: el.animation,
+            })),
+            props: block.props,
+            styles: block.styles,
+          })),
+          props: (stack as any).props || {},
+          styles: (stack as any).styles,
+        })),
+        props: (frame as any).props || {},
+        styles: (frame as any).styles,
+        layout: (frame as any).layout,
+        paddingVertical: (frame as any).paddingVertical,
+        paddingHorizontal: (frame as any).paddingHorizontal,
+        blockGap: (frame as any).blockGap,
+        maxWidth: (frame as any).maxWidth,
+        background: (frame as any).background,
+        backgroundColor: (frame as any).backgroundColor,
+        backgroundGradient: (frame as any).backgroundGradient,
+        backgroundImage: (frame as any).backgroundImage,
+        glass: (frame as any).glass,
+      })),
+      background: (currentStep.settings as any)?.background,
+      settings: {
+        maxWidth: currentStep.settings?.maxWidth,
+        minHeight: currentStep.settings?.minHeight,
+        verticalAlign: currentStep.settings?.verticalAlign,
+      },
+    };
+  }, [currentStep]);
+  
+  // Page settings for CanvasRenderer (matches editor's pageSettings prop)
+  const canvasPageSettings = useMemo(() => ({
+    theme: pageSettings?.theme,
+    font_family: fontFamily,
+    primary_color: primaryColor,
+    page_background: pageBackground,
+  }), [pageSettings?.theme, fontFamily, primaryColor, pageBackground]);
+  
+  // Form submission handler for CanvasRenderer's FlowContainerProvider
+  const handleFormSubmit = useCallback(async (values: Record<string, string>) => {
+    // Merge with existing form data
+    setFormData(prev => ({ ...prev, ...values }));
+    
+    // Submit lead
+    const success = await submitLead({ submitMode: 'submit' });
+    if (success) {
+      setIsComplete(true);
+    }
+  }, [submitLead]);
+
   // Complete state - full-bleed background
   if (isComplete) {
     return (
@@ -2015,41 +2108,42 @@ export function FlowCanvasRenderer({
               </div>
             )}
 
-            {/* Step content */}
-            <div className="flex items-center justify-center min-h-[calc(100vh-32px)] p-4 pt-8 relative z-10">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep?.id || currentStepIndex}
-                  variants={stepVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  className="w-full max-w-2xl"
+            {/* Step content - uses CanvasRenderer in readOnly mode for pixel-perfect parity */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep?.id || currentStepIndex}
+                variants={stepVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="w-full relative z-10"
+              >
+                <FlowContainerProvider
+                  initialSteps={steps.map(s => ({ id: s.id, name: s.name }))}
+                  initialStepId={currentStep?.id}
+                  isPreviewMode={true}
+                  onStepChange={(stepId, index) => setCurrentStepIndex(index)}
+                  onSubmit={async (values) => {
+                    // Handle form submission
+                    setIsSubmitting(true);
+                    try {
+                      await handleFormSubmit(values as Record<string, string>);
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
                 >
-                  <div className="space-y-4">
-                    {currentBlocks.map(block => (
-                      <div key={block.id} className="space-y-3">
-                        {block.elements.map(element => {
-                          const rendered = renderElement(element, block);
-                          // Wrap with scroll transform if enabled
-                          if (element.animation?.scrollTransform?.enabled) {
-                            return (
-                              <ScrollTransformWrapper
-                                key={`scroll-${element.id}`}
-                                config={element.animation.scrollTransform}
-                              >
-                                {rendered}
-                              </ScrollTransformWrapper>
-                            );
-                          }
-                          return rendered;
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                  <CanvasRenderer
+                    step={runtimeStep}
+                    selection={noSelection}
+                    onSelect={() => {}}
+                    deviceMode={deviceMode}
+                    readOnly={true}
+                    pageSettings={canvasPageSettings as any}
+                  />
+                </FlowContainerProvider>
+              </motion.div>
+            </AnimatePresence>
 
             {/* Step counter */}
             {totalSteps > 1 && (
