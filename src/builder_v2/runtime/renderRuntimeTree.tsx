@@ -16,24 +16,29 @@ import { RuntimeRegistry, runtimeFallbackComponent } from './runtimeRegistry';
  * Recursively renders a canvas node using runtime components
  * Includes try-catch for graceful degradation on production
  */
-export function renderRuntimeNode(node: CanvasNode, depth = 0): JSX.Element {
+export function renderRuntimeNode(node: CanvasNode, depth = 0, path = '0'): JSX.Element {
+  // Use a deterministic, traversal-based key to prevent React reconciliation bugs
+  // when snapshots contain duplicated node IDs (can happen with imported/legacy data).
+  const reactKey = `${node.id}::${path}`;
+
   try {
-    const children = node.children.map((child) =>
-      renderRuntimeNode(child, depth + 1)
+    const children = node.children.map((child, index) =>
+      renderRuntimeNode(child, depth + 1, `${path}.${index}`)
     );
-    
+
     const definition = RuntimeRegistry[node.type] ?? runtimeFallbackComponent;
-    
+
     // Guard: Ensure definition.render is a valid function
     if (!definition || typeof definition.render !== 'function') {
       console.error(`[RuntimeRegistry] Invalid render function for type: ${node.type}`, {
         nodeId: node.id,
+        reactKey,
         definitionExists: !!definition,
         renderType: definition ? typeof definition.render : 'undefined',
       });
       return (
         <div
-          key={node.id}
+          key={reactKey}
           className="runtime-node runtime-node--error"
           data-node-id={node.id}
           data-node-type={node.type}
@@ -42,22 +47,25 @@ export function renderRuntimeNode(node: CanvasNode, depth = 0): JSX.Element {
         </div>
       );
     }
-    
+
     const safeChildren = definition.constraints?.canHaveChildren ? children : [];
-    
+
     const props = {
       ...definition.defaultProps,
       ...node.props,
     };
 
     const rendered = definition.render(props, safeChildren);
-    
+
     // Guard: Check that render returned a valid React element
     if (rendered === undefined) {
-      console.warn(`[RuntimeRegistry] Render returned undefined for type: ${node.type}`);
+      console.warn(`[RuntimeRegistry] Render returned undefined for type: ${node.type}`, {
+        nodeId: node.id,
+        reactKey,
+      });
       return (
         <div
-          key={node.id}
+          key={reactKey}
           className="runtime-node"
           data-node-id={node.id}
           data-node-type={node.type}
@@ -67,7 +75,7 @@ export function renderRuntimeNode(node: CanvasNode, depth = 0): JSX.Element {
 
     return (
       <div
-        key={node.id}
+        key={reactKey}
         className="runtime-node"
         data-node-id={node.id}
         data-node-type={node.type}
@@ -76,10 +84,12 @@ export function renderRuntimeNode(node: CanvasNode, depth = 0): JSX.Element {
       </div>
     );
   } catch (error) {
-    console.error(`[RuntimeRegistry] Error rendering node ${node.id} (${node.type}):`, error);
+    console.error(`[RuntimeRegistry] Error rendering node ${node.id} (${node.type}):`, error, {
+      reactKey,
+    });
     return (
       <div
-        key={node.id}
+        key={reactKey}
         className="runtime-node runtime-node--error"
         data-node-id={node.id}
         data-node-type={node.type}
@@ -97,5 +107,5 @@ export function renderRuntimeNode(node: CanvasNode, depth = 0): JSX.Element {
  * Entry point for EditorDocumentRenderer
  */
 export function renderRuntimeTree(rootNode: CanvasNode): JSX.Element {
-  return renderRuntimeNode(rootNode, 0);
+  return renderRuntimeNode(rootNode, 0, '0');
 }
