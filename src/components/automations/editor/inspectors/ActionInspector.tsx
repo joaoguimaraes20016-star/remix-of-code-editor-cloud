@@ -3,11 +3,24 @@ import {
   SendMessageForm,
   TimeDelayForm,
   AddTagForm,
+  RemoveTagForm,
   AddTaskForm,
+  AddNoteForm,
   AssignOwnerForm,
   UpdateStageForm,
   NotifyTeamForm,
   WebhookForm,
+  CreateContactForm,
+  UpdateContactForm,
+  CreateDealForm,
+  CloseDealForm,
+  WaitUntilForm,
+  BusinessHoursForm,
+  ConditionForm,
+  SplitTestForm,
+  GoToForm,
+  RunWorkflowForm,
+  StopWorkflowForm,
 } from "@/components/automations/builder/action-forms";
 
 interface ActionInspectorProps {
@@ -25,15 +38,39 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
 
   return (
     <div className="[&_label]:text-white/70 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-white [&_input]:placeholder:text-white/30 [&_textarea]:bg-white/5 [&_textarea]:border-white/10 [&_textarea]:text-white [&_textarea]:placeholder:text-white/30 [&_button[role=combobox]]:bg-white/5 [&_button[role=combobox]]:border-white/10 [&_button[role=combobox]]:text-white">
+      {/* Messaging */}
       {step.type === "send_message" && <SendMessageForm {...formProps} />}
-      {step.type === "time_delay" && <TimeDelayForm {...formProps} />}
-      {step.type === "add_tag" && <AddTagForm {...formProps} />}
-      {step.type === "add_task" && <AddTaskForm {...formProps} />}
-      {step.type === "assign_owner" && <AssignOwnerForm {...formProps} teamId={teamId} />}
-      {step.type === "update_stage" && <UpdateStageForm {...formProps} teamId={teamId} />}
       {step.type === "notify_team" && <NotifyTeamForm {...formProps} />}
+      
+      {/* CRM Actions */}
+      {step.type === "add_tag" && <AddTagForm {...formProps} />}
+      {step.type === "remove_tag" && <RemoveTagForm {...formProps} />}
+      {step.type === "create_contact" && <CreateContactForm {...formProps} />}
+      {step.type === "update_contact" && <UpdateContactForm {...formProps} />}
+      {step.type === "add_task" && <AddTaskForm {...formProps} />}
+      {step.type === "add_note" && <AddNoteForm {...formProps} />}
+      {step.type === "assign_owner" && <AssignOwnerForm {...formProps} teamId={teamId} />}
+      
+      {/* Pipeline Actions */}
+      {step.type === "update_stage" && <UpdateStageForm {...formProps} teamId={teamId} />}
+      {step.type === "create_deal" && <CreateDealForm {...formProps} />}
+      {step.type === "close_deal" && <CloseDealForm {...formProps} />}
+      
+      {/* Flow Control */}
+      {step.type === "time_delay" && <TimeDelayForm {...formProps} />}
+      {step.type === "wait_until" && <WaitUntilForm {...formProps} />}
+      {step.type === "business_hours" && <BusinessHoursForm {...formProps} />}
+      {step.type === "condition" && <ConditionForm {...formProps} />}
+      {step.type === "split_test" && <SplitTestForm {...formProps} />}
+      {step.type === "go_to" && <GoToForm {...formProps} />}
+      {step.type === "run_workflow" && <RunWorkflowForm {...formProps} teamId={teamId} />}
+      {step.type === "stop_workflow" && <StopWorkflowForm {...formProps} />}
+      
+      {/* Integrations */}
       {step.type === "custom_webhook" && <WebhookForm {...formProps} />}
-      {step.type === "condition" && <p className="text-white/50 text-sm">Condition configuration coming soon</p>}
+      {step.type === "enqueue_dialer" && (
+        <p className="text-white/50 text-sm">Power dialer configuration coming soon</p>
+      )}
     </div>
   );
 }
