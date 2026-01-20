@@ -5001,13 +5001,13 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
             style={{ 
               fontFamily: fontFamily,
               '--primary-color': primaryColor,
-              // Only apply background in editor mode - runtime/preview use root background
-              ...(readOnly ? {} : getPageBackgroundStyles(
+              // Apply background in both editor and preview modes for visual parity
+              ...getPageBackgroundStyles(
                 (step.background && (step.background.type || step.background.color)) 
                   ? step.background 
                   : pageSettings?.page_background, 
                 isDarkTheme
-              )),
+              ),
             } as React.CSSProperties}
             onClick={(e) => {
               // Click on empty device frame = clear selection (don't open settings panel)
@@ -5016,8 +5016,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
               }
             }}
           >
-            {/* Video Background (from step or page) - editor only, runtime uses root */}
-            {!readOnly && (() => {
+            {/* Video Background (from step or page) - both editor and preview for parity */}
+            {(() => {
               const hasStepBackground = step.background && (step.background.type || step.background.color);
               const bgSource = hasStepBackground ? step.background : pageSettings?.page_background;
               
