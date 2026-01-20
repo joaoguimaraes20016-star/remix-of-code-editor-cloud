@@ -30,6 +30,14 @@ interface EditorDocument {
   version: number;
   pages: Page[];
   activePageId?: string;
+  /** Document-level settings (background, theme, fonts) - included in published snapshots */
+  settings?: {
+    page_background?: PageBackground;
+    theme?: string;
+    font_family?: string;
+    primary_color?: string;
+    [key: string]: unknown;
+  };
 }
 
 interface FunnelSettings {
@@ -70,25 +78,31 @@ interface EditorDocumentRendererProps {
  */
 function PageFrame({
   page,
+  documentSettings,
   children,
 }: {
   page: Page;
+  /** Document-level settings from published snapshot (source of truth for background/theme) */
+  documentSettings?: EditorDocument['settings'];
   children: React.ReactNode;
 }) {
-  // Extract background from page's canvasRoot props OR legacy page.settings.page_background
+  // Extract background with priority: document settings > page canvasRoot > legacy page.settings
   const pageBackground = useMemo(() => {
-    // Primary: new builder_v2 format
+    // Priority 1: Document-level settings from published snapshot (set by FunnelEditor publish)
+    if (documentSettings?.page_background) {
+      return documentSettings.page_background as PageBackground;
+    }
+    // Priority 2: new builder_v2 format (canvasRoot props)
     if (page.canvasRoot?.props?.background) {
       return page.canvasRoot.props.background as PageBackground;
     }
-    // Fallback: legacy FlowCanvas format (stored in page.settings)
-    // Use type assertion since Page type may not include settings
+    // Priority 3: legacy FlowCanvas format (stored in page.settings)
     const pageWithSettings = page as Page & { settings?: Record<string, unknown> };
     if (pageWithSettings.settings?.page_background) {
       return pageWithSettings.settings.page_background as PageBackground;
     }
     return undefined;
-  }, [page]);
+  }, [page, documentSettings]);
 
   const backgroundStyles = useMemo(() => {
     return getPageBackgroundStyles(pageBackground, true);
@@ -182,7 +196,7 @@ function RuntimePageRouter({
   }
 
   return (
-    <PageFrame page={activePage}>
+    <PageFrame page={activePage} documentSettings={document.settings}>
       <CanvasContent node={activePage.canvasRoot} />
     </PageFrame>
   );
@@ -267,7 +281,7 @@ export function EditorDocumentRenderer({
       data-funnel-id={funnelId}
       data-version={document.version}
     >
-      <PageFrame page={activePage}>
+      <PageFrame page={activePage} documentSettings={document.settings}>
         <CanvasContent node={activePage.canvasRoot} />
       </PageFrame>
     </main>
@@ -301,7 +315,7 @@ export function EditorDocumentScrollRenderer({
       data-version={document.version}
     >
       {document.pages.map((page) => (
-        <PageFrame key={page.id} page={page}>
+        <PageFrame key={page.id} page={page} documentSettings={document.settings}>
           <CanvasContent node={page.canvasRoot} />
         </PageFrame>
       ))}
