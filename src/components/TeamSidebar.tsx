@@ -30,7 +30,7 @@ const mainNavItems = [
   { id: "home", label: "Team Hub", icon: Home, path: "" },
   { id: "crm", label: "Sales CRM", icon: TrendingUp, path: "/crm" },
   { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
-  { id: "automations", label: "Workflows", icon: Workflow, path: "/automations" },
+  { id: "workflows", label: "Workflows", icon: Workflow, path: "/workflows" },
   { id: "schedule", label: "Schedule", icon: CalendarDays, path: "/schedule" },
   { id: "chat", label: "Team Chat", icon: MessageCircle, path: "/chat" },
   { id: "apps", label: "Apps", icon: Grid3X3, path: "/apps" },
