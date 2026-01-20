@@ -164,13 +164,14 @@ export default function FunnelEditor() {
     },
   });
 
-  // Publish mutation - now stores version history
-  // IMPORTANT: Include page.settings in the snapshot for runtime background/theme rendering
+  // Publish mutation - stores FlowCanvas format as the primary runtime payload
+  // CRITICAL: FlowCanvas (steps) is now canonical; EditorDocument is only for editor persistence
   const publishMutation = useMutation({
     mutationFn: async (page: FlowCanvasPage) => {
-      const document = flowCanvasToEditorDocument(page);
-      const publishedSnapshot = { 
-        ...document, 
+      // PRIMARY: Store FlowCanvas format directly (steps-based)
+      // This ensures runtime uses same rendering logic as editor preview
+      const flowCanvasSnapshot = { 
+        ...page,
         publishedAt: Date.now(),
         // Include page-level settings (background, theme, fonts) for runtime rendering
         settings: page.settings || {},
@@ -199,7 +200,8 @@ export default function FunnelEditor() {
       const { error } = await supabase
         .from('funnels')
         .update({
-          published_document_snapshot: publishedSnapshot as unknown as Json,
+          // Store FlowCanvas format as primary snapshot (steps-based)
+          published_document_snapshot: flowCanvasSnapshot as unknown as Json,
           version_history: newHistory as unknown as Json,
           status: 'published',
           updated_at: new Date().toISOString(),
