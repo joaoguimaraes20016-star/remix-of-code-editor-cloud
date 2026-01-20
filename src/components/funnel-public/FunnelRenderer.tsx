@@ -11,6 +11,7 @@ import recordEvent from "@/lib/events/recordEvent";
 import elementDefinitions from "@/components/funnel/elementDefinitions";
 import { getConsentMode, shouldShowConsentCheckbox, resolvePrivacyPolicyUrl } from "./consent";
 import { getQuestionStepTypes, getStepRegistryEntry } from "@/lib/funnel/stepRegistry";
+import { useUnifiedLeadSubmit, createUnifiedPayload, type LeadConsent } from "@/flow-canvas/shared/hooks/useUnifiedLeadSubmit";
 
 // Use the shared getStepIntent helper (falls back to defaults).
 
@@ -74,9 +75,7 @@ import { PopupOptInGate } from './PopupOptInGate';
 export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaign }: FunnelRendererProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [leadId, setLeadId] = useState<string | null>(null);
   const [teamCalendlySettings, setTeamCalendlySettings] = useState<TeamCalendlySettings | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
@@ -86,7 +85,6 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const [popupGateData, setPopupGateData] = useState<{ name?: string; email?: string; phone?: string } | null>(null);
 
   const calendlyBookingRef = useRef<CalendlyBookingData | null>(null);
-  const pendingSaveRef = useRef(false);
   const submitInFlightRef = useRef(false);
   const pixelsInitializedRef = useRef(false);
   const firedEventsRef = useRef<Set<string>>(new Set()); // Track fired events to prevent duplicates
@@ -94,6 +92,23 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
   const firedFunnelEventsRef = useRef<Map<string, number>>(new Map());
   const externalIdRef = useRef<string>(crypto.randomUUID()); // Consistent ID for cross-device tracking
   const queryClient = useQueryClient();
+
+  // Unified lead submission hook
+  const { submit: unifiedSubmit, saveDraft: unifiedSaveDraft, leadId, isSubmitting } = useUnifiedLeadSubmit({
+    funnelId: funnel.id,
+    teamId: funnel.team_id,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    onLeadSaved: (id, mode) => {
+      console.log(`[FunnelRenderer] Lead saved via unified hook: ${id}, mode=${mode}`);
+      try {
+        queryClient.invalidateQueries({ queryKey: ["funnel-leads", funnel.team_id] });
+      } catch (invalidateError) {
+        console.warn("Failed to invalidate funnel-leads query:", invalidateError);
+      }
+    },
+  });
 
   // Fetch team's Calendly settings for funnel embed override
   // This is read-only and uses safe fallback if fetch fails
@@ -489,8 +504,7 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
     [firePixelEvent],
   );
 
-  // Progressive lead save - creates or updates lead
-  // Uses pendingSaveRef as a mutex to prevent concurrent/duplicate submissions
+  // Progressive lead save - uses unified hook for all submissions
   // GHL-style: draft saves never trigger workflows; submit saves do.
   type SubmitMode = "draft" | "submit";
 
@@ -502,85 +516,50 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
       stepIntent?: StepIntent,
       stepType?: string,
     ): Promise<{ data: any; error: any } | void> => {
-      // Prevent duplicate submissions - if already submitting, ignore this call
-      if (pendingSaveRef.current) {
-        console.log("Ignoring duplicate save request - submission in progress");
-        return;
-      }
+      console.log(`[saveLead] stepId=${stepId}, stepIntent=${stepIntent}, submitMode=${submitMode}`);
+      console.log("[submit-funnel-lead payload]", {
+        leadId,
+        funnelId: funnel?.id,
+        stepId,
+        stepType,
+        stepIntent,
+        submitMode,
+        answers: allAnswers,
+      });
 
-      pendingSaveRef.current = true;
-
-      // Stable client request ID for SUBMIT only (so retries reuse same event)
-      let clientRequestId: string;
-      if (submitMode === "submit") {
-        const key = `submitReq:${funnel.id}:${currentStepIndex}`;
-        const existing = sessionStorage.getItem(key);
-        clientRequestId = existing || crypto.randomUUID();
-        if (!existing) sessionStorage.setItem(key, clientRequestId);
-      } else {
-        clientRequestId = crypto.randomUUID();
-      }
-
-      console.log(`[saveLead] stepId=${stepId}, stepIntent=${stepIntent}, submitMode=${submitMode}, clientRequestId=${clientRequestId}`);
-
-      try {
-        console.log("[submit-funnel-lead payload]", {
-          leadId,
-          funnelId: funnel?.id,
+      // Build unified payload
+      const payload = createUnifiedPayload(
+        allAnswers,
+        {
+          funnelId: funnel.id,
+          teamId: funnel.team_id,
           stepId,
+          stepIds: stepId ? [stepId] : [],
           stepType,
-          stepIntent,
-          submitMode,
-          answers: allAnswers,
-        });
-
-        const { data, error } = await supabase.functions.invoke("submit-funnel-lead", {
-          body: {
-            funnel_id: funnel.id,
-            funnelId: funnel.id,
-            team_id: funnel.team_id,
-            teamId: funnel.team_id,
-            lead_id: leadId,
-            answers: allAnswers,
-            utm_source: utmSource,
-            utm_medium: utmMedium,
-            utm_campaign: utmCampaign,
+          stepIntent: stepIntent as 'capture' | 'navigate' | 'info' | undefined,
+          lastStepIndex: currentStepIndex,
+        },
+        {
+          metadata: {
             calendly_booking: calendlyBookingRef.current,
-            submitMode,
-            clientRequestId,
-            step_id: stepId,
-            step_type: stepType,
-            step_intent: stepIntent,
           },
-        });
-
-        if (error) {
-          console.error("Failed to save lead:", error);
-        } else {
-          // Support BOTH response shapes (old + new) so this won’t break either way:
-          const returnedLeadId = data?.lead_id || data?.lead?.id || data?.leadId || data?.id;
-
-          if (returnedLeadId) {
-            setLeadId(returnedLeadId);
-            console.log("Lead saved:", returnedLeadId, submitMode === "submit" ? "(submit)" : "(draft)");
-            try {
-              queryClient.invalidateQueries({ queryKey: ["funnel-leads", funnel.team_id] });
-            } catch (invalidateError) {
-              console.warn("Failed to invalidate funnel-leads query after submit:", invalidateError);
-            }
-          } else {
-            console.log("Lead saved (no id returned)", data);
-          }
         }
+      );
 
-        return { data, error };
-      } catch (err) {
-        console.error("Error saving lead:", err);
-      } finally {
-        pendingSaveRef.current = false;
+      // Use unified hook for submission
+      const result = submitMode === "submit"
+        ? await unifiedSubmit(payload)
+        : await unifiedSaveDraft(payload);
+
+      if (result.error) {
+        console.error("Failed to save lead:", result.error);
+        return { data: null, error: result.error };
       }
+
+      console.log("Lead saved:", result.leadId, submitMode === "submit" ? "(submit)" : "(draft)");
+      return { data: { lead_id: result.leadId }, error: null };
     },
-    [funnel.id, currentStepIndex, leadId, utmSource, utmMedium, utmCampaign],
+    [funnel.id, funnel.team_id, currentStepIndex, leadId, unifiedSubmit, unifiedSaveDraft],
   );
 
   // Check if answer contains meaningful data worth saving
@@ -716,7 +695,7 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
         submitInFlightRef.current = true;
 
         try {
-          setIsSubmitting(true);
+          // isSubmitting is managed by the unified hook
           // DEV-only visibility for submit intent
           if (import.meta.env.DEV) {
             try {
@@ -783,7 +762,7 @@ export function FunnelRenderer({ funnel, steps, utmSource, utmMedium, utmCampaig
 
           updatedAnswers = submitAnswers;
         } finally {
-          setIsSubmitting(false);
+          // isSubmitting is managed by the unified hook
         }
         
         // Fire Lead pixel event

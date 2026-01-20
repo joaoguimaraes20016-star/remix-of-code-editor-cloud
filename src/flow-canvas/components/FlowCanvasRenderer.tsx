@@ -10,8 +10,8 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useUnifiedLeadSubmit, createUnifiedPayload } from '@/flow-canvas/shared/hooks/useUnifiedLeadSubmit';
 import { ChevronUp, ChevronDown, Loader2, Play, User, Layout, ArrowRight, Sparkles, Search, Calendar, FileText, Rocket, Video } from 'lucide-react';
 import { generateStateStylesCSS } from './RuntimeElementRenderer';
 import { ScrollTransformWrapper } from './ScrollTransformWrapper';
@@ -688,10 +688,20 @@ export function FlowCanvasRenderer({
 }: FlowCanvasRendererProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [formData, setFormData] = useState<Record<string, string | string[]>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [leadId, setLeadId] = useState<string | null>(null);
   const deviceMode = useRuntimeDeviceMode();
+
+  // Unified lead submission hook
+  const { submit, saveDraft: saveDraftHook, leadId, isSubmitting } = useUnifiedLeadSubmit({
+    funnelId,
+    teamId,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    onLeadSaved: (id, mode) => {
+      console.log(`[FlowCanvasRenderer] Lead saved via unified hook: ${id}, mode=${mode}`);
+    },
+  });
 
   const steps = page.steps || [];
   const currentStep = steps[currentStepIndex];
@@ -803,117 +813,51 @@ export function FlowCanvasRenderer({
     });
   }, []);
 
-  // Ref to prevent duplicate submissions
-  const pendingSaveRef = useRef(false);
-
-  // Extract identity fields from formData
-  const extractIdentity = useCallback(() => {
-    const name = (formData.name || formData.full_name || formData.contact_name || null) as string | null;
-    const email = (formData.email || formData.email_address || formData.contact_email || null) as string | null;
-    const phone = (formData.phone || formData.phone_number || formData.contact_phone || null) as string | null;
-    return { name, email, phone };
-  }, [formData]);
-
-  // Submit lead data - properly sends all required parameters
+  // Submit lead using unified hook - wraps for local API compatibility
   const submitLead = useCallback(async (options?: { 
     stepId?: string; 
     stepType?: string; 
     submitMode?: 'draft' | 'submit' 
-  }) => {
-    if (pendingSaveRef.current) {
-      console.log('[FlowCanvasRenderer] Ignoring duplicate submission');
-      return false;
-    }
-    pendingSaveRef.current = true;
-
-    try {
-      setIsSubmitting(true);
-      
-      const mode = options?.submitMode || 'submit';
-      
-      // Generate idempotent request ID for submits
-      let clientRequestId: string;
-      if (mode === 'submit') {
-        const key = `submitReq:${funnelId}:${currentStepIndex}`;
-        const existing = sessionStorage.getItem(key);
-        clientRequestId = existing || crypto.randomUUID();
-        if (!existing) sessionStorage.setItem(key, clientRequestId);
-      } else {
-        clientRequestId = crypto.randomUUID();
+  }): Promise<boolean> => {
+    const mode = options?.submitMode || 'submit';
+    
+    // Build payload using the unified helper
+    const payload = createUnifiedPayload(
+      formData as Record<string, any>,
+      {
+        funnelId,
+        teamId,
+        stepId: options?.stepId || steps[currentStepIndex]?.id,
+        stepIds: [options?.stepId || steps[currentStepIndex]?.id].filter(Boolean) as string[],
+        stepType: options?.stepType || 'flow-canvas',
+        stepIntent: 'capture',
+        lastStepIndex: currentStepIndex,
       }
-      
-      const { name, email, phone } = extractIdentity();
-      
-      console.log(`[FlowCanvasRenderer] Submitting lead: mode=${mode}, funnelId=${funnelId}, leadId=${leadId}`);
-      
-      const { data, error } = await supabase.functions.invoke('submit-funnel-lead', {
-        body: {
-          funnel_id: funnelId,
-          team_id: teamId,
-          lead_id: leadId,  // Track existing lead for updates
-          answers: formData,
-          name,
-          email,
-          phone,
-          utm_source: utmSource,
-          utm_medium: utmMedium,
-          utm_campaign: utmCampaign,
-          // CRITICAL: These were missing before
-          submitMode: mode,
-          clientRequestId,
-          step_id: options?.stepId || steps[currentStepIndex]?.id,
-          step_type: options?.stepType || 'flow-canvas',
-          step_intent: 'capture',
-          last_step_index: currentStepIndex,
-        },
-      });
-
-      if (error) throw error;
-      
-      // Extract lead ID from response (handle various response shapes)
-      const returnedLeadId = data?.lead_id || data?.lead?.id || data?.leadId || data?.id;
-      if (returnedLeadId) {
-        setLeadId(returnedLeadId);
-        console.log(`[FlowCanvasRenderer] Lead saved: ${returnedLeadId}`);
-      }
-      return true;
-    } catch (err) {
-      console.error('[FlowCanvasRenderer] Failed to submit lead:', err);
-      return false;
-    } finally {
-      setIsSubmitting(false);
-      pendingSaveRef.current = false;
-    }
-  }, [funnelId, teamId, leadId, formData, utmSource, utmMedium, utmCampaign, currentStepIndex, steps, extractIdentity]);
+    );
+    
+    const result = mode === 'submit' 
+      ? await submit(payload)
+      : await saveDraftHook(payload);
+    
+    return !result.error;
+  }, [formData, funnelId, teamId, currentStepIndex, steps, submit, saveDraftHook]);
 
   // Save draft on step navigation (for drop-off tracking)
   const saveDraft = useCallback(async () => {
-    const { name, email, phone } = extractIdentity();
-    
-    try {
-      const { data } = await supabase.functions.invoke('submit-funnel-lead', {
-        body: {
-          funnel_id: funnelId,
-          team_id: teamId,
-          lead_id: leadId,
-          answers: formData,
-          name,
-          email,
-          phone,
-          submitMode: 'draft',  // Draft = no automations triggered
-          step_id: steps[currentStepIndex]?.id,
-          step_type: 'flow-canvas',
-          last_step_index: currentStepIndex,
-        },
-      });
-      
-      if (data?.lead_id) {
-        setLeadId(data.lead_id);
+    const payload = createUnifiedPayload(
+      formData as Record<string, any>,
+      {
+        funnelId,
+        teamId,
+        stepId: steps[currentStepIndex]?.id,
+        stepIds: [steps[currentStepIndex]?.id].filter(Boolean) as string[],
+        stepType: 'flow-canvas',
+        lastStepIndex: currentStepIndex,
       }
-    } catch (err) {
-      console.warn('[FlowCanvasRenderer] Draft save failed:', err);
-    }
-  }, [funnelId, teamId, leadId, formData, currentStepIndex, steps, extractIdentity]);
+    );
+    
+    await saveDraftHook(payload);
+  }, [formData, funnelId, teamId, currentStepIndex, steps, saveDraftHook]);
 
   // Handle button click
   const handleButtonClick = useCallback(async (element: FlowCanvasElement) => {
@@ -2124,13 +2068,8 @@ export function FlowCanvasRenderer({
               isPreviewMode={true}
               onStepChange={(stepId, index) => setCurrentStepIndex(index)}
               onSubmit={async (values) => {
-                // Handle form submission
-                setIsSubmitting(true);
-                try {
-                  await handleFormSubmit(values as Record<string, string>);
-                } finally {
-                  setIsSubmitting(false);
-                }
+                // Handle form submission - isSubmitting is now managed by the unified hook
+                await handleFormSubmit(values as Record<string, string>);
               }}
             >
               <CanvasRenderer
