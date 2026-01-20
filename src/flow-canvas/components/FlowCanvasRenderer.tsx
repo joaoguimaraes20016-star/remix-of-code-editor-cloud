@@ -175,6 +175,115 @@ interface FlowCanvasStep {
     }>;
   }>;
   settings?: Record<string, unknown>;
+  /** Step type from editor (e.g., 'form', 'info', 'calendar') */
+  type?: string;
+  /** Step intent from editor */
+  intent?: 'capture' | 'navigate' | 'info' | 'schedule';
+}
+
+// ============ STEP INTENT DETECTION ============
+// Determines the correct intent based on step content/settings
+
+type StepIntentType = 'capture' | 'schedule' | 'navigate' | 'info';
+
+function detectStepIntent(step: FlowCanvasStep): StepIntentType {
+  // 1. Use explicit intent from step settings if available
+  if (step.intent) {
+    return step.intent === 'schedule' ? 'schedule' : step.intent;
+  }
+  
+  // 2. Check step type if set
+  const stepType = step.type?.toLowerCase() || (step.settings?.stepType as string)?.toLowerCase();
+  if (stepType === 'calendar' || stepType === 'schedule' || stepType === 'booking') {
+    return 'schedule';
+  }
+  
+  // 3. Analyze blocks to detect content type
+  const allBlocks = step.frames?.flatMap(f => f.stacks?.flatMap(s => s.blocks || []) || []) || [];
+  const allElements = allBlocks.flatMap(b => b.elements || []);
+  
+  // Check for calendar/scheduling blocks
+  const hasCalendarBlock = allBlocks.some(b => {
+    const blockType = b.type?.toLowerCase() || '';
+    return blockType.includes('calendar') || 
+           blockType.includes('calendly') || 
+           blockType.includes('schedule') ||
+           blockType.includes('booking');
+  });
+  
+  // Check for calendar/embed elements
+  const hasCalendarElement = allElements.some(e => {
+    const elemType = e.type?.toLowerCase() || '';
+    const embedUrl = (e.props?.url as string || e.props?.embedUrl as string || '').toLowerCase();
+    return elemType.includes('calendly') || 
+           elemType.includes('calendar') ||
+           embedUrl.includes('calendly.com') ||
+           embedUrl.includes('cal.com');
+  });
+  
+  if (hasCalendarBlock || hasCalendarElement) {
+    return 'schedule';
+  }
+  
+  // Check for capture/form elements
+  const captureElementTypes = ['input', 'email', 'phone', 'name', 'textarea', 'form-field', 'opt-in', 'capture'];
+  const hasCaptureElements = allElements.some(e => {
+    const elemType = e.type?.toLowerCase() || '';
+    return captureElementTypes.some(t => elemType.includes(t));
+  });
+  
+  const hasCaptureBlock = allBlocks.some(b => {
+    const blockType = b.type?.toLowerCase() || '';
+    return blockType.includes('capture') || 
+           blockType.includes('optin') || 
+           blockType.includes('opt-in') ||
+           blockType.includes('form');
+  });
+  
+  if (hasCaptureElements || hasCaptureBlock) {
+    return 'capture';
+  }
+  
+  // Check for quiz/question elements (also capture)
+  const hasQuizElements = allElements.some(e => {
+    const elemType = e.type?.toLowerCase() || '';
+    return elemType.includes('radio') || 
+           elemType.includes('checkbox') || 
+           elemType.includes('choice') ||
+           elemType.includes('quiz');
+  });
+  
+  if (hasQuizElements) {
+    return 'capture';
+  }
+  
+  // Default to 'navigate' (info-only step, just progresses)
+  return 'navigate';
+}
+
+function detectStepType(step: FlowCanvasStep): string {
+  // Use explicit type if available
+  if (step.type) {
+    return step.type;
+  }
+  
+  const stepTypeFromSettings = step.settings?.stepType as string;
+  if (stepTypeFromSettings) {
+    return stepTypeFromSettings;
+  }
+  
+  // Derive from intent
+  const intent = detectStepIntent(step);
+  switch (intent) {
+    case 'schedule':
+      return 'calendar';
+    case 'capture':
+      return 'form';
+    case 'navigate':
+    case 'info':
+    default:
+      return 'content';
+  }
 }
 
 interface FlowCanvasPage {
@@ -820,17 +929,22 @@ export function FlowCanvasRenderer({
     submitMode?: 'draft' | 'submit' 
   }): Promise<boolean> => {
     const mode = options?.submitMode || 'submit';
+    const step = steps[currentStepIndex];
     
-    // Build payload using the unified helper
+    // Detect real intent and type from step content
+    const detectedIntent = step ? detectStepIntent(step as FlowCanvasStep) : 'capture';
+    const detectedType = step ? detectStepType(step as FlowCanvasStep) : 'content';
+    
+    // Build payload using the unified helper with accurate intent
     const payload = createUnifiedPayload(
       formData as Record<string, any>,
       {
         funnelId,
         teamId,
-        stepId: options?.stepId || steps[currentStepIndex]?.id,
-        stepIds: [options?.stepId || steps[currentStepIndex]?.id].filter(Boolean) as string[],
-        stepType: options?.stepType || 'flow-canvas',
-        stepIntent: 'capture',
+        stepId: options?.stepId || step?.id,
+        stepIds: [options?.stepId || step?.id].filter(Boolean) as string[],
+        stepType: options?.stepType || detectedType,
+        stepIntent: detectedIntent,
         lastStepIndex: currentStepIndex,
       }
     );
@@ -844,14 +958,19 @@ export function FlowCanvasRenderer({
 
   // Save draft on step navigation (for drop-off tracking)
   const saveDraft = useCallback(async () => {
+    const step = steps[currentStepIndex];
+    const detectedIntent = step ? detectStepIntent(step as FlowCanvasStep) : 'capture';
+    const detectedType = step ? detectStepType(step as FlowCanvasStep) : 'content';
+    
     const payload = createUnifiedPayload(
       formData as Record<string, any>,
       {
         funnelId,
         teamId,
-        stepId: steps[currentStepIndex]?.id,
-        stepIds: [steps[currentStepIndex]?.id].filter(Boolean) as string[],
-        stepType: 'flow-canvas',
+        stepId: step?.id,
+        stepIds: [step?.id].filter(Boolean) as string[],
+        stepType: detectedType,
+        stepIntent: detectedIntent,
         lastStepIndex: currentStepIndex,
       }
     );

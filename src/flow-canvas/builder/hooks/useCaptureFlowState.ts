@@ -2,6 +2,9 @@
  * useCaptureFlowState Hook
  * Manages runtime state for a CaptureFlow instance (answers, validation, navigation)
  * This is used when RENDERING a CaptureFlow, not when editing it.
+ * 
+ * NOTE: This hook manages local state only. Actual submission is handled by the
+ * component using this hook via useUnifiedLeadSubmit.
  */
 
 import { useState, useCallback, useMemo } from 'react';
@@ -81,6 +84,8 @@ interface UseCaptureFlowStateOptions {
   captureFlow: CaptureFlow;
   onComplete?: (answers: CaptureFlowAnswers) => void;
   onNodeChange?: (nodeId: string) => void;
+  /** External submit handler - called instead of local fake submit */
+  onSubmit?: (answers: CaptureFlowAnswers) => Promise<{ success: boolean; leadId?: string; error?: string }>;
 }
 
 interface UseCaptureFlowStateReturn {
@@ -108,12 +113,17 @@ interface UseCaptureFlowStateReturn {
   
   // Reset
   reset: () => void;
+  
+  // Error state
+  submitError: string | null;
+  leadId: string | null;
 }
 
 export function useCaptureFlowState({
   captureFlow,
   onComplete,
   onNodeChange,
+  onSubmit,
 }: UseCaptureFlowStateOptions): UseCaptureFlowStateReturn {
   const [state, setState] = useState<CaptureFlowState>(() => ({
     currentNodeId: captureFlow.nodes[0]?.id || null,
@@ -122,6 +132,9 @@ export function useCaptureFlowState({
     isSubmitting: false,
     isComplete: false,
   }));
+  
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [leadId, setLeadId] = useState<string | null>(null);
   
   // Derived values
   const currentNodeIndex = useMemo(() => {
@@ -276,11 +289,32 @@ export function useCaptureFlowState({
     if (!validateAll()) return false;
     
     setState(prev => ({ ...prev, isSubmitting: true }));
+    setSubmitError(null);
     
     try {
-      // Simulate async submission
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Use external submit handler if provided (unified lead submission)
+      if (onSubmit) {
+        const result = await onSubmit(state.answers);
+        
+        if (result.success) {
+          if (result.leadId) {
+            setLeadId(result.leadId);
+          }
+          setState(prev => ({
+            ...prev,
+            isSubmitting: false,
+            isComplete: true,
+          }));
+          onComplete?.(state.answers);
+          return true;
+        } else {
+          setSubmitError(result.error || 'Submission failed');
+          setState(prev => ({ ...prev, isSubmitting: false }));
+          return false;
+        }
+      }
       
+      // Fallback: If no external handler, just complete locally (for preview mode)
       setState(prev => ({
         ...prev,
         isSubmitting: false,
@@ -290,10 +324,12 @@ export function useCaptureFlowState({
       onComplete?.(state.answers);
       return true;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setSubmitError(errorMessage);
       setState(prev => ({ ...prev, isSubmitting: false }));
       return false;
     }
-  }, [validateAll, state.answers, onComplete]);
+  }, [validateAll, state.answers, onComplete, onSubmit]);
   
   // Reset state
   const reset = useCallback(() => {
@@ -304,6 +340,8 @@ export function useCaptureFlowState({
       isSubmitting: false,
       isComplete: false,
     });
+    setSubmitError(null);
+    setLeadId(null);
   }, [captureFlow.nodes]);
   
   return {
@@ -322,5 +360,7 @@ export function useCaptureFlowState({
     canAdvance,
     submit,
     reset,
+    submitError,
+    leadId,
   };
 }

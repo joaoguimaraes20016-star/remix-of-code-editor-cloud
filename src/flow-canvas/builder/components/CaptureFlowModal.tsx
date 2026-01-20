@@ -1,22 +1,32 @@
 /**
  * CaptureFlowModal - Renders a CaptureFlow in a modal overlay
  * Used when a button triggers the 'open-capture-flow' action
+ * 
+ * Uses useUnifiedLeadSubmit for proper lead creation/CRM integration.
  */
 
-import React, { useEffect } from 'react';
-import { X, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useCallback } from 'react';
+import { X, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { CaptureFlow, CaptureFlowAnswers } from '../../types/captureFlow';
 import { useCaptureFlowState } from '../hooks/useCaptureFlowState';
 import { CaptureNodeRenderer } from './capture-flow/CaptureNodeRenderer';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUnifiedLeadSubmit, createUnifiedPayload } from '@/flow-canvas/shared/hooks/useUnifiedLeadSubmit';
 
 interface CaptureFlowModalProps {
   isOpen: boolean;
   onClose: () => void;
   captureFlow: CaptureFlow;
   onComplete?: (answers: CaptureFlowAnswers) => void;
+  /** Required for lead submission */
+  funnelId: string;
+  teamId: string;
+  /** UTM tracking */
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
 }
 
 export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
@@ -24,7 +34,63 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
   onClose,
   captureFlow,
   onComplete,
+  funnelId,
+  teamId,
+  utmSource,
+  utmMedium,
+  utmCampaign,
 }) => {
+  // Unified lead submission hook
+  const { submit: submitLead, leadId: hookLeadId, isSubmitting: hookIsSubmitting, lastError } = useUnifiedLeadSubmit({
+    funnelId,
+    teamId,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    onLeadSaved: (id, mode) => {
+      console.log(`[CaptureFlowModal] Lead saved: ${id}, mode=${mode}`);
+    },
+    onError: (error) => {
+      console.error('[CaptureFlowModal] Submission error:', error);
+    },
+  });
+
+  // Handler to submit via unified pipeline
+  const handleUnifiedSubmit = useCallback(async (answers: CaptureFlowAnswers): Promise<{ success: boolean; leadId?: string; error?: string }> => {
+    // Build payload with all node IDs as step IDs
+    const nodeIds = captureFlow.nodes.map(n => n.id);
+    
+    const payload = createUnifiedPayload(
+      answers as Record<string, any>,
+      {
+        funnelId,
+        teamId,
+        stepId: captureFlow.id,
+        stepIds: nodeIds,
+        stepType: 'capture-flow',
+        stepIntent: 'capture',
+      },
+      {
+        metadata: {
+          utm_source: utmSource,
+          utm_medium: utmMedium,
+          utm_campaign: utmCampaign,
+        },
+      }
+    );
+
+    const result = await submitLead(payload);
+    
+    if (result.error) {
+      return { 
+        success: false, 
+        error: typeof result.error === 'string' ? result.error : result.error?.message || 'Submission failed' 
+      };
+    }
+    
+    return { success: true, leadId: result.leadId };
+  }, [captureFlow.id, captureFlow.nodes, funnelId, teamId, utmSource, utmMedium, utmCampaign, submitLead]);
+
   const {
     state,
     currentNode,
@@ -38,11 +104,14 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
     canGoBack,
     submit,
     reset,
+    submitError,
+    leadId,
   } = useCaptureFlowState({
     captureFlow,
     onComplete: (answers) => {
       onComplete?.(answers);
     },
+    onSubmit: handleUnifiedSubmit,
   });
 
   // Reset when modal opens
@@ -107,6 +176,7 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
 
   const isComplete = state.isComplete;
   const isSubmitting = state.isSubmitting;
+  const displayError = submitError || lastError;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -205,6 +275,18 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
                   onSubmit={handleContinue}
                   validationError={state.validationErrors[currentNode.fieldKey]}
                 />
+                
+                {/* Display submission error if any */}
+                {displayError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 flex items-center gap-2 text-destructive text-sm"
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{displayError}</span>
+                  </motion.div>
+                )}
               </motion.div>
             ) : (
               // No nodes fallback
