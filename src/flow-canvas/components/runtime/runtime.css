@@ -281,16 +281,21 @@
 }
 
 /* ========================================
-   FlowCanvas Runtime - Full-Bleed Parity
+   FlowCanvas Runtime & Preview - Full-Bleed Parity
    Background is applied to viewport root,
    content is constrained by deviceWidths.
    
    CanvasRenderer is now used in readOnly mode
    to achieve pixel-perfect alignment parity.
+   
+   IMPORTANT: This CSS applies to BOTH:
+   - .flowcanvas-runtime (published runtime)
+   - .builder-v2-canvas--preview (editor draft/preview mode)
    ======================================== */
 
 /* Runtime root - full-bleed background */
-.flowcanvas-runtime {
+.flowcanvas-runtime,
+.builder-v2-canvas--preview {
   /* Background applied via inline styles */
   min-height: 100vh;
   width: 100%;
@@ -298,7 +303,9 @@
 
 /* Typography parity - match editor's font rendering */
 .flowcanvas-runtime,
-.flowcanvas-runtime * {
+.flowcanvas-runtime *,
+.builder-v2-canvas--preview,
+.builder-v2-canvas--preview * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -342,27 +349,31 @@
 }
 
 /* ========================================
-   CRITICAL: Strip CanvasRenderer editor chrome in runtime
+   CRITICAL: Strip CanvasRenderer editor chrome in runtime/preview
    When CanvasRenderer is used with readOnly=true inside
-   .flowcanvas-runtime, we strip all editor-specific styling
-   while preserving layout constraints for alignment parity.
+   .flowcanvas-runtime OR .builder-v2-canvas--preview,
+   we strip all editor-specific styling while preserving
+   layout constraints for alignment parity.
    ======================================== */
 
 /* Remove canvas grid background - make it transparent */
-.flowcanvas-runtime .canvas-grid {
+.flowcanvas-runtime .canvas-grid,
+.builder-v2-canvas--preview .canvas-grid {
   background: transparent !important;
   /* Keep flex-1 and overflow behavior for layout */
 }
 
 /* Remove builder-scroll background */
-.flowcanvas-runtime .builder-scroll {
+.flowcanvas-runtime .builder-scroll,
+.builder-v2-canvas--preview .builder-scroll {
   background: transparent !important;
 }
 
-/* CRITICAL: Device-frame becomes transparent in runtime
+/* CRITICAL: Device-frame becomes transparent in runtime/preview
    Background is already on .flowcanvas-runtime root (full-bleed)
    Device-frame should NOT add its own background or chrome */
-.flowcanvas-runtime .device-frame {
+.flowcanvas-runtime .device-frame,
+.builder-v2-canvas--preview .device-frame {
   background: transparent !important;
   border-radius: 0 !important;
   box-shadow: none !important;
@@ -370,13 +381,15 @@
 }
 
 /* Remove the pt-4 spacer in runtime (we have our own spacing) */
-.flowcanvas-runtime .canvas-grid > .pt-4 {
+.flowcanvas-runtime .canvas-grid > .pt-4,
+.builder-v2-canvas--preview .canvas-grid > .pt-4 {
   display: none !important;
 }
 
 /* The mx-auto px-8 pb-8 container from CanvasRenderer should NOT add centering
    It provides width constraints only - alignment comes from stack/element settings */
-.flowcanvas-runtime .canvas-grid > div[class*="mx-auto"] {
+.flowcanvas-runtime .canvas-grid > div[class*="mx-auto"],
+.builder-v2-canvas--preview .canvas-grid > div[class*="mx-auto"] {
   /* Keep max-width and horizontal padding for alignment parity */
   /* But remove any vertical padding that would interfere */
   padding-top: 0 !important;
@@ -388,41 +401,155 @@
 .flowcanvas-runtime .block-action-bar,
 .flowcanvas-runtime .add-section-button,
 .flowcanvas-runtime [class*="SectionActionBar"],
-.flowcanvas-runtime [class*="BlockActionBar"] {
+.flowcanvas-runtime [class*="BlockActionBar"],
+.builder-v2-canvas--preview .section-action-bar,
+.builder-v2-canvas--preview .block-action-bar,
+.builder-v2-canvas--preview .add-section-button,
+.builder-v2-canvas--preview [class*="SectionActionBar"],
+.builder-v2-canvas--preview [class*="BlockActionBar"] {
   display: none !important;
 }
 
 /* Hide grid overlay that shows on hover */
-.flowcanvas-runtime [style*="background-image: linear-gradient(to right"] {
+.flowcanvas-runtime [style*="background-image: linear-gradient(to right"],
+.builder-v2-canvas--preview [style*="background-image: linear-gradient(to right"] {
   display: none !important;
 }
 
-/* Hide section divider lines in runtime */
-.flowcanvas-runtime .bg-\[hsl\(var\(--builder-border-subtle\)\)\] {
+/* Hide section divider lines in runtime/preview */
+.flowcanvas-runtime .bg-\[hsl\(var\(--builder-border-subtle\)\)\],
+.builder-v2-canvas--preview .bg-\[hsl\(var\(--builder-border-subtle\)\)\] {
   display: none !important;
 }
 
-/* Ensure builder-section-selectable loses its editor hover/selection chrome */
-.flowcanvas-runtime .builder-section-selectable {
+/* ========================================
+   CRITICAL: Strip ALL editor chrome in runtime/preview
+   Section/Block/Element outlines, badges, overlays, rings
+   ======================================== */
+
+/* Section-level chrome */
+.flowcanvas-runtime .builder-section-selectable,
+.builder-v2-canvas--preview .builder-section-selectable {
   cursor: default !important;
+  outline: none !important;
 }
 
-.flowcanvas-runtime .builder-section-selectable:hover {
+.flowcanvas-runtime .builder-section-selectable:hover,
+.builder-v2-canvas--preview .builder-section-selectable:hover {
   outline: none !important;
   box-shadow: none !important;
 }
 
-.flowcanvas-runtime .builder-section-selected {
+.flowcanvas-runtime .builder-section-selected,
+.builder-v2-canvas--preview .builder-section-selected {
   outline: none !important;
+  box-shadow: none !important;
+}
+
+.flowcanvas-runtime .builder-section-parent-of-selected,
+.builder-v2-canvas--preview .builder-section-parent-of-selected {
+  outline: none !important;
+}
+
+/* Block-level chrome */
+.flowcanvas-runtime .builder-block-selectable,
+.flowcanvas-runtime .builder-block-selectable:hover,
+.builder-v2-canvas--preview .builder-block-selectable,
+.builder-v2-canvas--preview .builder-block-selectable:hover {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.flowcanvas-runtime .builder-block-selected,
+.builder-v2-canvas--preview .builder-block-selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.flowcanvas-runtime .builder-parent-of-selected,
+.builder-v2-canvas--preview .builder-parent-of-selected {
+  outline: none !important;
+}
+
+/* Element-level chrome */
+.flowcanvas-runtime .builder-element-selectable,
+.flowcanvas-runtime .builder-element-selectable:hover,
+.builder-v2-canvas--preview .builder-element-selectable,
+.builder-v2-canvas--preview .builder-element-selectable:hover {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.flowcanvas-runtime .builder-element-selected,
+.builder-v2-canvas--preview .builder-element-selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Generic selected state */
+.flowcanvas-runtime .builder-selected,
+.builder-v2-canvas--preview .builder-selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide ALL type badges (hero, section, block, etc.) */
+.flowcanvas-runtime .block-type-badge,
+.flowcanvas-runtime .section-type-badge,
+.flowcanvas-runtime [class*="block-badge-"],
+.flowcanvas-runtime [class*="block-type-badge-"],
+.builder-v2-canvas--preview .block-type-badge,
+.builder-v2-canvas--preview .section-type-badge,
+.builder-v2-canvas--preview [class*="block-badge-"],
+.builder-v2-canvas--preview [class*="block-type-badge-"] {
+  display: none !important;
+}
+
+/* Hide V2 node overlays (hover/selection rings) */
+.flowcanvas-runtime .builder-v2-node-overlay,
+.builder-v2-canvas--preview .builder-v2-node-overlay {
+  display: none !important;
+}
+
+.flowcanvas-runtime .builder-v2-node:hover .builder-v2-node-overlay,
+.flowcanvas-runtime .builder-v2-node[data-selected='true'] .builder-v2-node-overlay,
+.builder-v2-canvas--preview .builder-v2-node:hover .builder-v2-node-overlay,
+.builder-v2-canvas--preview .builder-v2-node[data-selected='true'] .builder-v2-node-overlay {
+  display: none !important;
+}
+
+/* Step-card editor chrome (border-radius, shadows for "scene" effect) */
+.flowcanvas-runtime .step-card,
+.builder-v2-canvas--preview .step-card {
+  border-radius: 0 !important;
   box-shadow: none !important;
 }
 
 /* Make bg-canvas-bg transparent */
-.flowcanvas-runtime .bg-canvas-bg {
+.flowcanvas-runtime .bg-canvas-bg,
+.builder-v2-canvas--preview .bg-canvas-bg {
   background: transparent !important;
 }
 
 /* Ensure dark-theme class on device-frame doesn't add dark background */
-.flowcanvas-runtime .device-frame.dark-theme {
+.flowcanvas-runtime .device-frame.dark-theme,
+.builder-v2-canvas--preview .device-frame.dark-theme {
   background: transparent !important;
+}
+
+/* Hide any drag handles or resize grips */
+.flowcanvas-runtime [class*="drag-handle"],
+.flowcanvas-runtime [class*="resize-grip"],
+.builder-v2-canvas--preview [class*="drag-handle"],
+.builder-v2-canvas--preview [class*="resize-grip"] {
+  display: none !important;
+}
+
+/* Hide selection rings that use ring-* utilities */
+.flowcanvas-runtime [class*="ring-selection"],
+.flowcanvas-runtime [class*="ring-primary"],
+.builder-v2-canvas--preview [class*="ring-selection"],
+.builder-v2-canvas--preview [class*="ring-primary"] {
+  --tw-ring-opacity: 0 !important;
+  --tw-ring-color: transparent !important;
 }
