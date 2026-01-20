@@ -4935,7 +4935,9 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
         className={cn(
           "flex-1 bg-canvas-bg canvas-grid overflow-y-auto overflow-x-hidden builder-scroll relative min-h-0",
           designMode === 'pan' && !isPanning && "cursor-grab",
-          isPanning && "cursor-grabbing select-none"
+          isPanning && "cursor-grabbing select-none",
+          // Add preview mode wrapper class to trigger runtime CSS chrome stripping
+          readOnly && "builder-v2-canvas--preview"
         )}
         onMouseDown={handlePanMouseDown}
         onMouseMove={handlePanMouseMove}

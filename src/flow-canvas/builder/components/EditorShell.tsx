@@ -1771,12 +1771,16 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         {/* Canvas */}
         <div className="flex-1 relative min-h-0 h-full overflow-hidden flex flex-col">
           {previewMode && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-4 py-2 glass border border-builder-border rounded-full">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 glass border border-builder-border rounded-full pointer-events-auto">
               <div className="w-2 h-2 rounded-full bg-builder-success animate-pulse" />
               <span className="text-xs font-medium text-builder-text">Preview Mode</span>
               <button 
-                onClick={() => setPreviewMode(false)}
-                className="ml-2 text-xs text-builder-text-muted hover:text-builder-text"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPreviewMode(false);
+                }}
+                className="ml-2 px-2 py-1 text-xs font-medium text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover rounded transition-colors"
               >
                 Exit
               </button>
