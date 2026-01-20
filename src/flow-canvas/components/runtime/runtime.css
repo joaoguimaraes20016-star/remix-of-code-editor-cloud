@@ -81,11 +81,11 @@
   min-height: 100%;
 }
 
+/* Node surface: inherit layout constraints from component/layout settings
+   DO NOT force max-width:none - this breaks centered layouts */
 .builder-v2-runtime .builder-v2-node-surface {
   width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 0;
+  /* Let component/layout settings control max-width and centering */
 }
 
 /* Frame primitives should be full-width in runtime */
@@ -117,7 +117,7 @@
   background: transparent !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  padding: 24px 16px !important;
+  /* Let component define its own padding - don't force override */
   /* Inherit text color from context or use light */
   color: inherit;
 }

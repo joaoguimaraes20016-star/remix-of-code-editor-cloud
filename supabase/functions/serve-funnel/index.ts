@@ -141,6 +141,7 @@ serve(async (req) => {
       headers: {
         'Accept': 'text/html',
         'User-Agent': 'Infostack-Funnel-Server/1.0',
+        'Cache-Control': 'no-cache', // Prevent intermediary caching
       },
     });
 
@@ -156,15 +157,13 @@ serve(async (req) => {
     const appIndexEtag = appIndexResponse.headers.get('etag') || '';
     const appIndexLastModified = appIndexResponse.headers.get('last-modified') || '';
     console.log(`[serve-funnel] Fetched index.html (${appHtml.length} bytes) etag=${appIndexEtag} lastModified=${appIndexLastModified}`);
-    // Cache-bust asset URLs to ensure latest bundle is loaded
+    
+    // Cache-bust ALL asset URLs to ensure latest bundle is loaded
+    // Vite produces hashed filenames like index-DaBc123.js, so we must match those too
     // This prevents stale JS/CSS from being served on custom domains
     appHtml = appHtml.replace(
-      /\/assets\/index\.js/g,
-      `/assets/index.js?v=${BUILD_TIMESTAMP}`
-    );
-    appHtml = appHtml.replace(
-      /\/assets\/index\.css/g,
-      `/assets/index.css?v=${BUILD_TIMESTAMP}`
+      /\/assets\/([a-zA-Z0-9_-]+)(-[a-zA-Z0-9]+)?\.(js|css)(?!\?)/g,
+      `/assets/$1$2.$3?v=${BUILD_TIMESTAMP}`
     );
 
     // 5. Inject funnel data into the HTML

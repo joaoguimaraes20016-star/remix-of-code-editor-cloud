@@ -153,25 +153,33 @@ export default function PublicFunnel() {
   const isLoading = !injectedData && (customDomainLoading || funnelLoading || stepsLoading);
   const hasError = customDomainError || funnelError;
 
-  // Detect format: new EditorDocument (has pages) OR old FlowCanvas (has steps)
+  // Detect format: FlowCanvas (has steps) OR EditorDocument (has pages)
   // NOTE: Must compute these before any early returns to keep hook order stable
   const snapshot = activeFunnel?.published_document_snapshot;
+  const isFlowCanvasFormat = Array.isArray((snapshot as any)?.steps) && (snapshot as any).steps.length > 0;
   const isEditorDocumentFormat =
     typeof (snapshot as any)?.version === 'number' &&
     Array.isArray((snapshot as any)?.pages) &&
     (snapshot as any).pages.length > 0;
-  const isFlowCanvasFormat = Array.isArray((snapshot as any)?.steps) && (snapshot as any).steps.length > 0;
+  
+  // Feature flag: opt-in to v2 runtime (EditorDocument) via setting or query param
+  const useV2Runtime = 
+    (snapshot as any)?.settings?.useV2Runtime === true ||
+    searchParams.get('runtime') === 'v2';
 
   // Debug: expose which runtime path was chosen
   // CRITICAL: This hook MUST be before any early returns to maintain consistent hook order
   useEffect(() => {
     if (!debug) return;
 
-    const renderer = isEditorDocumentFormat
-      ? 'EditorDocumentRenderer'
-      : isFlowCanvasFormat
-        ? 'FlowCanvasRenderer'
-        : 'LegacyFunnelRenderer';
+    // Determine which renderer will be used (FlowCanvas is now default)
+    const renderer = isFlowCanvasFormat
+      ? 'FlowCanvasRenderer'
+      : (isEditorDocumentFormat && useV2Runtime)
+        ? 'EditorDocumentRenderer'
+        : isEditorDocumentFormat
+          ? 'EditorDocumentRenderer (fallback)'
+          : 'LegacyFunnelRenderer';
 
     console.info('[PublicFunnel] runtime selection', {
       hostname: window.location.hostname,
@@ -182,6 +190,7 @@ export default function PublicFunnel() {
       snapshotVersion: (snapshot as any)?.version,
       pages: Array.isArray((snapshot as any)?.pages) ? (snapshot as any).pages.length : 0,
       steps: Array.isArray((snapshot as any)?.steps) ? (snapshot as any).steps.length : 0,
+      useV2Runtime,
       renderer,
       shell: (window as any).__INFOSTACK_SHELL__,
     });
@@ -190,7 +199,7 @@ export default function PublicFunnel() {
     return () => {
       delete document.documentElement.dataset.infostackRenderer;
     };
-  }, [debug, slug, activeFunnel?.id, injectedData, isEditorDocumentFormat, isFlowCanvasFormat, snapshot]);
+  }, [debug, slug, activeFunnel?.id, injectedData, isEditorDocumentFormat, isFlowCanvasFormat, useV2Runtime, snapshot]);
 
   // Early returns AFTER all hooks
   if (isLoading) {
@@ -214,9 +223,20 @@ export default function PublicFunnel() {
     );
   }
 
-  // NEW: EditorDocument format - use WYSIWYG renderer (no lossy conversion)
+  // PRIMARY: FlowCanvas format - canonical runtime renderer
+  if (isFlowCanvasFormat) {
+    return (
+      <FlowCanvasRenderer
+        funnelId={activeFunnel.id}
+        page={snapshot}
+        settings={activeFunnel.settings}
+      />
+    );
+  }
+
+  // FALLBACK: EditorDocument format (only if FlowCanvas not available)
+  // This handles legacy funnels that were published with v2 runtime
   if (isEditorDocumentFormat) {
-    // Extract webhook URLs from settings or funnel config
     const webhookUrls: string[] = [];
     if (activeFunnel.settings.ghl_webhook_url) {
       webhookUrls.push(activeFunnel.settings.ghl_webhook_url);
@@ -230,17 +250,6 @@ export default function PublicFunnel() {
         teamId={activeFunnel.team_id}
         funnelSlug={activeFunnel.slug}
         webhookUrls={webhookUrls}
-      />
-    );
-  }
-
-  // FlowCanvas format (legacy new builder) - use FlowCanvasRenderer
-  if (isFlowCanvasFormat) {
-    return (
-      <FlowCanvasRenderer
-        funnelId={activeFunnel.id}
-        page={snapshot}
-        settings={activeFunnel.settings}
       />
     );
   }
