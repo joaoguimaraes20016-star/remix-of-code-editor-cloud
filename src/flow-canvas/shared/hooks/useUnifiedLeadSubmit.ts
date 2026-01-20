@@ -36,7 +36,7 @@ export interface LeadSource {
   stepId?: string;
   stepIds?: string[];
   stepType?: string;
-  stepIntent?: 'capture' | 'navigate' | 'info' | 'schedule';
+  stepIntent?: 'capture' | 'collect' | 'schedule' | 'complete' | 'navigate' | 'info';
   pageId?: string;
   lastStepIndex?: number;
 }
