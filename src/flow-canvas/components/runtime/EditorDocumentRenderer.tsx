@@ -23,9 +23,7 @@ import {
 import { FunnelRuntimeProvider, useFunnelRuntimeOptional } from './FunnelRuntimeContext';
 import { RuntimeSuccessOverlay } from '@/builder_v2/runtime/RuntimeSuccessOverlay';
 
-// Import builder_v2 CSS for proper node styling
-import '@/builder_v2/canvas/canvas.css';
-// Import runtime-specific overrides
+// Import runtime-specific styles ONLY (no editor CSS to avoid card frames/hover states)
 import './runtime.css';
 
 interface EditorDocument {
@@ -77,8 +75,20 @@ function PageFrame({
   page: Page;
   children: React.ReactNode;
 }) {
-  // Extract background from page's canvasRoot props
-  const pageBackground = (page.canvasRoot?.props?.background as PageBackground) || undefined;
+  // Extract background from page's canvasRoot props OR legacy page.settings.page_background
+  const pageBackground = useMemo(() => {
+    // Primary: new builder_v2 format
+    if (page.canvasRoot?.props?.background) {
+      return page.canvasRoot.props.background as PageBackground;
+    }
+    // Fallback: legacy FlowCanvas format (stored in page.settings)
+    // Use type assertion since Page type may not include settings
+    const pageWithSettings = page as Page & { settings?: Record<string, unknown> };
+    if (pageWithSettings.settings?.page_background) {
+      return pageWithSettings.settings.page_background as PageBackground;
+    }
+    return undefined;
+  }, [page]);
 
   const backgroundStyles = useMemo(() => {
     return getPageBackgroundStyles(pageBackground, true);

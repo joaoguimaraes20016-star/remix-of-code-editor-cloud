@@ -3,12 +3,47 @@
  * 
  * These styles ensure published funnels render cleanly without any
  * editor-specific chrome (selection overlays, hover toolbars, etc.)
+ * 
+ * IMPORTANT: This is the ONLY CSS imported in runtime mode.
+ * No editor CSS (canvas.css, canvas-experience.css) should be imported.
  */
+
+/* ========================================
+   Runtime Root Structure
+   ======================================== */
+
+/* Runtime wrapper - clean slate */
+.builder-root[data-mode="runtime"] {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.builder-root[data-mode="runtime"] .builder-canvas-frame {
+  width: 100%;
+  min-height: 100vh;
+  background: transparent;
+  /* Remove any editor frame styling */
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.builder-root[data-mode="runtime"] .builder-page {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* ========================================
+   Reset Editor Chrome
+   ======================================== */
 
 /* Reset all editor-specific behaviors in runtime */
 .builder-v2-runtime .builder-v2-node {
   cursor: default !important;
   pointer-events: auto;
+  /* Remove any editor-specific styling */
+  outline: none !important;
+  box-shadow: none;
 }
 
 .builder-v2-runtime .builder-v2-node--readonly {
@@ -18,7 +53,9 @@
 
 /* Hide all editor overlays and toolbars */
 .builder-v2-runtime .builder-v2-node-overlay,
-.builder-v2-runtime .builder-v2-hover-toolbar {
+.builder-v2-runtime .builder-v2-hover-toolbar,
+.builder-v2-runtime .builder-v2-selection-ring,
+.builder-v2-runtime .builder-v2-drop-indicator {
   display: none !important;
 }
 
@@ -33,6 +70,10 @@
   opacity: 1;
   filter: none;
 }
+
+/* ========================================
+   Full Width Content
+   ======================================== */
 
 /* Ensure full width content */
 .builder-v2-runtime {
