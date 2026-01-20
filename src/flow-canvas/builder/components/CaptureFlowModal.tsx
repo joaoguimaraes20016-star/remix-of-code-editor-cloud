@@ -55,9 +55,12 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
     },
   });
 
-  // Handler to submit via unified pipeline
-  const handleUnifiedSubmit = useCallback(async (answers: CaptureFlowAnswers): Promise<{ success: boolean; leadId?: string; error?: string }> => {
-    // Build payload with all node IDs as step IDs
+  // Handler to submit via unified pipeline - receives currentNodeId for accurate step tracking
+  const handleUnifiedSubmit = useCallback(async (
+    answers: CaptureFlowAnswers, 
+    currentNodeId: string
+  ): Promise<{ success: boolean; leadId?: string; error?: string }> => {
+    // Build payload with current node ID as stepId and all node IDs
     const nodeIds = captureFlow.nodes.map(n => n.id);
     
     const payload = createUnifiedPayload(
@@ -65,7 +68,7 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
       {
         funnelId,
         teamId,
-        stepId: captureFlow.id,
+        stepId: currentNodeId, // Use actual current node, not captureFlow.id
         stepIds: nodeIds,
         stepType: 'capture-flow',
         stepIntent: 'capture',
@@ -89,7 +92,7 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
     }
     
     return { success: true, leadId: result.leadId };
-  }, [captureFlow.id, captureFlow.nodes, funnelId, teamId, utmSource, utmMedium, utmCampaign, submitLead]);
+  }, [captureFlow.nodes, funnelId, teamId, utmSource, utmMedium, utmCampaign, submitLead]);
 
   const {
     state,
