@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Play, Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { AutomationFormDialog } from "./AutomationFormDialog";
+import { AutomationCanvasWrapper } from "./AutomationCanvasWrapper";
 import { runAutomationsForEvent } from "@/lib/automations/triggerHelper";
 import type { TriggerType } from "@/lib/automations/types";
 
@@ -223,7 +223,7 @@ export function AutomationsList({ teamId }: AutomationsListProps) {
         )}
       </CardContent>
 
-      <AutomationFormDialog
+      <AutomationCanvasWrapper
         open={isDialogOpen}
         onOpenChange={handleDialogClose}
         teamId={teamId}
