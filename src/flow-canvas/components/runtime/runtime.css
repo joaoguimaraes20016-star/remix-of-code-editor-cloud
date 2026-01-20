@@ -369,14 +369,13 @@
   background: transparent !important;
 }
 
-/* Device-frame chrome removal (border-radius, box-shadow, border)
-   DO NOT override background - keep gradient/image from inline styles! */
+/* Device-frame full transparency in runtime/preview - background comes from root only */
 .flowcanvas-runtime .device-frame,
 .builder-v2-canvas--preview .device-frame {
+  background: transparent !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   border: none !important;
-  /* background is NOT overridden - inline styles apply gradient/image */
 }
 
 /* Remove the pt-4 spacer in runtime (we have our own spacing) */
