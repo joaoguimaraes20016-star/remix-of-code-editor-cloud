@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Play, Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { AutomationCanvasWrapper } from "./AutomationCanvasWrapper";
 import { runAutomationsForEvent } from "@/lib/automations/triggerHelper";
 import type { TriggerType } from "@/lib/automations/types";
 
@@ -30,9 +30,8 @@ interface Automation {
 }
 
 export function AutomationsList({ teamId }: AutomationsListProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [testingTrigger, setTestingTrigger] = useState(false);
 
   const { data: automations, isLoading } = useQuery({
@@ -104,18 +103,11 @@ export function AutomationsList({ teamId }: AutomationsListProps) {
   };
 
   const handleEdit = (automation: Automation) => {
-    setEditingAutomation(automation);
-    setIsDialogOpen(true);
+    navigate(`/team/${teamId}/workflows/${automation.id}/edit`);
   };
 
   const handleCreate = () => {
-    setEditingAutomation(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setEditingAutomation(null);
+    navigate(`/team/${teamId}/workflows/new/edit`);
   };
 
   const triggerTypeLabels: Record<TriggerType, string> = {
@@ -222,13 +214,6 @@ export function AutomationsList({ teamId }: AutomationsListProps) {
           </Table>
         )}
       </CardContent>
-
-      <AutomationCanvasWrapper
-        open={isDialogOpen}
-        onOpenChange={handleDialogClose}
-        teamId={teamId}
-        automation={editingAutomation}
-      />
     </Card>
   );
 }

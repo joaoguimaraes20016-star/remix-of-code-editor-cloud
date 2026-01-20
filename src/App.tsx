@@ -15,6 +15,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import TeamSettings from "./pages/TeamSettings";
 import Workflows from "./pages/Workflows";
+import AutomationEditor from "./pages/AutomationEditor";
 import ClientAssets from "./pages/ClientAssets";
 import Schedule from "./pages/Schedule";
 import OnboardingForm from "./pages/OnboardingForm";
@@ -82,6 +83,9 @@ const App = () => (
             
             {/* Funnel Editor - Full screen, no team layout */}
             <Route path="/team/:teamId/funnels/:funnelId/edit" element={<FunnelEditor />} />
+            
+            {/* Automation Editor - Full screen, no team layout */}
+            <Route path="/team/:teamId/workflows/:automationId/edit" element={<AutomationEditor />} />
 
             {/* Public routes - no auth required */}
             <Route path="/onboard/:token" element={<OnboardingForm />} />
