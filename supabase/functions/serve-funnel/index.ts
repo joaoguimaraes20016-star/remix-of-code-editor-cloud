@@ -7,8 +7,10 @@ const corsHeaders = {
 };
 
 // Your Lovable app's base URL - this is where the React SPA is hosted
-// HARDCODED to ensure correct asset loading - secrets were not propagating correctly
-const APP_BASE_URL = 'https://code-hug-hub.lovable.app';
+// NOTE: Custom domains always load the bundle described by APP_BASE_URL's index.html.
+// If the custom domain looks "old", ensure this URL points to the latest published SPA build.
+const DEFAULT_APP_BASE_URL = 'https://code-hug-hub.lovable.app';
+const APP_BASE_URL = Deno.env.get('APP_BASE_URL') ?? DEFAULT_APP_BASE_URL;
 
 // Build timestamp for cache-busting
 const BUILD_TIMESTAMP = Date.now().toString();
@@ -151,8 +153,9 @@ serve(async (req) => {
     }
 
     let appHtml = await appIndexResponse.text();
-    console.log(`[serve-funnel] Fetched index.html (${appHtml.length} bytes)`);
-
+    const appIndexEtag = appIndexResponse.headers.get('etag') || '';
+    const appIndexLastModified = appIndexResponse.headers.get('last-modified') || '';
+    console.log(`[serve-funnel] Fetched index.html (${appHtml.length} bytes) etag=${appIndexEtag} lastModified=${appIndexLastModified}`);
     // Cache-bust asset URLs to ensure latest bundle is loaded
     // This prevents stale JS/CSS from being served on custom domains
     appHtml = appHtml.replace(
@@ -178,12 +181,31 @@ serve(async (req) => {
       queryParams: queryString ? Object.fromEntries(queryParams) : {},
     }).replace(/</g, '\\u003c'); // Escape < for script safety
 
+    const shellData = JSON.stringify({
+      appBaseUrl: APP_BASE_URL,
+      edgeBuild: BUILD_TIMESTAMP,
+      appIndexEtag,
+      appIndexLastModified,
+      domain: cleanDomain,
+      funnelId: funnel.id,
+      snapshot: {
+        version: (snapshot as any)?.version ?? null,
+        pages: Array.isArray((snapshot as any)?.pages) ? (snapshot as any).pages.length : 0,
+        steps: Array.isArray((snapshot as any)?.steps) ? (snapshot as any).steps.length : 0,
+      },
+    }).replace(/</g, '\\u003c');
+
     // Inject BEFORE the main bundle script so data is available at boot
     // We use the body (not head) to avoid conflicts with next-themes and other head-manipulating libs
-    const injectionScript = `<script>window.__INFOSTACK_FUNNEL__=${funnelData};window.__INFOSTACK_DOMAIN__="${cleanDomain}";</script>`;
+    const injectionScript = `<script>window.__INFOSTACK_FUNNEL__=${funnelData};window.__INFOSTACK_DOMAIN__="${cleanDomain}";window.__INFOSTACK_SHELL__=${shellData};</script>`;
 
     // Inject at the very start of <body> — before any other scripts
-    appHtml = appHtml.replace(/<body[^>]*>/, (match) => `${match}\n${injectionScript}`);
+    appHtml = appHtml.replace(/<body[^>]*>/, (match) => {
+      const debugComment = debugMode
+        ? `\n<!-- serve-funnel: app_base_url=${APP_BASE_URL} edge_build=${BUILD_TIMESTAMP} etag=${appIndexEtag} -->`
+        : '';
+      return `${match}\n${injectionScript}${debugComment}`;
+    });
 
     // Update page title if funnel has a name
     if (funnel.name) {
@@ -217,6 +239,16 @@ serve(async (req) => {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'X-Frame-Options': 'SAMEORIGIN',
+        // Debug/tracing headers
+        'X-Infostack-App-Base-Url': APP_BASE_URL,
+        'X-Infostack-Edge-Build': BUILD_TIMESTAMP,
+        'X-Infostack-App-Index-Etag': appIndexEtag,
+        'X-Infostack-App-Index-Last-Modified': appIndexLastModified,
+        'X-Infostack-Domain': cleanDomain,
+        'X-Infostack-Funnel-Id': funnel.id,
+        'X-Infostack-Snapshot-Version': String((snapshot as any)?.version ?? ''),
+        'X-Infostack-Snapshot-Pages': String(Array.isArray((snapshot as any)?.pages) ? (snapshot as any).pages.length : 0),
+        'X-Infostack-Snapshot-Steps': String(Array.isArray((snapshot as any)?.steps) ? (snapshot as any).steps.length : 0),
       },
     });
 
