@@ -1,0 +1,282 @@
+import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChevronLeft,
+  Save,
+  Loader2,
+  Undo2,
+  Redo2,
+  Play,
+  PanelLeftClose,
+  PanelRightClose,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger } from "@/lib/automations/types";
+import { NodeSidebar } from "./NodeSidebar";
+import { AutomationCanvasArea } from "./AutomationCanvasArea";
+import { NodeInspector } from "./NodeInspector";
+import { cn } from "@/lib/utils";
+import "./automation-editor.css";
+
+interface AutomationEditorShellProps {
+  teamId: string;
+  definition: AutomationDefinition;
+  onChange: (definition: AutomationDefinition) => void;
+  name: string;
+  onNameChange: (name: string) => void;
+  onSave: () => void;
+  onBack: () => void;
+  isSaving?: boolean;
+}
+
+export function AutomationEditorShell({
+  teamId,
+  definition,
+  onChange,
+  name,
+  onNameChange,
+  onSave,
+  onBack,
+  isSaving,
+}: AutomationEditorShellProps) {
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  const handleTriggerChange = useCallback(
+    (trigger: AutomationTrigger) => {
+      onChange({ ...definition, trigger });
+    },
+    [definition, onChange]
+  );
+
+  const handleAddStep = useCallback(
+    (type: ActionType, afterStepId?: string) => {
+      const newStep: AutomationStep = {
+        id: `step-${Date.now()}`,
+        order: definition.steps.length + 1,
+        type,
+        config: getDefaultConfigForType(type),
+      };
+
+      let newSteps: AutomationStep[];
+      if (afterStepId) {
+        const insertIndex = definition.steps.findIndex((s) => s.id === afterStepId) + 1;
+        newSteps = [
+          ...definition.steps.slice(0, insertIndex),
+          newStep,
+          ...definition.steps.slice(insertIndex),
+        ].map((s, idx) => ({ ...s, order: idx + 1 }));
+      } else {
+        newSteps = [...definition.steps, newStep];
+      }
+
+      onChange({ ...definition, steps: newSteps });
+      setSelectedNodeId(newStep.id);
+    },
+    [definition, onChange]
+  );
+
+  const handleStepUpdate = useCallback(
+    (stepId: string, updates: Partial<AutomationStep>) => {
+      const updatedSteps = definition.steps.map((step) =>
+        step.id === stepId ? { ...step, ...updates } : step
+      );
+      onChange({ ...definition, steps: updatedSteps });
+    },
+    [definition, onChange]
+  );
+
+  const handleStepDelete = useCallback(
+    (stepId: string) => {
+      const updatedSteps = definition.steps
+        .filter((step) => step.id !== stepId)
+        .map((step, idx) => ({ ...step, order: idx + 1 }));
+      onChange({ ...definition, steps: updatedSteps });
+      if (selectedNodeId === stepId) setSelectedNodeId(null);
+    },
+    [definition, onChange, selectedNodeId]
+  );
+
+  const selectedStep = selectedNodeId === "trigger"
+    ? null
+    : definition.steps.find((s) => s.id === selectedNodeId);
+
+  return (
+    <div className="automation-editor">
+      {/* Header */}
+      <header className="automation-editor-header">
+        <div className="automation-editor-header-left">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+          <div className="automation-editor-divider" />
+          <Input
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Automation name..."
+            className="automation-editor-name-input"
+          />
+        </div>
+
+        <div className="automation-editor-header-center">
+          {/* Placeholder for future toolbar items */}
+        </div>
+
+        <div className="automation-editor-header-right">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled
+            className="text-white/50"
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled
+            className="text-white/50"
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
+          <div className="automation-editor-divider" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Test
+          </Button>
+          <Button
+            size="sm"
+            onClick={onSave}
+            disabled={isSaving}
+            className="bg-primary hover:bg-primary/90"
+          >
+            {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Save className="h-4 w-4 mr-2" />
+            Save
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Layout */}
+      <div className="automation-editor-body">
+        {/* Left Collapse Button */}
+        {leftCollapsed && (
+          <button
+            type="button"
+            className="automation-editor-expand-btn automation-editor-expand-btn--left"
+            onClick={() => setLeftCollapsed(false)}
+          >
+            <PanelLeftClose className="h-4 w-4 rotate-180" />
+          </button>
+        )}
+
+        {/* Left Sidebar - Node Palette */}
+        <aside className={cn("automation-editor-panel automation-editor-panel--left", leftCollapsed && "automation-editor-panel--collapsed")}>
+          <div className="automation-editor-panel-header">
+            <span className="automation-editor-panel-title">Add Node</span>
+            <button
+              type="button"
+              className="automation-editor-panel-collapse"
+              onClick={() => setLeftCollapsed(true)}
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="automation-editor-panel-content">
+            <NodeSidebar onAddNode={handleAddStep} />
+          </div>
+        </aside>
+
+        {/* Center - Canvas */}
+        <main className="automation-editor-canvas">
+          <AutomationCanvasArea
+            definition={definition}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={setSelectedNodeId}
+            onTriggerChange={handleTriggerChange}
+            onStepUpdate={handleStepUpdate}
+            onStepDelete={handleStepDelete}
+            onAddStep={handleAddStep}
+          />
+        </main>
+
+        {/* Right Collapse Button */}
+        {rightCollapsed && (
+          <button
+            type="button"
+            className="automation-editor-expand-btn automation-editor-expand-btn--right"
+            onClick={() => setRightCollapsed(false)}
+          >
+            <PanelRightClose className="h-4 w-4 rotate-180" />
+          </button>
+        )}
+
+        {/* Right Sidebar - Inspector */}
+        <aside className={cn("automation-editor-panel automation-editor-panel--right", rightCollapsed && "automation-editor-panel--collapsed")}>
+          <div className="automation-editor-panel-header">
+            <span className="automation-editor-panel-title">
+              {selectedNodeId === "trigger" ? "Trigger" : selectedStep ? "Action" : "Inspector"}
+            </span>
+            <button
+              type="button"
+              className="automation-editor-panel-collapse"
+              onClick={() => setRightCollapsed(true)}
+            >
+              <PanelRightClose className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="automation-editor-panel-content">
+            <NodeInspector
+              selectedNodeId={selectedNodeId}
+              trigger={definition.trigger}
+              step={selectedStep}
+              onTriggerChange={handleTriggerChange}
+              onStepUpdate={handleStepUpdate}
+              onStepDelete={handleStepDelete}
+              teamId={teamId}
+            />
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function getDefaultConfigForType(type: ActionType): Record<string, any> {
+  switch (type) {
+    case "send_message":
+      return { channel: "sms", template: "" };
+    case "time_delay":
+      return { duration: 5, unit: "minutes" };
+    case "add_tag":
+      return { tag: "" };
+    case "add_task":
+      return { title: "", assignTo: "setter" };
+    case "assign_owner":
+      return { entity: "lead", ownerId: "" };
+    case "update_stage":
+      return { entity: "lead", stageId: "" };
+    case "notify_team":
+      return { message: "", notifyAdmin: true };
+    case "custom_webhook":
+      return { url: "", method: "POST", payload: "" };
+    case "enqueue_dialer":
+      return {};
+    case "condition":
+      return { conditions: [] };
+    default:
+      return {};
+  }
+}
