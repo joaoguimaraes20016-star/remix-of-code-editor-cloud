@@ -248,13 +248,75 @@ export type Database = {
           },
         ]
       }
+      automation_rate_limits: {
+        Row: {
+          automation_id: string | null
+          channel: string
+          created_at: string | null
+          current_day_count: number | null
+          current_hour_count: number | null
+          day_reset_at: string | null
+          hour_reset_at: string | null
+          id: string
+          max_per_day: number | null
+          max_per_hour: number | null
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          automation_id?: string | null
+          channel: string
+          created_at?: string | null
+          current_day_count?: number | null
+          current_hour_count?: number | null
+          day_reset_at?: string | null
+          hour_reset_at?: string | null
+          id?: string
+          max_per_day?: number | null
+          max_per_hour?: number | null
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          automation_id?: string | null
+          channel?: string
+          created_at?: string | null
+          current_day_count?: number | null
+          current_hour_count?: number | null
+          day_reset_at?: string | null
+          hour_reset_at?: string | null
+          id?: string
+          max_per_day?: number | null
+          max_per_hour?: number | null
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rate_limits_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_rate_limits_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_runs: {
         Row: {
           automation_id: string
           context_snapshot: Json | null
           created_at: string
+          duration_ms: number | null
           error_message: string | null
           id: string
+          replay_of_run_id: string | null
           status: string
           steps_executed: Json
           team_id: string
@@ -264,8 +326,10 @@ export type Database = {
           automation_id: string
           context_snapshot?: Json | null
           created_at?: string
+          duration_ms?: number | null
           error_message?: string | null
           id?: string
+          replay_of_run_id?: string | null
           status: string
           steps_executed?: Json
           team_id: string
@@ -275,8 +339,10 @@ export type Database = {
           automation_id?: string
           context_snapshot?: Json | null
           created_at?: string
+          duration_ms?: number | null
           error_message?: string | null
           id?: string
+          replay_of_run_id?: string | null
           status?: string
           steps_executed?: Json
           team_id?: string
@@ -291,7 +357,129 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "automation_runs_replay_of_run_id_fkey"
+            columns: ["replay_of_run_id"]
+            isOneToOne: false
+            referencedRelation: "automation_runs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "automation_runs_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_step_logs: {
+        Row: {
+          action_type: string
+          completed_at: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          input_snapshot: Json | null
+          output_snapshot: Json | null
+          retry_count: number | null
+          run_id: string
+          skip_reason: string | null
+          started_at: string
+          status: string
+          step_id: string
+        }
+        Insert: {
+          action_type: string
+          completed_at?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_snapshot?: Json | null
+          output_snapshot?: Json | null
+          retry_count?: number | null
+          run_id: string
+          skip_reason?: string | null
+          started_at?: string
+          status?: string
+          step_id: string
+        }
+        Update: {
+          action_type?: string
+          completed_at?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_snapshot?: Json | null
+          output_snapshot?: Json | null
+          retry_count?: number | null
+          run_id?: string
+          skip_reason?: string | null
+          started_at?: string
+          status?: string
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_step_logs_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "automation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          definition: Json
+          description: string | null
+          icon: string | null
+          id: string
+          is_public: boolean | null
+          is_system: boolean | null
+          name: string
+          team_id: string | null
+          updated_at: string | null
+          use_count: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          definition: Json
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_public?: boolean | null
+          is_system?: boolean | null
+          name: string
+          team_id?: string | null
+          updated_at?: string | null
+          use_count?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          definition?: Json
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_public?: boolean | null
+          is_system?: boolean | null
+          name?: string
+          team_id?: string | null
+          updated_at?: string | null
+          use_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_templates_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -304,34 +492,49 @@ export type Database = {
           created_at: string
           definition: Json
           description: string | null
+          error_count: number | null
+          folder_id: string | null
           id: string
           is_active: boolean
+          last_run_at: string | null
           name: string
+          run_count: number | null
           team_id: string
           trigger_type: string
           updated_at: string
+          version: number | null
         }
         Insert: {
           created_at?: string
           definition?: Json
           description?: string | null
+          error_count?: number | null
+          folder_id?: string | null
           id?: string
           is_active?: boolean
+          last_run_at?: string | null
           name: string
+          run_count?: number | null
           team_id: string
           trigger_type: string
           updated_at?: string
+          version?: number | null
         }
         Update: {
           created_at?: string
           definition?: Json
           description?: string | null
+          error_count?: number | null
+          folder_id?: string | null
           id?: string
           is_active?: boolean
+          last_run_at?: string | null
           name?: string
+          run_count?: number | null
           team_id?: string
           trigger_type?: string
           updated_at?: string
+          version?: number | null
         }
         Relationships: [
           {
@@ -1214,47 +1417,65 @@ export type Database = {
         Row: {
           automation_id: string | null
           channel: string
+          clicked_at: string | null
           created_at: string
+          delivered_at: string | null
+          delivery_status: string | null
           error_message: string | null
           from_address: string | null
           id: string
+          opened_at: string | null
           payload: Json
           provider: string
+          provider_message_id: string | null
           run_id: string | null
           status: string
           team_id: string
           template: string | null
           to_address: string
+          webhook_payload: Json | null
         }
         Insert: {
           automation_id?: string | null
           channel: string
+          clicked_at?: string | null
           created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string | null
           error_message?: string | null
           from_address?: string | null
           id?: string
+          opened_at?: string | null
           payload?: Json
           provider: string
+          provider_message_id?: string | null
           run_id?: string | null
           status?: string
           team_id: string
           template?: string | null
           to_address: string
+          webhook_payload?: Json | null
         }
         Update: {
           automation_id?: string | null
           channel?: string
+          clicked_at?: string | null
           created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string | null
           error_message?: string | null
           from_address?: string | null
           id?: string
+          opened_at?: string | null
           payload?: Json
           provider?: string
+          provider_message_id?: string | null
           run_id?: string | null
           status?: string
           team_id?: string
           template?: string | null
           to_address?: string
+          webhook_payload?: Json | null
         }
         Relationships: [
           {
@@ -1670,6 +1891,70 @@ export type Database = {
           },
         ]
       }
+      scheduled_automation_jobs: {
+        Row: {
+          automation_id: string
+          context_snapshot: Json
+          created_at: string | null
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          resume_at: string
+          run_id: string | null
+          status: string
+          step_id: string | null
+          team_id: string
+        }
+        Insert: {
+          automation_id: string
+          context_snapshot?: Json
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          resume_at: string
+          run_id?: string | null
+          status?: string
+          step_id?: string | null
+          team_id: string
+        }
+        Update: {
+          automation_id?: string
+          context_snapshot?: Json
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          resume_at?: string
+          run_id?: string | null
+          status?: string
+          step_id?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_automation_jobs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_automation_jobs_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "automation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_automation_jobs_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       setter_rotation_settings: {
         Row: {
           created_at: string
@@ -1801,6 +2086,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "team_automation_rules_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_business_hours: {
+        Row: {
+          close_time: string
+          created_at: string | null
+          day_of_week: number
+          id: string
+          is_closed: boolean | null
+          open_time: string
+          team_id: string
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          close_time?: string
+          created_at?: string | null
+          day_of_week: number
+          id?: string
+          is_closed?: boolean | null
+          open_time?: string
+          team_id: string
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          close_time?: string
+          created_at?: string | null
+          day_of_week?: number
+          id?: string
+          is_closed?: boolean | null
+          open_time?: string
+          team_id?: string
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_business_hours_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
