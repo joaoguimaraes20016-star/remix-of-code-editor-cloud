@@ -61,6 +61,7 @@ export default function PublicFunnel() {
   const utmSource = searchParams.get('utm_source');
   const utmMedium = searchParams.get('utm_medium');
   const utmCampaign = searchParams.get('utm_campaign');
+  const debug = searchParams.get('debug') === '1';
 
   // Check for injected funnel data (served inline by serve-funnel)
   const injectedData = useMemo(() => getInjectedFunnelData(), []);
@@ -175,8 +176,40 @@ export default function PublicFunnel() {
 
   // Detect format: new EditorDocument (has pages) OR old FlowCanvas (has steps)
   const snapshot = activeFunnel?.published_document_snapshot;
-  const isEditorDocumentFormat = snapshot?.version && snapshot?.pages?.length > 0;
-  const isFlowCanvasFormat = snapshot?.steps?.length > 0;
+  const isEditorDocumentFormat =
+    typeof (snapshot as any)?.version === 'number' &&
+    Array.isArray((snapshot as any)?.pages) &&
+    (snapshot as any).pages.length > 0;
+  const isFlowCanvasFormat = Array.isArray((snapshot as any)?.steps) && (snapshot as any).steps.length > 0;
+
+  // Debug: expose which runtime path was chosen
+  useEffect(() => {
+    if (!debug) return;
+
+    const renderer = isEditorDocumentFormat
+      ? 'EditorDocumentRenderer'
+      : isFlowCanvasFormat
+        ? 'FlowCanvasRenderer'
+        : 'LegacyFunnelRenderer';
+
+    console.info('[PublicFunnel] runtime selection', {
+      hostname: window.location.hostname,
+      slug,
+      funnelId: activeFunnel?.id,
+      injected: !!injectedData,
+      snapshotKeys: snapshot ? Object.keys(snapshot) : [],
+      snapshotVersion: (snapshot as any)?.version,
+      pages: Array.isArray((snapshot as any)?.pages) ? (snapshot as any).pages.length : 0,
+      steps: Array.isArray((snapshot as any)?.steps) ? (snapshot as any).steps.length : 0,
+      renderer,
+      shell: (window as any).__INFOSTACK_SHELL__,
+    });
+
+    document.documentElement.dataset.infostackRenderer = renderer;
+    return () => {
+      delete document.documentElement.dataset.infostackRenderer;
+    };
+  }, [debug, slug, activeFunnel?.id, injectedData, isEditorDocumentFormat, isFlowCanvasFormat, snapshot]);
 
   // NEW: EditorDocument format - use WYSIWYG renderer (no lossy conversion)
   if (isEditorDocumentFormat) {

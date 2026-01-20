@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react';
 import { renderRuntimeTree } from '@/builder_v2/runtime/renderRuntimeTree';
-import type { CanvasNode, Page } from '@/builder_v2/types';
+import type { Page } from '@/builder_v2/types';
+import { resolveFunnelLayout } from '@/builder_v2/layout/funnelLayout';
+import { RuntimeLayout } from '@/builder_v2/runtime/RuntimeLayout';
+import { StepBoundary } from '@/builder_v2/runtime/StepBoundary';
+import { StepStack } from '@/builder_v2/runtime/StepStack';
 import {
   getPageBackgroundStyles,
   getOverlayStyles,
@@ -158,13 +162,49 @@ function PageFrame({
 }
 
 /**
- * Renders the canvas node tree using the runtime registry
+ * Renders the canvas node tree using the runtime registry, wrapped in the
+ * same layout stack used by the editor preview (RuntimeLayout + StepStack).
  */
-function CanvasContent({ node }: { node: CanvasNode }) {
+function CanvasContent({
+  page,
+  pageIndex,
+  totalPages,
+}: {
+  page: Page;
+  pageIndex: number;
+  totalPages: number;
+}) {
+  const layout = useMemo(() => {
+    try {
+      return resolveFunnelLayout(page);
+    } catch (e) {
+      console.error('[EditorDocumentRenderer] resolveFunnelLayout failed', e);
+      return null;
+    }
+  }, [page]);
+
+  if (!page.canvasRoot) return null;
+
+  // IMPORTANT: use mode="preview" so RuntimeLayout does not paint its own background.
+  // The page background comes from the published snapshot (PageFrame).
+  if (!layout) {
+    return <div className="builder-v2-runtime">{renderRuntimeTree(page.canvasRoot)}</div>;
+  }
+
   return (
-    <div className="builder-v2-runtime">
-      {renderRuntimeTree(node)}
-    </div>
+    <RuntimeLayout
+      mode="preview"
+      layout={layout}
+      page={page}
+      funnelPosition={pageIndex}
+      totalPages={totalPages}
+    >
+      <StepStack layout={layout} mode="preview">
+        <StepBoundary motionMode="preview" stepId={page.id}>
+          <div className="builder-v2-runtime">{renderRuntimeTree(page.canvasRoot)}</div>
+        </StepBoundary>
+      </StepStack>
+    </RuntimeLayout>
   );
 }
 
@@ -197,7 +237,7 @@ function RuntimePageRouter({
 
   return (
     <PageFrame page={activePage} documentSettings={document.settings}>
-      <CanvasContent node={activePage.canvasRoot} />
+      <CanvasContent page={activePage} pageIndex={currentStep} totalPages={document.pages.length} />
     </PageFrame>
   );
 }
@@ -267,6 +307,7 @@ export function EditorDocumentRenderer({
           className="min-h-screen w-full"
           data-funnel-id={funnelId}
           data-version={document.version}
+          data-runtime-renderer="editor-document"
         >
           <RuntimePageRouter document={document} redirectUrl={redirectUrl} />
         </main>
@@ -280,9 +321,10 @@ export function EditorDocumentRenderer({
       className="min-h-screen w-full"
       data-funnel-id={funnelId}
       data-version={document.version}
+      data-runtime-renderer="editor-document"
     >
       <PageFrame page={activePage} documentSettings={document.settings}>
-        <CanvasContent node={activePage.canvasRoot} />
+        <CanvasContent page={activePage} pageIndex={0} totalPages={document.pages.length} />
       </PageFrame>
     </main>
   );
@@ -314,9 +356,9 @@ export function EditorDocumentScrollRenderer({
       data-funnel-id={funnelId}
       data-version={document.version}
     >
-      {document.pages.map((page) => (
+      {document.pages.map((page, idx) => (
         <PageFrame key={page.id} page={page} documentSettings={document.settings}>
-          <CanvasContent node={page.canvasRoot} />
+          <CanvasContent page={page} pageIndex={idx} totalPages={document.pages.length} />
         </PageFrame>
       ))}
     </main>
