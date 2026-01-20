@@ -85,7 +85,7 @@ interface UseCaptureFlowStateOptions {
   onComplete?: (answers: CaptureFlowAnswers) => void;
   onNodeChange?: (nodeId: string) => void;
   /** External submit handler - called instead of local fake submit. Receives currentNodeId for step tracking. */
-  onSubmit?: (answers: CaptureFlowAnswers, currentNodeId: string) => Promise<{ success: boolean; leadId?: string; error?: string }>;
+  onSubmit?: (answers: CaptureFlowAnswers, currentNodeId: string | null) => Promise<{ success: boolean; leadId?: string; error?: string }>;
 }
 
 interface UseCaptureFlowStateReturn {
