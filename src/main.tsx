@@ -11,16 +11,42 @@ function escapeHtml(input: string) {
     .replace(/'/g, "&#039;");
 }
 
+let hasRenderedBootError = false;
+
+function unmountReactRootIfPresent() {
+  try {
+    const anyWindow = window as any;
+    const root = anyWindow.__INFOSTACK_REACT_ROOT__;
+    if (root && typeof root.unmount === "function") {
+      root.unmount();
+    }
+    anyWindow.__INFOSTACK_REACT_ROOT__ = null;
+  } catch {
+    // ignore
+  }
+}
+
 function renderBootError(title: string, details?: unknown) {
+  if (hasRenderedBootError) return;
+  hasRenderedBootError = true;
+
+  unmountReactRootIfPresent();
+
   const rootEl = document.getElementById("root");
   if (!rootEl) return;
 
-  const detailText =
-    typeof details === "string"
-      ? details
-      : details instanceof Error
-        ? `${details.name}: ${details.message}\n${details.stack ?? ""}`
-        : JSON.stringify(details, null, 2);
+  let detailText = "";
+  if (typeof details === "string") {
+    detailText = details;
+  } else if (details instanceof Error) {
+    detailText = `${details.name}: ${details.message}\n${details.stack ?? ""}`;
+  } else {
+    try {
+      detailText = JSON.stringify(details, null, 2);
+    } catch {
+      detailText = String(details);
+    }
+  }
 
   rootEl.innerHTML = `
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#0b0b0c; color:#eaeaea;">
@@ -36,7 +62,7 @@ function renderBootError(title: string, details?: unknown) {
 
 function installGlobalErrorHandlers() {
   window.addEventListener("error", (event) => {
-    // event.error can be undefined for resource errors; keep payload anyway
+    // event.error can be undefined for resource errors
     console.error("[Boot] window.error", event.error ?? event.message, event);
     renderBootError("Uncaught error", event.error ?? event.message);
   });
@@ -62,7 +88,10 @@ async function bootstrap() {
     const { default: App } = await import("./App.tsx");
 
     try {
-      createRoot(document.getElementById("root")!).render(<App />);
+      const rootEl = document.getElementById("root")!;
+      const root = createRoot(rootEl);
+      (window as any).__INFOSTACK_REACT_ROOT__ = root;
+      root.render(<App />);
     } catch (err) {
       console.error("[Boot] render failed", err);
       renderBootError("React render failed", err);
