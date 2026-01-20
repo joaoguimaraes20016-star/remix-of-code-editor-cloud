@@ -1994,7 +1994,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         currentImage={page.settings.meta?.og_image}
       />
       {/* CaptureFlow Modal - Phase 7 */}
-      {openCaptureFlow && (
+      {openCaptureFlow && funnelId && teamId && (
         <CaptureFlowModal
           isOpen={!!openCaptureFlowId}
           onClose={() => {
@@ -2002,6 +2002,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             setOpenCaptureFlow(null);
           }}
           captureFlow={openCaptureFlow}
+          funnelId={funnelId}
+          teamId={teamId}
           onComplete={(answers) => {
             console.log('CaptureFlow completed:', answers);
             toast.success('Response submitted successfully!');
