@@ -9,6 +9,7 @@ interface SendMessageConfig {
   subject?: string;
   to?: string;
   fromName?: string;
+  replyTo?: string;
 }
 
 export async function executeSendMessage(
@@ -20,7 +21,6 @@ export async function executeSendMessage(
 ): Promise<StepExecutionLog> {
   const channel = config.channel || "sms";
   const template = config.template || config.body || "";
-  const provider = "stub"; // Will be replaced with real provider lookup
 
   // Resolve recipient
   let toAddress = config.to || "";
@@ -32,53 +32,101 @@ export async function executeSendMessage(
     }
   }
 
+  if (!toAddress) {
+    return {
+      status: "skipped",
+      skipReason: `no_${channel === "email" ? "email" : "phone"}_address`,
+    };
+  }
+
   // Render template
   const renderedBody = renderTemplate(template, context);
-  const messageId = `${provider}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  const renderedSubject = config.subject ? renderTemplate(config.subject, context) : undefined;
 
   const log: StepExecutionLog = {
     channel,
-    provider,
     to: toAddress,
-    messageId,
     renderedBody,
     templateVariables: extractTemplateVariables(template, context),
-    status: "success",
+    status: "pending",
   };
 
-  if (!toAddress) {
-    log.status = "skipped";
-    log.skipReason = `no_${channel === "email" ? "email" : "phone"}_address`;
-    return log;
-  }
-
   try {
-    // Log to message_logs
-    const { error } = await supabase.from("message_logs").insert([
-      {
-        team_id: context.teamId,
-        automation_id: automationId,
-        run_id: runId,
-        channel,
-        provider,
-        to_address: toAddress,
-        from_address: config.fromName || null,
-        template,
-        payload: {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    let endpoint: string;
+    let payload: Record<string, any>;
+
+    switch (channel) {
+      case "sms":
+        endpoint = `${supabaseUrl}/functions/v1/send-sms`;
+        payload = {
           to: toAddress,
           body: renderedBody,
-          subject: config.subject,
-          templateVariables: log.templateVariables,
+          teamId: context.teamId,
+          automationId,
+          runId,
           leadId: context.lead?.id,
           appointmentId: context.appointment?.id,
-        },
-        status: "sent",
-      },
-    ]);
+        };
+        break;
 
-    if (error) {
+      case "email":
+        endpoint = `${supabaseUrl}/functions/v1/send-email`;
+        payload = {
+          to: toAddress,
+          subject: renderedSubject || "Notification",
+          body: renderedBody,
+          fromName: config.fromName,
+          replyTo: config.replyTo,
+          teamId: context.teamId,
+          automationId,
+          runId,
+          leadId: context.lead?.id,
+          appointmentId: context.appointment?.id,
+          template: config.template,
+        };
+        break;
+
+      case "voice":
+        endpoint = `${supabaseUrl}/functions/v1/make-call`;
+        payload = {
+          to: toAddress,
+          script: renderedBody,
+          teamId: context.teamId,
+          automationId,
+          runId,
+          leadId: context.lead?.id,
+          appointmentId: context.appointment?.id,
+        };
+        break;
+
+      default:
+        log.status = "error";
+        log.error = `Unknown channel: ${channel}`;
+        return log;
+    }
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      log.status = "success";
+      log.provider = result.provider;
+      log.messageId = result.messageId || result.callId;
+    } else {
       log.status = "error";
-      log.error = error.message;
+      log.error = result.error || "Unknown error";
+      log.provider = result.provider;
     }
   } catch (err) {
     log.status = "error";
