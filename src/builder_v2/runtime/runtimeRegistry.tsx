@@ -356,6 +356,8 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
         headline={typeof props.headline === 'string' ? props.headline : undefined}
         subheadline={typeof props.subheadline === 'string' ? props.subheadline : undefined}
         backgroundColor={typeof props.backgroundColor === 'string' ? props.backgroundColor : undefined}
+        // In runtime mode, render transparently (no card styling) to match page background
+        transparent={true}
       >
         {children}
       </Hero>
