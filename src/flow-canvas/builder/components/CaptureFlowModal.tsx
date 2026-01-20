@@ -58,7 +58,7 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
   // Handler to submit via unified pipeline - receives currentNodeId for accurate step tracking
   const handleUnifiedSubmit = useCallback(async (
     answers: CaptureFlowAnswers, 
-    currentNodeId: string
+    currentNodeId: string | null
   ): Promise<{ success: boolean; leadId?: string; error?: string }> => {
     // Build payload with current node ID as stepId and all node IDs
     const nodeIds = captureFlow.nodes.map(n => n.id);
@@ -68,7 +68,7 @@ export const CaptureFlowModal: React.FC<CaptureFlowModalProps> = ({
       {
         funnelId,
         teamId,
-        stepId: currentNodeId, // Use actual current node, not captureFlow.id
+        stepId: currentNodeId ?? captureFlow.id, // Fallback to captureFlow.id if null
         stepIds: nodeIds,
         stepType: 'capture-flow',
         stepIntent: 'capture',
