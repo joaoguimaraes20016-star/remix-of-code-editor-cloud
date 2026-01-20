@@ -30,6 +30,7 @@ const mainNavItems = [
   { id: "home", label: "Team Hub", icon: Home, path: "" },
   { id: "crm", label: "Sales CRM", icon: TrendingUp, path: "/crm" },
   { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
+  { id: "automations", label: "Workflows", icon: Workflow, path: "/automations" },
   { id: "schedule", label: "Schedule", icon: CalendarDays, path: "/schedule" },
   { id: "chat", label: "Team Chat", icon: MessageCircle, path: "/chat" },
   { id: "apps", label: "Apps", icon: Grid3X3, path: "/apps" },
@@ -137,16 +138,10 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
 
         {/* Admin-only links */}
         {isAdmin && (
-          <>
-            {renderNavButton(
-              { id: "automations", label: "Workflows", icon: Workflow, path: "/automations" },
-              isActive("/automations")
-            )}
-            {renderNavButton(
-              { id: "team-settings", label: "Team Settings", icon: Settings2, path: "/team-settings" },
-              isActive("/team-settings")
-            )}
-          </>
+          renderNavButton(
+            { id: "team-settings", label: "Team Settings", icon: Settings2, path: "/team-settings" },
+            isActive("/team-settings")
+          )
         )}
 
         {/* Collapse toggle */}
