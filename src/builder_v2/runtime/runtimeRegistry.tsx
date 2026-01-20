@@ -164,10 +164,24 @@ export const RuntimeRegistry: Record<string, ComponentDefinition> = {
     render: (props) => {
       // Support both 'text' (new format) and 'content' (FlowCanvas format)
       const textContent = (props.text ?? props.content) as string;
+
+      // Defensive: normalize legacy numeric heading levels (1/2/3) into 'h1'/'h2'/'h3'
+      const rawLevel = props.level as unknown;
+      const level: 'h1' | 'h2' | 'h3' =
+        rawLevel === 'h1' || rawLevel === 'h2' || rawLevel === 'h3'
+          ? rawLevel
+          : typeof rawLevel === 'number'
+            ? rawLevel === 1
+              ? 'h1'
+              : rawLevel === 2
+                ? 'h2'
+                : 'h3'
+            : 'h1';
+
       return (
         <Heading 
           text={textContent} 
-          level={props.level as 'h1' | 'h2' | 'h3'}
+          level={level}
           color={props.color as string}
           textAlign={props.textAlign as any}
           fontSize={props.fontSize as string}
