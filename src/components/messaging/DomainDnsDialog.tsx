@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -50,10 +50,11 @@ interface DomainDnsDialogProps {
   onVerify: () => void;
 }
 
-export function DomainDnsDialog({ 
+export const DomainDnsDialog = forwardRef<HTMLDivElement, DomainDnsDialogProps>(
+  function DomainDnsDialog({ 
   open, 
   onOpenChange, 
-  domain, 
+  domain,
   teamId,
   onVerify 
 }: DomainDnsDialogProps) {
@@ -261,4 +262,4 @@ export function DomainDnsDialog({
       </DialogContent>
     </Dialog>
   );
-}
+});

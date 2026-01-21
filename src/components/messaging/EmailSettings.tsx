@@ -156,7 +156,7 @@ export function EmailSettings({ teamId }: EmailSettingsProps) {
         <CardContent>
           <div className="p-4 rounded-lg bg-muted/50 border border-border">
             <p className="text-sm text-muted-foreground">
-              Emails will be sent from <span className="font-mono text-foreground">noreply@send.stackitmail.com</span>
+              Emails will be sent from <span className="font-mono text-foreground">noreply@notifications.usestackit.co</span>
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Great for testing and low-volume sending. For custom branding, add your own domain below.

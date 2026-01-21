@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -23,7 +23,8 @@ interface AddDomainDialogProps {
   onSuccess: () => void;
 }
 
-export function AddDomainDialog({ open, onOpenChange, teamId, onSuccess }: AddDomainDialogProps) {
+export const AddDomainDialog = forwardRef<HTMLDivElement, AddDomainDialogProps>(
+  function AddDomainDialog({ open, onOpenChange, teamId, onSuccess }, ref) {
   const [domain, setDomain] = useState("");
   const [useSubdomain, setUseSubdomain] = useState(true);
   const [subdomain, setSubdomain] = useState("mail");
@@ -163,4 +164,4 @@ export function AddDomainDialog({ open, onOpenChange, teamId, onSuccess }: AddDo
       </DialogContent>
     </Dialog>
   );
-}
+});
