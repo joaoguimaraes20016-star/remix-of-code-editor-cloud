@@ -2,8 +2,8 @@
 <html lang="en" class="light" style="color-scheme: light">
   <head>
     <script>
-      // Force light theme - clear any stored dark mode preference
-      localStorage.removeItem('theme');
+      // Force light theme for main content (sidebar has its own dark styling)
+      localStorage.setItem('theme', 'light');
       document.documentElement.classList.remove('dark');
       document.documentElement.classList.add('light');
       window.STACKIT_FUNNEL_RUNTIME_ACTIVE = true;

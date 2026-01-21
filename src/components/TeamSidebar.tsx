@@ -71,11 +71,11 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
           collapsed && "justify-center px-0",
           active 
             ? "bg-primary text-white font-medium hover:bg-primary/90 hover:text-white" 
-            : "text-gray-600 hover:text-primary hover:bg-primary/10"
+            : "text-white/70 hover:text-white hover:bg-blue-600/20"
         )}
         onClick={() => handleNavigation(item.path)}
       >
-        <item.icon className={cn("h-5 w-5 shrink-0", active && "text-white")} />
+        <item.icon className={cn("h-5 w-5 shrink-0", active ? "text-white" : "text-white/70")} />
         {!collapsed && <span>{item.label}</span>}
       </Button>
     );
@@ -98,15 +98,15 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
 
   return (
     <aside 
-      style={{ backgroundColor: '#ffffff' }}
+      style={{ backgroundColor: '#1a1a2e' }}
       className={cn(
-        "h-screen border-r border-gray-100 flex flex-col transition-all duration-300",
+        "h-screen border-r border-white/10 flex flex-col transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}
     >
       {/* Team Header */}
       <div className={cn(
-        "p-4 border-b border-gray-100 flex items-center gap-3",
+        "p-4 border-b border-white/10 flex items-center gap-3",
         collapsed && "justify-center"
       )}>
         <Avatar className="h-10 w-10 shrink-0 rounded-xl">
@@ -117,8 +117,8 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         </Avatar>
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-gray-900 truncate">{teamName}</h2>
-            <p className="text-xs text-gray-500">Team Workspace</p>
+            <h2 className="font-semibold text-white truncate">{teamName}</h2>
+            <p className="text-xs text-white/50">Team Workspace</p>
           </div>
         )}
       </div>
@@ -129,7 +129,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
       </nav>
 
       {/* Bottom Section */}
-      <div className="p-3 border-t border-gray-100 space-y-1">
+      <div className="p-3 border-t border-white/10 space-y-1">
 
         {/* Profile Settings */}
         {renderNavButton(
@@ -149,7 +149,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 h-10 text-gray-500 hover:text-gray-700 rounded-xl",
+            "w-full justify-start gap-3 h-10 text-white/50 hover:text-white hover:bg-blue-600/20 rounded-xl",
             collapsed && "justify-center px-0"
           )}
           onClick={() => setCollapsed(!collapsed)}
@@ -168,7 +168,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 h-10 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl",
+            "w-full justify-start gap-3 h-10 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl",
             collapsed && "justify-center px-0"
           )}
           onClick={() => navigate("/login")}

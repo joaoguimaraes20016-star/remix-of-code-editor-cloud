@@ -32,8 +32,8 @@ export function TeamLayout() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full bg-gray-50">
-        <div className="w-64 h-full bg-white border-r border-gray-100 p-4">
+      <div className="flex h-screen w-full bg-white">
+        <div style={{ backgroundColor: '#1a1a2e' }} className="w-64 h-full border-r border-white/10 p-4">
           <Skeleton className="h-10 w-10 rounded-full" />
           <Skeleton className="h-4 w-32 mt-2" />
         </div>
@@ -45,9 +45,9 @@ export function TeamLayout() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-gray-50">
+    <div className="flex h-screen w-full bg-white">
       <TeamSidebar teamName={teamName} teamLogo={teamLogo} />
-      <main className="flex-1 overflow-auto bg-gray-50">
+      <main className="flex-1 overflow-auto bg-white">
         <Outlet context={{ teamName, teamLogo }} />
       </main>
     </div>
