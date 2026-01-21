@@ -3,7 +3,7 @@ import {
   Zap, Check, AlertCircle, UserPlus, Tag, Calendar, CalendarClock, 
   UserX, CalendarCheck, CalendarX, ArrowRightLeft, Briefcase, 
   Trophy, XCircle, DollarSign, Webhook, Play, 
-  Clock, Timer, FileText
+  Clock, Timer, FileText, X
 } from "lucide-react";
 import type { AutomationTrigger, TriggerType } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ interface TriggerNodeCardProps {
   trigger: AutomationTrigger;
   isSelected: boolean;
   onSelect: () => void;
+  onDelete?: () => void;
 }
 
 interface TriggerDisplay {
@@ -155,7 +156,7 @@ function isTriggerConfigured(trigger: AutomationTrigger): boolean {
   }
 }
 
-export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCardProps) {
+export function TriggerNodeCard({ trigger, isSelected, onSelect, onDelete }: TriggerNodeCardProps) {
   const display = TRIGGER_DISPLAY[trigger.type] || {
     label: trigger.type,
     icon: <Zap className="h-5 w-5" />,
@@ -166,18 +167,31 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCa
   const isConfigured = isTriggerConfigured(trigger);
 
   return (
-    <motion.button
-      onClick={onSelect}
+    <motion.div
       whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
       className={cn(
-        "relative w-96 rounded-2xl border-2 transition-all shadow-lg",
+        "relative w-96 rounded-2xl border-2 transition-all shadow-lg group",
         "bg-sidebar",
         isSelected 
           ? "border-primary shadow-primary/20" 
           : "border-sidebar-border hover:border-primary/50 hover:shadow-xl"
       )}
     >
+      {/* Delete Button */}
+      {onDelete && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          whileHover={{ scale: 1.1 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute -left-2 -top-2 w-7 h-7 rounded-full bg-red-500/90 hover:bg-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
+        >
+          <X className="h-4 w-4 text-white" />
+        </motion.button>
+      )}
+
       {/* Status Indicator */}
       <div className={cn(
         "absolute -right-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-sidebar",
@@ -190,7 +204,10 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCa
         )}
       </div>
 
-      <div className="flex items-center gap-5 p-6">
+      <button
+        onClick={onSelect}
+        className="w-full flex items-center gap-5 p-6"
+      >
         {/* Icon */}
         <div className={cn("p-4 rounded-xl", display.bgColor)}>
           <span className={display.color}>{display.icon}</span>
@@ -210,7 +227,7 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCa
         <div className="px-3 py-1.5 rounded-lg bg-primary/15 text-sm font-medium text-primary">
           Trigger
         </div>
-      </div>
-    </motion.button>
+      </button>
+    </motion.div>
   );
 }

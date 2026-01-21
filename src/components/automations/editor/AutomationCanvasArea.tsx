@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ZapOff, Plus, MessageSquare, Clock, GitBranch, Tag, Bell, Webhook } from "lucide-react";
+import { ZapOff, Plus, MessageSquare, Clock, GitBranch, Tag, Bell, Webhook, Zap } from "lucide-react";
 import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger } from "@/lib/automations/types";
 import { TriggerNodeCard } from "./nodes/TriggerNodeCard";
 import { ActionNodeCard } from "./nodes/ActionNodeCard";
@@ -13,6 +13,7 @@ interface AutomationCanvasAreaProps {
   selectedNodeId: string | null;
   onSelectNode: (id: string | null) => void;
   onTriggerChange: (trigger: AutomationTrigger) => void;
+  onTriggerDelete: () => void;
   onStepUpdate: (stepId: string, updates: Partial<AutomationStep>) => void;
   onStepDelete: (stepId: string) => void;
   onAddStep: (type: ActionType, afterStepId?: string) => void;
@@ -27,26 +28,38 @@ const QUICK_ACTION_CONFIG: Record<string, { icon: React.ReactNode; label: string
   custom_webhook: { icon: <Webhook className="h-4 w-4" />, label: "Webhook" },
 };
 
+// Check if trigger is in empty/placeholder state
+function isTriggerEmpty(trigger: AutomationTrigger): boolean {
+  return trigger.type === 'manual_trigger' && Object.keys(trigger.config || {}).length === 0;
+}
+
 export function AutomationCanvasArea({
   definition,
   selectedNodeId,
   onSelectNode,
   onTriggerChange,
+  onTriggerDelete,
   onStepUpdate,
   onStepDelete,
   onAddStep,
 }: AutomationCanvasAreaProps) {
   const suggestions = getContextualSuggestions(definition.trigger.type, definition.steps);
   const topSuggestions = suggestions.slice(0, 4);
+  const hasTrigger = !isTriggerEmpty(definition.trigger);
 
   return (
     <div className="min-h-full py-12 px-8 flex flex-col items-center">
-      {/* Trigger Node */}
-      <TriggerNodeCard
-        trigger={definition.trigger}
-        isSelected={selectedNodeId === "trigger"}
-        onSelect={() => onSelectNode("trigger")}
-      />
+      {/* Trigger Node or Add Trigger Placeholder */}
+      {hasTrigger ? (
+        <TriggerNodeCard
+          trigger={definition.trigger}
+          isSelected={selectedNodeId === "trigger"}
+          onSelect={() => onSelectNode("trigger")}
+          onDelete={onTriggerDelete}
+        />
+      ) : (
+        <AddTriggerPlaceholder onSelect={() => onSelectNode("trigger")} />
+      )}
 
       {/* Connection to first step or add button */}
       <NodeConnectionLine />
@@ -150,15 +163,16 @@ function AddStepButton({ suggestions, onAddStep }: AddStepButtonProps) {
     <div className="group relative">
       <motion.button
         onClick={() => onAddStep("send_message")}
-        whileHover={{ scale: 1.1 }}
-        className="w-10 h-10 rounded-full flex items-center justify-center bg-sidebar border border-dashed border-white/20 hover:border-primary text-white/40 hover:text-primary transition-all"
+        whileHover={{ scale: 1.15 }}
+        whileTap={{ scale: 0.95 }}
+        className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/20 text-primary/60 hover:text-primary transition-all shadow-lg"
       >
-        <Plus className="h-5 w-5" />
+        <Plus className="h-6 w-6" />
       </motion.button>
       
       {/* Hover tooltip with quick actions */}
       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-10">
-        <div className="flex gap-1.5 p-1.5 bg-sidebar rounded-xl border border-sidebar-border shadow-xl">
+        <div className="flex gap-1.5 p-2 bg-sidebar rounded-xl border border-sidebar-border shadow-xl">
           {suggestions.map((suggestion) => {
             const config = QUICK_ACTION_CONFIG[suggestion.type];
             return (
@@ -168,7 +182,7 @@ function AddStepButton({ suggestions, onAddStep }: AddStepButtonProps) {
                   e.stopPropagation();
                   onAddStep(suggestion.type);
                 }}
-                className="p-2.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                className="p-3 rounded-lg hover:bg-primary/20 text-white/60 hover:text-primary transition-colors"
                 title={config?.label || suggestion.label}
               >
                 {config?.icon || <Plus className="h-4 w-4" />}
@@ -178,5 +192,42 @@ function AddStepButton({ suggestions, onAddStep }: AddStepButtonProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+interface AddTriggerPlaceholderProps {
+  onSelect: () => void;
+}
+
+function AddTriggerPlaceholder({ onSelect }: AddTriggerPlaceholderProps) {
+  return (
+    <motion.button
+      onClick={onSelect}
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      className="w-96 rounded-2xl border-2 border-dashed border-primary/40 hover:border-primary bg-sidebar/50 hover:bg-sidebar transition-all shadow-lg group"
+    >
+      <div className="flex items-center gap-5 p-6">
+        {/* Icon */}
+        <div className="p-4 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+          <Plus className="h-6 w-6 text-primary" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 text-left">
+          <div className="text-xs text-primary/70 uppercase tracking-wider font-medium mb-1">
+            Start your workflow
+          </div>
+          <div className="text-white/70 group-hover:text-white font-semibold text-lg transition-colors">
+            Add a Trigger
+          </div>
+        </div>
+
+        {/* Trigger Badge */}
+        <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-sm font-medium text-primary/70 group-hover:text-primary transition-colors">
+          Required
+        </div>
+      </div>
+    </motion.button>
   );
 }
