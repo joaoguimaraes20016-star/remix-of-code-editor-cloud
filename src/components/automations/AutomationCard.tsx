@@ -3,7 +3,8 @@ import {
   Pencil, Copy, Trash2, MoreHorizontal, Play,
   Calendar, UserPlus, Bell, Tag, Zap, Webhook,
   ArrowRightLeft, Trophy, XCircle, DollarSign, Clock,
-  CalendarClock, UserX, CalendarCheck, CalendarX, FileText
+  CalendarClock, UserX, CalendarCheck, CalendarX, FileText,
+  FolderInput, Folder, Check
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,18 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import type { TriggerType } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
+
+interface AutomationFolder {
+  id: string;
+  name: string;
+  color: string;
+}
 
 interface AutomationCardProps {
   id?: string;
@@ -25,11 +35,13 @@ interface AutomationCardProps {
   isActive: boolean;
   stepsCount: number;
   lastRun?: string | null;
+  folderId?: string | null;
+  folders?: AutomationFolder[];
   onToggle: (isActive: boolean) => void;
   onEdit: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
-  extraActions?: React.ReactNode;
+  onMoveToFolder?: (folderId: string | null) => void;
 }
 
 const TRIGGER_ICONS: Partial<Record<TriggerType, React.ReactNode>> = {
@@ -76,14 +88,18 @@ export function AutomationCard({
   triggerType,
   isActive,
   stepsCount,
+  folderId,
+  folders = [],
   onToggle,
   onEdit,
   onDuplicate,
   onDelete,
-  extraActions,
+  onMoveToFolder,
 }: AutomationCardProps) {
   const icon = TRIGGER_ICONS[triggerType] || <Zap className="h-4 w-4" />;
   const label = TRIGGER_LABELS[triggerType] || triggerType;
+  const isLoose = !folderId;
+  const currentFolder = folders.find(f => f.id === folderId);
 
   return (
     <motion.div
@@ -91,10 +107,18 @@ export function AutomationCard({
       className={cn(
         "group relative rounded-xl border bg-card p-4 transition-all cursor-pointer",
         "hover:shadow-lg hover:border-primary/30",
-        !isActive && "opacity-60"
+        !isActive && "opacity-60",
+        isLoose && "border-dashed border-amber-500/30"
       )}
       onClick={onEdit}
     >
+      {/* Loose indicator */}
+      {isLoose && (
+        <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+          Inbox
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -115,8 +139,36 @@ export function AutomationCard({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          {extraActions}
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          {/* Quick Move Button for loose automations */}
+          {isLoose && folders.length > 0 && onMoveToFolder && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs gap-1 border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+                >
+                  <FolderInput className="h-3.5 w-3.5" />
+                  Add to folder
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {folders.map((folder) => (
+                  <DropdownMenuItem
+                    key={folder.id}
+                    onClick={() => onMoveToFolder(folder.id)}
+                  >
+                    <div 
+                      className="w-3 h-3 rounded mr-2" 
+                      style={{ backgroundColor: folder.color }}
+                    />
+                    {folder.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Switch
             checked={isActive}
             onCheckedChange={onToggle}
@@ -143,6 +195,39 @@ export function AutomationCard({
                   Duplicate
                 </DropdownMenuItem>
               )}
+              {onMoveToFolder && folders.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <FolderInput className="h-4 w-4 mr-2" />
+                    Move to folder
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem 
+                      onClick={() => onMoveToFolder(null)}
+                      disabled={!folderId}
+                    >
+                      <Folder className="h-4 w-4 mr-2 text-muted-foreground" />
+                      Inbox (no folder)
+                      {!folderId && <Check className="h-4 w-4 ml-auto" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {folders.map((folder) => (
+                      <DropdownMenuItem
+                        key={folder.id}
+                        onClick={() => onMoveToFolder(folder.id)}
+                        disabled={folder.id === folderId}
+                      >
+                        <div 
+                          className="w-3 h-3 rounded mr-2" 
+                          style={{ backgroundColor: folder.color }}
+                        />
+                        {folder.name}
+                        {folder.id === folderId && <Check className="h-4 w-4 ml-auto" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
               {onDelete && (
                 <>
                   <DropdownMenuSeparator />
@@ -167,6 +252,18 @@ export function AutomationCard({
         </span>
         <span className="text-muted-foreground/60">•</span>
         <span>{stepsCount} step{stepsCount !== 1 ? "s" : ""}</span>
+        {currentFolder && (
+          <>
+            <span className="text-muted-foreground/60">•</span>
+            <span className="inline-flex items-center gap-1 text-xs">
+              <div 
+                className="w-2 h-2 rounded-full" 
+                style={{ backgroundColor: currentFolder.color }}
+              />
+              {currentFolder.name}
+            </span>
+          </>
+        )}
       </div>
     </motion.div>
   );
