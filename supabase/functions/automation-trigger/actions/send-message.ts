@@ -3,7 +3,7 @@
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
 
 interface SendMessageConfig {
-  channel?: "sms" | "email" | "voice";
+  channel?: "sms" | "email" | "voice" | "whatsapp";
   template?: string;
   body?: string;
   subject?: string;
@@ -95,6 +95,19 @@ export async function executeSendMessage(
         payload = {
           to: toAddress,
           script: renderedBody,
+          teamId: context.teamId,
+          automationId,
+          runId,
+          leadId: context.lead?.id,
+          appointmentId: context.appointment?.id,
+        };
+        break;
+
+      case "whatsapp":
+        endpoint = `${supabaseUrl}/functions/v1/send-whatsapp`;
+        payload = {
+          to: toAddress,
+          body: renderedBody,
           teamId: context.teamId,
           automationId,
           runId,

@@ -394,28 +394,60 @@ async function runAutomation(
     try {
       switch (step.type) {
         // === MESSAGING ACTIONS ===
-        case "send_message": {
+        case "send_message":
+        case "send_sms": {
           // Check rate limit first
-          const channel = step.config.channel || "sms";
-          const rateCheck = await checkRateLimit(supabase, context.teamId, channel, automation.id);
+          const smsChannel = step.config.channel || "sms";
+          const smsRateCheck = await checkRateLimit(supabase, context.teamId, smsChannel, automation.id);
           
-          if (!rateCheck.allowed) {
+          if (!smsRateCheck.allowed) {
             log.skipped = true;
-            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            log.skipReason = smsRateCheck.reason || "rate_limit_exceeded";
             break;
           }
 
-          const result = await executeSendMessage(step.config, context, supabase, runId, automation.id);
-          log = { ...log, ...result };
+          const smsConfig = { ...step.config, channel: step.config.channel || "sms" };
+          const smsResult = await executeSendMessage(smsConfig, context, supabase, runId, automation.id);
+          log = { ...log, ...smsResult };
+          break;
+        }
+
+        case "send_email": {
+          const emailRateCheck = await checkRateLimit(supabase, context.teamId, "email", automation.id);
+          
+          if (!emailRateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = emailRateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+
+          const emailConfig = { ...step.config, channel: "email" as const };
+          const emailResult = await executeSendMessage(emailConfig, context, supabase, runId, automation.id);
+          log = { ...log, ...emailResult };
+          break;
+        }
+
+        case "send_whatsapp": {
+          const waRateCheck = await checkRateLimit(supabase, context.teamId, "whatsapp", automation.id);
+          
+          if (!waRateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = waRateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+
+          const waConfig = { ...step.config, channel: "whatsapp" as const };
+          const waResult = await executeSendMessage(waConfig, context, supabase, runId, automation.id);
+          log = { ...log, ...waResult };
           break;
         }
 
         case "enqueue_dialer": {
           // Use voice channel for dialer
-          const rateCheck = await checkRateLimit(supabase, context.teamId, "voice", automation.id);
-          if (!rateCheck.allowed) {
+          const dialerRateCheck = await checkRateLimit(supabase, context.teamId, "voice", automation.id);
+          if (!dialerRateCheck.allowed) {
             log.skipped = true;
-            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            log.skipReason = dialerRateCheck.reason || "rate_limit_exceeded";
             break;
           }
           
@@ -423,8 +455,8 @@ async function runAutomation(
             ...step.config,
             channel: "voice" as const,
           };
-          const result = await executeSendMessage(dialerConfig, context, supabase, runId, automation.id);
-          log = { ...log, ...result, channel: "voice", provider: "power_dialer" };
+          const dialerResult = await executeSendMessage(dialerConfig, context, supabase, runId, automation.id);
+          log = { ...log, ...dialerResult, channel: "voice", provider: "power_dialer" };
           break;
         }
 
