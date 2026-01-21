@@ -2,7 +2,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import type { AutomationTrigger, TriggerType } from "@/lib/automations/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { AutomationTrigger, TriggerType, TriggerCategory } from "@/lib/automations/types";
+import {
+  UserPlus, Tag, UserCog, BellOff, Cake, CalendarDays, StickyNote,
+  FileText, ClipboardCheck, HelpCircle, Eye, MousePointerClick,
+  Calendar, CalendarClock, UserX, CalendarCheck, CalendarX,
+  ListPlus, Bell, CheckSquare,
+  ArrowRightLeft, Briefcase, Trophy, XCircle, RefreshCw, Clock,
+  DollarSign, AlertCircle, Send, AlertTriangle, Repeat, ShoppingCart, RotateCcw,
+  MessageCircle, MailOpen, MailX, AlertOctagon, Star,
+  Webhook, Play, Search, Music
+} from "lucide-react";
 
 interface TriggerInspectorProps {
   trigger: AutomationTrigger;
@@ -12,41 +23,98 @@ interface TriggerInspectorProps {
 interface TriggerOption {
   value: TriggerType;
   label: string;
-  category: string;
+  description: string;
+  icon: React.ReactNode;
+  category: TriggerCategory;
 }
 
 const TRIGGER_OPTIONS: TriggerOption[] = [
-  // Lead triggers
-  { value: "lead_created", label: "Lead Created", category: "Lead" },
-  { value: "lead_tag_added", label: "Tag Added", category: "Lead" },
-  { value: "lead_tag_removed", label: "Tag Removed", category: "Lead" },
-  { value: "form_submitted", label: "Form Submitted", category: "Lead" },
+  // Contact triggers
+  { value: "lead_created", label: "Contact Created", description: "When a new contact is added", icon: <UserPlus className="h-4 w-4" />, category: "contact" },
+  { value: "lead_tag_added", label: "Contact Tag Added", description: "When a tag is added", icon: <Tag className="h-4 w-4" />, category: "contact" },
+  { value: "lead_tag_removed", label: "Contact Tag Removed", description: "When a tag is removed", icon: <Tag className="h-4 w-4" />, category: "contact" },
+  { value: "contact_changed", label: "Contact Changed", description: "When a contact field is updated", icon: <UserCog className="h-4 w-4" />, category: "contact" },
+  { value: "contact_dnd", label: "Contact DND", description: "When DND status changes", icon: <BellOff className="h-4 w-4" />, category: "contact" },
+  { value: "birthday_reminder", label: "Birthday Reminder", description: "Annual birthday trigger", icon: <Cake className="h-4 w-4" />, category: "contact" },
+  { value: "custom_date_reminder", label: "Custom Date Reminder", description: "Trigger on custom date field", icon: <CalendarDays className="h-4 w-4" />, category: "contact" },
+  { value: "note_added", label: "Note Added", description: "When a note is added", icon: <StickyNote className="h-4 w-4" />, category: "contact" },
+  
+  // Form triggers
+  { value: "form_submitted", label: "Form Submitted", description: "When a form is completed", icon: <FileText className="h-4 w-4" />, category: "form" },
+  { value: "survey_submitted", label: "Survey Submitted", description: "When a survey is completed", icon: <ClipboardCheck className="h-4 w-4" />, category: "form" },
+  { value: "quiz_submitted", label: "Quiz Submitted", description: "When a quiz is completed", icon: <HelpCircle className="h-4 w-4" />, category: "form" },
+  { value: "funnel_page_view", label: "Page Viewed", description: "When a funnel page is viewed", icon: <Eye className="h-4 w-4" />, category: "form" },
+  { value: "trigger_link_clicked", label: "Trigger Link Clicked", description: "When a tracked link is clicked", icon: <MousePointerClick className="h-4 w-4" />, category: "form" },
+  
   // Appointment triggers
-  { value: "appointment_booked", label: "Appointment Booked", category: "Appointment" },
-  { value: "appointment_rescheduled", label: "Appointment Rescheduled", category: "Appointment" },
-  { value: "appointment_no_show", label: "No Show", category: "Appointment" },
-  { value: "appointment_completed", label: "Appointment Completed", category: "Appointment" },
-  { value: "appointment_canceled", label: "Appointment Canceled", category: "Appointment" },
+  { value: "appointment_booked", label: "Appointment Booked", description: "When an appointment is scheduled", icon: <Calendar className="h-4 w-4" />, category: "appointment" },
+  { value: "appointment_rescheduled", label: "Appointment Rescheduled", description: "When rescheduled", icon: <CalendarClock className="h-4 w-4" />, category: "appointment" },
+  { value: "appointment_no_show", label: "No Show", description: "When lead misses appointment", icon: <UserX className="h-4 w-4" />, category: "appointment" },
+  { value: "appointment_completed", label: "Appointment Completed", description: "When completed", icon: <CalendarCheck className="h-4 w-4" />, category: "appointment" },
+  { value: "appointment_canceled", label: "Appointment Canceled", description: "When canceled", icon: <CalendarX className="h-4 w-4" />, category: "appointment" },
+  
+  // Task triggers
+  { value: "task_added", label: "Task Added", description: "When a task is created", icon: <ListPlus className="h-4 w-4" />, category: "task" },
+  { value: "task_reminder", label: "Task Reminder", description: "Task due date reminder", icon: <Bell className="h-4 w-4" />, category: "task" },
+  { value: "task_completed", label: "Task Completed", description: "When a task is completed", icon: <CheckSquare className="h-4 w-4" />, category: "task" },
+  
   // Pipeline triggers
-  { value: "stage_changed", label: "Stage Changed", category: "Pipeline" },
-  { value: "deal_created", label: "Deal Created", category: "Pipeline" },
-  { value: "deal_won", label: "Deal Won", category: "Pipeline" },
-  { value: "deal_lost", label: "Deal Lost", category: "Pipeline" },
+  { value: "stage_changed", label: "Pipeline Stage Changed", description: "When stage changes", icon: <ArrowRightLeft className="h-4 w-4" />, category: "pipeline" },
+  { value: "deal_created", label: "Opportunity Created", description: "When a deal is created", icon: <Briefcase className="h-4 w-4" />, category: "pipeline" },
+  { value: "deal_won", label: "Deal Won", description: "When marked as won", icon: <Trophy className="h-4 w-4" />, category: "pipeline" },
+  { value: "deal_lost", label: "Deal Lost", description: "When marked as lost", icon: <XCircle className="h-4 w-4" />, category: "pipeline" },
+  { value: "opportunity_changed", label: "Opportunity Changed", description: "When details change", icon: <RefreshCw className="h-4 w-4" />, category: "pipeline" },
+  { value: "stale_opportunity", label: "Stale Opportunity", description: "No activity threshold", icon: <Clock className="h-4 w-4" />, category: "pipeline" },
+  
   // Payment triggers
-  { value: "payment_received", label: "Payment Received", category: "Payment" },
-  { value: "payment_failed", label: "Payment Failed", category: "Payment" },
+  { value: "payment_received", label: "Payment Received", description: "When payment is successful", icon: <DollarSign className="h-4 w-4" />, category: "payment" },
+  { value: "payment_failed", label: "Payment Failed", description: "When payment fails", icon: <AlertCircle className="h-4 w-4" />, category: "payment" },
+  { value: "invoice_created", label: "Invoice Created", description: "When invoice is created", icon: <FileText className="h-4 w-4" />, category: "payment" },
+  { value: "invoice_sent", label: "Invoice Sent", description: "When invoice is sent", icon: <Send className="h-4 w-4" />, category: "payment" },
+  { value: "invoice_paid", label: "Invoice Paid", description: "When invoice is paid", icon: <CheckSquare className="h-4 w-4" />, category: "payment" },
+  { value: "invoice_overdue", label: "Invoice Overdue", description: "When invoice is overdue", icon: <AlertTriangle className="h-4 w-4" />, category: "payment" },
+  { value: "subscription_created", label: "Subscription Created", description: "When subscription starts", icon: <Repeat className="h-4 w-4" />, category: "payment" },
+  { value: "subscription_cancelled", label: "Subscription Cancelled", description: "When cancelled", icon: <XCircle className="h-4 w-4" />, category: "payment" },
+  { value: "subscription_renewed", label: "Subscription Renewed", description: "When renewed", icon: <RefreshCw className="h-4 w-4" />, category: "payment" },
+  { value: "refund_issued", label: "Refund Issued", description: "When refund is processed", icon: <RotateCcw className="h-4 w-4" />, category: "payment" },
+  { value: "order_submitted", label: "Order Submitted", description: "When order is placed", icon: <ShoppingCart className="h-4 w-4" />, category: "payment" },
+  
+  // Messaging triggers
+  { value: "customer_replied", label: "Customer Replied", description: "When customer sends a message", icon: <MessageCircle className="h-4 w-4" />, category: "messaging" },
+  { value: "email_opened", label: "Email Opened", description: "When email is opened", icon: <MailOpen className="h-4 w-4" />, category: "messaging" },
+  { value: "email_bounced", label: "Email Bounced", description: "When email bounces", icon: <MailX className="h-4 w-4" />, category: "messaging" },
+  { value: "messaging_error", label: "Messaging Error", description: "When delivery fails", icon: <AlertOctagon className="h-4 w-4" />, category: "messaging" },
+  { value: "new_review_received", label: "New Review Received", description: "When a review is received", icon: <Star className="h-4 w-4" />, category: "messaging" },
+  
   // Integration triggers
-  { value: "webhook_received", label: "Webhook Received", category: "Integration" },
-  { value: "manual_trigger", label: "Manual Trigger", category: "Integration" },
-  { value: "scheduled_trigger", label: "Scheduled", category: "Integration" },
+  { value: "webhook_received", label: "Inbound Webhook", description: "When external webhook is received", icon: <Webhook className="h-4 w-4" />, category: "integration" },
+  { value: "manual_trigger", label: "Manual Trigger", description: "Triggered manually by user", icon: <Play className="h-4 w-4" />, category: "integration" },
+  { value: "scheduled_trigger", label: "Scheduled", description: "Runs on a schedule", icon: <Clock className="h-4 w-4" />, category: "integration" },
+  { value: "facebook_lead_form", label: "Facebook Lead Form", description: "When FB form is submitted", icon: <FileText className="h-4 w-4" />, category: "integration" },
+  { value: "tiktok_form_submitted", label: "TikTok Form", description: "When TikTok form is submitted", icon: <Music className="h-4 w-4" />, category: "integration" },
+  { value: "google_lead_form", label: "Google Lead Form", description: "When Google form is submitted", icon: <Search className="h-4 w-4" />, category: "integration" },
+];
+
+const CATEGORY_LABELS: Record<TriggerCategory, string> = {
+  contact: "Contact",
+  form: "Forms & Funnels",
+  appointment: "Appointments",
+  task: "Tasks",
+  pipeline: "Pipeline",
+  payment: "Payments",
+  messaging: "Messaging",
+  integration: "Integrations",
+};
+
+const CATEGORY_ORDER: TriggerCategory[] = [
+  'contact', 'form', 'appointment', 'task', 'pipeline', 'payment', 'messaging', 'integration'
 ];
 
 // Group options by category
-const TRIGGER_CATEGORIES = TRIGGER_OPTIONS.reduce((acc, opt) => {
-  if (!acc[opt.category]) acc[opt.category] = [];
-  acc[opt.category].push(opt);
+const TRIGGER_CATEGORIES = CATEGORY_ORDER.reduce((acc, category) => {
+  acc[category] = TRIGGER_OPTIONS.filter(opt => opt.category === category);
   return acc;
-}, {} as Record<string, TriggerOption[]>);
+}, {} as Record<TriggerCategory, TriggerOption[]>);
 
 export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
   const handleTypeChange = (type: TriggerType) => {
@@ -57,31 +125,48 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
     onChange({ ...trigger, config: { ...trigger.config, [key]: value } });
   };
 
+  const selectedOption = TRIGGER_OPTIONS.find(opt => opt.value === trigger.type);
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <Label className="text-white/70">Trigger Type</Label>
         <Select value={trigger.type} onValueChange={handleTypeChange}>
           <SelectTrigger className="bg-white/5 border-white/10 text-white">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#1a1a2e] border-white/10 max-h-80">
-            {Object.entries(TRIGGER_CATEGORIES).map(([category, options]) => (
-              <div key={category}>
-                <div className="px-2 py-1.5 text-xs font-semibold text-white/40 uppercase tracking-wide">
-                  {category}
+            <SelectValue>
+              {selectedOption && (
+                <div className="flex items-center gap-2">
+                  {selectedOption.icon}
+                  <span>{selectedOption.label}</span>
                 </div>
-                {options.map((opt) => (
-                  <SelectItem 
-                    key={opt.value} 
-                    value={opt.value} 
-                    className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
-                  >
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </div>
-            ))}
+              )}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="bg-[#1a1a2e] border-white/10">
+            <ScrollArea className="h-80">
+              {CATEGORY_ORDER.map((category) => (
+                <div key={category}>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-white/40 uppercase tracking-wide sticky top-0 bg-[#1a1a2e]">
+                    {CATEGORY_LABELS[category]}
+                  </div>
+                  {TRIGGER_CATEGORIES[category]?.map((opt) => (
+                    <SelectItem 
+                      key={opt.value} 
+                      value={opt.value} 
+                      className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                    >
+                      <div className="flex items-center gap-2">
+                        {opt.icon}
+                        <div className="flex flex-col">
+                          <span>{opt.label}</span>
+                          <span className="text-xs text-white/40">{opt.description}</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </div>
+              ))}
+            </ScrollArea>
           </SelectContent>
         </Select>
       </div>
@@ -101,8 +186,62 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
         </div>
       )}
 
+      {/* Contact changed trigger */}
+      {trigger.type === "contact_changed" && (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-white/70">Field (Optional)</Label>
+            <Input
+              value={trigger.config?.field || ""}
+              onChange={(e) => handleConfigChange("field", e.target.value)}
+              placeholder="Any field"
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            />
+            <p className="text-xs text-white/40">Leave empty to trigger on any field change</p>
+          </div>
+        </div>
+      )}
+
+      {/* Date reminder triggers */}
+      {(trigger.type === "birthday_reminder" || trigger.type === "custom_date_reminder") && (
+        <div className="space-y-4">
+          {trigger.type === "custom_date_reminder" && (
+            <div className="space-y-2">
+              <Label className="text-white/70">Date Field</Label>
+              <Input
+                value={trigger.config?.field || ""}
+                onChange={(e) => handleConfigChange("field", e.target.value)}
+                placeholder="e.g., anniversary_date"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-white/70">Days Before</Label>
+              <Input
+                type="number"
+                min={0}
+                value={trigger.config?.daysBefore || 0}
+                onChange={(e) => handleConfigChange("daysBefore", parseInt(e.target.value))}
+                className="bg-white/5 border-white/10 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Time</Label>
+              <Input
+                type="time"
+                value={trigger.config?.time || "09:00"}
+                onChange={(e) => handleConfigChange("time", e.target.value)}
+                className="bg-white/5 border-white/10 text-white"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Form submitted trigger */}
-      {trigger.type === "form_submitted" && (
+      {(trigger.type === "form_submitted" || trigger.type === "survey_submitted" || trigger.type === "quiz_submitted") && (
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-white/70">Funnel (Optional)</Label>
@@ -112,7 +251,7 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
               placeholder="Any funnel"
               className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
             />
-            <p className="text-xs text-white/40">Leave empty to trigger on any form submission</p>
+            <p className="text-xs text-white/40">Leave empty to trigger on any submission</p>
           </div>
         </div>
       )}
@@ -120,6 +259,15 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {/* Stage changed trigger */}
       {trigger.type === "stage_changed" && (
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-white/70">Pipeline (Optional)</Label>
+            <Input
+              value={trigger.config?.pipelineId || ""}
+              onChange={(e) => handleConfigChange("pipelineId", e.target.value)}
+              placeholder="Any pipeline"
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            />
+          </div>
           <div className="space-y-2">
             <Label className="text-white/70">From Stage (Optional)</Label>
             <Input
@@ -137,6 +285,23 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
               placeholder="Any stage"
               className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Stale opportunity trigger */}
+      {trigger.type === "stale_opportunity" && (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-white/70">Days Without Activity</Label>
+            <Input
+              type="number"
+              min={1}
+              value={trigger.config?.staleDays || 7}
+              onChange={(e) => handleConfigChange("staleDays", parseInt(e.target.value))}
+              className="bg-white/5 border-white/10 text-white"
+            />
+            <p className="text-xs text-white/40">Trigger when no activity for this many days</p>
           </div>
         </div>
       )}
@@ -224,6 +389,50 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
               <SelectItem value="any" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">Any Payment</SelectItem>
               <SelectItem value="subscription" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">Subscription</SelectItem>
               <SelectItem value="one_time" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">One-Time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Messaging error trigger */}
+      {trigger.type === "messaging_error" && (
+        <div className="space-y-2">
+          <Label className="text-white/70">Channel (Optional)</Label>
+          <Select 
+            value={trigger.config?.channel || "any"} 
+            onValueChange={(v) => handleConfigChange("channel", v === "any" ? undefined : v)}
+          >
+            <SelectTrigger className="bg-white/5 border-white/10 text-white">
+              <SelectValue placeholder="Any channel" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1a1a2e] border-white/10">
+              <SelectItem value="any" className="text-white hover:bg-white/10">Any Channel</SelectItem>
+              <SelectItem value="sms" className="text-white hover:bg-white/10">SMS</SelectItem>
+              <SelectItem value="email" className="text-white hover:bg-white/10">Email</SelectItem>
+              <SelectItem value="whatsapp" className="text-white hover:bg-white/10">WhatsApp</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Customer replied trigger */}
+      {trigger.type === "customer_replied" && (
+        <div className="space-y-2">
+          <Label className="text-white/70">Channel (Optional)</Label>
+          <Select 
+            value={trigger.config?.channel || "any"} 
+            onValueChange={(v) => handleConfigChange("channel", v === "any" ? undefined : v)}
+          >
+            <SelectTrigger className="bg-white/5 border-white/10 text-white">
+              <SelectValue placeholder="Any channel" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1a1a2e] border-white/10">
+              <SelectItem value="any" className="text-white hover:bg-white/10">Any Channel</SelectItem>
+              <SelectItem value="sms" className="text-white hover:bg-white/10">SMS</SelectItem>
+              <SelectItem value="email" className="text-white hover:bg-white/10">Email</SelectItem>
+              <SelectItem value="whatsapp" className="text-white hover:bg-white/10">WhatsApp</SelectItem>
+              <SelectItem value="facebook" className="text-white hover:bg-white/10">Facebook Messenger</SelectItem>
+              <SelectItem value="instagram" className="text-white hover:bg-white/10">Instagram DM</SelectItem>
             </SelectContent>
           </Select>
         </div>

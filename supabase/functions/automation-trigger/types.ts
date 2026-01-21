@@ -1,49 +1,142 @@
 // supabase/functions/automation-trigger/types.ts
 
 export type TriggerType =
+  // Contact triggers
   | "lead_created"
   | "lead_tag_added"
   | "lead_tag_removed"
+  | "contact_changed"
+  | "contact_dnd"
+  | "birthday_reminder"
+  | "custom_date_reminder"
+  | "note_added"
+  // Form/Funnel triggers
   | "form_submitted"
+  | "survey_submitted"
+  | "quiz_submitted"
+  | "funnel_page_view"
+  | "trigger_link_clicked"
+  // Appointment triggers
   | "appointment_booked"
   | "appointment_rescheduled"
   | "appointment_canceled"
   | "appointment_no_show"
   | "appointment_completed"
+  // Task triggers
+  | "task_added"
+  | "task_reminder"
+  | "task_completed"
+  // Pipeline triggers
   | "stage_changed"
   | "deal_created"
   | "deal_won"
   | "deal_lost"
+  | "opportunity_changed"
+  | "stale_opportunity"
+  // Payment triggers
   | "payment_received"
   | "payment_failed"
+  | "invoice_created"
+  | "invoice_sent"
+  | "invoice_paid"
+  | "invoice_overdue"
+  | "subscription_created"
+  | "subscription_cancelled"
+  | "subscription_renewed"
+  | "refund_issued"
+  | "order_submitted"
+  // Messaging triggers
+  | "customer_replied"
+  | "email_opened"
+  | "email_bounced"
+  | "messaging_error"
+  | "new_review_received"
+  // Integration triggers
   | "webhook_received"
   | "manual_trigger"
   | "scheduled_trigger"
+  | "facebook_lead_form"
+  | "tiktok_form_submitted"
+  | "google_lead_form"
   | "time_delay";
 
 export type ActionType =
+  // Communication
   | "send_message"
-  | "add_task"
+  | "send_email"
+  | "send_sms"
+  | "send_whatsapp"
+  | "send_voicemail"
+  | "make_call"
+  | "notify_team"
+  | "send_review_request"
+  | "reply_in_comments"
+  // CRM Actions
+  | "create_contact"
+  | "find_contact"
+  | "update_contact"
+  | "delete_contact"
   | "add_tag"
   | "remove_tag"
+  | "add_task"
   | "add_note"
-  | "create_contact"
-  | "update_contact"
+  | "assign_owner"
+  | "remove_owner"
+  | "toggle_dnd"
+  | "copy_contact"
+  | "add_followers"
+  | "remove_followers"
+  // Appointment Actions
+  | "book_appointment"
+  | "update_appointment"
+  | "cancel_appointment"
+  | "create_booking_link"
+  | "log_call"
+  // Pipeline Actions
+  | "update_stage"
   | "create_deal"
+  | "update_deal"
   | "close_deal"
-  | "notify_team"
-  | "enqueue_dialer"
+  | "find_opportunity"
+  // Payment Actions
+  | "send_invoice"
+  | "charge_payment"
+  | "create_subscription"
+  | "cancel_subscription"
+  // Flow Control
   | "time_delay"
   | "wait_until"
   | "business_hours"
-  | "split_test"
   | "condition"
+  | "split_test"
   | "go_to"
   | "run_workflow"
   | "stop_workflow"
+  | "goal_achieved"
+  | "set_variable"
+  | "add_to_workflow"
+  | "remove_from_workflow"
+  // Data Transform
+  | "format_date"
+  | "format_number"
+  | "format_text"
+  | "math_operation"
+  // AI Actions
+  | "ai_intent"
+  | "ai_decision"
+  | "ai_translate"
+  | "ai_summarize"
+  | "ai_message"
+  // Marketing
+  | "meta_conversion"
+  | "google_conversion"
+  | "add_to_audience"
+  | "remove_from_audience"
+  // Integrations
   | "custom_webhook"
-  | "assign_owner"
-  | "update_stage";
+  | "google_sheets"
+  | "slack_message"
+  | "enqueue_dialer";
 
 export type CrmEntity = "lead" | "deal" | "appointment";
 
