@@ -67,15 +67,15 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         key={item.id}
         variant="ghost"
         className={cn(
-          "w-full justify-start gap-3 h-11 transition-all",
+          "w-full justify-start gap-3 h-11 transition-all rounded-xl",
           collapsed && "justify-center px-0",
           active 
-            ? "bg-primary/10 text-primary font-medium" 
-            : "text-sidebar-foreground/70 hover:text-primary hover:bg-primary/10"
+            ? "bg-primary text-white font-medium hover:bg-primary/90 hover:text-white" 
+            : "text-gray-600 hover:text-primary hover:bg-primary/10"
         )}
         onClick={() => handleNavigation(item.path)}
       >
-        <item.icon className={cn("h-5 w-5 shrink-0", active && "text-primary")} />
+        <item.icon className={cn("h-5 w-5 shrink-0", active && "text-white")} />
         {!collapsed && <span>{item.label}</span>}
       </Button>
     );
@@ -98,26 +98,27 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
 
   return (
     <aside 
+      style={{ backgroundColor: '#ffffff' }}
       className={cn(
-        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300",
+        "h-screen border-r border-gray-100 flex flex-col transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}
     >
       {/* Team Header */}
       <div className={cn(
-        "p-4 border-b border-sidebar-border flex items-center gap-3",
+        "p-4 border-b border-gray-100 flex items-center gap-3",
         collapsed && "justify-center"
       )}>
         <Avatar className="h-10 w-10 shrink-0 rounded-xl">
           <AvatarImage src={teamLogo || undefined} alt={teamName} className="rounded-xl" />
-          <AvatarFallback className="rounded-xl bg-primary/15 text-primary text-sm font-semibold">
+          <AvatarFallback className="rounded-xl bg-primary text-white text-sm font-semibold">
             {getInitials(teamName)}
           </AvatarFallback>
         </Avatar>
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-sidebar-foreground truncate">{teamName}</h2>
-            <p className="text-xs text-sidebar-foreground/60">Team Workspace</p>
+            <h2 className="font-semibold text-gray-900 truncate">{teamName}</h2>
+            <p className="text-xs text-gray-500">Team Workspace</p>
           </div>
         )}
       </div>
@@ -128,7 +129,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
       </nav>
 
       {/* Bottom Section */}
-      <div className="p-3 border-t border-sidebar-border space-y-1">
+      <div className="p-3 border-t border-gray-100 space-y-1">
 
         {/* Profile Settings */}
         {renderNavButton(
@@ -148,7 +149,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 h-10 text-sidebar-foreground/60 hover:text-sidebar-foreground",
+            "w-full justify-start gap-3 h-10 text-gray-500 hover:text-gray-700 rounded-xl",
             collapsed && "justify-center px-0"
           )}
           onClick={() => setCollapsed(!collapsed)}
@@ -167,7 +168,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 h-10 text-destructive hover:text-destructive hover:bg-destructive/10",
+            "w-full justify-start gap-3 h-10 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl",
             collapsed && "justify-center px-0"
           )}
           onClick={() => navigate("/login")}
