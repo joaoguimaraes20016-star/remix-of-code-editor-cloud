@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Infostack design system - Coral/Pink Fanbasis-style branding */
+/* Design system - Fanbasis-like: dark slate sidebar + blue interaction */
 
 @layer base {
   :root {
@@ -16,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 15% 15%;
 
-    /* Brand Primary - Coral/Pink (Fanbasis style) */
-    --primary: 350 85% 60%;
+    /* Brand Primary - Blue (Fanbasis-like hover/interaction) */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
@@ -26,8 +26,8 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 10% 46%;
 
-    /* Brand Accent - Coral (same as primary for consistency) */
-    --accent: 350 85% 60%;
+    /* Brand Accent - Blue */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -35,7 +35,7 @@
 
     --border: 220 14% 90%;
     --input: 220 14% 90%;
-    --ring: 350 85% 60%;
+    --ring: 217 91% 60%;
 
     --radius: 0.75rem;
     
@@ -57,10 +57,10 @@
     --warning: 38 80% 50%;
     --warning-foreground: 220 15% 6%;
     
-    /* Brand gradient tokens - Coral → Rose → Pink (Fanbasis style) */
-    --gradient-start: 350 85% 60%;
-    --gradient-mid: 340 80% 55%;
-    --gradient-end: 330 75% 50%;
+    /* Brand gradient tokens - Blue range (use sparingly) */
+    --gradient-start: 217 91% 60%;
+    --gradient-mid: 214 85% 55%;
+    --gradient-end: 210 85% 48%;
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-mid)), hsl(var(--gradient-end)));
     --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)));
@@ -75,34 +75,34 @@
     --shadow-hover: 0 8px 30px hsl(var(--primary) / 0.12);
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     
-    /* Charts - Coral palette */
-    --chart-1: 350 85% 60%;
-    --chart-2: 340 75% 55%;
+    /* Charts - Blue palette */
+    --chart-1: 217 91% 60%;
+    --chart-2: 214 85% 55%;
     --chart-3: 142 60% 45%;
-    --chart-4: 330 70% 50%;
+    --chart-4: 210 85% 48%;
     --chart-5: 30 80% 50%;
 
-    /* Sidebar - Light clean theme */
-    --sidebar-background: 0 0% 99%;
-    --sidebar-foreground: 220 15% 15%;
-    --sidebar-primary: 350 85% 60%;
+    /* Sidebar - Dark slate */
+    --sidebar-background: 223 22% 14%;
+    --sidebar-foreground: 210 20% 96%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 350 85% 97%;
-    --sidebar-accent-foreground: 350 85% 40%;
-    --sidebar-border: 220 14% 92%;
-    --sidebar-ring: 350 85% 60%;
+    --sidebar-accent: 217 91% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 223 18% 22%;
+    --sidebar-ring: 217 91% 60%;
     
-    /* Builder-specific tokens - dark for contrast */
-    --builder-bg: 0 0% 4%;
-    --builder-surface: 0 0% 7%;
-    --builder-surface-hover: 0 0% 11%;
-    --builder-surface-active: 0 0% 15%;
-    --builder-border: 0 0% 14%;
-    --builder-border-subtle: 0 0% 10%;
-    --builder-text: 0 0% 100%;
-    --builder-text-secondary: 0 0% 75%;
-    --builder-text-muted: 0 0% 55%;
-    --builder-accent: 350 85% 60%;
+    /* Builder-specific tokens - neutral dark, no gradients */
+    --builder-bg: 223 22% 10%;
+    --builder-surface: 223 22% 13%;
+    --builder-surface-hover: 223 22% 16%;
+    --builder-surface-active: 223 22% 19%;
+    --builder-border: 223 18% 22%;
+    --builder-border-subtle: 223 18% 18%;
+    --builder-text: 210 20% 96%;
+    --builder-text-secondary: 210 15% 80%;
+    --builder-text-muted: 215 12% 62%;
+    --builder-accent: 217 91% 60%;
   }
 
   .dark {
@@ -115,8 +115,8 @@
     --popover: 0 0% 7%;
     --popover-foreground: 210 20% 96%;
 
-    /* Brand Primary - Coral/Pink (same in dark) */
-    --primary: 350 85% 60%;
+    /* Brand Primary - Blue */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 10%;
@@ -125,8 +125,8 @@
     --muted: 0 0% 12%;
     --muted-foreground: 220 10% 55%;
 
-    /* Brand Accent - Coral (same in dark) */
-    --accent: 350 85% 60%;
+    /* Brand Accent - Blue */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
@@ -134,7 +134,7 @@
 
     --border: 0 0% 14%;
     --input: 0 0% 14%;
-    --ring: 350 85% 60%;
+    --ring: 217 91% 60%;
     
     --success: 142 60% 45%;
     --success-foreground: 210 20% 96%;
@@ -158,15 +158,15 @@
     --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
     --shadow-hover: 0 8px 30px hsl(var(--primary) / 0.1);
 
-    /* Sidebar - Dark theme with coral accents */
-    --sidebar-background: 0 0% 4%;
+    /* Sidebar - Dark slate */
+    --sidebar-background: 223 22% 14%;
     --sidebar-foreground: 210 20% 96%;
-    --sidebar-primary: 350 85% 60%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 210 20% 96%;
-    --sidebar-border: 0 0% 12%;
-    --sidebar-ring: 350 85% 60%;
+    --sidebar-accent: 217 91% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 223 18% 22%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   * {
