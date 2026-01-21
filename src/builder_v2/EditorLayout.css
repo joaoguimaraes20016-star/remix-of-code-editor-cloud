@@ -6,29 +6,31 @@
    ============================================================================ */
 
 :root {
-  --builder-bg: #f8fafc;
-  --builder-panel-bg: #ffffff;
-  --builder-panel-border: #e2e8f0;
-  --builder-canvas-bg: #1e1e24;
-  --builder-text-primary: #0f172a;
-  --builder-text-secondary: #475569;
-  --builder-text-muted: #94a3b8;
-  --builder-accent: #38bdf8;
-  --builder-accent-light: #e0f2fe;
-  --builder-hover-bg: #f1f5f9;
-  --builder-active-bg: #e2e8f0;
+  /* Dark charcoal panels - matching sidebar (HSL 220 13% 10%) */
+  --builder-bg: #17181c;
+  --builder-panel-bg: #17181c;
+  --builder-panel-border: #252629;
+  --builder-canvas-bg: #0f1012;
+  --builder-text-primary: #f1f5f9;
+  --builder-text-secondary: #94a3b8;
+  --builder-text-muted: #64748b;
+  /* Blue accent - unified with sidebar */
+  --builder-accent: #3b82f6;
+  --builder-accent-light: #1e3a5f;
+  --builder-hover-bg: #1f2024;
+  --builder-active-bg: #252629;
   --builder-radius-sm: 6px;
   --builder-radius-md: 10px;
   --builder-radius-lg: 16px;
   --builder-font-size-xs: 11px;
   --builder-font-size-sm: 13px;
   --builder-font-size-base: 14px;
-  /* Perspective-style cyan selection */
-  --builder-selection-color: #38bdf8;
+  /* Blue selection - matching sidebar primary */
+  --builder-selection-color: #3b82f6;
   --builder-selection-bg: transparent;
   
-  /* Perspective-style content area */
-  --builder-content-bg: linear-gradient(180deg, #0f0f14 0%, #141419 100%);
+  /* Dark content area */
+  --builder-content-bg: linear-gradient(180deg, #0c0d0f 0%, #101114 100%);
   --builder-content-surface: rgba(255, 255, 255, 0.03);
 }
 
@@ -251,24 +253,24 @@
   z-index: 2;
 }
 
-/* Hover state - subtle cyan outline like Perspective */
+/* Hover state - subtle blue outline */
 .builder-v2-node:not([data-readonly]):hover > .builder-v2-node-overlay {
-  border-color: rgba(56, 189, 248, 0.4);
+  border-color: rgba(59, 130, 246, 0.4);
 }
 
-/* Selected state - strong cyan outline */
+/* Selected state - strong blue outline */
 .builder-v2-node[data-selected="true"] > .builder-v2-node-overlay {
-  border-color: #38bdf8;
+  border-color: #3b82f6;
 }
 
 /* Nested selection - keep parent subtle */
 .builder-v2-node[data-selected="true"] .builder-v2-node:not([data-readonly]):hover > .builder-v2-node-overlay {
-  border-color: rgba(56, 189, 248, 0.3);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 /* Highlighted state (for suggestions) */
 .builder-v2-node[data-highlighted="true"] > .builder-v2-node-overlay {
-  border-color: #22d3ee;
+  border-color: #3b82f6;
   animation: pulse-highlight 1.5s ease-in-out infinite;
 }
 
@@ -277,7 +279,7 @@
   50% { opacity: 0.6; }
 }
 
-/* Node type label on selection - Perspective style badge */
+/* Node type label on selection - Blue badge */
 .builder-v2-node[data-selected="true"]::before {
   content: attr(data-node-type);
   position: absolute;
@@ -285,18 +287,18 @@
   left: 0;
   font-size: 11px;
   font-weight: 600;
-  color: #0c4a6e;
-  background: #38bdf8;
+  color: #ffffff;
+  background: #3b82f6;
   padding: 3px 10px;
   border-radius: 4px;
   z-index: 10;
   text-transform: capitalize;
   pointer-events: none;
-  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.3);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
 }
 
 /* ============================================================================
-   HOVER TOOLBAR - Simplified (no purple)
+   HOVER TOOLBAR - Dark theme matching panels
    ============================================================================ */
 
 .builder-v2-hover-toolbar {
@@ -308,10 +310,10 @@
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: #1f2024;
+  border: 1px solid #252629;
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   opacity: 0;
   pointer-events: none;
   transition: opacity 150ms ease;
@@ -327,9 +329,9 @@
 .builder-v2-hover-toolbar-type {
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: #94a3b8;
   padding-right: 8px;
-  border-right: 1px solid #e2e8f0;
+  border-right: 1px solid #252629;
 }
 
 .builder-v2-hover-toolbar-actions {
@@ -341,8 +343,8 @@
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: #334155;
-  background: #f1f5f9;
+  color: #f1f5f9;
+  background: #252629;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -350,18 +352,18 @@
 }
 
 .builder-v2-hover-toolbar-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #3b82f6;
+  color: #ffffff;
 }
 
 .builder-v2-hover-toolbar-btn--delete {
-  background: #fef2f2;
+  background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
 
 .builder-v2-hover-toolbar-btn--delete:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
 }
 
 /* ============================================================================
@@ -416,20 +418,20 @@
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
-  border: 2px dashed rgba(99, 102, 241, 0.4);
+  background: rgba(59, 130, 246, 0.15);
+  border: 2px dashed rgba(59, 130, 246, 0.4);
   border-radius: 16px;
-  color: rgba(99, 102, 241, 0.9);
+  color: rgba(59, 130, 246, 0.9);
   cursor: pointer;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .builder-v2-empty-page-add-btn:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.25) 100%);
-  border-color: rgba(99, 102, 241, 0.6);
-  color: rgba(99, 102, 241, 1);
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6);
+  color: #3b82f6;
   transform: scale(1.05);
-  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
 }
 
 .builder-v2-empty-page-label {
@@ -459,11 +461,11 @@
 }
 
 .builder-v2-structure-row:hover {
-  background: #f1f5f9;
+  background: #1f2024;
 }
 
 .builder-v2-structure-row[data-selected="true"] {
-  background: #eef2ff;
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .builder-v2-structure-row-content {
@@ -477,7 +479,7 @@
 .builder-v2-structure-row-label {
   font-size: 13px;
   font-weight: 500;
-  color: #334155;
+  color: #f1f5f9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -485,7 +487,7 @@
 
 .builder-v2-structure-row-type {
   font-size: 11px;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 /* ============================================================================
@@ -505,8 +507,8 @@
   align-items: center;
   gap: 6px;
   padding: 12px 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #1f2024;
+  border: 1px solid #252629;
   border-radius: 8px;
   cursor: pointer;
   transition: all 150ms ease;
@@ -514,8 +516,8 @@
 }
 
 .element-palette-item:hover {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
   transform: translateY(-1px);
 }
 
@@ -529,13 +531,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6366f1;
+  color: #3b82f6;
 }
 
 .element-palette-label {
   font-size: 11px;
   font-weight: 500;
-  color: #475569;
+  color: #94a3b8;
 }
 
 /* ============================================================================
