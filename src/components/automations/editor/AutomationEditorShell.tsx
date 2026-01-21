@@ -6,18 +6,17 @@ import {
   Loader2,
   Play,
   PanelRightClose,
+  PanelLeftOpen,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger, TriggerType } from "@/lib/automations/types";
 import { TemplateGallery } from "./TemplateGallery";
-import { StartingOptionsModal } from "./StartingOptionsModal";
-import { WorkflowAIHelper } from "./WorkflowAIHelper";
+import { AutomationAIPanel } from "./AutomationAIPanel";
 import { AutomationCanvasArea } from "./AutomationCanvasArea";
 import { NodeInspector } from "./NodeInspector";
 import { cn } from "@/lib/utils";
-import { streamAICopilot } from "@/lib/ai/aiCopilotService";
 import { toast } from "sonner";
 import "./automation-editor.css";
 
@@ -44,8 +43,8 @@ export function AutomationEditorShell({
   isSaving,
   isNew,
 }: AutomationEditorShellProps) {
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(true);
-  const [showStartingOptions, setShowStartingOptions] = useState(isNew ?? false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
 
@@ -108,6 +107,16 @@ export function AutomationEditorShell({
     [definition, onChange, selectedNodeId]
   );
 
+  const handleTriggerDelete = useCallback(() => {
+    // Reset trigger to empty/placeholder state
+    onChange({
+      ...definition,
+      trigger: { type: 'manual_trigger', config: {} }
+    });
+    setSelectedNodeId(null);
+    setRightCollapsed(true);
+  }, [definition, onChange]);
+
   const handleTemplateSelect = useCallback(
     (templateDefinition: AutomationDefinition) => {
       onChange(templateDefinition);
@@ -123,78 +132,9 @@ export function AutomationEditorShell({
     }
   }, []);
 
-  const handleAIGenerate = useCallback(
-    async (prompt: string) => {
-      let fullResponse = "";
-
-      try {
-        await streamAICopilot(
-          "generate",
-          prompt,
-          {},
-          {
-            onDelta: (chunk) => {
-              fullResponse += chunk;
-            },
-            onDone: () => {
-              try {
-                // Try to parse the AI response as workflow JSON
-                const cleanResponse = fullResponse
-                  .replace(/```json\n?/g, "")
-                  .replace(/```\n?/g, "")
-                  .trim();
-                
-                const parsed = JSON.parse(cleanResponse);
-                
-                if (parsed.workflow) {
-                  // Apply the generated workflow
-                  const { trigger, steps, name: workflowName } = parsed.workflow;
-                  
-                  const newDefinition: AutomationDefinition = {
-                    ...definition,
-                    trigger: trigger || definition.trigger,
-                    steps: (steps || []).map((step: any, idx: number) => ({
-                      id: `step-${Date.now()}-${idx}`,
-                      order: idx + 1,
-                      type: step.type,
-                      config: step.config || {},
-                    })),
-                  };
-                  
-                  onChange(newDefinition);
-                  if (workflowName) {
-                    onNameChange(workflowName);
-                  }
-                  
-                  toast.success("Workflow generated successfully!");
-                } else {
-                  toast.error("AI response didn't contain a valid workflow");
-                }
-              } catch (parseError) {
-                console.error("Failed to parse AI response:", parseError, fullResponse);
-                toast.error("Failed to parse AI response");
-              }
-            },
-            onError: (error) => {
-              console.error("AI generation error:", error);
-              toast.error(error.message || "Failed to generate workflow");
-            },
-          },
-          "workflow"
-        );
-      } catch (error) {
-        console.error("AI generation error:", error);
-        toast.error("Failed to generate workflow");
-      }
-    },
-    [definition, onChange, onNameChange]
-  );
-
   const selectedStep = selectedNodeId === "trigger"
     ? null
     : definition.steps.find((s) => s.id === selectedNodeId);
-
-  const showAIHelper = !selectedNodeId && !selectedStep;
 
   return (
     <div className="automation-editor">
@@ -255,9 +195,40 @@ export function AutomationEditorShell({
         </div>
       </header>
 
-      {/* Main Layout - Centered Canvas */}
+      {/* Main Layout - Two Panel with AI on Left */}
       <div className="automation-editor-body">
-        {/* Center - Full Width Canvas */}
+        {/* Left Panel - AI Chat (Lovable-style) */}
+        <AnimatePresence>
+          {!leftCollapsed && (
+            <motion.aside
+              initial={{ x: -360, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -360, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-[360px] min-w-[360px] border-r border-sidebar-border flex-shrink-0"
+            >
+              <AutomationAIPanel
+                definition={definition}
+                onDefinitionChange={onChange}
+                onNameChange={onNameChange}
+                onCollapse={() => setLeftCollapsed(true)}
+                isNew={isNew}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
+
+        {/* Expand button when left collapsed */}
+        {leftCollapsed && (
+          <button
+            onClick={() => setLeftCollapsed(false)}
+            className="automation-editor-expand-btn automation-editor-expand-btn--left"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </button>
+        )}
+
+        {/* Center - Canvas */}
         <main className={cn(
           "automation-editor-canvas flex-1",
           !rightCollapsed && "mr-80"
@@ -267,6 +238,7 @@ export function AutomationEditorShell({
             selectedNodeId={selectedNodeId}
             onSelectNode={handleSelectNode}
             onTriggerChange={handleTriggerChange}
+            onTriggerDelete={handleTriggerDelete}
             onStepUpdate={handleStepUpdate}
             onStepDelete={handleStepDelete}
             onAddStep={handleAddStep}
@@ -285,12 +257,7 @@ export function AutomationEditorShell({
             >
               <div className="automation-editor-panel-header">
                 <span className="automation-editor-panel-title flex items-center gap-2">
-                  {showAIHelper ? (
-                    <>
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      AI Assistant
-                    </>
-                  ) : selectedNodeId === "trigger" ? (
+                  {selectedNodeId === "trigger" ? (
                     "Configure Trigger"
                   ) : selectedStep ? (
                     "Configure Step"
@@ -310,36 +277,15 @@ export function AutomationEditorShell({
                 </button>
               </div>
               <div className="automation-editor-panel-content">
-                <AnimatePresence mode="wait">
-                  {showAIHelper ? (
-                    <motion.div
-                      key="ai-helper"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="h-full"
-                    >
-                      <WorkflowAIHelper definition={definition} />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="inspector"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                    >
-                      <NodeInspector
-                        selectedNodeId={selectedNodeId}
-                        trigger={definition.trigger}
-                        step={selectedStep}
-                        onTriggerChange={handleTriggerChange}
-                        onStepUpdate={handleStepUpdate}
-                        onStepDelete={handleStepDelete}
-                        teamId={teamId}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <NodeInspector
+                  selectedNodeId={selectedNodeId}
+                  trigger={definition.trigger}
+                  step={selectedStep}
+                  onTriggerChange={handleTriggerChange}
+                  onStepUpdate={handleStepUpdate}
+                  onStepDelete={handleStepDelete}
+                  teamId={teamId}
+                />
               </div>
             </motion.aside>
           )}
@@ -352,18 +298,6 @@ export function AutomationEditorShell({
         onOpenChange={setShowTemplates}
         teamId={teamId}
         onSelectTemplate={handleTemplateSelect}
-      />
-
-      {/* Starting Options Modal (for new automations) */}
-      <StartingOptionsModal
-        open={showStartingOptions}
-        onOpenChange={setShowStartingOptions}
-        onSelectTemplate={() => {
-          setShowStartingOptions(false);
-          setShowTemplates(true);
-        }}
-        onStartScratch={() => setShowStartingOptions(false)}
-        onAIGenerate={handleAIGenerate}
       />
     </div>
   );
