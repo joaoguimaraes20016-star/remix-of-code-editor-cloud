@@ -18,7 +18,7 @@ import type { TriggerType } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
 
 interface AutomationCardProps {
-  id: string;
+  id?: string;
   name: string;
   description?: string | null;
   triggerType: TriggerType;
@@ -29,6 +29,7 @@ interface AutomationCardProps {
   onEdit: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
+  extraActions?: React.ReactNode;
 }
 
 const TRIGGER_ICONS: Partial<Record<TriggerType, React.ReactNode>> = {
@@ -79,6 +80,7 @@ export function AutomationCard({
   onEdit,
   onDuplicate,
   onDelete,
+  extraActions,
 }: AutomationCardProps) {
   const icon = TRIGGER_ICONS[triggerType] || <Zap className="h-4 w-4" />;
   const label = TRIGGER_LABELS[triggerType] || triggerType;
@@ -114,6 +116,7 @@ export function AutomationCard({
 
         {/* Actions */}
         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          {extraActions}
           <Switch
             checked={isActive}
             onCheckedChange={onToggle}
