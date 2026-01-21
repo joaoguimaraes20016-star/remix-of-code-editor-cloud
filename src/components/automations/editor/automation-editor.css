@@ -4,8 +4,18 @@
   width: 100vw;
   display: flex;
   flex-direction: column;
-  background: hsl(var(--sidebar-background));
-  color: white;
+  /* Scope the automation editor to builder tokens (dark UI even when app theme is light) */
+  --background: var(--builder-bg);
+  --foreground: var(--builder-text);
+  --muted: var(--builder-surface);
+  --muted-foreground: var(--builder-text-muted);
+  --card: var(--builder-surface);
+  --card-foreground: var(--builder-text);
+  --border: var(--builder-border);
+  --input: var(--builder-border);
+  --ring: var(--primary);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
   overflow: hidden;
 }
 
@@ -17,9 +27,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  background: rgba(22, 22, 42, 0.8);
+  background: hsl(var(--builder-surface) / 0.85);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
 }
 
 .automation-editor-header-left,
@@ -38,14 +48,14 @@
 .automation-editor-divider {
   width: 1px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.1);
+  background: hsl(var(--border) / 0.8);
   margin: 0 8px;
 }
 
 .automation-editor-name-input {
   background: transparent;
   border: none;
-  color: white;
+  color: hsl(var(--foreground));
   font-size: 1rem;
   font-weight: 500;
   width: 280px;
@@ -58,7 +68,7 @@
 }
 
 .automation-editor-name-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: hsl(var(--muted-foreground));
 }
 
 /* Body */
@@ -75,15 +85,15 @@
   min-width: 320px;
   display: flex;
   flex-direction: column;
-  background: rgba(18, 18, 26, 0.9);
+  background: hsl(var(--builder-surface) / 0.92);
   backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid hsl(var(--border) / 0.6);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .automation-editor-panel--right {
   border-right: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid hsl(var(--border) / 0.6);
 }
 
 .automation-editor-panel--collapsed {
@@ -100,13 +110,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
 }
 
 .automation-editor-panel-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: hsl(var(--foreground));
   display: flex;
   align-items: center;
   gap: 8px;
@@ -121,14 +131,14 @@
   border-radius: 8px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .automation-editor-panel-collapse:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--foreground));
 }
 
 .automation-editor-panel-content {
@@ -147,12 +157,12 @@
 }
 
 .automation-editor-panel-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: hsl(var(--border));
   border-radius: 3px;
 }
 
 .automation-editor-panel-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: hsl(var(--border) / 0.8);
 }
 
 /* Expand Buttons */
@@ -166,17 +176,17 @@
   justify-content: center;
   width: 28px;
   height: 56px;
-  background: rgba(26, 26, 46, 0.95);
+  background: hsl(var(--builder-surface) / 0.95);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid hsl(var(--border) / 0.7);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .automation-editor-expand-btn:hover {
-  background: rgba(37, 37, 64, 0.95);
-  color: white;
+  background: hsl(var(--builder-surface-hover) / 0.95);
+  color: hsl(var(--foreground));
 }
 
 .automation-editor-expand-btn--left {

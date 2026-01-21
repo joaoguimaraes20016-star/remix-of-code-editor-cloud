@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Stackit Builder Design System - Brand Colors: Coral → Pink → Magenta → Purple */
+/* Flow Canvas Design System (inherits global tokens) */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
 
@@ -18,8 +18,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 10%;
 
-    /* Brand Primary - Magenta/Fuchsia (between pink and purple) */
-    --primary: 315 85% 58%;
+    /* Brand Primary - Blue (unified system) */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
@@ -28,8 +28,8 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 10% 46%;
 
-    /* Brand Accent - Fuchsia */
-    --accent: 310 80% 55%;
+    /* Brand Accent - Blue (unified system) */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -37,40 +37,40 @@
 
     --border: 220 14% 90%;
     --input: 220 14% 90%;
-    --ring: 315 85% 58%;
+    --ring: 217 91% 60%;
 
     --radius: 0.75rem;
 
-    /* Builder-specific tokens - True black base */
-    --builder-bg: 0 0% 4%;
-    --builder-surface: 0 0% 7%;
-    --builder-surface-hover: 0 0% 11%;
-    --builder-surface-active: 0 0% 15%;
-    --builder-border: 0 0% 14%;
-    --builder-border-subtle: 0 0% 10%;
-    --builder-text: 0 0% 100%;
-    --builder-text-secondary: 0 0% 80%;
-    --builder-text-muted: 0 0% 55%;
-    --builder-text-dim: 0 0% 35%;
+    /* Builder-specific tokens - dark slate (unified system) */
+    --builder-bg: 223 22% 10%;
+    --builder-surface: 223 22% 13%;
+    --builder-surface-hover: 223 22% 16%;
+    --builder-surface-active: 223 22% 19%;
+    --builder-border: 223 18% 22%;
+    --builder-border-subtle: 223 18% 18%;
+    --builder-text: 210 20% 96%;
+    --builder-text-secondary: 210 15% 80%;
+    --builder-text-muted: 215 12% 62%;
+    --builder-text-dim: 215 12% 52%;
     
-    /* Brand accent colors - Purple dominant for solid buttons */
-    --builder-accent: 275 70% 55%;
-    --builder-accent-glow: 275 75% 60%;
-    --builder-accent-muted: 275 50% 45%;
-    --builder-accent-secondary: 315 85% 58%;
-    --builder-accent-tertiary: 20 90% 58%;
+    /* Builder accent colors - Blue (unified system) */
+    --builder-accent: 217 91% 60%;
+    --builder-accent-glow: 217 91% 66%;
+    --builder-accent-muted: 217 40% 45%;
+    --builder-accent-secondary: 217 91% 60%;
+    --builder-accent-tertiary: 199 89% 48%;
     
     /* Status colors */
     --builder-success: 142 71% 45%;
     --builder-warning: 38 92% 50%;
     --builder-error: 0 84% 60%;
     
-    /* Intent colors - magenta aligned */
-    --intent-capture: 20 90% 58%;
-    --intent-qualify: 280 75% 55%;
-    --intent-schedule: 315 85% 58%;
+    /* Intent colors - blue aligned */
+    --intent-capture: 217 91% 60%;
+    --intent-qualify: 199 89% 48%;
+    --intent-schedule: 217 91% 60%;
     --intent-convert: 142 71% 45%;
-    --intent-complete: 290 14% 50%;
+    --intent-complete: 215 14% 50%;
 
     /* Canvas */
     --canvas-bg: 0 0% 3%;
