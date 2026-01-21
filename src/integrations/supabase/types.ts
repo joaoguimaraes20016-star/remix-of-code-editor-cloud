@@ -2444,6 +2444,7 @@ export type Database = {
       team_credits: {
         Row: {
           created_at: string
+          email_balance: number
           id: string
           sms_balance: number
           team_id: string
@@ -2453,6 +2454,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_balance?: number
           id?: string
           sms_balance?: number
           team_id: string
@@ -2462,6 +2464,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_balance?: number
           id?: string
           sms_balance?: number
           team_id?: string
@@ -2852,8 +2855,10 @@ export type Database = {
           created_at: string | null
           dns_records: Json | null
           domain: string
+          emails_sent: number
           full_domain: string | null
           id: string
+          last_email_at: string | null
           provider: string | null
           provider_domain_id: string | null
           status: string | null
@@ -2867,8 +2872,10 @@ export type Database = {
           created_at?: string | null
           dns_records?: Json | null
           domain: string
+          emails_sent?: number
           full_domain?: string | null
           id?: string
+          last_email_at?: string | null
           provider?: string | null
           provider_domain_id?: string | null
           status?: string | null
@@ -2882,8 +2889,10 @@ export type Database = {
           created_at?: string | null
           dns_records?: Json | null
           domain?: string
+          emails_sent?: number
           full_domain?: string | null
           id?: string
+          last_email_at?: string | null
           provider?: string | null
           provider_domain_id?: string | null
           status?: string | null
@@ -3097,9 +3106,9 @@ export type Database = {
           p_description?: string
           p_reference_id?: string
           p_team_id: string
-          p_transaction_type?: string
+          p_transaction_type: string
         }
-        Returns: Json
+        Returns: number
       }
       auto_assign_unassigned_tasks: { Args: never; Returns: undefined }
       auto_return_expired_tasks: { Args: never; Returns: undefined }

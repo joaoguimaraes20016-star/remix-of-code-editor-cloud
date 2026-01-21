@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Phone, MessagesSquare, Check, Loader2 } from "lucide-react";
+import { MessageSquare, Phone, MessagesSquare, Mail, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -29,7 +29,7 @@ interface BuyCreditsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   teamId: string;
-  defaultChannel?: "sms" | "voice" | "whatsapp";
+  defaultChannel?: "sms" | "voice" | "whatsapp" | "email";
   onPurchaseComplete?: () => void;
 }
 
@@ -37,11 +37,24 @@ export function BuyCreditsModal({
   open,
   onOpenChange,
   teamId,
-  defaultChannel = "sms",
+  defaultChannel = "email",
   onPurchaseComplete,
 }: BuyCreditsModalProps) {
   const [selectedChannel, setSelectedChannel] = useState(defaultChannel);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+
+  // Reset selected package when channel changes
+  useEffect(() => {
+    setSelectedPackage(null);
+  }, [selectedChannel]);
+
+  // Reset to default channel when modal opens
+  useEffect(() => {
+    if (open) {
+      setSelectedChannel(defaultChannel);
+      setSelectedPackage(null);
+    }
+  }, [open, defaultChannel]);
 
   const { data: packages, isLoading } = useQuery({
     queryKey: ["credit-packages", selectedChannel],
@@ -100,6 +113,16 @@ export function BuyCreditsModal({
     }).format(cents / 100);
   };
 
+  const getChannelLabel = (channel: string) => {
+    switch (channel) {
+      case "email": return "emails";
+      case "sms": return "messages";
+      case "voice": return "minutes";
+      case "whatsapp": return "messages";
+      default: return "credits";
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -111,18 +134,22 @@ export function BuyCreditsModal({
         </DialogHeader>
 
         <Tabs value={selectedChannel} onValueChange={(v) => setSelectedChannel(v as typeof selectedChannel)}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="email" className="gap-2">
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Email</span>
+            </TabsTrigger>
             <TabsTrigger value="sms" className="gap-2">
               <MessageSquare className="h-4 w-4" />
-              SMS
+              <span className="hidden sm:inline">SMS</span>
             </TabsTrigger>
             <TabsTrigger value="voice" className="gap-2">
               <Phone className="h-4 w-4" />
-              Voice
+              <span className="hidden sm:inline">Voice</span>
             </TabsTrigger>
             <TabsTrigger value="whatsapp" className="gap-2">
               <MessagesSquare className="h-4 w-4" />
-              WhatsApp
+              <span className="hidden sm:inline">WhatsApp</span>
             </TabsTrigger>
           </TabsList>
 
@@ -135,9 +162,9 @@ export function BuyCreditsModal({
                   </Card>
                 ))}
               </div>
-            ) : (
+            ) : packages && packages.length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
-                {packages?.map((pkg) => (
+                {packages.map((pkg) => (
                   <Card
                     key={pkg.id}
                     className={cn(
@@ -162,19 +189,23 @@ export function BuyCreditsModal({
                       <div className="mt-2">
                         <span className="text-3xl font-bold">{pkg.credits.toLocaleString()}</span>
                         <span className="text-muted-foreground ml-1">
-                          {selectedChannel === "voice" ? "minutes" : "credits"}
+                          {getChannelLabel(selectedChannel)}
                         </span>
                       </div>
                       <div className="mt-2 text-xl font-semibold text-primary">
                         {formatPrice(pkg.price_cents)}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formatPrice(pkg.price_cents / pkg.credits * 100)} per{" "}
-                        {selectedChannel === "voice" ? "minute" : "credit"}
+                        {formatPrice(Math.round(pkg.price_cents / pkg.credits * 100))} per {selectedChannel === "voice" ? "minute" : selectedChannel === "email" ? "email" : "message"}
                       </p>
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No packages available for this channel yet.</p>
+                <p className="text-sm mt-1">Contact support to set up pricing.</p>
               </div>
             )}
           </TabsContent>

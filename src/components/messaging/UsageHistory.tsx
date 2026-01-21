@@ -55,8 +55,25 @@ export function UsageHistory({ teamId }: UsageHistoryProps) {
         return Phone;
       case "whatsapp":
         return MessagesSquare;
+      case "email":
+        return CreditCard;
       default:
         return CreditCard;
+    }
+  };
+
+  const getChannelColor = (channel: string) => {
+    switch (channel) {
+      case "sms":
+        return "text-blue-500";
+      case "voice":
+        return "text-green-500";
+      case "whatsapp":
+        return "text-emerald-500";
+      case "email":
+        return "text-violet-500";
+      default:
+        return "text-muted-foreground";
     }
   };
 
@@ -143,7 +160,7 @@ export function UsageHistory({ teamId }: UsageHistoryProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <ChannelIcon className="h-4 w-4 text-muted-foreground" />
+                      <ChannelIcon className={cn("h-4 w-4", getChannelColor(tx.channel))} />
                       <span className="capitalize">{tx.channel}</span>
                     </div>
                   </TableCell>
