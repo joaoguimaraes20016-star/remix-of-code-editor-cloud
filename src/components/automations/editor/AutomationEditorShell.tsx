@@ -9,11 +9,14 @@ import {
   Play,
   PanelLeftClose,
   PanelRightClose,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger } from "@/lib/automations/types";
-import { NodeSidebar } from "./NodeSidebar";
+import { SmartStartPanel } from "./SmartStartPanel";
+import { TemplateGallery } from "./TemplateGallery";
+import { WorkflowAIHelper } from "./WorkflowAIHelper";
 import { AutomationCanvasArea } from "./AutomationCanvasArea";
 import { NodeInspector } from "./NodeInspector";
 import { cn } from "@/lib/utils";
@@ -43,6 +46,7 @@ export function AutomationEditorShell({
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const handleTriggerChange = useCallback(
     (trigger: AutomationTrigger) => {
@@ -99,9 +103,24 @@ export function AutomationEditorShell({
     [definition, onChange, selectedNodeId]
   );
 
+  const handleTemplateSelect = useCallback(
+    (templateDefinition: AutomationDefinition) => {
+      onChange(templateDefinition);
+      onNameChange(templateDefinition.name);
+    },
+    [onChange, onNameChange]
+  );
+
+  const handleAskAI = useCallback((prompt: string) => {
+    // For now, just deselect any node to show the AI helper
+    setSelectedNodeId(null);
+  }, []);
+
   const selectedStep = selectedNodeId === "trigger"
     ? null
     : definition.steps.find((s) => s.id === selectedNodeId);
+
+  const showAIHelper = !selectedNodeId && !selectedStep;
 
   return (
     <div className="automation-editor">
@@ -127,7 +146,18 @@ export function AutomationEditorShell({
         </div>
 
         <div className="automation-editor-header-center">
-          {/* Placeholder for future toolbar items */}
+          {/* Status indicator */}
+          <div className="flex items-center gap-2 text-xs">
+            <div className={cn(
+              "w-2 h-2 rounded-full",
+              definition.steps.length > 0 ? "bg-green-400" : "bg-yellow-400"
+            )} />
+            <span className="text-white/50">
+              {definition.steps.length > 0 
+                ? `${definition.steps.length} step${definition.steps.length !== 1 ? "s" : ""}` 
+                : "No steps yet"}
+            </span>
+          </div>
         </div>
 
         <div className="automation-editor-header-right">
@@ -182,10 +212,12 @@ export function AutomationEditorShell({
           </button>
         )}
 
-        {/* Left Sidebar - Node Palette */}
+        {/* Left Sidebar - Smart Start Panel */}
         <aside className={cn("automation-editor-panel automation-editor-panel--left", leftCollapsed && "automation-editor-panel--collapsed")}>
           <div className="automation-editor-panel-header">
-            <span className="automation-editor-panel-title">Add Node</span>
+            <span className="automation-editor-panel-title">
+              {definition.steps.length === 0 ? "Get Started" : "Add Step"}
+            </span>
             <button
               type="button"
               className="automation-editor-panel-collapse"
@@ -195,7 +227,13 @@ export function AutomationEditorShell({
             </button>
           </div>
           <div className="automation-editor-panel-content">
-            <NodeSidebar onAddNode={handleAddStep} />
+            <SmartStartPanel
+              triggerType={definition.trigger.type}
+              steps={definition.steps}
+              onAddStep={handleAddStep}
+              onOpenTemplates={() => setShowTemplates(true)}
+              onAskAI={handleAskAI}
+            />
           </div>
         </aside>
 
@@ -223,11 +261,22 @@ export function AutomationEditorShell({
           </button>
         )}
 
-        {/* Right Sidebar - Inspector */}
+        {/* Right Sidebar - Inspector or AI Helper */}
         <aside className={cn("automation-editor-panel automation-editor-panel--right", rightCollapsed && "automation-editor-panel--collapsed")}>
           <div className="automation-editor-panel-header">
-            <span className="automation-editor-panel-title">
-              {selectedNodeId === "trigger" ? "Trigger" : selectedStep ? "Action" : "Inspector"}
+            <span className="automation-editor-panel-title flex items-center gap-2">
+              {showAIHelper ? (
+                <>
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  AI Assistant
+                </>
+              ) : selectedNodeId === "trigger" ? (
+                "Trigger"
+              ) : selectedStep ? (
+                "Configure"
+              ) : (
+                "Inspector"
+              )}
             </span>
             <button
               type="button"
@@ -238,18 +287,47 @@ export function AutomationEditorShell({
             </button>
           </div>
           <div className="automation-editor-panel-content">
-            <NodeInspector
-              selectedNodeId={selectedNodeId}
-              trigger={definition.trigger}
-              step={selectedStep}
-              onTriggerChange={handleTriggerChange}
-              onStepUpdate={handleStepUpdate}
-              onStepDelete={handleStepDelete}
-              teamId={teamId}
-            />
+            <AnimatePresence mode="wait">
+              {showAIHelper ? (
+                <motion.div
+                  key="ai-helper"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="h-full"
+                >
+                  <WorkflowAIHelper definition={definition} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="inspector"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <NodeInspector
+                    selectedNodeId={selectedNodeId}
+                    trigger={definition.trigger}
+                    step={selectedStep}
+                    onTriggerChange={handleTriggerChange}
+                    onStepUpdate={handleStepUpdate}
+                    onStepDelete={handleStepDelete}
+                    teamId={teamId}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </aside>
       </div>
+
+      {/* Template Gallery Modal */}
+      <TemplateGallery
+        open={showTemplates}
+        onOpenChange={setShowTemplates}
+        teamId={teamId}
+        onSelectTemplate={handleTemplateSelect}
+      />
     </div>
   );
 }
@@ -259,7 +337,7 @@ function getDefaultConfigForType(type: ActionType): Record<string, any> {
     case "send_message":
       return { channel: "sms", template: "" };
     case "time_delay":
-      return { duration: 5, unit: "minutes" };
+      return { delayValue: 5, delayType: "minutes" };
     case "add_tag":
       return { tag: "" };
     case "add_task":
