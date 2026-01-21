@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "next-themes";
 
@@ -29,6 +29,14 @@ import { EditorShell } from "./builder_v2/EditorShell";
 import { RuntimePage } from "./builder_v2/runtime";
 // Flow-canvas builder (new version)
 import FlowCanvasIndex from "./flow-canvas/pages/Index";
+
+// Legacy workflow route redirect component
+function LegacyWorkflowRedirect() {
+  const { teamId, automationId } = useParams();
+  const location = useLocation();
+  const targetId = automationId || "new";
+  return <Navigate to={`/team/${teamId}/workflows/${targetId}/edit${location.search}`} replace />;
+}
 // Dev-only funnel test route (dynamically imported so it is not included in production builds)
 let DevFunnelTest: React.LazyExoticComponent<any> | null = null;
 if (import.meta.env.DEV) {
@@ -87,6 +95,9 @@ const App = () => (
             
             {/* Automation Editor - Full screen, no team layout */}
             <Route path="/team/:teamId/workflows/:automationId/edit" element={<AutomationEditor />} />
+            {/* Legacy workflow routes - redirect to new structure */}
+            <Route path="/team/:teamId/workflows/edit/new" element={<LegacyWorkflowRedirect />} />
+            <Route path="/team/:teamId/workflows/edit/:automationId" element={<LegacyWorkflowRedirect />} />
 
             {/* Public routes - no auth required */}
             <Route path="/onboard/:token" element={<OnboardingForm />} />
