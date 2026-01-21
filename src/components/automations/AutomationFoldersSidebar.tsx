@@ -2,15 +2,9 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Folder, 
-  FolderOpen, 
-  Plus, 
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Sparkles,
-  FolderPlus
+import {
+  Plus, MoreHorizontal, Pencil, Trash2,
+  Folder, FolderOpen, FolderPlus, Inbox, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +19,9 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { toast } from "sonner";
 import { getIconComponent } from "@/components/IconPicker";
 
 interface AutomationFolder {
@@ -110,7 +104,7 @@ export function AutomationFoldersSidebar({
   };
 
   const handleDeleteFolder = (folder: AutomationFolder) => {
-    if (confirm(`Delete "${folder.name}"? Automations will be moved to "Uncategorized".`)) {
+    if (confirm(`Delete "${folder.name}"? Automations will be moved to Inbox.`)) {
       deleteMutation.mutate(folder.id);
     }
   };
@@ -119,8 +113,6 @@ export function AutomationFoldersSidebar({
     setCreateDialogOpen(false);
     setEditingFolder(null);
   };
-
-  
 
   const renderFolderIcon = (folder: AutomationFolder, isSelected: boolean) => {
     const colorClasses = FOLDER_COLORS[folder.color] || FOLDER_COLORS.blue;
@@ -151,6 +143,8 @@ export function AutomationFoldersSidebar({
     </>
   );
 
+  const isInboxSelected = selectedFolderId === "uncategorized" || selectedFolderId === null;
+
   return (
     <div className="w-60 border-r border-border bg-card/50 flex flex-col h-full">
       {/* Header */}
@@ -161,7 +155,7 @@ export function AutomationFoldersSidebar({
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
             <h3 className="text-sm font-semibold text-foreground">
-              Folders
+              Workflows
             </h3>
           </div>
           <Button
@@ -175,157 +169,188 @@ export function AutomationFoldersSidebar({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {/* Uncategorized */}
-        <motion.button
-          whileHover={{ x: 2 }}
-          onClick={() => onSelectFolder("uncategorized")}
-          className={cn(
-            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
-            "border-l-2 border-transparent",
-            selectedFolderId === "uncategorized" || selectedFolderId === null
-              ? "bg-muted border-l-muted-foreground text-foreground font-medium" 
-              : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <div className="p-1.5 rounded-md bg-muted">
-            <Folder className="h-3.5 w-3.5 text-muted-foreground" />
+      <div className="flex-1 overflow-y-auto">
+        {/* Folders Section */}
+        <div className="p-2">
+          <div className="px-2 py-1.5 mb-1">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Folders
+            </span>
           </div>
-          <span className="flex-1 text-left">Uncategorized</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-            {uncategorizedCount}
-          </span>
-        </motion.button>
 
-        {/* Separator */}
-        {folders.length > 0 && (
-          <div className="py-2">
-            <div className="h-px bg-border" />
+          {/* Folder List */}
+          <div className="space-y-0.5">
+            <AnimatePresence mode="popLayout">
+              {folders.map((folder) => {
+                const isSelected = selectedFolderId === folder.id;
+                const colorClasses = FOLDER_COLORS[folder.color] || FOLDER_COLORS.blue;
+                const count = automationCounts[folder.id] || 0;
+                
+                return (
+                  <ContextMenu key={folder.id}>
+                    <ContextMenuTrigger asChild>
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="group relative"
+                      >
+                        <motion.button
+                          whileHover={{ x: 2 }}
+                          onClick={() => onSelectFolder(folder.id)}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all",
+                            "border-l-2",
+                            isSelected 
+                              ? cn(colorClasses.bg, colorClasses.border, "text-foreground font-medium")
+                              : "border-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <div className={cn(
+                            "p-1.5 rounded-md transition-colors",
+                            isSelected ? colorClasses.bg : "bg-muted group-hover:bg-muted/80"
+                          )}>
+                            {renderFolderIcon(folder, isSelected)}
+                          </div>
+                          <span className="flex-1 text-left truncate">{folder.name}</span>
+                          <span className={cn(
+                            "text-xs px-2 py-0.5 rounded-full transition-colors",
+                            isSelected 
+                              ? cn(colorClasses.bg, colorClasses.text)
+                              : "bg-muted text-muted-foreground"
+                          )}>
+                            {count}
+                          </span>
+                        </motion.button>
+
+                        {/* Hover Actions */}
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6 hover:bg-background"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem onClick={() => handleEditFolder(folder)}>
+                                <Pencil className="h-3.5 w-3.5 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteFolder(folder)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </motion.div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <FolderContextMenuItems folder={folder} />
+                    </ContextMenuContent>
+                  </ContextMenu>
+                );
+              })}
+            </AnimatePresence>
+
+            {/* Empty Folders State */}
+            {folders.length === 0 && !isLoading && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="py-4 px-3 text-center"
+              >
+                <div className="mx-auto w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center mb-2">
+                  <FolderPlus className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Organize workflows
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCreateDialogOpen(true)}
+                  className="gap-1 text-xs h-7"
+                >
+                  <Plus className="h-3 w-3" />
+                  Create Folder
+                </Button>
+              </motion.div>
+            )}
+
+            {/* New Folder Button (when folders exist) */}
+            {folders.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground px-3 py-2 h-auto"
+                onClick={() => setCreateDialogOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New Folder
+              </Button>
+            )}
           </div>
-        )}
-
-        {/* Folder List */}
-        <AnimatePresence mode="popLayout">
-          {folders.map((folder) => {
-            const isSelected = selectedFolderId === folder.id;
-            const colorClasses = FOLDER_COLORS[folder.color] || FOLDER_COLORS.blue;
-            const count = automationCounts[folder.id] || 0;
-            
-            return (
-              <ContextMenu key={folder.id}>
-                <ContextMenuTrigger asChild>
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="group relative"
-                  >
-                    <motion.button
-                      whileHover={{ x: 2 }}
-                      onClick={() => onSelectFolder(folder.id)}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
-                        "border-l-2",
-                        isSelected 
-                          ? cn(colorClasses.bg, colorClasses.border, "text-foreground font-medium")
-                          : "border-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <div className={cn(
-                        "p-1.5 rounded-md transition-colors",
-                        isSelected ? colorClasses.bg : "bg-muted group-hover:bg-muted/80"
-                      )}>
-                        {renderFolderIcon(folder, isSelected)}
-                      </div>
-                      <span className="flex-1 text-left truncate">{folder.name}</span>
-                      <span className={cn(
-                        "text-xs px-2 py-0.5 rounded-full transition-colors",
-                        isSelected 
-                          ? cn(colorClasses.bg, colorClasses.text)
-                          : "bg-muted text-muted-foreground"
-                      )}>
-                        {count}
-                      </span>
-                    </motion.button>
-
-                    {/* Hover Actions */}
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 hover:bg-background"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem onClick={() => handleEditFolder(folder)}>
-                            <Pencil className="h-3.5 w-3.5 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteFolder(folder)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </motion.div>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <FolderContextMenuItems folder={folder} />
-                </ContextMenuContent>
-              </ContextMenu>
-            );
-          })}
-        </AnimatePresence>
-
-        {/* Empty State */}
-        {folders.length === 0 && !isLoading && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="py-8 px-4 text-center"
-          >
-            <div className="mx-auto w-12 h-12 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
-              <FolderPlus className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Organize your automations
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCreateDialogOpen(true)}
-              className="gap-1.5"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Create Folder
-            </Button>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Footer Create Button */}
-      {folders.length > 0 && (
-        <div className="p-3 border-t border-border">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            New Folder
-          </Button>
         </div>
-      )}
+
+        {/* Divider */}
+        <div className="mx-3 my-2 border-t border-border" />
+
+        {/* Inbox Section */}
+        <div className="p-2">
+          <div className="px-2 py-1.5 mb-1">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Inbox
+            </span>
+          </div>
+
+          <motion.button
+            whileHover={{ x: 2 }}
+            onClick={() => onSelectFolder("uncategorized")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
+              "border-l-2",
+              isInboxSelected
+                ? "bg-amber-500/10 border-l-amber-500 text-foreground font-medium" 
+                : "border-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <div className={cn(
+              "p-1.5 rounded-md transition-colors",
+              isInboxSelected ? "bg-amber-500/20" : "bg-muted"
+            )}>
+              <Inbox className={cn(
+                "h-4 w-4",
+                isInboxSelected ? "text-amber-500" : "text-muted-foreground"
+              )} />
+            </div>
+            <div className="flex-1 text-left">
+              <span className="block">Loose Automations</span>
+              <span className="text-xs text-muted-foreground">
+                Not in any folder
+              </span>
+            </div>
+            {uncategorizedCount > 0 && (
+              <span className={cn(
+                "text-xs px-2 py-0.5 rounded-full",
+                isInboxSelected 
+                  ? "bg-amber-500/20 text-amber-500"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {uncategorizedCount}
+              </span>
+            )}
+          </motion.button>
+        </div>
+      </div>
 
       <CreateFolderDialog
         open={createDialogOpen}
