@@ -88,18 +88,20 @@ export function AutomationsList({ teamId }: AutomationsListProps) {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center py-12 space-y-4"
+        className="flex items-center justify-between p-6 rounded-xl border border-border bg-card"
       >
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
-          <Zap className="h-8 w-8 text-primary" />
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Zap className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-medium text-foreground">No automations yet</h3>
+            <p className="text-sm text-muted-foreground">
+              Create your first automation to get started
+            </p>
+          </div>
         </div>
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium text-foreground">No automations yet</h3>
-          <p className="text-muted-foreground max-w-sm mx-auto">
-            Create your first automation using the prompt above or click the button below
-          </p>
-        </div>
-        <Button onClick={handleCreate} className="mt-4">
+        <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
           Create Automation
         </Button>
