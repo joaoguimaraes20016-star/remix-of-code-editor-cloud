@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger } from "@/lib/automations/types";
 import { TemplateGallery } from "./TemplateGallery";
+import { StartingOptionsModal } from "./StartingOptionsModal";
 import { WorkflowAIHelper } from "./WorkflowAIHelper";
 import { AutomationCanvasArea } from "./AutomationCanvasArea";
 import { NodeInspector } from "./NodeInspector";
@@ -27,6 +28,7 @@ interface AutomationEditorShellProps {
   onSave: () => void;
   onBack: () => void;
   isSaving?: boolean;
+  isNew?: boolean;
 }
 
 export function AutomationEditorShell({
@@ -38,8 +40,10 @@ export function AutomationEditorShell({
   onSave,
   onBack,
   isSaving,
+  isNew,
 }: AutomationEditorShellProps) {
   const [rightCollapsed, setRightCollapsed] = useState(true);
+  const [showStartingOptions, setShowStartingOptions] = useState(isNew ?? false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
 
@@ -279,6 +283,17 @@ export function AutomationEditorShell({
         onOpenChange={setShowTemplates}
         teamId={teamId}
         onSelectTemplate={handleTemplateSelect}
+      />
+
+      {/* Starting Options Modal (for new automations) */}
+      <StartingOptionsModal
+        open={showStartingOptions}
+        onOpenChange={setShowStartingOptions}
+        onSelectTemplate={() => {
+          setShowStartingOptions(false);
+          setShowTemplates(true);
+        }}
+        onStartScratch={() => setShowStartingOptions(false)}
       />
     </div>
   );
