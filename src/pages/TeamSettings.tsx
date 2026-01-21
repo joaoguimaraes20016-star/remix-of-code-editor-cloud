@@ -384,7 +384,7 @@ export default function TeamSettings() {
                 {members.map((member) => (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors border border-border"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">

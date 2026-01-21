@@ -189,36 +189,26 @@ export default function TeamHub() {
                   .map((action) => (
                   <Card 
                     key={action.label}
-                    className={cn(
-                      "group cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 border-0"
-                    )}
+                    className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border"
                     onClick={action.onClick}
                   >
-                    <CardContent className={cn(
-                      "p-0 relative"
-                    )}>
-                      <div className={cn(
-                        "absolute inset-0 bg-gradient-to-br opacity-90",
-                        action.gradient
-                      )} />
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-                      <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-                      
-                      <div className="relative p-5">
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:scale-110 transition-transform">
-                            <action.icon className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-white group-hover:translate-x-1 transition-transform">
-                              {action.label}
-                            </h3>
-                            <p className="text-sm text-white/70 truncate">
-                              {action.description}
-                            </p>
-                          </div>
-                          <ChevronRight className="h-5 w-5 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "p-3 rounded-xl bg-gradient-to-br group-hover:scale-110 transition-transform",
+                          action.gradient
+                        )}>
+                          <action.icon className="h-5 w-5 text-white" />
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-foreground group-hover:translate-x-1 transition-transform">
+                            {action.label}
+                          </h3>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {action.description}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
                       </div>
                     </CardContent>
                   </Card>
