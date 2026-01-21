@@ -20,24 +20,16 @@ export default function Workflows() {
   }
 
   const handleQuickStart = (triggerType: TriggerType) => {
-    // Navigate to editor with pre-selected trigger
     navigate(`/team/${teamId}/workflows/new/edit?trigger=${triggerType}`);
   };
 
   const handleCreateFromPrompt = (prompt: string) => {
-    // For now, navigate to new automation - AI processing can be added later
     navigate(`/team/${teamId}/workflows/new/edit`);
   };
 
   return (
     <div className="p-6 space-y-8 max-w-5xl mx-auto">
-      {/* Hero Prompt Section */}
-      <AutomationHeroPrompt 
-        onQuickStart={handleQuickStart}
-        onCreateFromPrompt={handleCreateFromPrompt}
-      />
-
-      {/* Simplified Tabs */}
+      {/* Simplified Tabs - Automations list comes first */}
       <Tabs defaultValue="automations" className="space-y-6">
         <TabsList className="bg-muted/50">
           <TabsTrigger value="automations" className="gap-2">
@@ -55,8 +47,17 @@ export default function Workflows() {
         </TabsList>
 
         {/* Automations Tab */}
-        <TabsContent value="automations" className="space-y-4">
+        <TabsContent value="automations" className="space-y-8">
+          {/* Automations List First */}
           <AutomationsList teamId={teamId} />
+          
+          {/* Hero Prompt Below */}
+          <div className="pt-4 border-t border-border">
+            <AutomationHeroPrompt 
+              onQuickStart={handleQuickStart}
+              onCreateFromPrompt={handleCreateFromPrompt}
+            />
+          </div>
         </TabsContent>
 
         {/* Activity Tab - Combines History + Messages */}
