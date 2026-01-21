@@ -3,8 +3,9 @@
 import type { AutomationContext, AutomationStep } from "../types.ts";
 
 interface TimeDelayConfig {
-  duration: number;
-  unit: "minutes" | "hours" | "days";
+  duration?: number;
+  unit?: "minutes" | "hours" | "days";
+  [key: string]: unknown;
 }
 
 /**
@@ -87,13 +88,14 @@ export async function executeTimeDelay(
 /**
  * Calculate next resume time for wait_until action
  */
-export function calculateWaitUntilTime(config: { type: string; value: string }): Date {
+export function calculateWaitUntilTime(config: { type?: string; value?: string; [key: string]: unknown }): Date {
   const now = new Date();
 
   switch (config.type) {
     case "specific_time": {
       // value is HH:MM format
-      const [hours, minutes] = config.value.split(":").map(Number);
+      const value = config.value || "09:00";
+      const [hours, minutes] = value.split(":").map(Number);
       const target = new Date(now);
       target.setHours(hours, minutes, 0, 0);
       // If time already passed today, schedule for tomorrow
@@ -104,7 +106,8 @@ export function calculateWaitUntilTime(config: { type: string; value: string }):
     }
     case "day_of_week": {
       // value is 0-6 (Sunday = 0)
-      const targetDay = parseInt(config.value, 10);
+      const value = config.value || "1";
+      const targetDay = parseInt(value, 10);
       const daysUntil = (targetDay - now.getDay() + 7) % 7 || 7;
       const target = new Date(now);
       target.setDate(target.getDate() + daysUntil);

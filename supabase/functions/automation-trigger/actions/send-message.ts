@@ -3,13 +3,14 @@
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
 
 interface SendMessageConfig {
-  channel: "sms" | "email" | "voice";
+  channel?: "sms" | "email" | "voice";
   template?: string;
   body?: string;
   subject?: string;
   to?: string;
   fromName?: string;
   replyTo?: string;
+  [key: string]: unknown;
 }
 
 export async function executeSendMessage(

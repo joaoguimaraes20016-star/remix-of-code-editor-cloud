@@ -2,15 +2,19 @@
 
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
 
+// Flexible config type to allow Record<string, any> from step.config
+type FlexibleConfig = Record<string, unknown>;
+
 // Create Task
 export async function executeAddTask(
-  config: { title: string; description?: string; assignTo?: string; dueIn?: number; dueUnit?: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
+  const title = config.title as string | undefined;
 
-  if (!config.title) {
+  if (!title) {
     log.status = "skipped";
     log.skipReason = "no_task_title";
     return log;
@@ -19,28 +23,31 @@ export async function executeAddTask(
   try {
     // Calculate due date
     let dueAt: Date | null = null;
-    if (config.dueIn && config.dueUnit) {
+    const dueIn = config.dueIn as number | undefined;
+    const dueUnit = config.dueUnit as string | undefined;
+    if (dueIn && dueUnit) {
       const now = new Date();
-      switch (config.dueUnit) {
+      switch (dueUnit) {
         case "hours":
-          dueAt = new Date(now.getTime() + config.dueIn * 60 * 60 * 1000);
+          dueAt = new Date(now.getTime() + dueIn * 60 * 60 * 1000);
           break;
         case "days":
-          dueAt = new Date(now.getTime() + config.dueIn * 24 * 60 * 60 * 1000);
+          dueAt = new Date(now.getTime() + dueIn * 24 * 60 * 60 * 1000);
           break;
         default:
-          dueAt = new Date(now.getTime() + config.dueIn * 60 * 60 * 1000);
+          dueAt = new Date(now.getTime() + dueIn * 60 * 60 * 1000);
       }
     }
 
     // Resolve assignee
+    const assignTo = config.assignTo as string | undefined;
     let assignedTo: string | null = null;
-    if (config.assignTo === "setter") {
+    if (assignTo === "setter") {
       assignedTo = context.appointment?.setter_id || null;
-    } else if (config.assignTo === "closer") {
+    } else if (assignTo === "closer") {
       assignedTo = context.appointment?.closer_id || null;
-    } else if (config.assignTo) {
-      assignedTo = config.assignTo;
+    } else if (assignTo) {
+      assignedTo = assignTo;
     }
 
     const { data, error } = await supabase
@@ -53,7 +60,7 @@ export async function executeAddTask(
           status: "pending",
           due_at: dueAt?.toISOString() || new Date().toISOString(),
           assigned_to: assignedTo,
-          pipeline_stage: config.title, // Using pipeline_stage to store task title
+          pipeline_stage: title, // Using pipeline_stage to store task title
         },
       ])
       .select("id")
@@ -75,15 +82,16 @@ export async function executeAddTask(
 
 // Notify Team
 export async function executeNotifyTeam(
-  config: { message: string; notifyAdmin?: boolean; notifyOwner?: boolean },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
   automationId: string,
   runId: string | null,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
+  const message = config.message as string | undefined;
 
-  if (!config.message) {
+  if (!message) {
     log.status = "skipped";
     log.skipReason = "no_message_content";
     return log;
@@ -91,12 +99,14 @@ export async function executeNotifyTeam(
 
   try {
     // Render message with context
-    const renderedMessage = config.message.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
+    const renderedMessage = message.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
       const value = getFieldValue(context, path.trim());
       return value !== undefined ? String(value) : match;
     });
 
     // Log as in-app notification in message_logs
+    const notifyAdmin = config.notifyAdmin as boolean | undefined;
+    const notifyOwner = config.notifyOwner as boolean | undefined;
     const { error } = await supabase.from("message_logs").insert([
       {
         team_id: context.teamId,
@@ -104,11 +114,11 @@ export async function executeNotifyTeam(
         run_id: runId,
         channel: "in_app",
         provider: "internal",
-        to_address: config.notifyAdmin ? "admin" : "team",
+        to_address: notifyAdmin ? "admin" : "team",
         payload: {
           message: renderedMessage,
-          notifyAdmin: config.notifyAdmin,
-          notifyOwner: config.notifyOwner,
+          notifyAdmin,
+          notifyOwner,
           leadId: context.lead?.id,
           appointmentId: context.appointment?.id,
         },
@@ -130,12 +140,13 @@ export async function executeNotifyTeam(
 
 // Custom Webhook
 export async function executeCustomWebhook(
-  config: { url: string; method?: string; headers?: Record<string, string>; payload?: string },
+  config: FlexibleConfig,
   context: AutomationContext,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
+  const url = config.url as string | undefined;
 
-  if (!config.url) {
+  if (!url) {
     log.status = "skipped";
     log.skipReason = "no_webhook_url";
     return log;
@@ -143,10 +154,11 @@ export async function executeCustomWebhook(
 
   try {
     // Parse and render payload
+    const configPayload = config.payload as string | undefined;
     let body: string | undefined;
-    if (config.payload) {
+    if (configPayload) {
       // Replace template variables in payload
-      body = config.payload.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
+      body = configPayload.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
         const value = getFieldValue(context, path.trim());
         return value !== undefined ? JSON.stringify(value) : match;
       });
@@ -162,11 +174,13 @@ export async function executeCustomWebhook(
       });
     }
 
-    const response = await fetch(config.url, {
-      method: config.method || "POST",
+    const method = (config.method as string) || "POST";
+    const headers = config.headers as Record<string, string> | undefined;
+    const response = await fetch(url, {
+      method,
       headers: {
         "Content-Type": "application/json",
-        ...config.headers,
+        ...headers,
       },
       body,
     });
@@ -187,13 +201,14 @@ export async function executeCustomWebhook(
 
 // Run Another Workflow
 export async function executeRunWorkflow(
-  config: { workflowId: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
+  const workflowId = config.workflowId as string | undefined;
 
-  if (!config.workflowId) {
+  if (!workflowId) {
     log.status = "skipped";
     log.skipReason = "no_workflow_specified";
     return log;
@@ -204,7 +219,7 @@ export async function executeRunWorkflow(
     const { data: workflow, error: fetchError } = await supabase
       .from("automations")
       .select("*")
-      .eq("id", config.workflowId)
+      .eq("id", workflowId)
       .eq("is_active", true)
       .single();
 
@@ -233,7 +248,7 @@ export async function executeRunWorkflow(
           deal: context.deal,
           meta: { ...context.meta, triggeredByWorkflow: true },
         },
-        eventId: `run_workflow:${config.workflowId}:${Date.now()}`,
+        eventId: `run_workflow:${workflowId}:${Date.now()}`,
       }),
     });
 
@@ -241,7 +256,7 @@ export async function executeRunWorkflow(
       log.status = "error";
       log.error = `Failed to trigger workflow: HTTP ${response.status}`;
     } else {
-      log.output = { triggeredWorkflowId: config.workflowId };
+      log.output = { triggeredWorkflowId: workflowId };
     }
   } catch (err) {
     log.status = "error";
@@ -253,22 +268,24 @@ export async function executeRunWorkflow(
 
 // Stop Workflow
 export function executeStopWorkflow(
-  config: { reason?: string },
+  config: FlexibleConfig,
 ): { shouldStop: true; reason: string } {
+  const reason = (config.reason as string) || "stop_workflow action";
   return {
     shouldStop: true,
-    reason: config.reason || "stop_workflow action",
+    reason,
   };
 }
 
 // Go To (jump to another step)
 export function executeGoTo(
-  config: { targetStepId: string },
+  config: FlexibleConfig,
 ): { jumpTo: string } | null {
-  if (!config.targetStepId) {
+  const targetStepId = config.targetStepId as string | undefined;
+  if (!targetStepId) {
     return null;
   }
-  return { jumpTo: config.targetStepId };
+  return { jumpTo: targetStepId };
 }
 
 // Helper function
