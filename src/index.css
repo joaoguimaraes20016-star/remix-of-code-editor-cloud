@@ -82,14 +82,14 @@
     --chart-4: 210 85% 48%;
     --chart-5: 30 80% 50%;
 
-    /* Sidebar - Dark slate */
-    --sidebar-background: 223 22% 14%;
-    --sidebar-foreground: 210 20% 96%;
+    /* Sidebar - White/Light */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 15% 15%;
     --sidebar-primary: 350 90% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 350 90% 62%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 223 18% 22%;
+    --sidebar-border: 220 14% 90%;
     --sidebar-ring: 350 90% 62%;
     
     /* Builder-specific tokens - neutral dark, no gradients */
@@ -158,14 +158,14 @@
     --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
     --shadow-hover: 0 8px 30px hsl(var(--primary) / 0.1);
 
-    /* Sidebar - Dark slate */
-    --sidebar-background: 223 22% 14%;
-    --sidebar-foreground: 210 20% 96%;
+    /* Sidebar - White/Light (same in dark mode for consistency) */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 15% 15%;
     --sidebar-primary: 350 90% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 350 90% 62%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 223 18% 22%;
+    --sidebar-border: 220 14% 90%;
     --sidebar-ring: 350 90% 62%;
   }
 
