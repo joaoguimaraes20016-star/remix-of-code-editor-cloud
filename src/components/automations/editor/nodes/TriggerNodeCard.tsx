@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import { 
-  Zap, ChevronRight, UserPlus, Tag, Calendar, CalendarClock, 
+  Zap, Check, AlertCircle, UserPlus, Tag, Calendar, CalendarClock, 
   UserX, CalendarCheck, CalendarX, ArrowRightLeft, Briefcase, 
-  Trophy, XCircle, DollarSign, AlertCircle, Webhook, Play, 
+  Trophy, XCircle, DollarSign, Webhook, Play, 
   Clock, Timer, FileText
 } from "lucide-react";
 import type { AutomationTrigger, TriggerType } from "@/lib/automations/types";
@@ -22,7 +22,6 @@ interface TriggerDisplay {
 }
 
 const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
-  // Lead triggers
   lead_created: { 
     label: "Lead Created", 
     icon: <UserPlus className="h-5 w-5" />, 
@@ -47,7 +46,6 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-blue-400", 
     bgColor: "bg-blue-500/20" 
   },
-  // Appointment triggers
   appointment_booked: { 
     label: "Appointment Booked", 
     icon: <Calendar className="h-5 w-5" />, 
@@ -78,7 +76,6 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-gray-400", 
     bgColor: "bg-gray-500/20" 
   },
-  // Pipeline triggers
   stage_changed: { 
     label: "Stage Changed", 
     icon: <ArrowRightLeft className="h-5 w-5" />, 
@@ -103,7 +100,6 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-red-400", 
     bgColor: "bg-red-500/20" 
   },
-  // Payment triggers
   payment_received: { 
     label: "Payment Received", 
     icon: <DollarSign className="h-5 w-5" />, 
@@ -116,7 +112,6 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-red-400", 
     bgColor: "bg-red-500/20" 
   },
-  // Integration triggers
   webhook_received: { 
     label: "Webhook Received", 
     icon: <Webhook className="h-5 w-5" />, 
@@ -143,6 +138,23 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
   },
 };
 
+// Check if trigger has required configuration
+function isTriggerConfigured(trigger: AutomationTrigger): boolean {
+  // Most triggers work without additional config
+  // Specific triggers that need config:
+  switch (trigger.type) {
+    case 'webhook_received':
+      return !!trigger.config?.webhookId;
+    case 'scheduled_trigger':
+      return !!trigger.config?.schedule;
+    case 'lead_tag_added':
+    case 'lead_tag_removed':
+      return !!trigger.config?.tagName;
+    default:
+      return true;
+  }
+}
+
 export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCardProps) {
   const display = TRIGGER_DISPLAY[trigger.type] || {
     label: trigger.type,
@@ -151,27 +163,52 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCa
     bgColor: "bg-purple-500/20",
   };
 
+  const isConfigured = isTriggerConfigured(trigger);
+
   return (
     <motion.button
       onClick={onSelect}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "w-72 rounded-xl border transition-all",
-        "bg-gradient-to-br from-[#1a1a2e] to-[#16162a]",
-        isSelected ? "border-primary ring-2 ring-primary/30" : "border-white/10 hover:border-white/20"
+        "relative w-80 rounded-2xl border transition-all shadow-lg",
+        "bg-gradient-to-br from-primary/20 to-primary/5",
+        isSelected 
+          ? "border-primary ring-2 ring-primary/30 shadow-primary/20" 
+          : "border-primary/30 hover:border-primary/50 hover:shadow-xl"
       )}
     >
-      <div className="flex items-center gap-3 p-4">
-        <div className={cn("p-2 rounded-lg", display.bgColor)}>
+      {/* Status Indicator */}
+      <div className={cn(
+        "absolute -right-1 -top-1 w-5 h-5 rounded-full flex items-center justify-center",
+        isConfigured ? "bg-green-500/20" : "bg-yellow-500/20"
+      )}>
+        {isConfigured ? (
+          <Check className="h-3 w-3 text-green-400" />
+        ) : (
+          <AlertCircle className="h-3 w-3 text-yellow-400" />
+        )}
+      </div>
+
+      <div className="flex items-center gap-4 p-5">
+        {/* Icon */}
+        <div className={cn("p-3 rounded-xl", display.bgColor)}>
           <span className={display.color}>{display.icon}</span>
         </div>
+
+        {/* Content */}
         <div className="flex-1 text-left">
-          <div className="text-xs text-white/50 uppercase tracking-wide">Trigger</div>
-          <div className="text-white font-medium flex items-center gap-2">
-            {display.label}
-            <ChevronRight className="h-4 w-4 text-white/40" />
+          <div className="text-xs text-primary/70 uppercase tracking-wide font-medium mb-1">
+            When this happens
           </div>
+          <div className="text-white font-medium text-lg">
+            {display.label}
+          </div>
+        </div>
+
+        {/* Trigger Badge */}
+        <div className="px-2 py-1 rounded-lg bg-primary/20 text-xs font-medium text-primary">
+          Trigger
         </div>
       </div>
     </motion.button>

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { 
   MessageSquare, Clock, Tag, ClipboardList, UserCheck, ArrowRightLeft, 
-  Bell, Webhook, ChevronRight, GitBranch, UserPlus, UserCog, StickyNote,
+  Bell, Webhook, Check, AlertCircle, GitBranch, UserPlus, UserCog, StickyNote,
   Briefcase, CheckCircle, CalendarClock, Building2, Split, CornerDownRight,
   PlayCircle, StopCircle, Phone
 } from "lucide-react";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 interface ActionNodeCardProps {
   step: AutomationStep;
+  stepNumber: number;
   isSelected: boolean;
   onSelect: () => void;
 }
@@ -22,7 +23,6 @@ interface ActionDisplay {
 }
 
 const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
-  // Messaging
   send_message: { 
     label: "Send Message", 
     icon: <MessageSquare className="h-4 w-4" />, 
@@ -35,7 +35,6 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-yellow-400", 
     bgColor: "bg-yellow-500/20" 
   },
-  // CRM Actions
   add_tag: { 
     label: "Add Tag", 
     icon: <Tag className="h-4 w-4" />, 
@@ -78,7 +77,6 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-cyan-400", 
     bgColor: "bg-cyan-500/20" 
   },
-  // Pipeline Actions
   update_stage: { 
     label: "Update Stage", 
     icon: <ArrowRightLeft className="h-4 w-4" />, 
@@ -97,7 +95,6 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-rose-400", 
     bgColor: "bg-rose-500/20" 
   },
-  // Flow Control
   time_delay: { 
     label: "Wait", 
     icon: <Clock className="h-4 w-4" />, 
@@ -146,7 +143,6 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-red-500", 
     bgColor: "bg-red-500/20" 
   },
-  // Integrations
   custom_webhook: { 
     label: "Webhook", 
     icon: <Webhook className="h-4 w-4" />, 
@@ -161,53 +157,107 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   },
 };
 
+// Check if step is properly configured
+function isStepConfigured(step: AutomationStep): boolean {
+  switch (step.type) {
+    case 'send_message':
+      return !!(step.config?.template && step.config?.channel);
+    case 'time_delay':
+      return !!(step.config?.delayValue && step.config?.delayType);
+    case 'add_tag':
+    case 'remove_tag':
+      return !!step.config?.tag;
+    case 'add_task':
+      return !!step.config?.title;
+    case 'notify_team':
+      return !!step.config?.message;
+    case 'condition':
+      return (step.conditions?.length || 0) > 0 || (step.conditionGroups?.length || 0) > 0;
+    case 'custom_webhook':
+      return !!step.config?.url;
+    default:
+      return true;
+  }
+}
+
 // Get a preview text based on the step configuration
 function getStepPreview(step: AutomationStep): string {
   switch (step.type) {
     case 'send_message':
-      return step.config?.channel 
-        ? `via ${step.config.channel.toUpperCase()}` 
-        : 'Click to configure';
+      if (step.config?.template) {
+        const template = step.config.template;
+        return template.length > 40 ? `"${template.substring(0, 40)}..."` : `"${template}"`;
+      }
+      return step.config?.channel ? `via ${step.config.channel.toUpperCase()}` : 'Click to configure';
     case 'time_delay':
       if (step.config?.delayValue && step.config?.delayType) {
         return `Wait ${step.config.delayValue} ${step.config.delayType}`;
       }
-      return 'Click to configure';
+      return 'Set delay duration';
     case 'add_tag':
+      return step.config?.tag ? `"${step.config.tag}"` : 'Choose a tag';
     case 'remove_tag':
-      return step.config?.tag || 'Click to configure';
+      return step.config?.tag ? `Remove "${step.config.tag}"` : 'Choose a tag';
+    case 'add_task':
+      return step.config?.title ? `"${step.config.title}"` : 'Set task details';
+    case 'notify_team':
+      return step.config?.message ? `"${step.config.message.substring(0, 30)}..."` : 'Set notification';
     case 'condition':
       const count = step.conditions?.length || step.conditionGroups?.length || 0;
-      return count > 0 ? `${count} condition${count !== 1 ? 's' : ''}` : 'Click to configure';
+      return count > 0 ? `${count} condition${count !== 1 ? 's' : ''}` : 'Add conditions';
+    case 'custom_webhook':
+      return step.config?.url ? step.config.url.substring(0, 30) + '...' : 'Configure webhook';
     default:
       return 'Click to configure';
   }
 }
 
-export function ActionNodeCard({ step, isSelected, onSelect }: ActionNodeCardProps) {
+export function ActionNodeCard({ step, stepNumber, isSelected, onSelect }: ActionNodeCardProps) {
   const display = ACTION_DISPLAY[step.type] || ACTION_DISPLAY.send_message;
   const preview = getStepPreview(step);
+  const isConfigured = isStepConfigured(step);
 
   return (
     <motion.button
       onClick={onSelect}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "w-72 rounded-xl border transition-all",
-        "bg-gradient-to-br from-[#1a1a2e] to-[#16162a]",
-        isSelected ? "border-primary ring-2 ring-primary/30" : "border-white/10 hover:border-white/20"
+        "relative w-80 rounded-2xl border transition-all shadow-lg",
+        "bg-gradient-to-br from-[#1e1e2e] to-[#16162a]",
+        isSelected 
+          ? "border-primary ring-2 ring-primary/30 shadow-primary/20" 
+          : "border-white/10 hover:border-white/25 hover:shadow-xl"
       )}
     >
-      <div className="flex items-center gap-3 p-4">
-        <div className={cn("p-2 rounded-lg", display.bgColor)}>
+      {/* Step Number Badge */}
+      <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs font-medium text-white/70">
+        {stepNumber}
+      </div>
+
+      {/* Status Indicator */}
+      <div className={cn(
+        "absolute -right-1 -top-1 w-5 h-5 rounded-full flex items-center justify-center",
+        isConfigured ? "bg-green-500/20" : "bg-yellow-500/20"
+      )}>
+        {isConfigured ? (
+          <Check className="h-3 w-3 text-green-400" />
+        ) : (
+          <AlertCircle className="h-3 w-3 text-yellow-400" />
+        )}
+      </div>
+
+      <div className="flex items-start gap-4 p-5">
+        {/* Icon */}
+        <div className={cn("p-3 rounded-xl", display.bgColor)}>
           <span className={display.color}>{display.icon}</span>
         </div>
-        <div className="flex-1 text-left">
-          <div className="text-white font-medium">{display.label}</div>
-          <div className="text-xs text-white/50 truncate">{preview}</div>
+
+        {/* Content */}
+        <div className="flex-1 text-left min-w-0">
+          <div className="text-white font-medium mb-1">{display.label}</div>
+          <div className="text-sm text-white/50 truncate">{preview}</div>
         </div>
-        <ChevronRight className="h-4 w-4 text-white/40" />
       </div>
     </motion.button>
   );
