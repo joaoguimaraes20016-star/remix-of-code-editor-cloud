@@ -36,76 +36,76 @@ interface SectionPickerProps {
   onAddSection: (node: CanvasNode) => void;
 }
 
-// Category definitions matching Perspective
+// Category definitions - Blue-unified color palette
 const sectionCategories = [
   { 
     id: 'hero', 
     name: 'Hero', 
     icon: Sparkles,
-    color: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+    color: 'bg-gradient-to-br from-blue-500 to-blue-600',
     templates: ['hero-simple', 'hero-button', 'hero-card-image']
   },
   { 
     id: 'product', 
     name: 'Product', 
     icon: LayoutGrid,
-    color: 'bg-gradient-to-br from-purple-500 to-pink-500',
+    color: 'bg-gradient-to-br from-indigo-500 to-blue-500',
     templates: ['features-list', 'content-heading-text']
   },
   { 
     id: 'cta', 
     name: 'Call to action', 
     icon: MousePointerClick,
-    color: 'bg-gradient-to-br from-orange-400 to-red-500',
+    color: 'bg-gradient-to-br from-blue-400 to-cyan-500',
     templates: ['cta-simple', 'cta-text']
   },
   { 
     id: 'about', 
     name: 'About us', 
     icon: Users,
-    color: 'bg-gradient-to-br from-teal-400 to-cyan-500',
+    color: 'bg-gradient-to-br from-cyan-500 to-teal-500',
     templates: ['content-text', 'content-heading-text']
   },
   { 
     id: 'quiz', 
     name: 'Quiz', 
     icon: HelpCircle,
-    color: 'bg-gradient-to-br from-yellow-400 to-orange-500',
+    color: 'bg-gradient-to-br from-sky-400 to-blue-500',
     templates: ['form-multi-choice']
   },
   { 
     id: 'team', 
     name: 'Team', 
     icon: Users,
-    color: 'bg-gradient-to-br from-green-400 to-emerald-500',
+    color: 'bg-gradient-to-br from-emerald-500 to-teal-500',
     templates: ['content-heading-text']
   },
   { 
     id: 'testimonials', 
     name: 'Testimonials', 
     icon: Quote,
-    color: 'bg-gradient-to-br from-pink-400 to-rose-500',
+    color: 'bg-gradient-to-br from-blue-400 to-indigo-500',
     templates: ['social-badges']
   },
   { 
     id: 'trust', 
     name: 'Trust', 
     icon: Shield,
-    color: 'bg-gradient-to-br from-slate-500 to-slate-700',
+    color: 'bg-gradient-to-br from-slate-500 to-slate-600',
     templates: ['social-badges', 'features-list']
   },
   { 
     id: 'media', 
     name: 'Media', 
     icon: Video,
-    color: 'bg-gradient-to-br from-red-500 to-rose-600',
+    color: 'bg-gradient-to-br from-sky-500 to-blue-600',
     templates: ['media-video', 'media-image']
   },
   { 
     id: 'form', 
     name: 'Form', 
     icon: Mail,
-    color: 'bg-gradient-to-br from-blue-400 to-blue-600',
+    color: 'bg-gradient-to-br from-blue-500 to-blue-600',
     templates: ['form-email', 'form-phone', 'form-full', 'form-calendar', 'legal-consent', 'legal-optin']
   },
 ];
@@ -366,7 +366,7 @@ export function SectionPicker({ onAddSection }: SectionPickerProps) {
                 expandedBlock === 'interactive' ? "bg-slate-100" : "hover:bg-slate-50"
               )}
             >
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
                 <Sparkles size={14} />
               </div>
               <span className="flex-1 text-left text-sm font-medium text-slate-700">Interactive blocks</span>
