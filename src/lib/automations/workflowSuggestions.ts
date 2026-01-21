@@ -8,7 +8,7 @@ export interface SuggestedAction {
 }
 
 // Context-aware suggestions based on trigger type
-const TRIGGER_SUGGESTIONS: Record<TriggerType, SuggestedAction[]> = {
+const TRIGGER_SUGGESTIONS: Partial<Record<TriggerType, SuggestedAction[]>> = {
   appointment_booked: [
     { type: "send_message", label: "Send Confirmation", description: "Confirm the booking via SMS", priority: 1 },
     { type: "time_delay", label: "Wait Before Reminder", description: "Add a delay before sending reminder", priority: 2 },
@@ -95,7 +95,7 @@ const TRIGGER_SUGGESTIONS: Record<TriggerType, SuggestedAction[]> = {
 };
 
 // Suggestions based on last action in the workflow
-const AFTER_ACTION_SUGGESTIONS: Record<ActionType, SuggestedAction[]> = {
+const AFTER_ACTION_SUGGESTIONS: Partial<Record<ActionType, SuggestedAction[]>> = {
   send_message: [
     { type: "time_delay", label: "Wait for Response", description: "Give time before next action", priority: 1 },
     { type: "condition", label: "Check Response", description: "Branch based on reply", priority: 2 },
