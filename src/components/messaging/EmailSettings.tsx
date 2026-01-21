@@ -158,20 +158,24 @@ export function EmailSettings({ teamId }: EmailSettingsProps) {
         <p className="text-muted-foreground">Configure email sending domains and settings</p>
       </div>
 
-      {/* Stackit Default Email */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardHeader className="pb-4">
+      {/* Stackit Default Email - Gradient Hero Card */}
+      <Card className="relative overflow-hidden border-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-indigo-600" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+        
+        <CardHeader className="relative pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
-                <Sparkles className="h-5 w-5 text-primary" />
+              <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2 text-white">
                   Stackit Email
-                  <Badge variant="secondary" className="text-xs">Default</Badge>
+                  <Badge className="bg-white/20 text-white border-white/30 text-xs">Default</Badge>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-white/70">
                   Send emails instantly from our shared sending infrastructure
                 </CardDescription>
               </div>
@@ -179,46 +183,49 @@ export function EmailSettings({ teamId }: EmailSettingsProps) {
             <Switch
               checked={teamSettings?.stackit_email_enabled ?? true}
               onCheckedChange={(checked) => updateSettings.mutate({ stackit_email_enabled: checked })}
+              className="data-[state=checked]:bg-white/30"
             />
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 rounded-lg bg-background/50 border border-border">
+        <CardContent className="relative space-y-4">
+          <div className="p-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
             <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Sending Address</span>
+              <Shield className="h-4 w-4 text-white/70" />
+              <span className="text-sm font-medium text-white">Sending Address</span>
             </div>
-            <p className="font-mono text-sm text-foreground bg-muted/50 px-3 py-2 rounded-md">
+            <p className="font-mono text-sm text-white bg-white/10 px-3 py-2 rounded-md">
               {teamSettings?.default_from_name || "Your Company"} &lt;noreply@notifications.usestackit.co&gt;
             </p>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-white/60 mt-2">
               Pre-warmed domain with excellent deliverability. Great for getting started quickly.
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="fromName">Default From Name</Label>
+              <Label htmlFor="fromName" className="text-white/90">Default From Name</Label>
               <Input
                 id="fromName"
                 placeholder="Your Company Name"
                 defaultValue={teamSettings?.default_from_name || ""}
                 onBlur={(e) => updateSettings.mutate({ default_from_name: e.target.value })}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/60">
                 Displayed as the sender name in recipient inboxes
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="replyTo">Default Reply-To</Label>
+              <Label htmlFor="replyTo" className="text-white/90">Default Reply-To</Label>
               <Input
                 id="replyTo"
                 type="email"
                 placeholder="hello@yourcompany.com"
                 defaultValue={teamSettings?.default_reply_to || ""}
                 onBlur={(e) => updateSettings.mutate({ default_reply_to: e.target.value })}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/60">
                 Replies will be sent to this address
               </p>
             </div>
@@ -226,28 +233,33 @@ export function EmailSettings({ teamId }: EmailSettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Custom Domains */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      {/* Custom Domains - Teal Gradient Header */}
+      <Card className="overflow-hidden">
+        <CardHeader className="relative bg-gradient-to-r from-teal-500 to-cyan-500 text-white">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="flex items-center justify-between relative">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-muted border">
-                <Globe className="h-5 w-5 text-muted-foreground" />
+              <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
+                <Globe className="h-5 w-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-lg">Custom Sending Domains</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg text-white">Custom Sending Domains</CardTitle>
+                <CardDescription className="text-white/70">
                   Send emails from your own branded domain for better deliverability and trust
                 </CardDescription>
               </div>
             </div>
-            <Button onClick={() => setAddDomainOpen(true)} size="sm">
+            <Button 
+              onClick={() => setAddDomainOpen(true)} 
+              size="sm"
+              className="bg-white text-teal-600 hover:bg-white/90"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Domain
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {domainsLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading domains...</div>
           ) : domains && domains.length > 0 ? (

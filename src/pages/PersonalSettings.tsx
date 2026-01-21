@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { 
   Camera, Loader2, Save, Phone, User, Mail, Bell, 
-  Video, Calendar, Link2, CheckCircle2, XCircle, Settings, Moon, Sun, Monitor
+  Link2, CheckCircle2, Settings, Sun
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -144,10 +144,10 @@ export default function PersonalSettings() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 sm:p-6 max-w-4xl space-y-6">
-        {/* Header */}
+        {/* Header with Gradient Icon */}
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-            <Settings className="h-5 w-5 text-primary" />
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600">
+            <Settings className="h-5 w-5 text-white" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Settings</h1>
@@ -155,30 +155,22 @@ export default function PersonalSettings() {
           </div>
         </div>
 
-        {/* Profile Section */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">My Account</CardTitle>
-            </div>
-            <CardDescription>Your personal information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Avatar */}
+        {/* Profile Section - Gradient Header */}
+        <Card className="overflow-hidden border-border/50">
+          <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white pb-6">
             <div className="flex items-center gap-4">
               <div className="relative">
-                <Avatar className="h-16 w-16 border-2 border-border">
+                <Avatar className="h-20 w-20 border-4 border-white/20 ring-2 ring-white/10">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+                  <AvatarFallback className="bg-white/20 text-white text-xl font-semibold">
                     {getInitials(profile?.full_name || profile?.email || "U")}
                   </AvatarFallback>
                 </Avatar>
-                <label className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-secondary border border-border flex items-center justify-center cursor-pointer hover:bg-muted transition-colors">
+                <label className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-white border-2 border-purple-500 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors shadow-lg">
                   {uploading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
                   ) : (
-                    <Camera className="h-3.5 w-3.5" />
+                    <Camera className="h-4 w-4 text-purple-600" />
                   )}
                   <input
                     type="file"
@@ -189,13 +181,12 @@ export default function PersonalSettings() {
                 </label>
               </div>
               <div className="flex-1">
-                <p className="font-medium">{profile?.full_name || "No name set"}</p>
-                <p className="text-sm text-muted-foreground">{profile?.email}</p>
+                <p className="font-semibold text-lg text-white">{profile?.full_name || "No name set"}</p>
+                <p className="text-sm text-white/70">{profile?.email}</p>
               </div>
             </div>
-
-            <Separator />
-
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
             {/* Form Fields */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -240,7 +231,7 @@ export default function PersonalSettings() {
             <Button 
               onClick={handleSave} 
               disabled={updateProfileMutation.isPending}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700"
             >
               {updateProfileMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -252,20 +243,20 @@ export default function PersonalSettings() {
           </CardContent>
         </Card>
 
-        {/* Connected Apps Section */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-4">
+        {/* Connected Apps Section - Teal Gradient Header */}
+        <Card className="overflow-hidden border-border/50">
+          <CardHeader className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white">
             <div className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Connected Apps</CardTitle>
+              <Link2 className="h-5 w-5 text-white" />
+              <CardTitle className="text-lg text-white">Connected Apps</CardTitle>
             </div>
-            <CardDescription>Connect your personal accounts</CardDescription>
+            <CardDescription className="text-white/70">Connect your personal accounts</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-6">
             {personalApps.map((app) => (
               <div
                 key={app.id}
-                className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-gradient-to-r from-secondary/30 to-secondary/10 hover:from-secondary/50 hover:to-secondary/30 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center border border-border/50">
@@ -278,16 +269,16 @@ export default function PersonalSettings() {
                 </div>
                 <div className="flex items-center gap-2">
                   {app.comingSoon ? (
-                    <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">Coming Soon</span>
+                    <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-full">Coming Soon</span>
                   ) : app.connected ? (
                     <>
-                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                       <Button variant="ghost" size="sm" className="text-destructive">
                         Disconnect
                       </Button>
                     </>
                   ) : (
-                    <Button variant="outline" size="sm">
+                    <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white">
                       Connect
                     </Button>
                   )}
@@ -301,13 +292,15 @@ export default function PersonalSettings() {
         <Card className="border-border/50">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <Sun className="h-5 w-5 text-primary" />
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-orange-500/10 to-rose-500/10">
+                <Sun className="h-4 w-4 text-orange-500" />
+              </div>
               <CardTitle className="text-lg">Appearance</CardTitle>
             </div>
             <CardDescription>Customize how the app looks</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Theme</Label>
                 <p className="text-xs text-muted-foreground">Choose between light and dark mode</p>
@@ -321,29 +314,29 @@ export default function PersonalSettings() {
         <Card className="border-border/50">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/10 to-indigo-500/10">
+                <Bell className="h-4 w-4 text-purple-500" />
+              </div>
               <CardTitle className="text-lg">Notifications</CardTitle>
             </div>
             <CardDescription>Manage how you receive updates</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">New Lead Notifications</Label>
                 <p className="text-xs text-muted-foreground">Get notified when new leads come in</p>
               </div>
               <Switch defaultChecked />
             </div>
-            <Separator />
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Task Reminders</Label>
                 <p className="text-xs text-muted-foreground">Receive reminders for upcoming tasks</p>
               </div>
               <Switch defaultChecked />
             </div>
-            <Separator />
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Team Messages</Label>
                 <p className="text-xs text-muted-foreground">Notifications for team chat messages</p>

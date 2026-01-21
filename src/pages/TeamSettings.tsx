@@ -14,6 +14,7 @@ import { Users, Settings, DollarSign, Trash2, Loader2, Upload, UserPlus, Mail, A
 import { toast } from "sonner";
 import { CommissionSettings } from "@/components/CommissionSettings";
 import { ClearTeamData } from "@/components/ClearTeamData";
+import { cn } from "@/lib/utils";
 
 interface TeamMember {
   id: string;
@@ -229,30 +230,34 @@ export default function TeamSettings() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <Settings className="h-6 w-6 text-primary" />
-          Team Settings
-        </h1>
-        <p className="text-muted-foreground">
-          Manage your team's branding, members, and commissions
-        </p>
+      {/* Header with Gradient Icon */}
+      <div className="space-y-1 flex items-center gap-3">
+        <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600">
+          <Settings className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-semibold">Team Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your team's branding, members, and commissions
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="branding" className="space-y-6">
-        <TabsList className="bg-muted/50">
-          <TabsTrigger value="branding">Branding</TabsTrigger>
-          <TabsTrigger value="members" className="gap-2">
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="branding" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/10 data-[state=active]:to-indigo-500/10">
+            Branding
+          </TabsTrigger>
+          <TabsTrigger value="members" className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500/10 data-[state=active]:to-cyan-500/10">
             <Users className="h-4 w-4" />
             Members
           </TabsTrigger>
-          <TabsTrigger value="commissions" className="gap-2">
+          <TabsTrigger value="commissions" className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/10 data-[state=active]:to-rose-500/10">
             <DollarSign className="h-4 w-4" />
             Commissions
           </TabsTrigger>
-          <TabsTrigger value="danger" className="gap-2 text-destructive">
+          <TabsTrigger value="danger" className="gap-2 text-destructive data-[state=active]:bg-red-500/10">
             <AlertTriangle className="h-4 w-4" />
             Danger Zone
           </TabsTrigger>
@@ -260,21 +265,21 @@ export default function TeamSettings() {
 
         {/* Branding Tab */}
         <TabsContent value="branding" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Team Branding</CardTitle>
-              <CardDescription>
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+              <CardTitle className="text-lg text-white">Team Branding</CardTitle>
+              <CardDescription className="text-white/70">
                 Customize your team's name and logo
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               {/* Logo Upload */}
               <div className="space-y-2">
                 <Label>Team Logo</Label>
                 <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
+                  <Avatar className="h-20 w-20 ring-2 ring-purple-500/20">
                     <AvatarImage src={teamLogo || undefined} />
-                    <AvatarFallback className="text-lg bg-primary text-primary-foreground">
+                    <AvatarFallback className="text-lg bg-gradient-to-br from-purple-500 to-indigo-600 text-white">
                       {getInitials(teamName)}
                     </AvatarFallback>
                   </Avatar>
@@ -317,7 +322,7 @@ export default function TeamSettings() {
                 />
               </div>
 
-              <Button onClick={handleSaveTeam} disabled={saving}>
+              <Button onClick={handleSaveTeam} disabled={saving} className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700">
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>
@@ -328,14 +333,14 @@ export default function TeamSettings() {
         {/* Members Tab */}
         <TabsContent value="members" className="space-y-4">
           {/* Invite Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white">
+              <CardTitle className="text-lg flex items-center gap-2 text-white">
                 <UserPlus className="h-5 w-5" />
                 Invite Team Member
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="flex gap-3">
                 <div className="flex-1">
                   <Input
@@ -355,7 +360,7 @@ export default function TeamSettings() {
                     <SelectItem value="setter">Setter</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={handleInvite} disabled={inviting}>
+                <Button onClick={handleInvite} disabled={inviting} className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600">
                   {inviting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
@@ -379,12 +384,12 @@ export default function TeamSettings() {
                 {members.map((member) => (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={member.profiles?.avatar_url || undefined} />
-                        <AvatarFallback>
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white">
                           {getInitials(member.profiles?.full_name)}
                         </AvatarFallback>
                       </Avatar>
@@ -416,7 +421,7 @@ export default function TeamSettings() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-destructive hover:text-destructive"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={() =>
                             handleRemoveMember(
                               member.id,

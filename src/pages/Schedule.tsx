@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Calendar, Clock, User, Phone, Mail, Video, CheckCircle2, AlertCircle } from "lucide-react";
-import { format, isToday, isTomorrow, isThisWeek, parseISO, startOfDay } from "date-fns";
+import { Calendar, Clock, User, Video, CheckCircle2 } from "lucide-react";
+import { format, isToday, isTomorrow, isThisWeek, parseISO } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useMySchedule, useTeamSchedule, ScheduleAppointment, ScheduleTask } from "@/hooks/useSchedule";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -111,23 +111,35 @@ export default function Schedule() {
   const renderItem = (item: ScheduleItem) => (
     <div
       key={item.id}
-      className="flex items-start gap-4 p-4 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
+      className={cn(
+        "flex items-start gap-4 p-4 rounded-xl border transition-all hover:shadow-md",
+        item.type === "appointment" 
+          ? "bg-gradient-to-r from-blue-500/5 to-indigo-500/5 border-blue-500/20 hover:border-blue-500/40" 
+          : "bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-emerald-500/20 hover:border-emerald-500/40"
+      )}
     >
       <div className={cn(
-        "flex items-center justify-center w-10 h-10 rounded-full shrink-0",
-        item.type === "appointment" ? "bg-primary/10 text-primary" : "bg-primary/10 text-primary"
+        "flex items-center justify-center w-10 h-10 rounded-xl shrink-0",
+        item.type === "appointment" 
+          ? "bg-gradient-to-br from-blue-500 to-indigo-500" 
+          : "bg-gradient-to-br from-emerald-500 to-teal-500"
       )}>
         {item.type === "appointment" ? (
-          <Video className="h-5 w-5" />
+          <Video className="h-5 w-5 text-white" />
         ) : (
-          <CheckCircle2 className="h-5 w-5" />
+          <CheckCircle2 className="h-5 w-5 text-white" />
         )}
       </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="font-medium text-foreground truncate">{item.title}</span>
-          <Badge variant="secondary" className="text-xs shrink-0">
+          <Badge variant="secondary" className={cn(
+            "text-xs shrink-0",
+            item.type === "appointment" 
+              ? "bg-blue-500/10 text-blue-600 border-blue-500/20" 
+              : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+          )}>
             {item.subtitle}
           </Badge>
         </div>
@@ -149,9 +161,8 @@ export default function Schedule() {
       
       {item.meetingLink && (
         <Button
-          variant="outline"
           size="sm"
-          className="shrink-0"
+          className="shrink-0 bg-[#ef476f] hover:bg-[#d63d5f] text-white"
           onClick={() => window.open(item.meetingLink!, "_blank")}
         >
           Join
@@ -170,7 +181,7 @@ export default function Schedule() {
           {dateLabel && (
             <span className="text-sm text-muted-foreground">({dateLabel})</span>
           )}
-          <Badge variant="outline" className="ml-auto">
+          <Badge variant="outline" className="ml-auto bg-muted/50">
             {items.length} {items.length === 1 ? "item" : "items"}
           </Badge>
         </div>
@@ -187,11 +198,16 @@ export default function Schedule() {
     <div className="flex-1 p-6 space-y-6 overflow-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
-          <p className="text-muted-foreground">
-            {viewMode === "my" ? "Your upcoming calls and tasks" : "All team calls and tasks"}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600">
+            <Calendar className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
+            <p className="text-muted-foreground">
+              {viewMode === "my" ? "Your upcoming calls and tasks" : "All team calls and tasks"}
+            </p>
+          </div>
         </div>
         
         {/* View Toggle */}
@@ -200,7 +216,10 @@ export default function Schedule() {
             variant={viewMode === "my" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("my")}
-            className="h-8"
+            className={cn(
+              "h-8",
+              viewMode === "my" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
+            )}
           >
             My Schedule
           </Button>
@@ -208,7 +227,10 @@ export default function Schedule() {
             variant={viewMode === "team" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("team")}
-            className="h-8"
+            className={cn(
+              "h-8",
+              viewMode === "team" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
+            )}
           >
             Team Schedule
           </Button>
@@ -219,8 +241,8 @@ export default function Schedule() {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-start gap-4 p-4 rounded-lg border border-border">
-              <Skeleton className="h-10 w-10 rounded-full" />
+            <div key={i} className="flex items-start gap-4 p-4 rounded-xl border border-border">
+              <Skeleton className="h-10 w-10 rounded-xl" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-48" />
                 <Skeleton className="h-3 w-32" />
@@ -229,10 +251,10 @@ export default function Schedule() {
           ))}
         </div>
       ) : hasNoItems ? (
-        <Card className="border-dashed">
+        <Card className="border-dashed border-2">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Calendar className="h-6 w-6 text-muted-foreground" />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 flex items-center justify-center mb-4">
+              <Calendar className="h-8 w-8 text-purple-500" />
             </div>
             <h3 className="font-semibold text-foreground mb-1">No upcoming items</h3>
             <p className="text-sm text-muted-foreground">

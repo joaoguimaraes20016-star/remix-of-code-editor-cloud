@@ -9,10 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   ArrowLeft, BarChart3, Layers, Settings, MessageSquare, 
-  FolderOpen, Users, Plug, ChevronRight 
+  FolderOpen, ChevronRight 
 } from 'lucide-react';
 import TeamAssets from '@/components/TeamAssets';
 import TeamChat from '@/components/TeamChat';
+import { cn } from '@/lib/utils';
 
 export default function TeamHub() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -79,24 +80,21 @@ export default function TeamHub() {
       description: 'Pipeline & appointments',
       icon: BarChart3,
       onClick: () => navigate(`/team/${teamId}/sales`),
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
+      gradient: 'from-blue-500 to-indigo-600',
     },
     {
       label: 'Funnels',
       description: 'Build & manage funnels',
       icon: Layers,
       onClick: () => navigate(`/team/${teamId}/funnels`),
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
+      gradient: 'from-purple-500 to-pink-600',
     },
     {
       label: 'Team Settings',
       description: 'Members & integrations',
       icon: Settings,
       onClick: () => navigate(`/team/${teamId}/settings`),
-      color: 'text-muted-foreground',
-      bgColor: 'bg-muted',
+      gradient: 'from-gray-600 to-gray-800',
       adminOnly: true,
     },
   ];
@@ -117,9 +115,9 @@ export default function TeamHub() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9 rounded-lg">
+                <Avatar className="h-9 w-9 rounded-lg ring-2 ring-purple-500/20">
                   <AvatarImage src={teamLogo || undefined} />
-                  <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-semibold">
+                  <AvatarFallback className="rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-semibold">
                     {teamName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -143,7 +141,7 @@ export default function TeamHub() {
               <Button
                 size="sm"
                 onClick={() => navigate(`/team/${teamId}/sales`)}
-                className="bg-primary hover:bg-primary/90"
+                className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Sales CRM</span>
@@ -182,7 +180,7 @@ export default function TeamHub() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 mt-0">
-            {/* Quick Actions */}
+            {/* Quick Actions with Gradient Cards */}
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Quick Actions</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -191,23 +189,36 @@ export default function TeamHub() {
                   .map((action) => (
                   <Card 
                     key={action.label}
-                    className="group cursor-pointer hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/5"
+                    className={cn(
+                      "group cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 border-0"
+                    )}
                     onClick={action.onClick}
                   >
-                    <CardContent className="p-5">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl ${action.bgColor} group-hover:scale-110 transition-transform`}>
-                          <action.icon className={`h-5 w-5 ${action.color}`} />
+                    <CardContent className={cn(
+                      "p-0 relative"
+                    )}>
+                      <div className={cn(
+                        "absolute inset-0 bg-gradient-to-br opacity-90",
+                        action.gradient
+                      )} />
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                      <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+                      
+                      <div className="relative p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:scale-110 transition-transform">
+                            <action.icon className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-white group-hover:translate-x-1 transition-transform">
+                              {action.label}
+                            </h3>
+                            <p className="text-sm text-white/70 truncate">
+                              {action.description}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {action.label}
-                          </h3>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {action.description}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                       </div>
                     </CardContent>
                   </Card>
@@ -223,7 +234,7 @@ export default function TeamHub() {
                   View All
                 </Button>
               </div>
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden border-border/50">
                 <CardContent className="p-0">
                   <div className="h-[300px] overflow-hidden">
                     <TeamChat teamId={teamId!} />
