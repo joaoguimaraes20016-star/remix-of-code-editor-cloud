@@ -26,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending onboarding email to ${clientEmail} for ${teamName}`);
 
     const emailResponse = await resend.emails.send({
-      from: "Client Onboarding <onboarding@notifications.stackit.app>",
+      from: "Client Onboarding <onboarding@notifications.usestackit.co>",
       to: [clientEmail],
       subject: `Complete Your Onboarding - ${teamName}`,
       html: `

@@ -73,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Stackit <invites@notifications.stackit.app>",
+            from: "Stackit <invites@notifications.usestackit.co>",
             to: [email],
             subject: `You've been invited to join ${teamName}`,
             html: `
