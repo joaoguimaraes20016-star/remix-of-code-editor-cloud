@@ -2,32 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Stackit design system - Orange/Purple gradient branding, Light mode default */
+/* Infostack design system - Coral/Pink Fanbasis-style branding */
 
 @layer base {
   :root {
-    /* Light mode - White base with brand accents */
+    /* Light mode - Clean white base with coral accents */
     --background: 0 0% 100%;
-    --foreground: 220 20% 10%;
+    --foreground: 220 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 220 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 220 15% 15%;
 
-    /* Brand Primary - Blue (like builder) */
-    --primary: 217 80% 55%;
+    /* Brand Primary - Coral/Pink (Fanbasis style) */
+    --primary: 350 85% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
-    --secondary-foreground: 220 20% 10%;
+    --secondary-foreground: 220 15% 15%;
 
     --muted: 220 14% 96%;
     --muted-foreground: 220 10% 46%;
 
-    /* Brand Accent - Orange */
-    --accent: 20 90% 58%;
+    /* Brand Accent - Coral (same as primary for consistency) */
+    --accent: 350 85% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -35,7 +35,7 @@
 
     --border: 220 14% 90%;
     --input: 220 14% 90%;
-    --ring: 217 80% 55%;
+    --ring: 350 85% 60%;
 
     --radius: 0.75rem;
     
@@ -57,10 +57,10 @@
     --warning: 38 80% 50%;
     --warning-foreground: 220 15% 6%;
     
-    /* Brand gradient tokens - Orange → Magenta → Purple */
-    --gradient-start: 20 90% 58%;
-    --gradient-mid: 315 85% 58%;
-    --gradient-end: 280 75% 55%;
+    /* Brand gradient tokens - Coral → Rose → Pink (Fanbasis style) */
+    --gradient-start: 350 85% 60%;
+    --gradient-mid: 340 80% 55%;
+    --gradient-end: 330 75% 50%;
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-mid)), hsl(var(--gradient-end)));
     --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)));
@@ -71,27 +71,28 @@
     --gradient-rescheduled: linear-gradient(135deg, hsl(45 80% 60%), hsl(42 75% 50%));
     
     --shadow-glow: 0 0 30px hsl(var(--primary) / 0.15);
-    --shadow-card: 0 4px 20px hsl(220 14% 10% / 0.08);
-    --shadow-hover: 0 8px 30px hsl(var(--primary) / 0.15);
+    --shadow-card: 0 4px 20px hsl(220 14% 10% / 0.06);
+    --shadow-hover: 0 8px 30px hsl(var(--primary) / 0.12);
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     
-    --chart-1: 315 85% 58%;
-    --chart-2: 217 80% 60%;
+    /* Charts - Coral palette */
+    --chart-1: 350 85% 60%;
+    --chart-2: 340 75% 55%;
     --chart-3: 142 60% 45%;
-    --chart-4: 280 70% 55%;
+    --chart-4: 330 70% 50%;
     --chart-5: 30 80% 50%;
 
-    /* Sidebar - Light theme */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 220 20% 10%;
-    --sidebar-primary: 217 80% 55%;
+    /* Sidebar - Light clean theme */
+    --sidebar-background: 0 0% 99%;
+    --sidebar-foreground: 220 15% 15%;
+    --sidebar-primary: 350 85% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 220 20% 10%;
-    --sidebar-border: 220 14% 90%;
-    --sidebar-ring: 217 80% 55%;
+    --sidebar-accent: 350 85% 97%;
+    --sidebar-accent-foreground: 350 85% 40%;
+    --sidebar-border: 220 14% 92%;
+    --sidebar-ring: 350 85% 60%;
     
-    /* Builder-specific tokens - always dark for consistent editor UI */
+    /* Builder-specific tokens - dark for contrast */
     --builder-bg: 0 0% 4%;
     --builder-surface: 0 0% 7%;
     --builder-surface-hover: 0 0% 11%;
@@ -101,7 +102,7 @@
     --builder-text: 0 0% 100%;
     --builder-text-secondary: 0 0% 75%;
     --builder-text-muted: 0 0% 55%;
-    --builder-accent: 217 80% 55%;
+    --builder-accent: 350 85% 60%;
   }
 
   .dark {
@@ -114,8 +115,8 @@
     --popover: 0 0% 7%;
     --popover-foreground: 210 20% 96%;
 
-    /* Brand Primary - Blue (same in dark) */
-    --primary: 217 80% 55%;
+    /* Brand Primary - Coral/Pink (same in dark) */
+    --primary: 350 85% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 10%;
@@ -124,8 +125,8 @@
     --muted: 0 0% 12%;
     --muted-foreground: 220 10% 55%;
 
-    /* Brand Accent - Orange (same in dark) */
-    --accent: 20 90% 58%;
+    /* Brand Accent - Coral (same in dark) */
+    --accent: 350 85% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
@@ -133,7 +134,7 @@
 
     --border: 0 0% 14%;
     --input: 0 0% 14%;
-    --ring: 217 80% 55%;
+    --ring: 350 85% 60%;
     
     --success: 142 60% 45%;
     --success-foreground: 210 20% 96%;
@@ -157,15 +158,15 @@
     --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
     --shadow-hover: 0 8px 30px hsl(var(--primary) / 0.1);
 
-    /* Sidebar - Dark theme */
+    /* Sidebar - Dark theme with coral accents */
     --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 210 20% 96%;
-    --sidebar-primary: 217 80% 55%;
+    --sidebar-primary: 350 85% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 210 20% 96%;
     --sidebar-border: 0 0% 12%;
-    --sidebar-ring: 217 80% 55%;
+    --sidebar-ring: 350 85% 60%;
   }
 
   * {

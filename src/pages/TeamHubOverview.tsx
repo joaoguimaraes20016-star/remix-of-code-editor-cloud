@@ -71,18 +71,18 @@ const DEFAULT_CATEGORIES: AssetCategory[] = [
   { id: "client_onboarding", label: "Prospect Onboarding", icon: "Briefcase", order_index: 6 },
 ];
 
-// Color palette for categories
+// Color palette for categories - using primary coral as main color with subtle variations
 const CATEGORY_COLORS = [
-  { color: "text-blue-500", bgColor: "bg-blue-500/20" },
-  { color: "text-amber-500", bgColor: "bg-amber-500/20" },
-  { color: "text-purple-500", bgColor: "bg-purple-500/20" },
-  { color: "text-orange-500", bgColor: "bg-orange-500/20" },
-  { color: "text-pink-500", bgColor: "bg-pink-500/20" },
-  { color: "text-emerald-500", bgColor: "bg-emerald-500/20" },
-  { color: "text-primary", bgColor: "bg-primary/20" },
-  { color: "text-rose-500", bgColor: "bg-rose-500/20" },
-  { color: "text-cyan-500", bgColor: "bg-cyan-500/20" },
-  { color: "text-indigo-500", bgColor: "bg-indigo-500/20" },
+  { color: "text-primary", bgColor: "bg-primary/15" },
+  { color: "text-primary", bgColor: "bg-primary/10" },
+  { color: "text-muted-foreground", bgColor: "bg-muted" },
+  { color: "text-primary", bgColor: "bg-primary/12" },
+  { color: "text-primary", bgColor: "bg-primary/8" },
+  { color: "text-primary", bgColor: "bg-primary/15" },
+  { color: "text-muted-foreground", bgColor: "bg-muted" },
+  { color: "text-primary", bgColor: "bg-primary/10" },
+  { color: "text-primary", bgColor: "bg-primary/12" },
+  { color: "text-muted-foreground", bgColor: "bg-muted" },
 ];
 
 const getCategoryColor = (index: number) => CATEGORY_COLORS[index % CATEGORY_COLORS.length];
@@ -489,16 +489,16 @@ export function TeamHubOverview() {
       description: "Pipeline & revenue tracking",
       icon: TrendingUp,
       path: `/team/${teamId}/crm`,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
     },
     {
       title: "Funnels",
       description: "Lead capture forms",
       icon: Layers,
       path: `/team/${teamId}/funnels`,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
     },
   ];
 

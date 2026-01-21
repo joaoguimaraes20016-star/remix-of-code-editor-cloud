@@ -10,32 +10,27 @@ interface LogoProps {
 
 export const Logo = ({ size = "medium", className, showText = false, gradientText = true }: LogoProps) => {
   const sizeClasses = {
-    small: "h-5 w-5 sm:h-6 sm:w-6",
-    medium: "h-6 w-6 sm:h-8 sm:w-8",
-    large: "h-10 w-10 sm:h-16 sm:w-16",
-    xlarge: "h-16 w-16 sm:h-24 sm:w-24",
+    small: "h-6 w-6 sm:h-7 sm:w-7",
+    medium: "h-8 w-8 sm:h-9 sm:w-9",
+    large: "h-12 w-12 sm:h-16 sm:w-16",
+    xlarge: "h-20 w-20 sm:h-24 sm:w-24",
   };
 
   return (
-    <div className={cn("flex items-center gap-1.5 sm:gap-2", className)}>
-      <div className={cn(
-        sizeClasses[size],
-        "bg-gradient-brand rounded-md sm:rounded-lg flex items-center justify-center p-0.5 sm:p-1"
-      )}>
-        <img 
-          src={logo} 
-          alt="Stackit Logo" 
-          className="w-full h-full object-contain"
-        />
-      </div>
+    <div className={cn("flex items-center gap-2 sm:gap-2.5", className)}>
+      <img 
+        src={logo} 
+        alt="Infostack Logo" 
+        className={cn(sizeClasses[size], "object-contain")}
+      />
       {showText && (
         <span className={cn(
-          "font-bold text-sm sm:text-lg",
+          "font-bold text-base sm:text-xl tracking-tight",
           gradientText 
             ? "text-gradient-brand" 
             : "text-foreground"
         )}>
-          Stackit
+          Infostack
         </span>
       )}
     </div>

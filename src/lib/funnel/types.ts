@@ -80,9 +80,9 @@ export function getLeadStateLabel(status: LeadStatus): string {
 export function getLeadStateBadgeColor(status: LeadStatus): string {
   const colors: Record<LeadStatus, string> = {
     visitor: 'bg-muted text-muted-foreground',
-    partial: 'bg-yellow-500/10 text-yellow-600',
-    lead: 'bg-emerald-500/10 text-emerald-600',
-    booked: 'bg-blue-500/10 text-blue-600',
+    partial: 'bg-warning/10 text-warning',
+    lead: 'bg-success/10 text-success',
+    booked: 'bg-primary/10 text-primary',
   };
   return colors[status] || 'bg-muted text-muted-foreground';
 }

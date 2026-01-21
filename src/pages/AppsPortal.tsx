@@ -191,7 +191,7 @@ export default function AppsPortal() {
                                 {app.name}
                               </h3>
                               {isConnected && (
-                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-0">
+                                <Badge variant="secondary" className="bg-success/10 text-success border-0">
                                   <Check className="h-3 w-3 mr-1" />
                                   Connected
                                 </Badge>

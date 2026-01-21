@@ -155,16 +155,16 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId }: LeadsVsVisitor
             label="Leads" 
             count={totalLeads} 
             percentage={leadRate} 
-            color="bg-blue-500/20"
-            textColor="text-blue-600"
+            color="bg-primary/20"
+            textColor="text-primary"
           />
           <ArrowRight className="h-4 w-4 text-muted-foreground/50 mx-2" />
           <FunnelStage 
             label="Booked" 
             count={totalBooked} 
             percentage={overallConversion} 
-            color="bg-emerald-500/20"
-            textColor="text-emerald-600"
+            color="bg-success/20"
+            textColor="text-success"
           />
         </div>
       </Card>
