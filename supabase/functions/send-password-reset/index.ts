@@ -67,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "Stackit <noreply@notifications.stackit.app>",
+      from: "Stackit <noreply@notifications.usestackit.co>",
       to: [email],
       subject: "Reset Your Stackit Password",
       html: `

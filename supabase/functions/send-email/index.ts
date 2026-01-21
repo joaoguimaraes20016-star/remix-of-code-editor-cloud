@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
     // Determine sending method: custom domain or Stackit default
     let useCustomDomain = false;
     let customDomain: string | null = null;
-    let senderEmail = from || Deno.env.get("DEFAULT_FROM_EMAIL") || "noreply@send.stackitmail.com";
+    let senderEmail = from || Deno.env.get("DEFAULT_FROM_EMAIL") || "noreply@notifications.usestackit.co";
     const senderName = fromName || Deno.env.get("DEFAULT_FROM_NAME") || "Stackit";
 
     // Check if fromEmail specifies a custom domain
