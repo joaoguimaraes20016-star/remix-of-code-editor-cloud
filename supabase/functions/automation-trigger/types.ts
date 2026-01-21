@@ -59,6 +59,12 @@ export interface AutomationStep {
   type: ActionType;
   config: Record<string, any>;
   conditions?: AutomationCondition[];
+  conditionLogic?: "AND" | "OR";
+  // For condition (If/Else) steps
+  trueBranchStepId?: string;
+  falseBranchStepId?: string;
+  // For split_test steps
+  variants?: Array<{ id: string; percentage: number; nextStepId?: string }>;
   retryConfig?: {
     maxRetries: number;
     retryDelayMs: number;

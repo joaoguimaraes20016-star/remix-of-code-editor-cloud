@@ -2,14 +2,17 @@
 
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
 
+// Flexible config types to allow Record<string, any> from step.config
+type FlexibleConfig = Record<string, unknown>;
+
 // Add Tag
 export async function executeAddTag(
-  config: { tag: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-  const tag = config.tag?.trim();
+  const tag = (config.tag as string)?.trim();
 
   if (!tag) {
     log.status = "skipped";
@@ -60,12 +63,12 @@ export async function executeAddTag(
 
 // Remove Tag
 export async function executeRemoveTag(
-  config: { tag: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-  const tag = config.tag?.trim();
+  const tag = (config.tag as string)?.trim();
 
   if (!tag) {
     log.status = "skipped";
@@ -117,7 +120,7 @@ export async function executeRemoveTag(
 
 // Create Contact
 export async function executeCreateContact(
-  config: { name?: string; email?: string; phone?: string; source?: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
@@ -129,10 +132,10 @@ export async function executeCreateContact(
       .insert([
         {
           team_id: context.teamId,
-          name: config.name || context.meta?.name || null,
-          email: config.email || context.meta?.email || null,
-          phone: config.phone || context.meta?.phone || null,
-          source: config.source || "automation",
+          name: (config.name as string) || (context.meta as any)?.name || null,
+          email: (config.email as string) || (context.meta as any)?.email || null,
+          phone: (config.phone as string) || (context.meta as any)?.phone || null,
+          source: (config.source as string) || "automation",
         },
       ])
       .select("id")
@@ -154,11 +157,13 @@ export async function executeCreateContact(
 
 // Update Contact
 export async function executeUpdateContact(
-  config: { field: string; value: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
+  const field = config.field as string;
+  const value = config.value as string;
 
   const leadId = context.lead?.id;
   if (!leadId) {
@@ -167,7 +172,7 @@ export async function executeUpdateContact(
     return log;
   }
 
-  if (!config.field) {
+  if (!field) {
     log.status = "skipped";
     log.skipReason = "no_field_specified";
     return log;
@@ -175,8 +180,8 @@ export async function executeUpdateContact(
 
   try {
     // Handle custom fields separately
-    if (config.field.startsWith("custom_fields.")) {
-      const customFieldKey = config.field.replace("custom_fields.", "");
+    if (field.startsWith("custom_fields.")) {
+      const customFieldKey = field.replace("custom_fields.", "");
       const { data: contact, error: fetchError } = await supabase
         .from("contacts")
         .select("custom_fields")
@@ -190,7 +195,7 @@ export async function executeUpdateContact(
       }
 
       const customFields = contact?.custom_fields || {};
-      customFields[customFieldKey] = config.value;
+      customFields[customFieldKey] = value;
 
       const { error: updateError } = await supabase
         .from("contacts")
@@ -205,7 +210,7 @@ export async function executeUpdateContact(
       // Standard field update
       const { error } = await supabase
         .from("contacts")
-        .update({ [config.field]: config.value })
+        .update({ [field]: value })
         .eq("id", leadId);
 
       if (error) {
@@ -223,13 +228,13 @@ export async function executeUpdateContact(
 
 // Add Note
 export async function executeAddNote(
-  config: { note: string; entity?: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-
-  const entityType = config.entity || "lead";
+  const note = config.note as string | undefined;
+  const entityType = (config.entity as string) || "lead";
   const entityId = entityType === "lead" ? context.lead?.id : context.appointment?.id;
 
   if (!entityId) {
@@ -238,7 +243,7 @@ export async function executeAddNote(
     return log;
   }
 
-  if (!config.note) {
+  if (!note) {
     log.status = "skipped";
     log.skipReason = "no_note_content";
     return log;
@@ -261,7 +266,7 @@ export async function executeAddNote(
 
       const existingNotes = appt?.closer_notes || "";
       const timestamp = new Date().toISOString();
-      const newNote = `${existingNotes}\n\n[${timestamp}] ${config.note}`.trim();
+      const newNote = `${existingNotes}\n\n[${timestamp}] ${note}`.trim();
 
       const { error: updateError } = await supabase
         .from("appointments")
@@ -282,7 +287,7 @@ export async function executeAddNote(
           appointment_id: context.appointment?.id || entityId,
           action_type: "note_added",
           actor_name: "Automation",
-          note: config.note,
+          note: note,
         },
       ]);
 
@@ -301,14 +306,14 @@ export async function executeAddNote(
 
 // Assign Owner
 export async function executeAssignOwner(
-  config: { entity: string; ownerId: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
 
-  const entity = config.entity || "lead";
-  const ownerId = config.ownerId;
+  const entity = (config.entity as string) || "lead";
+  const ownerId = config.ownerId as string | undefined;
 
   if (!ownerId) {
     log.status = "skipped";
@@ -354,14 +359,14 @@ export async function executeAssignOwner(
 
 // Update Stage
 export async function executeUpdateStage(
-  config: { entity: string; stageId: string },
+  config: FlexibleConfig,
   context: AutomationContext,
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
 
-  const entity = config.entity || "lead";
-  const stageId = config.stageId;
+  const entity = (config.entity as string) || "lead";
+  const stageId = config.stageId as string | undefined;
 
   if (!stageId) {
     log.status = "skipped";

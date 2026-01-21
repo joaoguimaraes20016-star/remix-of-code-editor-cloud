@@ -326,7 +326,7 @@ function renderTemplate(template: string, context: AutomationContext): string {
   });
 }
 
-// --- Run Automation ---
+// --- Run Automation with Branching Support ---
 async function runAutomation(
   automation: AutomationDefinition,
   context: AutomationContext,
@@ -334,193 +334,375 @@ async function runAutomation(
   runId: string | null,
 ): Promise<StepExecutionLog[]> {
   const logs: StepExecutionLog[] = [];
+  const steps = automation.steps.sort((a, b) => a.order - b.order);
+  const stepMap = new Map(steps.map((s) => [s.id, s]));
+  const visitedSteps = new Set<string>();
+  const maxSteps = 100; // Prevent infinite loops
 
-  console.log(`[Automation] Running "${automation.name}" (${automation.id})`);
+  console.log(`[Automation] Running "${automation.name}" (${automation.id}) with ${steps.length} steps`);
 
-  for (const step of automation.steps.sort((a, b) => a.order - b.order)) {
-    const conditionsMet = evaluateConditions(step.conditions, context);
+  // Start with the first step
+  let currentStepId: string | null = steps[0]?.id || null;
 
-    if (!conditionsMet) {
-      logs.push({
-        stepId: step.id,
-        actionType: step.type,
-        skipped: true,
-        skipReason: "conditions_not_met",
-      });
-      continue;
+  while (currentStepId && logs.length < maxSteps) {
+    // Prevent infinite loops
+    if (visitedSteps.has(currentStepId)) {
+      console.warn(`[Automation] Loop detected at step ${currentStepId}, breaking`);
+      break;
+    }
+    visitedSteps.add(currentStepId);
+
+    const step = stepMap.get(currentStepId);
+    if (!step) {
+      console.warn(`[Automation] Step ${currentStepId} not found`);
+      break;
     }
 
-    const log: StepExecutionLog = {
+    // Evaluate step conditions (NOT for condition nodes - those have their own logic)
+    if (step.type !== "condition" && step.conditions && step.conditions.length > 0) {
+      const conditionsMet = evaluateConditions(step.conditions, context, step.conditionLogic || "AND");
+      if (!conditionsMet) {
+        logs.push({
+          stepId: step.id,
+          actionType: step.type,
+          skipped: true,
+          skipReason: "conditions_not_met",
+        });
+        // Move to next step by order
+        currentStepId = getNextStepByOrder(steps, step.order);
+        continue;
+      }
+    }
+
+    const startTime = Date.now();
+    let log: StepExecutionLog = {
       stepId: step.id,
       actionType: step.type,
       skipped: false,
     };
 
-    switch (step.type) {
-      case "send_message": {
-        const channel = step.config.channel || "sms";
-        const template = step.config.template || step.config.body || "";
-        const provider = "stub";
-        const toPhone = context.lead?.phone || context.appointment?.lead_phone || step.config.to || "";
-        const renderedBody = renderTemplate(template, context);
-        const messageId = `stub_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    let nextStepId: string | null = null;
+    let shouldStop = false;
 
-        log.channel = channel;
-        log.provider = provider;
-        log.to = toPhone;
-        log.messageId = messageId;
-        log.renderedBody = renderedBody;
-        log.templateVariables = extractTemplateVariables(template, context);
+    try {
+      switch (step.type) {
+        // === MESSAGING ACTIONS ===
+        case "send_message": {
+          // Check rate limit first
+          const channel = step.config.channel || "sms";
+          const rateCheck = await checkRateLimit(supabase, context.teamId, channel, automation.id);
+          
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
 
-        if (channel === "sms" && toPhone) {
-          try {
-            await logMessage(supabase, {
-              teamId: context.teamId,
-              automationId: automation.id,
+          const result = await executeSendMessage(step.config, context, supabase, runId, automation.id);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "enqueue_dialer": {
+          // Use voice channel for dialer
+          const rateCheck = await checkRateLimit(supabase, context.teamId, "voice", automation.id);
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          
+          const dialerConfig = {
+            ...step.config,
+            channel: "voice" as const,
+          };
+          const result = await executeSendMessage(dialerConfig, context, supabase, runId, automation.id);
+          log = { ...log, ...result, channel: "voice", provider: "power_dialer" };
+          break;
+        }
+
+        // === TIME/DELAY ACTIONS ===
+        case "time_delay": {
+          const result = await executeTimeDelay(
+            step.config,
+            context,
+            supabase,
+            automation.id,
+            runId,
+            step.id,
+            steps.filter((s) => s.order > step.order),
+          );
+          
+          if (result.scheduled) {
+            log.status = "success";
+            log.output = { resumeAt: result.resumeAt, jobId: result.jobId };
+            // Stop execution - remaining steps will run when scheduled job fires
+            shouldStop = true;
+          } else {
+            log.status = "error";
+            log.error = result.error;
+          }
+          break;
+        }
+
+        case "wait_until": {
+          const resumeAt = calculateWaitUntilTime(step.config);
+          const result = await executeTimeDelay(
+            { duration: 0, unit: "minutes" },
+            { ...context, meta: { ...context.meta, waitUntilTime: resumeAt.toISOString() } },
+            supabase,
+            automation.id,
+            runId,
+            step.id,
+            steps.filter((s) => s.order > step.order),
+          );
+          
+          if (result.scheduled) {
+            log.status = "success";
+            log.output = { resumeAt: resumeAt.toISOString() };
+            shouldStop = true;
+          }
+          break;
+        }
+
+        case "business_hours": {
+          const timezone = step.config.timezone || "America/New_York";
+          const { withinHours, nextOpenTime } = await isWithinBusinessHours(supabase, context.teamId, timezone);
+          
+          if (!withinHours && nextOpenTime) {
+            // Schedule to resume at next open time
+            const result = await executeTimeDelay(
+              { duration: 0, unit: "minutes" },
+              context,
+              supabase,
+              automation.id,
               runId,
-              channel: "sms",
-              provider,
-              toAddress: toPhone,
-              template,
-              payload: {
-                to: toPhone,
-                body: renderedBody,
-                templateVariables: log.templateVariables,
-                leadId: context.lead?.id,
-                appointmentId: context.appointment?.id,
-              },
-              status: "sent",
-            });
-          } catch (msgErr) {
-            console.error("[Automation] Error logging SMS to message_logs:", msgErr);
+              step.id,
+              steps.filter((s) => s.order > step.order),
+            );
+            log.status = "success";
+            log.output = { withinHours, resumeAt: nextOpenTime };
+            shouldStop = true;
+          } else {
+            log.status = "success";
+            log.output = { withinHours };
           }
+          break;
         }
-        break;
-      }
 
-      case "time_delay": {
-        const delayHours = step.config.delayHours || 0;
-        log.templateVariables = { delayHours };
-        break;
-      }
-
-      case "notify_team": {
-        const message = step.config.message || "";
-        log.channel = "in_app";
-        log.templateVariables = extractTemplateVariables(message, context);
-        break;
-      }
-
-      case "add_task": {
-        log.templateVariables = step.config;
-        break;
-      }
-
-      case "add_tag": {
-        log.templateVariables = step.config;
-        break;
-      }
-
-      case "enqueue_dialer": {
-        log.channel = "voice";
-        log.provider = "power_dialer";
-        log.templateVariables = step.config;
-        break;
-      }
-
-      case "custom_webhook": {
-        log.templateVariables = step.config;
-        break;
-      }
-
-      case "assign_owner": {
-        const entity = step.config.entity as CrmEntity;
-        const ownerId = step.config.ownerId as string;
-        log.entity = entity;
-        log.ownerId = ownerId;
-
-        if (entity === "lead") {
-          const leadId = context.lead?.id;
-          if (!leadId) {
-            log.skipped = true;
-            log.skipReason = "no_lead_id_in_context";
-          } else {
-            try {
-              const { error } = await supabase.from("contacts").update({ owner_id: ownerId }).eq("id", leadId);
-              if (error) {
-                log.error = error.message;
-              }
-            } catch (err) {
-              log.error = err instanceof Error ? err.message : "Unknown error";
-            }
-          }
-        } else if (entity === "deal") {
-          const dealId = context.deal?.id || context.appointment?.id;
-          if (!dealId) {
-            log.skipped = true;
-            log.skipReason = "no_deal_id_in_context";
-          } else {
-            try {
-              const { error } = await supabase.from("appointments").update({ closer_id: ownerId }).eq("id", dealId);
-              if (error) {
-                log.error = error.message;
-              }
-            } catch (err) {
-              log.error = err instanceof Error ? err.message : "Unknown error";
-            }
-          }
+        // === CRM ACTIONS ===
+        case "add_tag": {
+          const result = await executeAddTag(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
         }
-        break;
-      }
 
-      case "update_stage": {
-        const entity = step.config.entity as CrmEntity;
-        const stageId = step.config.stageId as string;
-        log.entity = entity;
-        log.stageId = stageId;
-
-        if (entity === "lead") {
-          const leadId = context.lead?.id;
-          if (!leadId) {
-            log.skipped = true;
-            log.skipReason = "no_lead_id_in_context";
-          } else {
-            try {
-              const { error } = await supabase.from("contacts").update({ stage_id: stageId }).eq("id", leadId);
-              if (error) {
-                log.error = error.message;
-              }
-            } catch (err) {
-              log.error = err instanceof Error ? err.message : "Unknown error";
-            }
-          }
-        } else if (entity === "deal") {
-          const dealId = context.deal?.id || context.appointment?.id;
-          if (!dealId) {
-            log.skipped = true;
-            log.skipReason = "no_deal_id_in_context";
-          } else {
-            try {
-              const { error } = await supabase.from("appointments").update({ pipeline_stage: stageId }).eq("id", dealId);
-              if (error) {
-                log.error = error.message;
-              }
-            } catch (err) {
-              log.error = err instanceof Error ? err.message : "Unknown error";
-            }
-          }
+        case "remove_tag": {
+          const result = await executeRemoveTag(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
         }
-        break;
-      }
 
-      default:
-        console.log(`[Automation] Unknown action type: ${step.type}`);
+        case "create_contact": {
+          const result = await executeCreateContact(step.config, context, supabase);
+          log = { ...log, ...result };
+          // Update context with new contact if created
+          if (result.output?.contactId) {
+            context.lead = { ...context.lead, id: result.output.contactId };
+          }
+          break;
+        }
+
+        case "update_contact": {
+          const result = await executeUpdateContact(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "add_note": {
+          const result = await executeAddNote(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "assign_owner": {
+          const result = await executeAssignOwner(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "update_stage": {
+          const result = await executeUpdateStage(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        // === WORKFLOW ACTIONS ===
+        case "add_task": {
+          const result = await executeAddTask(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "notify_team": {
+          const result = await executeNotifyTeam(step.config, context, supabase, automation.id, runId);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "custom_webhook": {
+          const rateCheck = await checkRateLimit(supabase, context.teamId, "webhook", automation.id);
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const result = await executeCustomWebhook(step.config, context);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "run_workflow": {
+          const result = await executeRunWorkflow(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "stop_workflow": {
+          const result = executeStopWorkflow(step.config);
+          log.status = "success";
+          log.output = { reason: result.reason };
+          shouldStop = true;
+          break;
+        }
+
+        case "go_to": {
+          const result = executeGoTo(step.config);
+          if (result) {
+            nextStepId = result.jumpTo;
+            log.status = "success";
+            log.output = { jumpTo: result.jumpTo };
+          } else {
+            log.skipped = true;
+            log.skipReason = "no_target_step";
+          }
+          break;
+        }
+
+        // === FLOW CONTROL ===
+        case "condition": {
+          // Evaluate the conditions to determine which branch to take
+          const conditions = step.conditions || [];
+          const conditionsMet = evaluateConditions(conditions, context, step.conditionLogic || "AND");
+          
+          log.status = "success";
+          log.output = { conditionsMet, evaluatedConditions: conditions.length };
+          
+          // Determine next step based on condition result
+          if (conditionsMet && step.trueBranchStepId) {
+            nextStepId = step.trueBranchStepId;
+            log.output.branch = "true";
+          } else if (!conditionsMet && step.falseBranchStepId) {
+            nextStepId = step.falseBranchStepId;
+            log.output.branch = "false";
+          } else {
+            // No branch configured, continue to next step by order
+            log.output.branch = conditionsMet ? "true_no_branch" : "false_no_branch";
+          }
+          break;
+        }
+
+        case "split_test": {
+          // A/B split testing - randomly select a variant based on percentages
+          const variants = step.variants || step.config.variants || [];
+          if (variants.length === 0) {
+            log.skipped = true;
+            log.skipReason = "no_variants_configured";
+            break;
+          }
+
+          const random = Math.random() * 100;
+          let cumulative = 0;
+          let selectedVariant = variants[0];
+
+          for (const variant of variants) {
+            cumulative += variant.percentage;
+            if (random <= cumulative) {
+              selectedVariant = variant;
+              break;
+            }
+          }
+
+          log.status = "success";
+          log.output = { selectedVariant: selectedVariant.id, random };
+
+          if (selectedVariant.nextStepId) {
+            nextStepId = selectedVariant.nextStepId;
+          }
+          break;
+        }
+
+        // === DEAL ACTIONS (stubs for now) ===
+        case "create_deal":
+        case "close_deal":
+          log.status = "success";
+          log.templateVariables = step.config;
+          console.info(`[Automation] Stub action: ${step.type}`, step.config);
+          break;
+
+        default:
+          console.warn(`[Automation] Unknown action type: ${step.type}`);
+          log.skipped = true;
+          log.skipReason = "unknown_action_type";
+      }
+    } catch (err) {
+      log.status = "error";
+      log.error = err instanceof Error ? err.message : "Unknown error";
+      console.error(`[Automation] Error executing step ${step.id}:`, err);
     }
 
+    log.durationMs = Date.now() - startTime;
     logs.push(log);
+
+    // Log step execution to database
+    if (runId) {
+      await logStepExecution(supabase, {
+        runId,
+        stepId: step.id,
+        actionType: step.type,
+        status: log.status === "error" ? "error" : log.skipped ? "skipped" : "success",
+        inputSnapshot: step.config,
+        outputSnapshot: log.output,
+        errorMessage: log.error,
+        skipReason: log.skipReason,
+        durationMs: log.durationMs,
+      });
+    }
+
+    // Check if we should stop
+    if (shouldStop) {
+      console.log(`[Automation] Stopping at step ${step.id}`);
+      break;
+    }
+
+    // Determine next step
+    if (nextStepId) {
+      currentStepId = nextStepId;
+    } else {
+      currentStepId = getNextStepByOrder(steps, step.order);
+    }
   }
 
+  console.log(`[Automation] Completed "${automation.name}" with ${logs.length} steps executed`);
   return logs;
+}
+
+/**
+ * Get the next step by order index
+ */
+function getNextStepByOrder(steps: AutomationStep[], currentOrder: number): string | null {
+  const nextStep = steps.find((s) => s.order > currentOrder);
+  return nextStep?.id || null;
 }
 
 // --- Main Handler ---
