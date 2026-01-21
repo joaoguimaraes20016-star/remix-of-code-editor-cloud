@@ -152,6 +152,7 @@ export default function AutomationEditor() {
       onSave={handleSave}
       onBack={handleBack}
       isSaving={saveMutation.isPending}
+      isNew={isNew}
     />
   );
 }
