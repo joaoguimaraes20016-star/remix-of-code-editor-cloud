@@ -82,23 +82,23 @@
     --chart-4: 210 85% 48%;
     --chart-5: 30 80% 50%;
 
-    /* Sidebar - Dark slate */
-    --sidebar-background: 223 22% 14%;
+    /* Sidebar - Very dark charcoal (Fanbasis-like) */
+    --sidebar-background: 220 13% 10%;
     --sidebar-foreground: 210 20% 96%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 217 91% 60%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 223 18% 22%;
+    --sidebar-border: 220 13% 16%;
     --sidebar-ring: 217 91% 60%;
     
-    /* Builder-specific tokens - neutral dark, no gradients */
-    --builder-bg: 223 22% 10%;
-    --builder-surface: 223 22% 13%;
-    --builder-surface-hover: 223 22% 16%;
-    --builder-surface-active: 223 22% 19%;
-    --builder-border: 223 18% 22%;
-    --builder-border-subtle: 223 18% 18%;
+    /* Builder-specific tokens - matching dark charcoal */
+    --builder-bg: 220 13% 8%;
+    --builder-surface: 220 13% 10%;
+    --builder-surface-hover: 220 13% 14%;
+    --builder-surface-active: 220 13% 18%;
+    --builder-border: 220 13% 16%;
+    --builder-border-subtle: 220 13% 13%;
     --builder-text: 210 20% 96%;
     --builder-text-secondary: 210 15% 80%;
     --builder-text-muted: 215 12% 62%;
