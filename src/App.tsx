@@ -24,7 +24,7 @@ import FunnelList from "./pages/FunnelList";
 import FunnelEditor from "./pages/FunnelEditor";
 import PublicFunnel from "./pages/PublicFunnel";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
-import MessagingSettings from "./pages/MessagingSettings";
+import Marketing from "./pages/Marketing";
 import { EditorShell } from "./builder_v2/EditorShell";
 import { RuntimePage } from "./builder_v2/runtime";
 // Flow-canvas builder (new version)
@@ -138,7 +138,9 @@ const App = () => (
               <Route path="apps" element={<AppsPortal />} />
               <Route path="profile" element={<PersonalSettings />} />
               <Route path="workflows" element={<Workflows />} />
-              <Route path="messaging" element={<MessagingSettings />} />
+              <Route path="marketing" element={<Marketing />} />
+              {/* Legacy redirect for old messaging route */}
+              <Route path="messaging" element={<Navigate to="../marketing" replace />} />
               <Route path="settings" element={<TeamSettings />} />
               {/* Legacy redirect */}
               <Route path="integrations" element={<Navigate to="../apps" replace />} />
