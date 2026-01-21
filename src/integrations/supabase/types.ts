@@ -248,6 +248,143 @@ export type Database = {
           },
         ]
       }
+      automation_enrollments: {
+        Row: {
+          appointment_id: string | null
+          automation_id: string
+          completed_at: string | null
+          contact_id: string | null
+          context_snapshot: Json | null
+          created_at: string
+          current_step_id: string | null
+          enrolled_at: string
+          exit_reason: string | null
+          exited_at: string | null
+          id: string
+          status: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          automation_id: string
+          completed_at?: string | null
+          contact_id?: string | null
+          context_snapshot?: Json | null
+          created_at?: string
+          current_step_id?: string | null
+          enrolled_at?: string
+          exit_reason?: string | null
+          exited_at?: string | null
+          id?: string
+          status?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          automation_id?: string
+          completed_at?: string | null
+          contact_id?: string | null
+          context_snapshot?: Json | null
+          created_at?: string
+          current_step_id?: string | null
+          enrolled_at?: string
+          exit_reason?: string | null
+          exited_at?: string | null
+          id?: string
+          status?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_enrollments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_enrollments_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_enrollments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_enrollments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_goals: {
+        Row: {
+          automation_id: string
+          condition: Json
+          created_at: string
+          description: string | null
+          exit_on_goal: boolean
+          go_to_step_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          automation_id: string
+          condition?: Json
+          created_at?: string
+          description?: string | null
+          exit_on_goal?: boolean
+          go_to_step_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          automation_id?: string
+          condition?: Json
+          created_at?: string
+          description?: string | null
+          exit_on_goal?: boolean
+          go_to_step_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_goals_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_goals_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_rate_limits: {
         Row: {
           automation_id: string | null
@@ -2918,6 +3055,15 @@ export type Database = {
           p_description?: string
           p_reference_id?: string
           p_team_id: string
+        }
+        Returns: Json
+      }
+      fire_automation_event: {
+        Args: {
+          p_event_id?: string
+          p_event_payload: Json
+          p_team_id: string
+          p_trigger_type: string
         }
         Returns: Json
       }
