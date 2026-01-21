@@ -49,8 +49,8 @@ const CATEGORY_CONFIG = {
   engagement: {
     label: "Customer Engagement",
     icon: Heart,
-    color: "text-pink-400",
-    bgColor: "bg-pink-500/20",
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/20",
   },
 };
 

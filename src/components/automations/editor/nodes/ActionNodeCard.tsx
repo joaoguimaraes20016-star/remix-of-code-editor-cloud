@@ -22,6 +22,7 @@ interface ActionDisplay {
   bgColor: string;
 }
 
+// Unified blue-scale color palette - no pink/coral/fuchsia/amber
 const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   send_message: { 
     label: "Send Message", 
@@ -32,14 +33,14 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   notify_team: { 
     label: "Notify Team", 
     icon: <Bell className="h-4 w-4" />, 
-    color: "text-yellow-400", 
-    bgColor: "bg-yellow-500/20" 
+    color: "text-sky-400", 
+    bgColor: "bg-sky-500/20" 
   },
   add_tag: { 
     label: "Add Tag", 
     icon: <Tag className="h-4 w-4" />, 
-    color: "text-green-400", 
-    bgColor: "bg-green-500/20" 
+    color: "text-emerald-400", 
+    bgColor: "bg-emerald-500/20" 
   },
   remove_tag: { 
     label: "Remove Tag", 
@@ -62,14 +63,14 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   add_task: { 
     label: "Create Task", 
     icon: <ClipboardList className="h-4 w-4" />, 
-    color: "text-purple-400", 
-    bgColor: "bg-purple-500/20" 
+    color: "text-indigo-400", 
+    bgColor: "bg-indigo-500/20" 
   },
   add_note: { 
     label: "Add Note", 
     icon: <StickyNote className="h-4 w-4" />, 
-    color: "text-amber-400", 
-    bgColor: "bg-amber-500/20" 
+    color: "text-slate-400", 
+    bgColor: "bg-slate-500/20" 
   },
   assign_owner: { 
     label: "Assign Owner", 
@@ -92,20 +93,20 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   close_deal: { 
     label: "Close Deal", 
     icon: <CheckCircle className="h-4 w-4" />, 
-    color: "text-rose-400", 
-    bgColor: "bg-rose-500/20" 
+    color: "text-green-400", 
+    bgColor: "bg-green-500/20" 
   },
   time_delay: { 
     label: "Wait", 
     icon: <Clock className="h-4 w-4" />, 
-    color: "text-orange-400", 
-    bgColor: "bg-orange-500/20" 
+    color: "text-slate-400", 
+    bgColor: "bg-slate-500/20" 
   },
   wait_until: { 
     label: "Wait Until", 
     icon: <CalendarClock className="h-4 w-4" />, 
-    color: "text-orange-400", 
-    bgColor: "bg-orange-500/20" 
+    color: "text-slate-400", 
+    bgColor: "bg-slate-500/20" 
   },
   business_hours: { 
     label: "Business Hours", 
@@ -116,14 +117,14 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   condition: { 
     label: "If / Else", 
     icon: <GitBranch className="h-4 w-4" />, 
-    color: "text-amber-400", 
-    bgColor: "bg-amber-500/20" 
+    color: "text-blue-400", 
+    bgColor: "bg-blue-500/20" 
   },
   split_test: { 
     label: "A/B Split", 
     icon: <Split className="h-4 w-4" />, 
-    color: "text-pink-400", 
-    bgColor: "bg-pink-500/20" 
+    color: "text-indigo-400", 
+    bgColor: "bg-indigo-500/20" 
   },
   go_to: { 
     label: "Go To", 
@@ -134,8 +135,8 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   run_workflow: { 
     label: "Run Workflow", 
     icon: <PlayCircle className="h-4 w-4" />, 
-    color: "text-fuchsia-400", 
-    bgColor: "bg-fuchsia-500/20" 
+    color: "text-blue-400", 
+    bgColor: "bg-blue-500/20" 
   },
   stop_workflow: { 
     label: "Stop", 
@@ -152,8 +153,8 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   enqueue_dialer: { 
     label: "Power Dialer", 
     icon: <Phone className="h-4 w-4" />, 
-    color: "text-red-400", 
-    bgColor: "bg-red-500/20" 
+    color: "text-blue-400", 
+    bgColor: "bg-blue-500/20" 
   },
 };
 
@@ -224,10 +225,10 @@ export function ActionNodeCard({ step, stepNumber, isSelected, onSelect }: Actio
       whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-80 rounded-2xl border transition-all shadow-lg",
-        "bg-gradient-to-br from-[#1e1e2e] to-[#16162a]",
+        "bg-sidebar border-sidebar-border",
         isSelected 
           ? "border-primary ring-2 ring-primary/30 shadow-primary/20" 
-          : "border-white/10 hover:border-white/25 hover:shadow-xl"
+          : "border-white/10 hover:border-blue-500/50 hover:shadow-xl"
       )}
     >
       {/* Step Number Badge */}

@@ -4,7 +4,7 @@
   width: 100vw;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #0a0a0f 0%, #0d0d15 100%);
+  background: hsl(var(--sidebar-background));
   color: white;
   overflow: hidden;
 }
@@ -197,7 +197,7 @@
   overflow: auto;
   position: relative;
   background: 
-    radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.05) 0%, transparent 50%),
     linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 100% 100%, 40px 40px, 40px 40px;

@@ -19,13 +19,13 @@ export function ConditionNodeCard({ step, isSelected, onSelect }: ConditionNodeC
       whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-72 rounded-xl border transition-all",
-        "bg-gradient-to-br from-amber-900/30 to-amber-950/30",
-        isSelected ? "border-amber-400 ring-2 ring-amber-400/30" : "border-amber-500/30 hover:border-amber-500/50"
+        "bg-sidebar border-sidebar-border",
+        isSelected ? "border-primary ring-2 ring-primary/30" : "border-white/10 hover:border-blue-500/50"
       )}
     >
       <div className="flex items-center gap-3 p-4">
-        <div className="p-2 rounded-lg bg-amber-500/20">
-          <GitBranch className="h-4 w-4 text-amber-400" />
+        <div className="p-2 rounded-lg bg-blue-500/20">
+          <GitBranch className="h-4 w-4 text-blue-400" />
         </div>
         <div className="flex-1 text-left">
           <div className="text-white font-medium">If / Else</div>

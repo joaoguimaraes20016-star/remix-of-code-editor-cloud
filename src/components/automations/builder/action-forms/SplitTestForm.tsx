@@ -63,9 +63,9 @@ export function SplitTestForm({ config, onChange }: SplitTestFormProps) {
 
   return (
     <div className="space-y-4">
-      <div className="p-4 rounded-lg bg-pink-500/10 border border-pink-500/20">
+      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
         <div className="flex items-start gap-3">
-          <Split className="h-5 w-5 text-pink-400 mt-0.5" />
+          <Split className="h-5 w-5 text-blue-400 mt-0.5" />
           <div>
             <p className="text-sm text-white/80">
               Randomly split contacts into different paths for A/B testing.
