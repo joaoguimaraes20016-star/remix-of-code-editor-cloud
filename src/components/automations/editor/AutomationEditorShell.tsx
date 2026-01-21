@@ -4,17 +4,13 @@ import {
   ChevronLeft,
   Save,
   Loader2,
-  Undo2,
-  Redo2,
   Play,
-  PanelLeftClose,
   PanelRightClose,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger } from "@/lib/automations/types";
-import { SmartStartPanel } from "./SmartStartPanel";
 import { TemplateGallery } from "./TemplateGallery";
 import { WorkflowAIHelper } from "./WorkflowAIHelper";
 import { AutomationCanvasArea } from "./AutomationCanvasArea";
@@ -43,8 +39,7 @@ export function AutomationEditorShell({
   onBack,
   isSaving,
 }: AutomationEditorShellProps) {
-  const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
 
@@ -78,6 +73,7 @@ export function AutomationEditorShell({
 
       onChange({ ...definition, steps: newSteps });
       setSelectedNodeId(newStep.id);
+      setRightCollapsed(false);
     },
     [definition, onChange]
   );
@@ -98,7 +94,10 @@ export function AutomationEditorShell({
         .filter((step) => step.id !== stepId)
         .map((step, idx) => ({ ...step, order: idx + 1 }));
       onChange({ ...definition, steps: updatedSteps });
-      if (selectedNodeId === stepId) setSelectedNodeId(null);
+      if (selectedNodeId === stepId) {
+        setSelectedNodeId(null);
+        setRightCollapsed(true);
+      }
     },
     [definition, onChange, selectedNodeId]
   );
@@ -111,9 +110,11 @@ export function AutomationEditorShell({
     [onChange, onNameChange]
   );
 
-  const handleAskAI = useCallback((prompt: string) => {
-    // For now, just deselect any node to show the AI helper
-    setSelectedNodeId(null);
+  const handleSelectNode = useCallback((id: string | null) => {
+    setSelectedNodeId(id);
+    if (id) {
+      setRightCollapsed(false);
+    }
   }, []);
 
   const selectedStep = selectedNodeId === "trigger"
@@ -124,7 +125,7 @@ export function AutomationEditorShell({
 
   return (
     <div className="automation-editor">
-      {/* Header */}
+      {/* Simplified Header */}
       <header className="automation-editor-header">
         <div className="automation-editor-header-left">
           <Button
@@ -146,7 +147,6 @@ export function AutomationEditorShell({
         </div>
 
         <div className="automation-editor-header-center">
-          {/* Status indicator */}
           <div className="flex items-center gap-2 text-xs">
             <div className={cn(
               "w-2 h-2 rounded-full",
@@ -161,23 +161,6 @@ export function AutomationEditorShell({
         </div>
 
         <div className="automation-editor-header-right">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            className="text-white/50"
-          >
-            <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            className="text-white/50"
-          >
-            <Redo2 className="h-4 w-4" />
-          </Button>
-          <div className="automation-editor-divider" />
           <Button
             variant="outline"
             size="sm"
@@ -199,50 +182,17 @@ export function AutomationEditorShell({
         </div>
       </header>
 
-      {/* Main Layout */}
+      {/* Main Layout - Centered Canvas */}
       <div className="automation-editor-body">
-        {/* Left Collapse Button */}
-        {leftCollapsed && (
-          <button
-            type="button"
-            className="automation-editor-expand-btn automation-editor-expand-btn--left"
-            onClick={() => setLeftCollapsed(false)}
-          >
-            <PanelLeftClose className="h-4 w-4 rotate-180" />
-          </button>
-        )}
-
-        {/* Left Sidebar - Smart Start Panel */}
-        <aside className={cn("automation-editor-panel automation-editor-panel--left", leftCollapsed && "automation-editor-panel--collapsed")}>
-          <div className="automation-editor-panel-header">
-            <span className="automation-editor-panel-title">
-              {definition.steps.length === 0 ? "Get Started" : "Add Step"}
-            </span>
-            <button
-              type="button"
-              className="automation-editor-panel-collapse"
-              onClick={() => setLeftCollapsed(true)}
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="automation-editor-panel-content">
-            <SmartStartPanel
-              triggerType={definition.trigger.type}
-              steps={definition.steps}
-              onAddStep={handleAddStep}
-              onOpenTemplates={() => setShowTemplates(true)}
-              onAskAI={handleAskAI}
-            />
-          </div>
-        </aside>
-
-        {/* Center - Canvas */}
-        <main className="automation-editor-canvas">
+        {/* Center - Full Width Canvas */}
+        <main className={cn(
+          "automation-editor-canvas flex-1",
+          !rightCollapsed && "mr-80"
+        )}>
           <AutomationCanvasArea
             definition={definition}
             selectedNodeId={selectedNodeId}
-            onSelectNode={setSelectedNodeId}
+            onSelectNode={handleSelectNode}
             onTriggerChange={handleTriggerChange}
             onStepUpdate={handleStepUpdate}
             onStepDelete={handleStepDelete}
@@ -250,75 +200,77 @@ export function AutomationEditorShell({
           />
         </main>
 
-        {/* Right Collapse Button */}
-        {rightCollapsed && (
-          <button
-            type="button"
-            className="automation-editor-expand-btn automation-editor-expand-btn--right"
-            onClick={() => setRightCollapsed(false)}
-          >
-            <PanelRightClose className="h-4 w-4 rotate-180" />
-          </button>
-        )}
-
-        {/* Right Sidebar - Inspector or AI Helper */}
-        <aside className={cn("automation-editor-panel automation-editor-panel--right", rightCollapsed && "automation-editor-panel--collapsed")}>
-          <div className="automation-editor-panel-header">
-            <span className="automation-editor-panel-title flex items-center gap-2">
-              {showAIHelper ? (
-                <>
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  AI Assistant
-                </>
-              ) : selectedNodeId === "trigger" ? (
-                "Trigger"
-              ) : selectedStep ? (
-                "Configure"
-              ) : (
-                "Inspector"
-              )}
-            </span>
-            <button
-              type="button"
-              className="automation-editor-panel-collapse"
-              onClick={() => setRightCollapsed(true)}
+        {/* Right Panel - Slides in when node selected */}
+        <AnimatePresence>
+          {!rightCollapsed && (
+            <motion.aside
+              initial={{ x: 320, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 320, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed right-0 top-14 bottom-0 w-80 bg-sidebar border-l border-sidebar-border z-20"
             >
-              <PanelRightClose className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="automation-editor-panel-content">
-            <AnimatePresence mode="wait">
-              {showAIHelper ? (
-                <motion.div
-                  key="ai-helper"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="h-full"
+              <div className="automation-editor-panel-header">
+                <span className="automation-editor-panel-title flex items-center gap-2">
+                  {showAIHelper ? (
+                    <>
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      AI Assistant
+                    </>
+                  ) : selectedNodeId === "trigger" ? (
+                    "Configure Trigger"
+                  ) : selectedStep ? (
+                    "Configure Step"
+                  ) : (
+                    "Inspector"
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="automation-editor-panel-collapse"
+                  onClick={() => {
+                    setRightCollapsed(true);
+                    setSelectedNodeId(null);
+                  }}
                 >
-                  <WorkflowAIHelper definition={definition} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="inspector"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                >
-                  <NodeInspector
-                    selectedNodeId={selectedNodeId}
-                    trigger={definition.trigger}
-                    step={selectedStep}
-                    onTriggerChange={handleTriggerChange}
-                    onStepUpdate={handleStepUpdate}
-                    onStepDelete={handleStepDelete}
-                    teamId={teamId}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </aside>
+                  <PanelRightClose className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="automation-editor-panel-content">
+                <AnimatePresence mode="wait">
+                  {showAIHelper ? (
+                    <motion.div
+                      key="ai-helper"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="h-full"
+                    >
+                      <WorkflowAIHelper definition={definition} />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="inspector"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                    >
+                      <NodeInspector
+                        selectedNodeId={selectedNodeId}
+                        trigger={definition.trigger}
+                        step={selectedStep}
+                        onTriggerChange={handleTriggerChange}
+                        onStepUpdate={handleStepUpdate}
+                        onStepDelete={handleStepDelete}
+                        teamId={teamId}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Template Gallery Modal */}

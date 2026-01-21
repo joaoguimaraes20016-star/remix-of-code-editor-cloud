@@ -171,43 +171,43 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCa
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "relative w-80 rounded-2xl border transition-all shadow-lg",
-        "bg-builder-surface border-builder-border",
+        "relative w-96 rounded-2xl border-2 transition-all shadow-lg",
+        "bg-sidebar",
         isSelected 
-          ? "border-primary ring-2 ring-primary/30 shadow-primary/20" 
-          : "border-builder-border hover:border-primary/50 hover:shadow-xl"
+          ? "border-primary shadow-primary/20" 
+          : "border-sidebar-border hover:border-primary/50 hover:shadow-xl"
       )}
     >
       {/* Status Indicator */}
       <div className={cn(
-        "absolute -right-1 -top-1 w-5 h-5 rounded-full flex items-center justify-center",
-        isConfigured ? "bg-green-500/20" : "bg-yellow-500/20"
+        "absolute -right-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-sidebar",
+        isConfigured ? "bg-green-500" : "bg-yellow-500"
       )}>
         {isConfigured ? (
-          <Check className="h-3 w-3 text-green-400" />
+          <Check className="h-3.5 w-3.5 text-white" />
         ) : (
-          <AlertCircle className="h-3 w-3 text-yellow-400" />
+          <AlertCircle className="h-3.5 w-3.5 text-white" />
         )}
       </div>
 
-      <div className="flex items-center gap-4 p-5">
+      <div className="flex items-center gap-5 p-6">
         {/* Icon */}
-        <div className={cn("p-3 rounded-xl", display.bgColor)}>
+        <div className={cn("p-4 rounded-xl", display.bgColor)}>
           <span className={display.color}>{display.icon}</span>
         </div>
 
         {/* Content */}
         <div className="flex-1 text-left">
-          <div className="text-xs text-primary/70 uppercase tracking-wide font-medium mb-1">
+          <div className="text-xs text-primary/70 uppercase tracking-wider font-medium mb-1">
             When this happens
           </div>
-          <div className="text-builder-text font-medium text-lg">
+          <div className="text-white font-semibold text-lg">
             {display.label}
           </div>
         </div>
 
         {/* Trigger Badge */}
-        <div className="px-2 py-1 rounded-lg bg-primary/15 text-xs font-medium text-primary">
+        <div className="px-3 py-1.5 rounded-lg bg-primary/15 text-sm font-medium text-primary">
           Trigger
         </div>
       </div>

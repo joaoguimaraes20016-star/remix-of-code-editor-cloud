@@ -1,57 +1,56 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Zap, GitBranch, Workflow, Bot, History, MessageSquare } from "lucide-react";
+import { Zap, GitBranch, Workflow, Bot, History, Settings2 } from "lucide-react";
 import { TaskFlowBuilder } from "@/components/TaskFlowBuilder";
 import { FollowUpSettings } from "@/components/FollowUpSettings";
 import { ActionPipelineMappings } from "@/components/ActionPipelineMappings";
 import { AutomationsList } from "@/components/automations/AutomationsList";
 import AutomationRunsList from "@/components/automations/AutomationRunsList";
 import { MessageLogsList } from "@/components/automations/MessageLogsList";
+import { AutomationHeroPrompt } from "@/components/automations/AutomationHeroPrompt";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { TriggerType } from "@/lib/automations/types";
 
 export default function Workflows() {
   const { teamId } = useParams();
+  const navigate = useNavigate();
 
   if (!teamId) {
     return <div className="p-8 text-center text-muted-foreground">Team not found</div>;
   }
 
-  return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <Workflow className="h-6 w-6 text-primary" />
-          Workflows & Automations
-        </h1>
-        <p className="text-muted-foreground">Configure automated task flows, follow-ups, and pipeline actions</p>
-      </div>
+  const handleQuickStart = (triggerType: TriggerType) => {
+    // Navigate to editor with pre-selected trigger
+    navigate(`/team/${teamId}/workflows/new/edit?trigger=${triggerType}`);
+  };
 
-      {/* Tabs */}
+  const handleCreateFromPrompt = (prompt: string) => {
+    // For now, navigate to new automation - AI processing can be added later
+    navigate(`/team/${teamId}/workflows/new/edit`);
+  };
+
+  return (
+    <div className="p-6 space-y-8 max-w-5xl mx-auto">
+      {/* Hero Prompt Section */}
+      <AutomationHeroPrompt 
+        onQuickStart={handleQuickStart}
+        onCreateFromPrompt={handleCreateFromPrompt}
+      />
+
+      {/* Simplified Tabs */}
       <Tabs defaultValue="automations" className="space-y-6">
         <TabsList className="bg-muted/50">
           <TabsTrigger value="automations" className="gap-2">
             <Bot className="h-4 w-4" />
             Automations
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
+          <TabsTrigger value="activity" className="gap-2">
             <History className="h-4 w-4" />
-            History
+            Activity
           </TabsTrigger>
-          <TabsTrigger value="messages" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Messages
-          </TabsTrigger>
-          <TabsTrigger value="confirmations" className="gap-2">
-            <Zap className="h-4 w-4" />
-            Call Confirmations
-          </TabsTrigger>
-          <TabsTrigger value="followups" className="gap-2">
-            <GitBranch className="h-4 w-4" />
-            Follow-Up Flows
-          </TabsTrigger>
-          <TabsTrigger value="actions" className="gap-2">
-            <Workflow className="h-4 w-4" />
-            Pipeline Actions
+          <TabsTrigger value="settings" className="gap-2">
+            <Settings2 className="h-4 w-4" />
+            Advanced
           </TabsTrigger>
         </TabsList>
 
@@ -60,21 +59,27 @@ export default function Workflows() {
           <AutomationsList teamId={teamId} />
         </TabsContent>
 
-        {/* History Tab */}
-        <TabsContent value="history" className="space-y-4">
-          <AutomationRunsList teamId={teamId} />
+        {/* Activity Tab - Combines History + Messages */}
+        <TabsContent value="activity" className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Recent Runs</h3>
+            <AutomationRunsList teamId={teamId} />
+          </div>
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Message Logs</h3>
+            <MessageLogsList teamId={teamId} />
+          </div>
         </TabsContent>
 
-        {/* Messages Tab */}
-        <TabsContent value="messages" className="space-y-4">
-          <MessageLogsList teamId={teamId} />
-        </TabsContent>
-
-        {/* Call Confirmation Flow */}
-        <TabsContent value="confirmations" className="space-y-4">
+        {/* Advanced Settings Tab */}
+        <TabsContent value="settings" className="space-y-6">
+          {/* Call Confirmation Flow */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Call Confirmation Flow</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                Call Confirmation Flow
+              </CardTitle>
               <CardDescription>
                 Configure when and how confirmation tasks are created for new appointments
               </CardDescription>
@@ -83,26 +88,28 @@ export default function Workflows() {
               <TaskFlowBuilder teamId={teamId} />
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Follow-Up Flows */}
-        <TabsContent value="followups" className="space-y-4">
+          {/* Follow-Up Flows */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Automated Follow-Up Flows</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <GitBranch className="h-5 w-5 text-primary" />
+                Automated Follow-Up Flows
+              </CardTitle>
               <CardDescription>Set up automatic follow-up tasks based on pipeline stage changes</CardDescription>
             </CardHeader>
             <CardContent>
               <FollowUpSettings teamId={teamId} />
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Pipeline Action Mappings */}
-        <TabsContent value="actions" className="space-y-4">
+          {/* Pipeline Action Mappings */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Action → Pipeline Mappings</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Workflow className="h-5 w-5 text-primary" />
+                Action → Pipeline Mappings
+              </CardTitle>
               <CardDescription>Define which pipeline stage leads move to when specific actions occur</CardDescription>
             </CardHeader>
             <CardContent>
