@@ -38,10 +38,26 @@ const channelInfo: Record<string, { icon: typeof Mail; label: string; gradient: 
 
 export function PricingTable({ pricing }: PricingTableProps) {
   const formatPrice = (cents: number) => {
+    // Convert cents to dollars
+    const dollars = cents / 100;
+    
+    // For very small amounts (fractional cents), show more precision
     if (cents < 1) {
-      return `$${cents.toFixed(3)}`;
+      // Show 4-5 decimal places for sub-cent pricing
+      return `$${dollars.toFixed(5).replace(/0+$/, '').replace(/\.$/, '')}`;
     }
-    return `$${(cents / 100).toFixed(2)}`;
+    // For amounts less than $0.01, show 4 decimals
+    if (dollars < 0.01) {
+      return `$${dollars.toFixed(4)}`;
+    }
+    // Standard 2 decimal places for normal prices
+    return `$${dollars.toFixed(2)}`;
+  };
+
+  // Calculate cost per 1000 for context
+  const formatPer1000 = (cents: number) => {
+    const per1000 = (cents * 1000) / 100;
+    return `$${per1000.toFixed(2)}/1K`;
   };
 
   if (!pricing.length) return null;
@@ -78,6 +94,9 @@ export function PricingTable({ pricing }: PricingTableProps) {
                     </div>
                     <div className="text-xs text-muted-foreground">
                       per {item.unit_label}
+                    </div>
+                    <div className="text-xs text-muted-foreground/70 mt-1">
+                      {formatPer1000(item.unit_price_cents)}
                     </div>
                   </div>
                 </div>

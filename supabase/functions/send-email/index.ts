@@ -1,7 +1,14 @@
 // supabase/functions/send-email/index.ts
 // Email Provider Edge Function with routing for Stackit Default (Resend) and Custom Domains (Mailgun)
+// Includes wallet billing integration
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  getChannelPrice, 
+  deductFromWallet, 
+  refundToWallet, 
+  triggerAutoRechargeIfNeeded 
+} from "../_shared/billing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +22,7 @@ interface SendEmailRequest {
   html?: string;
   from?: string;
   fromName?: string;
-  fromEmail?: string; // Custom domain email address
+  fromEmail?: string;
   replyTo?: string;
   teamId: string;
   automationId?: string;
@@ -23,6 +30,7 @@ interface SendEmailRequest {
   leadId?: string;
   appointmentId?: string;
   template?: string;
+  skipBilling?: boolean;
 }
 
 interface ResendResponse {
@@ -167,6 +175,7 @@ Deno.serve(async (req) => {
       leadId,
       appointmentId,
       template,
+      skipBilling,
     } = requestData;
 
     if (!to || !subject || (!body && !html)) {
@@ -174,6 +183,37 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: false, error: "Missing required fields: to, subject, body/html" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // Get email pricing
+    const pricing = await getChannelPrice(supabase, "email");
+    const costCents = pricing?.unitPriceCents || 0.0675; // Default to 0.0675 cents if not found
+
+    // Deduct from wallet (unless skipped)
+    let billingResult: { success: boolean; newBalanceCents: number; shouldAutoRecharge: boolean; error?: string } = { 
+      success: true, newBalanceCents: 0, shouldAutoRecharge: false 
+    };
+    
+    if (!skipBilling && teamId) {
+      billingResult = await deductFromWallet(supabase, {
+        teamId,
+        amountCents: costCents,
+        channel: "email",
+        referenceId: runId || undefined,
+        description: `Email to ${to}`,
+      });
+
+      if (!billingResult.success) {
+        console.error("[send-email] Billing failed:", billingResult.error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: billingResult.error || "Insufficient wallet balance",
+            code: "INSUFFICIENT_BALANCE",
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // Determine sending method: custom domain or Stackit default
@@ -184,7 +224,6 @@ Deno.serve(async (req) => {
 
     // Check if fromEmail specifies a custom domain
     if (fromEmail && fromEmail !== "default") {
-      // Verify the domain is verified for this team
       const { data: domainRecord } = await supabase
         .from("team_sending_domains")
         .select("full_domain, status")
@@ -196,7 +235,6 @@ Deno.serve(async (req) => {
       if (domainRecord) {
         useCustomDomain = true;
         customDomain = domainRecord.full_domain;
-        // Construct email address from fromEmail domain
         senderEmail = fromEmail.includes("@") ? fromEmail : `noreply@${fromEmail}`;
       }
     }
@@ -204,7 +242,7 @@ Deno.serve(async (req) => {
     const fullFrom = `${senderName} <${senderEmail}>`;
     const emailHtml = html || `<p>${body.replace(/\n/g, "<br/>")}</p>`;
 
-    console.log(`[send-email] Sending via ${useCustomDomain ? `Mailgun (${customDomain})` : "Resend (default)"} to ${to}`);
+    console.log(`[send-email] Sending via ${useCustomDomain ? `Mailgun (${customDomain})` : "Resend (default)"} to ${to}, cost: ${costCents} cents`);
 
     let result: { success: boolean; messageId?: string; error?: string };
     let provider: string;
@@ -234,6 +272,23 @@ Deno.serve(async (req) => {
     const status = result.success ? "sent" : "failed";
     const messageId = result.messageId || `failed_${Date.now()}`;
 
+    // If send failed, refund the wallet
+    if (!result.success && !skipBilling && teamId) {
+      console.log("[send-email] Refunding failed email cost");
+      await refundToWallet(supabase, {
+        teamId,
+        amountCents: costCents,
+        channel: "email",
+        referenceId: messageId,
+        description: "Email send failed - refund",
+      });
+    }
+
+    // Trigger auto-recharge if needed
+    if (billingResult.shouldAutoRecharge && teamId) {
+      triggerAutoRechargeIfNeeded(teamId, true);
+    }
+
     // Log to message_logs
     try {
       const { error: logError } = await supabase.from("message_logs").insert([
@@ -255,6 +310,7 @@ Deno.serve(async (req) => {
             appointmentId,
             replyTo,
             customDomain: customDomain || null,
+            costCents,
           },
           status,
           error_message: result.error || null,
@@ -276,6 +332,8 @@ Deno.serve(async (req) => {
         status,
         provider,
         customDomain,
+        costCents,
+        newBalanceCents: billingResult.newBalanceCents,
         error: result.error,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
