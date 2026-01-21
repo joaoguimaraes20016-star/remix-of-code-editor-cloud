@@ -3,7 +3,12 @@ import {
   Zap, Check, AlertCircle, UserPlus, Tag, Calendar, CalendarClock, 
   UserX, CalendarCheck, CalendarX, ArrowRightLeft, Briefcase, 
   Trophy, XCircle, DollarSign, Webhook, Play, 
-  Clock, Timer, FileText, X
+  Clock, Timer, FileText, X, Cake, UserCog, BellOff, CalendarDays,
+  StickyNote, ClipboardCheck, HelpCircle, Eye, MousePointerClick,
+  ListPlus, Bell, CheckSquare, RefreshCw, Send, AlertTriangle,
+  Repeat, RotateCcw, ShoppingCart, MessageCircle, MailOpen, MailX,
+  AlertOctagon, Star, Facebook, Music, Search, CreditCard, Receipt,
+  ReceiptText
 } from "lucide-react";
 import type { AutomationTrigger, TriggerType } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
@@ -23,6 +28,7 @@ interface TriggerDisplay {
 }
 
 const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
+  // Contact Events
   lead_created: { 
     label: "Lead Created", 
     icon: <UserPlus className="h-5 w-5" />, 
@@ -41,12 +47,90 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-red-400", 
     bgColor: "bg-red-500/20" 
   },
+  contact_changed: {
+    label: "Contact Changed",
+    icon: <UserCog className="h-5 w-5" />,
+    color: "text-sky-400",
+    bgColor: "bg-sky-500/20"
+  },
+  contact_dnd: {
+    label: "DND Status Changed",
+    icon: <BellOff className="h-5 w-5" />,
+    color: "text-orange-400",
+    bgColor: "bg-orange-500/20"
+  },
+  birthday_reminder: {
+    label: "Birthday Reminder",
+    icon: <Cake className="h-5 w-5" />,
+    color: "text-pink-400",
+    bgColor: "bg-pink-500/20"
+  },
+  custom_date_reminder: {
+    label: "Custom Date Reminder",
+    icon: <CalendarDays className="h-5 w-5" />,
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/20"
+  },
+  note_added: {
+    label: "Note Added",
+    icon: <StickyNote className="h-5 w-5" />,
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/20"
+  },
+
+  // Form Events
   form_submitted: { 
     label: "Form Submitted", 
     icon: <FileText className="h-5 w-5" />, 
     color: "text-blue-400", 
     bgColor: "bg-blue-500/20" 
   },
+  survey_submitted: {
+    label: "Survey Submitted",
+    icon: <ClipboardCheck className="h-5 w-5" />,
+    color: "text-teal-400",
+    bgColor: "bg-teal-500/20"
+  },
+  quiz_submitted: {
+    label: "Quiz Submitted",
+    icon: <HelpCircle className="h-5 w-5" />,
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/20"
+  },
+  funnel_page_view: {
+    label: "Page Viewed",
+    icon: <Eye className="h-5 w-5" />,
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-500/20"
+  },
+  trigger_link_clicked: {
+    label: "Link Clicked",
+    icon: <MousePointerClick className="h-5 w-5" />,
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/20"
+  },
+
+  // Task Events
+  task_added: {
+    label: "Task Added",
+    icon: <ListPlus className="h-5 w-5" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/20"
+  },
+  task_reminder: {
+    label: "Task Reminder",
+    icon: <Bell className="h-5 w-5" />,
+    color: "text-yellow-400",
+    bgColor: "bg-yellow-500/20"
+  },
+  task_completed: {
+    label: "Task Completed",
+    icon: <CheckSquare className="h-5 w-5" />,
+    color: "text-green-400",
+    bgColor: "bg-green-500/20"
+  },
+
+  // Appointment Events
   appointment_booked: { 
     label: "Appointment Booked", 
     icon: <Calendar className="h-5 w-5" />, 
@@ -77,6 +161,8 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-gray-400", 
     bgColor: "bg-gray-500/20" 
   },
+
+  // Pipeline Events
   stage_changed: { 
     label: "Stage Changed", 
     icon: <ArrowRightLeft className="h-5 w-5" />, 
@@ -101,6 +187,20 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-red-400", 
     bgColor: "bg-red-500/20" 
   },
+  opportunity_changed: {
+    label: "Opportunity Changed",
+    icon: <RefreshCw className="h-5 w-5" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/20"
+  },
+  stale_opportunity: {
+    label: "Stale Opportunity",
+    icon: <AlertTriangle className="h-5 w-5" />,
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/20"
+  },
+
+  // Payment Events
   payment_received: { 
     label: "Payment Received", 
     icon: <DollarSign className="h-5 w-5" />, 
@@ -113,6 +213,94 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-red-400", 
     bgColor: "bg-red-500/20" 
   },
+  invoice_created: {
+    label: "Invoice Created",
+    icon: <ReceiptText className="h-5 w-5" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/20"
+  },
+  invoice_sent: {
+    label: "Invoice Sent",
+    icon: <Send className="h-5 w-5" />,
+    color: "text-sky-400",
+    bgColor: "bg-sky-500/20"
+  },
+  invoice_paid: {
+    label: "Invoice Paid",
+    icon: <Receipt className="h-5 w-5" />,
+    color: "text-green-400",
+    bgColor: "bg-green-500/20"
+  },
+  invoice_overdue: {
+    label: "Invoice Overdue",
+    icon: <AlertTriangle className="h-5 w-5" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/20"
+  },
+  subscription_created: {
+    label: "Subscription Created",
+    icon: <Repeat className="h-5 w-5" />,
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/20"
+  },
+  subscription_cancelled: {
+    label: "Subscription Cancelled",
+    icon: <XCircle className="h-5 w-5" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/20"
+  },
+  subscription_renewed: {
+    label: "Subscription Renewed",
+    icon: <RotateCcw className="h-5 w-5" />,
+    color: "text-green-400",
+    bgColor: "bg-green-500/20"
+  },
+  refund_issued: {
+    label: "Refund Issued",
+    icon: <CreditCard className="h-5 w-5" />,
+    color: "text-orange-400",
+    bgColor: "bg-orange-500/20"
+  },
+  order_submitted: {
+    label: "Order Submitted",
+    icon: <ShoppingCart className="h-5 w-5" />,
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500/20"
+  },
+
+  // Messaging Events
+  customer_replied: {
+    label: "Customer Replied",
+    icon: <MessageCircle className="h-5 w-5" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/20"
+  },
+  email_opened: {
+    label: "Email Opened",
+    icon: <MailOpen className="h-5 w-5" />,
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/20"
+  },
+  email_bounced: {
+    label: "Email Bounced",
+    icon: <MailX className="h-5 w-5" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/20"
+  },
+  messaging_error: {
+    label: "Messaging Error",
+    icon: <AlertOctagon className="h-5 w-5" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/20"
+  },
+  new_review_received: {
+    label: "New Review",
+    icon: <Star className="h-5 w-5" />,
+    color: "text-yellow-400",
+    bgColor: "bg-yellow-500/20"
+  },
+
+  // Integration Events
   webhook_received: { 
     label: "Webhook Received", 
     icon: <Webhook className="h-5 w-5" />, 
@@ -137,12 +325,28 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-gray-400", 
     bgColor: "bg-gray-500/20" 
   },
+  facebook_lead_form: {
+    label: "Facebook Lead Form",
+    icon: <Facebook className="h-5 w-5" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/20"
+  },
+  tiktok_form_submitted: {
+    label: "TikTok Form",
+    icon: <Music className="h-5 w-5" />,
+    color: "text-pink-400",
+    bgColor: "bg-pink-500/20"
+  },
+  google_lead_form: {
+    label: "Google Lead Form",
+    icon: <Search className="h-5 w-5" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/20"
+  },
 };
 
 // Check if trigger has required configuration
 function isTriggerConfigured(trigger: AutomationTrigger): boolean {
-  // Most triggers work without additional config
-  // Specific triggers that need config:
   switch (trigger.type) {
     case 'webhook_received':
       return !!trigger.config?.webhookId;

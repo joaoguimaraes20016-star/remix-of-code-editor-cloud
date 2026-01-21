@@ -3,7 +3,12 @@ import {
   MessageSquare, Clock, Tag, ClipboardList, UserCheck, ArrowRightLeft, 
   Bell, Webhook, Check, AlertCircle, GitBranch, UserPlus, UserCog, StickyNote,
   Briefcase, CheckCircle, CalendarClock, Building2, Split, CornerDownRight,
-  PlayCircle, StopCircle, Phone
+  PlayCircle, StopCircle, Phone, Mail, MessageCircleMore, Voicemail, PhoneCall,
+  Star, Reply, Search, Trash2, BellOff, Copy, Users, UserMinus, Calendar,
+  CalendarX, Link, PhoneIncoming, RefreshCw, Receipt, CreditCard, Repeat,
+  XCircle, Target, Variable, PlusCircle, MinusCircle, CalendarDays,
+  Hash, Type, Calculator, Brain, Sparkles, Languages, FileText, Bot,
+  Facebook, ChartBar, Megaphone, Table, Slack
 } from "lucide-react";
 import type { AutomationStep, ActionType } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
@@ -21,19 +26,87 @@ interface ActionDisplay {
   bgColor: string;
 }
 
-// Unified system palette (primary blue; allow success/destructive)
 const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
+  // Messaging Actions
   send_message: { 
     label: "Send Message", 
     icon: <MessageSquare className="h-4 w-4" />, 
     color: "text-primary", 
     bgColor: "bg-primary/15" 
   },
+  send_email: {
+    label: "Send Email",
+    icon: <Mail className="h-4 w-4" />,
+    color: "text-sky-400",
+    bgColor: "bg-sky-500/15"
+  },
+  send_sms: {
+    label: "Send SMS",
+    icon: <MessageSquare className="h-4 w-4" />,
+    color: "text-green-400",
+    bgColor: "bg-green-500/15"
+  },
+  send_whatsapp: {
+    label: "Send WhatsApp",
+    icon: <MessageCircleMore className="h-4 w-4" />,
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500/15"
+  },
+  send_voicemail: {
+    label: "Send Voicemail",
+    icon: <Voicemail className="h-4 w-4" />,
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/15"
+  },
+  make_call: {
+    label: "Make Call",
+    icon: <PhoneCall className="h-4 w-4" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/15"
+  },
   notify_team: { 
     label: "Notify Team", 
     icon: <Bell className="h-4 w-4" />, 
     color: "text-primary", 
     bgColor: "bg-primary/15" 
+  },
+  send_review_request: {
+    label: "Send Review Request",
+    icon: <Star className="h-4 w-4" />,
+    color: "text-yellow-400",
+    bgColor: "bg-yellow-500/15"
+  },
+  reply_in_comments: {
+    label: "Reply in Comments",
+    icon: <Reply className="h-4 w-4" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/15"
+  },
+
+  // CRM Actions
+  create_contact: { 
+    label: "Create Contact", 
+    icon: <UserPlus className="h-4 w-4" />, 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
+  },
+  find_contact: {
+    label: "Find Contact",
+    icon: <Search className="h-4 w-4" />,
+    color: "text-sky-400",
+    bgColor: "bg-sky-500/15"
+  },
+  update_contact: { 
+    label: "Update Contact", 
+    icon: <UserCog className="h-4 w-4" />, 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
+  },
+  delete_contact: {
+    label: "Delete Contact",
+    icon: <Trash2 className="h-4 w-4" />,
+    color: "text-destructive",
+    bgColor: "bg-destructive/15"
   },
   add_tag: { 
     label: "Add Tag", 
@@ -47,15 +120,9 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-destructive", 
     bgColor: "bg-destructive/15" 
   },
-  create_contact: { 
-    label: "Create Contact", 
-    icon: <UserPlus className="h-4 w-4" />, 
-    color: "text-primary", 
-    bgColor: "bg-primary/15" 
-  },
-  update_contact: { 
-    label: "Update Contact", 
-    icon: <UserCog className="h-4 w-4" />, 
+  add_note: { 
+    label: "Add Note", 
+    icon: <StickyNote className="h-4 w-4" />, 
     color: "text-primary", 
     bgColor: "bg-primary/15" 
   },
@@ -65,18 +132,76 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-primary", 
     bgColor: "bg-primary/15" 
   },
-  add_note: { 
-    label: "Add Note", 
-    icon: <StickyNote className="h-4 w-4" />, 
-    color: "text-primary", 
-    bgColor: "bg-primary/15" 
-  },
   assign_owner: { 
     label: "Assign Owner", 
     icon: <UserCheck className="h-4 w-4" />, 
     color: "text-primary", 
     bgColor: "bg-primary/15" 
   },
+  remove_owner: {
+    label: "Remove Owner",
+    icon: <UserMinus className="h-4 w-4" />,
+    color: "text-orange-400",
+    bgColor: "bg-orange-500/15"
+  },
+  toggle_dnd: {
+    label: "Toggle DND",
+    icon: <BellOff className="h-4 w-4" />,
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/15"
+  },
+  copy_contact: {
+    label: "Copy Contact",
+    icon: <Copy className="h-4 w-4" />,
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-500/15"
+  },
+  add_followers: {
+    label: "Add Followers",
+    icon: <Users className="h-4 w-4" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/15"
+  },
+  remove_followers: {
+    label: "Remove Followers",
+    icon: <Users className="h-4 w-4" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/15"
+  },
+
+  // Appointment Actions
+  book_appointment: {
+    label: "Book Appointment",
+    icon: <Calendar className="h-4 w-4" />,
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/15"
+  },
+  update_appointment: {
+    label: "Update Appointment",
+    icon: <CalendarClock className="h-4 w-4" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/15"
+  },
+  cancel_appointment: {
+    label: "Cancel Appointment",
+    icon: <CalendarX className="h-4 w-4" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/15"
+  },
+  create_booking_link: {
+    label: "Create Booking Link",
+    icon: <Link className="h-4 w-4" />,
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/15"
+  },
+  log_call: {
+    label: "Log Call",
+    icon: <PhoneIncoming className="h-4 w-4" />,
+    color: "text-green-400",
+    bgColor: "bg-green-500/15"
+  },
+
+  // Pipeline Actions
   update_stage: { 
     label: "Update Stage", 
     icon: <ArrowRightLeft className="h-4 w-4" />, 
@@ -89,12 +214,52 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-primary", 
     bgColor: "bg-primary/15" 
   },
+  update_deal: {
+    label: "Update Deal",
+    icon: <RefreshCw className="h-4 w-4" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/15"
+  },
   close_deal: { 
     label: "Close Deal", 
     icon: <CheckCircle className="h-4 w-4" />, 
     color: "text-success", 
     bgColor: "bg-success/15" 
   },
+  find_opportunity: {
+    label: "Find Opportunity",
+    icon: <Search className="h-4 w-4" />,
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-500/15"
+  },
+
+  // Payment Actions
+  send_invoice: {
+    label: "Send Invoice",
+    icon: <Receipt className="h-4 w-4" />,
+    color: "text-green-400",
+    bgColor: "bg-green-500/15"
+  },
+  charge_payment: {
+    label: "Charge Payment",
+    icon: <CreditCard className="h-4 w-4" />,
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500/15"
+  },
+  create_subscription: {
+    label: "Create Subscription",
+    icon: <Repeat className="h-4 w-4" />,
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/15"
+  },
+  cancel_subscription: {
+    label: "Cancel Subscription",
+    icon: <XCircle className="h-4 w-4" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/15"
+  },
+
+  // Flow Control Actions
   time_delay: { 
     label: "Wait", 
     icon: <Clock className="h-4 w-4" />, 
@@ -131,11 +296,35 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-primary", 
     bgColor: "bg-primary/15" 
   },
+  goal_achieved: {
+    label: "Goal Achieved",
+    icon: <Target className="h-4 w-4" />,
+    color: "text-green-400",
+    bgColor: "bg-green-500/15"
+  },
+  set_variable: {
+    label: "Set Variable",
+    icon: <Variable className="h-4 w-4" />,
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/15"
+  },
   run_workflow: { 
     label: "Run Workflow", 
     icon: <PlayCircle className="h-4 w-4" />, 
     color: "text-primary", 
     bgColor: "bg-primary/15" 
+  },
+  add_to_workflow: {
+    label: "Add to Workflow",
+    icon: <PlusCircle className="h-4 w-4" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/15"
+  },
+  remove_from_workflow: {
+    label: "Remove from Workflow",
+    icon: <MinusCircle className="h-4 w-4" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/15"
   },
   stop_workflow: { 
     label: "Stop", 
@@ -143,11 +332,109 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-destructive", 
     bgColor: "bg-destructive/15" 
   },
+
+  // Data Transform Actions
+  format_date: {
+    label: "Format Date",
+    icon: <CalendarDays className="h-4 w-4" />,
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/15"
+  },
+  format_number: {
+    label: "Format Number",
+    icon: <Hash className="h-4 w-4" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/15"
+  },
+  format_text: {
+    label: "Format Text",
+    icon: <Type className="h-4 w-4" />,
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-500/15"
+  },
+  math_operation: {
+    label: "Math Operation",
+    icon: <Calculator className="h-4 w-4" />,
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/15"
+  },
+
+  // AI Actions
+  ai_intent: {
+    label: "AI Intent",
+    icon: <Brain className="h-4 w-4" />,
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/15"
+  },
+  ai_decision: {
+    label: "AI Decision",
+    icon: <Sparkles className="h-4 w-4" />,
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/15"
+  },
+  ai_translate: {
+    label: "AI Translate",
+    icon: <Languages className="h-4 w-4" />,
+    color: "text-sky-400",
+    bgColor: "bg-sky-500/15"
+  },
+  ai_summarize: {
+    label: "AI Summarize",
+    icon: <FileText className="h-4 w-4" />,
+    color: "text-teal-400",
+    bgColor: "bg-teal-500/15"
+  },
+  ai_message: {
+    label: "AI Message",
+    icon: <Bot className="h-4 w-4" />,
+    color: "text-pink-400",
+    bgColor: "bg-pink-500/15"
+  },
+
+  // Marketing Actions
+  meta_conversion: {
+    label: "Meta Conversion",
+    icon: <Facebook className="h-4 w-4" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/15"
+  },
+  google_conversion: {
+    label: "Google Conversion",
+    icon: <ChartBar className="h-4 w-4" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/15"
+  },
+  add_to_audience: {
+    label: "Add to Audience",
+    icon: <Megaphone className="h-4 w-4" />,
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-500/15"
+  },
+  remove_from_audience: {
+    label: "Remove from Audience",
+    icon: <Megaphone className="h-4 w-4" />,
+    color: "text-orange-400",
+    bgColor: "bg-orange-500/15"
+  },
+
+  // Integration Actions
   custom_webhook: { 
     label: "Webhook", 
     icon: <Webhook className="h-4 w-4" />, 
     color: "text-primary", 
     bgColor: "bg-primary/15" 
+  },
+  google_sheets: {
+    label: "Google Sheets",
+    icon: <Table className="h-4 w-4" />,
+    color: "text-green-400",
+    bgColor: "bg-green-500/15"
+  },
+  slack_message: {
+    label: "Slack Message",
+    icon: <Slack className="h-4 w-4" />,
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/15"
   },
   enqueue_dialer: { 
     label: "Power Dialer", 
@@ -161,6 +448,9 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
 function isStepConfigured(step: AutomationStep): boolean {
   switch (step.type) {
     case 'send_message':
+    case 'send_email':
+    case 'send_sms':
+    case 'send_whatsapp':
       return !!(step.config?.template && step.config?.channel);
     case 'time_delay':
       return !!(step.config?.delayValue && step.config?.delayType);
@@ -175,6 +465,14 @@ function isStepConfigured(step: AutomationStep): boolean {
       return (step.conditions?.length || 0) > 0 || (step.conditionGroups?.length || 0) > 0;
     case 'custom_webhook':
       return !!step.config?.url;
+    case 'find_contact':
+      return !!step.config?.searchField;
+    case 'send_invoice':
+      return !!step.config?.amount;
+    case 'book_appointment':
+      return !!step.config?.calendarId;
+    case 'math_operation':
+      return !!step.config?.operation;
     default:
       return true;
   }
@@ -184,6 +482,9 @@ function isStepConfigured(step: AutomationStep): boolean {
 function getStepPreview(step: AutomationStep): string {
   switch (step.type) {
     case 'send_message':
+    case 'send_email':
+    case 'send_sms':
+    case 'send_whatsapp':
       if (step.config?.template) {
         const template = step.config.template;
         return template.length > 40 ? `"${template.substring(0, 40)}..."` : `"${template}"`;
@@ -207,6 +508,19 @@ function getStepPreview(step: AutomationStep): string {
       return count > 0 ? `${count} condition${count !== 1 ? 's' : ''}` : 'Add conditions';
     case 'custom_webhook':
       return step.config?.url ? step.config.url.substring(0, 30) + '...' : 'Configure webhook';
+    case 'find_contact':
+      return step.config?.searchField ? `Search by ${step.config.searchField}` : 'Set search criteria';
+    case 'send_invoice':
+      return step.config?.amount ? `$${step.config.amount}` : 'Set invoice details';
+    case 'book_appointment':
+      return step.config?.calendarId ? 'Calendar configured' : 'Select calendar';
+    case 'math_operation':
+      return step.config?.operation || 'Set operation';
+    case 'ai_intent':
+    case 'ai_decision':
+      return 'AI-powered logic';
+    case 'goal_achieved':
+      return step.config?.goalName || 'Set goal name';
     default:
       return 'Click to configure';
   }
