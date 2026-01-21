@@ -41,13 +41,13 @@
 
     --radius: 0.75rem;
 
-    /* Builder-specific tokens - dark slate (unified system) */
-    --builder-bg: 223 22% 10%;
-    --builder-surface: 223 22% 13%;
-    --builder-surface-hover: 223 22% 16%;
-    --builder-surface-active: 223 22% 19%;
-    --builder-border: 223 18% 22%;
-    --builder-border-subtle: 223 18% 18%;
+    /* Builder-specific tokens - very dark charcoal (Fanbasis-like) */
+    --builder-bg: 220 13% 8%;
+    --builder-surface: 220 13% 10%;
+    --builder-surface-hover: 220 13% 14%;
+    --builder-surface-active: 220 13% 18%;
+    --builder-border: 220 13% 16%;
+    --builder-border-subtle: 220 13% 13%;
     --builder-text: 210 20% 96%;
     --builder-text-secondary: 210 15% 80%;
     --builder-text-muted: 215 12% 62%;
@@ -78,14 +78,14 @@
     --canvas-frame: 0 0% 100%;
     --canvas-frame-border: 0 0% 14%;
 
-    /* Sidebar - Dark slate (Fanbasis-like) */
-    --sidebar-background: 223 22% 14%;
+    /* Sidebar - Very dark charcoal (Fanbasis-like) */
+    --sidebar-background: 220 13% 10%;
     --sidebar-foreground: 210 20% 96%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 217 91% 60%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 223 18% 22%;
+    --sidebar-border: 220 13% 16%;
     --sidebar-ring: 217 91% 60%;
 
     /* Brand gradient stops - Blue range (unified) */
@@ -95,25 +95,25 @@
   }
 
   .dark {
-    /* Dark theme tokens - Dark slate base (Fanbasis-like) */
-    --background: 223 22% 10%;
+    /* Dark theme tokens - Very dark charcoal base (Fanbasis-like) */
+    --background: 220 13% 8%;
     --foreground: 210 20% 96%;
 
-    --card: 223 22% 13%;
+    --card: 220 13% 10%;
     --card-foreground: 210 20% 96%;
 
     /* Popover uses builder surface colors for consistency */
-    --popover: 223 22% 13%;
+    --popover: 220 13% 10%;
     --popover-foreground: 210 20% 96%;
 
     /* Brand Primary - Blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 223 18% 18%;
+    --secondary: 220 13% 14%;
     --secondary-foreground: 210 20% 96%;
 
-    --muted: 223 18% 18%;
+    --muted: 220 13% 14%;
     --muted-foreground: 215 12% 55%;
 
     /* Brand Accent - Blue */
@@ -123,8 +123,8 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 223 18% 22%;
-    --input: 223 18% 22%;
+    --border: 220 13% 16%;
+    --input: 220 13% 16%;
     --ring: 217 91% 60%;
   }
 
