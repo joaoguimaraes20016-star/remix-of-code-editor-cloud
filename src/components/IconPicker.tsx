@@ -16,8 +16,7 @@ import {
   Plane, Car, Train, Bus, Bike, Ship,
   Coffee, Pizza, Utensils, Wine, Beer, Cake,
   Sun, Moon, CloudRain, Snowflake, Wind, Thermometer,
-  Smile, Frown, Meh, ThumbsUp, ThumbsDown, AlertCircle,
-  ShoppingCart, TrendingUp, Flame
+  Smile, Frown, Meh, ThumbsUp, ThumbsDown, AlertCircle
 } from "lucide-react";
 
 const ICON_OPTIONS = [
@@ -79,9 +78,6 @@ const ICON_OPTIONS = [
   { name: "Smile", component: Smile },
   { name: "ThumbsUp", component: ThumbsUp },
   { name: "AlertCircle", component: AlertCircle },
-  { name: "ShoppingCart", component: ShoppingCart },
-  { name: "TrendingUp", component: TrendingUp },
-  { name: "Flame", component: Flame },
 ];
 
 export function getIconComponent(iconName: string) {

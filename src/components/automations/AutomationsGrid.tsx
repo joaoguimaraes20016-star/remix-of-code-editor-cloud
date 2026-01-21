@@ -2,12 +2,18 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Zap, Inbox, FolderPlus, Sparkles } from "lucide-react";
+import { Loader2, Zap, FolderInput } from "lucide-react";
 import { AutomationCard } from "./AutomationCard";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import type { TriggerType } from "@/lib/automations/types";
-import { cn } from "@/lib/utils";
 
 interface Automation {
   id: string;
@@ -169,34 +175,19 @@ export function AutomationsGrid({
     );
   }
 
-  const isInbox = folderId === "uncategorized" || !folderId;
-
   if (filteredAutomations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className={cn(
-          "w-16 h-16 rounded-full flex items-center justify-center mb-4",
-          isInbox ? "bg-amber-500/10" : "bg-muted"
-        )}>
-          {isInbox ? (
-            <Inbox className="h-8 w-8 text-amber-500" />
-          ) : (
-            <Zap className="h-8 w-8 text-muted-foreground" />
-          )}
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Zap className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="text-lg font-medium mb-2">
-          {searchQuery 
-            ? "No automations found" 
-            : isInbox 
-              ? "Inbox is empty" 
-              : "No automations in this folder"}
+          {searchQuery ? "No automations found" : "No automations yet"}
         </h3>
         <p className="text-sm text-muted-foreground mb-6 max-w-sm">
           {searchQuery
             ? "Try a different search term"
-            : isInbox
-              ? "All your automations are organized! Create a new one to get started."
-              : "Move automations here or create a new one"}
+            : "Create your first automation to start automating your workflows"}
         </p>
         {!searchQuery && (
           <Button onClick={() => navigate(`/team/${teamId}/workflows/edit/new`)}>
@@ -208,58 +199,59 @@ export function AutomationsGrid({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Inbox Banner */}
-      {isInbox && filteredAutomations.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20"
-        >
-          <div className="p-2 rounded-full bg-amber-500/20">
-            <Sparkles className="h-4 w-4 text-amber-600" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-foreground">
-              {filteredAutomations.length} automation{filteredAutomations.length !== 1 ? 's' : ''} waiting to be organized
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Add them to folders for better organization
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence mode="popLayout">
-          {filteredAutomations.map((automation, index) => (
-            <motion.div
-              key={automation.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <AutomationCard
-                name={automation.name}
-                description={automation.description || ""}
-                triggerType={automation.trigger_type as TriggerType}
-                isActive={automation.is_active}
-                stepsCount={getStepsCount(automation)}
-                folderId={automation.folder_id}
-                folders={folders}
-                onToggle={(active) => handleToggle(automation.id, active)}
-                onEdit={() => handleEdit(automation)}
-                onDuplicate={() => handleDuplicate(automation)}
-                onDelete={() => handleDelete(automation.id)}
-                onMoveToFolder={(newFolderId) => 
-                  moveMutation.mutate({ automationId: automation.id, newFolderId })
-                }
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <AnimatePresence mode="popLayout">
+        {filteredAutomations.map((automation, index) => (
+          <motion.div
+            key={automation.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <AutomationCard
+              name={automation.name}
+              description={automation.description || ""}
+              triggerType={automation.trigger_type as TriggerType}
+              isActive={automation.is_active}
+              stepsCount={getStepsCount(automation)}
+              onToggle={(active) => handleToggle(automation.id, active)}
+              onEdit={() => handleEdit(automation)}
+              onDuplicate={() => handleDuplicate(automation)}
+              onDelete={() => handleDelete(automation.id)}
+              extraActions={
+                folders.length > 0 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 px-2">
+                        <FolderInput className="h-4 w-4 mr-1" />
+                        Move
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => moveMutation.mutate({ automationId: automation.id, newFolderId: null })}
+                      >
+                        Uncategorized
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {folders.map((folder) => (
+                        <DropdownMenuItem
+                          key={folder.id}
+                          onClick={() => moveMutation.mutate({ automationId: automation.id, newFolderId: folder.id })}
+                          disabled={folder.id === automation.folder_id}
+                        >
+                          {folder.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : undefined
+              }
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
