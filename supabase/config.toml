@@ -72,5 +72,14 @@ verify_jwt = false
 [functions.automation-trigger]
 verify_jwt = false
 
+[functions.process-scheduled-jobs]
+verify_jwt = false
+
+[functions.elevenlabs-conversation-token]
+verify_jwt = false
+
+[functions.make-call]
+verify_jwt = false
+
 [functions.ai-copilot]
 verify_jwt = false
