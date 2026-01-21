@@ -177,16 +177,18 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect, onDelete }: Tri
           : "border-sidebar-border hover:border-primary/50 hover:shadow-xl"
       )}
     >
-      {/* Delete Button */}
+      {/* Delete Button - Always visible */}
       {onDelete && (
         <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ scale: 0.9 }}
           whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute -left-2 -top-2 w-7 h-7 rounded-full bg-red-500/90 hover:bg-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
+          className="absolute -right-2 -top-2 w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center transition-all z-10 shadow-lg border-2 border-sidebar"
+          title="Remove trigger"
         >
           <X className="h-4 w-4 text-white" />
         </motion.button>

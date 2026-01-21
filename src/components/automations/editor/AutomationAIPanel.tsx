@@ -2,13 +2,15 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, Send, Loader2, Lightbulb, Wand2, 
-  HelpCircle, ChevronRight, Bot, PanelLeftClose
+  HelpCircle, ChevronRight, PanelLeftClose, Wrench, MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { streamAICopilot } from "@/lib/ai/aiCopilotService";
 import type { AutomationDefinition, AutomationStep, ActionType } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
+
+type PanelMode = 'build' | 'chat';
 
 interface AutomationAIPanelProps {
   definition: AutomationDefinition;
@@ -26,16 +28,16 @@ interface Message {
   isGenerating?: boolean;
 }
 
-const QUICK_PROMPTS = [
+const BUILD_PROMPTS = [
   { icon: Wand2, label: "Send a welcome SMS to new leads", prompt: "Send a welcome SMS to new leads" },
   { icon: Lightbulb, label: "Follow up after missed appointments", prompt: "Follow up after missed appointments with an SMS reminder" },
   { icon: HelpCircle, label: "Alert my team when a deal closes", prompt: "Alert my team when a deal closes" },
 ];
 
-const HELPER_PROMPTS = [
+const CHAT_PROMPTS = [
   { icon: HelpCircle, label: "Explain this workflow", prompt: "Explain what this workflow does in simple terms" },
   { icon: Lightbulb, label: "What should I add next?", prompt: "What step should I add next to improve this workflow?" },
-  { icon: Wand2, label: "Optimize for conversions", prompt: "How can I optimize this workflow for better conversions?" },
+  { icon: Wand2, label: "Best practices for automations", prompt: "What are the best practices for automation workflows?" },
 ];
 
 export function AutomationAIPanel({ 
@@ -45,6 +47,7 @@ export function AutomationAIPanel({
   onCollapse,
   isNew = false 
 }: AutomationAIPanelProps) {
+  const [mode, setMode] = useState<PanelMode>('build');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -194,7 +197,8 @@ export function AutomationAIPanel({
     handleSendMessage(prompt);
   };
 
-  const prompts = isNew && messages.length === 0 ? QUICK_PROMPTS : HELPER_PROMPTS;
+  // Get prompts based on mode
+  const prompts = mode === 'build' ? BUILD_PROMPTS : CHAT_PROMPTS;
 
   return (
     <div className="flex flex-col h-full bg-sidebar">
@@ -206,7 +210,9 @@ export function AutomationAIPanel({
           </div>
           <div>
             <h3 className="text-sm font-semibold text-white">AI Assistant</h3>
-            <p className="text-xs text-white/50">Build with natural language</p>
+            <p className="text-xs text-white/50">
+              {mode === 'build' ? 'Build with AI' : 'Ask questions'}
+            </p>
           </div>
         </div>
         <Button
@@ -219,6 +225,36 @@ export function AutomationAIPanel({
         </Button>
       </div>
 
+      {/* Mode Toggle */}
+      <div className="px-4 py-3 border-b border-sidebar-border">
+        <div className="flex gap-1 p-1 bg-white/5 rounded-lg">
+          <button
+            onClick={() => { setMode('build'); setMessages([]); }}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
+              mode === 'build' 
+                ? "bg-primary text-white shadow-sm" 
+                : "text-white/50 hover:text-white/70"
+            )}
+          >
+            <Wrench className="h-4 w-4" />
+            Build
+          </button>
+          <button
+            onClick={() => { setMode('chat'); setMessages([]); }}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
+              mode === 'chat' 
+                ? "bg-primary text-white shadow-sm" 
+                : "text-white/50 hover:text-white/70"
+            )}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Chat
+          </button>
+        </div>
+      </div>
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {messages.length === 0 ? (
@@ -226,15 +262,25 @@ export function AutomationAIPanel({
             {/* Welcome Message */}
             <div className="text-center py-6">
               <div className="inline-flex p-4 rounded-2xl bg-primary/10 mb-4">
-                <Sparkles className="h-8 w-8 text-primary" />
+                {mode === 'build' ? (
+                  <Wrench className="h-8 w-8 text-primary" />
+                ) : (
+                  <MessageCircle className="h-8 w-8 text-primary" />
+                )}
               </div>
               <h2 className="text-lg font-semibold text-white mb-2">
-                {isNew ? "What would you like to automate?" : "How can I help?"}
+                {mode === 'build' 
+                  ? (isNew ? "What would you like to automate?" : "Modify your workflow")
+                  : "Ask me anything"
+                }
               </h2>
               <p className="text-sm text-white/50 max-w-[280px] mx-auto">
-                {isNew 
-                  ? "Describe your automation in plain language and I'll build it for you."
-                  : "Ask me anything about your workflow or request changes."
+                {mode === 'build'
+                  ? (isNew 
+                      ? "Describe your automation in plain language and I'll build it for you."
+                      : "Ask me to add steps, change triggers, or optimize your workflow."
+                    )
+                  : "I can explain automations, suggest best practices, or answer questions about your workflow."
                 }
               </p>
             </div>
@@ -323,7 +369,7 @@ export function AutomationAIPanel({
                 handleSendMessage(input);
               }
             }}
-            placeholder={isNew ? "Describe what you want to automate..." : "Ask me anything..."}
+            placeholder={mode === 'build' ? "Describe what you want to automate..." : "Ask a question..."}
             className="min-h-[56px] max-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-12 resize-none rounded-xl focus:border-primary/50 focus:ring-primary/20"
           />
           <Button
