@@ -19,6 +19,7 @@ import { ChevronDown } from "lucide-react";
 
 interface ActionLibraryPanelProps {
   onSelect: (type: ActionType) => void;
+  supportedActions?: ActionType[];
 }
 
 interface ActionOption {
@@ -164,7 +165,7 @@ const ACTION_CATEGORIES: ActionCategory[] = [
   },
 ];
 
-export function ActionLibraryPanel({ onSelect }: ActionLibraryPanelProps) {
+export function ActionLibraryPanel({ onSelect, supportedActions }: ActionLibraryPanelProps) {
   const [search, setSearch] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<string[]>(["messaging", "crm", "flow"]);
 
@@ -184,7 +185,7 @@ export function ActionLibraryPanel({ onSelect }: ActionLibraryPanelProps) {
   })).filter((category) => category.actions.length > 0);
 
   return (
-    <div className="flex flex-col h-full max-h-[500px]">
+    <div className="flex flex-col h-full">
       {/* Search */}
       <div className="p-3 border-b border-sidebar-border">
         <div className="relative">
@@ -218,23 +219,40 @@ export function ActionLibraryPanel({ onSelect }: ActionLibraryPanelProps) {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="space-y-1 py-1">
-                  {category.actions.map((action) => (
-                    <motion.button
-                      key={action.type}
-                      whileHover={{ x: 4 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => onSelect(action.type)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent/70 transition-colors text-left"
-                    >
-                      <div className={cn("p-2 rounded-lg bg-sidebar-accent", action.color)}>
-                        {action.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white">{action.label}</div>
-                        <div className="text-xs text-white/50 truncate">{action.description}</div>
-                      </div>
-                    </motion.button>
-                  ))}
+                  {category.actions.map((action) => {
+                    const isSupported = !supportedActions || supportedActions.includes(action.type);
+                    
+                    return (
+                      <motion.button
+                        key={action.type}
+                        whileHover={isSupported ? { x: 4 } : undefined}
+                        whileTap={isSupported ? { scale: 0.98 } : undefined}
+                        onClick={() => isSupported && onSelect(action.type)}
+                        disabled={!isSupported}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
+                          isSupported 
+                            ? "hover:bg-sidebar-accent/70 cursor-pointer" 
+                            : "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        <div className={cn("p-2 rounded-lg bg-sidebar-accent", action.color)}>
+                          {action.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-white">{action.label}</span>
+                            {!isSupported && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 shrink-0">
+                                Coming soon
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-white/50 truncate">{action.description}</div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </CollapsibleContent>
             </Collapsible>

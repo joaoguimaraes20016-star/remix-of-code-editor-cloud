@@ -17,6 +17,7 @@ interface AutomationCanvasAreaProps {
   onStepUpdate: (stepId: string, updates: Partial<AutomationStep>) => void;
   onStepDelete: (stepId: string) => void;
   onAddStep: (type: ActionType, afterStepId?: string) => void;
+  onOpenActionLibrary: (afterStepId?: string) => void;
 }
 
 const QUICK_ACTION_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
@@ -42,6 +43,7 @@ export function AutomationCanvasArea({
   onStepUpdate,
   onStepDelete,
   onAddStep,
+  onOpenActionLibrary,
 }: AutomationCanvasAreaProps) {
   const suggestions = getContextualSuggestions(definition.trigger.type, definition.steps);
   const topSuggestions = suggestions.slice(0, 4);
@@ -73,9 +75,9 @@ export function AutomationCanvasArea({
         >
           <div className="text-white/40 text-sm font-medium">Then do this...</div>
           
-          {/* PRIMARY: Large Add Step Button */}
+          {/* PRIMARY: Large Add Step Button - Opens Action Library */}
           <motion.button
-            onClick={() => onAddStep("send_message")}
+            onClick={() => onOpenActionLibrary()}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="w-20 h-20 rounded-full flex items-center justify-center bg-primary/20 border-2 border-dashed border-primary/50 hover:border-primary hover:bg-primary/30 text-primary transition-all shadow-lg"
@@ -140,6 +142,7 @@ export function AutomationCanvasArea({
             <AddStepButton 
               suggestions={topSuggestions.slice(0, 3)}
               onAddStep={(type) => onAddStep(type, step.id)}
+              onOpenLibrary={() => onOpenActionLibrary(step.id)}
             />
 
             {/* Connection to next step */}
@@ -168,13 +171,14 @@ export function AutomationCanvasArea({
 interface AddStepButtonProps {
   suggestions: { type: ActionType; label: string }[];
   onAddStep: (type: ActionType) => void;
+  onOpenLibrary: () => void;
 }
 
-function AddStepButton({ suggestions, onAddStep }: AddStepButtonProps) {
+function AddStepButton({ suggestions, onAddStep, onOpenLibrary }: AddStepButtonProps) {
   return (
     <div className="group relative">
       <motion.button
-        onClick={() => onAddStep("send_message")}
+        onClick={onOpenLibrary}
         whileHover={{ scale: 1.15 }}
         whileTap={{ scale: 0.95 }}
         className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/20 text-primary/60 hover:text-primary transition-all shadow-lg"
