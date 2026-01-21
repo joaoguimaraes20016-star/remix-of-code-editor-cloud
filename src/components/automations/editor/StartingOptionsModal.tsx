@@ -1,6 +1,7 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Sparkles, LayoutTemplate, Hammer, ArrowRight } from "lucide-react";
+import { Sparkles, LayoutTemplate, Hammer, ArrowRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StartingOptionsModalProps {
@@ -8,89 +9,170 @@ interface StartingOptionsModalProps {
   onOpenChange: (open: boolean) => void;
   onSelectTemplate: () => void;
   onStartScratch: () => void;
+  onAIGenerate?: (prompt: string) => Promise<void>;
 }
+
+const EXAMPLE_PROMPTS = [
+  "Send a welcome SMS to new leads",
+  "Follow up after missed appointments",
+  "Alert team when a deal closes",
+];
 
 export function StartingOptionsModal({
   open,
   onOpenChange,
   onSelectTemplate,
   onStartScratch,
+  onAIGenerate,
 }: StartingOptionsModalProps) {
+  const [prompt, setPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!prompt.trim() || !onAIGenerate) return;
+    setIsGenerating(true);
+    try {
+      await onAIGenerate(prompt);
+      onOpenChange(false);
+    } finally {
+      setIsGenerating(false);
+      setPrompt("");
+    }
+  };
+
+  const handleExampleClick = (example: string) => {
+    setPrompt(example);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="sm:max-w-lg bg-[#0a0a0f] border-white/10 p-0 overflow-hidden"
+      <DialogContent
+        className="sm:max-w-[540px] bg-[#0a0a0f] border-white/10 p-0 overflow-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogTitle className="sr-only">How would you like to start?</DialogTitle>
-        
+        <DialogTitle className="sr-only">What would you like to automate?</DialogTitle>
+
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="p-8"
+          className="p-6"
         >
-          {/* Header */}
-          <div className="text-center mb-8">
+          {/* AI Chat Section */}
+          <div className="text-center mb-4">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.4, type: "spring", stiffness: 200 }}
-              className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4"
+              className="inline-flex items-center gap-2 mb-2"
             >
-              <Sparkles className="w-7 h-7 text-primary" />
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-white">
+                What would you like to automate?
+              </h2>
             </motion.div>
-            <motion.h2
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.3 }}
-              className="text-xl font-semibold text-white mb-2"
+          </div>
+
+          {/* AI Input */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.3 }}
+            className="relative mb-3"
+          >
+            <input
+              type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Describe your automation..."
+              disabled={isGenerating}
+              className="w-full px-4 py-3 pr-12 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-all disabled:opacity-50"
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={!prompt.trim() || isGenerating || !onAIGenerate}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md bg-primary/20 text-primary hover:bg-primary/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
-              How would you like to start?
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-              className="text-white/50 text-sm"
-            >
-              Choose a template or build your automation from scratch
-            </motion.p>
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ArrowRight className="w-4 h-4" />
+              )}
+            </button>
+          </motion.div>
+
+          {/* Example Prompts */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+            className="flex flex-wrap gap-2 mb-5"
+          >
+            {EXAMPLE_PROMPTS.map((example) => (
+              <button
+                key={example}
+                onClick={() => handleExampleClick(example)}
+                disabled={isGenerating}
+                className="text-xs px-3 py-1.5 rounded-full bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70 transition-all disabled:opacity-50"
+              >
+                {example}
+              </button>
+            ))}
+          </motion.div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-white/30 uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-white/10" />
           </div>
 
           {/* Option Cards */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.3 }}
+            className="grid grid-cols-2 gap-3 mb-4"
+          >
             <OptionCard
               icon={LayoutTemplate}
               title="Use a Template"
-              description="Pre-built workflows ready to customize"
+              description="Pre-built workflows"
               onClick={onSelectTemplate}
-              delay={0.25}
+              disabled={isGenerating}
             />
             <OptionCard
               icon={Hammer}
               title="Start from Scratch"
-              description="Build your own step by step"
+              description="Build step by step"
               onClick={onStartScratch}
-              delay={0.3}
               variant="secondary"
+              disabled={isGenerating}
             />
-          </div>
+          </motion.div>
 
           {/* Skip Link */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.3 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
             className="text-center"
           >
             <button
               onClick={onStartScratch}
-              className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white/70 transition-colors group"
+              disabled={isGenerating}
+              className="text-xs text-white/40 hover:text-white/60 hover:underline transition-all disabled:opacity-50"
             >
               Skip for now
-              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </button>
           </motion.div>
         </motion.div>
@@ -104,8 +186,8 @@ interface OptionCardProps {
   title: string;
   description: string;
   onClick: () => void;
-  delay: number;
   variant?: "primary" | "secondary";
+  disabled?: boolean;
 }
 
 function OptionCard({
@@ -113,40 +195,32 @@ function OptionCard({
   title,
   description,
   onClick,
-  delay,
   variant = "primary",
+  disabled = false,
 }: OptionCardProps) {
   return (
     <motion.button
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.3, ease: "easeOut" }}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={disabled ? {} : { y: -2 }}
+      whileTap={disabled ? {} : { scale: 0.98 }}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "flex flex-col items-center text-center p-6 rounded-xl border transition-all duration-200",
+        "flex flex-col items-start text-left p-4 rounded-xl border transition-all duration-200",
         "bg-white/[0.03] hover:bg-white/[0.06]",
         variant === "primary"
           ? "border-primary/20 hover:border-primary/40"
-          : "border-white/10 hover:border-white/20"
+          : "border-white/10 hover:border-white/20",
+        disabled && "opacity-50 cursor-not-allowed"
       )}
     >
-      <div
+      <Icon
         className={cn(
-          "w-12 h-12 rounded-xl flex items-center justify-center mb-3",
-          variant === "primary" ? "bg-primary/10" : "bg-white/5"
+          "w-6 h-6 mb-2",
+          variant === "primary" ? "text-primary" : "text-white/70"
         )}
-      >
-        <Icon
-          className={cn(
-            "w-6 h-6",
-            variant === "primary" ? "text-primary" : "text-white/70"
-          )}
-        />
-      </div>
-      <h3 className="text-sm font-medium text-white mb-1">{title}</h3>
-      <p className="text-xs text-white/40 leading-relaxed">{description}</p>
+      />
+      <h3 className="text-sm font-medium text-white mb-0.5">{title}</h3>
+      <p className="text-xs text-white/40">{description}</p>
     </motion.button>
   );
 }

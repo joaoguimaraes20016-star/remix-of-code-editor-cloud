@@ -10,13 +10,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger } from "@/lib/automations/types";
+import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger, TriggerType } from "@/lib/automations/types";
 import { TemplateGallery } from "./TemplateGallery";
 import { StartingOptionsModal } from "./StartingOptionsModal";
 import { WorkflowAIHelper } from "./WorkflowAIHelper";
 import { AutomationCanvasArea } from "./AutomationCanvasArea";
 import { NodeInspector } from "./NodeInspector";
 import { cn } from "@/lib/utils";
+import { streamAICopilot } from "@/lib/ai/aiCopilotService";
+import { toast } from "sonner";
 import "./automation-editor.css";
 
 interface AutomationEditorShellProps {
@@ -120,6 +122,73 @@ export function AutomationEditorShell({
       setRightCollapsed(false);
     }
   }, []);
+
+  const handleAIGenerate = useCallback(
+    async (prompt: string) => {
+      let fullResponse = "";
+
+      try {
+        await streamAICopilot(
+          "generate",
+          prompt,
+          {},
+          {
+            onDelta: (chunk) => {
+              fullResponse += chunk;
+            },
+            onDone: () => {
+              try {
+                // Try to parse the AI response as workflow JSON
+                const cleanResponse = fullResponse
+                  .replace(/```json\n?/g, "")
+                  .replace(/```\n?/g, "")
+                  .trim();
+                
+                const parsed = JSON.parse(cleanResponse);
+                
+                if (parsed.workflow) {
+                  // Apply the generated workflow
+                  const { trigger, steps, name: workflowName } = parsed.workflow;
+                  
+                  const newDefinition: AutomationDefinition = {
+                    ...definition,
+                    trigger: trigger || definition.trigger,
+                    steps: (steps || []).map((step: any, idx: number) => ({
+                      id: `step-${Date.now()}-${idx}`,
+                      order: idx + 1,
+                      type: step.type,
+                      config: step.config || {},
+                    })),
+                  };
+                  
+                  onChange(newDefinition);
+                  if (workflowName) {
+                    onNameChange(workflowName);
+                  }
+                  
+                  toast.success("Workflow generated successfully!");
+                } else {
+                  toast.error("AI response didn't contain a valid workflow");
+                }
+              } catch (parseError) {
+                console.error("Failed to parse AI response:", parseError, fullResponse);
+                toast.error("Failed to parse AI response");
+              }
+            },
+            onError: (error) => {
+              console.error("AI generation error:", error);
+              toast.error(error.message || "Failed to generate workflow");
+            },
+          },
+          "workflow"
+        );
+      } catch (error) {
+        console.error("AI generation error:", error);
+        toast.error("Failed to generate workflow");
+      }
+    },
+    [definition, onChange, onNameChange]
+  );
 
   const selectedStep = selectedNodeId === "trigger"
     ? null
@@ -294,6 +363,7 @@ export function AutomationEditorShell({
           setShowTemplates(true);
         }}
         onStartScratch={() => setShowStartingOptions(false)}
+        onAIGenerate={handleAIGenerate}
       />
     </div>
   );
