@@ -1,7 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="light" style="color-scheme: light">
   <head>
     <script>
+      // Force light theme - clear any stored dark mode preference
+      localStorage.removeItem('theme');
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
       window.STACKIT_FUNNEL_RUNTIME_ACTIVE = true;
     </script>
     <meta charset="UTF-8" />
