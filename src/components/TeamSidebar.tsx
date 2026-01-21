@@ -13,7 +13,8 @@ import {
   Settings2,
   Workflow,
   CalendarDays,
-  Megaphone
+  Megaphone,
+  Wallet
 } from "lucide-react";
 import { useTeamRole } from "@/hooks/useTeamRole";
 import { cn } from "@/lib/utils";
@@ -132,13 +133,21 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
       {/* Bottom Section */}
       <div className="p-3 border-t border-sidebar-border space-y-1">
 
+        {/* Billing - Admin only */}
+        {isAdmin && (
+          renderNavButton(
+            { id: "billing", label: "Billing", icon: Wallet, path: "/billing" },
+            isActive("/billing")
+          )
+        )}
+
         {/* Profile Settings */}
         {renderNavButton(
           { id: "settings", label: "Profile Settings", icon: UserCircle, path: "/settings" },
           isActive("/settings")
         )}
 
-        {/* Admin-only links */}
+        {/* Admin-only Team Settings */}
         {isAdmin && (
           renderNavButton(
             { id: "team-settings", label: "Team Settings", icon: Settings2, path: "/team-settings" },

@@ -83,3 +83,15 @@ verify_jwt = false
 
 [functions.ai-copilot]
 verify_jwt = false
+
+[functions.setup-billing]
+verify_jwt = false
+
+[functions.add-wallet-funds]
+verify_jwt = false
+
+[functions.billing-webhook]
+verify_jwt = false
+
+[functions.auto-recharge]
+verify_jwt = false
