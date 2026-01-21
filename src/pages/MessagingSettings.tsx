@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreditsBalance } from "@/components/messaging/CreditsBalance";
 import { PhoneNumberList } from "@/components/messaging/PhoneNumberList";
 import { UsageHistory } from "@/components/messaging/UsageHistory";
-import { MessageSquare, Phone, CreditCard, History } from "lucide-react";
+import { EmailSettings } from "@/components/messaging/EmailSettings";
+import { MessageSquare, Phone, CreditCard, History, Mail } from "lucide-react";
 
 export default function MessagingSettings() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -52,7 +53,7 @@ export default function MessagingSettings() {
       </div>
 
       <Tabs defaultValue="credits" className="space-y-6">
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="credits" className="gap-2">
             <CreditCard className="h-4 w-4" />
             Credits
@@ -60,6 +61,10 @@ export default function MessagingSettings() {
           <TabsTrigger value="numbers" className="gap-2">
             <Phone className="h-4 w-4" />
             Numbers
+          </TabsTrigger>
+          <TabsTrigger value="email" className="gap-2">
+            <Mail className="h-4 w-4" />
+            Email
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-2">
             <History className="h-4 w-4" />
@@ -83,6 +88,10 @@ export default function MessagingSettings() {
             isLoading={phonesLoading}
             onNumbersChanged={refetchPhones}
           />
+        </TabsContent>
+
+        <TabsContent value="email">
+          <EmailSettings teamId={teamId!} />
         </TabsContent>
 
         <TabsContent value="history">
