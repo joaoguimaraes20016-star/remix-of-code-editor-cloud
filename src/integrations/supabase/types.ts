@@ -1011,6 +1011,89 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_packages: {
+        Row: {
+          channel: string
+          created_at: string
+          credits: number
+          id: string
+          is_active: boolean
+          is_popular: boolean
+          name: string
+          price_cents: number
+          sort_order: number
+          stripe_price_id: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          credits: number
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          name: string
+          price_cents: number
+          sort_order?: number
+          stripe_price_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          credits?: number
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          name?: string
+          price_cents?: number
+          sort_order?: number
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          channel: string
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          team_id: string
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          channel: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          team_id: string
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          channel?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          team_id?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_integrity_logs: {
         Row: {
           created_at: string
@@ -1493,6 +1576,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messaging_pricing: {
+        Row: {
+          channel: string
+          country_code: string
+          created_at: string
+          credits_per_unit: number
+          description: string | null
+          direction: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          country_code?: string
+          created_at?: string
+          credits_per_unit?: number
+          description?: string | null
+          direction?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          country_code?: string
+          created_at?: string
+          credits_per_unit?: number
+          description?: string | null
+          direction?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       mrr_commissions: {
         Row: {
@@ -2137,6 +2256,44 @@ export type Database = {
           },
         ]
       }
+      team_credits: {
+        Row: {
+          created_at: string
+          id: string
+          sms_balance: number
+          team_id: string
+          updated_at: string
+          voice_minutes_balance: number
+          whatsapp_balance: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sms_balance?: number
+          team_id: string
+          updated_at?: string
+          voice_minutes_balance?: number
+          whatsapp_balance?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sms_balance?: number
+          team_id?: string
+          updated_at?: string
+          voice_minutes_balance?: number
+          whatsapp_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_credits_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_follow_up_flow_config: {
         Row: {
           assigned_role: string
@@ -2405,6 +2562,62 @@ export type Database = {
           },
         ]
       }
+      team_phone_numbers: {
+        Row: {
+          capabilities: Json
+          country_code: string
+          friendly_name: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          monthly_cost_cents: number
+          phone_number: string
+          phone_number_sid: string
+          purchased_at: string
+          released_at: string | null
+          team_id: string
+          webhook_configured: boolean
+        }
+        Insert: {
+          capabilities?: Json
+          country_code?: string
+          friendly_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          monthly_cost_cents?: number
+          phone_number: string
+          phone_number_sid: string
+          purchased_at?: string
+          released_at?: string | null
+          team_id: string
+          webhook_configured?: boolean
+        }
+        Update: {
+          capabilities?: Json
+          country_code?: string
+          friendly_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          monthly_cost_cents?: number
+          phone_number?: string
+          phone_number_sid?: string
+          purchased_at?: string
+          released_at?: string | null
+          team_id?: string
+          webhook_configured?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_phone_numbers_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_pipeline_stages: {
         Row: {
           created_at: string
@@ -2627,6 +2840,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_credits: {
+        Args: {
+          p_amount: number
+          p_channel: string
+          p_description?: string
+          p_reference_id?: string
+          p_team_id: string
+          p_transaction_type?: string
+        }
+        Returns: Json
+      }
       auto_assign_unassigned_tasks: { Args: never; Returns: undefined }
       auto_return_expired_tasks: { Args: never; Returns: undefined }
       calculate_completion_percentage: {
@@ -2686,6 +2910,16 @@ export type Database = {
           p_team_id: string
         }
         Returns: string
+      }
+      deduct_credits: {
+        Args: {
+          p_amount: number
+          p_channel: string
+          p_description?: string
+          p_reference_id?: string
+          p_team_id: string
+        }
+        Returns: Json
       }
       get_team_role: {
         Args: { _team_id: string; _user_id: string }
