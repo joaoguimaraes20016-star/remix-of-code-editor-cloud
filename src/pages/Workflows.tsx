@@ -66,22 +66,22 @@ export default function Workflows() {
     return counts;
   }, [automations]);
 
-  const totalCount = automations.length;
+  const uncategorizedCount = useMemo(() => {
+    return automations.filter((a) => !a.folder_id).length;
+  }, [automations]);
 
   const selectedFolderName = useMemo(() => {
-    if (!selectedFolderId) return "All Automations";
-    if (selectedFolderId === "uncategorized") return "Uncategorized";
+    if (!selectedFolderId || selectedFolderId === "uncategorized") return "Uncategorized";
     const folder = folders.find((f) => f.id === selectedFolderId);
-    return folder?.name || "All Automations";
+    return folder?.name || "Uncategorized";
   }, [selectedFolderId, folders]);
 
   const selectedFolderCount = useMemo(() => {
-    if (!selectedFolderId) return totalCount;
-    if (selectedFolderId === "uncategorized") {
-      return automations.filter((a) => !a.folder_id).length;
+    if (!selectedFolderId || selectedFolderId === "uncategorized") {
+      return uncategorizedCount;
     }
     return automationCounts[selectedFolderId] || 0;
-  }, [selectedFolderId, automationCounts, automations, totalCount]);
+  }, [selectedFolderId, automationCounts, uncategorizedCount]);
 
   if (!teamId) {
     return (
@@ -132,7 +132,7 @@ export default function Workflows() {
               selectedFolderId={selectedFolderId}
               onSelectFolder={setSelectedFolderId}
               automationCounts={automationCounts}
-              totalCount={totalCount}
+              uncategorizedCount={uncategorizedCount}
             />
 
             {/* Main Content */}

@@ -9,7 +9,6 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  Zap,
   Sparkles,
   FolderPlus
 } from "lucide-react";
@@ -44,7 +43,7 @@ interface AutomationFoldersSidebarProps {
   selectedFolderId: string | null;
   onSelectFolder: (folderId: string | null) => void;
   automationCounts: Record<string, number>;
-  totalCount: number;
+  uncategorizedCount: number;
 }
 
 const FOLDER_COLORS: Record<string, { text: string; bg: string; border: string }> = {
@@ -63,7 +62,7 @@ export function AutomationFoldersSidebar({
   selectedFolderId,
   onSelectFolder,
   automationCounts,
-  totalCount,
+  uncategorizedCount,
 }: AutomationFoldersSidebarProps) {
   const queryClient = useQueryClient();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -111,7 +110,7 @@ export function AutomationFoldersSidebar({
   };
 
   const handleDeleteFolder = (folder: AutomationFolder) => {
-    if (confirm(`Delete "${folder.name}"? Automations will be moved to "All Automations".`)) {
+    if (confirm(`Delete "${folder.name}"? Automations will be moved to "Uncategorized".`)) {
       deleteMutation.mutate(folder.id);
     }
   };
@@ -121,7 +120,7 @@ export function AutomationFoldersSidebar({
     setEditingFolder(null);
   };
 
-  const uncategorizedCount = totalCount - Object.values(automationCounts).reduce((a, b) => a + b, 0);
+  
 
   const renderFolderIcon = (folder: AutomationFolder, isSelected: boolean) => {
     const colorClasses = FOLDER_COLORS[folder.color] || FOLDER_COLORS.blue;
@@ -177,60 +176,26 @@ export function AutomationFoldersSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {/* All Automations */}
+        {/* Uncategorized */}
         <motion.button
           whileHover={{ x: 2 }}
-          onClick={() => onSelectFolder(null)}
+          onClick={() => onSelectFolder("uncategorized")}
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
             "border-l-2 border-transparent",
-            selectedFolderId === null 
-              ? "bg-primary/10 border-l-primary text-foreground font-medium" 
+            selectedFolderId === "uncategorized" || selectedFolderId === null
+              ? "bg-muted border-l-muted-foreground text-foreground font-medium" 
               : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
           )}
         >
-          <div className={cn(
-            "p-1.5 rounded-md",
-            selectedFolderId === null ? "bg-primary/20" : "bg-muted"
-          )}>
-            <Zap className={cn(
-              "h-3.5 w-3.5",
-              selectedFolderId === null ? "text-primary" : "text-muted-foreground"
-            )} />
+          <div className="p-1.5 rounded-md bg-muted">
+            <Folder className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
-          <span className="flex-1 text-left">All Automations</span>
-          <span className={cn(
-            "text-xs px-2 py-0.5 rounded-full",
-            selectedFolderId === null 
-              ? "bg-primary/20 text-primary" 
-              : "bg-muted text-muted-foreground"
-          )}>
-            {totalCount}
+          <span className="flex-1 text-left">Uncategorized</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            {uncategorizedCount}
           </span>
         </motion.button>
-
-        {/* Uncategorized */}
-        {uncategorizedCount > 0 && (
-          <motion.button
-            whileHover={{ x: 2 }}
-            onClick={() => onSelectFolder("uncategorized")}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
-              "border-l-2 border-transparent",
-              selectedFolderId === "uncategorized" 
-                ? "bg-muted border-l-muted-foreground text-foreground font-medium" 
-                : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <div className="p-1.5 rounded-md bg-muted">
-              <Folder className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            <span className="flex-1 text-left">Uncategorized</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-              {uncategorizedCount}
-            </span>
-          </motion.button>
-        )}
 
         {/* Separator */}
         {folders.length > 0 && (
