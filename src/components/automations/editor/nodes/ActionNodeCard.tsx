@@ -22,139 +22,139 @@ interface ActionDisplay {
   bgColor: string;
 }
 
-// Unified blue-scale color palette - no pink/coral/fuchsia/amber
+// Unified system palette (primary blue; allow success/destructive)
 const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   send_message: { 
     label: "Send Message", 
     icon: <MessageSquare className="h-4 w-4" />, 
-    color: "text-blue-400", 
-    bgColor: "bg-blue-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   notify_team: { 
     label: "Notify Team", 
     icon: <Bell className="h-4 w-4" />, 
-    color: "text-sky-400", 
-    bgColor: "bg-sky-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   add_tag: { 
     label: "Add Tag", 
     icon: <Tag className="h-4 w-4" />, 
-    color: "text-emerald-400", 
-    bgColor: "bg-emerald-500/20" 
+    color: "text-success", 
+    bgColor: "bg-success/15" 
   },
   remove_tag: { 
     label: "Remove Tag", 
     icon: <Tag className="h-4 w-4" />, 
-    color: "text-red-400", 
-    bgColor: "bg-red-500/20" 
+    color: "text-destructive", 
+    bgColor: "bg-destructive/15" 
   },
   create_contact: { 
     label: "Create Contact", 
     icon: <UserPlus className="h-4 w-4" />, 
-    color: "text-emerald-400", 
-    bgColor: "bg-emerald-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   update_contact: { 
     label: "Update Contact", 
     icon: <UserCog className="h-4 w-4" />, 
-    color: "text-sky-400", 
-    bgColor: "bg-sky-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   add_task: { 
     label: "Create Task", 
     icon: <ClipboardList className="h-4 w-4" />, 
-    color: "text-indigo-400", 
-    bgColor: "bg-indigo-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   add_note: { 
     label: "Add Note", 
     icon: <StickyNote className="h-4 w-4" />, 
-    color: "text-slate-400", 
-    bgColor: "bg-slate-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   assign_owner: { 
     label: "Assign Owner", 
     icon: <UserCheck className="h-4 w-4" />, 
-    color: "text-cyan-400", 
-    bgColor: "bg-cyan-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   update_stage: { 
     label: "Update Stage", 
     icon: <ArrowRightLeft className="h-4 w-4" />, 
-    color: "text-indigo-400", 
-    bgColor: "bg-indigo-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   create_deal: { 
     label: "Create Deal", 
     icon: <Briefcase className="h-4 w-4" />, 
-    color: "text-violet-400", 
-    bgColor: "bg-violet-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   close_deal: { 
     label: "Close Deal", 
     icon: <CheckCircle className="h-4 w-4" />, 
-    color: "text-green-400", 
-    bgColor: "bg-green-500/20" 
+    color: "text-success", 
+    bgColor: "bg-success/15" 
   },
   time_delay: { 
     label: "Wait", 
     icon: <Clock className="h-4 w-4" />, 
-    color: "text-slate-400", 
-    bgColor: "bg-slate-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   wait_until: { 
     label: "Wait Until", 
     icon: <CalendarClock className="h-4 w-4" />, 
-    color: "text-slate-400", 
-    bgColor: "bg-slate-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   business_hours: { 
     label: "Business Hours", 
     icon: <Building2 className="h-4 w-4" />, 
-    color: "text-teal-400", 
-    bgColor: "bg-teal-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   condition: { 
     label: "If / Else", 
     icon: <GitBranch className="h-4 w-4" />, 
-    color: "text-blue-400", 
-    bgColor: "bg-blue-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   split_test: { 
     label: "A/B Split", 
     icon: <Split className="h-4 w-4" />, 
-    color: "text-indigo-400", 
-    bgColor: "bg-indigo-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   go_to: { 
     label: "Go To", 
     icon: <CornerDownRight className="h-4 w-4" />, 
-    color: "text-slate-400", 
-    bgColor: "bg-slate-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   run_workflow: { 
     label: "Run Workflow", 
     icon: <PlayCircle className="h-4 w-4" />, 
-    color: "text-blue-400", 
-    bgColor: "bg-blue-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   stop_workflow: { 
     label: "Stop", 
     icon: <StopCircle className="h-4 w-4" />, 
-    color: "text-red-500", 
-    bgColor: "bg-red-500/20" 
+    color: "text-destructive", 
+    bgColor: "bg-destructive/15" 
   },
   custom_webhook: { 
     label: "Webhook", 
     icon: <Webhook className="h-4 w-4" />, 
-    color: "text-gray-400", 
-    bgColor: "bg-gray-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
   enqueue_dialer: { 
     label: "Power Dialer", 
     icon: <Phone className="h-4 w-4" />, 
-    color: "text-blue-400", 
-    bgColor: "bg-blue-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/15" 
   },
 };
 
@@ -225,14 +225,14 @@ export function ActionNodeCard({ step, stepNumber, isSelected, onSelect }: Actio
       whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-80 rounded-2xl border transition-all shadow-lg",
-        "bg-sidebar border-sidebar-border",
+        "bg-builder-surface border-builder-border",
         isSelected 
           ? "border-primary ring-2 ring-primary/30 shadow-primary/20" 
-          : "border-white/10 hover:border-blue-500/50 hover:shadow-xl"
+          : "border-builder-border hover:border-primary/50 hover:shadow-xl"
       )}
     >
       {/* Step Number Badge */}
-      <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs font-medium text-white/70">
+      <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-builder-surface-active border border-builder-border flex items-center justify-center text-xs font-medium text-builder-text-muted">
         {stepNumber}
       </div>
 
@@ -256,8 +256,8 @@ export function ActionNodeCard({ step, stepNumber, isSelected, onSelect }: Actio
 
         {/* Content */}
         <div className="flex-1 text-left min-w-0">
-          <div className="text-white font-medium mb-1">{display.label}</div>
-          <div className="text-sm text-white/50 truncate">{preview}</div>
+          <div className="text-builder-text font-medium mb-1">{display.label}</div>
+          <div className="text-sm text-builder-text-muted truncate">{preview}</div>
         </div>
       </div>
     </motion.button>

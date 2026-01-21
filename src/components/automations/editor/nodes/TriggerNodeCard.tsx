@@ -172,10 +172,10 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCa
       whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-80 rounded-2xl border transition-all shadow-lg",
-        "bg-sidebar border-sidebar-border",
+        "bg-builder-surface border-builder-border",
         isSelected 
           ? "border-primary ring-2 ring-primary/30 shadow-primary/20" 
-          : "border-primary/30 hover:border-blue-500/50 hover:shadow-xl"
+          : "border-builder-border hover:border-primary/50 hover:shadow-xl"
       )}
     >
       {/* Status Indicator */}
@@ -201,13 +201,13 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect }: TriggerNodeCa
           <div className="text-xs text-primary/70 uppercase tracking-wide font-medium mb-1">
             When this happens
           </div>
-          <div className="text-white font-medium text-lg">
+          <div className="text-builder-text font-medium text-lg">
             {display.label}
           </div>
         </div>
 
         {/* Trigger Badge */}
-        <div className="px-2 py-1 rounded-lg bg-primary/20 text-xs font-medium text-primary">
+        <div className="px-2 py-1 rounded-lg bg-primary/15 text-xs font-medium text-primary">
           Trigger
         </div>
       </div>

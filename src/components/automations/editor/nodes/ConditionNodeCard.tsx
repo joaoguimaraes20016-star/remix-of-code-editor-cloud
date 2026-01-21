@@ -19,21 +19,21 @@ export function ConditionNodeCard({ step, isSelected, onSelect }: ConditionNodeC
       whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-72 rounded-xl border transition-all",
-        "bg-sidebar border-sidebar-border",
-        isSelected ? "border-primary ring-2 ring-primary/30" : "border-white/10 hover:border-blue-500/50"
+        "bg-builder-surface border-builder-border",
+        isSelected ? "border-primary ring-2 ring-primary/30" : "border-builder-border hover:border-primary/50"
       )}
     >
       <div className="flex items-center gap-3 p-4">
-        <div className="p-2 rounded-lg bg-blue-500/20">
-          <GitBranch className="h-4 w-4 text-blue-400" />
+        <div className="p-2 rounded-lg bg-primary/15">
+          <GitBranch className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1 text-left">
-          <div className="text-white font-medium">If / Else</div>
-          <div className="text-xs text-white/50">
+          <div className="text-builder-text font-medium">If / Else</div>
+          <div className="text-xs text-builder-text-muted">
             {conditionCount ? `${conditionCount} condition(s)` : "No conditions set"}
           </div>
         </div>
-        <ChevronRight className="h-4 w-4 text-white/40" />
+        <ChevronRight className="h-4 w-4 text-builder-text-muted" />
       </div>
     </motion.button>
   );

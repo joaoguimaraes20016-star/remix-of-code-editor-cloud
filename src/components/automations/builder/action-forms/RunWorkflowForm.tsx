@@ -35,14 +35,14 @@ export function RunWorkflowForm({ config, onChange, teamId }: RunWorkflowFormPro
 
   return (
     <div className="space-y-4">
-      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+      <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
         <div className="flex items-start gap-3">
-          <PlayCircle className="h-5 w-5 text-blue-400 mt-0.5" />
+          <PlayCircle className="h-5 w-5 text-primary mt-0.5" />
           <div>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-builder-text">
               Trigger another automation workflow from this one.
             </p>
-            <p className="text-xs text-white/50 mt-1">
+            <p className="text-xs text-builder-text-muted mt-1">
               Great for reusable sequences like onboarding or notifications.
             </p>
           </div>
