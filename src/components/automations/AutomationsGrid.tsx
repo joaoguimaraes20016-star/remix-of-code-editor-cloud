@@ -137,7 +137,7 @@ export function AutomationsGrid({
   });
 
   const handleEdit = (automation: Automation) => {
-    navigate(`/team/${teamId}/workflows/edit/${automation.id}`);
+    navigate(`/team/${teamId}/workflows/${automation.id}/edit`);
   };
 
   const handleToggle = (id: string, isActive: boolean) => {

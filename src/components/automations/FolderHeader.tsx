@@ -27,7 +27,7 @@ export function FolderHeader({
   const handleCreateAutomation = () => {
     // Pass folder ID as query param for new automations
     const folderParam = folderId && folderId !== "uncategorized" ? `?folder=${folderId}` : "";
-    navigate(`/team/${teamId}/workflows/edit/new${folderParam}`);
+    navigate(`/team/${teamId}/workflows/new/edit${folderParam}`);
   };
 
   return (
