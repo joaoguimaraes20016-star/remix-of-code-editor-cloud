@@ -28,11 +28,11 @@ interface TeamAssetsProps {
 }
 
 const ASSET_CATEGORIES = [
-  { id: "training", label: "TRAINING", icon: Video, color: "text-orange-500", bgColor: "bg-orange-500/20" },
-  { id: "resources", label: "SCRIPTS", icon: FileText, color: "text-blue-500", bgColor: "bg-blue-500/20" },
-  { id: "team_onboarding", label: "ONBOARDING", icon: Users, color: "text-emerald-500", bgColor: "bg-emerald-500/20" },
-  { id: "tracking", label: "TRACKING SHEETS", icon: FileSpreadsheet, color: "text-pink-500", bgColor: "bg-pink-500/20" },
-  { id: "client_onboarding", label: "COMPLETE OFFER", icon: Briefcase, color: "text-primary", bgColor: "bg-primary/20" },
+  { id: "training", label: "TRAINING", icon: Video, color: "text-primary", bgColor: "bg-primary/15" },
+  { id: "resources", label: "SCRIPTS", icon: FileText, color: "text-primary", bgColor: "bg-primary/10" },
+  { id: "team_onboarding", label: "ONBOARDING", icon: Users, color: "text-primary", bgColor: "bg-primary/12" },
+  { id: "tracking", label: "TRACKING SHEETS", icon: FileSpreadsheet, color: "text-primary", bgColor: "bg-primary/10" },
+  { id: "client_onboarding", label: "COMPLETE OFFER", icon: Briefcase, color: "text-primary", bgColor: "bg-primary/15" },
 ];
 
 // Helper to extract video embed URL
@@ -379,7 +379,7 @@ export default function TeamAssets({ teamId }: TeamAssetsProps) {
   return (
     <div className="space-y-6">
       {/* Hero Section */}
-      <div className="relative rounded-2xl bg-gradient-to-br from-amber-900/40 via-amber-800/30 to-background border border-primary/20 p-6 overflow-hidden">
+      <div className="relative rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background border border-primary/20 p-6 overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         
         <div className="relative flex items-start justify-between">

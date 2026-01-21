@@ -410,18 +410,18 @@ export function TodaysSchedule({ teamId, currentUserId, onCloseDeal }: TodaysSch
     const noAnswerCount = countNoAnswerAttempts(task.confirmation_attempts || []);
     const displayStatus = appointment.status === 'NEW' ? 'Pending Confirmation' : appointment.status;
     const statusColors: Record<string, string> = {
-      NEW: "bg-orange-500 text-white",
-      SHOWED: "bg-green-500 text-white",
-      NO_SHOW: "bg-red-500 text-white",
-      CANCELLED: "bg-gray-500 text-white",
-      CLOSED: "bg-green-600 text-white",
-      RESCHEDULED: "bg-yellow-500 text-white",
-      CONFIRMED: "bg-green-500 text-white",
+      NEW: "bg-warning text-warning-foreground",
+      SHOWED: "bg-success text-white",
+      NO_SHOW: "bg-destructive text-white",
+      CANCELLED: "bg-muted text-muted-foreground",
+      CLOSED: "bg-success text-white",
+      RESCHEDULED: "bg-warning text-warning-foreground",
+      CONFIRMED: "bg-success text-white",
     };
     const statusColor = statusColors[appointment.status] || statusColors.NEW;
 
     return (
-      <Card key={appointment.id} className="p-4 hover:shadow-md transition-all duration-200 border-l-4 border-l-orange-500 group">
+      <Card key={appointment.id} className="p-4 hover:shadow-md transition-all duration-200 border-l-4 border-l-primary group">
         {/* Main Content Row */}
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
           {/* Lead Information - Left Section */}

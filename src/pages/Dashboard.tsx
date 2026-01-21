@@ -210,7 +210,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-3">
               <Logo size="medium" />
               <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-foreground">Stackit</h1>
+                <h1 className="text-lg font-semibold text-foreground">Infostack</h1>
               </div>
             </div>
             

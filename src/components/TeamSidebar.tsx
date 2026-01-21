@@ -108,9 +108,9 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         "p-4 border-b border-sidebar-border flex items-center gap-3",
         collapsed && "justify-center"
       )}>
-        <Avatar className="h-10 w-10 shrink-0">
-          <AvatarImage src={teamLogo || undefined} alt={teamName} />
-          <AvatarFallback className="bg-gradient-brand text-white text-sm font-semibold">
+        <Avatar className="h-10 w-10 shrink-0 rounded-xl">
+          <AvatarImage src={teamLogo || undefined} alt={teamName} className="rounded-xl" />
+          <AvatarFallback className="rounded-xl bg-primary/15 text-primary text-sm font-semibold">
             {getInitials(teamName)}
           </AvatarFallback>
         </Avatar>
