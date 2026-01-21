@@ -8,6 +8,7 @@ import { Zap, Activity, ClipboardCheck, Loader2 } from "lucide-react";
 import { AutomationFoldersSidebar } from "@/components/automations/AutomationFoldersSidebar";
 import { FolderHeader } from "@/components/automations/FolderHeader";
 import { AutomationsGrid } from "@/components/automations/AutomationsGrid";
+import { CreateFolderDialog } from "@/components/automations/CreateFolderDialog";
 import AutomationRunsList from "@/components/automations/AutomationRunsList";
 import { MessageLogsList } from "@/components/automations/MessageLogsList";
 import { TaskFlowBuilder } from "@/components/TaskFlowBuilder";
@@ -24,6 +25,7 @@ export default function Workflows() {
   const { teamId } = useParams<{ teamId: string }>();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false);
 
   // Fetch folders for sidebar
   const { data: folders = [] } = useQuery({
@@ -144,6 +146,7 @@ export default function Workflows() {
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 folderId={selectedFolderId}
+                onCreateFolder={() => setShowCreateFolderDialog(true)}
               />
 
               <AutomationsGrid
@@ -234,6 +237,12 @@ export default function Workflows() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <CreateFolderDialog
+        open={showCreateFolderDialog}
+        onOpenChange={setShowCreateFolderDialog}
+        teamId={teamId}
+      />
     </div>
   );
 }

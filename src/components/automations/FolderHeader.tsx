@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -10,6 +10,7 @@ interface FolderHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   folderId: string | null;
+  onCreateFolder: () => void;
 }
 
 export function FolderHeader({
@@ -19,6 +20,7 @@ export function FolderHeader({
   searchQuery,
   onSearchChange,
   folderId,
+  onCreateFolder,
 }: FolderHeaderProps) {
   const navigate = useNavigate();
 
@@ -47,6 +49,11 @@ export function FolderHeader({
             className="pl-9 w-64"
           />
         </div>
+
+        <Button variant="outline" onClick={onCreateFolder}>
+          <FolderPlus className="h-4 w-4 mr-2" />
+          New Folder
+        </Button>
 
         <Button onClick={handleCreateAutomation}>
           <Plus className="h-4 w-4 mr-2" />
