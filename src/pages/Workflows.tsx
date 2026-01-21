@@ -233,9 +233,12 @@ export default function Workflows() {
             </div>
 
             <Accordion type="multiple" defaultValue={["reminders"]} className="space-y-4">
-              <AccordionItem value="reminders" className="border rounded-xl px-4 bg-gradient-to-r from-purple-500/5 to-indigo-500/5 border-purple-500/20">
+              <AccordionItem value="reminders" className="border rounded-xl px-4 bg-card">
                 <AccordionTrigger className="hover:no-underline py-4">
                   <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500">
+                      <ClipboardCheck className="h-3.5 w-3.5 text-white" />
+                    </div>
                     <span className="font-medium">Pre-Appointment Reminders</span>
                     <span className="text-xs text-muted-foreground">
                       Create tasks for your team to confirm appointments
@@ -247,9 +250,12 @@ export default function Workflows() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="followups" className="border rounded-xl px-4 bg-gradient-to-r from-teal-500/5 to-cyan-500/5 border-teal-500/20">
+              <AccordionItem value="followups" className="border rounded-xl px-4 bg-card">
                 <AccordionTrigger className="hover:no-underline py-4">
                   <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500">
+                      <Activity className="h-3.5 w-3.5 text-white" />
+                    </div>
                     <span className="font-medium">Follow-Up Sequences</span>
                     <span className="text-xs text-muted-foreground">
                       Auto-create tasks based on lead status
@@ -261,9 +267,12 @@ export default function Workflows() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="mappings" className="border rounded-xl px-4 bg-gradient-to-r from-orange-500/5 to-rose-500/5 border-orange-500/20">
+              <AccordionItem value="mappings" className="border rounded-xl px-4 bg-card">
                 <AccordionTrigger className="hover:no-underline py-4">
                   <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
+                      <Zap className="h-3.5 w-3.5 text-white" />
+                    </div>
                     <span className="font-medium">Status Change Rules</span>
                     <span className="text-xs text-muted-foreground">
                       Automatically move leads when events happen

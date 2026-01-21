@@ -256,7 +256,7 @@ export default function PersonalSettings() {
             {personalApps.map((app) => (
               <div
                 key={app.id}
-                className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-gradient-to-r from-secondary/30 to-secondary/10 hover:from-secondary/50 hover:to-secondary/30 transition-colors"
+                className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center border border-border/50">
@@ -300,7 +300,7 @@ export default function PersonalSettings() {
             <CardDescription>Customize how the app looks</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Theme</Label>
                 <p className="text-xs text-muted-foreground">Choose between light and dark mode</p>
@@ -322,21 +322,21 @@ export default function PersonalSettings() {
             <CardDescription>Manage how you receive updates</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">New Lead Notifications</Label>
                 <p className="text-xs text-muted-foreground">Get notified when new leads come in</p>
               </div>
               <Switch defaultChecked />
             </div>
-            <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Task Reminders</Label>
                 <p className="text-xs text-muted-foreground">Receive reminders for upcoming tasks</p>
               </div>
               <Switch defaultChecked />
             </div>
-            <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Team Messages</Label>
                 <p className="text-xs text-muted-foreground">Notifications for team chat messages</p>

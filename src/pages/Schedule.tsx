@@ -112,10 +112,10 @@ export default function Schedule() {
     <div
       key={item.id}
       className={cn(
-        "flex items-start gap-4 p-4 rounded-xl border transition-all hover:shadow-md",
+        "flex items-start gap-4 p-4 rounded-xl border bg-card transition-all hover:shadow-md",
         item.type === "appointment" 
-          ? "bg-gradient-to-r from-blue-500/5 to-indigo-500/5 border-blue-500/20 hover:border-blue-500/40" 
-          : "bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-emerald-500/20 hover:border-emerald-500/40"
+          ? "border-blue-500/20 hover:border-blue-500/40" 
+          : "border-emerald-500/20 hover:border-emerald-500/40"
       )}
     >
       <div className={cn(

@@ -158,14 +158,11 @@ export function EmailSettings({ teamId }: EmailSettingsProps) {
         <p className="text-muted-foreground">Configure email sending domains and settings</p>
       </div>
 
-      {/* Stackit Default Email - Gradient Hero Card */}
-      <Card className="relative overflow-hidden border-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-indigo-600" />
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-        
-        <CardHeader className="relative pb-4">
-          <div className="flex items-center justify-between">
+      {/* Stackit Default Email - Gradient Header with White Content */}
+      <Card className="overflow-hidden">
+        <CardHeader className="relative bg-gradient-to-r from-purple-600 to-indigo-600 text-white pb-4">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="flex items-center justify-between relative">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
                 <Sparkles className="h-5 w-5 text-white" />
@@ -187,45 +184,43 @@ export function EmailSettings({ teamId }: EmailSettingsProps) {
             />
           </div>
         </CardHeader>
-        <CardContent className="relative space-y-4">
-          <div className="p-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+        <CardContent className="pt-6 space-y-4">
+          <div className="p-4 rounded-lg bg-muted border">
             <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-4 w-4 text-white/70" />
-              <span className="text-sm font-medium text-white">Sending Address</span>
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Sending Address</span>
             </div>
-            <p className="font-mono text-sm text-white bg-white/10 px-3 py-2 rounded-md">
+            <p className="font-mono text-sm text-foreground bg-background px-3 py-2 rounded-md border">
               {teamSettings?.default_from_name || "Your Company"} &lt;noreply@notifications.usestackit.co&gt;
             </p>
-            <p className="text-xs text-white/60 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Pre-warmed domain with excellent deliverability. Great for getting started quickly.
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="fromName" className="text-white/90">Default From Name</Label>
+              <Label htmlFor="fromName">Default From Name</Label>
               <Input
                 id="fromName"
                 placeholder="Your Company Name"
                 defaultValue={teamSettings?.default_from_name || ""}
                 onBlur={(e) => updateSettings.mutate({ default_from_name: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
               />
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-muted-foreground">
                 Displayed as the sender name in recipient inboxes
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="replyTo" className="text-white/90">Default Reply-To</Label>
+              <Label htmlFor="replyTo">Default Reply-To</Label>
               <Input
                 id="replyTo"
                 type="email"
                 placeholder="hello@yourcompany.com"
                 defaultValue={teamSettings?.default_reply_to || ""}
                 onBlur={(e) => updateSettings.mutate({ default_reply_to: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
               />
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-muted-foreground">
                 Replies will be sent to this address
               </p>
             </div>
