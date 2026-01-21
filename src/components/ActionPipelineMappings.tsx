@@ -170,17 +170,7 @@ export function ActionPipelineMappings({ teamId }: ActionPipelineMappingsProps) 
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <GitBranch className="h-5 w-5 text-primary" />
-          <CardTitle>Action Pipeline Mappings</CardTitle>
-        </div>
-        <CardDescription>
-          Configure which pipeline stage leads move to when specific actions occur
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-4">
         {ACTION_CONFIG.map((action) => {
           const Icon = action.icon;
           return (
@@ -225,13 +215,12 @@ export function ActionPipelineMappings({ teamId }: ActionPipelineMappingsProps) 
           );
         })}
 
-        <div className="flex justify-end pt-4 border-t">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Mappings
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="flex justify-end pt-4 border-t">
+        <Button onClick={handleSave} disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Rules
+        </Button>
+      </div>
+    </div>
   );
 }
