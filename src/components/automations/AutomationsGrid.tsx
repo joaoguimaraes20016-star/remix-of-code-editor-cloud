@@ -190,7 +190,10 @@ export function AutomationsGrid({
             : "Create your first automation to start automating your workflows"}
         </p>
         {!searchQuery && (
-          <Button onClick={() => navigate(`/team/${teamId}/workflows/edit/new`)}>
+          <Button onClick={() => {
+            const folderParam = folderId && folderId !== "uncategorized" ? `?folder=${folderId}` : "";
+            navigate(`/team/${teamId}/workflows/new/edit${folderParam}`);
+          }}>
             Create Automation
           </Button>
         )}
