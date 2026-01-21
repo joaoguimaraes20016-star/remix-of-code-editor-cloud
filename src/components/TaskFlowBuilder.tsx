@@ -435,205 +435,115 @@ export function TaskFlowBuilder({ teamId }: TaskFlowBuilderProps) {
 
   return (
     <div className="space-y-6">
-      {/* Visual Timeline Preview */}
-      <Card className="bg-gradient-to-r from-primary/5 to-info/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Confirmation Flow Timeline
-          </CardTitle>
-          <CardDescription>
-            Visual preview of your confirmation workflow from booking to appointment time
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="relative py-8">
-            {/* Timeline Line */}
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-border -translate-y-1/2"></div>
-            
-            {/* Timeline Nodes */}
-            <div className="relative flex justify-between items-center">
-              {/* Booking Node */}
-              <div className="flex flex-col items-center z-10">
-                <div className="w-4 h-4 rounded-full bg-success mb-2"></div>
-                <span className="text-xs font-medium">Booked</span>
-              </div>
-
-              {/* Confirmation Nodes */}
-              {confirmations
-                .filter(c => c.enabled)
-                .sort((a, b) => b.hours_before - a.hours_before)
-                .map((conf) => (
-                  <div key={conf.sequence} className="flex flex-col items-center z-10">
-                <div className={`w-4 h-4 rounded-full mb-2 ${
-                  conf.assigned_role === "setter" 
-                    ? "bg-primary" 
-                    : conf.assigned_role === "closer"
-                    ? "bg-primary"
-                    : conf.assigned_role === "admin"
-                    ? "bg-primary"
-                    : conf.assigned_role === "offer_owner"
-                    ? "bg-primary"
-                    : "bg-muted"
-                }`}></div>
-                    <span className="text-xs font-medium">{conf.label}</span>
-                    <Badge variant="outline" className="mt-1 text-xs">
-                      {conf.assigned_role === "setter" 
-                        ? "Setter" 
-                        : conf.assigned_role === "closer"
-                        ? "Closer"
-                        : conf.assigned_role === "admin"
-                        ? "Admin"
-                        : conf.assigned_role === "offer_owner"
-                        ? "Offer Owner"
-                        : "Off"}
-                    </Badge>
-                  </div>
-                ))}
-
-              {/* Appointment Node */}
-              <div className="flex flex-col items-center z-10">
-                <div className="w-4 h-4 rounded-full bg-chart-2 mb-2"></div>
-                <span className="text-xs font-medium">Appointment</span>
-              </div>
-            </div>
-          </div>
-
-          {enabledCount === 0 && (
-            <div className="text-center text-sm text-destructive mt-4">
-              ⚠️ Warning: No confirmations are enabled. Enable at least one confirmation below.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Warning if no confirmations enabled */}
+      {enabledCount === 0 && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            ⚠️ No reminders are enabled. Enable at least one below to auto-create confirmation tasks.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Confirmation Cards */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Confirmation Tasks</CardTitle>
-          <CardDescription>
-            Configure when confirmations happen and who handles them. Drag to reorder.
-          </CardDescription>
-          <Alert className="mt-4">
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Tasks are automatically assigned using round-robin distribution to team members with the fewest pending tasks. Setters and Closers must be in rotation, while Admin and Offer Owner roles are always included.
-            </AlertDescription>
-          </Alert>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={confirmations.map(c => c.sequence.toString())} strategy={verticalListSortingStrategy}>
-              {confirmations.map((conf, index) => (
-                <ConfirmationCard
-                  key={conf.sequence}
-                  confirmation={conf}
-                  index={index}
-                  onUpdate={updateConfirmation}
-                  onDelete={deleteConfirmation}
-                  canDelete={confirmations.length > 1}
-                  teamMembers={teamMembers}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {enabledCount} reminder{enabledCount !== 1 ? 's' : ''} active • Drag to reorder
+          </p>
+        </div>
+        
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={confirmations.map(c => c.sequence.toString())} strategy={verticalListSortingStrategy}>
+            {confirmations.map((conf, index) => (
+              <ConfirmationCard
+                key={conf.sequence}
+                confirmation={conf}
+                index={index}
+                onUpdate={updateConfirmation}
+                onDelete={deleteConfirmation}
+                canDelete={confirmations.length > 1}
+                teamMembers={teamMembers}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
 
-          <Button onClick={addConfirmation} variant="outline" className="w-full">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Confirmation Point
-          </Button>
-        </CardContent>
-      </Card>
+        <Button onClick={addConfirmation} variant="outline" className="w-full">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Reminder
+        </Button>
+      </div>
 
-      {/* Default Task Routing */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Default Task Assignment</CardTitle>
-          <CardDescription>
-            Set default role assignments for other task types
-          </CardDescription>
-          <Alert className="mt-4">
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              These settings determine which role receives follow-up, reschedule, and manually created tasks by default.
-            </AlertDescription>
-          </Alert>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Follow-up Tasks</Label>
-              <p className="text-sm text-muted-foreground">Who handles follow-up tasks by default</p>
-            </div>
+      {/* Default Task Routing - Simplified */}
+      <div className="pt-4 border-t space-y-4">
+        <h4 className="text-sm font-medium text-muted-foreground">Default Assignments</h4>
+        
+        <div className="grid gap-3">
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+            <span className="text-sm">Follow-up tasks go to</span>
             <Select
               value={defaultRouting.follow_up}
               onValueChange={(value: "setter" | "closer") => 
                 setDefaultRouting({ ...defaultRouting, follow_up: value })
               }
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-32 h-9">
                 <SelectValue />
               </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="setter">Setter</SelectItem>
-                  <SelectItem value="closer">Closer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="offer_owner">Offer Owner</SelectItem>
-                </SelectContent>
+              <SelectContent>
+                <SelectItem value="setter">Setter</SelectItem>
+                <SelectItem value="closer">Closer</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="offer_owner">Offer Owner</SelectItem>
+              </SelectContent>
             </Select>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Reschedule Tasks</Label>
-              <p className="text-sm text-muted-foreground">Who handles reschedule requests</p>
-            </div>
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+            <span className="text-sm">Reschedule tasks go to</span>
             <Select
               value={defaultRouting.reschedule}
               onValueChange={(value: "setter" | "closer") => 
                 setDefaultRouting({ ...defaultRouting, reschedule: value })
               }
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-32 h-9">
                 <SelectValue />
               </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="setter">Setter</SelectItem>
-                  <SelectItem value="closer">Closer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="offer_owner">Offer Owner</SelectItem>
-                </SelectContent>
+              <SelectContent>
+                <SelectItem value="setter">Setter</SelectItem>
+                <SelectItem value="closer">Closer</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="offer_owner">Offer Owner</SelectItem>
+              </SelectContent>
             </Select>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Manual Tasks</Label>
-              <p className="text-sm text-muted-foreground">Who handles manually created tasks</p>
-            </div>
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+            <span className="text-sm">Manual tasks go to</span>
             <Select
               value={defaultRouting.manual_task}
               onValueChange={(value: "setter" | "closer") => 
                 setDefaultRouting({ ...defaultRouting, manual_task: value })
               }
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-32 h-9">
                 <SelectValue />
               </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="setter">Setter</SelectItem>
-                  <SelectItem value="closer">Closer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="offer_owner">Offer Owner</SelectItem>
-                </SelectContent>
+              <SelectContent>
+                <SelectItem value="setter">Setter</SelectItem>
+                <SelectItem value="closer">Closer</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="offer_owner">Offer Owner</SelectItem>
+              </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Save Button */}
       <Button onClick={handleSave} disabled={saving || enabledCount === 0} className="w-full">
-        {saving ? "Saving..." : "Save Task Flow Settings"}
+        {saving ? "Saving..." : "Save Reminder Settings"}
       </Button>
     </div>
   );

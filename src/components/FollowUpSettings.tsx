@@ -250,14 +250,7 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Follow-Up Settings</CardTitle>
-        <CardDescription>
-          Configure multiple follow-up attempts for each pipeline stage
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-8">
+    <div className="space-y-6">
         {stages.map(stage => (
           <div key={stage.value} className="space-y-3">
             <h3 className="font-semibold text-base">{stage.label}</h3>
@@ -353,10 +346,9 @@ export function FollowUpSettings({ teamId }: FollowUpSettingsProps) {
           </div>
         ))}
 
-        <Button onClick={handleSave} disabled={saving} className="w-full">
-          {saving ? 'Saving...' : 'Save Settings'}
-        </Button>
-      </CardContent>
-    </Card>
+      <Button onClick={handleSave} disabled={saving} className="w-full">
+        {saving ? 'Saving...' : 'Save Follow-Up Settings'}
+      </Button>
+    </div>
   );
 }

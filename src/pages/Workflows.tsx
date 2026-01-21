@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Zap, GitBranch, Workflow, Bot, History, Settings2 } from "lucide-react";
+import { Bot, History, ClipboardCheck, Info } from "lucide-react";
 import { TaskFlowBuilder } from "@/components/TaskFlowBuilder";
 import { FollowUpSettings } from "@/components/FollowUpSettings";
 import { ActionPipelineMappings } from "@/components/ActionPipelineMappings";
@@ -9,6 +8,8 @@ import AutomationRunsList from "@/components/automations/AutomationRunsList";
 import { MessageLogsList } from "@/components/automations/MessageLogsList";
 import { AutomationHeroPrompt } from "@/components/automations/AutomationHeroPrompt";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { TriggerType } from "@/lib/automations/types";
 
 export default function Workflows() {
@@ -41,8 +42,8 @@ export default function Workflows() {
             Activity
           </TabsTrigger>
           <TabsTrigger value="settings" className="gap-2">
-            <Settings2 className="h-4 w-4" />
-            Advanced
+            <ClipboardCheck className="h-4 w-4" />
+            Manual Tasks
           </TabsTrigger>
         </TabsList>
 
@@ -72,51 +73,72 @@ export default function Workflows() {
           </div>
         </TabsContent>
 
-        {/* Advanced Settings Tab */}
+        {/* Manual Tasks Tab */}
         <TabsContent value="settings" className="space-y-6">
-          {/* Call Confirmation Flow */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" />
-                Call Confirmation Flow
-              </CardTitle>
-              <CardDescription>
-                Configure when and how confirmation tasks are created for new appointments
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TaskFlowBuilder teamId={teamId} />
-            </CardContent>
-          </Card>
+          {/* Section Header */}
+          <Alert className="bg-muted/50 border-primary/20">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm text-muted-foreground">
+              Configure tasks that your team handles manually — confirmations, follow-ups, and status updates.
+            </AlertDescription>
+          </Alert>
 
-          {/* Follow-Up Flows */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <GitBranch className="h-5 w-5 text-primary" />
-                Automated Follow-Up Flows
-              </CardTitle>
-              <CardDescription>Set up automatic follow-up tasks based on pipeline stage changes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FollowUpSettings teamId={teamId} />
-            </CardContent>
-          </Card>
+          {/* Accordion Sections */}
+          <Accordion type="multiple" defaultValue={["reminders"]} className="space-y-4">
+            {/* Pre-Appointment Reminders */}
+            <AccordionItem value="reminders" className="border rounded-xl px-4 bg-card">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3 text-left">
+                  <span className="text-lg">📞</span>
+                  <div>
+                    <h3 className="font-semibold text-base">Pre-Appointment Reminders</h3>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      Create tasks for your team to call and confirm appointments
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <TaskFlowBuilder teamId={teamId} />
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Pipeline Action Mappings */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Workflow className="h-5 w-5 text-primary" />
-                Action → Pipeline Mappings
-              </CardTitle>
-              <CardDescription>Define which pipeline stage leads move to when specific actions occur</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ActionPipelineMappings teamId={teamId} />
-            </CardContent>
-          </Card>
+            {/* Follow-Up Sequences */}
+            <AccordionItem value="followups" className="border rounded-xl px-4 bg-card">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3 text-left">
+                  <span className="text-lg">🔄</span>
+                  <div>
+                    <h3 className="font-semibold text-base">Follow-Up Sequences</h3>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      Auto-create follow-up tasks when leads hit certain stages
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <FollowUpSettings teamId={teamId} />
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Status Change Rules */}
+            <AccordionItem value="rules" className="border rounded-xl px-4 bg-card">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3 text-left">
+                  <span className="text-lg">⚡</span>
+                  <div>
+                    <h3 className="font-semibold text-base">Status Change Rules</h3>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      Auto-move leads to stages when events happen (cancel, no-show, etc.)
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <ActionPipelineMappings teamId={teamId} />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </TabsContent>
       </Tabs>
     </div>
