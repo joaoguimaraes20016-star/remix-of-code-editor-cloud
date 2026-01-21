@@ -200,9 +200,9 @@ export function OnboardingTemplateManager({ teamId }: OnboardingTemplateManagerP
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      instagram: 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20',
+      instagram: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
       domain: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
-      manychat: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
+      manychat: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20',
       media: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
     };
     return colors[category] || 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20';
