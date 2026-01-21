@@ -1,7 +1,13 @@
 // supabase/functions/make-call/index.ts
-// Twilio Voice Provider Edge Function
+// Twilio Voice Provider Edge Function with wallet billing
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  getChannelPrice, 
+  deductFromWallet, 
+  refundToWallet, 
+  triggerAutoRechargeIfNeeded 
+} from "../_shared/billing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,12 +22,12 @@ interface MakeCallRequest {
   runId?: string;
   leadId?: string;
   appointmentId?: string;
-  // TwiML or URL for call handling
   twiml?: string;
   url?: string;
-  // For power dialer queue
   mode?: "immediate" | "dialer_queue";
   script?: string;
+  estimatedMinutes?: number; // For upfront billing
+  skipBilling?: boolean;
 }
 
 interface TwilioCallResponse {
@@ -58,6 +64,8 @@ Deno.serve(async (req) => {
       url,
       mode,
       script,
+      estimatedMinutes,
+      skipBilling,
     } = requestData;
 
     if (!to) {
@@ -67,10 +75,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // For dialer queue mode, just log to queue and return
+    // Get voice pricing
+    const pricing = await getChannelPrice(supabase, "voice");
+    const costPerMinute = pricing?.unitPriceCents || 2.0; // Default to 2 cents per minute
+    
+    // Charge for estimated minutes (minimum 1 minute upfront)
+    const minutesToCharge = estimatedMinutes || 1;
+    const costCents = costPerMinute * minutesToCharge;
+
+    // For dialer queue mode, just log to queue and return (no billing yet)
     if (mode === "dialer_queue") {
       try {
-        // Insert into a dialer queue (using message_logs for now)
         const { error: queueError } = await supabase.from("message_logs").insert([
           {
             team_id: teamId,
@@ -85,6 +100,7 @@ Deno.serve(async (req) => {
               leadId,
               appointmentId,
               queuedAt: new Date().toISOString(),
+              estimatedCostCents: costCents,
             },
             status: "queued",
           },
@@ -100,6 +116,7 @@ Deno.serve(async (req) => {
             status: "queued",
             provider: "power_dialer",
             message: "Call added to dialer queue",
+            estimatedCostCents: costCents,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
@@ -111,6 +128,33 @@ Deno.serve(async (req) => {
             error: queueErr instanceof Error ? queueErr.message : "Queue failed",
           }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    // Deduct from wallet for immediate calls (unless skipped)
+    let billingResult: { success: boolean; newBalanceCents: number; shouldAutoRecharge: boolean; error?: string } = { 
+      success: true, newBalanceCents: 0, shouldAutoRecharge: false 
+    };
+    
+    if (!skipBilling && teamId) {
+      billingResult = await deductFromWallet(supabase, {
+        teamId,
+        amountCents: costCents,
+        channel: "voice",
+        referenceId: runId || undefined,
+        description: `Voice call to ${to.slice(-4).padStart(to.length, '*')} (${minutesToCharge} min)`,
+      });
+
+      if (!billingResult.success) {
+        console.error("[make-call] Billing failed:", billingResult.error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: billingResult.error || "Insufficient wallet balance",
+            code: "INSUFFICIENT_BALANCE",
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     }
@@ -138,13 +182,11 @@ Deno.serve(async (req) => {
         formData.append("To", to);
         formData.append("From", twilioFromNumber!);
 
-        // Use TwiML or URL for call handling
         if (twiml) {
           formData.append("Twiml", twiml);
         } else if (url) {
           formData.append("Url", url);
         } else if (script) {
-          // Generate simple TwiML from script
           const escapedScript = script.replace(/[<>&'"]/g, (c) => ({
             "<": "&lt;",
             ">": "&gt;",
@@ -154,7 +196,6 @@ Deno.serve(async (req) => {
           })[c] || c);
           formData.append("Twiml", `<Response><Say>${escapedScript}</Say></Response>`);
         } else {
-          // Default: play a message
           formData.append("Twiml", "<Response><Say>Hello, this is an automated call.</Say></Response>");
         }
 
@@ -172,7 +213,7 @@ Deno.serve(async (req) => {
         if (twilioResponse.ok) {
           callId = result.sid;
           status = result.status === "queued" ? "queued" : "initiated";
-          console.log("[make-call] Twilio call initiated:", { sid: result.sid, status: result.status });
+          console.log("[make-call] Twilio call initiated:", { sid: result.sid, status: result.status, cost: costCents });
         } else {
           callId = `failed_${Date.now()}`;
           status = "failed";
@@ -190,7 +231,24 @@ Deno.serve(async (req) => {
       provider = "stub";
       callId = `stub_call_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       status = "initiated";
-      console.log("[make-call] Stub mode - Call logged:", { to });
+      console.log("[make-call] Stub mode - Call logged:", { to, cost: costCents });
+    }
+
+    // If call failed, refund the wallet
+    if (status === "failed" && !skipBilling && teamId) {
+      console.log("[make-call] Refunding failed call cost");
+      await refundToWallet(supabase, {
+        teamId,
+        amountCents: costCents,
+        channel: "voice",
+        referenceId: callId,
+        description: "Voice call failed - refund",
+      });
+    }
+
+    // Trigger auto-recharge if needed
+    if (billingResult.shouldAutoRecharge && teamId) {
+      triggerAutoRechargeIfNeeded(teamId, true);
     }
 
     // Log to message_logs
@@ -211,6 +269,8 @@ Deno.serve(async (req) => {
             appointmentId,
             hasTwiml: !!twiml,
             hasUrl: !!url,
+            costCents,
+            minutesCharged: minutesToCharge,
           },
           status: status === "failed" ? "failed" : "sent",
           error_message: errorMessage || null,
@@ -231,6 +291,9 @@ Deno.serve(async (req) => {
         callId,
         status,
         provider,
+        costCents,
+        minutesCharged: minutesToCharge,
+        newBalanceCents: billingResult.newBalanceCents,
         error: errorMessage,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

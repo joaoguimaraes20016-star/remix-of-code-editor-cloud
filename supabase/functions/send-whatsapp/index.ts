@@ -1,7 +1,13 @@
 // supabase/functions/send-whatsapp/index.ts
-// Twilio WhatsApp Provider Edge Function
+// Twilio WhatsApp Provider Edge Function with wallet billing
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  getChannelPrice, 
+  deductFromWallet, 
+  refundToWallet, 
+  triggerAutoRechargeIfNeeded 
+} from "../_shared/billing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +23,7 @@ interface SendWhatsAppRequest {
   runId?: string;
   leadId?: string;
   appointmentId?: string;
+  skipBilling?: boolean;
 }
 
 function getSupabaseClient() {
@@ -34,13 +41,44 @@ Deno.serve(async (req) => {
 
   try {
     const requestData: SendWhatsAppRequest = await req.json();
-    const { to, body, mediaUrl, teamId, automationId, runId, leadId, appointmentId } = requestData;
+    const { to, body, mediaUrl, teamId, automationId, runId, leadId, appointmentId, skipBilling } = requestData;
 
     if (!to || !body) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing required fields: to, body" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // Get WhatsApp pricing
+    const pricing = await getChannelPrice(supabase, "whatsapp");
+    const costCents = pricing?.unitPriceCents || 0.8; // Default to 0.8 cents if not found
+
+    // Deduct from wallet (unless skipped)
+    let billingResult: { success: boolean; newBalanceCents: number; shouldAutoRecharge: boolean; error?: string } = { 
+      success: true, newBalanceCents: 0, shouldAutoRecharge: false 
+    };
+    
+    if (!skipBilling && teamId) {
+      billingResult = await deductFromWallet(supabase, {
+        teamId,
+        amountCents: costCents,
+        channel: "whatsapp",
+        referenceId: runId || undefined,
+        description: `WhatsApp to ${to.slice(-4).padStart(to.length, '*')}`,
+      });
+
+      if (!billingResult.success) {
+        console.error("[send-whatsapp] Billing failed:", billingResult.error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: billingResult.error || "Insufficient wallet balance",
+            code: "INSUFFICIENT_BALANCE",
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // Get Twilio credentials
@@ -91,7 +129,7 @@ Deno.serve(async (req) => {
         if (twilioResponse.ok) {
           messageId = result.sid;
           status = result.status === "queued" || result.status === "sent" ? "sent" : "queued";
-          console.log("[send-whatsapp] WhatsApp message sent:", { sid: result.sid });
+          console.log("[send-whatsapp] WhatsApp message sent:", { sid: result.sid, cost: costCents });
         } else {
           messageId = `failed_${Date.now()}`;
           status = "failed";
@@ -109,7 +147,24 @@ Deno.serve(async (req) => {
       provider = "stub";
       messageId = `stub_wa_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       status = "sent";
-      console.log("[send-whatsapp] Stub mode - WhatsApp logged:", { to, bodyLength: body.length });
+      console.log("[send-whatsapp] Stub mode - WhatsApp logged:", { to, bodyLength: body.length, cost: costCents });
+    }
+
+    // If send failed, refund the wallet
+    if (status === "failed" && !skipBilling && teamId) {
+      console.log("[send-whatsapp] Refunding failed message cost");
+      await refundToWallet(supabase, {
+        teamId,
+        amountCents: costCents,
+        channel: "whatsapp",
+        referenceId: messageId,
+        description: "WhatsApp send failed - refund",
+      });
+    }
+
+    // Trigger auto-recharge if needed
+    if (billingResult.shouldAutoRecharge && teamId) {
+      triggerAutoRechargeIfNeeded(teamId, true);
     }
 
     // Log to message_logs
@@ -129,6 +184,7 @@ Deno.serve(async (req) => {
             hasMedia: !!mediaUrl,
             leadId,
             appointmentId,
+            costCents,
           },
           status,
           error_message: errorMessage || null,
@@ -149,6 +205,8 @@ Deno.serve(async (req) => {
         messageId,
         status,
         provider,
+        costCents,
+        newBalanceCents: billingResult.newBalanceCents,
         error: errorMessage,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
