@@ -731,6 +731,36 @@ export type Database = {
           },
         ]
       }
+      channel_pricing: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          is_active: boolean
+          unit_label: string
+          unit_price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          unit_label: string
+          unit_price_cents: number
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          unit_label?: string
+          unit_price_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_asset_audit_logs: {
         Row: {
           action: string
@@ -2397,6 +2427,59 @@ export type Database = {
           },
         ]
       }
+      team_billing: {
+        Row: {
+          auto_recharge_amount_cents: number
+          auto_recharge_enabled: boolean
+          auto_recharge_threshold_cents: number
+          created_at: string
+          id: string
+          payment_method_brand: string | null
+          payment_method_last4: string | null
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
+          team_id: string
+          updated_at: string
+          wallet_balance_cents: number
+        }
+        Insert: {
+          auto_recharge_amount_cents?: number
+          auto_recharge_enabled?: boolean
+          auto_recharge_threshold_cents?: number
+          created_at?: string
+          id?: string
+          payment_method_brand?: string | null
+          payment_method_last4?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          team_id: string
+          updated_at?: string
+          wallet_balance_cents?: number
+        }
+        Update: {
+          auto_recharge_amount_cents?: number
+          auto_recharge_enabled?: boolean
+          auto_recharge_threshold_cents?: number
+          created_at?: string
+          id?: string
+          payment_method_brand?: string | null
+          payment_method_last4?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          team_id?: string
+          updated_at?: string
+          wallet_balance_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_billing_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_business_hours: {
         Row: {
           close_time: string
@@ -3064,6 +3147,50 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_transactions: {
+        Row: {
+          amount_cents: number
+          balance_after_cents: number
+          channel: string | null
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          team_id: string
+          transaction_type: string
+        }
+        Insert: {
+          amount_cents: number
+          balance_after_cents: number
+          channel?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          team_id: string
+          transaction_type: string
+        }
+        Update: {
+          amount_cents?: number
+          balance_after_cents?: number
+          channel?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          team_id?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_audit_logs: {
         Row: {
           created_at: string
@@ -3109,6 +3236,16 @@ export type Database = {
           p_transaction_type: string
         }
         Returns: number
+      }
+      add_wallet_balance: {
+        Args: {
+          p_amount_cents: number
+          p_description?: string
+          p_reference_id?: string
+          p_team_id: string
+          p_transaction_type?: string
+        }
+        Returns: Json
       }
       auto_assign_unassigned_tasks: { Args: never; Returns: undefined }
       auto_return_expired_tasks: { Args: never; Returns: undefined }
@@ -3173,6 +3310,16 @@ export type Database = {
       deduct_credits: {
         Args: {
           p_amount: number
+          p_channel: string
+          p_description?: string
+          p_reference_id?: string
+          p_team_id: string
+        }
+        Returns: Json
+      }
+      deduct_wallet_balance: {
+        Args: {
+          p_amount_cents: number
           p_channel: string
           p_description?: string
           p_reference_id?: string
