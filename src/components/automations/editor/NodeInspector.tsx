@@ -7,29 +7,37 @@ import { ActionLibraryPanel } from "./ActionLibraryPanel";
 
 // Actions that are fully implemented with UI + backend execution
 const SUPPORTED_ACTIONS: ActionType[] = [
+  // Messaging (all route through send_message backend)
   "send_message",
+  "send_sms",
+  "send_email",
+  "send_whatsapp",
+  "make_call",
+  "enqueue_dialer",
+  "notify_team",
+  // Flow Control
   "time_delay",
+  "wait_until",
+  "business_hours",
+  "condition",
+  "split_test",
+  "go_to",
+  "run_workflow",
+  "stop_workflow",
+  // CRM Actions
   "add_tag",
   "remove_tag",
   "add_task",
   "add_note",
   "assign_owner",
-  "update_stage",
-  "notify_team",
-  "custom_webhook",
-  "enqueue_dialer",
-  "condition",
   "create_contact",
   "update_contact",
+  // Pipeline
+  "update_stage",
   "create_deal",
   "close_deal",
-  "run_workflow",
-  "stop_workflow",
-  "go_to",
-  "wait_until",
-  "business_hours",
-  "split_test",
-  "make_call",
+  // Integrations
+  "custom_webhook",
 ];
 
 interface NodeInspectorProps {
