@@ -64,7 +64,7 @@ export function AutomationCanvasArea({
       {/* Connection to first step or add button */}
       <NodeConnectionLine />
 
-      {/* Empty state - Add first step with smart suggestions */}
+      {/* Empty state - Add first step with primary + button and smart suggestions */}
       {definition.steps.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -73,7 +73,19 @@ export function AutomationCanvasArea({
         >
           <div className="text-white/40 text-sm font-medium">Then do this...</div>
           
-          {/* Smart Suggestions Grid */}
+          {/* PRIMARY: Large Add Step Button */}
+          <motion.button
+            onClick={() => onAddStep("send_message")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-20 h-20 rounded-full flex items-center justify-center bg-primary/20 border-2 border-dashed border-primary/50 hover:border-primary hover:bg-primary/30 text-primary transition-all shadow-lg"
+          >
+            <Plus className="h-10 w-10" />
+          </motion.button>
+          
+          <div className="text-white/30 text-xs">or choose a quick action</div>
+          
+          {/* SECONDARY: Smart Suggestions Grid */}
           <div className="grid grid-cols-2 gap-3 max-w-md">
             {topSuggestions.map((suggestion) => {
               const config = QUICK_ACTION_CONFIG[suggestion.type];
