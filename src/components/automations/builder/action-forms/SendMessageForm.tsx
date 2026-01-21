@@ -1,6 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -10,11 +11,16 @@ import {
 } from "@/components/ui/select";
 import { TemplateVariablePicker } from "../TemplateVariablePicker";
 import { useRef } from "react";
+import { Bot, Phone } from "lucide-react";
 
 interface SendMessageConfig {
   channel: "sms" | "email" | "voice" | "in_app";
   template: string;
   subject?: string;
+  // Voice-specific options
+  useElevenLabsAI?: boolean;
+  agentId?: string;
+  mode?: "immediate" | "dialer_queue";
 }
 
 interface SendMessageFormProps {
@@ -99,9 +105,85 @@ export function SendMessageForm({ config, onChange }: SendMessageFormProps) {
         </div>
       )}
 
+      {/* Voice-specific options */}
+      {config.channel === "voice" && (
+        <div className="space-y-4 rounded-lg border border-border/50 bg-muted/20 p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Phone className="h-4 w-4" />
+            Voice Call Options
+          </div>
+
+          {/* Call Mode */}
+          <div className="space-y-2">
+            <Label>Call Mode</Label>
+            <Select
+              value={config.mode || "immediate"}
+              onValueChange={(value: "immediate" | "dialer_queue") =>
+                onChange({ ...config, mode: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="immediate">Immediate Call</SelectItem>
+                <SelectItem value="dialer_queue">Add to Power Dialer</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {config.mode === "dialer_queue" 
+                ? "Call will be queued for manual dialing" 
+                : "Call will be initiated immediately"}
+            </p>
+          </div>
+
+          {/* ElevenLabs AI Toggle */}
+          <div className="flex items-center justify-between rounded-md border border-border/50 bg-background p-3">
+            <div className="flex items-center gap-3">
+              <Bot className="h-5 w-5 text-primary" />
+              <div>
+                <Label htmlFor="elevenlabs-toggle" className="cursor-pointer">
+                  Use AI Voice Agent
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Connect to ElevenLabs Conversational AI
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="elevenlabs-toggle"
+              checked={config.useElevenLabsAI || false}
+              onCheckedChange={(checked) =>
+                onChange({ ...config, useElevenLabsAI: checked })
+              }
+            />
+          </div>
+
+          {/* Agent ID Input (shown when AI is enabled) */}
+          {config.useElevenLabsAI && (
+            <div className="space-y-2">
+              <Label htmlFor="agent-id">ElevenLabs Agent ID</Label>
+              <Input
+                id="agent-id"
+                placeholder="Enter your ElevenLabs Agent ID..."
+                value={config.agentId || ""}
+                onChange={(e) => onChange({ ...config, agentId: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Find this in your ElevenLabs Conversational AI dashboard
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="template">Message</Label>
+          <Label htmlFor="template">
+            {config.channel === "voice" && !config.useElevenLabsAI 
+              ? "Call Script" 
+              : "Message"}
+          </Label>
           <TemplateVariablePicker
             onInsert={(v) => handleInsertVariable(v, "template")}
             triggerLabel="Insert Variable"
@@ -115,6 +197,8 @@ export function SendMessageForm({ config, onChange }: SendMessageFormProps) {
               ? "Hey {{lead.first_name}}, your appointment is confirmed!"
               : config.channel === "email"
               ? "Dear {{lead.first_name}},\n\nThank you for booking..."
+              : config.channel === "voice"
+              ? "Hi {{lead.first_name}}, this is a reminder about your upcoming appointment..."
               : "Enter your message..."
           }
           value={config.template}
@@ -123,7 +207,9 @@ export function SendMessageForm({ config, onChange }: SendMessageFormProps) {
           className="font-mono text-sm"
         />
         <p className="text-xs text-muted-foreground">
-          Use {"{{variable}}"} syntax for dynamic content
+          {config.channel === "voice" && config.useElevenLabsAI
+            ? "This script will be used as fallback if AI agent is unavailable"
+            : "Use {{variable}} syntax for dynamic content"}
         </p>
       </div>
     </div>

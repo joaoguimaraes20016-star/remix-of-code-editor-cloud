@@ -32,6 +32,13 @@ import {
   executeStopWorkflow,
   executeGoTo,
 } from "./actions/workflow-actions.ts";
+import { executeVoiceCall } from "./actions/voice-ai.ts";
+import {
+  checkAndCreateEnrollment,
+  completeEnrollment,
+  exitEnrollment,
+  checkGoals,
+} from "./enrollment.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -765,7 +772,7 @@ Deno.serve(async (req) => {
     const automationsSkipped: string[] = [];
     const allStepsExecuted: StepExecutionLog[] = [];
 
-    // Run each automation with PER-AUTOMATION idempotency check
+    // Run each automation with PER-AUTOMATION idempotency check and enrollment tracking
     for (const automation of automations) {
       // Generate automationKey: unique identifier for this automation
       // For DB automations, use the database ID
@@ -785,6 +792,22 @@ Deno.serve(async (req) => {
       if (alreadyRan) {
         console.log(
           `[Automation Trigger] SKIPPED automation ${automation.id} - already ran for event ${stableEventId} (run ${existingRunId})`,
+        );
+        automationsSkipped.push(automation.id);
+        continue;
+      }
+
+      // ENROLLMENT CHECK - Prevent duplicate enrollments
+      const enrollmentCheck = await checkAndCreateEnrollment(
+        supabase,
+        automation.id,
+        teamId,
+        context,
+      );
+
+      if (!enrollmentCheck.shouldRun) {
+        console.log(
+          `[Automation Trigger] SKIPPED automation ${automation.id} - ${enrollmentCheck.reason}`,
         );
         automationsSkipped.push(automation.id);
         continue;
@@ -810,14 +833,38 @@ Deno.serve(async (req) => {
       let status: "success" | "error" = "success";
       let errorMessage: string | undefined;
       let stepLogs: StepExecutionLog[] = [];
+      let exitedByGoal = false;
 
       try {
         stepLogs = await runAutomation(automation, context, supabase, runId);
         allStepsExecuted.push(...stepLogs);
+        
+        // Check for goal completion after run
+        const goalCheck = await checkGoals(supabase, automation.id, context);
+        if (goalCheck.goalMet && goalCheck.goal?.exitOnGoal) {
+          exitedByGoal = true;
+          await exitEnrollment(
+            supabase,
+            automation.id,
+            context.lead?.id || null,
+            context.appointment?.id || null,
+            `Goal met: ${goalCheck.goal.name}`,
+          );
+        }
       } catch (err) {
         status = "error";
         errorMessage = err instanceof Error ? err.message : "Unknown error";
         console.error(`[Automation Trigger] Error running automation ${automation.id}:`, err);
+      }
+
+      // Complete enrollment if not exited by goal
+      if (!exitedByGoal && status === "success") {
+        await completeEnrollment(
+          supabase,
+          automation.id,
+          context.lead?.id || null,
+          context.appointment?.id || null,
+        );
       }
 
       // Update the automation run with final status and steps
