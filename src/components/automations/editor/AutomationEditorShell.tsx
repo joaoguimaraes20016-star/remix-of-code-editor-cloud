@@ -32,6 +32,20 @@ interface AutomationEditorShellProps {
   isNew?: boolean;
 }
 
+// Track "add step" mode in selectedNodeId
+// - "add-step" = adding first step
+// - "add-step-after:{stepId}" = adding after specific step
+function isAddStepMode(id: string | null): boolean {
+  return id?.startsWith("add-step") ?? false;
+}
+
+function getAfterStepId(id: string | null): string | undefined {
+  if (id?.startsWith("add-step-after:")) {
+    return id.replace("add-step-after:", "");
+  }
+  return undefined;
+}
+
 export function AutomationEditorShell({
   teamId,
   definition,
@@ -132,9 +146,25 @@ export function AutomationEditorShell({
     }
   }, []);
 
-  const selectedStep = selectedNodeId === "trigger"
-    ? null
-    : definition.steps.find((s) => s.id === selectedNodeId);
+  // Handler for opening action library (called by "+" buttons)
+  const handleOpenActionLibrary = useCallback((afterStepId?: string) => {
+    if (afterStepId) {
+      setSelectedNodeId(`add-step-after:${afterStepId}`);
+    } else {
+      setSelectedNodeId("add-step");
+    }
+    setRightCollapsed(false);
+  }, []);
+
+  // Handler for when action is selected from library
+  const handleActionSelected = useCallback((type: ActionType) => {
+    const afterStepId = getAfterStepId(selectedNodeId);
+    handleAddStep(type, afterStepId);
+  }, [selectedNodeId, handleAddStep]);
+
+  const selectedStep = selectedNodeId && !isAddStepMode(selectedNodeId) && selectedNodeId !== "trigger"
+    ? definition.steps.find((s) => s.id === selectedNodeId)
+    : undefined;
 
   return (
     <div className="automation-editor">
@@ -242,6 +272,7 @@ export function AutomationEditorShell({
             onStepUpdate={handleStepUpdate}
             onStepDelete={handleStepDelete}
             onAddStep={handleAddStep}
+            onOpenActionLibrary={handleOpenActionLibrary}
           />
         </main>
 
@@ -257,7 +288,9 @@ export function AutomationEditorShell({
             >
               <div className="automation-editor-panel-header">
                 <span className="automation-editor-panel-title flex items-center gap-2">
-                  {selectedNodeId === "trigger" ? (
+                  {isAddStepMode(selectedNodeId) ? (
+                    "Add Action"
+                  ) : selectedNodeId === "trigger" ? (
                     "Configure Trigger"
                   ) : selectedStep ? (
                     "Configure Step"
@@ -284,6 +317,7 @@ export function AutomationEditorShell({
                   onTriggerChange={handleTriggerChange}
                   onStepUpdate={handleStepUpdate}
                   onStepDelete={handleStepDelete}
+                  onActionSelected={handleActionSelected}
                   teamId={teamId}
                 />
               </div>
