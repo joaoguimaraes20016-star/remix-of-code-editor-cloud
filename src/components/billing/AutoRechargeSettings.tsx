@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, Loader2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RefreshCw, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +65,6 @@ export function AutoRechargeSettings({ teamId, billing, onUpdate }: AutoRecharge
 
     setIsLoading(true);
     try {
-      // Ensure billing record exists
       const { error: upsertError } = await supabase
         .from("team_billing")
         .upsert({
@@ -90,97 +88,94 @@ export function AutoRechargeSettings({ teamId, billing, onUpdate }: AutoRecharge
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <RefreshCw className="h-5 w-5 text-muted-foreground" />
-          <CardTitle>Auto-Recharge</CardTitle>
-        </div>
-        <CardDescription>
-          Automatically add funds when your balance drops below a threshold
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="auto-recharge">Enable Auto-Recharge</Label>
-            <p className="text-sm text-muted-foreground">
-              Never run out of funds during campaigns
-            </p>
+    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-6 text-white shadow-lg">
+      {/* Background decoration */}
+      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+      <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+      
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-white/80" />
+            <span className="text-sm font-medium text-white/80">Auto-Recharge</span>
           </div>
           <Switch
-            id="auto-recharge"
             checked={enabled}
             onCheckedChange={(checked) => {
               setEnabled(checked);
               handleChange();
             }}
             disabled={!hasPaymentMethod}
+            className="data-[state=checked]:bg-white/30"
           />
         </div>
-
-        {!hasPaymentMethod && (
-          <p className="text-sm text-amber-500">
+        
+        {!hasPaymentMethod ? (
+          <p className="text-sm text-white/60">
             Add a payment method to enable auto-recharge
           </p>
-        )}
-
-        {enabled && hasPaymentMethod && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="space-y-2">
-              <Label htmlFor="threshold">When balance drops below</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="threshold"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={threshold}
-                  onChange={(e) => {
-                    setThreshold(e.target.value);
-                    handleChange();
-                  }}
-                  className="pl-7"
-                />
+        ) : enabled ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-white/70">When below</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 text-sm">$</span>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={threshold}
+                    onChange={(e) => {
+                      setThreshold(e.target.value);
+                      handleChange();
+                    }}
+                    className="pl-7 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-white/70">Add amount</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 text-sm">$</span>
+                  <Input
+                    type="number"
+                    min="5"
+                    step="5"
+                    value={amount}
+                    onChange={(e) => {
+                      setAmount(e.target.value);
+                      handleChange();
+                    }}
+                    className="pl-7 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                  />
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="amount">Add this amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="amount"
-                  type="number"
-                  min="5"
-                  step="5"
-                  value={amount}
-                  onChange={(e) => {
-                    setAmount(e.target.value);
-                    handleChange();
-                  }}
-                  className="pl-7"
-                />
-              </div>
-            </div>
+            
+            {hasChanges && (
+              <Button 
+                onClick={handleSave} 
+                disabled={isLoading}
+                className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Settings"
+                )}
+              </Button>
+            )}
           </div>
+        ) : (
+          <p className="text-sm text-white/70">
+            Never run out of funds during campaigns
+          </p>
         )}
-
-        {hasChanges && (
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Settings"
-              )}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -48,7 +48,8 @@ export default function Billing() {
           <Skeleton className="h-8 w-48 mb-2" />
           <Skeleton className="h-4 w-72" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-48" />
           <Skeleton className="h-48" />
           <Skeleton className="h-48" />
         </div>
@@ -65,7 +66,8 @@ export default function Billing() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Hero Cards - 3 column layout */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <WalletCard 
           teamId={teamId!} 
           billing={billing} 
@@ -76,13 +78,12 @@ export default function Billing() {
           billing={billing} 
           onUpdate={refetch} 
         />
+        <AutoRechargeSettings 
+          teamId={teamId!} 
+          billing={billing} 
+          onUpdate={refetch} 
+        />
       </div>
-
-      <AutoRechargeSettings 
-        teamId={teamId!} 
-        billing={billing} 
-        onUpdate={refetch} 
-      />
 
       <PricingTable pricing={pricing || []} />
 
