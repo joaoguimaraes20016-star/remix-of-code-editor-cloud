@@ -129,7 +129,7 @@ export function PaymentMethodCard({ teamId, billing, onUpdate }: PaymentMethodCa
         <Button 
           onClick={handleSetupBilling}
           disabled={isLoading}
-          className="w-full bg-[#ef476f] hover:bg-[#d63d5f] text-white border-0"
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
