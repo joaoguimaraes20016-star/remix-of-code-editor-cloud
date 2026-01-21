@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 
 interface ActionNodeCardProps {
   step: AutomationStep;
-  stepNumber: number;
   isSelected: boolean;
   onSelect: () => void;
 }
@@ -213,7 +212,7 @@ function getStepPreview(step: AutomationStep): string {
   }
 }
 
-export function ActionNodeCard({ step, stepNumber, isSelected, onSelect }: ActionNodeCardProps) {
+export function ActionNodeCard({ step, isSelected, onSelect }: ActionNodeCardProps) {
   const display = ACTION_DISPLAY[step.type] || ACTION_DISPLAY.send_message;
   const preview = getStepPreview(step);
   const isConfigured = isStepConfigured(step);
@@ -224,40 +223,35 @@ export function ActionNodeCard({ step, stepNumber, isSelected, onSelect }: Actio
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "relative w-80 rounded-2xl border transition-all shadow-lg",
-        "bg-builder-surface border-builder-border",
+        "relative w-96 rounded-2xl border-2 transition-all shadow-lg",
+        "bg-sidebar",
         isSelected 
-          ? "border-primary ring-2 ring-primary/30 shadow-primary/20" 
-          : "border-builder-border hover:border-primary/50 hover:shadow-xl"
+          ? "border-primary shadow-primary/20" 
+          : "border-sidebar-border hover:border-primary/50 hover:shadow-xl"
       )}
     >
-      {/* Step Number Badge */}
-      <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-builder-surface-active border border-builder-border flex items-center justify-center text-xs font-medium text-builder-text-muted">
-        {stepNumber}
-      </div>
-
       {/* Status Indicator */}
       <div className={cn(
-        "absolute -right-1 -top-1 w-5 h-5 rounded-full flex items-center justify-center",
-        isConfigured ? "bg-green-500/20" : "bg-yellow-500/20"
+        "absolute -right-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-sidebar",
+        isConfigured ? "bg-green-500" : "bg-yellow-500"
       )}>
         {isConfigured ? (
-          <Check className="h-3 w-3 text-green-400" />
+          <Check className="h-3.5 w-3.5 text-white" />
         ) : (
-          <AlertCircle className="h-3 w-3 text-yellow-400" />
+          <AlertCircle className="h-3.5 w-3.5 text-white" />
         )}
       </div>
 
-      <div className="flex items-start gap-4 p-5">
+      <div className="flex items-start gap-5 p-6">
         {/* Icon */}
-        <div className={cn("p-3 rounded-xl", display.bgColor)}>
+        <div className={cn("p-4 rounded-xl", display.bgColor)}>
           <span className={display.color}>{display.icon}</span>
         </div>
 
         {/* Content */}
         <div className="flex-1 text-left min-w-0">
-          <div className="text-builder-text font-medium mb-1">{display.label}</div>
-          <div className="text-sm text-builder-text-muted truncate">{preview}</div>
+          <div className="text-white font-semibold text-lg mb-1">{display.label}</div>
+          <div className="text-sm text-white/50 truncate">{preview}</div>
         </div>
       </div>
     </motion.button>
