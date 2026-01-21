@@ -2847,6 +2847,62 @@ export type Database = {
           },
         ]
       }
+      team_sending_domains: {
+        Row: {
+          created_at: string | null
+          dns_records: Json | null
+          domain: string
+          full_domain: string | null
+          id: string
+          provider: string | null
+          provider_domain_id: string | null
+          status: string | null
+          subdomain: string | null
+          team_id: string
+          updated_at: string | null
+          verification_error: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dns_records?: Json | null
+          domain: string
+          full_domain?: string | null
+          id?: string
+          provider?: string | null
+          provider_domain_id?: string | null
+          status?: string | null
+          subdomain?: string | null
+          team_id: string
+          updated_at?: string | null
+          verification_error?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dns_records?: Json | null
+          domain?: string
+          full_domain?: string | null
+          id?: string
+          provider?: string | null
+          provider_domain_id?: string | null
+          status?: string | null
+          subdomain?: string | null
+          team_id?: string
+          updated_at?: string | null
+          verification_error?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_sending_domains_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           action_pipeline_mappings: Json | null
@@ -2869,6 +2925,8 @@ export type Database = {
           created_at: string | null
           created_by: string
           dashboard_preferences: Json | null
+          default_from_name: string | null
+          default_reply_to: string | null
           default_task_routing: Json | null
           fallback_confirmation_minutes: number | null
           google_sheets_url: string | null
@@ -2882,6 +2940,7 @@ export type Database = {
           no_answer_retry_minutes: number | null
           overdue_threshold_minutes: number | null
           setter_commission_percentage: number | null
+          stackit_email_enabled: boolean | null
           task_routing_config: Json | null
           updated_at: string | null
         }
@@ -2906,6 +2965,8 @@ export type Database = {
           created_at?: string | null
           created_by: string
           dashboard_preferences?: Json | null
+          default_from_name?: string | null
+          default_reply_to?: string | null
           default_task_routing?: Json | null
           fallback_confirmation_minutes?: number | null
           google_sheets_url?: string | null
@@ -2919,6 +2980,7 @@ export type Database = {
           no_answer_retry_minutes?: number | null
           overdue_threshold_minutes?: number | null
           setter_commission_percentage?: number | null
+          stackit_email_enabled?: boolean | null
           task_routing_config?: Json | null
           updated_at?: string | null
         }
@@ -2943,6 +3005,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           dashboard_preferences?: Json | null
+          default_from_name?: string | null
+          default_reply_to?: string | null
           default_task_routing?: Json | null
           fallback_confirmation_minutes?: number | null
           google_sheets_url?: string | null
@@ -2956,6 +3020,7 @@ export type Database = {
           no_answer_retry_minutes?: number | null
           overdue_threshold_minutes?: number | null
           setter_commission_percentage?: number | null
+          stackit_email_enabled?: boolean | null
           task_routing_config?: Json | null
           updated_at?: string | null
         }

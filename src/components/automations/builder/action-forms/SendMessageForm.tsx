@@ -11,12 +11,18 @@ import {
 } from "@/components/ui/select";
 import { TemplateVariablePicker } from "../TemplateVariablePicker";
 import { useRef } from "react";
-import { Bot, Phone } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Bot, Phone, Mail } from "lucide-react";
 
 interface SendMessageConfig {
   channel: "sms" | "email" | "voice" | "in_app";
   template: string;
   subject?: string;
+  // Email-specific options
+  fromName?: string;
+  fromEmail?: string;
+  replyTo?: string;
   // Voice-specific options
   useElevenLabsAI?: boolean;
   agentId?: string;
@@ -26,11 +32,29 @@ interface SendMessageConfig {
 interface SendMessageFormProps {
   config: SendMessageConfig;
   onChange: (config: SendMessageConfig) => void;
+  teamId?: string;
 }
 
-export function SendMessageForm({ config, onChange }: SendMessageFormProps) {
+export function SendMessageForm({ config, onChange, teamId }: SendMessageFormProps) {
   const templateRef = useRef<HTMLTextAreaElement>(null);
   const subjectRef = useRef<HTMLInputElement>(null);
+
+  // Fetch verified sending domains for email
+  const { data: sendingDomains } = useQuery({
+    queryKey: ["team-sending-domains-verified", teamId],
+    queryFn: async () => {
+      if (!teamId) return [];
+      const { data, error } = await supabase
+        .from("team_sending_domains")
+        .select("id, full_domain, status")
+        .eq("team_id", teamId)
+        .eq("status", "verified");
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!teamId && config.channel === "email",
+  });
 
   const handleInsertVariable = (variable: string, field: "template" | "subject") => {
     if (field === "template" && templateRef.current) {
@@ -87,21 +111,76 @@ export function SendMessageForm({ config, onChange }: SendMessageFormProps) {
       </div>
 
       {config.channel === "email" && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="subject">Subject</Label>
-            <TemplateVariablePicker
-              onInsert={(v) => handleInsertVariable(v, "subject")}
-              triggerLabel="Insert"
+        <div className="space-y-4 rounded-lg border border-border/50 bg-muted/20 p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Mail className="h-4 w-4" />
+            Email Options
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="fromName">From Name</Label>
+              <Input
+                id="fromName"
+                placeholder="Your Company Name"
+                value={config.fromName || ""}
+                onChange={(e) => onChange({ ...config, fromName: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fromEmail">From Email</Label>
+              <Select
+                value={config.fromEmail || "default"}
+                onValueChange={(value) => onChange({ ...config, fromEmail: value === "default" ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sending address" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">
+                    Stackit Default (noreply@send.stackitmail.com)
+                  </SelectItem>
+                  {sendingDomains?.map((domain) => (
+                    <SelectItem key={domain.id} value={domain.full_domain}>
+                      @{domain.full_domain}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {sendingDomains?.length === 0 && "Add a custom domain in Settings → Messaging → Email"}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="replyTo">Reply-To (optional)</Label>
+            <Input
+              id="replyTo"
+              type="email"
+              placeholder="replies@yourcompany.com"
+              value={config.replyTo || ""}
+              onChange={(e) => onChange({ ...config, replyTo: e.target.value })}
             />
           </div>
-          <Input
-            ref={subjectRef}
-            id="subject"
-            placeholder="Email subject line..."
-            value={config.subject || ""}
-            onChange={(e) => onChange({ ...config, subject: e.target.value })}
-          />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="subject">Subject</Label>
+              <TemplateVariablePicker
+                onInsert={(v) => handleInsertVariable(v, "subject")}
+                triggerLabel="Insert"
+              />
+            </div>
+            <Input
+              ref={subjectRef}
+              id="subject"
+              placeholder="Email subject line..."
+              value={config.subject || ""}
+              onChange={(e) => onChange({ ...config, subject: e.target.value })}
+            />
+          </div>
         </div>
       )}
 

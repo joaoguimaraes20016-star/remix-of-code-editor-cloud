@@ -39,7 +39,7 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
   return (
     <div className="[&_label]:text-white/70 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-white [&_input]:placeholder:text-white/30 [&_textarea]:bg-white/5 [&_textarea]:border-white/10 [&_textarea]:text-white [&_textarea]:placeholder:text-white/30 [&_button[role=combobox]]:bg-white/5 [&_button[role=combobox]]:border-white/10 [&_button[role=combobox]]:text-white">
       {/* Messaging */}
-      {step.type === "send_message" && <SendMessageForm {...formProps} />}
+      {step.type === "send_message" && <SendMessageForm {...formProps} teamId={teamId} />}
       {step.type === "notify_team" && <NotifyTeamForm {...formProps} />}
       
       {/* CRM Actions */}
