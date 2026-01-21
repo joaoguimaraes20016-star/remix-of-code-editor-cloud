@@ -78,52 +78,54 @@
     --canvas-frame: 0 0% 100%;
     --canvas-frame-border: 0 0% 14%;
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 4%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 275 70% 55%;
+    /* Sidebar - Dark slate (Fanbasis-like) */
+    --sidebar-background: 223 22% 14%;
+    --sidebar-foreground: 210 20% 96%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 10%;
-    --sidebar-ring: 275 70% 55%;
+    --sidebar-accent: 217 91% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 223 18% 22%;
+    --sidebar-ring: 217 91% 60%;
 
-    /* Brand gradient stops - Coral → Magenta → Purple */
-    --gradient-start: 20 90% 58%;
-    --gradient-mid: 315 85% 58%;
-    --gradient-end: 280 75% 55%;
+    /* Brand gradient stops - Blue range (unified) */
+    --gradient-start: 217 91% 60%;
+    --gradient-mid: 214 85% 55%;
+    --gradient-end: 210 85% 48%;
   }
 
   .dark {
-    /* Dark theme tokens - used by builder UI - True black base */
-    --background: 0 0% 2%;
-    --foreground: 0 0% 98%;
+    /* Dark theme tokens - Dark slate base (Fanbasis-like) */
+    --background: 223 22% 10%;
+    --foreground: 210 20% 96%;
 
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 98%;
+    --card: 223 22% 13%;
+    --card-foreground: 210 20% 96%;
 
     /* Popover uses builder surface colors for consistency */
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 223 22% 13%;
+    --popover-foreground: 210 20% 96%;
 
-    --primary: 275 70% 55%;
+    /* Brand Primary - Blue */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 223 18% 18%;
+    --secondary-foreground: 210 20% 96%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 55%;
+    --muted: 223 18% 18%;
+    --muted-foreground: 215 12% 55%;
 
-    --accent: 275 70% 55%;
+    /* Brand Accent - Blue */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 12%;
-    --input: 0 0% 12%;
-    --ring: 275 70% 55%;
+    --border: 223 18% 22%;
+    --input: 223 18% 22%;
+    --ring: 217 91% 60%;
   }
 
   /* Editor-only light theme (panels + canvas chrome). Does NOT affect the page content inside the device frame. */
@@ -234,15 +236,15 @@
   }
 
   /* ============================================ */
-  /* SELECTION SYSTEM - Level-differentiated colors */
-  /* Section = Blue, Block = Purple, Element = Pink */
+  /* SELECTION SYSTEM - Blue-unified hierarchy */
+  /* Section = Light Blue, Block = Blue, Element = Blue */
   /* ============================================ */
   
-  /* Selection color tokens - clear hierarchy */
+  /* Selection color tokens - blue hierarchy */
   :root {
-    --selection-section: 217 91% 60%;      /* Blue - top level */
-    --selection-block: 280 75% 55%;        /* Purple - middle level */
-    --selection-element: 315 85% 58%;      /* Pink/Magenta - lowest level */
+    --selection-section: 210 85% 48%;      /* Light Blue - top level */
+    --selection-block: 217 91% 60%;        /* Blue - middle level */
+    --selection-element: 214 85% 55%;      /* Blue - lowest level */
     --builder-transition: 0.18s cubic-bezier(0.32, 0.72, 0, 1);
   }
   

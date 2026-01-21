@@ -162,12 +162,12 @@ export const masterGradientPresets: GradientPreset[] = [
   },
   // Additional premium gradients
   { 
-    name: 'Rose', 
-    gradient: { type: 'linear', angle: 135, stops: [{ color: '#ec4899', position: 0 }, { color: '#f472b6', position: 100 }] } 
+    name: 'Sky', 
+    gradient: { type: 'linear', angle: 135, stops: [{ color: '#0ea5e9', position: 0 }, { color: '#38bdf8', position: 100 }] } 
   },
   { 
-    name: 'Aurora', 
-    gradient: { type: 'linear', angle: 135, stops: [{ color: '#8b5cf6', position: 0 }, { color: '#06b6d4', position: 50 }, { color: '#10b981', position: 100 }] } 
+    name: 'Teal', 
+    gradient: { type: 'linear', angle: 135, stops: [{ color: '#14b8a6', position: 0 }, { color: '#06b6d4', position: 50 }, { color: '#0ea5e9', position: 100 }] } 
   },
   { 
     name: 'Midnight', 

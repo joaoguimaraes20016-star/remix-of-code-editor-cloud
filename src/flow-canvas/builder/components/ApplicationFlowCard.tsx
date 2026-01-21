@@ -42,9 +42,9 @@ import { gradientToCSS } from '../utils/gradientHelpers';
 import { getButtonIconComponent } from './ButtonIconPicker';
 import { ThemeContext } from './CanvasRenderer';
 
-// Default button color for flow steps - matches the brand magenta/pink
+// Default button color for flow steps - matches the brand blue
 // This is used when no explicit buttonColor is set on a step AND no theme primary is available
-export const DEFAULT_FLOW_BUTTON_COLOR = '#EC4899';
+export const DEFAULT_FLOW_BUTTON_COLOR = '#3B82F6';
 
 // Convert ApplicationFlowBackground to CSS string
 // Returns 'transparent' when no background is set (respects user intent)

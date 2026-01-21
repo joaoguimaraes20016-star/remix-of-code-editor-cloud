@@ -43,8 +43,8 @@ const CATEGORY_CONFIG = {
   recovery: {
     label: "Recovery & Re-engagement",
     icon: AlertTriangle,
-    color: "text-amber-400",
-    bgColor: "bg-amber-500/20",
+    color: "text-sky-400",
+    bgColor: "bg-sky-500/20",
   },
   engagement: {
     label: "Customer Engagement",

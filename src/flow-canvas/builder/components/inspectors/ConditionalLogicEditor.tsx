@@ -80,8 +80,8 @@ export const ConditionalLogicEditor: React.FC<ConditionalLogicEditorProps> = ({
       </div>
 
       {/* Info text */}
-      <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-        <p className="text-[10px] text-amber-700 dark:text-amber-300">
+      <div className="p-2 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+        <p className="text-[10px] text-blue-700 dark:text-blue-300">
           Show or hide based on answers
         </p>
       </div>

@@ -70,12 +70,12 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
           "w-full justify-start gap-3 h-11 transition-all rounded-xl",
           collapsed && "justify-center px-0",
           active 
-            ? "bg-primary text-primary-foreground font-medium hover:bg-primary/90" 
-            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-primary/15"
+            ? "bg-primary text-white font-medium hover:bg-primary/90" 
+            : "text-sidebar-foreground hover:text-white hover:bg-primary/15"
         )}
         onClick={() => handleNavigation(item.path)}
       >
-        <item.icon className={cn("h-5 w-5 shrink-0", active ? "text-primary-foreground" : "text-sidebar-foreground/70")} />
+        <item.icon className={cn("h-5 w-5 shrink-0", active ? "text-white" : "text-sidebar-foreground")} />
         {!collapsed && <span>{item.label}</span>}
       </Button>
     );
@@ -148,7 +148,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 h-10 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-primary/15 rounded-xl",
+            "w-full justify-start gap-3 h-10 text-sidebar-foreground hover:text-white hover:bg-primary/15 rounded-xl",
             collapsed && "justify-center px-0"
           )}
           onClick={() => setCollapsed(!collapsed)}
@@ -167,7 +167,7 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 h-10 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl",
+            "w-full justify-start gap-3 h-10 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl",
             collapsed && "justify-center px-0"
           )}
           onClick={() => navigate("/login")}
