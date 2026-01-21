@@ -18,8 +18,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 10%;
 
-    /* Brand Primary - Hot Pink/Coral (unified system) */
-    --primary: 350 90% 62%;
+    /* Brand Primary - Blue (unified system) */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
@@ -28,8 +28,8 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 10% 46%;
 
-    /* Brand Accent - Hot Pink/Coral (unified system) */
-    --accent: 350 90% 62%;
+    /* Brand Accent - Blue (unified system) */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -37,7 +37,7 @@
 
     --border: 220 14% 90%;
     --input: 220 14% 90%;
-    --ring: 350 90% 62%;
+    --ring: 217 91% 60%;
 
     --radius: 0.75rem;
 
@@ -53,11 +53,11 @@
     --builder-text-muted: 215 12% 62%;
     --builder-text-dim: 215 12% 52%;
     
-    /* Builder accent colors - Hot Pink/Coral (unified system) */
-    --builder-accent: 350 90% 62%;
-    --builder-accent-glow: 350 92% 68%;
-    --builder-accent-muted: 350 60% 50%;
-    --builder-accent-secondary: 350 90% 62%;
+    /* Builder accent colors - Blue (unified system) */
+    --builder-accent: 217 91% 60%;
+    --builder-accent-glow: 217 91% 66%;
+    --builder-accent-muted: 217 40% 45%;
+    --builder-accent-secondary: 217 91% 60%;
     --builder-accent-tertiary: 199 89% 48%;
     
     /* Status colors */
@@ -65,10 +65,10 @@
     --builder-warning: 38 92% 50%;
     --builder-error: 0 84% 60%;
     
-    /* Intent colors - hot pink aligned */
-    --intent-capture: 350 90% 62%;
-    --intent-qualify: 345 85% 58%;
-    --intent-schedule: 350 90% 62%;
+    /* Intent colors - blue aligned */
+    --intent-capture: 217 91% 60%;
+    --intent-qualify: 199 89% 48%;
+    --intent-schedule: 217 91% 60%;
     --intent-convert: 142 71% 45%;
     --intent-complete: 215 14% 50%;
 
