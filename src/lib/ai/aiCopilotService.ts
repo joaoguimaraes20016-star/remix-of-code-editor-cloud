@@ -8,7 +8,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
-export type GenerationMode = 'block' | 'funnel' | 'settings';
+export type GenerationMode = 'block' | 'funnel' | 'settings' | 'workflow';
 
 export type FunnelType = 'vsl' | 'webinar' | 'optin' | 'sales' | 'booking' | 'quiz' | 'application' | 'checkout' | 'thank-you' | 'general';
 

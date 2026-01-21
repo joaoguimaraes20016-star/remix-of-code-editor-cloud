@@ -8,7 +8,7 @@
  */
 
 export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
-export type GenerationMode = 'block' | 'funnel' | 'settings';
+export type GenerationMode = 'block' | 'funnel' | 'settings' | 'workflow';
 export type FunnelType = 'vsl' | 'webinar' | 'optin' | 'sales' | 'booking' | 'quiz' | 'application' | 'checkout' | 'thank-you' | 'general';
 
 export interface StylingContext {
@@ -420,6 +420,101 @@ OPT-IN FUNNEL:
 
 Respond with ONLY valid JSON. No markdown, no explanation.`;
 
+// NEW: Workflow/Automation generation prompt
+const WORKFLOW_GENERATE_PROMPT = `You are an automation workflow builder AI.
+
+USER REQUEST:
+{{USER_PROMPT}}
+
+Generate a workflow automation based on the user's request.
+
+=== AVAILABLE TRIGGER TYPES ===
+- lead_created: When a new lead is created
+- lead_updated: When lead data changes
+- lead_tag_added: When a tag is added to a lead
+- appointment_booked: When an appointment is scheduled
+- appointment_completed: When an appointment is marked complete
+- appointment_no_show: When a lead doesn't show up
+- appointment_cancelled: When an appointment is cancelled
+- deal_created: When a new deal is created
+- deal_stage_changed: When deal moves to a new stage
+- deal_won: When a deal is marked as won
+- deal_lost: When a deal is marked as lost
+- payment_received: When payment is received
+- form_submitted: When a form is submitted
+- manual: Triggered manually
+- scheduled: Runs on a schedule
+
+=== AVAILABLE ACTION TYPES ===
+- send_message: Send SMS/Email (config: { channel: "sms"|"email", template: "message text" })
+- time_delay: Wait before next action (config: { delayValue: number, delayType: "minutes"|"hours"|"days" })
+- add_tag: Add tag to contact (config: { tag: "tag_name" })
+- add_task: Create a task (config: { title: "task title", assignTo: "setter"|"closer"|"admin" })
+- assign_owner: Assign to team member (config: { entity: "lead"|"deal", ownerId: "" })
+- update_stage: Move to pipeline stage (config: { entity: "lead"|"deal", stageId: "" })
+- notify_team: Send internal notification (config: { message: "notification text", notifyAdmin: true })
+- custom_webhook: Call external webhook (config: { url: "", method: "POST", payload: "" })
+- condition: Branching logic (config: { conditions: [] })
+
+=== RESPONSE FORMAT ===
+
+Respond with ONLY this JSON structure:
+
+{
+  "workflow": {
+    "name": "Descriptive Workflow Name",
+    "trigger": {
+      "type": "trigger_type_from_list_above",
+      "config": {}
+    },
+    "steps": [
+      {
+        "type": "action_type_from_list_above",
+        "config": { ... action specific config ... }
+      }
+    ]
+  }
+}
+
+=== EXAMPLES ===
+
+User: "Send a welcome SMS when a new lead is created"
+{
+  "workflow": {
+    "name": "New Lead Welcome",
+    "trigger": { "type": "lead_created", "config": {} },
+    "steps": [
+      { "type": "send_message", "config": { "channel": "sms", "template": "Hi! Thanks for your interest. We'll be in touch soon." } }
+    ]
+  }
+}
+
+User: "Follow up 1 hour after a no-show appointment"
+{
+  "workflow": {
+    "name": "No-Show Follow Up",
+    "trigger": { "type": "appointment_no_show", "config": {} },
+    "steps": [
+      { "type": "time_delay", "config": { "delayValue": 1, "delayType": "hours" } },
+      { "type": "send_message", "config": { "channel": "sms", "template": "Hi! We noticed you missed your appointment. Would you like to reschedule?" } },
+      { "type": "add_task", "config": { "title": "Follow up with no-show", "assignTo": "setter" } }
+    ]
+  }
+}
+
+User: "Notify the team when a deal is won"
+{
+  "workflow": {
+    "name": "Deal Won Celebration",
+    "trigger": { "type": "deal_won", "config": {} },
+    "steps": [
+      { "type": "notify_team", "config": { "message": "We just closed a deal! Great work team!", "notifyAdmin": true } }
+    ]
+  }
+}
+
+Respond with ONLY valid JSON. No markdown, no code blocks, no explanation.`;
+
 // NEW: Settings update prompt
 const SETTINGS_PROMPT = `${BASE_CONTEXT}
 
@@ -628,6 +723,10 @@ export function getSystemPrompt(
         return SETTINGS_PROMPT
           .replace('{{CURRENT_SETTINGS}}', currentSettings)
           .replace('{{USER_PROMPT}}', userPrompt || 'Update the theme');
+      
+      case 'workflow':
+        return WORKFLOW_GENERATE_PROMPT
+          .replace('{{USER_PROMPT}}', userPrompt || 'Create a simple automation');
       
       case 'block':
       default:
