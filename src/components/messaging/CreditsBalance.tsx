@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MessageSquare, Phone, MessagesSquare, Plus, Sparkles } from "lucide-react";
+import { MessageSquare, Phone, MessagesSquare, Mail, Plus, Sparkles } from "lucide-react";
 import { BuyCreditsModal } from "./BuyCreditsModal";
 
 interface TeamCredits {
@@ -12,6 +12,7 @@ interface TeamCredits {
   sms_balance: number;
   voice_minutes_balance: number;
   whatsapp_balance: number;
+  email_balance: number;
 }
 
 interface CreditsBalanceProps {
@@ -28,23 +29,31 @@ interface CreditCardProps {
   unit?: string;
   color: string;
   maxForProgress?: number;
+  onBuy?: () => void;
 }
 
-function CreditCard({ icon: Icon, label, balance, unit = "", color, maxForProgress = 1000 }: CreditCardProps) {
+function CreditCard({ icon: Icon, label, balance, unit = "", color, maxForProgress = 1000, onBuy }: CreditCardProps) {
   const progressPercent = Math.min((balance / maxForProgress) * 100, 100);
   
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div className={`p-3 rounded-xl ${color}`}>
             <Icon className="h-6 w-6 text-white" />
           </div>
-          {balance === 0 && (
-            <Badge variant="outline" className="text-destructive border-destructive/30">
-              Empty
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {balance === 0 && (
+              <Badge variant="outline" className="text-destructive border-destructive/30">
+                Empty
+              </Badge>
+            )}
+            {balance > 0 && balance < 100 && (
+              <Badge variant="outline" className="text-amber-500 border-amber-500/30">
+                Low
+              </Badge>
+            )}
+          </div>
         </div>
         
         <div className="mt-4">
@@ -56,6 +65,18 @@ function CreditCard({ icon: Icon, label, balance, unit = "", color, maxForProgre
         </div>
         
         <Progress value={progressPercent} className="mt-4 h-2" />
+        
+        {onBuy && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="mt-3 w-full text-primary hover:text-primary hover:bg-primary/10"
+            onClick={onBuy}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Credits
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -63,21 +84,23 @@ function CreditCard({ icon: Icon, label, balance, unit = "", color, maxForProgre
 
 export function CreditsBalance({ teamId, credits, isLoading, onCreditsUpdated }: CreditsBalanceProps) {
   const [buyModalOpen, setBuyModalOpen] = useState(false);
-  const [selectedChannel, setSelectedChannel] = useState<"sms" | "voice" | "whatsapp">("sms");
+  const [selectedChannel, setSelectedChannel] = useState<"sms" | "voice" | "whatsapp" | "email">("sms");
 
-  const handleBuyCredits = (channel: "sms" | "voice" | "whatsapp") => {
+  const handleBuyCredits = (channel: "sms" | "voice" | "whatsapp" | "email") => {
     setSelectedChannel(channel);
     setBuyModalOpen(true);
   };
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="pt-6 h-40" />
-          </Card>
-        ))}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="pt-6 h-44" />
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -85,11 +108,24 @@ export function CreditsBalance({ teamId, credits, isLoading, onCreditsUpdated }:
   const hasNoCredits = !credits || (
     credits.sms_balance === 0 && 
     credits.voice_minutes_balance === 0 && 
-    credits.whatsapp_balance === 0
+    credits.whatsapp_balance === 0 &&
+    credits.email_balance === 0
   );
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-foreground">Credits & Usage</h2>
+          <p className="text-muted-foreground">Manage your messaging credits across all channels</p>
+        </div>
+        <Button onClick={() => handleBuyCredits("email")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Buy Credits
+        </Button>
+      </div>
+
       {hasNoCredits && (
         <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
           <CardContent className="py-8 text-center">
@@ -98,9 +134,9 @@ export function CreditsBalance({ teamId, credits, isLoading, onCreditsUpdated }:
             </div>
             <h3 className="text-xl font-semibold text-foreground">Get Started with Messaging</h3>
             <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-              Purchase credits to send SMS, make calls, and WhatsApp messages to your leads and customers.
+              Purchase credits to send emails, SMS, make calls, and WhatsApp messages to your leads and customers.
             </p>
-            <Button className="mt-4" onClick={() => handleBuyCredits("sms")}>
+            <Button className="mt-4" onClick={() => handleBuyCredits("email")}>
               <Plus className="mr-2 h-4 w-4" />
               Buy Credits
             </Button>
@@ -108,12 +144,20 @@ export function CreditsBalance({ teamId, credits, isLoading, onCreditsUpdated }:
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <CreditCard
+          icon={Mail}
+          label="Email Credits"
+          balance={credits?.email_balance || 0}
+          color="bg-violet-500"
+          onBuy={() => handleBuyCredits("email")}
+        />
         <CreditCard
           icon={MessageSquare}
           label="SMS Credits"
           balance={credits?.sms_balance || 0}
           color="bg-blue-500"
+          onBuy={() => handleBuyCredits("sms")}
         />
         <CreditCard
           icon={Phone}
@@ -121,28 +165,15 @@ export function CreditsBalance({ teamId, credits, isLoading, onCreditsUpdated }:
           balance={credits?.voice_minutes_balance || 0}
           unit="min"
           color="bg-green-500"
+          onBuy={() => handleBuyCredits("voice")}
         />
         <CreditCard
           icon={MessagesSquare}
           label="WhatsApp Credits"
           balance={credits?.whatsapp_balance || 0}
           color="bg-emerald-500"
+          onBuy={() => handleBuyCredits("whatsapp")}
         />
-      </div>
-
-      <div className="flex gap-3">
-        <Button onClick={() => handleBuyCredits("sms")} variant="outline">
-          <Plus className="mr-2 h-4 w-4" />
-          Add SMS Credits
-        </Button>
-        <Button onClick={() => handleBuyCredits("voice")} variant="outline">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Voice Minutes
-        </Button>
-        <Button onClick={() => handleBuyCredits("whatsapp")} variant="outline">
-          <Plus className="mr-2 h-4 w-4" />
-          Add WhatsApp Credits
-        </Button>
       </div>
 
       <BuyCreditsModal

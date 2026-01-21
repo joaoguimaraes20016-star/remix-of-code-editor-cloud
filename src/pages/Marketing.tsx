@@ -3,21 +3,19 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { Mail, Phone, CreditCard, History } from "lucide-react";
+import { Mail, CreditCard, History, Palette } from "lucide-react";
 
 // Import marketing components
 import { EmailSettings } from "@/components/messaging/EmailSettings";
-import { PhoneNumberList } from "@/components/messaging/PhoneNumberList";
 import { CreditsBalance } from "@/components/messaging/CreditsBalance";
 import { UsageHistory } from "@/components/messaging/UsageHistory";
 
-type MarketingSection = "email" | "phone" | "credits" | "history";
+type MarketingSection = "email" | "credits" | "history";
 
 const sections = [
-  { id: "email" as const, label: "Email Services", icon: Mail },
-  { id: "phone" as const, label: "Phone Services", icon: Phone },
-  { id: "credits" as const, label: "Credits", icon: CreditCard },
-  { id: "history" as const, label: "Usage History", icon: History },
+  { id: "email" as const, label: "Email Services", icon: Mail, description: "Configure sending domains" },
+  { id: "credits" as const, label: "Credits & Billing", icon: CreditCard, description: "Manage your balance" },
+  { id: "history" as const, label: "Usage History", icon: History, description: "View transactions" },
 ];
 
 export default function Marketing() {
@@ -40,36 +38,10 @@ export default function Marketing() {
     enabled: !!teamId,
   });
 
-  // Fetch phone numbers for the Phone section
-  const { data: phoneNumbers, isLoading: phonesLoading, refetch: refetchPhones } = useQuery({
-    queryKey: ["team-phone-numbers", teamId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_phone_numbers")
-        .select("*")
-        .eq("team_id", teamId)
-        .eq("is_active", true)
-        .order("purchased_at", { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!teamId,
-  });
-
   const renderContent = () => {
     switch (activeSection) {
       case "email":
         return <EmailSettings teamId={teamId!} />;
-      case "phone":
-        return (
-          <PhoneNumberList
-            teamId={teamId!}
-            phoneNumbers={(phoneNumbers || []) as any}
-            isLoading={phonesLoading}
-            onNumbersChanged={refetchPhones}
-          />
-        );
       case "credits":
         return (
           <CreditsBalance
@@ -87,27 +59,45 @@ export default function Marketing() {
   return (
     <div className="flex h-full">
       {/* Sub-navigation sidebar */}
-      <aside className="w-56 border-r border-border bg-muted/30 p-4 space-y-1">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-foreground">Marketing</h2>
-          <p className="text-sm text-muted-foreground">Email & phone services</p>
+      <aside className="w-64 border-r border-border bg-muted/30 p-4">
+        <div className="mb-6 px-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Palette className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Marketing</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">Email services & billing</p>
         </div>
         
-        {sections.map((section) => (
-          <button
-            key={section.id}
-            onClick={() => setActiveSection(section.id)}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
-              activeSection === section.id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
-          >
-            <section.icon className="h-4 w-4" />
-            {section.label}
-          </button>
-        ))}
+        <nav className="space-y-1">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={cn(
+                "w-full flex items-start gap-3 px-3 py-3 rounded-lg text-sm transition-colors text-left",
+                activeSection === section.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <section.icon className={cn(
+                "h-5 w-5 mt-0.5 shrink-0",
+                activeSection === section.id ? "text-primary-foreground" : ""
+              )} />
+              <div>
+                <div className="font-medium">{section.label}</div>
+                <div className={cn(
+                  "text-xs mt-0.5",
+                  activeSection === section.id 
+                    ? "text-primary-foreground/70" 
+                    : "text-muted-foreground"
+                )}>
+                  {section.description}
+                </div>
+              </div>
+            </button>
+          ))}
+        </nav>
       </aside>
 
       {/* Main content area */}
