@@ -53,6 +53,27 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
 
   // SINGLE EFFECT - handles all setup status states deterministically
   useEffect(() => {
+    // SAFETY CHECK 1: If we have payment method but still syncing, stop immediately
+    // This handles cases where DB updated but state didn't sync properly
+    if (hasPaymentMethod && isSyncing) {
+      console.log("[BillingSync] Safety reset: have payment method while syncing");
+      cleanupAndFinish(true);
+      return;
+    }
+
+    // SAFETY CHECK 2: If syncing but no setup param, cleanup wasn't complete
+    // This handles the race condition where URL was cleaned but state wasn't
+    if (!setupStatus && isSyncing) {
+      console.log("[BillingSync] Safety reset: syncing without setup param");
+      setIsSyncing(false);
+      toast.dismiss("billing-sync");
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
     // Case 1: No setup param - nothing to do
     if (!setupStatus) {
       return;
