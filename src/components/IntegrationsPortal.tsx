@@ -4,31 +4,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Calendar, 
   Webhook, 
-  CreditCard, 
   Video, 
   BarChart3,
   Zap,
   Check,
-  ExternalLink,
-  ChevronRight,
-  Loader2
+  ChevronRight
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CalendlyConfig } from "./CalendlyConfig";
-import { StripeConfig } from "./StripeConfig";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
 
 interface Integration {
   id: string;
   name: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  category: "scheduling" | "automation" | "payments" | "analytics" | "video";
+  category: "scheduling" | "automation" | "analytics" | "video";
   status: "connected" | "available" | "coming_soon";
   configurable?: boolean;
 }
@@ -58,15 +52,6 @@ const integrations: Integration[] = [
     icon: Zap,
     category: "automation",
     status: "available",
-  },
-  {
-    id: "stripe",
-    name: "Stripe",
-    description: "Accept payments & trigger automations",
-    icon: CreditCard,
-    category: "payments",
-    status: "available",
-    configurable: true,
   },
   {
     id: "zoom",
@@ -105,7 +90,6 @@ const integrations: Integration[] = [
 const categoryLabels: Record<string, string> = {
   scheduling: "Scheduling",
   automation: "Automation",
-  payments: "Payments",
   analytics: "Analytics",
   video: "Video Conferencing",
 };
@@ -113,8 +97,6 @@ const categoryLabels: Record<string, string> = {
 export function IntegrationsPortal() {
   const { teamId } = useParams();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
-  const [stripeDialogOpen, setStripeDialogOpen] = useState(false);
-  const [stripeConnecting, setStripeConnecting] = useState(false);
 
   const { data: teamData, refetch } = useQuery({
     queryKey: ["team-integrations", teamId],
@@ -131,84 +113,18 @@ export function IntegrationsPortal() {
     enabled: !!teamId,
   });
 
-  const { data: stripeIntegration, refetch: refetchStripe } = useQuery({
-    queryKey: ["stripe-integration", teamId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_integrations")
-        .select("id, is_connected, config")
-        .eq("team_id", teamId)
-        .eq("integration_type", "stripe")
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!teamId,
-  });
-
   const isCalendlyConnected = !!teamData?.calendly_access_token;
-  const isStripeConnected = !!stripeIntegration?.is_connected;
 
   const getIntegrationStatus = (integration: Integration) => {
     if (integration.id === "calendly" && isCalendlyConnected) {
       return "connected";
     }
-    if (integration.id === "stripe" && isStripeConnected) {
-      return "connected";
-    }
     return integration.status;
-  };
-
-  const handleStripeConnect = async () => {
-    if (!teamId) return;
-    
-    setStripeConnecting(true);
-    try {
-      const response = await supabase.functions.invoke("stripe-oauth-start", {
-        body: { 
-          teamId, 
-          redirectUri: window.location.href 
-        },
-      });
-      
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to start Stripe connection");
-      }
-      
-      if (response.data?.authUrl) {
-        // Open Stripe OAuth in popup
-        const popup = window.open(
-          response.data.authUrl, 
-          "stripe-connect",
-          "width=600,height=700,scrollbars=yes"
-        );
-        
-        // Poll for popup close and refetch status
-        const checkPopup = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkPopup);
-            refetchStripe();
-          }
-        }, 1000);
-      }
-    } catch (error) {
-      console.error("Failed to start Stripe connection:", error);
-      toast.error("Failed to start Stripe connection");
-    } finally {
-      setStripeConnecting(false);
-    }
   };
 
   const handleIntegrationClick = (integration: Integration) => {
     if (integration.id === "calendly") {
       setCalendlyDialogOpen(true);
-    } else if (integration.id === "stripe") {
-      if (isStripeConnected) {
-        setStripeDialogOpen(true);
-      } else {
-        handleStripeConnect();
-      }
     }
   };
 
@@ -284,17 +200,8 @@ export function IntegrationsPortal() {
                     </CardDescription>
                     {status !== "coming_soon" && (
                       <div className="flex items-center gap-1 mt-3 text-sm text-primary">
-                        {integration.id === "stripe" && stripeConnecting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Connecting...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>{status === "connected" ? "Manage" : "Connect"}</span>
-                            <ChevronRight className="h-4 w-4" />
-                          </>
-                        )}
+                        <span>{status === "connected" ? "Manage" : "Connect"}</span>
+                        <ChevronRight className="h-4 w-4" />
                       </div>
                     )}
                   </CardContent>
@@ -321,24 +228,6 @@ export function IntegrationsPortal() {
               calendlyEnabledForFunnels={teamData?.calendly_enabled_for_funnels ?? false}
               calendlyEnabledForCrm={teamData?.calendly_enabled_for_crm ?? false}
               onUpdate={() => refetch()}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Stripe Configuration Dialog */}
-      <Dialog open={stripeDialogOpen} onOpenChange={setStripeDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Stripe Integration</DialogTitle>
-          </DialogHeader>
-          {teamId && (
-            <StripeConfig 
-              teamId={teamId} 
-              onUpdate={() => {
-                refetchStripe();
-                setStripeDialogOpen(false);
-              }}
             />
           )}
         </DialogContent>

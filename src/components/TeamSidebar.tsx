@@ -37,7 +37,7 @@ const mainNavItems = [
   { id: "marketing", label: "Marketing", icon: Megaphone, path: "/marketing" },
   { id: "schedule", label: "Schedule", icon: CalendarDays, path: "/schedule" },
   { id: "chat", label: "Team Chat", icon: MessageCircle, path: "/chat" },
-  { id: "payments", label: "Connect Payments", icon: CreditCard, path: "/payments" },
+  { id: "payments", label: "Payments", icon: CreditCard, path: "/payments" },
   { id: "apps", label: "Apps", icon: Grid3X3, path: "/apps" },
 ];
 
