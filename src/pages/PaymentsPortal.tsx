@@ -30,11 +30,9 @@ const StripeLogo = () => (
   </svg>
 );
 
-// Whop Logo - official brand mark with white background for visibility
+// Whop Logo - official brand mark
 const WhopLogo = () => (
-  <div className="w-6 h-6 rounded bg-white p-0.5 shadow-sm">
-    <img src={whopLogo} alt="Whop" className="w-full h-full rounded-sm" />
-  </div>
+  <img src={whopLogo} alt="Whop" className="w-6 h-6 rounded" />
 );
 
 // Fanbasis Logo placeholder
