@@ -94,11 +94,73 @@ export default function Workflows() {
     );
   }
 
+  const activeAutomations = automations.filter((a) => a.folder_id !== null).length;
+  const uncategorizedCount = automations.filter((a) => !a.folder_id).length;
+
   return (
-    <div className="min-h-screen bg-background">
-      <Tabs defaultValue="automations" className="h-full">
-        {/* Top Tab Bar with Gradient Accent */}
-        <div className="border-b border-border bg-card">
+    <div className="p-6 space-y-6 max-w-6xl">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Workflows</h1>
+        <p className="text-muted-foreground">
+          Automate your workflows, track activity, and manage manual tasks
+        </p>
+      </div>
+
+      {/* Hero Stats Cards - 3 column layout */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Total Automations Card */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-6 text-white">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 rounded-lg bg-white/20">
+                <Zap className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-white/80">Total Automations</span>
+            </div>
+            <div className="text-3xl font-bold mb-1">{totalCount}</div>
+            <p className="text-sm text-white/60">{folders.length} folders</p>
+          </div>
+        </div>
+
+        {/* Recent Activity Card */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 p-6 text-white">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 rounded-lg bg-white/20">
+                <Activity className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-white/80">Activity</span>
+            </div>
+            <div className="text-3xl font-bold mb-1">—</div>
+            <p className="text-sm text-white/60">View recent runs</p>
+          </div>
+        </div>
+
+        {/* Manual Tasks Card */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 p-6 text-white">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 rounded-lg bg-white/20">
+                <ClipboardCheck className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-white/80">Manual Tasks</span>
+            </div>
+            <div className="text-3xl font-bold mb-1">3</div>
+            <p className="text-sm text-white/60">Task rule types</p>
+          </div>
+        </div>
+      </div>
+
+      <Tabs defaultValue="automations" className="space-y-4">
+        {/* Tab Bar */}
+        <div className="border-b border-border">
           <div className="px-6">
             <TabsList className="h-12 bg-transparent border-0 p-0 gap-6">
               <TabsTrigger
@@ -151,8 +213,8 @@ export default function Workflows() {
         </div>
 
         {/* Automations Tab - Folder Layout */}
-        <TabsContent value="automations" className="m-0">
-          <div className="flex h-[calc(100vh-8rem)]">
+        <TabsContent value="automations" className="mt-0 pt-4">
+          <div className="flex gap-6 min-h-[500px]">
             {/* Folder Sidebar */}
             <AutomationFoldersSidebar
               teamId={teamId}
@@ -163,7 +225,7 @@ export default function Workflows() {
             />
 
             {/* Main Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1">
               <FolderHeader
                 teamId={teamId}
                 folderName={selectedFolderName}
@@ -183,21 +245,9 @@ export default function Workflows() {
           </div>
         </TabsContent>
 
-        {/* Activity Tab with Gradient Headers */}
-        <TabsContent value="activity" className="m-0 p-6">
-          <div className="max-w-5xl mx-auto space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500">
-                <Activity className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">Activity Log</h2>
-                <p className="text-sm text-muted-foreground">
-                  View recent automation runs and message delivery status
-                </p>
-              </div>
-            </div>
-
+        {/* Activity Tab */}
+        <TabsContent value="activity" className="mt-0 pt-4">
+          <div className="space-y-6">
             <div className="grid gap-6">
               <div className="space-y-3">
                 <h3 className="text-sm font-medium flex items-center gap-2">
@@ -217,74 +267,60 @@ export default function Workflows() {
           </div>
         </TabsContent>
 
-        {/* Manual Tasks Tab with Gradient Headers */}
-        <TabsContent value="tasks" className="m-0 p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-500 to-rose-500">
-                <ClipboardCheck className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">Manual Tasks</h2>
-                <p className="text-sm text-muted-foreground">
-                  Configure tasks your team handles manually — confirmations, follow-ups, and status changes
-                </p>
-              </div>
-            </div>
-
-            <Accordion type="multiple" defaultValue={["reminders"]} className="space-y-4">
-              <AccordionItem value="reminders" className="border rounded-xl px-4 bg-card">
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500">
-                      <ClipboardCheck className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <span className="font-medium">Pre-Appointment Reminders</span>
-                    <span className="text-xs text-muted-foreground">
-                      Create tasks for your team to confirm appointments
-                    </span>
+        {/* Manual Tasks Tab */}
+        <TabsContent value="tasks" className="mt-0 pt-4">
+          <Accordion type="multiple" defaultValue={["reminders"]} className="space-y-4">
+            <AccordionItem value="reminders" className="border rounded-xl px-4 bg-card">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500">
+                    <ClipboardCheck className="h-3.5 w-3.5 text-white" />
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <TaskFlowBuilder teamId={teamId} />
-                </AccordionContent>
-              </AccordionItem>
+                  <span className="font-medium">Pre-Appointment Reminders</span>
+                  <span className="text-xs text-muted-foreground">
+                    Create tasks for your team to confirm appointments
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <TaskFlowBuilder teamId={teamId} />
+              </AccordionContent>
+            </AccordionItem>
 
-              <AccordionItem value="followups" className="border rounded-xl px-4 bg-card">
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500">
-                      <Activity className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <span className="font-medium">Follow-Up Sequences</span>
-                    <span className="text-xs text-muted-foreground">
-                      Auto-create tasks based on lead status
-                    </span>
+            <AccordionItem value="followups" className="border rounded-xl px-4 bg-card">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500">
+                    <Activity className="h-3.5 w-3.5 text-white" />
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <FollowUpSettings teamId={teamId} />
-                </AccordionContent>
-              </AccordionItem>
+                  <span className="font-medium">Follow-Up Sequences</span>
+                  <span className="text-xs text-muted-foreground">
+                    Auto-create tasks based on lead status
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <FollowUpSettings teamId={teamId} />
+              </AccordionContent>
+            </AccordionItem>
 
-              <AccordionItem value="mappings" className="border rounded-xl px-4 bg-card">
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
-                      <Zap className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <span className="font-medium">Status Change Rules</span>
-                    <span className="text-xs text-muted-foreground">
-                      Automatically move leads when events happen
-                    </span>
+            <AccordionItem value="mappings" className="border rounded-xl px-4 bg-card">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
+                    <Zap className="h-3.5 w-3.5 text-white" />
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <ActionPipelineMappings teamId={teamId} />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
+                  <span className="font-medium">Status Change Rules</span>
+                  <span className="text-xs text-muted-foreground">
+                    Automatically move leads when events happen
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <ActionPipelineMappings teamId={teamId} />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </TabsContent>
       </Tabs>
 
