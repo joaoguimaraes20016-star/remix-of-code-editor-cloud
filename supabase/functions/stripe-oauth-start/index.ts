@@ -84,14 +84,14 @@ Deno.serve(async (req) => {
       .from("team_integrations")
       .upsert({
         team_id: teamId,
-        provider: "stripe",
+        integration_type: "stripe",
         is_connected: false,
         config: {
           oauth_state: state,
           oauth_started_at: new Date().toISOString(),
           redirect_uri: redirectUri,
         },
-      }, { onConflict: "team_id,provider" });
+      }, { onConflict: "team_id,integration_type" });
 
     if (stateError) {
       console.error("[stripe-oauth-start] Failed to store state:", stateError);

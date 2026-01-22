@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       .from("team_integrations")
       .select("config")
       .eq("team_id", teamId)
-      .eq("provider", "stripe")
+      .eq("integration_type", "stripe")
       .eq("is_connected", true)
       .single();
 

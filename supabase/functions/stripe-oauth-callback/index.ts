@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       .from("team_integrations")
       .select("config")
       .eq("team_id", teamId)
-      .eq("provider", "stripe")
+      .eq("integration_type", "stripe")
       .single();
 
     if (fetchError || !integration) {
@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       })
       .eq("team_id", teamId)
-      .eq("provider", "stripe");
+      .eq("integration_type", "stripe");
 
     if (updateError) {
       console.error("[stripe-oauth-callback] Failed to save credentials:", updateError);
@@ -228,7 +228,7 @@ async function registerWebhookEndpoint(
         })}::jsonb`,
       })
       .eq("team_id", teamId)
-      .eq("provider", "stripe");
+      .eq("integration_type", "stripe");
 
     console.log("[stripe-oauth-callback] Webhook endpoint created:", webhookData.id);
 
