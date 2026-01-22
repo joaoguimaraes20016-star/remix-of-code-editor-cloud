@@ -289,6 +289,46 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
         </div>
       )}
 
+      {/* Appointment triggers - Calendar & Event Type constraints */}
+      {(trigger.type === "appointment_booked" || 
+        trigger.type === "appointment_rescheduled" || 
+        trigger.type === "appointment_no_show" || 
+        trigger.type === "appointment_completed" ||
+        trigger.type === "appointment_canceled") && (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-white/70">Calendar (Optional)</Label>
+            <Input
+              value={trigger.config?.calendarId || ""}
+              onChange={(e) => handleConfigChange("calendarId", e.target.value)}
+              placeholder="Any calendar"
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            />
+            <p className="text-xs text-white/40">Leave empty to trigger for any calendar</p>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white/70">Event Type (Optional)</Label>
+            <Input
+              value={trigger.config?.eventTypeName || ""}
+              onChange={(e) => handleConfigChange("eventTypeName", e.target.value)}
+              placeholder="Any event type"
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            />
+            <p className="text-xs text-white/40">e.g., "Discovery Call", "Strategy Session"</p>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white/70">Closer (Optional)</Label>
+            <Input
+              value={trigger.config?.closerId || ""}
+              onChange={(e) => handleConfigChange("closerId", e.target.value)}
+              placeholder="Any closer"
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            />
+            <p className="text-xs text-white/40">Filter by assigned closer</p>
+          </div>
+        </div>
+      )}
+
       {/* Stale opportunity trigger */}
       {trigger.type === "stale_opportunity" && (
         <div className="space-y-4">
