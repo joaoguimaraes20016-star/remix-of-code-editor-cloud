@@ -99,31 +99,47 @@ export default function PaymentsPortal() {
 
   const queryClient = useQueryClient();
 
-  // Handle OAuth redirect callback (query params from Edge Function redirect)
+  // Handle postMessage from OAuth popup (primary method)
   useEffect(() => {
-    const handleOAuthReturn = async () => {
-      const stripeConnected = searchParams.get("stripe_connected");
-      const stripeError = searchParams.get("stripe_error");
-
-      if (stripeConnected === "success") {
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'stripe-oauth-success') {
+        console.log("[PaymentsPortal] Received stripe-oauth-success message");
         // Small delay to ensure DB write is propagated
         await new Promise(resolve => setTimeout(resolve, 500));
-        // Invalidate cache and refetch fresh data
         await queryClient.invalidateQueries({ queryKey: ["stripe-integration", teamId] });
         await refetchStripe();
-        
         toast.success("Stripe connected successfully!");
         setStripeConnecting(false);
-        // Clean URL params AFTER everything else
-        setSearchParams({}, { replace: true });
-      } else if (stripeError) {
-        toast.error(`Connection failed: ${stripeError}`);
+      } else if (event.data?.type === 'stripe-oauth-error') {
+        console.log("[PaymentsPortal] Received stripe-oauth-error message:", event.data.error);
+        toast.error(`Connection failed: ${event.data.error}`);
         setStripeConnecting(false);
-        setSearchParams({}, { replace: true });
       }
     };
-    
-    handleOAuthReturn();
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [teamId, queryClient, refetchStripe]);
+
+  // Fallback: Handle OAuth redirect callback via URL params (if popup fails to postMessage)
+  useEffect(() => {
+    const stripeConnected = searchParams.get("stripe_connected");
+    const stripeError = searchParams.get("stripe_error");
+
+    if (stripeConnected === "success" || stripeError) {
+      // Clean URL params immediately - this is fallback only
+      setSearchParams({}, { replace: true });
+      
+      if (stripeConnected === "success") {
+        // Trigger refetch in case postMessage didn't fire
+        queryClient.invalidateQueries({ queryKey: ["stripe-integration", teamId] });
+        refetchStripe();
+        toast.success("Stripe connected successfully!");
+      } else if (stripeError) {
+        toast.error(`Connection failed: ${stripeError}`);
+      }
+      setStripeConnecting(false);
+    }
   }, [searchParams]);
 
   // Cleanup popup polling on unmount

@@ -51,13 +51,42 @@ Deno.serve(async (req) => {
     // Handle OAuth errors
     if (error) {
       console.error("[stripe-oauth-callback] OAuth error:", error, errorDescription);
-      if (redirectUri) {
-        return Response.redirect(
-          buildRedirectUrl(redirectUri, { stripe_error: errorDescription || error }),
-          302
-        );
-      }
-      return new Response(`OAuth Error: ${errorDescription || error}`, { status: 400 });
+      const errorMessage = errorDescription || error;
+      const errorHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Connection Failed</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f9fafb; }
+    .container { text-align: center; padding: 2rem; max-width: 400px; }
+    .error-icon { width: 64px; height: 64px; margin: 0 auto 1rem; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .error-icon svg { width: 32px; height: 32px; color: white; }
+    h1 { color: #dc2626; margin: 0 0 0.5rem; font-size: 1.5rem; }
+    p { color: #6b7280; margin: 0 0 0.5rem; }
+    .error-detail { font-size: 0.875rem; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="error-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </div>
+    <h1>Connection Failed</h1>
+    <p class="error-detail">${errorMessage}</p>
+    <p>This window will close automatically...</p>
+  </div>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ type: 'stripe-oauth-error', error: '${errorMessage.replace(/'/g, "\\'")}' }, '*');
+    }
+    setTimeout(function() { window.close(); }, 2500);
+  </script>
+</body>
+</html>`;
+      return new Response(errorHtml, {
+        headers: { ...corsHeaders, "Content-Type": "text/html" },
+      });
     }
 
     if (!code || !state) {
@@ -191,15 +220,41 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Success! Redirect back to app with success param
-    console.log("[stripe-oauth-callback] Redirecting to:", redirectUri);
-    return Response.redirect(
-      buildRedirectUrl(redirectUri, { 
-        stripe_connected: "success",
-        account_id: stripe_user_id 
-      }),
-      302
-    );
+    // Success! Return self-closing HTML page
+    console.log("[stripe-oauth-callback] Connection successful, returning self-closing page");
+    const successHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Stripe Connected</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f9fafb; }
+    .container { text-align: center; padding: 2rem; }
+    .success-icon { width: 64px; height: 64px; margin: 0 auto 1rem; background: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .success-icon svg { width: 32px; height: 32px; color: white; }
+    h1 { color: #059669; margin: 0 0 0.5rem; font-size: 1.5rem; }
+    p { color: #6b7280; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+    </div>
+    <h1>Stripe Connected!</h1>
+    <p>This window will close automatically...</p>
+  </div>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ type: 'stripe-oauth-success', accountId: '${stripe_user_id}' }, '*');
+    }
+    setTimeout(function() { window.close(); }, 1500);
+  </script>
+</body>
+</html>`;
+    return new Response(successHtml, {
+      headers: { ...corsHeaders, "Content-Type": "text/html" },
+    });
 
   } catch (err) {
     console.error("[stripe-oauth-callback] Error:", err);
