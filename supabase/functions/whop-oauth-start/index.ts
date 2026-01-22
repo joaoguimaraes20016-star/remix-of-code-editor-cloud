@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", callbackUrl);
-    authUrl.searchParams.set("scope", "openid profile");
+    authUrl.searchParams.set("scope", "profile");
     authUrl.searchParams.set("state", encodedState);
     authUrl.searchParams.set("code_challenge", codeChallenge);
     authUrl.searchParams.set("code_challenge_method", "S256");
