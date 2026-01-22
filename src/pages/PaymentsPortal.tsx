@@ -106,28 +106,9 @@ export default function PaymentsPortal() {
       if (error) throw error;
 
       if (data?.authUrl) {
-        // Try popup first
-        const popup = window.open(
-          data.authUrl,
-          'stripe-connect',
-          'width=600,height=700,menubar=no,toolbar=no,location=no,left=200,top=100'
-        );
-        
-        // If popup was blocked, fall back to redirect
-        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-          sessionStorage.setItem('stripe_oauth_pending', teamId);
-          window.location.href = data.authUrl;
-          return;
-        }
-        
-        // Popup opened successfully - poll for close
-        const pollTimer = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(pollTimer);
-            setStripeConnecting(false);
-            refetchStripe();
-          }
-        }, 500);
+        // Always use redirect - bypasses all popup blocker issues
+        sessionStorage.setItem('stripe_oauth_pending', teamId);
+        window.location.href = data.authUrl;
       }
     } catch (error) {
       console.error("Stripe connect error:", error);
