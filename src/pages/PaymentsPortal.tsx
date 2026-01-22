@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ExternalLink, Check, Clock, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -97,25 +97,34 @@ export default function PaymentsPortal() {
 
   const isStripeConnected = stripeIntegration?.is_connected;
 
+  const queryClient = useQueryClient();
+
   // Handle OAuth redirect callback (query params from Edge Function redirect)
   useEffect(() => {
-    const stripeConnected = searchParams.get("stripe_connected");
-    const stripeError = searchParams.get("stripe_error");
-    const accountId = searchParams.get("account_id");
+    const handleOAuthReturn = async () => {
+      const stripeConnected = searchParams.get("stripe_connected");
+      const stripeError = searchParams.get("stripe_error");
 
-    if (stripeConnected === "success") {
-      toast.success("Stripe connected successfully!");
-      refetchStripe();
-      // Clean URL params
-      setSearchParams({}, { replace: true });
-      setStripeConnecting(false);
-    } else if (stripeError) {
-      toast.error(`Connection failed: ${stripeError}`);
-      // Clean URL params
-      setSearchParams({}, { replace: true });
-      setStripeConnecting(false);
-    }
-  }, [searchParams, setSearchParams, refetchStripe]);
+      if (stripeConnected === "success") {
+        // Small delay to ensure DB write is propagated
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Invalidate cache and refetch fresh data
+        await queryClient.invalidateQueries({ queryKey: ["stripe-integration", teamId] });
+        await refetchStripe();
+        
+        toast.success("Stripe connected successfully!");
+        setStripeConnecting(false);
+        // Clean URL params AFTER everything else
+        setSearchParams({}, { replace: true });
+      } else if (stripeError) {
+        toast.error(`Connection failed: ${stripeError}`);
+        setStripeConnecting(false);
+        setSearchParams({}, { replace: true });
+      }
+    };
+    
+    handleOAuthReturn();
+  }, [searchParams]);
 
   // Cleanup popup polling on unmount
   useEffect(() => {
