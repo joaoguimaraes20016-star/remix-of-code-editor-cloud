@@ -25,7 +25,7 @@ export function AddCardModal({ open, onOpenChange, teamId, onSuccess }: AddCardM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-full bg-primary/10">
