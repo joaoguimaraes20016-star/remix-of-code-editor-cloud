@@ -106,9 +106,55 @@ export default function PaymentsPortal() {
       if (error) throw error;
 
       if (data?.authUrl) {
-        // Always use redirect - bypasses all popup blocker issues
+        // Store pending state for when we return
         sessionStorage.setItem('stripe_oauth_pending', teamId);
-        window.location.href = data.authUrl;
+        
+        // Calculate centered popup position
+        const width = 600;
+        const height = 700;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        
+        // Open popup with proper features
+        const popup = window.open(
+          data.authUrl,
+          'stripe-connect',
+          `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes`
+        );
+        
+        // Immediately check if popup was blocked
+        if (!popup || popup.closed) {
+          // Popup was blocked - try opening via window.top to escape iframe
+          toast.info("Opening Stripe in a new tab...");
+          if (window.top) {
+            window.top.location.href = data.authUrl;
+          } else {
+            window.open(data.authUrl, '_blank');
+          }
+          setStripeConnecting(false);
+          return;
+        }
+        
+        // Popup opened successfully - poll for close
+        const pollTimer = setInterval(() => {
+          try {
+            if (popup.closed) {
+              clearInterval(pollTimer);
+              setStripeConnecting(false);
+              sessionStorage.removeItem('stripe_oauth_pending');
+              refetchStripe();
+              toast.success("Checking connection status...");
+            }
+          } catch (e) {
+            // Cross-origin error means popup is still open on Stripe domain
+          }
+        }, 500);
+        
+        // Failsafe: stop polling after 10 minutes
+        setTimeout(() => {
+          clearInterval(pollTimer);
+          setStripeConnecting(false);
+        }, 10 * 60 * 1000);
       }
     } catch (error) {
       console.error("Stripe connect error:", error);
