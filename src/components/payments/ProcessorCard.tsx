@@ -82,7 +82,7 @@ export function ProcessorCard({
               onClick={onManage}
               className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
             >
-              Manage Integration
+              Manage
             </Button>
           ) : isConnecting ? (
             <>
