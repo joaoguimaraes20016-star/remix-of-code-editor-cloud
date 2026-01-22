@@ -81,6 +81,17 @@ export default function PaymentsPortal() {
     return () => window.removeEventListener('message', handleMessage);
   }, [refetchStripe]);
 
+  // Check if returning from OAuth redirect (not popup)
+  useEffect(() => {
+    const pendingTeamId = sessionStorage.getItem('stripe_oauth_pending');
+    if (pendingTeamId && pendingTeamId === teamId) {
+      sessionStorage.removeItem('stripe_oauth_pending');
+      refetchStripe().then(() => {
+        toast.info("Checking Stripe connection status...");
+      });
+    }
+  }, [teamId, refetchStripe]);
+
   const handleStripeConnect = async () => {
     if (!teamId) return;
     
@@ -95,25 +106,32 @@ export default function PaymentsPortal() {
       if (error) throw error;
 
       if (data?.authUrl) {
-        // Open as popup with specific dimensions for proper postMessage support
+        // Try popup first
         const popup = window.open(
           data.authUrl,
           'stripe-connect',
-          'width=600,height=700,left=200,top=100'
+          'width=600,height=700,menubar=no,toolbar=no,location=no,left=200,top=100'
         );
         
-        // Poll to detect when popup is closed
+        // If popup was blocked, fall back to redirect
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          sessionStorage.setItem('stripe_oauth_pending', teamId);
+          window.location.href = data.authUrl;
+          return;
+        }
+        
+        // Popup opened successfully - poll for close
         const pollTimer = setInterval(() => {
-          if (popup?.closed) {
+          if (popup.closed) {
             clearInterval(pollTimer);
-            refetchStripe(); // Refresh status when popup closes
+            setStripeConnecting(false);
+            refetchStripe();
           }
         }, 500);
       }
     } catch (error) {
       console.error("Stripe connect error:", error);
       toast.error("Failed to start Stripe connection");
-    } finally {
       setStripeConnecting(false);
     }
   };
