@@ -99,118 +99,54 @@ export default function Workflows() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Workflows</h1>
-        <p className="text-muted-foreground">
-          Automate your workflows, track activity, and manage manual tasks
-        </p>
-      </div>
-
-      {/* Hero Stats Cards - 3 column layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Total Automations Card */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-6 text-white">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 rounded-lg bg-white/20">
-                <Zap className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-white/80">Total Automations</span>
-            </div>
-            <div className="text-3xl font-bold mb-1">{totalCount}</div>
-            <p className="text-sm text-white/60">{folders.length} folders</p>
-          </div>
+      {/* Page Header with Inline Stats */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Workflows</h1>
+          <p className="text-muted-foreground text-sm">
+            Automate your workflows and manage tasks
+          </p>
         </div>
-
-        {/* Recent Activity Card */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 p-6 text-white">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 rounded-lg bg-white/20">
-                <Activity className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-white/80">Activity</span>
-            </div>
-            <div className="text-3xl font-bold mb-1">—</div>
-            <p className="text-sm text-white/60">View recent runs</p>
+        
+        {/* Compact Stats Badges */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-medium">
+            <Zap className="h-3.5 w-3.5" />
+            <span>{totalCount} automations</span>
           </div>
-        </div>
-
-        {/* Manual Tasks Card */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 p-6 text-white">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 rounded-lg bg-white/20">
-                <ClipboardCheck className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-white/80">Manual Tasks</span>
-            </div>
-            <div className="text-3xl font-bold mb-1">3</div>
-            <p className="text-sm text-white/60">Task rule types</p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-sm font-medium">
+            <Activity className="h-3.5 w-3.5" />
+            <span>{folders.length} folders</span>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium">
+            <ClipboardCheck className="h-3.5 w-3.5" />
+            <span>3 task rules</span>
           </div>
         </div>
       </div>
 
       <Tabs defaultValue="automations" className="space-y-4">
-        {/* Tab Bar */}
-        <div className="border-b border-border">
-          <div className="px-6">
-            <TabsList className="h-12 bg-transparent border-0 p-0 gap-6">
-              <TabsTrigger
-                value="automations"
-                className={cn(
-                  "h-12 px-0 rounded-none border-b-2 border-transparent",
-                  "data-[state=active]:border-purple-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none",
-                  "data-[state=active]:text-purple-600"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-md bg-gradient-to-br from-purple-500/10 to-indigo-500/10">
-                    <Zap className="h-4 w-4" />
-                  </div>
-                  Automations
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                value="activity"
-                className={cn(
-                  "h-12 px-0 rounded-none border-b-2 border-transparent",
-                  "data-[state=active]:border-teal-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none",
-                  "data-[state=active]:text-teal-600"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-md bg-gradient-to-br from-teal-500/10 to-cyan-500/10">
-                    <Activity className="h-4 w-4" />
-                  </div>
-                  Activity
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                value="tasks"
-                className={cn(
-                  "h-12 px-0 rounded-none border-b-2 border-transparent",
-                  "data-[state=active]:border-orange-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none",
-                  "data-[state=active]:text-orange-600"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-md bg-gradient-to-br from-orange-500/10 to-rose-500/10">
-                    <ClipboardCheck className="h-4 w-4" />
-                  </div>
-                  Manual Tasks
-                </div>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        </div>
+        {/* Simplified Tab Bar */}
+        <TabsList className="h-10 bg-transparent border-b border-border rounded-none p-0 gap-6 w-full justify-start">
+          <TabsTrigger
+            value="automations"
+            className="h-10 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground"
+          >
+            Automations
+          </TabsTrigger>
+          <TabsTrigger
+            value="activity"
+            className="h-10 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground"
+          >
+            Activity
+          </TabsTrigger>
+          <TabsTrigger
+            value="tasks"
+            className="h-10 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-muted-foreground data-[state=active]:text-foreground"
+          >
+            Manual Tasks
+          </TabsTrigger>
+        </TabsList>
 
         {/* Automations Tab - Folder Layout */}
         <TabsContent value="automations" className="mt-0 pt-4">
