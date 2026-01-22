@@ -31,7 +31,7 @@ export const WalletCard = React.forwardRef<HTMLDivElement, WalletCardProps>(
 
     return (
       <>
-        <div ref={ref} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-6 text-white shadow-lg">
+        <div ref={ref} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-6 text-white shadow-lg">
           {/* Background decoration */}
           <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
           <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
