@@ -30,7 +30,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
-import whopLogo from "@/assets/integrations/whop-logo.svg";
+import whopLogo from "@/assets/integrations/whop-logo.png";
 
 interface WhopConfigProps {
   teamId: string;

@@ -12,7 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import whopLogo from "@/assets/integrations/whop-logo.svg";
+import whopLogo from "@/assets/integrations/whop-logo.png";
 
 interface PaymentProcessor {
   id: string;
