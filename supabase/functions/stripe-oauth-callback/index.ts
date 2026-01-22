@@ -252,26 +252,68 @@ function generateSuccessHTML(redirectUri: string): string {
 <html>
 <head>
   <title>Stripe Connected</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f8fafc; }
-    .container { text-align: center; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .success { color: #22c55e; font-size: 48px; margin-bottom: 16px; }
-    h1 { color: #1e293b; margin: 0 0 8px; }
-    p { color: #64748b; margin: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      display: flex; justify-content: center; align-items: center; 
+      height: 100vh; margin: 0; background: #f8fafc; 
+    }
+    .container { 
+      text-align: center; padding: 40px; background: white; 
+      border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+    .success { color: #22c55e; font-size: 64px; margin-bottom: 16px; }
+    h1 { color: #1e293b; margin: 0 0 8px; font-size: 24px; }
+    p { color: #64748b; margin: 0 0 20px; }
+    .btn { 
+      display: inline-block; padding: 12px 24px; 
+      background: #635BFF; color: white; text-decoration: none;
+      border-radius: 8px; font-weight: 500; cursor: pointer; border: none;
+      font-size: 16px;
+    }
+    .btn:hover { background: #5147e5; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="success">✓</div>
     <h1>Stripe Connected!</h1>
-    <p>You can close this window.</p>
+    <p id="message">Redirecting back to your app...</p>
+    <button id="closeBtn" class="btn hidden" onclick="handleClose()">Continue</button>
   </div>
   <script>
+    function handleClose() {
+      if (window.opener) {
+        window.opener.postMessage({ type: 'STRIPE_CONNECTED', success: true }, '*');
+        window.close();
+      } else {
+        window.location.href = '${redirectUri}';
+      }
+    }
+    
     if (window.opener) {
-      window.opener.postMessage({ type: 'STRIPE_CONNECTED', success: true }, '*');
-      setTimeout(() => window.close(), 1500);
+      try {
+        window.opener.postMessage({ type: 'STRIPE_CONNECTED', success: true }, '*');
+        document.getElementById('message').textContent = 'Connection successful! Closing...';
+        setTimeout(function() {
+          window.close();
+          setTimeout(function() {
+            document.getElementById('message').textContent = 'Click Continue to finish.';
+            document.getElementById('closeBtn').classList.remove('hidden');
+          }, 500);
+        }, 1000);
+      } catch (e) {
+        console.error('Failed to communicate with opener:', e);
+        document.getElementById('closeBtn').classList.remove('hidden');
+      }
     } else {
-      setTimeout(() => window.location.href = '${redirectUri}', 1500);
+      setTimeout(function() {
+        window.location.href = '${redirectUri}';
+      }, 1500);
     }
   </script>
 </body>
@@ -279,17 +321,37 @@ function generateSuccessHTML(redirectUri: string): string {
 }
 
 function generateErrorHTML(title: string, message: string): string {
+  // Escape message for use in JS string
+  const escapedMessage = message.replace(/'/g, "\\'").replace(/"/g, '\\"');
+  
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <title>Connection Failed</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f8fafc; }
-    .container { text-align: center; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; }
-    .error { color: #ef4444; font-size: 48px; margin-bottom: 16px; }
-    h1 { color: #1e293b; margin: 0 0 8px; }
-    p { color: #64748b; margin: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      display: flex; justify-content: center; align-items: center; 
+      height: 100vh; margin: 0; background: #f8fafc; 
+    }
+    .container { 
+      text-align: center; padding: 40px; background: white; 
+      border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+      max-width: 400px; 
+    }
+    .error { color: #ef4444; font-size: 64px; margin-bottom: 16px; }
+    h1 { color: #1e293b; margin: 0 0 8px; font-size: 24px; }
+    p { color: #64748b; margin: 0 0 20px; }
+    .btn { 
+      display: inline-block; padding: 12px 24px; 
+      background: #64748b; color: white; text-decoration: none;
+      border-radius: 8px; font-weight: 500; cursor: pointer; border: none;
+      font-size: 16px;
+    }
+    .btn:hover { background: #475569; }
   </style>
 </head>
 <body>
@@ -297,10 +359,20 @@ function generateErrorHTML(title: string, message: string): string {
     <div class="error">✕</div>
     <h1>${title}</h1>
     <p>${message}</p>
+    <button class="btn" onclick="handleClose()">Close</button>
   </div>
   <script>
+    function handleClose() {
+      if (window.opener) {
+        window.opener.postMessage({ type: 'STRIPE_CONNECTED', success: false, error: '${escapedMessage}' }, '*');
+        window.close();
+      } else {
+        window.history.back();
+      }
+    }
+    
     if (window.opener) {
-      window.opener.postMessage({ type: 'STRIPE_CONNECTED', success: false, error: '${message}' }, '*');
+      window.opener.postMessage({ type: 'STRIPE_CONNECTED', success: false, error: '${escapedMessage}' }, '*');
     }
   </script>
 </body>
