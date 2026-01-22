@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       client_id: clientId,
       redirect_uri: callbackUrl,
       response_type: "code",
-      scope: "offline",
+      scope: "offline member:basic:read company:basic:read payment:basic:read",
       state: encodedState,
     });
 
