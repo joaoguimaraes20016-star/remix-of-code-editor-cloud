@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ExternalLink, Check, Clock, X } from "lucide-react";
@@ -71,14 +71,13 @@ const POPUP_LOADING_HTML = `
 
 export default function PaymentsPortal() {
   const { teamId } = useParams<{ teamId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [stripeDialogOpen, setStripeDialogOpen] = useState(false);
   const [stripeConnecting, setStripeConnecting] = useState(false);
   
-  // Refs for cleanup
+  // Refs for popup tracking
   const popupRef = useRef<Window | null>(null);
   const pollTimerRef = useRef<number | null>(null);
-  const failsafeTimerRef = useRef<number | null>(null);
-  const watchdogTimerRef = useRef<number | null>(null);
 
   // Query Stripe connection status
   const { data: stripeIntegration, refetch: refetchStripe } = useQuery({
@@ -98,79 +97,50 @@ export default function PaymentsPortal() {
 
   const isStripeConnected = stripeIntegration?.is_connected;
 
-  // Cleanup function to clear all timers and state
-  const cleanupOAuthFlow = useCallback(() => {
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current);
-      pollTimerRef.current = null;
+  // Handle OAuth redirect callback (query params from Edge Function redirect)
+  useEffect(() => {
+    const stripeConnected = searchParams.get("stripe_connected");
+    const stripeError = searchParams.get("stripe_error");
+    const accountId = searchParams.get("account_id");
+
+    if (stripeConnected === "success") {
+      toast.success("Stripe connected successfully!");
+      refetchStripe();
+      // Clean URL params
+      setSearchParams({}, { replace: true });
+      setStripeConnecting(false);
+    } else if (stripeError) {
+      toast.error(`Connection failed: ${stripeError}`);
+      // Clean URL params
+      setSearchParams({}, { replace: true });
+      setStripeConnecting(false);
     }
-    if (failsafeTimerRef.current) {
-      clearTimeout(failsafeTimerRef.current);
-      failsafeTimerRef.current = null;
-    }
-    if (watchdogTimerRef.current) {
-      clearTimeout(watchdogTimerRef.current);
-      watchdogTimerRef.current = null;
-    }
-    sessionStorage.removeItem('stripe_oauth_pending');
-    setStripeConnecting(false);
+  }, [searchParams, setSearchParams, refetchStripe]);
+
+  // Cleanup popup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+    };
   }, []);
 
   // Cancel the OAuth flow
   const handleCancelConnect = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
     try {
       popupRef.current?.close();
     } catch (e) {
       // Ignore cross-origin errors
     }
     popupRef.current = null;
-    cleanupOAuthFlow();
+    setStripeConnecting(false);
     toast.info("Connection cancelled");
-  }, [cleanupOAuthFlow]);
-
-  // Listen for OAuth completion messages from popup
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'STRIPE_CONNECTED') {
-        // Always clean up on message received
-        cleanupOAuthFlow();
-        try {
-          popupRef.current?.close();
-        } catch (e) {
-          // Ignore cross-origin errors
-        }
-        popupRef.current = null;
-        
-        if (event.data.success) {
-          toast.success("Stripe connected successfully!");
-          refetchStripe();
-        } else {
-          toast.error(event.data.error || "Failed to connect Stripe");
-        }
-      }
-    };
-    
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [refetchStripe, cleanupOAuthFlow]);
-
-  // Check if returning from OAuth redirect (not popup)
-  useEffect(() => {
-    const pendingTeamId = sessionStorage.getItem('stripe_oauth_pending');
-    if (pendingTeamId && pendingTeamId === teamId) {
-      sessionStorage.removeItem('stripe_oauth_pending');
-      refetchStripe().then(() => {
-        toast.info("Checking Stripe connection status...");
-      });
-    }
-  }, [teamId, refetchStripe]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cleanupOAuthFlow();
-    };
-  }, [cleanupOAuthFlow]);
+  }, []);
 
   const handleStripeConnect = async () => {
     if (!teamId) return;
@@ -195,10 +165,7 @@ export default function PaymentsPortal() {
       toast.error("Popup blocked. Please allow popups or use the button below.", {
         action: {
           label: "Open in new tab",
-          onClick: () => {
-            // Will need to fetch URL first
-            handleStripeConnectNewTab();
-          }
+          onClick: () => handleStripeConnectNewTab()
         },
         duration: 10000,
       });
@@ -225,52 +192,25 @@ export default function PaymentsPortal() {
       if (error) throw error;
 
       if (data?.authUrl) {
-        sessionStorage.setItem('stripe_oauth_pending', teamId);
-        
         // Navigate the already-open popup to Stripe
         popup.location.href = data.authUrl;
         
-        // Watchdog: if popup is still on about:blank after 5s, something failed
-        watchdogTimerRef.current = window.setTimeout(() => {
-          try {
-            // Check if popup navigated away from about:blank
-            const popupUrl = popup.location?.href;
-            if (popupUrl === 'about:blank' || !popupUrl) {
-              // Popup didn't navigate - treat as blocked/failed
-              popup.close();
-              popupRef.current = null;
-              cleanupOAuthFlow();
-              toast.error("Failed to open Stripe. Try opening in a new tab.", {
-                action: {
-                  label: "Open in new tab",
-                  onClick: () => window.open(data.authUrl, '_blank')
-                },
-                duration: 10000,
-              });
-            }
-          } catch (e) {
-            // Cross-origin error = popup is on Stripe domain = success!
-          }
-        }, 5000);
-        
-        // Poll for popup close
+        // Poll for popup close - the redirect will happen automatically
         pollTimerRef.current = window.setInterval(() => {
           try {
             if (popup.closed) {
-              cleanupOAuthFlow();
+              if (pollTimerRef.current) {
+                clearInterval(pollTimerRef.current);
+                pollTimerRef.current = null;
+              }
               popupRef.current = null;
-              refetchStripe();
-              toast.success("Checking connection status...");
+              // The page will be redirected back with query params
+              // so we don't need to do anything else here
             }
           } catch (e) {
-            // Cross-origin error means popup is still open
+            // Cross-origin error means popup is still open on Stripe domain
           }
         }, 500);
-        
-        // Failsafe: stop after 10 minutes
-        failsafeTimerRef.current = window.setTimeout(() => {
-          cleanupOAuthFlow();
-        }, 10 * 60 * 1000);
       } else {
         popup.close();
         popupRef.current = null;
@@ -283,7 +223,7 @@ export default function PaymentsPortal() {
         popup.close();
       } catch (e) {}
       popupRef.current = null;
-      cleanupOAuthFlow();
+      setStripeConnecting(false);
     }
   };
   
@@ -302,13 +242,12 @@ export default function PaymentsPortal() {
       if (error) throw error;
 
       if (data?.authUrl) {
-        sessionStorage.setItem('stripe_oauth_pending', teamId);
-        window.open(data.authUrl, '_blank');
+        // Open in same window since it will redirect back
+        window.location.href = data.authUrl;
       }
     } catch (error) {
       console.error("Stripe connect error:", error);
       toast.error("Failed to start Stripe connection");
-    } finally {
       setStripeConnecting(false);
     }
   };
