@@ -58,7 +58,7 @@ export default function Billing() {
   // Always render the same root container to prevent React removeChild errors
   return (
     <div className="p-6 space-y-6 max-w-6xl">
-      {(isLoading || isSyncing) ? (
+      {isLoading ? (
         <React.Fragment key="billing-loading">
           <div>
             <Skeleton className="h-8 w-48 mb-2" />
