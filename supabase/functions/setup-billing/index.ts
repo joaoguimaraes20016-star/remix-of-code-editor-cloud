@@ -120,6 +120,12 @@ Deno.serve(async (req) => {
       metadata: {
         team_id: teamId,
       },
+      // Branding: Custom messaging for Infostack
+      custom_text: {
+        submit: {
+          message: "Your card will be saved securely for wallet top-ups and auto-recharge. No charges today.",
+        },
+      },
     });
 
     return new Response(
