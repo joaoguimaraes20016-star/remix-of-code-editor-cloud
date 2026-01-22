@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const errorDescription = url.searchParams.get("error_description");
 
     // Static callback page URL
-    const callbackPage = "https://kqfyevdblvgxaycdvfxe.supabase.co/storage/v1/object/public/static/whop-callback.html";
+    const callbackPage = "https://code-hug-hub.lovable.app/whop-callback.html";
 
     // Handle OAuth errors from Whop
     if (error) {
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error("[whop-oauth-callback] Unexpected error:", error);
-    const callbackPage = "https://kqfyevdblvgxaycdvfxe.supabase.co/storage/v1/object/public/static/whop-callback.html";
+    const callbackPage = "https://code-hug-hub.lovable.app/whop-callback.html";
     const redirectUrl = buildRedirectUrl(callbackPage, {
       error: "An unexpected error occurred",
     });
