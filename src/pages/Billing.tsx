@@ -1,3 +1,4 @@
+import React from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,7 +59,7 @@ export default function Billing() {
   return (
     <div className="p-6 space-y-6 max-w-6xl">
       {(isLoading || isSyncing) ? (
-        <>
+        <React.Fragment key="billing-loading">
           <div>
             <Skeleton className="h-8 w-48 mb-2" />
             <Skeleton className="h-4 w-72" />
@@ -73,9 +74,9 @@ export default function Billing() {
               Finalizing your payment method...
             </p>
           )}
-        </>
+        </React.Fragment>
       ) : isError ? (
-        <>
+        <React.Fragment key="billing-error">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Billing</h1>
             <p className="text-muted-foreground">
@@ -98,9 +99,9 @@ export default function Billing() {
               </Button>
             </AlertDescription>
           </Alert>
-        </>
+        </React.Fragment>
       ) : (
-        <>
+        <React.Fragment key="billing-content">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Billing</h1>
             <p className="text-muted-foreground">
@@ -130,7 +131,7 @@ export default function Billing() {
           <PricingTable pricing={pricing || []} />
 
           <TransactionHistory teamId={teamId!} />
-        </>
+        </React.Fragment>
       )}
     </div>
   );
