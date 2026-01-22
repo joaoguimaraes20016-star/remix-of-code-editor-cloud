@@ -21,6 +21,7 @@ interface PaymentProcessor {
   gradient: string;
   logo: React.ReactNode;
   status: "available" | "coming_soon";
+  logoStyle?: "default" | "branded";
 }
 
 // Stripe Logo SVG
@@ -32,7 +33,7 @@ const StripeLogo = () => (
 
 // Whop Logo - official brand mark
 const WhopLogo = () => (
-  <img src={whopLogo} alt="Whop" className="w-6 h-6 rounded" />
+  <img src={whopLogo} alt="Whop" className="w-8 h-8" />
 );
 
 // Fanbasis Logo placeholder
@@ -56,6 +57,7 @@ const processors: PaymentProcessor[] = [
     gradient: "bg-[#FA4616]",
     logo: <WhopLogo />,
     status: "available",
+    logoStyle: "branded",
   },
   {
     id: "fanbasis",
@@ -390,6 +392,7 @@ export default function PaymentsPortal() {
               onManage={() => handleProcessorClick(processor)}
               onCancel={handleCancelConnect}
               accountInfo={getAccountInfo(processor)}
+              logoStyle={processor.logoStyle}
             />
           );
         })}

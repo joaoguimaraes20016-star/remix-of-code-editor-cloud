@@ -13,6 +13,7 @@ interface ProcessorCardProps {
   onManage?: () => void;
   onCancel?: () => void;
   accountInfo?: string;
+  logoStyle?: "default" | "branded";
 }
 
 export function ProcessorCard({
@@ -26,6 +27,7 @@ export function ProcessorCard({
   onManage,
   onCancel,
   accountInfo,
+  logoStyle = "default",
 }: ProcessorCardProps) {
   const isComingSoon = status === "coming_soon";
   const isConnected = status === "connected";
@@ -44,7 +46,11 @@ export function ProcessorCard({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div className={`flex items-center justify-center ${
+              logoStyle === "branded" 
+                ? "w-12 h-12 rounded-xl bg-white shadow-md" 
+                : "w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm"
+            }`}>
               {logo}
             </div>
             <div>
