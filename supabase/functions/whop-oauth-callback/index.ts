@@ -33,8 +33,35 @@ Deno.serve(async (req) => {
     const error = url.searchParams.get("error");
     const errorDescription = url.searchParams.get("error_description");
 
-    // Static callback page URL
-    const callbackPage = "https://code-hug-hub.lovable.app/whop-callback.html";
+    // Default fallback callback page
+    let callbackPage = "https://id-preview--3953e671-1532-4998-9201-5d787bfebd43.lovable.app/whop-callback.html";
+
+    // Decode and parse state first to get the origin for callback
+    let teamId = "";
+    let stateToken = "";
+    let redirectUri = "";
+
+    if (stateParam) {
+      try {
+        const decodedState = atob(stateParam);
+        const stateData = JSON.parse(decodedState);
+        teamId = stateData.teamId || "";
+        stateToken = stateData.stateToken || "";
+        redirectUri = stateData.redirectUri || "";
+        
+        // Derive callback page from the redirect URI origin
+        if (redirectUri) {
+          const originUrl = new URL(redirectUri);
+          callbackPage = `${originUrl.origin}/whop-callback.html`;
+        }
+      } catch (e) {
+        console.error("[whop-oauth-callback] Failed to parse state:", e);
+        const redirectUrl = buildRedirectUrl(callbackPage, {
+          error: "Invalid state parameter",
+        });
+        return Response.redirect(redirectUrl, 302);
+      }
+    }
 
     // Handle OAuth errors from Whop
     if (error) {
@@ -45,29 +72,10 @@ Deno.serve(async (req) => {
       return Response.redirect(redirectUrl, 302);
     }
 
-    if (!code || !stateParam) {
-      console.error("[whop-oauth-callback] Missing code or state");
+    if (!code || !stateParam || !teamId) {
+      console.error("[whop-oauth-callback] Missing code, state, or teamId");
       const redirectUrl = buildRedirectUrl(callbackPage, {
         error: "Missing authorization code or state",
-      });
-      return Response.redirect(redirectUrl, 302);
-    }
-
-    // Decode and parse state
-    let teamId: string;
-    let stateToken: string;
-    let redirectUri: string;
-
-    try {
-      const decodedState = atob(stateParam);
-      const stateData = JSON.parse(decodedState);
-      teamId = stateData.teamId;
-      stateToken = stateData.stateToken;
-      redirectUri = stateData.redirectUri;
-    } catch (e) {
-      console.error("[whop-oauth-callback] Failed to parse state:", e);
-      const redirectUrl = buildRedirectUrl(callbackPage, {
-        error: "Invalid state parameter",
       });
       return Response.redirect(redirectUrl, 302);
     }
@@ -90,7 +98,7 @@ Deno.serve(async (req) => {
       return Response.redirect(redirectUrl, 302);
     }
 
-    const storedConfig = integration.config as Record<string, any>;
+    const storedConfig = integration.config as Record<string, unknown>;
     if (storedConfig?.state_token !== stateToken) {
       console.error("[whop-oauth-callback] State token mismatch");
       const redirectUrl = buildRedirectUrl(callbackPage, {
@@ -192,8 +200,8 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error("[whop-oauth-callback] Unexpected error:", error);
-    const callbackPage = "https://code-hug-hub.lovable.app/whop-callback.html";
-    const redirectUrl = buildRedirectUrl(callbackPage, {
+    const fallbackPage = "https://id-preview--3953e671-1532-4998-9201-5d787bfebd43.lovable.app/whop-callback.html";
+    const redirectUrl = buildRedirectUrl(fallbackPage, {
       error: "An unexpected error occurred",
     });
     return Response.redirect(redirectUrl, 302);
