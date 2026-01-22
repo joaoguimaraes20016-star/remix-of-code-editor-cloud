@@ -217,6 +217,158 @@ function evaluateConditions(
   return conditions.some((c) => evaluateCondition(c, context));
 }
 
+// --- Trigger Constraint Matching ---
+// Checks if the event payload matches the trigger's configured constraints
+// Returns { matches: boolean, reasons: string[] } for debugging
+interface ConstraintCheckResult {
+  matches: boolean;
+  reasons: string[];
+}
+
+function matchesTriggerConstraints(
+  triggerConfig: Record<string, any> | undefined,
+  triggerType: TriggerType,
+  context: AutomationContext,
+): ConstraintCheckResult {
+  const reasons: string[] = [];
+  const config = triggerConfig || {};
+  
+  // No constraints = always matches
+  if (Object.keys(config).length === 0) {
+    return { matches: true, reasons: [] };
+  }
+
+  // --- APPOINTMENT TRIGGER CONSTRAINTS ---
+  if (triggerType.startsWith("appointment_")) {
+    const appointment = context.appointment;
+    
+    // Calendar ID constraint
+    if (config.calendarId && config.calendarId.trim()) {
+      const calendarMatch = appointment?.calendar_id === config.calendarId;
+      if (!calendarMatch) {
+        reasons.push(`calendar_id mismatch: expected "${config.calendarId}", got "${appointment?.calendar_id}"`);
+      }
+    }
+    
+    // Event Type Name constraint (case-insensitive partial match)
+    if (config.eventTypeName && config.eventTypeName.trim()) {
+      const eventName = (appointment?.event_type_name || "").toLowerCase();
+      const configName = config.eventTypeName.toLowerCase();
+      const eventMatch = eventName.includes(configName);
+      if (!eventMatch) {
+        reasons.push(`event_type_name mismatch: expected "${config.eventTypeName}", got "${appointment?.event_type_name}"`);
+      }
+    }
+    
+    // Closer ID constraint
+    if (config.closerId && config.closerId.trim()) {
+      const closerMatch = appointment?.closer_id === config.closerId;
+      if (!closerMatch) {
+        reasons.push(`closer_id mismatch: expected "${config.closerId}", got "${appointment?.closer_id}"`);
+      }
+    }
+    
+    // Appointment Type ID constraint
+    if (config.appointmentTypeId && config.appointmentTypeId.trim()) {
+      const typeMatch = appointment?.appointment_type_id === config.appointmentTypeId;
+      if (!typeMatch) {
+        reasons.push(`appointment_type_id mismatch: expected "${config.appointmentTypeId}", got "${appointment?.appointment_type_id}"`);
+      }
+    }
+  }
+
+  // --- TAG TRIGGER CONSTRAINTS ---
+  if (triggerType === "lead_tag_added" || triggerType === "lead_tag_removed") {
+    if (config.tag && config.tag.trim()) {
+      const eventTag = context.meta?.tag || context.meta?.tagName;
+      const tagMatch = eventTag?.toLowerCase() === config.tag.toLowerCase();
+      if (!tagMatch) {
+        reasons.push(`tag mismatch: expected "${config.tag}", got "${eventTag}"`);
+      }
+    }
+  }
+
+  // --- FORM TRIGGER CONSTRAINTS ---
+  if (triggerType === "form_submitted" || triggerType === "survey_submitted" || triggerType === "quiz_submitted") {
+    if (config.funnelId && config.funnelId.trim()) {
+      const funnelMatch = context.meta?.funnelId === config.funnelId || 
+                          context.meta?.funnel_id === config.funnelId;
+      if (!funnelMatch) {
+        reasons.push(`funnel_id mismatch: expected "${config.funnelId}", got "${context.meta?.funnelId || context.meta?.funnel_id}"`);
+      }
+    }
+    
+    if (config.formId && config.formId.trim()) {
+      const formMatch = context.meta?.formId === config.formId ||
+                        context.meta?.form_id === config.formId;
+      if (!formMatch) {
+        reasons.push(`form_id mismatch: expected "${config.formId}", got "${context.meta?.formId || context.meta?.form_id}"`);
+      }
+    }
+  }
+
+  // --- PIPELINE/STAGE TRIGGER CONSTRAINTS ---
+  if (triggerType === "stage_changed") {
+    if (config.pipelineId && config.pipelineId.trim()) {
+      const pipelineMatch = context.deal?.pipeline_id === config.pipelineId ||
+                            context.meta?.pipelineId === config.pipelineId;
+      if (!pipelineMatch) {
+        reasons.push(`pipeline_id mismatch: expected "${config.pipelineId}", got "${context.deal?.pipeline_id || context.meta?.pipelineId}"`);
+      }
+    }
+    
+    if (config.fromStage && config.fromStage.trim()) {
+      const fromMatch = context.meta?.fromStage === config.fromStage ||
+                        context.meta?.from_stage === config.fromStage;
+      if (!fromMatch) {
+        reasons.push(`from_stage mismatch: expected "${config.fromStage}", got "${context.meta?.fromStage || context.meta?.from_stage}"`);
+      }
+    }
+    
+    if (config.toStage && config.toStage.trim()) {
+      const toMatch = context.meta?.toStage === config.toStage ||
+                      context.meta?.to_stage === config.toStage;
+      if (!toMatch) {
+        reasons.push(`to_stage mismatch: expected "${config.toStage}", got "${context.meta?.toStage || context.meta?.to_stage}"`);
+      }
+    }
+  }
+
+  // --- PAYMENT TRIGGER CONSTRAINTS ---
+  if (triggerType === "payment_received" || triggerType === "payment_failed") {
+    if (config.paymentType && config.paymentType !== "any") {
+      const paymentMatch = context.payment?.payment_type === config.paymentType ||
+                           context.meta?.paymentType === config.paymentType;
+      if (!paymentMatch) {
+        reasons.push(`payment_type mismatch: expected "${config.paymentType}", got "${context.payment?.payment_type || context.meta?.paymentType}"`);
+      }
+    }
+    
+    if (config.productId && config.productId.trim()) {
+      const productMatch = context.payment?.product_id === config.productId ||
+                           context.meta?.productId === config.productId;
+      if (!productMatch) {
+        reasons.push(`product_id mismatch: expected "${config.productId}", got "${context.payment?.product_id || context.meta?.productId}"`);
+      }
+    }
+  }
+
+  // --- MESSAGING TRIGGER CONSTRAINTS ---
+  if (triggerType === "customer_replied" || triggerType === "messaging_error") {
+    if (config.channel && config.channel !== "any") {
+      const channelMatch = context.meta?.channel === config.channel;
+      if (!channelMatch) {
+        reasons.push(`channel mismatch: expected "${config.channel}", got "${context.meta?.channel}"`);
+      }
+    }
+  }
+
+  return {
+    matches: reasons.length === 0,
+    reasons,
+  };
+}
+
 // --- Get Automations from DB using Published Versions ---
 async function getAutomationsForTrigger(
   supabase: any,
@@ -954,6 +1106,24 @@ Deno.serve(async (req) => {
       if (alreadyRan) {
         console.log(
           `[Automation Trigger] SKIPPED automation ${automation.id} - already ran for event ${stableEventId} (run ${existingRunId})`,
+        );
+        automationsSkipped.push(automation.id);
+        continue;
+      }
+
+      // TRIGGER CONSTRAINT CHECK
+      // Validates that the event payload matches the trigger's configured constraints
+      // (e.g., calendar_id, event_type, tag name, funnel_id, etc.)
+      const constraintCheck = matchesTriggerConstraints(
+        automation.trigger?.config,
+        triggerType,
+        context,
+      );
+
+      if (!constraintCheck.matches) {
+        console.log(
+          `[Automation Trigger] SKIPPED automation "${automation.name}" - trigger constraints not met:`,
+          constraintCheck.reasons,
         );
         automationsSkipped.push(automation.id);
         continue;
