@@ -140,7 +140,7 @@ export function WhopConfig({ teamId, onUpdate }: WhopConfigProps) {
   return (
     <div className="space-y-6">
       {/* Connection Status Hero */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 p-5 text-white">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 p-5 text-white">
         <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10" />
         <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-white/5" />
 
