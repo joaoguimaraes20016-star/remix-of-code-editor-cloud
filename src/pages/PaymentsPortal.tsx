@@ -2,41 +2,66 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, ExternalLink, Check, Clock, X } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import { ProcessorCard } from "@/components/payments/ProcessorCard";
 import { StripeConfig } from "@/components/StripeConfig";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface PaymentProcessor {
   id: string;
   name: string;
   description: string;
-  logo: string;
+  gradient: string;
+  logo: React.ReactNode;
   status: "available" | "coming_soon";
 }
+
+// Stripe Logo SVG
+const StripeLogo = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z" />
+  </svg>
+);
+
+// Whop Logo placeholder
+const WhopLogo = () => (
+  <span className="text-lg font-bold">W</span>
+);
+
+// Fanbasis Logo placeholder
+const FanbasisLogo = () => (
+  <span className="text-lg font-bold">F</span>
+);
 
 const processors: PaymentProcessor[] = [
   {
     id: "stripe",
     name: "Stripe",
-    description: "Accept cards, subscriptions & invoices",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg",
+    description: "Cards, subscriptions & invoices",
+    gradient: "bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700",
+    logo: <StripeLogo />,
     status: "available",
   },
   {
     id: "whop",
     name: "Whop",
-    description: "Membership payments & digital products",
-    logo: "https://assets.whop.com/images/logo/whop-logo-white.svg",
+    description: "Memberships & digital products",
+    gradient: "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900",
+    logo: <WhopLogo />,
     status: "coming_soon",
   },
   {
     id: "fanbasis",
     name: "Fanbasis",
     description: "Creator subscriptions & tips",
-    logo: "https://fanbasis.com/favicon.ico",
+    gradient: "bg-gradient-to-br from-pink-500 via-rose-500 to-red-500",
+    logo: <FanbasisLogo />,
     status: "coming_soon",
   },
 ];
@@ -72,9 +97,9 @@ const POPUP_LOADING_HTML = `
 export default function PaymentsPortal() {
   const { teamId } = useParams<{ teamId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [stripeDialogOpen, setStripeDialogOpen] = useState(false);
+  const [stripeSheetOpen, setStripeSheetOpen] = useState(false);
   const [stripeConnecting, setStripeConnecting] = useState(false);
-  
+
   // Refs for popup tracking
   const popupRef = useRef<Window | null>(null);
   const pollTimerRef = useRef<number | null>(null);
@@ -96,42 +121,41 @@ export default function PaymentsPortal() {
   });
 
   const isStripeConnected = stripeIntegration?.is_connected;
+  const stripeConfig = stripeIntegration?.config as Record<string, any> | null;
+  const stripeAccountId = stripeConfig?.stripe_account_id;
 
   const queryClient = useQueryClient();
 
   // Handle postMessage from OAuth popup (primary method)
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      if (event.data?.type === 'stripe-oauth-success') {
+      if (event.data?.type === "stripe-oauth-success") {
         console.log("[PaymentsPortal] Received stripe-oauth-success message");
-        // Small delay to ensure DB write is propagated
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await queryClient.invalidateQueries({ queryKey: ["stripe-integration", teamId] });
         await refetchStripe();
         toast.success("Stripe connected successfully!");
         setStripeConnecting(false);
-      } else if (event.data?.type === 'stripe-oauth-error') {
+      } else if (event.data?.type === "stripe-oauth-error") {
         console.log("[PaymentsPortal] Received stripe-oauth-error message:", event.data.error);
         toast.error(`Connection failed: ${event.data.error}`);
         setStripeConnecting(false);
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, [teamId, queryClient, refetchStripe]);
 
-  // Fallback: Handle OAuth redirect callback via URL params (if popup fails to postMessage)
+  // Fallback: Handle OAuth redirect callback via URL params
   useEffect(() => {
     const stripeConnected = searchParams.get("stripe_connected");
     const stripeError = searchParams.get("stripe_error");
 
     if (stripeConnected === "success" || stripeError) {
-      // Clean URL params immediately - this is fallback only
       setSearchParams({}, { replace: true });
-      
+
       if (stripeConnected === "success") {
-        // Trigger refetch in case postMessage didn't fire
         queryClient.invalidateQueries({ queryKey: ["stripe-integration", teamId] });
         refetchStripe();
         toast.success("Stripe connected successfully!");
@@ -151,7 +175,6 @@ export default function PaymentsPortal() {
     };
   }, []);
 
-  // Cancel the OAuth flow
   const handleCancelConnect = useCallback(() => {
     if (pollTimerRef.current) {
       clearInterval(pollTimerRef.current);
@@ -169,47 +192,43 @@ export default function PaymentsPortal() {
 
   const handleStripeConnect = async () => {
     if (!teamId) return;
-    
+
     setStripeConnecting(true);
-    
-    // Calculate centered popup position
+
     const width = 600;
     const height = 700;
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
-    
-    // CRITICAL: Open popup SYNCHRONOUSLY before any await to avoid popup blockers
+
     const popup = window.open(
-      'about:blank',
-      'stripe-connect',
+      "about:blank",
+      "stripe-connect",
       `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes`
     );
-    
-    // Check if popup was blocked
+
     if (!popup || popup.closed) {
       toast.error("Popup blocked. Please allow popups or use the button below.", {
         action: {
           label: "Open in new tab",
-          onClick: () => handleStripeConnectNewTab()
+          onClick: () => handleStripeConnectNewTab(),
         },
         duration: 10000,
       });
       setStripeConnecting(false);
       return;
     }
-    
-    // Store popup ref and write loading HTML
+
     popupRef.current = popup;
     try {
       popup.document.write(POPUP_LOADING_HTML);
       popup.document.close();
     } catch (e) {
-      // Ignore if we can't write (shouldn't happen with about:blank)
+      // Ignore
     }
-    
+
     try {
       const redirectUri = `${window.location.origin}/team/${teamId}/payments`;
-      
+
       const { data, error } = await supabase.functions.invoke("stripe-oauth-start", {
         body: { teamId, redirectUri },
       });
@@ -217,10 +236,8 @@ export default function PaymentsPortal() {
       if (error) throw error;
 
       if (data?.authUrl) {
-        // Navigate the already-open popup to Stripe
         popup.location.href = data.authUrl;
-        
-        // Poll for popup close - the redirect will happen automatically
+
         pollTimerRef.current = window.setInterval(() => {
           try {
             if (popup.closed) {
@@ -229,11 +246,9 @@ export default function PaymentsPortal() {
                 pollTimerRef.current = null;
               }
               popupRef.current = null;
-              // The page will be redirected back with query params
-              // so we don't need to do anything else here
             }
           } catch (e) {
-            // Cross-origin error means popup is still open on Stripe domain
+            // Cross-origin error
           }
         }, 500);
       } else {
@@ -251,15 +266,14 @@ export default function PaymentsPortal() {
       setStripeConnecting(false);
     }
   };
-  
-  // Fallback: open in new tab (for when popups are blocked)
+
   const handleStripeConnectNewTab = async () => {
     if (!teamId) return;
-    
+
     setStripeConnecting(true);
     try {
       const redirectUri = `${window.location.origin}/team/${teamId}/payments`;
-      
+
       const { data, error } = await supabase.functions.invoke("stripe-oauth-start", {
         body: { teamId, redirectUri },
       });
@@ -267,7 +281,6 @@ export default function PaymentsPortal() {
       if (error) throw error;
 
       if (data?.authUrl) {
-        // Open in same window since it will redirect back
         window.location.href = data.authUrl;
       }
     } catch (error) {
@@ -285,14 +298,14 @@ export default function PaymentsPortal() {
 
     if (processor.id === "stripe") {
       if (isStripeConnected) {
-        setStripeDialogOpen(true);
+        setStripeSheetOpen(true);
       } else {
         handleStripeConnect();
       }
     }
   };
 
-  const getProcessorStatus = (processor: PaymentProcessor) => {
+  const getProcessorStatus = (processor: PaymentProcessor): "connected" | "available" | "coming_soon" => {
     if (processor.id === "stripe" && isStripeConnected) {
       return "connected";
     }
@@ -301,147 +314,54 @@ export default function PaymentsPortal() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Connect Payments</h1>
+        <h1 className="text-2xl font-bold text-foreground">Payment Processors</h1>
         <p className="text-muted-foreground mt-1">
-          Link your payment processors to trigger automations and track revenue
+          Connect your payment accounts to trigger automations and track revenue
         </p>
       </div>
 
-      {/* Info box explaining Stripe Connect */}
-      {!isStripeConnected && (
-        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-          <h4 className="font-medium text-foreground">Why Connect Your Stripe?</h4>
-          <p className="text-sm text-muted-foreground mt-1">
-            Link your existing Stripe account to unlock powerful features:
-          </p>
-          <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-            <li>• Create payment links and send invoices directly</li>
-            <li>• Track revenue and subscriptions in real-time</li>
-            <li>• Trigger automations when customers pay</li>
-            <li>• Charge saved cards and manage subscriptions</li>
-          </ul>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Processor Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {processors.map((processor) => {
           const status = getProcessorStatus(processor);
-          
+
           return (
-            <Card
+            <ProcessorCard
               key={processor.id}
-              className={`cursor-pointer transition-all hover:shadow-md ${
-                status === "coming_soon" ? "opacity-60" : ""
-              }`}
-              onClick={() => handleProcessorClick(processor)}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-                      {processor.logo ? (
-                        <img
-                          src={processor.logo}
-                          alt={processor.name}
-                          className="w-6 h-6 object-contain"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                            e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                          }}
-                        />
-                      ) : null}
-                      <CreditCard className={`h-5 w-5 text-muted-foreground ${processor.logo ? "hidden" : ""}`} />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">{processor.name}</h3>
-                      <p className="text-sm text-muted-foreground">{processor.description}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between">
-                  {status === "connected" ? (
-                    <div className="flex items-center gap-1.5 text-sm text-green-600">
-                      <Check className="h-4 w-4" />
-                      <span>Connected</span>
-                    </div>
-                  ) : status === "coming_soon" ? (
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>Coming Soon</span>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={stripeConnecting && processor.id === "stripe"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleProcessorClick(processor);
-                      }}
-                    >
-                      {stripeConnecting && processor.id === "stripe" ? (
-                        "Connecting..."
-                      ) : (
-                        <>
-                          Connect <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  
-                  {/* Cancel button when connecting */}
-                  {stripeConnecting && processor.id === "stripe" && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCancelConnect();
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Cancel
-                    </Button>
-                  )}
-
-                  {status === "connected" && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleProcessorClick(processor);
-                      }}
-                    >
-                      Manage
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              name={processor.name}
+              description={processor.description}
+              logo={processor.logo}
+              gradient={processor.gradient}
+              status={status}
+              isConnecting={stripeConnecting && processor.id === "stripe"}
+              onConnect={() => handleProcessorClick(processor)}
+              onManage={() => handleProcessorClick(processor)}
+              onCancel={handleCancelConnect}
+              accountInfo={processor.id === "stripe" && isStripeConnected ? stripeAccountId : undefined}
+            />
           );
         })}
       </div>
 
-      {/* Stripe Config Dialog */}
-      <Dialog open={stripeDialogOpen} onOpenChange={setStripeDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Stripe Configuration</DialogTitle>
-          </DialogHeader>
+      {/* Stripe Config Sheet */}
+      <Sheet open={stripeSheetOpen} onOpenChange={setStripeSheetOpen}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle>Stripe Integration</SheetTitle>
+          </SheetHeader>
           {teamId && (
             <StripeConfig
               teamId={teamId}
               onUpdate={() => {
                 refetchStripe();
-                setStripeDialogOpen(false);
+                setStripeSheetOpen(false);
               }}
             />
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
