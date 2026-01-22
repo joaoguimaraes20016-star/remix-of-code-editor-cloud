@@ -49,15 +49,24 @@ export type Database = {
       }
       appointments: {
         Row: {
+          add_to_google_calendar_link: string | null
+          add_to_ical_link: string | null
+          appointment_notes: string | null
+          appointment_timezone: string | null
+          appointment_type_id: string | null
+          assigned_user_id: string | null
           assignment_source: string | null
           booking_code: string | null
+          calendar_id: string | null
           calendly_invitee_uri: string | null
           cancel_url: string | null
+          cancellation_link: string | null
           cc_collected: number | null
           closer_id: string | null
           closer_name: string | null
           closer_notes: string | null
           created_at: string | null
+          duration_minutes: number | null
           event_type_name: string | null
           event_type_uri: string | null
           id: string
@@ -91,15 +100,24 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          add_to_google_calendar_link?: string | null
+          add_to_ical_link?: string | null
+          appointment_notes?: string | null
+          appointment_timezone?: string | null
+          appointment_type_id?: string | null
+          assigned_user_id?: string | null
           assignment_source?: string | null
           booking_code?: string | null
+          calendar_id?: string | null
           calendly_invitee_uri?: string | null
           cancel_url?: string | null
+          cancellation_link?: string | null
           cc_collected?: number | null
           closer_id?: string | null
           closer_name?: string | null
           closer_notes?: string | null
           created_at?: string | null
+          duration_minutes?: number | null
           event_type_name?: string | null
           event_type_uri?: string | null
           id?: string
@@ -133,15 +151,24 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          add_to_google_calendar_link?: string | null
+          add_to_ical_link?: string | null
+          appointment_notes?: string | null
+          appointment_timezone?: string | null
+          appointment_type_id?: string | null
+          assigned_user_id?: string | null
           assignment_source?: string | null
           booking_code?: string | null
+          calendar_id?: string | null
           calendly_invitee_uri?: string | null
           cancel_url?: string | null
+          cancellation_link?: string | null
           cc_collected?: number | null
           closer_id?: string | null
           closer_name?: string | null
           closer_notes?: string | null
           created_at?: string | null
+          duration_minutes?: number | null
           event_type_name?: string | null
           event_type_uri?: string | null
           id?: string
@@ -499,6 +526,7 @@ export type Database = {
           steps_executed: Json
           team_id: string
           trigger_type: string
+          version_id: string | null
         }
         Insert: {
           automation_id: string
@@ -512,6 +540,7 @@ export type Database = {
           steps_executed?: Json
           team_id: string
           trigger_type: string
+          version_id?: string | null
         }
         Update: {
           automation_id?: string
@@ -525,6 +554,7 @@ export type Database = {
           steps_executed?: Json
           team_id?: string
           trigger_type?: string
+          version_id?: string | null
         }
         Relationships: [
           {
@@ -668,6 +698,7 @@ export type Database = {
       automations: {
         Row: {
           created_at: string
+          current_version_id: string | null
           definition: Json
           description: string | null
           error_count: number | null
@@ -684,6 +715,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_version_id?: string | null
           definition?: Json
           description?: string | null
           error_count?: number | null
@@ -700,6 +732,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_version_id?: string | null
           definition?: Json
           description?: string | null
           error_count?: number | null
@@ -1138,49 +1171,115 @@ export type Database = {
       }
       contacts: {
         Row: {
+          address_1: string | null
+          address_2: string | null
+          calendar_link: string | null
           calendly_booked_at: string | null
+          city: string | null
+          company_name: string | null
+          contact_type: string | null
+          country: string | null
           created_at: string
           custom_fields: Json | null
+          date_of_birth: string | null
+          dnd_email: boolean | null
+          dnd_sms: boolean | null
+          dnd_voice: boolean | null
           email: string | null
+          engagement_score: number | null
+          first_name: string | null
           funnel_lead_id: string | null
           id: string
+          last_activity_at: string | null
+          last_name: string | null
           name: string | null
           opt_in: boolean | null
+          owner_user_id: string | null
           phone: string | null
+          postal_code: string | null
+          signature: string | null
           source: string | null
+          state: string | null
           tags: string[] | null
           team_id: string
+          timezone: string | null
+          twilio_phone: string | null
           updated_at: string
+          website: string | null
         }
         Insert: {
+          address_1?: string | null
+          address_2?: string | null
+          calendar_link?: string | null
           calendly_booked_at?: string | null
+          city?: string | null
+          company_name?: string | null
+          contact_type?: string | null
+          country?: string | null
           created_at?: string
           custom_fields?: Json | null
+          date_of_birth?: string | null
+          dnd_email?: boolean | null
+          dnd_sms?: boolean | null
+          dnd_voice?: boolean | null
           email?: string | null
+          engagement_score?: number | null
+          first_name?: string | null
           funnel_lead_id?: string | null
           id?: string
+          last_activity_at?: string | null
+          last_name?: string | null
           name?: string | null
           opt_in?: boolean | null
+          owner_user_id?: string | null
           phone?: string | null
+          postal_code?: string | null
+          signature?: string | null
           source?: string | null
+          state?: string | null
           tags?: string[] | null
           team_id: string
+          timezone?: string | null
+          twilio_phone?: string | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          address_1?: string | null
+          address_2?: string | null
+          calendar_link?: string | null
           calendly_booked_at?: string | null
+          city?: string | null
+          company_name?: string | null
+          contact_type?: string | null
+          country?: string | null
           created_at?: string
           custom_fields?: Json | null
+          date_of_birth?: string | null
+          dnd_email?: boolean | null
+          dnd_sms?: boolean | null
+          dnd_voice?: boolean | null
           email?: string | null
+          engagement_score?: number | null
+          first_name?: string | null
           funnel_lead_id?: string | null
           id?: string
+          last_activity_at?: string | null
+          last_name?: string | null
           name?: string | null
           opt_in?: boolean | null
+          owner_user_id?: string | null
           phone?: string | null
+          postal_code?: string | null
+          signature?: string | null
           source?: string | null
+          state?: string | null
           tags?: string[] | null
           team_id?: string
+          timezone?: string | null
+          twilio_phone?: string | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: [
           {
@@ -3221,6 +3320,60 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_versions: {
+        Row: {
+          automation_id: string
+          created_at: string | null
+          definition_json: Json
+          id: string
+          is_active: boolean | null
+          published_at: string
+          published_by: string | null
+          team_id: string
+          trigger_type: string
+          version_number: number
+        }
+        Insert: {
+          automation_id: string
+          created_at?: string | null
+          definition_json: Json
+          id?: string
+          is_active?: boolean | null
+          published_at?: string
+          published_by?: string | null
+          team_id: string
+          trigger_type: string
+          version_number: number
+        }
+        Update: {
+          automation_id?: string
+          created_at?: string | null
+          definition_json?: Json
+          id?: string
+          is_active?: boolean | null
+          published_at?: string
+          published_by?: string | null
+          team_id?: string
+          trigger_type?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_versions_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_versions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -3336,6 +3489,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_contact_full_name: {
+        Args: { contact_row: Database["public"]["Tables"]["contacts"]["Row"] }
+        Returns: string
+      }
       get_team_role: {
         Args: { _team_id: string; _user_id: string }
         Returns: string
@@ -3359,15 +3516,24 @@ export type Database = {
       insert_appointments_batch: {
         Args: { appointments_data: Json }
         Returns: {
+          add_to_google_calendar_link: string | null
+          add_to_ical_link: string | null
+          appointment_notes: string | null
+          appointment_timezone: string | null
+          appointment_type_id: string | null
+          assigned_user_id: string | null
           assignment_source: string | null
           booking_code: string | null
+          calendar_id: string | null
           calendly_invitee_uri: string | null
           cancel_url: string | null
+          cancellation_link: string | null
           cc_collected: number | null
           closer_id: string | null
           closer_name: string | null
           closer_notes: string | null
           created_at: string | null
+          duration_minutes: number | null
           event_type_name: string | null
           event_type_uri: string | null
           id: string

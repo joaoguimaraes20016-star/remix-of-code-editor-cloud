@@ -69,15 +69,17 @@ function buildAutomationContext(triggerType: TriggerType, payload: Record<string
   };
 }
 
-// --- Condition Evaluator ---
+// --- Import Enhanced Template Engine ---
+import { 
+  renderTemplate as renderTemplateEnhanced, 
+  getFieldValue as getFieldValueEnhanced,
+  enrichContext,
+  extractTemplateVariables as extractVarsEnhanced,
+} from "./template-engine.ts";
+
+// --- Condition Evaluator (GHL-grade operators) ---
 function getFieldValue(context: Record<string, any>, path: string): any {
-  const keys = path.split(".");
-  let value: any = context;
-  for (const key of keys) {
-    if (value == null) return undefined;
-    value = value[key];
-  }
-  return value;
+  return getFieldValueEnhanced(context, path);
 }
 
 function evaluateCondition(condition: AutomationCondition, context: Record<string, any>): boolean {
@@ -85,19 +87,120 @@ function evaluateCondition(condition: AutomationCondition, context: Record<strin
   const expected = condition.value;
 
   switch (condition.operator) {
+    // === STRING OPERATORS ===
     case "equals":
       return actual === expected;
     case "not_equals":
       return actual !== expected;
     case "contains":
-      return typeof actual === "string" && actual.includes(String(expected));
+      if (typeof actual === "string") {
+        return actual.toLowerCase().includes(String(expected).toLowerCase());
+      }
+      if (Array.isArray(actual)) {
+        return actual.includes(expected);
+      }
+      return false;
+    case "not_contains":
+      if (typeof actual === "string") {
+        return !actual.toLowerCase().includes(String(expected).toLowerCase());
+      }
+      if (Array.isArray(actual)) {
+        return !actual.includes(expected);
+      }
+      return true;
+    case "starts_with":
+      return typeof actual === "string" && actual.toLowerCase().startsWith(String(expected).toLowerCase());
+    case "ends_with":
+      return typeof actual === "string" && actual.toLowerCase().endsWith(String(expected).toLowerCase());
+    case "regex":
+      try {
+        return typeof actual === "string" && new RegExp(String(expected)).test(actual);
+      } catch {
+        return false;
+      }
+
+    // === NUMBER OPERATORS ===
     case "gt":
-      return typeof actual === "number" && actual > Number(expected);
+    case "greater_than":
+      return Number(actual) > Number(expected);
+    case "gte":
+    case "greater_or_equal":
+      return Number(actual) >= Number(expected);
     case "lt":
-      return typeof actual === "number" && actual < Number(expected);
+    case "less_than":
+      return Number(actual) < Number(expected);
+    case "lte":
+    case "less_or_equal":
+      return Number(actual) <= Number(expected);
+    case "between":
+      if (Array.isArray(expected) && expected.length === 2) {
+        const num = Number(actual);
+        return num >= Number(expected[0]) && num <= Number(expected[1]);
+      }
+      return false;
+
+    // === DATE OPERATORS ===
+    case "before":
+      return new Date(actual) < new Date(String(expected));
+    case "after":
+      return new Date(actual) > new Date(String(expected));
+    case "within_last_minutes": {
+      const minAgo = new Date(Date.now() - Number(expected) * 60 * 1000);
+      return new Date(actual) >= minAgo;
+    }
+    case "within_last_hours": {
+      const hoursAgo = new Date(Date.now() - Number(expected) * 60 * 60 * 1000);
+      return new Date(actual) >= hoursAgo;
+    }
+    case "within_last_days": {
+      const daysAgo = new Date(Date.now() - Number(expected) * 24 * 60 * 60 * 1000);
+      return new Date(actual) >= daysAgo;
+    }
+    case "after_now_minutes": {
+      const futureTime = new Date(Date.now() + Number(expected) * 60 * 1000);
+      return new Date(actual) > futureTime;
+    }
+    case "day_of_week_is": {
+      const date = new Date(actual);
+      const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+      return dayNames[date.getDay()] === String(expected).toLowerCase();
+    }
+    case "month_is": {
+      const date = new Date(actual);
+      return (date.getMonth() + 1) === Number(expected);
+    }
+
+    // === BOOLEAN OPERATORS ===
+    case "is_true":
+      return actual === true || actual === "true" || actual === 1;
+    case "is_false":
+      return actual === false || actual === "false" || actual === 0;
+
+    // === ARRAY OPERATORS ===
+    case "contains_any":
+      return Array.isArray(actual) && Array.isArray(expected) && expected.some((e: any) => actual.includes(e));
+    case "contains_all":
+      return Array.isArray(actual) && Array.isArray(expected) && expected.every((e: any) => actual.includes(e));
+    case "not_contains_any":
+      return Array.isArray(actual) && Array.isArray(expected) && !expected.some((e: any) => actual.includes(e));
+
+    // === EXISTENCE OPERATORS ===
+    case "is_set":
+    case "exists":
+      return actual !== null && actual !== undefined && actual !== "";
+    case "is_not_set":
+    case "is_empty":
+      return actual === null || actual === undefined || actual === "";
+    case "is_not_empty":
+      if (Array.isArray(actual)) return actual.length > 0;
+      return actual !== null && actual !== undefined && actual !== "";
+
+    // === LEGACY OPERATORS ===
     case "in":
       return Array.isArray(expected) && expected.includes(actual);
+
     default:
+      console.warn(`[Automation] Unknown operator: ${condition.operator}`);
       return false;
   }
 }
@@ -316,21 +419,12 @@ async function logMessage(
 
 // --- Template Variable Extraction (for logging) ---
 function extractTemplateVariables(template: string, context: AutomationContext): Record<string, any> {
-  const matches = template.match(/\{\{([^}]+)\}\}/g) || [];
-  const variables: Record<string, any> = {};
-  for (const match of matches) {
-    const path = match.replace(/\{\{|\}\}/g, "").trim();
-    variables[path] = getFieldValue(context, path);
-  }
-  return variables;
+  return extractVarsEnhanced(template, context);
 }
 
-// --- Render Template ---
+// --- Render Template (GHL-grade with pipes and aliases) ---
 function renderTemplate(template: string, context: AutomationContext): string {
-  return template.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
-    const value = getFieldValue(context, path.trim());
-    return value !== undefined ? String(value) : match;
-  });
+  return renderTemplateEnhanced(template, context);
 }
 
 // --- Run Automation with Branching Support ---
