@@ -153,26 +153,53 @@ export type ActionType =
 // ============================================
 
 export type ConditionOperator =
+  // String operators
   | 'equals'
   | 'not_equals'
   | 'contains'
   | 'not_contains'
   | 'starts_with'
   | 'ends_with'
+  | 'regex'
+  // Number operators
+  | 'gt'
+  | 'lt'
+  | 'gte'
+  | 'lte'
   | 'greater_than'
-  | 'less_than'
   | 'greater_or_equal'
+  | 'less_than'
   | 'less_or_equal'
-  | 'is_empty'
-  | 'is_not_empty'
-  | 'is_set'
-  | 'is_not_set'
-  | 'in'
-  | 'not_in'
+  | 'between'
+  // Date operators
+  | 'before'
+  | 'after'
+  | 'within_last_minutes'
+  | 'within_last_hours'
+  | 'within_last_days'
+  | 'after_now_minutes'
+  | 'day_of_week_is'
+  | 'month_is'
   | 'date_before'
   | 'date_after'
   | 'date_within_days'
   | 'date_past_days'
+  // Boolean operators
+  | 'is_true'
+  | 'is_false'
+  // Array operators
+  | 'in'
+  | 'not_in'
+  | 'contains_any'
+  | 'contains_all'
+  | 'not_contains_any'
+  // Existence operators
+  | 'is_set'
+  | 'is_not_set'
+  | 'exists'
+  | 'is_empty'
+  | 'is_not_empty'
+  // Tag operators (legacy)
   | 'tag_present'
   | 'tag_absent';
 

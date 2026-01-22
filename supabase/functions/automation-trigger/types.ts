@@ -140,10 +140,53 @@ export type ActionType =
 
 export type CrmEntity = "lead" | "deal" | "appointment";
 
+export type ConditionOperator =
+  // String operators
+  | "equals"
+  | "not_equals"
+  | "contains"
+  | "not_contains"
+  | "starts_with"
+  | "ends_with"
+  | "regex"
+  // Number operators
+  | "gt"
+  | "lt"
+  | "gte"
+  | "lte"
+  | "greater_than"
+  | "greater_or_equal"
+  | "less_than"
+  | "less_or_equal"
+  | "between"
+  // Date operators
+  | "before"
+  | "after"
+  | "within_last_minutes"
+  | "within_last_hours"
+  | "within_last_days"
+  | "after_now_minutes"
+  | "day_of_week_is"
+  | "month_is"
+  // Boolean operators
+  | "is_true"
+  | "is_false"
+  // Array operators
+  | "in"
+  | "contains_any"
+  | "contains_all"
+  | "not_contains_any"
+  // Existence operators
+  | "is_set"
+  | "is_not_set"
+  | "exists"
+  | "is_empty"
+  | "is_not_empty";
+
 export interface AutomationCondition {
   field: string;
-  operator: "equals" | "not_equals" | "contains" | "gt" | "lt" | "gte" | "lte" | "in" | "is_set" | "is_not_set";
-  value?: string | number | string[];
+  operator: ConditionOperator;
+  value?: string | number | string[] | boolean;
 }
 
 export interface AutomationStep {
