@@ -217,44 +217,80 @@ function evaluateConditions(
   return conditions.some((c) => evaluateCondition(c, context));
 }
 
-// --- Get Automations from DB ONLY (no templates to prevent duplicates) ---
+// --- Get Automations from DB using Published Versions ---
 async function getAutomationsForTrigger(
   supabase: any,
   teamId: string,
   triggerType: TriggerType,
 ): Promise<AutomationDefinition[]> {
   try {
-    const { data, error } = await supabase
+    // First, get active automations with their current_version_id
+    const { data: automations, error: automationsError } = await supabase
       .from("automations")
-      .select("*")
+      .select(`
+        id,
+        team_id,
+        name,
+        description,
+        is_active,
+        trigger_type,
+        current_version_id,
+        definition
+      `)
       .eq("team_id", teamId)
       .eq("trigger_type", triggerType)
       .eq("is_active", true);
 
-    if (error) {
-      console.error("[Automation Trigger] Error fetching automations:", error);
+    if (automationsError) {
+      console.error("[Automation Trigger] Error fetching automations:", automationsError);
       return [];
     }
 
-    if (data && data.length > 0) {
-      console.log(`[Automation Trigger] Found ${data.length} DB automations for ${triggerType}`);
-      return data.map((row: any) => {
-        const definition = row.definition || {};
-        return {
-          id: row.id,
-          teamId: row.team_id,
-          name: row.name,
-          description: row.description || "",
-          isActive: row.is_active,
-          trigger: definition.trigger || { type: row.trigger_type, config: {} },
-          triggerType: row.trigger_type as TriggerType,
-          steps: definition.steps || [],
-        } as AutomationDefinition;
-      });
+    if (!automations || automations.length === 0) {
+      console.log(`[Automation Trigger] No DB automations found for ${triggerType}`);
+      return [];
     }
 
-    console.log(`[Automation Trigger] No DB automations found for ${triggerType}`);
-    return [];
+    console.log(`[Automation Trigger] Found ${automations.length} DB automations for ${triggerType}`);
+    
+    // For each automation, get the published version if it exists
+    const results: AutomationDefinition[] = [];
+    
+    for (const row of automations) {
+      let definitionToUse = row.definition || {};
+      
+      // If there's a published version, use that instead
+      if (row.current_version_id) {
+        const { data: version, error: versionError } = await supabase
+          .from("workflow_versions")
+          .select("definition_json")
+          .eq("id", row.current_version_id)
+          .eq("is_active", true)
+          .single();
+        
+        if (!versionError && version?.definition_json) {
+          console.log(`[Automation Trigger] Using published version for "${row.name}"`);
+          definitionToUse = version.definition_json;
+        } else {
+          console.log(`[Automation Trigger] Falling back to draft definition for "${row.name}"`);
+        }
+      } else {
+        console.log(`[Automation Trigger] No published version for "${row.name}", using draft`);
+      }
+      
+      results.push({
+        id: row.id,
+        teamId: row.team_id,
+        name: row.name,
+        description: row.description || "",
+        isActive: row.is_active,
+        trigger: definitionToUse.trigger || { type: row.trigger_type, config: {} },
+        triggerType: row.trigger_type as TriggerType,
+        steps: definitionToUse.steps || [],
+      } as AutomationDefinition);
+    }
+    
+    return results;
   } catch (err) {
     console.error("[Automation Trigger] Unexpected error fetching automations:", err);
     return [];

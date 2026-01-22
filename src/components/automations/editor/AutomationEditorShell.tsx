@@ -8,6 +8,7 @@ import {
   PanelRightClose,
   PanelLeftOpen,
   Sparkles,
+  Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +17,12 @@ import { TemplateGallery } from "./TemplateGallery";
 import { AutomationAIPanel } from "./AutomationAIPanel";
 import { AutomationCanvasArea } from "./AutomationCanvasArea";
 import { NodeInspector } from "./NodeInspector";
+import { PublishStatusBadge } from "./PublishStatusBadge";
+import { VersionHistoryPanel } from "./VersionHistoryPanel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import "./automation-editor.css";
+import type { PublishStatus } from "@/hooks/useAutomationVersioning";
 
 interface AutomationEditorShellProps {
   teamId: string;
@@ -27,9 +31,15 @@ interface AutomationEditorShellProps {
   name: string;
   onNameChange: (name: string) => void;
   onSave: () => void;
+  onPublish: () => void;
   onBack: () => void;
   isSaving?: boolean;
+  isPublishing?: boolean;
   isNew?: boolean;
+  automationId?: string | null;
+  publishStatus: PublishStatus;
+  currentVersionNumber?: number | null;
+  currentVersionId?: string | null;
 }
 
 // Track "add step" mode in selectedNodeId
@@ -53,9 +63,15 @@ export function AutomationEditorShell({
   name,
   onNameChange,
   onSave,
+  onPublish,
   onBack,
   isSaving,
+  isPublishing,
   isNew,
+  automationId,
+  publishStatus,
+  currentVersionNumber,
+  currentVersionId,
 }: AutomationEditorShellProps) {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(true);
@@ -190,20 +206,24 @@ export function AutomationEditorShell({
         </div>
 
         <div className="automation-editor-header-center">
-          <div className="flex items-center gap-2 text-xs">
-            <div className={cn(
-              "w-2 h-2 rounded-full",
-              definition.steps.length > 0 ? "bg-green-400" : "bg-yellow-400"
-            )} />
-            <span className="text-white/50">
-              {definition.steps.length > 0 
-                ? `${definition.steps.length} step${definition.steps.length !== 1 ? "s" : ""}` 
-                : "No steps yet"}
+          <div className="flex items-center gap-3">
+            <PublishStatusBadge 
+              status={publishStatus} 
+              version={currentVersionNumber} 
+            />
+            <span className="text-white/30">•</span>
+            <span className="text-white/50 text-xs">
+              {definition.steps.length} step{definition.steps.length !== 1 ? "s" : ""}
             </span>
           </div>
         </div>
 
         <div className="automation-editor-header-right">
+          <VersionHistoryPanel
+            automationId={automationId}
+            teamId={teamId}
+            currentVersionId={currentVersionId}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -213,14 +233,25 @@ export function AutomationEditorShell({
             Test
           </Button>
           <Button
+            variant="outline"
             size="sm"
             onClick={onSave}
-            disabled={isSaving}
-            className="bg-primary hover:bg-primary/90"
+            disabled={isSaving || isPublishing}
+            className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
           >
             {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Save className="h-4 w-4 mr-2" />
-            Save
+            Save Draft
+          </Button>
+          <Button
+            size="sm"
+            onClick={onPublish}
+            disabled={isPublishing || isSaving || isNew || definition.steps.length === 0}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            {isPublishing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Rocket className="h-4 w-4 mr-2" />
+            {publishStatus === "unpublished" ? "Publish" : "Update Live"}
           </Button>
         </div>
       </header>
