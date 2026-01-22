@@ -34,13 +34,6 @@ export default function Billing() {
     staleTime: 5000,
   });
 
-  // Handle post-Stripe return sync
-  const { isSyncing } = useBillingSync({
-    billing,
-    refetch,
-    isLoading,
-  });
-
   const { data: pricing } = useQuery({
     queryKey: ["channel-pricing"],
     queryFn: async () => {
@@ -52,6 +45,13 @@ export default function Billing() {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Handle post-Stripe return sync - must be called unconditionally (hooks rule)
+  const { isSyncing } = useBillingSync({
+    billing,
+    refetch,
+    isLoading,
   });
 
   if (isLoading || isSyncing) {
