@@ -30,7 +30,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
-
+import whopLogo from "@/assets/integrations/whop-logo.svg";
 
 interface WhopConfigProps {
   teamId: string;
@@ -146,10 +146,8 @@ export function WhopConfig({ teamId, onUpdate }: WhopConfigProps) {
         <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-white/5" />
 
         <div className="relative flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            <svg className="w-7 h-7" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 75 C15 75 25 25 35 25 C45 25 40 60 50 60 C60 60 55 25 65 25 C75 25 85 75 85 75" />
-            </svg>
+          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center p-2">
+            <img src={whopLogo} alt="Whop" className="w-full h-full" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
