@@ -6,6 +6,11 @@ import { toast } from "sonner";
 import { AutomationEditorShell } from "@/components/automations/editor/AutomationEditorShell";
 import type { AutomationDefinition, TriggerType } from "@/lib/automations/types";
 import { Loader2 } from "lucide-react";
+import {
+  useLatestVersion,
+  usePublishVersion,
+  getPublishStatus,
+} from "@/hooks/useAutomationVersioning";
 
 const DEFAULT_DEFINITION: AutomationDefinition = {
   id: "",
@@ -44,6 +49,19 @@ export default function AutomationEditor() {
     },
     enabled: !isNew && !!automationId,
   });
+
+  // Fetch latest published version
+  const { data: latestVersion } = useLatestVersion(isNew ? null : automationId || null);
+  
+  // Publish mutation
+  const publishMutation = usePublishVersion(isNew ? null : automationId || null, teamId || "");
+
+  // Calculate publish status
+  const publishStatus = getPublishStatus(
+    definition,
+    latestVersion,
+    isNew ? null : automationId || null
+  );
 
   // Initialize state from fetched data
   useEffect(() => {
@@ -130,6 +148,30 @@ export default function AutomationEditor() {
     saveMutation.mutate();
   };
 
+  const handlePublish = async () => {
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    if (definition.steps.length === 0) {
+      toast.error("Add at least one step before publishing");
+      return;
+    }
+    // Save first if needed, then publish
+    if (isNew) {
+      toast.error("Save the automation first before publishing");
+      return;
+    }
+    // Ensure we save latest changes before publishing
+    await saveMutation.mutateAsync();
+    const finalDefinition: AutomationDefinition = {
+      ...definition,
+      teamId: teamId || "",
+      name,
+    };
+    publishMutation.mutate(finalDefinition);
+  };
+
   const handleBack = () => {
     navigate(`/team/${teamId}/workflows`);
   };
@@ -150,9 +192,15 @@ export default function AutomationEditor() {
       name={name}
       onNameChange={setName}
       onSave={handleSave}
+      onPublish={handlePublish}
       onBack={handleBack}
       isSaving={saveMutation.isPending}
+      isPublishing={publishMutation.isPending}
       isNew={isNew}
+      automationId={isNew ? null : automationId || null}
+      publishStatus={publishStatus}
+      currentVersionNumber={latestVersion?.version_number || null}
+      currentVersionId={automation?.current_version_id || null}
     />
   );
 }
