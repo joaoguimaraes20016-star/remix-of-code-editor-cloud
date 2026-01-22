@@ -349,7 +349,7 @@ export default function PaymentsPortal() {
       <Sheet open={stripeSheetOpen} onOpenChange={setStripeSheetOpen}>
         <SheetContent className="sm:max-w-lg overflow-y-auto">
           <SheetHeader className="mb-6">
-            <SheetTitle>Stripe Integration</SheetTitle>
+            <SheetTitle>Stripe Connection</SheetTitle>
           </SheetHeader>
           {teamId && (
             <StripeConfig
