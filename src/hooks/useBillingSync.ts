@@ -16,7 +16,8 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
   const [searchParams, setSearchParams] = useSearchParams();
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
-  const maxPolls = 15; // 30 seconds at 2s intervals
+  const hasHandledSuccessRef = useRef(false);
+  const maxPolls = 15;
   const setupStatus = searchParams.get("setup");
 
   const isSyncing = setupStatus === "success" && !billing?.stripe_payment_method_id;
@@ -38,17 +39,18 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
   }, []);
 
   useEffect(() => {
-    // If setup=success and we already have a payment method, just clean up
-    if (setupStatus === "success" && billing?.stripe_payment_method_id) {
+    // If setup=success and we already have a payment method, handle once
+    if (setupStatus === "success" && billing?.stripe_payment_method_id && !hasHandledSuccessRef.current) {
+      hasHandledSuccessRef.current = true;
+      toast.dismiss("billing-sync");
       toast.success("Payment method saved successfully!");
-      clearSetupParam();
       stopPolling();
+      clearSetupParam();
       return;
     }
 
     // If setup=success but no payment method yet, start polling
     if (setupStatus === "success" && !billing?.stripe_payment_method_id && !isLoading) {
-      // Don't start a new poll if one is already running
       if (pollIntervalRef.current) return;
 
       toast.loading("Finalizing payment method...", { id: "billing-sync" });
@@ -71,7 +73,6 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
       }, 2000);
     }
 
-    // Cleanup on unmount
     return () => {
       stopPolling();
     };
