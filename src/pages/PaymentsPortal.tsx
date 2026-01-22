@@ -344,6 +344,22 @@ export default function PaymentsPortal() {
         </p>
       </div>
 
+      {/* Info box explaining Stripe Connect */}
+      {!isStripeConnected && (
+        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+          <h4 className="font-medium text-foreground">Why Connect Your Stripe?</h4>
+          <p className="text-sm text-muted-foreground mt-1">
+            Link your existing Stripe account to unlock powerful features:
+          </p>
+          <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+            <li>• Create payment links and send invoices directly</li>
+            <li>• Track revenue and subscriptions in real-time</li>
+            <li>• Trigger automations when customers pay</li>
+            <li>• Charge saved cards and manage subscriptions</li>
+          </ul>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {processors.map((processor) => {
           const status = getProcessorStatus(processor);

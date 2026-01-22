@@ -114,16 +114,24 @@ Deno.serve(async (req) => {
     // Show login page first for users with existing Stripe accounts
     stripeAuthUrl.searchParams.set("stripe_landing", "login");
     
-    // Optional: prefill email if we have it
-    const { data: team } = await supabase
-      .from("teams")
-      .select("name")
-      .eq("id", teamId)
-      .single();
+    // Prefill user and business data for faster onboarding
+    const [teamResult, profileResult] = await Promise.all([
+      supabase.from("teams").select("name").eq("id", teamId).single(),
+      supabase.from("profiles").select("email, full_name").eq("id", user.id).single()
+    ]);
       
-    if (team?.name) {
-      stripeAuthUrl.searchParams.set("stripe_user[business_name]", team.name);
+    if (teamResult.data?.name) {
+      stripeAuthUrl.searchParams.set("stripe_user[business_name]", teamResult.data.name);
     }
+    if (profileResult.data?.email) {
+      stripeAuthUrl.searchParams.set("stripe_user[email]", profileResult.data.email);
+    }
+    if (profileResult.data?.full_name) {
+      const firstName = profileResult.data.full_name.split(' ')[0];
+      stripeAuthUrl.searchParams.set("stripe_user[first_name]", firstName);
+    }
+    // Prompt existing Stripe users to login rather than create new account
+    stripeAuthUrl.searchParams.set("always_prompt", "true");
 
     console.log("[stripe-oauth-start] Generated OAuth URL for team:", teamId);
 
