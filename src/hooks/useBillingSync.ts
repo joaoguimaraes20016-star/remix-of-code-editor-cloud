@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 interface TeamBilling {
@@ -14,63 +14,73 @@ interface UseBillingSyncOptions {
 
 export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOptions) {
   const location = useLocation();
-  const navigate = useNavigate();
   const [isSyncing, setIsSyncing] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
-  const hasHandledSuccessRef = useRef(false);
   const maxPolls = 15;
 
-  // Parse setup status from URL
+  // Derived state - computed fresh each render
   const searchParams = new URLSearchParams(location.search);
   const setupStatus = searchParams.get("setup");
+  const hasPaymentMethod = !!billing?.stripe_payment_method_id;
 
-  const clearSetupParam = useCallback(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.has("setup")) {
-      params.delete("setup");
-      const newSearch = params.toString();
-      const newPath = location.pathname + (newSearch ? `?${newSearch}` : "");
-      // Use window.history for atomic URL cleanup without React state churn
-      window.history.replaceState(null, "", newPath);
-    }
-  }, [location.pathname, location.search]);
-
-  const stopPolling = useCallback(() => {
+  // Single cleanup function - clears everything and optionally shows success
+  const cleanupAndFinish = useCallback((showSuccess = false) => {
+    // Stop polling
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
     pollCountRef.current = 0;
+    
+    // Update state
+    setIsSyncing(false);
+    
+    // Handle toasts
+    toast.dismiss("billing-sync");
+    if (showSuccess) {
+      toast.success("Payment method saved successfully!");
+    }
+    
+    // Clean URL atomically using replaceState to avoid React re-render issues
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("setup")) {
+      params.delete("setup");
+      const newPath = window.location.pathname + (params.toString() ? `?${params}` : "");
+      window.history.replaceState(null, "", newPath);
+    }
   }, []);
 
-  const finishSync = useCallback(() => {
-    setIsSyncing(false);
-    toast.dismiss("billing-sync");
-    stopPolling();
-    clearSetupParam();
-  }, [stopPolling, clearSetupParam]);
-
-  // SAFETY EXIT: If payment method exists, always exit syncing state
-  // This is the single source of truth - DB has payment method = we're done
+  // SINGLE EFFECT - handles all setup status states deterministically
   useEffect(() => {
-    if (billing?.stripe_payment_method_id && !hasHandledSuccessRef.current) {
-      hasHandledSuccessRef.current = true;
-      
-      // Only show success toast if we were actually syncing
-      if (isSyncing || setupStatus === "success") {
-        toast.dismiss("billing-sync");
-        toast.success("Payment method saved successfully!");
-      }
-      
-      finishSync();
+    // Case 1: No setup param - nothing to do
+    if (!setupStatus) {
+      return;
     }
-  }, [billing?.stripe_payment_method_id, isSyncing, setupStatus, finishSync]);
 
-  // Handle setup=success: start syncing if we don't have payment method yet
-  useEffect(() => {
-    if (setupStatus === "success" && !billing?.stripe_payment_method_id && !isLoading && !hasHandledSuccessRef.current) {
-      // Start syncing mode
+    // Case 2: Setup cancelled - show error and cleanup
+    if (setupStatus === "cancelled") {
+      toast.error("Card setup was cancelled");
+      cleanupAndFinish();
+      return;
+    }
+
+    // Case 3: Setup success + already have payment method = done!
+    // This is the KEY fix - check this FIRST before starting any polling
+    if (setupStatus === "success" && hasPaymentMethod) {
+      cleanupAndFinish(true);
+      return;
+    }
+
+    // Case 4: Setup success + still loading data = wait
+    if (setupStatus === "success" && isLoading) {
+      // Don't start syncing yet, data is still loading
+      return;
+    }
+
+    // Case 5: Setup success + no payment method yet + not loading = poll
+    if (setupStatus === "success" && !hasPaymentMethod && !isLoading) {
+      // Start syncing if not already
       if (!isSyncing) {
         setIsSyncing(true);
         toast.loading("Finalizing payment method...", { id: "billing-sync" });
@@ -78,45 +88,35 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
 
       // Start polling if not already
       if (!pollIntervalRef.current) {
+        pollCountRef.current = 0;
         pollIntervalRef.current = setInterval(async () => {
-          pollCountRef.current += 1;
-          
+          pollCountRef.current++;
+
           try {
             await refetch();
           } catch (error) {
             console.error("[BillingSync] Refetch error:", error);
           }
 
+          // Give up after max polls
           if (pollCountRef.current >= maxPolls) {
-            stopPolling();
-            setIsSyncing(false);
-            toast.dismiss("billing-sync");
-            toast.error("Taking longer than expected. Please click 'Refresh Status'.");
-            clearSetupParam();
+            toast.error("Taking longer than expected. Please refresh the page.");
+            cleanupAndFinish();
           }
         }, 2000);
       }
     }
+  }, [setupStatus, hasPaymentMethod, isLoading, isSyncing, refetch, cleanupAndFinish]);
 
-    return () => {
-      // Cleanup on unmount only - don't stop on every render
-    };
-  }, [setupStatus, billing?.stripe_payment_method_id, isLoading, isSyncing, refetch, stopPolling, clearSetupParam]);
-
-  // Cleanup polling on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopPolling();
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
     };
-  }, [stopPolling]);
+  }, []);
 
-  // Handle cancelled setup
-  useEffect(() => {
-    if (setupStatus === "cancelled") {
-      toast.error("Card setup was cancelled");
-      clearSetupParam();
-    }
-  }, [setupStatus, clearSetupParam]);
-
-  return { isSyncing, stopPolling };
+  return { isSyncing };
 }
