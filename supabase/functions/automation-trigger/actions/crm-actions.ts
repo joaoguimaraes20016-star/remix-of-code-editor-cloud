@@ -409,3 +409,205 @@ export async function executeUpdateStage(
 
   return log;
 }
+
+// Create Deal
+export async function executeCreateDeal(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  try {
+    // Get lead info from context
+    const lead = context.lead;
+    const appointment = context.appointment;
+
+    // Determine deal name - use config or fall back to lead name
+    const dealName = (config.name as string) || 
+                     lead?.name || 
+                     appointment?.lead_name || 
+                     "New Deal";
+
+    // Determine value
+    const dealValue = Number(config.value) || 0;
+
+    // Determine stage - use config or default to 'booked'
+    const stageId = (config.stageId as string) || "booked";
+
+    // Create deal as an appointment record (deals are appointments in this system)
+    const { data, error } = await supabase
+      .from("appointments")
+      .insert([
+        {
+          team_id: context.teamId,
+          lead_name: dealName,
+          lead_email: lead?.email || appointment?.lead_email || null,
+          lead_phone: lead?.phone || appointment?.lead_phone || null,
+          pipeline_stage: stageId,
+          revenue: dealValue,
+          status: "NEW",
+          start_at_utc: new Date().toISOString(),
+          event_type_name: (config.eventType as string) || "Deal from Automation",
+          setter_id: lead?.owner_user_id || null,
+          appointment_notes: (config.notes as string) || `Created by automation at ${new Date().toISOString()}`,
+        },
+      ])
+      .select("id")
+      .single();
+
+    if (error) {
+      log.status = "error";
+      log.error = error.message;
+      return log;
+    }
+
+    log.output = { dealId: data?.id, stage: stageId, value: dealValue };
+    log.entity = "deal";
+
+    // Log activity
+    await supabase.from("activity_logs").insert([
+      {
+        team_id: context.teamId,
+        appointment_id: data?.id,
+        action_type: "deal_created",
+        actor_name: "Automation",
+        note: `Deal created: ${dealName} - $${dealValue}`,
+      },
+    ]);
+
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// Close Deal
+export async function executeCloseDeal(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  try {
+    // Get deal from context
+    const dealId = context.deal?.id || context.appointment?.id;
+
+    if (!dealId) {
+      log.status = "skipped";
+      log.skipReason = "no_deal_in_context";
+      return log;
+    }
+
+    const closeStatus = (config.status as string) || "won";
+    const reason = (config.reason as string) || "";
+
+    if (closeStatus === "won") {
+      // For won deals, we need more info - use RPC if available, else direct update
+      const ccAmount = Number(config.ccAmount) || 0;
+      const mrrAmount = Number(config.mrrAmount) || 0;
+      const mrrMonths = Number(config.mrrMonths) || 0;
+      const productName = (config.productName as string) || "Product";
+
+      // Try using the close_deal_transaction RPC for full processing
+      if (ccAmount > 0 || mrrAmount > 0) {
+        const { data, error } = await supabase.rpc("close_deal_transaction", {
+          p_appointment_id: dealId,
+          p_closer_id: context.appointment?.closer_id || null,
+          p_cc_amount: ccAmount,
+          p_mrr_amount: mrrAmount,
+          p_mrr_months: mrrMonths,
+          p_product_name: productName,
+          p_notes: reason,
+          p_closer_name: context.appointment?.closer_name || "Automation",
+        });
+
+        if (error) {
+          // Fall back to simple update if RPC fails
+          console.warn("[CRM Action] RPC failed, falling back to direct update:", error.message);
+          const { error: updateError } = await supabase
+            .from("appointments")
+            .update({
+              status: "CLOSED",
+              pipeline_stage: "won",
+              cc_collected: ccAmount,
+              mrr_amount: mrrAmount,
+              mrr_months: mrrMonths,
+              product_name: productName,
+              closer_notes: reason ? `${reason}\n\nClosed by automation.` : "Closed by automation.",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", dealId);
+
+          if (updateError) {
+            log.status = "error";
+            log.error = updateError.message;
+            return log;
+          }
+        }
+
+        log.output = { closed: true, status: "won", dealId, ccAmount, mrrAmount };
+      } else {
+        // Simple won update without revenue
+        const { error } = await supabase
+          .from("appointments")
+          .update({
+            status: "CLOSED",
+            pipeline_stage: "won",
+            closer_notes: reason ? `${reason}\n\nClosed by automation.` : "Closed by automation.",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", dealId);
+
+        if (error) {
+          log.status = "error";
+          log.error = error.message;
+          return log;
+        }
+
+        log.output = { closed: true, status: "won", dealId };
+      }
+    } else {
+      // Lost deal - update to disqualified
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          status: "CANCELLED",
+          pipeline_stage: "disqualified",
+          closer_notes: reason ? `Lost Reason: ${reason}` : "Marked as lost by automation.",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", dealId);
+
+      if (error) {
+        log.status = "error";
+        log.error = error.message;
+        return log;
+      }
+
+      log.output = { closed: true, status: "lost", dealId, reason };
+    }
+
+    log.entity = "deal";
+
+    // Log activity
+    await supabase.from("activity_logs").insert([
+      {
+        team_id: context.teamId,
+        appointment_id: dealId,
+        action_type: closeStatus === "won" ? "deal_won" : "deal_lost",
+        actor_name: "Automation",
+        note: closeStatus === "won" ? "Deal closed as won by automation" : `Deal lost: ${reason || "No reason provided"}`,
+      },
+    ]);
+
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}

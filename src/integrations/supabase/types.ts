@@ -2115,6 +2115,68 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_events: {
+        Row: {
+          amount: number | null
+          created_at: string
+          currency: string | null
+          customer_email: string | null
+          customer_id: string | null
+          event_id: string
+          event_type: string
+          id: string
+          processed_at: string | null
+          product_id: string | null
+          provider: string
+          raw_data: Json | null
+          status: string | null
+          subscription_id: string | null
+          team_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          product_id?: string | null
+          provider: string
+          raw_data?: Json | null
+          status?: string | null
+          subscription_id?: string | null
+          team_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          product_id?: string | null
+          provider?: string
+          raw_data?: Json | null
+          status?: string | null
+          subscription_id?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number

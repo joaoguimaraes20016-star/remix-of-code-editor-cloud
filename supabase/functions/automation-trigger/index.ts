@@ -23,6 +23,8 @@ import {
   executeAddNote,
   executeAssignOwner,
   executeUpdateStage,
+  executeCreateDeal,
+  executeCloseDeal,
 } from "./actions/crm-actions.ts";
 import {
   executeAddTask,
@@ -33,6 +35,12 @@ import {
   executeGoTo,
 } from "./actions/workflow-actions.ts";
 import { executeVoiceCall } from "./actions/voice-ai.ts";
+import {
+  executeSendInvoice,
+  executeChargePayment,
+  executeCreateSubscription,
+  executeCancelSubscription,
+} from "./actions/stripe-actions.ts";
 import {
   checkAndCreateEnrollment,
   completeEnrollment,
@@ -963,13 +971,47 @@ async function runAutomation(
           break;
         }
 
-        // === DEAL ACTIONS (stubs for now) ===
-        case "create_deal":
-        case "close_deal":
-          log.status = "success";
-          log.templateVariables = step.config;
-          console.info(`[Automation] Stub action: ${step.type}`, step.config);
+        // === DEAL ACTIONS ===
+        case "create_deal": {
+          const result = await executeCreateDeal(step.config, context, supabase);
+          log = { ...log, ...result };
+          // Update context with new deal for downstream steps
+          if (result.output?.dealId) {
+            context.deal = { id: result.output.dealId, ...result.output };
+          }
           break;
+        }
+
+        case "close_deal": {
+          const result = await executeCloseDeal(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        // === STRIPE PAYMENT ACTIONS ===
+        case "send_invoice": {
+          const result = await executeSendInvoice(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "charge_payment": {
+          const result = await executeChargePayment(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "create_subscription": {
+          const result = await executeCreateSubscription(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "cancel_subscription": {
+          const result = await executeCancelSubscription(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
 
         default:
           console.warn(`[Automation] Unknown action type: ${step.type}`);
