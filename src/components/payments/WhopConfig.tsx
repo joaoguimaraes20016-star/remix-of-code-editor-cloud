@@ -141,12 +141,12 @@ export function WhopConfig({ teamId, onUpdate }: WhopConfigProps) {
   return (
     <div className="space-y-6">
       {/* Connection Status Hero */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 p-5 text-white">
+      <div className="relative overflow-hidden rounded-xl bg-[#FA4616] p-5 text-white">
         <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10" />
         <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-white/5" />
 
         <div className="relative flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center p-2">
+          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center p-1.5 shadow-md">
             <img src={whopLogo} alt="Whop" className="w-full h-full" />
           </div>
           <div className="flex-1">

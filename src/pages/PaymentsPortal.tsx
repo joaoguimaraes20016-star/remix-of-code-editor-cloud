@@ -30,9 +30,11 @@ const StripeLogo = () => (
   </svg>
 );
 
-// Whop Logo - official brand mark
+// Whop Logo - official brand mark with white background for visibility
 const WhopLogo = () => (
-  <img src={whopLogo} alt="Whop" className="w-6 h-6" />
+  <div className="w-6 h-6 rounded bg-white p-0.5 shadow-sm">
+    <img src={whopLogo} alt="Whop" className="w-full h-full rounded-sm" />
+  </div>
 );
 
 // Fanbasis Logo placeholder
@@ -53,7 +55,7 @@ const processors: PaymentProcessor[] = [
     id: "whop",
     name: "Whop",
     description: "Memberships & digital products",
-    gradient: "bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600",
+    gradient: "bg-[#FA4616]",
     logo: <WhopLogo />,
     status: "available",
   },
