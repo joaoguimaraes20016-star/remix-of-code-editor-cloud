@@ -81,7 +81,20 @@ Deno.serve(async (req) => {
     // Generate a state token for CSRF protection
     const stateToken = crypto.randomUUID();
 
-    // Store state in team_integrations (upsert)
+    // Generate PKCE code_verifier (43-128 characters, URL-safe)
+    const codeVerifier = crypto.randomUUID() + crypto.randomUUID(); // ~72 chars
+
+    // Generate code_challenge from code_verifier using SHA-256
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = new Uint8Array(hashBuffer);
+    const codeChallenge = btoa(String.fromCharCode(...hashArray))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    // Store state and code_verifier in team_integrations (upsert)
     const { error: upsertError } = await supabase
       .from("team_integrations")
       .upsert({
@@ -90,6 +103,7 @@ Deno.serve(async (req) => {
         is_connected: false,
         config: {
           state_token: stateToken,
+          code_verifier: codeVerifier,
           redirect_uri: redirectUri,
           initiated_at: new Date().toISOString(),
         },
@@ -105,28 +119,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build Whop OAuth URL
-    // Whop OAuth endpoint: https://whop.com/oauth
+    // Build Whop OAuth URL with PKCE
     const callbackUrl = `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/whop-oauth-callback`;
     
     // State includes teamId and token for verification
     const state = JSON.stringify({ teamId, stateToken, redirectUri });
     const encodedState = btoa(state);
 
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: callbackUrl,
-      response_type: "code",
-      scope: "offline member:basic:read company:basic:read payment:basic:read",
-      state: encodedState,
-    });
-
-    const authUrl = `https://whop.com/oauth?${params.toString()}`;
+    const authUrl = new URL("https://api.whop.com/oauth/authorize");
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("client_id", clientId);
+    authUrl.searchParams.set("redirect_uri", callbackUrl);
+    authUrl.searchParams.set("scope", "openid profile");
+    authUrl.searchParams.set("state", encodedState);
+    authUrl.searchParams.set("code_challenge", codeChallenge);
+    authUrl.searchParams.set("code_challenge_method", "S256");
 
     console.log(`[whop-oauth-start] Generated auth URL for team ${teamId}`);
 
     return new Response(
-      JSON.stringify({ authUrl }),
+      JSON.stringify({ authUrl: authUrl.toString() }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
