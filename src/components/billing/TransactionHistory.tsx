@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { 
@@ -60,7 +60,8 @@ const channelIcons: Record<string, typeof Mail> = {
   whatsapp: MessageCircle,
 };
 
-export function TransactionHistory({ teamId }: TransactionHistoryProps) {
+export const TransactionHistory = forwardRef<HTMLDivElement, TransactionHistoryProps>(
+  function TransactionHistory({ teamId }, ref) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: transactions, isLoading } = useQuery({
@@ -136,7 +137,7 @@ export function TransactionHistory({ teamId }: TransactionHistoryProps) {
   }
 
   return (
-    <Card className="border-border/50">
+    <Card ref={ref} className="border-border/50">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle>Transaction History</CardTitle>
@@ -235,4 +236,4 @@ export function TransactionHistory({ teamId }: TransactionHistoryProps) {
       </CardContent>
     </Card>
   );
-}
+});
