@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
     // Exchange code for access token
     const clientId = Deno.env.get("WHOP_CLIENT_ID");
     const clientSecret = Deno.env.get("WHOP_CLIENT_SECRET");
+    const REDIRECT_URI = "https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/whop-oauth-callback";
 
     if (!clientId || !clientSecret) {
       console.error("[whop-oauth-callback] Missing Whop credentials");
@@ -119,25 +120,77 @@ Deno.serve(async (req) => {
       return Response.redirect(redirectUrl, 302);
     }
 
-    const tokenResponse = await fetch("https://api.whop.com/api/v5/oauth/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        grant_type: "authorization_code",
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: "https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/whop-oauth-callback",
-      }),
-    });
+    // Token exchange with multiple auth methods and URLs
+    const tokenUrls = [
+      "https://api.whop.com/api/v5/oauth/token",
+      "https://api.whop.com/v5/oauth/token",
+    ];
 
-    if (!tokenResponse.ok) {
-      const errorBody = await tokenResponse.text();
-      console.error("[whop-oauth-callback] Token exchange failed:", errorBody);
+    const authMethods: Array<{ name: string; headers: Record<string, string>; body: string }> = [
+      {
+        name: "client_secret_basic",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+        },
+        body: JSON.stringify({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: REDIRECT_URI,
+        }),
+      },
+      {
+        name: "client_secret_post",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          grant_type: "authorization_code",
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: REDIRECT_URI,
+        }),
+      },
+    ];
+
+    let tokenResponse: Response | null = null;
+    let lastError = "";
+
+    for (const url of tokenUrls) {
+      for (const method of authMethods) {
+        console.log(`[whop-oauth-callback] Trying ${method.name} at ${url}`);
+        
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: method.headers,
+            body: method.body,
+          });
+
+          console.log(`[whop-oauth-callback] Response status: ${response.status}`);
+
+          if (response.ok) {
+            tokenResponse = response;
+            console.log(`[whop-oauth-callback] Success with ${method.name} at ${url}`);
+            break;
+          }
+
+          const errorBody = await response.text();
+          lastError = errorBody;
+          console.error(`[whop-oauth-callback] Failed with ${method.name} at ${url}: ${errorBody}`);
+        } catch (fetchError) {
+          lastError = String(fetchError);
+          console.error(`[whop-oauth-callback] Fetch error with ${method.name} at ${url}:`, fetchError);
+        }
+      }
+      if (tokenResponse?.ok) break;
+    }
+
+    if (!tokenResponse?.ok) {
+      console.error("[whop-oauth-callback] All token exchange methods failed. Last error:", lastError);
       const redirectUrl = buildRedirectUrl(callbackPage, {
-        error: "Failed to exchange authorization code",
+        error: `Token exchange failed: ${lastError.substring(0, 100)}`,
       });
       return Response.redirect(redirectUrl, 302);
     }
