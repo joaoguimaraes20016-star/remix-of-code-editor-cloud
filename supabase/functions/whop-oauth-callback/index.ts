@@ -122,14 +122,14 @@ Deno.serve(async (req) => {
     const tokenResponse = await fetch("https://api.whop.com/api/v5/oauth/token", {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
-      body: new URLSearchParams({
+      body: JSON.stringify({
         grant_type: "authorization_code",
         code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/whop-oauth-callback`,
+        redirect_uri: "https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/whop-oauth-callback",
       }),
     });
 
