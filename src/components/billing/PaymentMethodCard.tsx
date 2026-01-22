@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Plus, Loader2, ExternalLink } from "lucide-react";
+import { CreditCard, Plus, Loader2, ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -135,18 +135,29 @@ export function PaymentMethodCard({ teamId, billing, onUpdate }: PaymentMethodCa
           </p>
         </div>
         
-        <Button 
-          onClick={handleSetupBilling}
-          disabled={isLoading}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
-          Add Card
-        </Button>
+        <div className="space-y-2">
+          <Button 
+            onClick={handleSetupBilling}
+            disabled={isLoading}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            Add Card
+          </Button>
+          <Button
+            onClick={onUpdate}
+            variant="ghost"
+            size="sm"
+            className="w-full text-white/60 hover:text-white hover:bg-white/10"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh Status
+          </Button>
+        </div>
       </div>
     </div>
   );
