@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -7,11 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock } from "lucide-react";
+import { Clock, Building2 } from "lucide-react";
 
 interface TimeDelayConfig {
   duration: number;
   unit: "minutes" | "hours" | "days";
+  onlyDuringBusinessHours?: boolean;
+  skipWeekends?: boolean;
 }
 
 interface TimeDelayFormProps {
@@ -25,7 +28,15 @@ export function TimeDelayForm({ config, onChange }: TimeDelayFormProps) {
     const unit = config.unit || "minutes";
     if (duration === 0) return "No delay configured";
     const unitLabel = duration === 1 ? unit.slice(0, -1) : unit;
-    return `Wait ${duration} ${unitLabel} before the next step`;
+    
+    let text = `Wait ${duration} ${unitLabel}`;
+    if (config.onlyDuringBusinessHours) {
+      text += " (business hours only)";
+    }
+    if (config.skipWeekends) {
+      text += " (skipping weekends)";
+    }
+    return text;
   };
 
   return (
@@ -62,6 +73,47 @@ export function TimeDelayForm({ config, onChange }: TimeDelayFormProps) {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* Business Hours Option */}
+      <div className="space-y-3 pt-2 border-t border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <Label className="text-sm">Only during business hours</Label>
+              <p className="text-xs text-muted-foreground">
+                Resume only when business hours are active
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={config.onlyDuringBusinessHours ?? false}
+            onCheckedChange={(checked) => 
+              onChange({ ...config, onlyDuringBusinessHours: checked })
+            }
+          />
+        </div>
+
+        {config.unit === "days" && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label className="text-sm">Skip weekends</Label>
+                <p className="text-xs text-muted-foreground">
+                  Only count business days
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={config.skipWeekends ?? false}
+              onCheckedChange={(checked) => 
+                onChange({ ...config, skipWeekends: checked })
+              }
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
