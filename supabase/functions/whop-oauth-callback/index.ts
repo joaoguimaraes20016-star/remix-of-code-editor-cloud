@@ -107,90 +107,52 @@ Deno.serve(async (req) => {
       return Response.redirect(redirectUrl, 302);
     }
 
+    // Retrieve the stored code_verifier for PKCE
+    const codeVerifier = storedConfig?.code_verifier as string | undefined;
+    if (!codeVerifier) {
+      console.error("[whop-oauth-callback] Missing code_verifier for PKCE");
+      const redirectUrl = buildRedirectUrl(callbackPage, {
+        error: "OAuth session expired or invalid",
+      });
+      return Response.redirect(redirectUrl, 302);
+    }
+
     // Exchange code for access token
     const clientId = Deno.env.get("WHOP_CLIENT_ID");
-    const clientSecret = Deno.env.get("WHOP_CLIENT_SECRET");
     const REDIRECT_URI = "https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/whop-oauth-callback";
 
-    if (!clientId || !clientSecret) {
-      console.error("[whop-oauth-callback] Missing Whop credentials");
+    if (!clientId) {
+      console.error("[whop-oauth-callback] Missing Whop client ID");
       const redirectUrl = buildRedirectUrl(callbackPage, {
         error: "Server configuration error",
       });
       return Response.redirect(redirectUrl, 302);
     }
 
-    // Token exchange with multiple auth methods and URLs
-    const tokenUrls = [
-      "https://api.whop.com/api/v5/oauth/token",
-      "https://api.whop.com/v5/oauth/token",
-    ];
-
-    const authMethods: Array<{ name: string; headers: Record<string, string>; body: string }> = [
-      {
-        name: "client_secret_basic",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
-        },
-        body: JSON.stringify({
-          grant_type: "authorization_code",
-          code,
-          redirect_uri: REDIRECT_URI,
-        }),
+    // Token exchange with PKCE - using correct endpoint and form-urlencoded
+    console.log(`[whop-oauth-callback] Exchanging code with PKCE for team ${teamId}`);
+    
+    const tokenResponse = await fetch("https://api.whop.com/oauth/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      {
-        name: "client_secret_post",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          grant_type: "authorization_code",
-          code,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: REDIRECT_URI,
-        }),
-      },
-    ];
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code: code,
+        redirect_uri: REDIRECT_URI,
+        client_id: clientId,
+        code_verifier: codeVerifier,
+      }).toString(),
+    });
 
-    let tokenResponse: Response | null = null;
-    let lastError = "";
+    console.log(`[whop-oauth-callback] Token response status: ${tokenResponse.status}`);
 
-    for (const url of tokenUrls) {
-      for (const method of authMethods) {
-        console.log(`[whop-oauth-callback] Trying ${method.name} at ${url}`);
-        
-        try {
-          const response = await fetch(url, {
-            method: "POST",
-            headers: method.headers,
-            body: method.body,
-          });
-
-          console.log(`[whop-oauth-callback] Response status: ${response.status}`);
-
-          if (response.ok) {
-            tokenResponse = response;
-            console.log(`[whop-oauth-callback] Success with ${method.name} at ${url}`);
-            break;
-          }
-
-          const errorBody = await response.text();
-          lastError = errorBody;
-          console.error(`[whop-oauth-callback] Failed with ${method.name} at ${url}: ${errorBody}`);
-        } catch (fetchError) {
-          lastError = String(fetchError);
-          console.error(`[whop-oauth-callback] Fetch error with ${method.name} at ${url}:`, fetchError);
-        }
-      }
-      if (tokenResponse?.ok) break;
-    }
-
-    if (!tokenResponse?.ok) {
-      console.error("[whop-oauth-callback] All token exchange methods failed. Last error:", lastError);
+    if (!tokenResponse.ok) {
+      const errorBody = await tokenResponse.text();
+      console.error("[whop-oauth-callback] Token exchange failed:", errorBody);
       const redirectUrl = buildRedirectUrl(callbackPage, {
-        error: `Token exchange failed: ${lastError.substring(0, 100)}`,
+        error: `Token exchange failed: ${errorBody.substring(0, 100)}`,
       });
       return Response.redirect(redirectUrl, 302);
     }
