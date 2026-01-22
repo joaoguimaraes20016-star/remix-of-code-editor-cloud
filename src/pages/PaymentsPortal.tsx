@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { ProcessorCard } from "@/components/payments/ProcessorCard";
 import { StripeConfig } from "@/components/StripeConfig";
+import { WhopConfig } from "@/components/payments/WhopConfig";
 import {
   Sheet,
   SheetContent,
@@ -29,7 +29,7 @@ const StripeLogo = () => (
   </svg>
 );
 
-// Whop Logo placeholder
+// Whop Logo
 const WhopLogo = () => (
   <span className="text-lg font-bold">W</span>
 );
@@ -54,7 +54,7 @@ const processors: PaymentProcessor[] = [
     description: "Memberships & digital products",
     gradient: "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900",
     logo: <WhopLogo />,
-    status: "coming_soon",
+    status: "available",
   },
   {
     id: "fanbasis",
@@ -67,11 +67,11 @@ const processors: PaymentProcessor[] = [
 ];
 
 // Loading HTML for the popup placeholder
-const POPUP_LOADING_HTML = `
+const POPUP_LOADING_HTML = (provider: string) => `
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Connecting to Stripe...</title>
+  <title>Connecting to ${provider}...</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
            display: flex; justify-content: center; align-items: center; 
@@ -88,7 +88,7 @@ const POPUP_LOADING_HTML = `
 <body>
   <div class="container">
     <div class="spinner"></div>
-    <h2>Connecting to Stripe</h2>
+    <h2>Connecting to ${provider}</h2>
     <p>Please wait...</p>
   </div>
 </body>
@@ -98,11 +98,15 @@ export default function PaymentsPortal() {
   const { teamId } = useParams<{ teamId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [stripeSheetOpen, setStripeSheetOpen] = useState(false);
+  const [whopSheetOpen, setWhopSheetOpen] = useState(false);
   const [stripeConnecting, setStripeConnecting] = useState(false);
+  const [whopConnecting, setWhopConnecting] = useState(false);
 
   // Refs for popup tracking
   const popupRef = useRef<Window | null>(null);
   const pollTimerRef = useRef<number | null>(null);
+
+  const queryClient = useQueryClient();
 
   // Query Stripe connection status
   const { data: stripeIntegration, refetch: refetchStripe } = useQuery({
@@ -120,11 +124,29 @@ export default function PaymentsPortal() {
     enabled: !!teamId,
   });
 
+  // Query Whop connection status
+  const { data: whopIntegration, refetch: refetchWhop } = useQuery({
+    queryKey: ["whop-integration", teamId],
+    queryFn: async () => {
+      if (!teamId) return null;
+      const { data } = await supabase
+        .from("team_integrations")
+        .select("*")
+        .eq("team_id", teamId)
+        .eq("integration_type", "whop")
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!teamId,
+  });
+
   const isStripeConnected = stripeIntegration?.is_connected;
   const stripeConfig = stripeIntegration?.config as Record<string, any> | null;
   const stripeAccountId = stripeConfig?.stripe_account_id;
 
-  const queryClient = useQueryClient();
+  const isWhopConnected = whopIntegration?.is_connected;
+  const whopConfig = whopIntegration?.config as Record<string, any> | null;
+  const whopCompanyId = whopConfig?.company_id || whopConfig?.company_name;
 
   // Handle postMessage from OAuth popup (primary method)
   useEffect(() => {
@@ -140,29 +162,53 @@ export default function PaymentsPortal() {
         console.log("[PaymentsPortal] Received stripe-oauth-error message:", event.data.error);
         toast.error(`Connection failed: ${event.data.error}`);
         setStripeConnecting(false);
+      } else if (event.data?.type === "whop-oauth-success") {
+        console.log("[PaymentsPortal] Received whop-oauth-success message");
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await queryClient.invalidateQueries({ queryKey: ["whop-integration", teamId] });
+        await refetchWhop();
+        toast.success("Whop connected successfully!");
+        setWhopConnecting(false);
+      } else if (event.data?.type === "whop-oauth-error") {
+        console.log("[PaymentsPortal] Received whop-oauth-error message:", event.data.error);
+        toast.error(`Connection failed: ${event.data.error}`);
+        setWhopConnecting(false);
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [teamId, queryClient, refetchStripe]);
+  }, [teamId, queryClient, refetchStripe, refetchWhop]);
 
   // Fallback: Handle OAuth redirect callback via URL params
   useEffect(() => {
     const stripeConnected = searchParams.get("stripe_connected");
     const stripeError = searchParams.get("stripe_error");
+    const whopConnected = searchParams.get("whop_connected");
+    const whopError = searchParams.get("whop_error");
 
-    if (stripeConnected === "success" || stripeError) {
+    if (stripeConnected === "success" || stripeError || whopConnected === "success" || whopError) {
       setSearchParams({}, { replace: true });
 
       if (stripeConnected === "success") {
         queryClient.invalidateQueries({ queryKey: ["stripe-integration", teamId] });
         refetchStripe();
         toast.success("Stripe connected successfully!");
+        setStripeConnecting(false);
       } else if (stripeError) {
         toast.error(`Connection failed: ${stripeError}`);
+        setStripeConnecting(false);
       }
-      setStripeConnecting(false);
+
+      if (whopConnected === "success") {
+        queryClient.invalidateQueries({ queryKey: ["whop-integration", teamId] });
+        refetchWhop();
+        toast.success("Whop connected successfully!");
+        setWhopConnecting(false);
+      } else if (whopError) {
+        toast.error(`Connection failed: ${whopError}`);
+        setWhopConnecting(false);
+      }
     }
   }, [searchParams]);
 
@@ -187,13 +233,18 @@ export default function PaymentsPortal() {
     }
     popupRef.current = null;
     setStripeConnecting(false);
+    setWhopConnecting(false);
     toast.info("Connection cancelled");
   }, []);
 
-  const handleStripeConnect = async () => {
+  const openOAuthPopup = async (provider: "stripe" | "whop") => {
     if (!teamId) return;
 
-    setStripeConnecting(true);
+    const setConnecting = provider === "stripe" ? setStripeConnecting : setWhopConnecting;
+    const functionName = provider === "stripe" ? "stripe-oauth-start" : "whop-oauth-start";
+    const displayName = provider === "stripe" ? "Stripe" : "Whop";
+
+    setConnecting(true);
 
     const width = 600;
     const height = 700;
@@ -202,25 +253,21 @@ export default function PaymentsPortal() {
 
     const popup = window.open(
       "about:blank",
-      "stripe-connect",
+      `${provider}-connect`,
       `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes`
     );
 
     if (!popup || popup.closed) {
-      toast.error("Popup blocked. Please allow popups or use the button below.", {
-        action: {
-          label: "Open in new tab",
-          onClick: () => handleStripeConnectNewTab(),
-        },
+      toast.error("Popup blocked. Please allow popups and try again.", {
         duration: 10000,
       });
-      setStripeConnecting(false);
+      setConnecting(false);
       return;
     }
 
     popupRef.current = popup;
     try {
-      popup.document.write(POPUP_LOADING_HTML);
+      popup.document.write(POPUP_LOADING_HTML(displayName));
       popup.document.close();
     } catch (e) {
       // Ignore
@@ -229,7 +276,7 @@ export default function PaymentsPortal() {
     try {
       const redirectUri = `${window.location.origin}/team/${teamId}/payments`;
 
-      const { data, error } = await supabase.functions.invoke("stripe-oauth-start", {
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { teamId, redirectUri },
       });
 
@@ -257,36 +304,13 @@ export default function PaymentsPortal() {
         throw new Error("No auth URL returned");
       }
     } catch (error) {
-      console.error("Stripe connect error:", error);
-      toast.error("Failed to start Stripe connection");
+      console.error(`${displayName} connect error:`, error);
+      toast.error(`Failed to start ${displayName} connection`);
       try {
         popup.close();
       } catch (e) {}
       popupRef.current = null;
-      setStripeConnecting(false);
-    }
-  };
-
-  const handleStripeConnectNewTab = async () => {
-    if (!teamId) return;
-
-    setStripeConnecting(true);
-    try {
-      const redirectUri = `${window.location.origin}/team/${teamId}/payments`;
-
-      const { data, error } = await supabase.functions.invoke("stripe-oauth-start", {
-        body: { teamId, redirectUri },
-      });
-
-      if (error) throw error;
-
-      if (data?.authUrl) {
-        window.location.href = data.authUrl;
-      }
-    } catch (error) {
-      console.error("Stripe connect error:", error);
-      toast.error("Failed to start Stripe connection");
-      setStripeConnecting(false);
+      setConnecting(false);
     }
   };
 
@@ -300,7 +324,13 @@ export default function PaymentsPortal() {
       if (isStripeConnected) {
         setStripeSheetOpen(true);
       } else {
-        handleStripeConnect();
+        openOAuthPopup("stripe");
+      }
+    } else if (processor.id === "whop") {
+      if (isWhopConnected) {
+        setWhopSheetOpen(true);
+      } else {
+        openOAuthPopup("whop");
       }
     }
   };
@@ -309,7 +339,26 @@ export default function PaymentsPortal() {
     if (processor.id === "stripe" && isStripeConnected) {
       return "connected";
     }
+    if (processor.id === "whop" && isWhopConnected) {
+      return "connected";
+    }
     return processor.status;
+  };
+
+  const getAccountInfo = (processor: PaymentProcessor): string | undefined => {
+    if (processor.id === "stripe" && isStripeConnected) {
+      return stripeAccountId;
+    }
+    if (processor.id === "whop" && isWhopConnected) {
+      return whopCompanyId;
+    }
+    return undefined;
+  };
+
+  const isProcessorConnecting = (processor: PaymentProcessor): boolean => {
+    if (processor.id === "stripe") return stripeConnecting;
+    if (processor.id === "whop") return whopConnecting;
+    return false;
   };
 
   return (
@@ -335,11 +384,11 @@ export default function PaymentsPortal() {
               logo={processor.logo}
               gradient={processor.gradient}
               status={status}
-              isConnecting={stripeConnecting && processor.id === "stripe"}
+              isConnecting={isProcessorConnecting(processor)}
               onConnect={() => handleProcessorClick(processor)}
               onManage={() => handleProcessorClick(processor)}
               onCancel={handleCancelConnect}
-              accountInfo={processor.id === "stripe" && isStripeConnected ? stripeAccountId : undefined}
+              accountInfo={getAccountInfo(processor)}
             />
           );
         })}
@@ -357,6 +406,24 @@ export default function PaymentsPortal() {
               onUpdate={() => {
                 refetchStripe();
                 setStripeSheetOpen(false);
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Whop Config Sheet */}
+      <Sheet open={whopSheetOpen} onOpenChange={setWhopSheetOpen}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle>Whop Connection</SheetTitle>
+          </SheetHeader>
+          {teamId && (
+            <WhopConfig
+              teamId={teamId}
+              onUpdate={() => {
+                refetchWhop();
+                setWhopSheetOpen(false);
               }}
             />
           )}
