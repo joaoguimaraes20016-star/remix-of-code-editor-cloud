@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -14,13 +14,13 @@ interface UseBillingSyncOptions {
 
 export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOptions) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isSyncing, setIsSyncing] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
   const hasHandledSuccessRef = useRef(false);
+  const hasStartedSyncRef = useRef(false);
   const maxPolls = 15;
   const setupStatus = searchParams.get("setup");
-
-  const isSyncing = setupStatus === "success" && !billing?.stripe_payment_method_id;
 
   const clearSetupParam = useCallback(() => {
     if (searchParams.has("setup")) {
@@ -38,19 +38,30 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
     pollCountRef.current = 0;
   }, []);
 
+  // Initialize sync state when setup=success is detected
+  useEffect(() => {
+    if (setupStatus === "success" && !hasStartedSyncRef.current && !hasHandledSuccessRef.current) {
+      hasStartedSyncRef.current = true;
+      setIsSyncing(true);
+    }
+  }, [setupStatus]);
+
+  // Handle successful sync or start polling
   useEffect(() => {
     // If setup=success and we already have a payment method, handle once
     if (setupStatus === "success" && billing?.stripe_payment_method_id && !hasHandledSuccessRef.current) {
       hasHandledSuccessRef.current = true;
+      setIsSyncing(false);
       toast.dismiss("billing-sync");
       toast.success("Payment method saved successfully!");
       stopPolling();
-      clearSetupParam();
+      // Delay URL cleanup to ensure state propagates
+      setTimeout(() => clearSetupParam(), 50);
       return;
     }
 
     // If setup=success but no payment method yet, start polling
-    if (setupStatus === "success" && !billing?.stripe_payment_method_id && !isLoading) {
+    if (setupStatus === "success" && !billing?.stripe_payment_method_id && !isLoading && hasStartedSyncRef.current) {
       if (pollIntervalRef.current) return;
 
       toast.loading("Finalizing payment method...", { id: "billing-sync" });
@@ -66,9 +77,10 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
 
         if (pollCountRef.current >= maxPolls) {
           stopPolling();
+          setIsSyncing(false);
           toast.dismiss("billing-sync");
           toast.error("Taking longer than expected. Please click 'Refresh Status'.");
-          clearSetupParam();
+          setTimeout(() => clearSetupParam(), 50);
         }
       }, 2000);
     }
