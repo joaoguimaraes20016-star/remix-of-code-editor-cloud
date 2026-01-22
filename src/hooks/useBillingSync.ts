@@ -15,16 +15,16 @@ interface UseBillingSyncOptions {
 export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOptions) {
   const location = useLocation();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncComplete, setSyncComplete] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
   const maxPolls = 15;
 
-  // Derived state
-  const searchParams = new URLSearchParams(location.search);
-  const setupStatus = searchParams.get("setup");
+  // Use window.location.search directly for real-time accuracy
+  const setupStatus = new URLSearchParams(window.location.search).get("setup");
   const hasPaymentMethod = !!billing?.stripe_payment_method_id;
 
-  // Cleanup function - uses window.history for URL changes
+  // Cleanup function
   const cleanupAndFinish = useCallback((showSuccess = false) => {
     // Stop polling
     if (pollIntervalRef.current) {
@@ -35,6 +35,7 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
     
     // Update state
     setIsSyncing(false);
+    setSyncComplete(true);
     
     // Handle toasts
     toast.dismiss("billing-sync");
@@ -51,27 +52,30 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
     }
   }, []);
 
-  // MAIN EFFECT - deterministic state machine with clear priority
+  // MAIN EFFECT
   useEffect(() => {
-    // PRIORITY 1: Handle cancelled - show error and cleanup
+    // EARLY EXIT: If sync already completed, do nothing
+    if (syncComplete) {
+      return;
+    }
+
+    // PRIORITY 1: Handle cancelled
     if (setupStatus === "cancelled") {
       toast.error("Card setup was cancelled");
       cleanupAndFinish();
       return;
     }
 
-    // PRIORITY 2: SUCCESS STATE - payment method exists with setup=success
-    // This is the key fix: check this regardless of isSyncing state!
+    // PRIORITY 2: SUCCESS - payment method exists with setup=success
     if (setupStatus === "success" && hasPaymentMethod) {
       console.log("[BillingSync] Success: payment method found, cleaning up");
       cleanupAndFinish(true);
       return;
     }
 
-    // PRIORITY 3: No setup param - ensure no stale sync state
+    // PRIORITY 3: No setup param - nothing to do
     if (!setupStatus) {
       if (isSyncing) {
-        console.log("[BillingSync] Cleaning up stale sync state");
         setIsSyncing(false);
         toast.dismiss("billing-sync");
         if (pollIntervalRef.current) {
@@ -82,7 +86,7 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
       return;
     }
 
-    // PRIORITY 4: Setup success but still loading - show toast, wait for data
+    // PRIORITY 4: Setup success but still loading
     if (setupStatus === "success" && isLoading) {
       if (!isSyncing) {
         toast.loading("Finalizing payment method...", { id: "billing-sync" });
@@ -101,13 +105,11 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
         pollCountRef.current = 0;
         pollIntervalRef.current = setInterval(async () => {
           pollCountRef.current++;
-
           try {
             await refetch();
           } catch (error) {
             console.error("[BillingSync] Refetch error:", error);
           }
-
           if (pollCountRef.current >= maxPolls) {
             toast.error("Taking longer than expected. Please refresh the page.");
             cleanupAndFinish();
@@ -115,7 +117,12 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
         }, 2000);
       }
     }
-  }, [setupStatus, hasPaymentMethod, isLoading, isSyncing, refetch, cleanupAndFinish]);
+  }, [setupStatus, hasPaymentMethod, isLoading, isSyncing, syncComplete, refetch, cleanupAndFinish]);
+
+  // Reset syncComplete when location pathname changes (new navigation)
+  useEffect(() => {
+    setSyncComplete(false);
+  }, [location.pathname]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -127,5 +134,5 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
     };
   }, []);
 
-  return { isSyncing };
+  return { isSyncing: isSyncing && !syncComplete };
 }
