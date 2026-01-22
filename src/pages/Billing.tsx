@@ -54,87 +54,84 @@ export default function Billing() {
     isLoading,
   });
 
-  if (isLoading || isSyncing) {
-    return (
-      <div className="p-6 space-y-6">
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Skeleton className="h-48" />
-          <Skeleton className="h-48" />
-          <Skeleton className="h-48" />
-        </div>
-        {isSyncing && (
-          <p className="text-sm text-muted-foreground text-center">
-            Finalizing your payment method...
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="p-6 space-y-6 max-w-6xl">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Billing</h1>
-          <p className="text-muted-foreground">
-            Manage your wallet balance, payment methods, and auto-recharge settings
-          </p>
-        </div>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Failed to load billing</AlertTitle>
-          <AlertDescription className="space-y-3">
-            <p>We couldn't load billing information for this team.</p>
-            <details className="text-xs">
-              <summary className="cursor-pointer">Technical details</summary>
-              <pre className="mt-2 whitespace-pre-wrap">
-                {error instanceof Error ? error.message : "Unknown error"}
-              </pre>
-            </details>
-            <Button onClick={() => refetch()} variant="outline" size="sm">
-              Try Again
-            </Button>
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
+  // Always render the same root container to prevent React removeChild errors
   return (
     <div className="p-6 space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Billing</h1>
-        <p className="text-muted-foreground">
-          Manage your wallet balance, payment methods, and auto-recharge settings
-        </p>
-      </div>
+      {(isLoading || isSyncing) ? (
+        <>
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton className="h-48" />
+            <Skeleton className="h-48" />
+            <Skeleton className="h-48" />
+          </div>
+          {isSyncing && (
+            <p className="text-sm text-muted-foreground text-center">
+              Finalizing your payment method...
+            </p>
+          )}
+        </>
+      ) : isError ? (
+        <>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Billing</h1>
+            <p className="text-muted-foreground">
+              Manage your wallet balance, payment methods, and auto-recharge settings
+            </p>
+          </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Failed to load billing</AlertTitle>
+            <AlertDescription className="space-y-3">
+              <p>We couldn't load billing information for this team.</p>
+              <details className="text-xs">
+                <summary className="cursor-pointer">Technical details</summary>
+                <pre className="mt-2 whitespace-pre-wrap">
+                  {error instanceof Error ? error.message : "Unknown error"}
+                </pre>
+              </details>
+              <Button onClick={() => refetch()} variant="outline" size="sm">
+                Try Again
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </>
+      ) : (
+        <>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Billing</h1>
+            <p className="text-muted-foreground">
+              Manage your wallet balance, payment methods, and auto-recharge settings
+            </p>
+          </div>
 
-      {/* Hero Cards - 3 column layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <WalletCard 
-          teamId={teamId!} 
-          billing={billing} 
-          onUpdate={refetch} 
-        />
-        <PaymentMethodCard 
-          teamId={teamId!} 
-          billing={billing} 
-          onUpdate={refetch} 
-        />
-        <AutoRechargeSettings 
-          teamId={teamId!} 
-          billing={billing} 
-          onUpdate={refetch} 
-        />
-      </div>
+          {/* Hero Cards - 3 column layout */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <WalletCard 
+              teamId={teamId!} 
+              billing={billing} 
+              onUpdate={refetch} 
+            />
+            <PaymentMethodCard 
+              teamId={teamId!} 
+              billing={billing} 
+              onUpdate={refetch} 
+            />
+            <AutoRechargeSettings 
+              teamId={teamId!} 
+              billing={billing} 
+              onUpdate={refetch} 
+            />
+          </div>
 
-      <PricingTable pricing={pricing || []} />
+          <PricingTable pricing={pricing || []} />
 
-      <TransactionHistory teamId={teamId!} />
+          <TransactionHistory teamId={teamId!} />
+        </>
+      )}
     </div>
   );
 }
