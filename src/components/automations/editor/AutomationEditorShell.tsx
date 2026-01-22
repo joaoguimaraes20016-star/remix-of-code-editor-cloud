@@ -19,6 +19,7 @@ import { AutomationCanvasArea } from "./AutomationCanvasArea";
 import { NodeInspector } from "./NodeInspector";
 import { PublishStatusBadge } from "./PublishStatusBadge";
 import { VersionHistoryPanel } from "./VersionHistoryPanel";
+import { TestPanel } from "./TestPanel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import "./automation-editor.css";
@@ -77,6 +78,7 @@ export function AutomationEditorShell({
   const [rightCollapsed, setRightCollapsed] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showTestPanel, setShowTestPanel] = useState(false);
 
   const handleTriggerChange = useCallback(
     (trigger: AutomationTrigger) => {
@@ -227,6 +229,7 @@ export function AutomationEditorShell({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowTestPanel(true)}
             className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
           >
             <Play className="h-4 w-4 mr-2" />
@@ -363,6 +366,15 @@ export function AutomationEditorShell({
         onOpenChange={setShowTemplates}
         teamId={teamId}
         onSelectTemplate={handleTemplateSelect}
+      />
+
+      {/* Test Panel */}
+      <TestPanel
+        open={showTestPanel}
+        onOpenChange={setShowTestPanel}
+        automationId={automationId || null}
+        teamId={teamId}
+        definition={definition}
       />
     </div>
   );
