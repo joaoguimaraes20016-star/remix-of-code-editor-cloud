@@ -15,7 +15,7 @@ interface UseBillingSyncOptions {
 export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOptions) {
   const location = useLocation();
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncComplete, setSyncComplete] = useState(false);
+  const syncCompleteRef = useRef(false); // Use ref instead of state to avoid HMR issues
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
   const maxPolls = 15;
@@ -35,7 +35,7 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
     
     // Update state
     setIsSyncing(false);
-    setSyncComplete(true);
+    syncCompleteRef.current = true;
     
     // Handle toasts
     toast.dismiss("billing-sync");
@@ -52,10 +52,15 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
     }
   }, []);
 
+  // Reset syncComplete when location pathname changes (new navigation)
+  useEffect(() => {
+    syncCompleteRef.current = false;
+  }, [location.pathname]);
+
   // MAIN EFFECT
   useEffect(() => {
     // EARLY EXIT: If sync already completed, do nothing
-    if (syncComplete) {
+    if (syncCompleteRef.current) {
       return;
     }
 
@@ -117,12 +122,7 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
         }, 2000);
       }
     }
-  }, [setupStatus, hasPaymentMethod, isLoading, isSyncing, syncComplete, refetch, cleanupAndFinish]);
-
-  // Reset syncComplete when location pathname changes (new navigation)
-  useEffect(() => {
-    setSyncComplete(false);
-  }, [location.pathname]);
+  }, [setupStatus, hasPaymentMethod, isLoading, isSyncing, refetch, cleanupAndFinish]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -134,5 +134,5 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
     };
   }, []);
 
-  return { isSyncing: isSyncing && !syncComplete };
+  return { isSyncing };
 }
