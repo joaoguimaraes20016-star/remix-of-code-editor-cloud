@@ -12,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import whopLogo from "@/assets/integrations/whop-logo.png";
 
 interface PaymentProcessor {
   id: string;
@@ -29,11 +30,9 @@ const StripeLogo = () => (
   </svg>
 );
 
-// Whop Logo - stylized wave/check mark
+// Whop Logo - official brand image
 const WhopLogo = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 12c0 0 3-6 6-6s3 6 6 6 3-6 6-6" />
-  </svg>
+  <img src={whopLogo} alt="Whop" className="w-6 h-6 object-contain" />
 );
 
 // Fanbasis Logo placeholder
