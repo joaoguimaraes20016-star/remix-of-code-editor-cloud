@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set("state", encodedState);
     authUrl.searchParams.set("code_challenge", codeChallenge);
     authUrl.searchParams.set("code_challenge_method", "S256");
+    authUrl.searchParams.set("prompt", "consent");
 
     console.log(`[whop-oauth-start] Generated auth URL for team ${teamId}`);
 
