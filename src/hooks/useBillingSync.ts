@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 interface TeamBilling {
@@ -14,7 +14,6 @@ interface UseBillingSyncOptions {
 
 export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOptions) {
   const location = useLocation();
-  const navigate = useNavigate();
   const [isSyncing, setIsSyncing] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
@@ -25,7 +24,7 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
   const setupStatus = searchParams.get("setup");
   const hasPaymentMethod = !!billing?.stripe_payment_method_id;
 
-  // Cleanup function - uses React Router navigate for proper state sync
+  // Cleanup function - uses window.history for URL changes
   const cleanupAndFinish = useCallback((showSuccess = false) => {
     // Stop polling
     if (pollIntervalRef.current) {
@@ -43,11 +42,14 @@ export function useBillingSync({ billing, refetch, isLoading }: UseBillingSyncOp
       toast.success("Payment method saved successfully!");
     }
     
-    // Clean URL using React Router navigate (keeps internal state in sync)
-    if (location.search.includes("setup=")) {
-      navigate(location.pathname, { replace: true });
+    // Clean URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("setup")) {
+      params.delete("setup");
+      const newPath = window.location.pathname + (params.toString() ? `?${params}` : "");
+      window.history.replaceState(null, "", newPath);
     }
-  }, [location.pathname, location.search, navigate]);
+  }, []);
 
   // MAIN EFFECT - deterministic state machine with clear priority
   useEffect(() => {
