@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Stripe Connection</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f9fafb; }
+    .container { text-align: center; padding: 2rem; max-width: 400px; }
+    .icon { width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .success .icon { background: #059669; }
+    .error .icon { background: #dc2626; }
+    .icon svg { width: 32px; height: 32px; color: white; }
+    h1 { margin: 0 0 0.5rem; font-size: 1.5rem; }
+    .success h1 { color: #059669; }
+    .error h1 { color: #dc2626; }
+    p { color: #6b7280; margin: 0; }
+    .error-detail { font-size: 0.875rem; color: #9ca3af; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <div class="container" id="content">
+    <p>Processing...</p>
+  </div>
+  <script>
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var success = params.get('success') === 'true';
+      var accountId = params.get('account_id');
+      var error = params.get('error');
+      
+      var container = document.getElementById('content');
+      
+      if (success) {
+        container.className = 'container success';
+        container.innerHTML = 
+          '<div class="icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>' +
+          '<h1>Stripe Connected!</h1>' +
+          '<p>This window will close automatically...</p>';
+        
+        if (window.opener) {
+          window.opener.postMessage({ type: 'stripe-oauth-success', accountId: accountId }, '*');
+        }
+      } else {
+        container.className = 'container error';
+        container.innerHTML = 
+          '<div class="icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg></div>' +
+          '<h1>Connection Failed</h1>' +
+          '<p class="error-detail">' + (error || 'An error occurred') + '</p>' +
+          '<p style="margin-top: 0.5rem;">This window will close automatically...</p>';
+        
+        if (window.opener) {
+          window.opener.postMessage({ type: 'stripe-oauth-error', error: error }, '*');
+        }
+      }
+      
+      setTimeout(function() { window.close(); }, 1500);
+    })();
+  </script>
+</body>
+</html>
