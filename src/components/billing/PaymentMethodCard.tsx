@@ -34,6 +34,7 @@ export function PaymentMethodCard({ teamId, billing, onUpdate }: PaymentMethodCa
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error("Please sign in to continue");
+        setIsLoading(false);
         return;
       }
 
@@ -48,15 +49,23 @@ export function PaymentMethodCard({ teamId, billing, onUpdate }: PaymentMethodCa
         throw new Error(response.error.message || "Failed to setup billing");
       }
 
-      if (response.data?.checkoutUrl) {
-        window.location.href = response.data.checkoutUrl;
+      const checkoutUrl = response.data?.checkoutUrl;
+      if (checkoutUrl) {
+        console.log("[Billing] Redirecting to Stripe:", checkoutUrl);
+        // Use window.open as primary method for better reliability
+        const newWindow = window.open(checkoutUrl, "_blank");
+        if (!newWindow) {
+          // Fallback to direct redirect if popup blocked
+          window.location.href = checkoutUrl;
+        }
+        setIsLoading(false);
+        return;
       } else {
         throw new Error("No checkout URL returned");
       }
     } catch (error) {
       console.error("Setup billing error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to setup billing");
-    } finally {
       setIsLoading(false);
     }
   };

@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Mail, MessageSquare, Phone, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -36,7 +37,8 @@ const channelInfo: Record<string, { icon: typeof Mail; label: string; gradient: 
   },
 };
 
-export function PricingTable({ pricing }: PricingTableProps) {
+export const PricingTable = forwardRef<HTMLDivElement, PricingTableProps>(
+  function PricingTable({ pricing }, ref) {
   const formatPrice = (cents: number) => {
     // Convert cents to dollars
     const dollars = cents / 100;
@@ -63,7 +65,7 @@ export function PricingTable({ pricing }: PricingTableProps) {
   if (!pricing.length) return null;
 
   return (
-    <Card className="border-border/50">
+    <Card ref={ref} className="border-border/50">
       <CardHeader className="pb-4">
         <CardTitle>Channel Pricing</CardTitle>
       </CardHeader>
@@ -107,4 +109,4 @@ export function PricingTable({ pricing }: PricingTableProps) {
       </CardContent>
     </Card>
   );
-}
+});
