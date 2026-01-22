@@ -26,6 +26,7 @@ import PublicFunnel from "./pages/PublicFunnel";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Marketing from "./pages/Marketing";
 import Billing from "./pages/Billing";
+import PaymentsPortal from "./pages/PaymentsPortal";
 import { EditorShell } from "./builder_v2/EditorShell";
 import { RuntimePage } from "./builder_v2/runtime";
 // Flow-canvas builder (new version)
@@ -136,6 +137,7 @@ const App = () => (
               <Route path="funnels" element={<FunnelList />} />
               <Route path="schedule" element={<Schedule />} />
               <Route path="chat" element={<TeamChatPage />} />
+              <Route path="payments" element={<PaymentsPortal />} />
               <Route path="apps" element={<AppsPortal />} />
               <Route path="profile" element={<PersonalSettings />} />
               <Route path="workflows" element={<Workflows />} />

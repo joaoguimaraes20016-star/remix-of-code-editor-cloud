@@ -12,7 +12,6 @@ import { Check, ExternalLink } from "lucide-react";
 // Import logos
 import calendlyLogo from "@/assets/integrations/calendly.svg";
 import ghlLogo from "@/assets/integrations/ghl.svg";
-import stripeLogo from "@/assets/integrations/stripe.svg";
 import zoomLogo from "@/assets/integrations/zoom.svg";
 import googleMeetLogo from "@/assets/integrations/google-meet.svg";
 import zapierLogo from "@/assets/integrations/zapier.svg";
@@ -24,7 +23,7 @@ interface App {
   name: string;
   description: string;
   logo: string;
-  category: "scheduling" | "crm" | "payments" | "communication" | "analytics";
+  category: "scheduling" | "crm" | "communication" | "analytics";
   status: "connected" | "available" | "coming_soon";
   configurable?: boolean;
 }
@@ -72,14 +71,6 @@ const apps: App[] = [
     status: "coming_soon",
   },
   {
-    id: "stripe",
-    name: "Stripe",
-    description: "Payment processing",
-    logo: stripeLogo,
-    category: "payments",
-    status: "coming_soon",
-  },
-  {
     id: "zoom",
     name: "Zoom",
     description: "Video conferencing",
@@ -100,7 +91,6 @@ const apps: App[] = [
 const categoryLabels: Record<string, string> = {
   scheduling: "Scheduling",
   crm: "CRM & Marketing",
-  payments: "Payments",
   communication: "Communication",
   analytics: "Analytics",
 };
