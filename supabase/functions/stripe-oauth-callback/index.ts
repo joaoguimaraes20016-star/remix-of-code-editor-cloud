@@ -190,6 +190,25 @@ async function registerWebhookEndpoint(
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const webhookUrl = `${supabaseUrl}/functions/v1/stripe-user-webhook?teamId=${teamId}`;
 
+    // Build webhook body with proper array format for enabled_events
+    const webhookBody = new URLSearchParams();
+    webhookBody.append("url", webhookUrl);
+    
+    const events = [
+      "payment_intent.succeeded",
+      "payment_intent.payment_failed",
+      "invoice.paid",
+      "invoice.payment_failed",
+      "customer.subscription.created",
+      "customer.subscription.updated",
+      "customer.subscription.deleted",
+      "charge.refunded"
+    ];
+    
+    events.forEach(event => {
+      webhookBody.append("enabled_events[]", event);
+    });
+
     // Create webhook endpoint using the connected account's credentials
     const response = await fetch("https://api.stripe.com/v1/webhook_endpoints", {
       method: "POST",
@@ -198,17 +217,7 @@ async function registerWebhookEndpoint(
         "Content-Type": "application/x-www-form-urlencoded",
         "Stripe-Account": stripeAccountId,
       },
-      body: new URLSearchParams({
-        url: webhookUrl,
-        "enabled_events[]": "payment_intent.succeeded",
-        "enabled_events[1]": "payment_intent.payment_failed",
-        "enabled_events[2]": "invoice.paid",
-        "enabled_events[3]": "invoice.payment_failed",
-        "enabled_events[4]": "customer.subscription.created",
-        "enabled_events[5]": "customer.subscription.updated",
-        "enabled_events[6]": "customer.subscription.deleted",
-        "enabled_events[7]": "charge.refunded",
-      }),
+      body: webhookBody,
     });
 
     const webhookData = await response.json();

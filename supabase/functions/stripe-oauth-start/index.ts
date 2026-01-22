@@ -111,6 +111,8 @@ Deno.serve(async (req) => {
     stripeAuthUrl.searchParams.set("scope", "read_write");
     stripeAuthUrl.searchParams.set("state", `${teamId}:${state}`);
     stripeAuthUrl.searchParams.set("redirect_uri", callbackUrl);
+    // Show login page first for users with existing Stripe accounts
+    stripeAuthUrl.searchParams.set("stripe_landing", "login");
     
     // Optional: prefill email if we have it
     const { data: team } = await supabase
