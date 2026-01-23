@@ -5,6 +5,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Feature-specific scopes
+const FEATURE_SCOPES: Record<string, string[]> = {
+  sheets: ["https://www.googleapis.com/auth/spreadsheets"],
+  calendar: ["https://www.googleapis.com/auth/calendar"],
+  drive: ["https://www.googleapis.com/auth/drive.readonly"],
+};
+
+// Base identity scopes (always included on first connection)
+const IDENTITY_SCOPES = [
+  "openid",
+  "https://www.googleapis.com/auth/userinfo.email",
+  "https://www.googleapis.com/auth/userinfo.profile",
+];
+
+type GoogleFeature = keyof typeof FEATURE_SCOPES;
+
 function getSupabaseClient() {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -41,11 +57,18 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { teamId } = await req.json();
+    const { teamId, feature } = await req.json();
     
     if (!teamId) {
       return new Response(
         JSON.stringify({ error: "Missing teamId" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!feature || !FEATURE_SCOPES[feature as GoogleFeature]) {
+      return new Response(
+        JSON.stringify({ error: "Invalid feature. Must be one of: sheets, calendar, drive" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -65,6 +88,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if there's already a unified Google integration
+    const { data: existingIntegration } = await supabase
+      .from("team_integrations")
+      .select("config")
+      .eq("team_id", teamId)
+      .eq("integration_type", "google")
+      .single();
+
+    const hasExistingConnection = !!existingIntegration?.config?.refresh_token;
+
     // Get Google OAuth credentials from environment
     const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -80,18 +113,31 @@ Deno.serve(async (req) => {
     const stateToken = crypto.randomUUID();
     const redirectUri = `${supabaseUrl}/functions/v1/google-oauth-callback`;
 
+    // Determine scopes to request
+    // If first connection: identity + feature scopes
+    // If incremental: just the new feature scope (Google will merge with existing)
+    const featureScopes = FEATURE_SCOPES[feature as GoogleFeature];
+    const requestedScopes = hasExistingConnection
+      ? featureScopes
+      : [...IDENTITY_SCOPES, ...featureScopes];
+
     // Store state token in team_integrations for verification during callback
+    const integrationConfig = {
+      state_token: stateToken,
+      redirect_uri: redirectUri,
+      initiated_by: user.id,
+      initiated_at: new Date().toISOString(),
+      requested_feature: feature,
+      // Preserve existing config if incremental auth
+      ...(hasExistingConnection ? existingIntegration.config : {}),
+    };
+
     const { error: storeError } = await supabase
       .from("team_integrations")
       .upsert({
         team_id: teamId,
-        integration_type: "google_sheets",
-        config: {
-          state_token: stateToken,
-          redirect_uri: redirectUri,
-          initiated_by: user.id,
-          initiated_at: new Date().toISOString(),
-        },
+        integration_type: "google",
+        config: integrationConfig,
       }, {
         onConflict: "team_id,integration_type",
       });
@@ -105,25 +151,25 @@ Deno.serve(async (req) => {
     }
 
     // Build Google OAuth URL
-    // Scopes: spreadsheets for read/write, userinfo.email for identifying the account
-    const scopes = [
-      "https://www.googleapis.com/auth/spreadsheets",
-      "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile",
-    ].join(" ");
-
-    const state = JSON.stringify({ teamId, stateToken });
+    const state = JSON.stringify({ teamId, stateToken, feature });
 
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("scope", scopes);
+    authUrl.searchParams.set("scope", requestedScopes.join(" "));
     authUrl.searchParams.set("access_type", "offline");
-    authUrl.searchParams.set("prompt", "consent"); // Force consent to get refresh token
+    
+    // Include granted scopes for incremental auth
+    if (hasExistingConnection) {
+      authUrl.searchParams.set("include_granted_scopes", "true");
+    }
+    
+    // Force consent to get refresh token on first connection
+    authUrl.searchParams.set("prompt", "consent");
     authUrl.searchParams.set("state", btoa(state));
 
-    console.log(`[Google OAuth Start] Generated auth URL for team ${teamId}`);
+    console.log(`[Google Connect Feature] Generated auth URL for team ${teamId}, feature: ${feature}, incremental: ${hasExistingConnection}`);
 
     return new Response(
       JSON.stringify({ authUrl: authUrl.toString() }),
@@ -131,7 +177,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Error in google-oauth-start:", error);
+    console.error("Error in google-connect-feature:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

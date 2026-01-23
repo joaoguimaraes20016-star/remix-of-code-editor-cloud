@@ -69,18 +69,21 @@ async function ensureValidToken(
         const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
         // Update stored token
+        // Preserve enabled_features and other config when updating token
+        const updatedConfig = {
+          ...integration,
+          access_token: tokens.access_token,
+          expires_at: newExpiresAt,
+          last_refreshed: new Date().toISOString(),
+        };
+
         await supabase
           .from("team_integrations")
           .update({
-            config: {
-              ...integration,
-              access_token: tokens.access_token,
-              expires_at: newExpiresAt,
-              last_refreshed: new Date().toISOString(),
-            },
+            config: updatedConfig,
           })
           .eq("team_id", teamId)
-          .eq("integration_type", "google_sheets");
+          .eq("integration_type", "google");
 
         console.log("[Google Sheets] Token refreshed successfully");
         return { access_token: tokens.access_token };
@@ -109,15 +112,15 @@ function columnToIndex(column: string): number {
  * Execute Google Sheets append row action
  */
 export async function executeGoogleSheets(
-  config: GoogleSheetsConfig,
+  actionConfig: GoogleSheetsConfig,
   context: AutomationContext,
   supabase: SupabaseClient
 ): Promise<Partial<StepExecutionLog>> {
   const startTime = Date.now();
 
   try {
-    // Validate config
-    if (!config.spreadsheetId) {
+    // Validate actionConfig
+    if (!actionConfig.spreadsheetId) {
       return {
         status: "error",
         error: "Spreadsheet ID is required",
@@ -125,7 +128,7 @@ export async function executeGoogleSheets(
       };
     }
 
-    if (!config.values || config.values.length === 0) {
+    if (!actionConfig.values || actionConfig.values.length === 0) {
       return {
         status: "error",
         error: "At least one column value is required",
@@ -133,18 +136,28 @@ export async function executeGoogleSheets(
       };
     }
 
-    // Get team's Google integration
+    // Get team's unified Google integration
     const { data: integrationData, error: fetchError } = await supabase
       .from("team_integrations")
       .select("config")
       .eq("team_id", context.teamId)
-      .eq("integration_type", "google_sheets")
+      .eq("integration_type", "google")
       .single();
 
     if (fetchError || !integrationData) {
       return {
         status: "error",
-        error: "Google Sheets not connected. Please connect in Apps settings.",
+        error: "Google not connected. Please connect Google Sheets in Apps settings.",
+        durationMs: Date.now() - startTime,
+      };
+    }
+
+    // Check if Sheets feature is enabled
+    const integrationConfig = integrationData.config as Record<string, any>;
+    if (!integrationConfig.enabled_features?.sheets) {
+      return {
+        status: "error",
+        error: "Google Sheets not enabled. Please enable it in Apps settings.",
         durationMs: Date.now() - startTime,
       };
     }
@@ -174,7 +187,7 @@ export async function executeGoogleSheets(
     let maxColumnIndex = 0;
     const columnData: { index: number; value: string }[] = [];
 
-    for (const mapping of config.values) {
+    for (const mapping of actionConfig.values) {
       if (!mapping.column || !mapping.value) continue;
       
       const columnIndex = columnToIndex(mapping.column.toUpperCase());
@@ -192,15 +205,15 @@ export async function executeGoogleSheets(
     }
 
     // Build range (e.g., "Sheet1!A:Z")
-    const sheetName = config.sheetName || "Sheet1";
+    const sheetName = actionConfig.sheetName || "Sheet1";
     const lastColumn = String.fromCharCode(65 + maxColumnIndex); // A, B, C...
     const range = `${sheetName}!A:${lastColumn}`;
 
-    console.log(`[Google Sheets] Appending row to ${config.spreadsheetId}, range: ${range}`);
+    console.log(`[Google Sheets] Appending row to ${actionConfig.spreadsheetId}, range: ${range}`);
     console.log(`[Google Sheets] Row data:`, rowData);
 
     // Call Google Sheets API
-    const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}/values/${encodeURIComponent(range)}:append`;
+    const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(actionConfig.spreadsheetId)}/values/${encodeURIComponent(range)}:append`;
     
     const response = await fetch(`${apiUrl}?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, {
       method: "POST",
@@ -246,7 +259,7 @@ export async function executeGoogleSheets(
       status: "success",
       durationMs: Date.now() - startTime,
       output: {
-        spreadsheetId: config.spreadsheetId,
+        spreadsheetId: actionConfig.spreadsheetId,
         sheetName,
         updatedRange: result.updates?.updatedRange,
         updatedRows: result.updates?.updatedRows,
