@@ -2819,6 +2819,7 @@ export type Database = {
       }
       team_integrations: {
         Row: {
+          access_token: string | null
           config: Json | null
           connected_at: string | null
           created_at: string
@@ -2827,10 +2828,13 @@ export type Database = {
           is_connected: boolean | null
           oauth_state: string | null
           redirect_uri: string | null
+          refresh_token: string | null
           team_id: string
+          token_expires_at: string | null
           updated_at: string
         }
         Insert: {
+          access_token?: string | null
           config?: Json | null
           connected_at?: string | null
           created_at?: string
@@ -2839,10 +2843,13 @@ export type Database = {
           is_connected?: boolean | null
           oauth_state?: string | null
           redirect_uri?: string | null
+          refresh_token?: string | null
           team_id: string
+          token_expires_at?: string | null
           updated_at?: string
         }
         Update: {
+          access_token?: string | null
           config?: Json | null
           connected_at?: string | null
           created_at?: string
@@ -2851,7 +2858,9 @@ export type Database = {
           is_connected?: boolean | null
           oauth_state?: string | null
           redirect_uri?: string | null
+          refresh_token?: string | null
           team_id?: string
+          token_expires_at?: string | null
           updated_at?: string
         }
         Relationships: [
