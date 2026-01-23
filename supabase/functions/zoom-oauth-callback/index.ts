@@ -92,10 +92,10 @@ Deno.serve(async (req) => {
 
     console.log(`[Zoom OAuth Callback] Processing callback for team ${teamId}`);
 
-    // Verify state token
+    // Verify state token from config JSONB
     const { data: integration, error: integrationError } = await supabase
       .from("team_integrations")
-      .select("oauth_state, config")
+      .select("config")
       .eq("team_id", teamId)
       .eq("integration_type", "zoom")
       .single();
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       return Response.redirect(redirectUrl, 302);
     }
 
-    if (integration.oauth_state !== stateToken) {
+    if (integration.config?.oauth_state !== stateToken) {
       console.error("[Zoom OAuth Callback] State mismatch");
       const redirectUrl = await buildCallbackRedirect(teamId, false, { error: "state_mismatch" });
       return Response.redirect(redirectUrl, 302);
@@ -162,20 +162,22 @@ Deno.serve(async (req) => {
     // Calculate token expiry
     const expiresAt = new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString();
 
-    // Store tokens and user info
+    // Store tokens and user info in config JSONB
     const { error: updateError } = await supabase
       .from("team_integrations")
       .update({
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        token_expires_at: expiresAt,
-        oauth_state: null, // Clear the state
+        is_connected: true,
+        connected_at: new Date().toISOString(),
         config: {
-          ...integration.config,
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          token_expires_at: expiresAt,
           email: userInfo.email,
           name: `${userInfo.first_name} ${userInfo.last_name}`.trim(),
           scope: tokenData.scope,
           connected_at: new Date().toISOString(),
+          oauth_state: null,
+          redirect_uri: null,
         },
         updated_at: new Date().toISOString(),
       })

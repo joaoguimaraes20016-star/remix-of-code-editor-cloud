@@ -88,14 +88,14 @@ Deno.serve(async (req) => {
     const stateToken = crypto.randomUUID();
     const state = `${teamId}:${stateToken}`;
 
-    // Store state and redirect URI in team_integrations
+    // Store state and redirect URI in team_integrations config JSONB
     const { error: upsertError } = await supabase
       .from("team_integrations")
       .upsert({
         team_id: teamId,
         integration_type: "zoom",
-        oauth_state: stateToken,
         config: {
+          oauth_state: stateToken,
           redirect_uri: redirectUri,
           initiated_by: userId,
           initiated_at: new Date().toISOString(),
