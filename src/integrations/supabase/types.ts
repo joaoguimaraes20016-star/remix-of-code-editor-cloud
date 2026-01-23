@@ -3438,7 +3438,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      team_integrations_public: {
+        Row: {
+          config_safe: Json | null
+          connected_at: string | null
+          created_at: string | null
+          id: string | null
+          integration_type: string | null
+          is_connected: boolean | null
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          config_safe?: never
+          connected_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          integration_type?: string | null
+          is_connected?: boolean | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          config_safe?: never
+          connected_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          integration_type?: string | null
+          is_connected?: boolean | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_integrations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_credits: {
