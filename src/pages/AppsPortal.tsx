@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
 import { ZoomConfig } from "@/components/ZoomConfig";
+import { TypeformConfig } from "@/components/TypeformConfig";
 import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { GoogleAccountBanner } from "@/components/GoogleAccountBanner";
 import { Check, ExternalLink, Lock } from "lucide-react";
@@ -20,6 +21,7 @@ import zoomLogo from "@/assets/integrations/zoom.svg";
 import zapierLogo from "@/assets/integrations/zapier.svg";
 import slackLogo from "@/assets/integrations/slack.svg";
 import hubspotLogo from "@/assets/integrations/hubspot.svg";
+import typeformLogo from "@/assets/integrations/typeform.svg";
 
 // Google features - excludes signin (handled by banner)
 const GOOGLE_FEATURES: Array<{
@@ -130,6 +132,15 @@ const apps: App[] = [
     status: "coming_soon",
   },
   {
+    id: "typeform",
+    name: "Typeform",
+    description: "Form responses and lead capture",
+    logo: typeformLogo,
+    category: "analytics",
+    status: "available",
+    configurable: true,
+  },
+  {
     id: "zoom",
     name: "Zoom",
     description: "Video conferencing",
@@ -152,6 +163,7 @@ export default function AppsPortal() {
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
+  const [typeformDialogOpen, setTypeformDialogOpen] = useState(false);
 
   // Fetch team integrations from secure view (tokens masked)
   const { data: teamData, refetch } = useQuery({
@@ -179,12 +191,14 @@ export default function AppsPortal() {
       
       const slackIntegration = integrations.find(i => i.integration_type === "slack");
       const zoomIntegration = integrations.find(i => i.integration_type === "zoom");
+      const typeformIntegration = integrations.find(i => i.integration_type === "typeform");
       const googleIntegration = integrations.find(i => i.integration_type === "google");
       
       return {
         ...teamsResult.data,
         slack_connected: slackIntegration?.is_connected ?? false,
         zoom_connected: zoomIntegration?.is_connected ?? false,
+        typeform_connected: typeformIntegration?.is_connected ?? false,
         google_connected: googleIntegration?.is_connected ?? false,
         google_email: (googleIntegration?.config_safe as any)?.email ?? null,
         google_connected_at: (googleIntegration?.config_safe as any)?.connected_at ?? null,
@@ -209,6 +223,9 @@ export default function AppsPortal() {
     if (app.id === "zoom" && teamData?.zoom_connected) {
       return "connected";
     }
+    if (app.id === "typeform" && teamData?.typeform_connected) {
+      return "connected";
+    }
     return app.status;
   };
 
@@ -221,6 +238,9 @@ export default function AppsPortal() {
     }
     if (app.id === "zoom" && app.configurable) {
       setZoomDialogOpen(true);
+    }
+    if (app.id === "typeform" && app.configurable) {
+      setTypeformDialogOpen(true);
     }
   };
 
@@ -390,6 +410,19 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <ZoomConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Typeform Config Dialog */}
+        <Dialog open={typeformDialogOpen} onOpenChange={setTypeformDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={typeformLogo} alt="Typeform" className="h-6 w-6" />
+                Typeform Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <TypeformConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typeform Connection</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #262627 0%, #1a1a1b 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1rem;
+    }
+    .success-icon {
+      color: #10b981;
+    }
+    .error-icon {
+      color: #ef4444;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      color: #9ca3af;
+      margin-bottom: 1.5rem;
+    }
+    .closing {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success') === 'true';
+    const error = params.get('error');
+    const email = params.get('email');
+
+    const content = document.getElementById('content');
+
+    if (success) {
+      content.innerHTML = `
+        <svg class="icon success-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h1>Connected Successfully!</h1>
+        <p>${email ? `Connected as ${email}` : 'Your Typeform account is now connected.'}</p>
+        <p class="closing">This window will close automatically...</p>
+      `;
+
+      // Send success message to parent window
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'typeform-oauth-callback',
+          success: true,
+          email: email
+        }, '*');
+      }
+
+      // Close after a short delay
+      setTimeout(() => window.close(), 2000);
+    } else {
+      content.innerHTML = `
+        <svg class="icon error-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h1>Connection Failed</h1>
+        <p>${error || 'An error occurred while connecting to Typeform.'}</p>
+        <p class="closing">This window will close automatically...</p>
+      `;
+
+      // Send error message to parent window
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'typeform-oauth-callback',
+          success: false,
+          error: error || 'Connection failed'
+        }, '*');
+      }
+
+      // Close after a short delay
+      setTimeout(() => window.close(), 3000);
+    }
+  </script>
+</body>
+</html>
