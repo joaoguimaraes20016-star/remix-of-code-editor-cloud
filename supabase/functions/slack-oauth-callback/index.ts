@@ -30,26 +30,60 @@ Deno.serve(async (req) => {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
-
-  // Get the static callback page URL
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  // Use the same pattern as Stripe - redirect to a static HTML page
-  const callbackPageUrl = supabaseUrl.replace(".supabase.co", ".supabase.co").replace(
-    "https://",
-    "https://"
-  ) + "/storage/v1/object/public/static/slack-callback.html";
 
-  // For now, use a simple redirect approach with query params
-  // The frontend will handle the postMessage
-  
+  // Helper function to build redirect URL
+  // Uses the stored redirect_uri (app domain) for proper postMessage communication
+  const buildCallbackRedirect = (baseUri: string | null | undefined, params: Record<string, string>): string => {
+    // If we have the app's redirect_uri, use it (this is the user's app domain)
+    if (baseUri) {
+      const callbackUrl = baseUri.endsWith('/') ? `${baseUri}slack-callback.html` : `${baseUri}/slack-callback.html`;
+      return buildRedirectUrl(callbackUrl, params);
+    }
+    // Fallback: redirect to a generic error page or use project URL
+    // This should rarely happen as redirect_uri is set during OAuth start
+    console.warn("[Slack OAuth] No redirect_uri available, using fallback");
+    return buildRedirectUrl("https://code-hug-hub.lovable.app/slack-callback.html", params);
+  };
+
+  // Variable to store redirect_uri once we fetch it
+  let appRedirectUri: string | null = null;
+
   try {
+    // For early errors (before we can fetch redirect_uri from DB), we need to parse state
+    // to get teamId so we can look up the redirect_uri
+    let teamId: string | null = null;
+    let stateToken: string | null = null;
+
+    if (state) {
+      const parts = state.split(":");
+      teamId = parts[0] || null;
+      stateToken = parts[1] || null;
+    }
+
+    // Try to fetch redirect_uri early if we have teamId
+    if (teamId) {
+      const supabase = getSupabaseClient();
+      const { data: integration } = await supabase
+        .from("team_integrations")
+        .select("config")
+        .eq("team_id", teamId)
+        .eq("integration_type", "slack")
+        .single();
+      
+      if (integration?.config?.redirect_uri) {
+        appRedirectUri = integration.config.redirect_uri;
+        console.log("[Slack OAuth] Retrieved redirect_uri:", appRedirectUri);
+      }
+    }
+
     // Handle OAuth errors from Slack
     if (error) {
       console.error("[Slack OAuth] Error from Slack:", error);
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/slack-callback.html?success=false&error=${encodeURIComponent(error)}`,
+          Location: buildCallbackRedirect(appRedirectUri, { success: "false", error }),
         },
       });
     }
@@ -59,26 +93,24 @@ Deno.serve(async (req) => {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/slack-callback.html?success=false&error=${encodeURIComponent("Missing authorization code")}`,
+          Location: buildCallbackRedirect(appRedirectUri, { success: "false", error: "Missing authorization code" }),
         },
       });
     }
 
-    // Parse state: format is "teamId:stateToken"
-    const [teamId, stateToken] = state.split(":");
     if (!teamId || !stateToken) {
       console.error("[Slack OAuth] Invalid state format");
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/slack-callback.html?success=false&error=${encodeURIComponent("Invalid state")}`,
+          Location: buildCallbackRedirect(appRedirectUri, { success: "false", error: "Invalid state" }),
         },
       });
     }
 
     const supabase = getSupabaseClient();
 
-    // Verify state token
+    // Verify state token (re-fetch to ensure we have latest data)
     const { data: integration, error: fetchError } = await supabase
       .from("team_integrations")
       .select("config")
@@ -91,20 +123,25 @@ Deno.serve(async (req) => {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/slack-callback.html?success=false&error=${encodeURIComponent("OAuth session not found")}`,
+          Location: buildCallbackRedirect(appRedirectUri, { success: "false", error: "OAuth session not found" }),
         },
       });
     }
 
     const storedState = integration.config?.oauth_state;
     const redirectUri = integration.config?.redirect_uri;
+    
+    // Update appRedirectUri if we got it from the fresh fetch
+    if (redirectUri) {
+      appRedirectUri = redirectUri;
+    }
 
     if (storedState !== stateToken) {
-      console.error("[Slack OAuth] State mismatch");
+      console.error("[Slack OAuth] State mismatch. Expected:", storedState, "Got:", stateToken);
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/slack-callback.html?success=false&error=${encodeURIComponent("State mismatch - possible CSRF attack")}`,
+          Location: buildCallbackRedirect(appRedirectUri, { success: "false", error: "State mismatch - possible CSRF attack" }),
         },
       });
     }
@@ -118,12 +155,13 @@ Deno.serve(async (req) => {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/slack-callback.html?success=false&error=${encodeURIComponent("Slack integration not configured")}`,
+          Location: buildCallbackRedirect(appRedirectUri, { success: "false", error: "Slack integration not configured" }),
         },
       });
     }
 
     const callbackUrl = `${supabaseUrl}/functions/v1/slack-oauth-callback`;
+    console.log("[Slack OAuth] Exchanging code for token with callback URL:", callbackUrl);
 
     const tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
       method: "POST",
@@ -139,13 +177,14 @@ Deno.serve(async (req) => {
     });
 
     const tokenData = await tokenResponse.json();
+    console.log("[Slack OAuth] Token response ok:", tokenData.ok, "error:", tokenData.error);
 
     if (!tokenData.ok) {
       console.error("[Slack OAuth] Token exchange failed:", tokenData.error);
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/slack-callback.html?success=false&error=${encodeURIComponent(tokenData.error || "Token exchange failed")}`,
+          Location: buildCallbackRedirect(appRedirectUri, { success: "false", error: tokenData.error || "Token exchange failed" }),
         },
       });
     }
@@ -175,18 +214,19 @@ Deno.serve(async (req) => {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/slack-callback.html?success=false&error=${encodeURIComponent("Failed to save connection")}`,
+          Location: buildCallbackRedirect(appRedirectUri, { success: "false", error: "Failed to save connection" }),
         },
       });
     }
 
     console.log(`[Slack OAuth] Successfully connected workspace "${tokenData.team?.name}" for team ${teamId}`);
+    console.log("[Slack OAuth] Redirecting to:", buildCallbackRedirect(appRedirectUri, { success: "true", workspace: tokenData.team?.name || "Slack" }));
 
     // Redirect to callback page with success
     return new Response(null, {
       status: 302,
       headers: {
-        Location: `/slack-callback.html?success=true&workspace=${encodeURIComponent(tokenData.team?.name || "Slack")}`,
+        Location: buildCallbackRedirect(appRedirectUri, { success: "true", workspace: tokenData.team?.name || "Slack" }),
       },
     });
 
@@ -195,7 +235,7 @@ Deno.serve(async (req) => {
     return new Response(null, {
       status: 302,
       headers: {
-        Location: `/slack-callback.html?success=false&error=${encodeURIComponent("Unexpected error occurred")}`,
+        Location: buildCallbackRedirect(appRedirectUri, { success: "false", error: "Unexpected error occurred" }),
       },
     });
   }
