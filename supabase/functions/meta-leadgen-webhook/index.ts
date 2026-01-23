@@ -36,13 +36,19 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
     
+    console.log("[Meta Webhook] Verification request received", {
+      mode,
+      hasToken: !!token,
+      hasChallenge: !!challenge,
+    });
+    
     const verifyToken = Deno.env.get("META_WEBHOOK_VERIFY_TOKEN");
     
     if (mode === "subscribe" && token === verifyToken) {
-      console.log("Webhook verified successfully");
+      console.log("[Meta Webhook] Verification successful");
       return new Response(challenge, { status: 200 });
     } else {
-      console.error("Webhook verification failed");
+      console.error("[Meta Webhook] Verification failed - token mismatch");
       return new Response("Forbidden", { status: 403 });
     }
   }
@@ -78,7 +84,12 @@ Deno.serve(async (req) => {
               const formId = change.value.form_id;
               const createdTime = change.value.created_time;
               
-              console.log(`New lead: ${leadgenId} from form ${formId} on page ${pageId}`);
+              console.log("[Meta Webhook] Lead received", {
+                leadgenId,
+                formId,
+                pageId,
+                createdTime,
+              });
               
               // Find team by page subscription
               const { data: integrations, error: integrationError } = await supabase
@@ -230,10 +241,45 @@ Deno.serve(async (req) => {
                 }
               }
               
-              console.log(`Processed lead ${leadgenId} for team ${teamId}, contact: ${contactId}`);
+              console.log("[Meta Webhook] Contact saved", {
+                leadgenId,
+                teamId,
+                contactId,
+                email: leadInfo.email,
+              });
               
-              // TODO: Trigger automation for facebook_lead_form trigger type
-              // This can be implemented later when automation trigger system is expanded
+              // Trigger automation for facebook_lead_form trigger type
+              if (contactId) {
+                try {
+                  await supabase.rpc("fire_automation_event", {
+                    p_team_id: teamId,
+                    p_trigger_type: "facebook_lead_form",
+                    p_event_payload: {
+                      teamId,
+                      lead: {
+                        id: contactId,
+                        email: leadInfo.email || null,
+                        phone: leadInfo.phone || null,
+                        name: leadInfo.name || null,
+                        first_name: leadInfo.first_name || null,
+                        last_name: leadInfo.last_name || null,
+                        source: "facebook_lead_form",
+                      },
+                      meta: {
+                        facebook_lead_id: leadgenId,
+                        facebook_form_id: formId,
+                        facebook_page_id: pageId,
+                        lead_created_at: new Date(createdTime * 1000).toISOString(),
+                      },
+                    },
+                    p_event_id: `fb_lead:${leadgenId}`,
+                  });
+                  console.log("[Meta Webhook] Automation triggered", { leadgenId, teamId });
+                } catch (automationError) {
+                  console.error("[Meta Webhook] Failed to trigger automation:", automationError);
+                  // Don't fail the webhook - lead is already saved
+                }
+              }
             }
           }
         }
