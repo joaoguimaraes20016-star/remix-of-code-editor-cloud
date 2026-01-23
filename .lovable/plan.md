@@ -1,167 +1,146 @@
 
-# Full OAuth Integration: Meta & Google Ads
+# Meta & Google Ads OAuth Integration
 
 ## Overview
-
-Implement full OAuth integrations for Meta (Facebook Business) and Google Ads, following the same proven pattern as Zoom, Discord, and Fathom. Users will be able to connect their Meta Business and Google Ads accounts to enable:
-
-- **Meta**: Lead Forms, Conversions API (CAPI), Custom Audiences
-- **Google Ads**: Conversion tracking, Offline conversions, Customer Match
+Implementing full OAuth integrations for Meta (Facebook Business) and Google Ads. Based on your input:
+- **Meta**: New OAuth flow using the secrets you just added
+- **Google Ads**: Extend existing Google OAuth to add `ads` scope (no new secrets needed)
 
 ---
 
-## Required Secrets
+## Secrets Status
 
-Before implementation, you'll need to add these API credentials:
+| Secret | Status |
+|--------|--------|
+| `META_CLIENT_ID` | Added by you |
+| `META_CLIENT_SECRET` | Added by you |
+| `GOOGLE_CLIENT_ID` | Already exists |
+| `GOOGLE_CLIENT_SECRET` | Already exists |
 
-| Secret | Provider | Where to Get |
-|--------|----------|--------------|
-| `META_CLIENT_ID` | Meta | [Meta Developers](https://developers.facebook.com/) → Create App |
-| `META_CLIENT_SECRET` | Meta | Same as above |
-| `GOOGLE_ADS_CLIENT_ID` | Google | [Google Cloud Console](https://console.cloud.google.com/) |
-| `GOOGLE_ADS_CLIENT_SECRET` | Google | Same as above |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | Google | [Google Ads API Center](https://ads.google.com/aw/apicenter) |
+Google Ads uses the same Google OAuth credentials. You enabled the Google Ads API scope on your existing Google Cloud project.
 
 ---
 
 ## Files to Create
 
-### 1. Edge Functions (8 files)
+### Edge Functions (4 files)
 
 | File | Purpose |
 |------|---------|
 | `supabase/functions/meta-oauth-start/index.ts` | Initiates Meta OAuth flow |
 | `supabase/functions/meta-oauth-callback/index.ts` | Handles Meta callback, stores tokens |
-| `supabase/functions/google-ads-oauth-start/index.ts` | Initiates Google Ads OAuth flow |
-| `supabase/functions/google-ads-oauth-callback/index.ts` | Handles Google Ads callback |
+| `supabase/functions/google-ads-oauth-start/index.ts` | Initiates Google Ads OAuth (uses existing Google credentials + ads scope) |
+| `supabase/functions/google-ads-oauth-callback/index.ts` | Handles Google Ads callback, stores tokens |
 
-### 2. Callback HTML Pages (2 files)
+### Callback HTML Pages (2 files)
 
 | File | Purpose |
 |------|---------|
 | `public/meta-callback.html` | Popup callback for Meta OAuth |
 | `public/google-ads-callback.html` | Popup callback for Google Ads OAuth |
 
-### 3. Config Components (2 files)
+### Config Components (2 files)
 
 | File | Purpose |
 |------|---------|
 | `src/components/MetaConfig.tsx` | Meta connection/disconnect UI |
 | `src/components/GoogleAdsConfig.tsx` | Google Ads connection/disconnect UI |
 
-### 4. Assets (2 files)
+### Assets (1 file)
 
-| File | Purpose |
-|------|---------|
-| `src/assets/integrations/meta.svg` | Already exists ✓ |
-| `src/assets/integrations/google-ads.svg` | Google Ads logo |
-
-### 5. Updates to Existing Files
-
-| File | Changes |
-|------|---------|
-| `src/pages/AppsPortal.tsx` | Add Meta & Google Ads to apps array, dialogs, handlers |
-| `supabase/config.toml` | Add function configurations |
+| File | Status |
+|------|--------|
+| `src/assets/integrations/meta.svg` | Already exists |
+| `src/assets/integrations/google-ads.svg` | Need to create |
 
 ---
 
-## Technical Implementation Details
+## Files to Update
 
-### Meta OAuth Scopes
-```text
-ads_management
-ads_read
-business_management
-leads_retrieval
-pages_read_engagement
+### 1. `supabase/config.toml`
+Add configurations for the 4 new edge functions:
+```toml
+[functions.meta-oauth-start]
+verify_jwt = false
+
+[functions.meta-oauth-callback]
+verify_jwt = false
+
+[functions.google-ads-oauth-start]
+verify_jwt = false
+
+[functions.google-ads-oauth-callback]
+verify_jwt = false
 ```
 
-### Google Ads OAuth Scopes
-```text
-https://www.googleapis.com/auth/adwords
-```
+### 2. `src/pages/AppsPortal.tsx`
+- Import `MetaConfig` and `GoogleAdsConfig` components
+- Import `meta.svg` and `google-ads.svg` logos
+- Add Meta and Google Ads to the `apps` array in a new "Ads & Marketing" category
+- Add dialog states for both integrations
+- Add status checks for `meta_connected` and `google_ads_connected`
+- Add dialog components for configuration
 
-### OAuth Flow Pattern (Same as Zoom/Discord)
+---
 
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                         OAuth Flow Diagram                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  User clicks "Connect"                                              │
-│         │                                                           │
-│         ▼                                                           │
-│  ┌──────────────────┐                                              │
-│  │  Frontend opens  │                                              │
-│  │  popup window    │                                              │
-│  └────────┬─────────┘                                              │
-│           │                                                         │
-│           ▼                                                         │
-│  ┌──────────────────────┐      ┌─────────────────────┐             │
-│  │  *-oauth-start       │─────►│  Meta/Google OAuth  │             │
-│  │  Edge Function       │      │  Consent Screen     │             │
-│  └──────────────────────┘      └──────────┬──────────┘             │
-│                                           │                         │
-│                                           ▼                         │
-│                                ┌─────────────────────┐             │
-│                                │  *-oauth-callback   │             │
-│                                │  Edge Function      │             │
-│                                └──────────┬──────────┘             │
-│                                           │                         │
-│           ┌───────────────────────────────┘                         │
-│           ▼                                                         │
-│  ┌──────────────────┐                                              │
-│  │  Callback HTML   │──► postMessage to parent window              │
-│  │  (popup closes)  │                                              │
-│  └────────┬─────────┘                                              │
-│           │                                                         │
-│           ▼                                                         │
-│  ┌──────────────────┐                                              │
-│  │  Frontend refetch│──► Shows "Connected" state                   │
-│  │  integrations    │                                              │
-│  └──────────────────┘                                              │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
+## Technical Details
+
+### Meta OAuth Configuration
+- **Scopes**: `ads_management`, `ads_read`, `business_management`, `leads_retrieval`, `pages_read_engagement`
+- **Token URL**: `https://graph.facebook.com/v18.0/oauth/access_token`
+- **User Info**: `https://graph.facebook.com/me`
+- **State**: Base64 encoded `teamId:stateToken`
+
+### Google Ads OAuth Configuration
+- **Scopes**: `https://www.googleapis.com/auth/adwords` (plus identity scopes)
+- **Token URL**: `https://oauth2.googleapis.com/token`
+- Uses same `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+- Stored as separate `integration_type: "google_ads"` (not merged with existing Google integration)
 
 ### Database Storage
-
-Tokens stored in `team_integrations` table:
-- `integration_type`: "meta" or "google_ads"
-- `is_connected`: true when authenticated
-- `config`: JSONB with tokens, user info, scope
+Both integrations store in `team_integrations` table:
+```text
+integration_type: "meta" or "google_ads"
+is_connected: true
+config: {
+  access_token: "...",
+  refresh_token: "...",
+  token_expires_at: "...",
+  email: "...",
+  name: "...",
+  connected_at: "...",
+  scope: "..."
+}
+```
 
 ### Security View
-
-The `team_integrations_public` view masks tokens, exposing only:
+The `team_integrations_public` view automatically masks tokens, exposing:
 - `is_connected`
-- `config_safe` (email, name, connected_at)
+- `config_safe` (email, name, connected_at only)
 
 ---
 
 ## Implementation Order
 
-1. **Create secrets** (META_CLIENT_ID, META_CLIENT_SECRET, GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, GOOGLE_ADS_DEVELOPER_TOKEN)
-2. **Create edge functions** (meta-oauth-start/callback, google-ads-oauth-start/callback)
-3. **Update config.toml** with new function configurations
-4. **Create callback HTML pages** (meta-callback.html, google-ads-callback.html)
-5. **Create config components** (MetaConfig.tsx, GoogleAdsConfig.tsx)
-6. **Create Google Ads logo** asset
-7. **Update AppsPortal.tsx** to add both integrations
+1. Create Meta edge functions (meta-oauth-start, meta-oauth-callback)
+2. Create Google Ads edge functions (google-ads-oauth-start, google-ads-oauth-callback)
+3. Update config.toml with new function configurations
+4. Create callback HTML pages (meta-callback.html, google-ads-callback.html)
+5. Create config components (MetaConfig.tsx, GoogleAdsConfig.tsx)
+6. Create Google Ads logo asset
+7. Update AppsPortal.tsx to add both integrations
 
 ---
 
-## Usage After Connection
+## After Connection
 
-Once connected, these integrations enable:
-
-### Meta
+### Meta enables:
 - Automation action: "Meta Conversion" (CAPI events)
 - Trigger: "Facebook Lead Form" (lead capture)
 - Future: Custom Audiences sync
 
-### Google Ads
-- Automation action: "Google Conversion" (offline conversions)
+### Google Ads enables:
+- Automation action: "Google Ads Conversion" (offline conversions)
 - Trigger: "Google Lead Form" (lead capture)
 - Future: Customer Match sync
 
@@ -169,9 +148,13 @@ Once connected, these integrations enable:
 
 ## Summary
 
-| Integration | Edge Functions | Config Component | Callback Page | Logo |
-|-------------|----------------|------------------|---------------|------|
-| Meta | 2 (start + callback) | MetaConfig.tsx | meta-callback.html | ✓ exists |
-| Google Ads | 2 (start + callback) | GoogleAdsConfig.tsx | google-ads-callback.html | Create new |
+| Component | Meta | Google Ads |
+|-----------|------|------------|
+| OAuth Start | `meta-oauth-start` | `google-ads-oauth-start` |
+| OAuth Callback | `meta-oauth-callback` | `google-ads-oauth-callback` |
+| Config Component | `MetaConfig.tsx` | `GoogleAdsConfig.tsx` |
+| Callback Page | `meta-callback.html` | `google-ads-callback.html` |
+| Logo | `meta.svg` (exists) | `google-ads.svg` (create) |
+| Secrets | `META_CLIENT_ID`, `META_CLIENT_SECRET` | Uses existing Google |
 
-**Total new files**: 8 (4 edge functions, 2 components, 1 asset, 2 callbacks) + 2 file updates
+**Total**: 9 new files + 2 file updates
