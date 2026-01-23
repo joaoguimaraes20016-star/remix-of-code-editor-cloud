@@ -116,12 +116,16 @@ Deno.serve(async (req) => {
     const redirectUri = `${supabaseUrl}/functions/v1/google-oauth-callback`;
 
     // Determine scopes to request
-    // If first connection: identity + feature scopes
-    // If incremental: just the new feature scope (Google will merge with existing)
     const featureScopes = FEATURE_SCOPES[feature as GoogleFeature];
-    const requestedScopes = hasExistingConnection
-      ? featureScopes
-      : [...IDENTITY_SCOPES, ...featureScopes];
+    
+    // For "signin" feature, always include identity scopes (master connection)
+    // For other features during incremental auth, just request the new scope
+    // For first connection with a feature, include identity + feature scopes
+    const requestedScopes = feature === "signin"
+      ? IDENTITY_SCOPES  // Always request identity scopes for master sign-in
+      : hasExistingConnection
+        ? featureScopes  // Incremental: just the new feature scope
+        : [...IDENTITY_SCOPES, ...featureScopes];  // First connection: identity + feature
 
     // Store state token in team_integrations for verification during callback
     const integrationConfig = {
@@ -162,13 +166,11 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set("scope", requestedScopes.join(" "));
     authUrl.searchParams.set("access_type", "offline");
     
-    // Include granted scopes for incremental auth
-    if (hasExistingConnection) {
-      authUrl.searchParams.set("include_granted_scopes", "true");
-    }
+    // Always include granted scopes for proper incremental auth
+    authUrl.searchParams.set("include_granted_scopes", "true");
     
-    // Force consent to get refresh token on first connection
-    authUrl.searchParams.set("prompt", "consent");
+    // For signin, let user select account; for features, request consent for new scopes
+    authUrl.searchParams.set("prompt", feature === "signin" ? "select_account" : "consent");
     authUrl.searchParams.set("state", btoa(state));
 
     console.log(`[Google Connect Feature] Generated auth URL for team ${teamId}, feature: ${feature}, incremental: ${hasExistingConnection}`);
