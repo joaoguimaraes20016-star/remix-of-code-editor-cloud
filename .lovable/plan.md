@@ -1,234 +1,298 @@
 
-# Fix Meta Integration: Remove OAuth Scope Abuse
+# Complete Meta Lead Ads End-to-End Integration
 
-## Problem
+## Current State Analysis
 
-The current `meta-connect-feature` edge function builds an OAuth URL with business scopes (`ads_read`, `leads_retrieval`, `pages_read_engagement`, etc.) at line 153. This causes **"Invalid Scopes"** errors because:
+The codebase already has significant Meta integration infrastructure. After thorough review, here's what exists:
 
-1. Meta does **NOT** allow business/marketing scopes in OAuth popups for apps that haven't passed App Review
-2. Unlike Google, Meta does not support `include_granted_scopes=true` for incremental permissions
-3. Only `public_profile` and `email` are valid for unapproved apps
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `meta-leadgen-webhook` | ✅ Exists | Handles verification + lead ingestion |
+| `meta-subscribe-page` | ✅ Exists | Subscribes pages to leadgen webhooks |
+| `meta-enable-feature` | ✅ Exists | Server-side permission check |
+| `meta-fetch-assets` | ✅ Exists | Fetches pages/lead forms |
+| `MetaAssetSelector` | ✅ Exists | Page/form selection UI |
+| `MetaConfig` | ✅ Exists | Main config UI |
+| `META_WEBHOOK_VERIFY_TOKEN` | ❌ Missing | Required secret |
+| Automation trigger | ❌ TODO | Not wired up |
+| Config cleanup | ❌ Needed | Dead entries |
 
-## Solution Architecture
+---
 
-Replace OAuth-based feature enablement with a **server-side permission check** flow:
+## What Needs To Be Done
 
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    Current (Broken) vs. Fixed Flow                       │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  CURRENT (Broken):                                                      │
-│  User clicks "Enable Lead Forms"                                        │
-│       │                                                                 │
-│       ▼                                                                 │
-│  Opens OAuth popup with scope=leads_retrieval,pages_read_engagement     │
-│       │                                                                 │
-│       ▼                                                                 │
-│  ❌ Meta returns "Invalid Scopes" error                                 │
-│                                                                         │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  FIXED (No OAuth popup for features):                                   │
-│  User clicks "Enable Lead Forms"                                        │
-│       │                                                                 │
-│       ▼                                                                 │
-│  Frontend calls meta-enable-feature edge function                       │
-│       │                                                                 │
-│       ▼                                                                 │
-│  Edge function checks GET /me/permissions                               │
-│       │                                                                 │
-│       ├─── Has required scopes ──► Enable feature, return success       │
-│       │                                                                 │
-│       └─── Missing scopes ──► Return { needsAppReview: true }           │
-│                │                                                        │
-│                ▼                                                        │
-│  Frontend shows "Requires Meta App Review" message                      │
-│  (Works for admins/testers in Dev Mode)                                 │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+### 1. Add Missing Secret: META_WEBHOOK_VERIFY_TOKEN
+
+Add the `META_WEBHOOK_VERIFY_TOKEN` secret to Supabase Edge Function secrets.
+
+**Value**: Generate a random secure string (e.g., `stackit_meta_webhook_2024_secure`)
+
+**Where to add**: Supabase Dashboard → Settings → Edge Functions → Secrets
+
+---
+
+### 2. Update config.toml
+
+**Remove dead entries:**
+- `meta-connect-feature` (obsolete OAuth flow)
+- `meta-feature-callback` (obsolete callback)
+
+**Add missing entry:**
+- `meta-enable-feature` (new permission-check flow)
+
+```toml
+# Remove these lines:
+[functions.meta-connect-feature]
+verify_jwt = false
+
+[functions.meta-feature-callback]
+verify_jwt = false
+
+# Add this line:
+[functions.meta-enable-feature]
+verify_jwt = false
 ```
 
 ---
 
-## Files to Create
+### 3. Delete Obsolete Edge Functions
 
-### 1. `supabase/functions/meta-enable-feature/index.ts`
+Delete these folders entirely:
+- `supabase/functions/meta-connect-feature/`
+- `supabase/functions/meta-feature-callback/`
 
-New edge function that enables features WITHOUT OAuth:
+---
 
-**Logic:**
-1. Authenticate user, verify team membership
-2. Get stored Meta access token from `team_integrations`
-3. Call `GET /me/permissions` to get granted scopes
-4. Check if feature's required scopes are all present:
-   - `lead_forms`: `pages_show_list`, `pages_read_engagement`, `leads_retrieval`
-   - `ads_reporting`: `ads_read`
-   - `capi`: `ads_management`
-5. If all present → Update `config.enabled_features[feature] = true` → Return success
-6. If missing → Return `{ success: false, reason: "app_review_required", missingScopes: [...] }`
+### 4. Wire Up Automation Trigger in Webhook
+
+**File**: `supabase/functions/meta-leadgen-webhook/index.ts`
+
+Replace the TODO comment (line 235-236) with actual automation trigger call:
+
+```typescript
+// After creating/updating contact, trigger automation
+if (contactId) {
+  // Fire automation for facebook_lead_form trigger
+  try {
+    await supabase.rpc("fire_automation_event", {
+      p_team_id: teamId,
+      p_trigger_type: "facebook_lead_form",
+      p_event_payload: {
+        teamId,
+        lead: {
+          id: contactId,
+          email: leadInfo.email,
+          phone: leadInfo.phone,
+          name: leadInfo.name,
+          first_name: leadInfo.first_name,
+          last_name: leadInfo.last_name,
+          source: "facebook_lead_form",
+        },
+        meta: {
+          facebook_lead_id: leadgenId,
+          facebook_form_id: formId,
+          facebook_page_id: pageId,
+          form_name: formId, // Could be enhanced to get actual form name
+        },
+      },
+      p_event_id: `fb_lead:${leadgenId}`,
+    });
+    console.log(`Automation triggered for lead ${leadgenId}`);
+  } catch (automationError) {
+    console.error("Failed to trigger automation:", automationError);
+    // Don't fail the webhook - lead is already saved
+  }
+}
+```
+
+---
+
+### 5. Enhance Logging in Webhook
+
+Add structured logging for easier debugging:
+
+```typescript
+console.log("[Meta Webhook] Verification request received", {
+  mode: url.searchParams.get("hub.mode"),
+  hasChallenge: !!url.searchParams.get("hub.challenge"),
+});
+
+console.log("[Meta Webhook] Lead received", {
+  leadgenId,
+  formId,
+  pageId,
+  teamId: matchedIntegration?.team_id,
+});
+```
+
+---
+
+## Meta Developer Console Configuration
+
+### Webhook Setup
+
+1. Go to **Meta Developers Console** → Your App → **Webhooks**
+2. Click **Add Subscription** for **Page**
+3. Configure:
+
+| Field | Value |
+|-------|-------|
+| Callback URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/meta-leadgen-webhook` |
+| Verify Token | (Same value as `META_WEBHOOK_VERIFY_TOKEN` secret) |
+| Subscription Fields | `leadgen` |
+
+4. Click **Verify and Save**
+
+### Facebook Login Settings
+
+Ensure these OAuth Redirect URIs are configured:
+
+| URI | Purpose |
+|-----|---------|
+| `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/meta-oauth-callback` | Basic login callback |
+
+---
+
+## End-to-End Flow After Implementation
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     Complete Meta Lead Ads Flow                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. USER CONNECTS (Basic OAuth)                                             │
+│     ─────────────────────────────                                           │
+│     "Connect Facebook" button                                               │
+│          │                                                                  │
+│          ▼                                                                  │
+│     OAuth popup (public_profile, email only)                                │
+│          │                                                                  │
+│          ▼                                                                  │
+│     meta-oauth-callback stores token                                        │
+│          │                                                                  │
+│          ▼                                                                  │
+│     UI shows "Connected"                                                    │
+│                                                                             │
+│  2. USER ENABLES LEAD FORMS                                                 │
+│     ───────────────────────────                                             │
+│     Click "Enable" on Lead Forms card                                       │
+│          │                                                                  │
+│          ▼                                                                  │
+│     meta-enable-feature checks GET /me/permissions                          │
+│          │                                                                  │
+│          ├─── Has permissions → Enable feature                              │
+│          └─── Missing permissions → Show "App Review Required"              │
+│                                                                             │
+│  3. USER SELECTS PAGES/FORMS                                                │
+│     ────────────────────────────                                            │
+│     MetaAssetSelector shows list of Pages                                   │
+│          │                                                                  │
+│          ▼                                                                  │
+│     User clicks "Subscribe" on a Page                                       │
+│          │                                                                  │
+│          ▼                                                                  │
+│     meta-subscribe-page calls POST /{page_id}/subscribed_apps               │
+│          │                                                                  │
+│          ▼                                                                  │
+│     Page is now receiving leadgen webhooks                                  │
+│                                                                             │
+│  4. LEAD COMES IN VIA WEBHOOK                                               │
+│     ────────────────────────────                                            │
+│     User submits Facebook Lead Form                                         │
+│          │                                                                  │
+│          ▼                                                                  │
+│     Meta sends POST to meta-leadgen-webhook                                 │
+│          │                                                                  │
+│          ▼                                                                  │
+│     Webhook fetches full lead details from Meta API                         │
+│          │                                                                  │
+│          ▼                                                                  │
+│     Lead saved to contacts table                                            │
+│          │                                                                  │
+│          ▼                                                                  │
+│     fire_automation_event("facebook_lead_form", {...})                      │
+│          │                                                                  │
+│          ▼                                                                  │
+│     Automation workflows execute (emails, tags, tasks, etc.)                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Files to Modify
 
-### 2. `src/components/MetaConfig.tsx`
-
-**Changes:**
-- Remove popup logic from `handleEnableFeature()`
-- Create new function `enableFeatureDirectly()` that:
-  - Calls `meta-enable-feature` (no popup)
-  - If success: toast + refetch
-  - If `needsAppReview`: show warning UI
-- Add state for tracking App Review requirements per feature
-- Update feature card rendering to show "Requires App Review" badge when appropriate
-
-**New UI States:**
-
-| State | Display |
-|-------|---------|
-| Feature enabled | ✓ Enabled (green) |
-| Permissions available | [Enable] button |
-| Missing permissions | ⚠️ Requires App Review badge with info |
-
----
+| File | Action | Changes |
+|------|--------|---------|
+| `supabase/config.toml` | Modify | Remove dead entries, add meta-enable-feature |
+| `supabase/functions/meta-leadgen-webhook/index.ts` | Modify | Add automation trigger, enhance logging |
 
 ## Files to Delete
 
-### 3. `supabase/functions/meta-connect-feature/index.ts`
-
-This function tries to add invalid scopes to OAuth. Delete entirely.
-
-### 4. `supabase/functions/meta-feature-callback/index.ts`
-
-Not needed since we're not using OAuth for features. Delete.
-
-### 5. `public/meta-feature-callback.html`
-
-Callback page no longer needed. Delete.
+| File | Reason |
+|------|--------|
+| `supabase/functions/meta-connect-feature/` | Replaced by meta-enable-feature |
+| `supabase/functions/meta-feature-callback/` | No longer needed (no OAuth for features) |
 
 ---
 
-## Config Updates
+## Secret to Add
 
-### 6. `supabase/config.toml`
+| Name | Purpose |
+|------|---------|
+| `META_WEBHOOK_VERIFY_TOKEN` | Verify incoming Meta webhooks |
 
-- Remove `meta-connect-feature` entry
-- Remove `meta-feature-callback` entry  
-- Add `meta-enable-feature` entry
-
----
-
-## Implementation Details
-
-### meta-enable-feature Edge Function
-
-```text
-Endpoint: POST /functions/v1/meta-enable-feature
-Body: { teamId, feature }
-
-Response (success):
-{
-  "success": true,
-  "feature": "lead_forms"
-}
-
-Response (missing permissions):
-{
-  "success": false,
-  "reason": "app_review_required",
-  "missingScopes": ["leads_retrieval", "pages_read_engagement"],
-  "message": "This feature requires Meta App Review approval. Available for app admins/testers in Dev Mode."
-}
-
-Response (already enabled):
-{
-  "success": true,
-  "alreadyEnabled": true
-}
-```
-
-### Frontend App Review UI
-
-When a feature requires App Review, display inline message:
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ Lead Forms                                                  │
-│ Sync Facebook Lead Ads directly to your CRM                 │
-│                                                             │
-│ ⚠️ Requires Meta App Review                                 │
-│                                                             │
-│ Until approved, this feature is only available for:         │
-│ • App administrators                                        │
-│ • App developers                                            │
-│ • Test users added in Meta Developer Console                │
-│                                                             │
-│ Missing: leads_retrieval, pages_read_engagement             │
-│                                                             │
-│ [Try Enabling (Dev Mode)]                                   │
-└─────────────────────────────────────────────────────────────┘
-```
+**Suggested value**: `stackit_meta_webhook_2024_secure` (or generate a random 32-character string)
 
 ---
 
-## Permission Check Logic
+## Testing Checklist
 
-The `/me/permissions` endpoint returns what scopes the user has granted:
+After implementation:
 
-```json
-{
-  "data": [
-    { "permission": "email", "status": "granted" },
-    { "permission": "public_profile", "status": "granted" },
-    { "permission": "leads_retrieval", "status": "granted" }
-  ]
-}
-```
+1. **Webhook Verification**
+   - Configure webhook in Meta Developer Console
+   - Should receive "Webhook verified successfully" in logs
 
-For app admins/testers in Dev Mode, Meta grants the permissions even without App Review approval. For regular users, these scopes won't be present until the app passes App Review.
+2. **Page Subscription**
+   - Connect Meta, enable Lead Forms
+   - Select a Page, click Subscribe
+   - Check that page is in `config.selected_pages`
 
----
+3. **Lead Ingestion**
+   - Use Meta Lead Ads Testing Tool to send a test lead
+   - Check Supabase logs for webhook receipt
+   - Verify contact appears in `contacts` table
+   - Verify automation runs (if configured)
 
-## Summary of Changes
-
-| Action | File |
-|--------|------|
-| CREATE | `supabase/functions/meta-enable-feature/index.ts` |
-| MODIFY | `src/components/MetaConfig.tsx` |
-| MODIFY | `supabase/config.toml` |
-| DELETE | `supabase/functions/meta-connect-feature/index.ts` |
-| DELETE | `supabase/functions/meta-feature-callback/index.ts` |
-| DELETE | `public/meta-feature-callback.html` |
-
----
-
-## Acceptance Criteria
-
-1. ✅ "Connect with Meta" opens OAuth with ONLY `public_profile,email` (already working)
-2. ✅ Clicking "Enable" on any feature does NOT open a popup
-3. ✅ If user is app admin/tester with permissions → feature enables successfully
-4. ✅ If user lacks permissions → clear "Requires App Review" message appears
-5. ✅ No "Invalid Scopes" errors anywhere in the flow
-6. ✅ GHL-style asset selection (pages/forms) continues to work after lead_forms enabled
+4. **Error Cases**
+   - Verify "App Review Required" shows for non-admin users
+   - Verify graceful handling of missing tokens
 
 ---
 
 ## Technical Notes
 
-### Why this approach works:
+### Why the existing code is mostly correct:
 
-1. **Basic OAuth** (`public_profile`, `email`) always succeeds - no App Review needed
-2. **Admins/testers** in Dev Mode already have business permissions granted by Meta
-3. **Permission check** via `/me/permissions` reveals what's actually available
-4. **No scope abuse** - we never ask for scopes we can't get
-5. **Clear user communication** - users know exactly what's blocked and why
+1. **meta-leadgen-webhook** already handles:
+   - GET verification with `META_WEBHOOK_VERIFY_TOKEN`
+   - POST with signature verification using `META_CLIENT_SECRET`
+   - Team lookup by subscribed page
+   - Lead data normalization
+   - Contact creation/update
 
-### Meta Dev Mode behavior:
+2. **meta-subscribe-page** already handles:
+   - Page subscription via `POST /{page_id}/subscribed_apps`
+   - Storing page access tokens in config
+   - Unsubscribe functionality
 
-- App admins can use all requested scopes
-- App developers can use all requested scopes
-- Test users (added in Meta console) can use all requested scopes
-- Regular users get "Invalid Scopes" until App Review approved
+3. **MetaAssetSelector** already shows:
+   - List of user's pages
+   - Subscribe/Unsubscribe buttons
+   - Lead forms for subscribed pages
 
-This architecture lets you build and test the full integration in Dev Mode, then seamlessly scale to production users after App Review.
+### Main gap was:
+- Missing `META_WEBHOOK_VERIFY_TOKEN` secret
+- Automation trigger not wired up (was a TODO)
+- Dead code cluttering the codebase
