@@ -9,6 +9,7 @@ export { AssignOwnerForm } from "./AssignOwnerForm";
 export { UpdateStageForm } from "./UpdateStageForm";
 export { NotifyTeamForm } from "./NotifyTeamForm";
 export { WebhookForm } from "./WebhookForm";
+export { SlackMessageForm } from "./SlackMessageForm";
 
 // New CRM Actions
 export { CreateContactForm } from "./CreateContactForm";

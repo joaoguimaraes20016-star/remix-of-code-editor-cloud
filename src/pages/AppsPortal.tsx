@@ -60,7 +60,7 @@ const apps: App[] = [
     description: "Team messaging and notifications",
     logo: slackLogo,
     category: "communication",
-    status: "coming_soon",
+    status: "available",
   },
   {
     id: "hubspot",
