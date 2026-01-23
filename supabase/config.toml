@@ -146,3 +146,9 @@ verify_jwt = false
 
 [functions.discord-oauth-callback]
 verify_jwt = false
+
+[functions.fathom-oauth-start]
+verify_jwt = false
+
+[functions.fathom-oauth-callback]
+verify_jwt = false

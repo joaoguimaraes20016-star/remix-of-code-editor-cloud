@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { CalendlyConfig } from "./CalendlyConfig";
 import { SlackConfig } from "./SlackConfig";
 import { ZoomConfig } from "./ZoomConfig";
+import { FathomConfig } from "./FathomConfig";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -75,6 +76,15 @@ const integrations: Integration[] = [
     configurable: true,
   },
   {
+    id: "fathom",
+    name: "Fathom",
+    description: "Meeting recordings and transcriptions",
+    icon: Video,
+    category: "video",
+    status: "available",
+    configurable: true,
+  },
+  {
     id: "google_meet",
     name: "Google Meet",
     description: "Video meetings",
@@ -112,6 +122,7 @@ export function IntegrationsPortal() {
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
+  const [fathomDialogOpen, setFathomDialogOpen] = useState(false);
 
   const { data: teamData, refetch } = useQuery({
     queryKey: ["team-integrations-portal", teamId],
@@ -137,11 +148,13 @@ export function IntegrationsPortal() {
       
       const slackIntegration = integrations.find(i => i.integration_type === "slack");
       const zoomIntegration = integrations.find(i => i.integration_type === "zoom");
+      const fathomIntegration = integrations.find(i => i.integration_type === "fathom");
       
       return {
         ...teamsResult.data,
         slack_connected: slackIntegration?.is_connected ?? false,
         zoom_connected: zoomIntegration?.is_connected ?? false,
+        fathom_connected: fathomIntegration?.is_connected ?? false,
       };
     },
     enabled: !!teamId,
@@ -150,6 +163,7 @@ export function IntegrationsPortal() {
   const isCalendlyConnected = !!teamData?.calendly_access_token;
   const isSlackConnected = !!teamData?.slack_connected;
   const isZoomConnected = !!teamData?.zoom_connected;
+  const isFathomConnected = !!teamData?.fathom_connected;
 
   const getIntegrationStatus = (integration: Integration) => {
     if (integration.id === "calendly" && isCalendlyConnected) {
@@ -159,6 +173,9 @@ export function IntegrationsPortal() {
       return "connected";
     }
     if (integration.id === "zoom" && isZoomConnected) {
+      return "connected";
+    }
+    if (integration.id === "fathom" && isFathomConnected) {
       return "connected";
     }
     return integration.status;
@@ -173,6 +190,9 @@ export function IntegrationsPortal() {
     }
     if (integration.id === "zoom") {
       setZoomDialogOpen(true);
+    }
+    if (integration.id === "fathom") {
+      setFathomDialogOpen(true);
     }
   };
 
@@ -304,6 +324,21 @@ export function IntegrationsPortal() {
           </DialogHeader>
           {teamId && (
             <ZoomConfig 
+              teamId={teamId}
+              onUpdate={() => refetch()}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Fathom Configuration Dialog */}
+      <Dialog open={fathomDialogOpen} onOpenChange={setFathomDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Fathom Integration</DialogTitle>
+          </DialogHeader>
+          {teamId && (
+            <FathomConfig 
               teamId={teamId}
               onUpdate={() => refetch()}
             />
