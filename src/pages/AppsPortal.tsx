@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
+import { ZoomConfig } from "@/components/ZoomConfig";
 import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { GoogleAccountBanner } from "@/components/GoogleAccountBanner";
 import { Check, ExternalLink, Lock } from "lucide-react";
@@ -134,7 +135,8 @@ const apps: App[] = [
     description: "Video conferencing",
     logo: zoomLogo,
     category: "scheduling",
-    status: "coming_soon",
+    status: "available",
+    configurable: true,
   },
 ];
 
@@ -149,6 +151,7 @@ export default function AppsPortal() {
   const { teamId } = useParams();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
+  const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
 
   // Fetch team integrations from secure view (tokens masked)
   const { data: teamData, refetch } = useQuery({
@@ -175,11 +178,13 @@ export default function AppsPortal() {
       }>;
       
       const slackIntegration = integrations.find(i => i.integration_type === "slack");
+      const zoomIntegration = integrations.find(i => i.integration_type === "zoom");
       const googleIntegration = integrations.find(i => i.integration_type === "google");
       
       return {
         ...teamsResult.data,
         slack_connected: slackIntegration?.is_connected ?? false,
+        zoom_connected: zoomIntegration?.is_connected ?? false,
         google_connected: googleIntegration?.is_connected ?? false,
         google_email: (googleIntegration?.config_safe as any)?.email ?? null,
         google_connected_at: (googleIntegration?.config_safe as any)?.connected_at ?? null,
@@ -201,6 +206,9 @@ export default function AppsPortal() {
     if (app.id === "slack" && teamData?.slack_connected) {
       return "connected";
     }
+    if (app.id === "zoom" && teamData?.zoom_connected) {
+      return "connected";
+    }
     return app.status;
   };
 
@@ -210,6 +218,9 @@ export default function AppsPortal() {
     }
     if (app.id === "slack" && app.configurable) {
       setSlackDialogOpen(true);
+    }
+    if (app.id === "zoom" && app.configurable) {
+      setZoomDialogOpen(true);
     }
   };
 
@@ -366,6 +377,19 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <SlackConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Zoom Config Dialog */}
+        <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={zoomLogo} alt="Zoom" className="h-6 w-6" />
+                Zoom Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <ZoomConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>

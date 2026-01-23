@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CalendlyConfig } from "./CalendlyConfig";
 import { SlackConfig } from "./SlackConfig";
+import { ZoomConfig } from "./ZoomConfig";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -70,7 +71,8 @@ const integrations: Integration[] = [
     description: "Video conferencing",
     icon: Video,
     category: "video",
-    status: "coming_soon",
+    status: "available",
+    configurable: true,
   },
   {
     id: "google_meet",
@@ -109,6 +111,7 @@ export function IntegrationsPortal() {
   const { teamId } = useParams();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
+  const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
 
   const { data: teamData, refetch } = useQuery({
     queryKey: ["team-integrations-portal", teamId],
@@ -133,10 +136,12 @@ export function IntegrationsPortal() {
       }>;
       
       const slackIntegration = integrations.find(i => i.integration_type === "slack");
+      const zoomIntegration = integrations.find(i => i.integration_type === "zoom");
       
       return {
         ...teamsResult.data,
         slack_connected: slackIntegration?.is_connected ?? false,
+        zoom_connected: zoomIntegration?.is_connected ?? false,
       };
     },
     enabled: !!teamId,
@@ -144,12 +149,16 @@ export function IntegrationsPortal() {
 
   const isCalendlyConnected = !!teamData?.calendly_access_token;
   const isSlackConnected = !!teamData?.slack_connected;
+  const isZoomConnected = !!teamData?.zoom_connected;
 
   const getIntegrationStatus = (integration: Integration) => {
     if (integration.id === "calendly" && isCalendlyConnected) {
       return "connected";
     }
     if (integration.id === "slack" && isSlackConnected) {
+      return "connected";
+    }
+    if (integration.id === "zoom" && isZoomConnected) {
       return "connected";
     }
     return integration.status;
@@ -161,6 +170,9 @@ export function IntegrationsPortal() {
     }
     if (integration.id === "slack") {
       setSlackDialogOpen(true);
+    }
+    if (integration.id === "zoom") {
+      setZoomDialogOpen(true);
     }
   };
 
@@ -277,6 +289,21 @@ export function IntegrationsPortal() {
           </DialogHeader>
           {teamId && (
             <SlackConfig 
+              teamId={teamId}
+              onUpdate={() => refetch()}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Zoom Configuration Dialog */}
+      <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Zoom Integration</DialogTitle>
+          </DialogHeader>
+          {teamId && (
+            <ZoomConfig 
               teamId={teamId}
               onUpdate={() => refetch()}
             />
