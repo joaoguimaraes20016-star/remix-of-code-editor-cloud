@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
   try {
     // Decode and parse state
-    let state: { teamId: string; stateToken: string };
+    let state: { teamId: string; stateToken: string; feature?: string };
     try {
       state = JSON.parse(atob(stateParam));
     } catch (e) {
@@ -64,16 +64,29 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { teamId, stateToken } = state;
+    const { teamId, stateToken, feature } = state;
     const supabase = getSupabaseClient();
 
-    // Verify state token matches what we stored
-    const { data: integration, error: fetchError } = await supabase
+    // Try unified "google" integration first, fall back to legacy "google_sheets"
+    let integrationQuery = await supabase
       .from("team_integrations")
       .select("config")
       .eq("team_id", teamId)
-      .eq("integration_type", "google_sheets")
+      .eq("integration_type", "google")
       .single();
+
+    // Fallback to legacy google_sheets if not found
+    if (integrationQuery.error && !feature) {
+      integrationQuery = await supabase
+        .from("team_integrations")
+        .select("config")
+        .eq("team_id", teamId)
+        .eq("integration_type", "google_sheets")
+        .single();
+    }
+
+    const integration = integrationQuery.data;
+    const fetchError = integrationQuery.error;
 
     if (fetchError || !integration) {
       console.error("[Google OAuth Callback] Integration not found:", fetchError);
@@ -153,22 +166,47 @@ Deno.serve(async (req) => {
     // Calculate token expiration time
     const expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
 
-    // Store tokens in team_integrations
+    // Parse granted scopes from response
+    const grantedScopes = scope ? scope.split(" ") : [];
+
+    // Determine which feature was requested
+    const requestedFeature = feature || config.requested_feature || "sheets";
+
+    // Build enabled_features object
+    const existingEnabledFeatures = config.enabled_features || {};
+    const enabledFeatures = {
+      sheets: existingEnabledFeatures.sheets || false,
+      calendar: existingEnabledFeatures.calendar || false,
+      drive: existingEnabledFeatures.drive || false,
+      [requestedFeature]: true, // Enable the requested feature
+    };
+
+    // Merge scopes (keep existing + add new)
+    const existingScopes = config.granted_scopes || [];
+    const allScopes = [...new Set([...existingScopes, ...grantedScopes])];
+
+    // Store tokens in unified google integration
+    const newConfig = {
+      access_token,
+      refresh_token: refresh_token || config.refresh_token, // Keep existing refresh token if not provided
+      expires_at: expiresAt,
+      granted_scopes: allScopes,
+      email: userEmail,
+      name: userName,
+      connected_at: config.connected_at || new Date().toISOString(),
+      last_updated_at: new Date().toISOString(),
+      enabled_features: enabledFeatures,
+    };
+
     const { error: updateError } = await supabase
       .from("team_integrations")
-      .update({
-        config: {
-          access_token,
-          refresh_token,
-          expires_at: expiresAt,
-          scope,
-          email: userEmail,
-          name: userName,
-          connected_at: new Date().toISOString(),
-        },
-      })
-      .eq("team_id", teamId)
-      .eq("integration_type", "google_sheets");
+      .upsert({
+        team_id: teamId,
+        integration_type: "google",
+        config: newConfig,
+      }, {
+        onConflict: "team_id,integration_type",
+      });
 
     if (updateError) {
       console.error("[Google OAuth Callback] Failed to store tokens:", updateError);
@@ -178,11 +216,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[Google OAuth Callback] Successfully connected Google Sheets for team ${teamId}`);
+    console.log(`[Google OAuth Callback] Successfully connected Google for team ${teamId}, feature: ${requestedFeature}`);
 
-    // Redirect to success page
+    // Redirect to success page with feature info
     return Response.redirect(
-      buildRedirectUrl(callbackPage, { success: "true", email: userEmail }),
+      buildRedirectUrl(callbackPage, { 
+        success: "true", 
+        email: userEmail,
+        feature: requestedFeature,
+      }),
       302
     );
 

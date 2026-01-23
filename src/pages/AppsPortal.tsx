@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
-import { GoogleSheetsOAuthConfig } from "@/components/GoogleSheetsOAuthConfig";
+import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { Check, ExternalLink } from "lucide-react";
 
 // Import logos
@@ -16,6 +16,9 @@ import calendlyLogo from "@/assets/integrations/calendly.svg";
 import ghlLogo from "@/assets/integrations/ghl.svg";
 import zoomLogo from "@/assets/integrations/zoom.svg";
 import googleMeetLogo from "@/assets/integrations/google-meet.svg";
+import googleSheetsLogo from "@/assets/integrations/google-sheets.svg";
+import googleCalendarLogo from "@/assets/integrations/google-calendar.svg";
+import googleDriveLogo from "@/assets/integrations/google-drive.svg";
 import zapierLogo from "@/assets/integrations/zapier.svg";
 import slackLogo from "@/assets/integrations/slack.svg";
 import hubspotLogo from "@/assets/integrations/hubspot.svg";
@@ -25,11 +28,12 @@ interface App {
   name: string;
   description: string;
   logo: string;
-  category: "scheduling" | "crm" | "communication" | "analytics";
+  category: "scheduling" | "crm" | "communication" | "analytics" | "google";
   status: "connected" | "available" | "coming_soon";
   configurable?: boolean;
 }
 
+// Non-Google apps
 const apps: App[] = [
   {
     id: "calendly",
@@ -37,15 +41,6 @@ const apps: App[] = [
     description: "Scheduling and appointment booking",
     logo: calendlyLogo,
     category: "scheduling",
-    status: "available",
-    configurable: true,
-  },
-  {
-    id: "google-sheets",
-    name: "Google Sheets",
-    description: "Append rows to spreadsheets",
-    logo: googleMeetLogo, // Using Google Meet logo temporarily
-    category: "crm",
     status: "available",
     configurable: true,
   },
@@ -90,13 +85,48 @@ const apps: App[] = [
     category: "scheduling",
     status: "coming_soon",
   },
+];
+
+// Google features configuration
+const googleFeatures: {
+  feature: GoogleFeature;
+  name: string;
+  description: string;
+  logo: string;
+  usageInstructions: string[];
+}[] = [
   {
-    id: "google-meet",
-    name: "Google Meet",
-    description: "Video meetings",
-    logo: googleMeetLogo,
-    category: "scheduling",
-    status: "coming_soon",
+    feature: "sheets",
+    name: "Google Sheets",
+    description: "Append rows to spreadsheets automatically",
+    logo: googleSheetsLogo,
+    usageInstructions: [
+      "Create an automation with any trigger (e.g., 'Appointment Booked')",
+      "Add a 'Google Sheets: Append Row' action",
+      "Enter your spreadsheet URL and map columns to lead/appointment data",
+    ],
+  },
+  {
+    feature: "calendar",
+    name: "Google Calendar",
+    description: "Create events with Google Meet links",
+    logo: googleCalendarLogo,
+    usageInstructions: [
+      "Create an automation with a trigger like 'Appointment Booked'",
+      "Add a 'Google Calendar: Create Event' action",
+      "The event will automatically include a Google Meet link",
+    ],
+  },
+  {
+    feature: "drive",
+    name: "Google Drive",
+    description: "Access and organize files",
+    logo: googleDriveLogo,
+    usageInstructions: [
+      "Use in automations to upload or access files",
+      "Organize client documents automatically",
+      "Sync files with your team's Drive folders",
+    ],
   },
 ];
 
@@ -105,13 +135,13 @@ const categoryLabels: Record<string, string> = {
   crm: "CRM & Marketing",
   communication: "Communication",
   analytics: "Analytics",
+  google: "Google Workspace",
 };
 
 export default function AppsPortal() {
   const { teamId } = useParams();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
-  const [googleSheetsDialogOpen, setGoogleSheetsDialogOpen] = useState(false);
 
   // Fetch team integrations from secure view (tokens masked)
   const { data: teamData, refetch } = useQuery({
@@ -138,12 +168,19 @@ export default function AppsPortal() {
       }>;
       
       const slackIntegration = integrations.find(i => i.integration_type === "slack");
-      const googleSheetsIntegration = integrations.find(i => i.integration_type === "google_sheets");
+      const googleIntegration = integrations.find(i => i.integration_type === "google");
       
       return {
         ...teamsResult.data,
         slack_connected: slackIntegration?.is_connected ?? false,
-        google_sheets_connected: googleSheetsIntegration?.is_connected ?? false,
+        google_connected: googleIntegration?.is_connected ?? false,
+        google_email: (googleIntegration?.config_safe as any)?.email ?? null,
+        google_connected_at: (googleIntegration?.config_safe as any)?.connected_at ?? null,
+        google_enabled_features: (googleIntegration?.config_safe as any)?.enabled_features ?? {
+          sheets: false,
+          calendar: false,
+          drive: false,
+        },
       };
     },
     enabled: !!teamId,
@@ -156,9 +193,6 @@ export default function AppsPortal() {
     if (app.id === "slack" && teamData?.slack_connected) {
       return "connected";
     }
-    if (app.id === "google-sheets" && teamData?.google_sheets_connected) {
-      return "connected";
-    }
     return app.status;
   };
 
@@ -168,9 +202,6 @@ export default function AppsPortal() {
     }
     if (app.id === "slack" && app.configurable) {
       setSlackDialogOpen(true);
-    }
-    if (app.id === "google-sheets" && app.configurable) {
-      setGoogleSheetsDialogOpen(true);
     }
   };
 
@@ -192,6 +223,32 @@ export default function AppsPortal() {
         </div>
 
         <div className="space-y-10">
+          {/* Google Workspace Section */}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground mb-4">
+              {categoryLabels.google}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {googleFeatures.map((gf) => (
+                <GoogleFeatureCard
+                  key={gf.feature}
+                  feature={gf.feature}
+                  teamId={teamId || ""}
+                  name={gf.name}
+                  description={gf.description}
+                  logo={gf.logo}
+                  isConnected={teamData?.google_connected ?? false}
+                  isEnabled={teamData?.google_enabled_features?.[gf.feature] ?? false}
+                  connectedEmail={teamData?.google_email}
+                  connectedAt={teamData?.google_connected_at}
+                  usageInstructions={gf.usageInstructions}
+                  onUpdate={refetch}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Other App Categories */}
           {Object.entries(groupedApps).map(([category, categoryApps]) => (
             <div key={category}>
               <h2 className="text-lg font-semibold text-foreground mb-4">
@@ -290,19 +347,6 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <SlackConfig teamId={teamId || ""} onUpdate={refetch} />
-          </DialogContent>
-        </Dialog>
-
-        {/* Google Sheets Config Dialog */}
-        <Dialog open={googleSheetsDialogOpen} onOpenChange={setGoogleSheetsDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
-                <img src={googleMeetLogo} alt="Google Sheets" className="h-6 w-6" />
-                Google Sheets Configuration
-              </DialogTitle>
-            </DialogHeader>
-            <GoogleSheetsOAuthConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>
