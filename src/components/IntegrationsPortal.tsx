@@ -113,25 +113,30 @@ export function IntegrationsPortal() {
   const { data: teamData, refetch } = useQuery({
     queryKey: ["team-integrations-portal", teamId],
     queryFn: async () => {
-      const [teamsResult, slackResult] = await Promise.all([
+      const [teamsResult, integrationsResult] = await Promise.all([
         supabase
           .from("teams")
           .select("calendly_access_token, calendly_organization_uri, calendly_webhook_id, calendly_event_types, calendly_enabled_for_funnels, calendly_enabled_for_crm")
           .eq("id", teamId)
           .single(),
         supabase
-          .from("team_integrations")
-          .select("config")
-          .eq("team_id", teamId)
-          .eq("integration_type", "slack")
-          .maybeSingle(),
+          .from("team_integrations_public" as any)
+          .select("integration_type, is_connected")
+          .eq("team_id", teamId),
       ]);
       
       if (teamsResult.error) throw teamsResult.error;
       
+      const integrations = ((integrationsResult.data || []) as unknown) as Array<{
+        integration_type: string;
+        is_connected: boolean;
+      }>;
+      
+      const slackIntegration = integrations.find(i => i.integration_type === "slack");
+      
       return {
         ...teamsResult.data,
-        slack_connected: !!(slackResult.data?.config as Record<string, unknown>)?.access_token,
+        slack_connected: slackIntegration?.is_connected ?? false,
       };
     },
     enabled: !!teamId,

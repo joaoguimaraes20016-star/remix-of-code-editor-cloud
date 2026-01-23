@@ -111,44 +111,44 @@ export default function PaymentsPortal() {
 
   const queryClient = useQueryClient();
 
-  // Query Stripe connection status
+  // Query Stripe connection status from secure view (tokens masked)
   const { data: stripeIntegration, refetch: refetchStripe } = useQuery({
     queryKey: ["stripe-integration", teamId],
     queryFn: async () => {
       if (!teamId) return null;
       const { data } = await supabase
-        .from("team_integrations")
-        .select("*")
+        .from("team_integrations_public" as any)
+        .select("is_connected, config_safe")
         .eq("team_id", teamId)
         .eq("integration_type", "stripe")
         .maybeSingle();
-      return data;
+      return data as unknown as { is_connected: boolean; config_safe: Record<string, any> | null } | null;
     },
     enabled: !!teamId,
   });
 
-  // Query Whop connection status
+  // Query Whop connection status from secure view (tokens masked)
   const { data: whopIntegration, refetch: refetchWhop } = useQuery({
     queryKey: ["whop-integration", teamId],
     queryFn: async () => {
       if (!teamId) return null;
       const { data } = await supabase
-        .from("team_integrations")
-        .select("*")
+        .from("team_integrations_public" as any)
+        .select("is_connected, config_safe")
         .eq("team_id", teamId)
         .eq("integration_type", "whop")
         .maybeSingle();
-      return data;
+      return data as unknown as { is_connected: boolean; config_safe: Record<string, any> | null } | null;
     },
     enabled: !!teamId,
   });
 
-  const isStripeConnected = stripeIntegration?.is_connected;
-  const stripeConfig = stripeIntegration?.config as Record<string, any> | null;
+  const isStripeConnected = stripeIntegration?.is_connected ?? false;
+  const stripeConfig = stripeIntegration?.config_safe;
   const stripeAccountId = stripeConfig?.stripe_account_id;
 
-  const isWhopConnected = whopIntegration?.is_connected;
-  const whopConfig = whopIntegration?.config as Record<string, any> | null;
+  const isWhopConnected = whopIntegration?.is_connected ?? false;
+  const whopConfig = whopIntegration?.config_safe;
   const whopCompanyId = whopConfig?.company_id || whopConfig?.company_name;
 
   // Handle postMessage from OAuth popup (primary method)

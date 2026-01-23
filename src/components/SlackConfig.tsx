@@ -23,12 +23,9 @@ interface SlackConfigProps {
   onUpdate?: () => void;
 }
 
-interface SlackIntegration {
-  access_token?: string;
-  team_id?: string;
+interface SlackIntegrationPublic {
   team_name?: string;
-  bot_user_id?: string;
-  scope?: string;
+  workspace_name?: string;
   connected_at?: string;
 }
 
@@ -66,24 +63,26 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
   const popupRef = useRef<Window | null>(null);
   const pollTimerRef = useRef<number | null>(null);
 
-  // Fetch Slack integration status
-  const { data: integration, isLoading, refetch } = useQuery({
+  // Fetch Slack integration status from secure view (tokens masked)
+  const { data: integrationData, isLoading, refetch } = useQuery({
     queryKey: ["slack-integration", teamId],
     queryFn: async () => {
+      // Query the secure view that masks tokens
       const { data, error } = await supabase
-        .from("team_integrations")
-        .select("config")
+        .from("team_integrations_public" as any)
+        .select("is_connected, config_safe")
         .eq("team_id", teamId)
         .eq("integration_type", "slack")
         .maybeSingle();
 
       if (error) throw error;
-      return data?.config as SlackIntegration | null;
+      return data as unknown as { is_connected: boolean; config_safe: SlackIntegrationPublic | null } | null;
     },
     enabled: !!teamId,
   });
 
-  const isConnected = !!integration?.access_token;
+  const isConnected = integrationData?.is_connected ?? false;
+  const integration = integrationData?.config_safe;
 
   // Handle OAuth message from popup
   useEffect(() => {
@@ -120,8 +119,8 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
       try {
         // 1) First, check if the integration is now connected
         const result = await refetch();
-        if (result.data?.access_token) {
-          console.debug("[SlackConfig] Detected access_token via polling");
+        if (result.data?.is_connected) {
+          console.debug("[SlackConfig] Detected connection via polling");
           try {
             popupRef.current?.close();
           } catch {
@@ -129,7 +128,8 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
           }
           popupRef.current = null;
           setConnecting(false);
-          toast.success(`Connected to ${result.data.team_name || "Slack"}!`);
+          const configSafe = result.data.config_safe as SlackIntegrationPublic | null;
+          toast.success(`Connected to ${configSafe?.team_name || configSafe?.workspace_name || "Slack"}!`);
           onUpdate?.();
           return;
         }
@@ -301,7 +301,7 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
               <CardTitle className="text-lg">Connection Status</CardTitle>
               <CardDescription>
                 {isConnected
-                  ? `Connected to ${integration?.team_name || "Slack workspace"}`
+                  ? `Connected to ${integration?.team_name || integration?.workspace_name || "Slack workspace"}`
                   : "Connect your Slack workspace to send automated messages"}
               </CardDescription>
             </div>
@@ -319,7 +319,7 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Workspace</span>
-                  <p className="font-medium">{integration?.team_name || "Unknown"}</p>
+                  <p className="font-medium">{integration?.team_name || integration?.workspace_name || "Unknown"}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Connected</span>
@@ -342,7 +342,7 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Disconnect Slack?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will remove the connection to {integration?.team_name || "your Slack workspace"}.
+                      This will remove the connection to {integration?.team_name || integration?.workspace_name || "your Slack workspace"}.
                       Automations that use Slack will stop working until you reconnect.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
