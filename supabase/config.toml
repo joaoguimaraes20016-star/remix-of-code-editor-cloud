@@ -159,10 +159,7 @@ verify_jwt = false
 [functions.meta-oauth-callback]
 verify_jwt = false
 
-[functions.meta-connect-feature]
-verify_jwt = false
-
-[functions.meta-feature-callback]
+[functions.meta-enable-feature]
 verify_jwt = false
 
 [functions.meta-fetch-assets]
