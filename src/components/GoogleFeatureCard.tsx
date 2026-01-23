@@ -12,7 +12,6 @@ import {
   ExternalLink, 
   Unlink,
   CheckCircle2,
-  Lock,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -342,31 +341,21 @@ export function GoogleFeatureCard({
   // Determine button state
   const buttonLabel = isEnabled ? "Manage" : isConnected ? "Enable" : "Connect";
   const buttonVariant = isEnabled ? "outline" : "default";
-  const isLocked = !isConnected;
 
   return (
     <>
       <Card
-        className={`border-border/50 transition-all ${
-          isLocked 
-            ? "opacity-60 cursor-not-allowed" 
-            : "hover:border-primary/30 hover:shadow-md cursor-pointer"
-        }`}
-        onClick={() => !isLocked && setDialogOpen(true)}
+        className="border-border/50 transition-all hover:border-primary/30 hover:shadow-md cursor-pointer"
+        onClick={() => setDialogOpen(true)}
       >
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden relative">
+            <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
               <img 
                 src={logo} 
                 alt={name}
                 className="h-8 w-8 object-contain"
               />
-              {isLocked && (
-                <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-lg">
-                  <Lock className="h-4 w-4 text-muted-foreground" />
-                </div>
-              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -382,17 +371,16 @@ export function GoogleFeatureCard({
             </div>
           </div>
           <Button
-            variant={isLocked ? "secondary" : buttonVariant}
+            variant={buttonVariant}
             size="sm"
             className="w-full mt-4"
-            disabled={isLocked}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isLocked) setDialogOpen(true);
+              setDialogOpen(true);
             }}
           >
-            {isLocked ? "Sign in first" : buttonLabel}
-            {!isLocked && <ExternalLink className="h-3 w-3 ml-2" />}
+            {buttonLabel}
+            <ExternalLink className="h-3 w-3 ml-2" />
           </Button>
         </CardContent>
       </Card>
