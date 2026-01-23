@@ -1,48 +1,159 @@
 
-Goal: Fix the Typeform “Invalid input: scope not allowed” error shown in your screenshot so the OAuth consent screen loads correctly and the connection completes.
+# Discord Integration Implementation
 
-What’s happening (root cause)
-- We’re currently setting `scope` to a string that contains literal `+` characters:
-  `accounts:read+forms:read+responses:read+webhooks:read+webhooks:write`
-- Because we build the URL with `URL.searchParams.set("scope", scopes)`, those `+` characters get URL-encoded as `%2B`.
-- Typeform then receives the scope value as one single scope containing plus signs (not as a list of scopes), and rejects it as “scope not allowed”.
+## Overview
+Add Discord as a fully functional integration allowing teams to send messages to Discord channels from automations. This follows the established OAuth pattern used by Slack, Zoom, and Typeform.
 
-Code changes (Typeform OAuth start)
-1. Update `supabase/functions/typeform-oauth-start/index.ts`:
-   - Change the scopes string to be space-separated (OAuth standard).
-     - From:
-       - `const scopes = "accounts:read+forms:read+responses:read+webhooks:read+webhooks:write";`
-     - To:
-       - `const scopes = "accounts:read forms:read responses:read webhooks:read webhooks:write";`
-   - Add the required OAuth parameter:
-     - `authUrl.searchParams.set("response_type", "code");`
-   - Keep the rest of the URL building logic the same (state, client_id, redirect_uri).
+## Prerequisites (User Action Required)
 
-Why this works
-- When `URLSearchParams` serializes a value with spaces, it produces `+` separators in the final URL (e.g. `scope=accounts:read+forms:read+...`).
-- Typeform will interpret those `+` separators correctly as scope separators.
+Before implementation, you need to create a Discord application:
 
-Verification steps (manual)
-1. Go to: Team → Apps → Typeform → Connect.
-2. Confirm the popup goes to Typeform and shows a consent/authorization screen (not the “We’re sorry / Bad Request” error).
-3. Authorize the app.
-4. Confirm the popup redirects back to `typeform-callback.html` and closes.
-5. Confirm Infostack shows “Connected” with your Typeform email.
-6. If anything fails:
-   - Check Supabase Edge Function logs for:
-     - `typeform-oauth-start`
-     - `typeform-oauth-callback`
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click **New Application** → Name it "Infostack" (or your preferred name)
+3. Go to **OAuth2** → **General**
+4. Add redirect URL: `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/discord-oauth-callback`
+5. Copy the **Client ID** and **Client Secret**
+6. Go to **Bot** → Click **Add Bot** → Enable required intents if needed
+7. Provide me with the Client ID and Client Secret to add as Supabase secrets
 
-Fallback if Typeform still rejects scopes after the encoding fix
-- Some Typeform apps/accounts may not be allowed to request webhook scopes.
-- If it still errors, we’ll temporarily reduce scopes to:
-  - `accounts:read forms:read responses:read`
-- Then add webhook scopes back once basic connection is confirmed.
+## Implementation Summary
 
-Non-blocking improvement (optional, after the above works)
-- In `typeform-oauth-callback`, when Typeform sends an `error`, we can parse `state` (if present) so we can always redirect back to your app domain instead of defaulting to the Supabase domain for errors. This makes failures more predictable and easier to understand.
+| Component | File | Purpose |
+|-----------|------|---------|
+| OAuth Start | `supabase/functions/discord-oauth-start/index.ts` | Initiates OAuth flow |
+| OAuth Callback | `supabase/functions/discord-oauth-callback/index.ts` | Handles token exchange |
+| Config Component | `src/components/DiscordConfig.tsx` | Frontend configuration UI |
+| Callback Page | `public/discord-callback.html` | Popup communication bridge |
+| Logo Asset | `src/assets/integrations/discord.svg` | Discord brand icon |
+| Apps Portal Update | `src/pages/AppsPortal.tsx` | Add Discord to app list |
+| Edge Config | `supabase/config.toml` | Register new functions |
 
-Implementation deliverables
-- 1 small edit to `supabase/functions/typeform-oauth-start/index.ts`
-- Redeploy edge function automatically (as usual)
-- Retest connect flow end-to-end
+## Technical Details
+
+### 1. Edge Function: `discord-oauth-start`
+
+Initiates the Discord OAuth flow with bot permissions:
+
+```text
+Endpoint: POST /functions/v1/discord-oauth-start
+Input: { teamId, redirectUri }
+Output: { authUrl }
+
+OAuth URL Parameters:
+- client_id: DISCORD_CLIENT_ID
+- redirect_uri: discord-oauth-callback URL
+- response_type: code
+- scope: bot applications.commands
+- permissions: 2048 (SEND_MESSAGES)
+- state: {teamId}:{stateToken}
+```
+
+### 2. Edge Function: `discord-oauth-callback`
+
+Handles the OAuth callback and stores credentials:
+
+```text
+Endpoint: GET /functions/v1/discord-oauth-callback
+Query Params: code, state, guild_id
+
+Token Exchange:
+- POST https://discord.com/api/v10/oauth2/token
+- Content-Type: application/x-www-form-urlencoded
+
+Stored in team_integrations:
+- access_token, refresh_token
+- guild_id, guild_name
+- bot_user_id
+- connected_at
+```
+
+### 3. Frontend Component: `DiscordConfig.tsx`
+
+Follows the `SlackConfig.tsx` pattern:
+- Synchronous popup opening (avoids blockers)
+- postMessage communication
+- Polling fallback (2.5s interval)
+- 2-minute connection timeout
+- Disconnect with confirmation dialog
+
+### 4. AppsPortal Updates
+
+Add Discord to the apps array and wire up the dialog:
+- Category: "communication" (alongside Slack)
+- Status: "available"
+- Configurable: true
+
+### 5. Required Secrets
+
+| Secret | Description |
+|--------|-------------|
+| DISCORD_CLIENT_ID | From Discord Developer Portal |
+| DISCORD_CLIENT_SECRET | From Discord Developer Portal |
+
+## Data Flow
+
+```text
+User clicks "Connect Discord"
+         │
+         ▼
+┌─────────────────────────────┐
+│  DiscordConfig.tsx          │
+│  Opens popup to about:blank │
+│  Invokes discord-oauth-start│
+└─────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│  discord-oauth-start        │
+│  Stores state in DB         │
+│  Returns Discord auth URL   │
+└─────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│  Discord Authorization Page │
+│  User selects server        │
+│  Authorizes bot permissions │
+└─────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│  discord-oauth-callback     │
+│  Exchanges code for tokens  │
+│  Stores in team_integrations│
+│  Redirects to callback.html │
+└─────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│  discord-callback.html      │
+│  postMessage to opener      │
+│  Auto-closes after 1.5s     │
+└─────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│  DiscordConfig.tsx          │
+│  Receives success message   │
+│  Shows "Connected" status   │
+└─────────────────────────────┘
+```
+
+## Files to Create
+
+1. `supabase/functions/discord-oauth-start/index.ts` - OAuth initiation
+2. `supabase/functions/discord-oauth-callback/index.ts` - Token exchange
+3. `src/components/DiscordConfig.tsx` - Configuration UI
+4. `public/discord-callback.html` - Popup callback page
+5. `src/assets/integrations/discord.svg` - Discord logo
+
+## Files to Modify
+
+1. `src/pages/AppsPortal.tsx` - Add Discord app entry and dialog
+2. `supabase/config.toml` - Register new edge functions
+
+## Next Steps After Implementation
+
+1. Test the full OAuth flow end-to-end
+2. Implement `executeDiscordMessage` action for automations (future)
+3. Add channel selection UI (optional enhancement)
