@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Google Sheets Connected</title>
+  <title>Google Connection</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -13,96 +13,128 @@
       background: #1a1a2e;
       color: #fff;
     }
-    .container {
-      text-align: center;
+    .container { 
+      text-align: center; 
       padding: 2rem;
     }
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid rgba(255,255,255,0.1);
-      border-left-color: #4285f4;
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: #22c55e;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1rem;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .success-icon svg {
+      width: 32px;
+      height: 32px;
+      color: white;
     }
-    .success {
-      color: #34a853;
+    .error-icon {
+      width: 64px;
+      height: 64px;
+      background: #ef4444;
+      border-radius: 50%;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .error {
-      color: #ea4335;
+    .error-icon svg {
+      width: 32px;
+      height: 32px;
+      color: white;
     }
-    h2 {
-      margin: 0 0 0.5rem;
+    h1 { 
+      font-size: 1.5rem; 
+      margin-bottom: 0.5rem;
     }
-    p {
+    p { 
+      color: #a0a0a0; 
       margin: 0;
-      opacity: 0.8;
+    }
+    .email {
+      color: #4285f4;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
   <div class="container" id="content">
-    <div class="spinner"></div>
-    <h2>Connecting Google Sheets...</h2>
-    <p>Please wait</p>
+    <div class="success-icon" id="success-icon" style="display: none;">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <div class="error-icon" id="error-icon" style="display: none;">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </div>
+    <h1 id="title">Processing...</h1>
+    <p id="message">Please wait</p>
   </div>
+
   <script>
-    (function() {
-      const params = new URLSearchParams(window.location.search);
-      const success = params.get('success') === 'true';
-      const error = params.get('error');
-      const email = params.get('email');
-      
-      const container = document.getElementById('content');
-      
-      if (success) {
-        container.innerHTML = `
-          <div class="success">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22,4 12,14.01 9,11.01"/>
-            </svg>
-          </div>
-          <h2>Successfully Connected!</h2>
-          <p>${email ? 'Connected as: ' + email : 'Google Sheets is now connected.'}</p>
-          <p style="margin-top: 1rem; opacity: 0.6;">This window will close automatically...</p>
-        `;
-        
-        // Notify parent window
-        if (window.opener) {
-          window.opener.postMessage({ type: 'google-oauth-success', email }, '*');
-        }
-        
-        // Auto-close after delay
-        setTimeout(() => window.close(), 2000);
-      } else {
-        const errorMessage = error === 'access_denied' 
-          ? 'You denied access to Google Sheets'
-          : error || 'An unknown error occurred';
-          
-        container.innerHTML = `
-          <div class="error">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-          </div>
-          <h2>Connection Failed</h2>
-          <p>${errorMessage}</p>
-          <p style="margin-top: 1rem; opacity: 0.6;">You can close this window and try again.</p>
-        `;
-        
-        // Notify parent window of failure
-        if (window.opener) {
-          window.opener.postMessage({ type: 'google-oauth-error', error: errorMessage }, '*');
-        }
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success') === 'true';
+    const email = params.get('email');
+    const feature = params.get('feature');
+    const error = params.get('error');
+
+    const successIcon = document.getElementById('success-icon');
+    const errorIcon = document.getElementById('error-icon');
+    const title = document.getElementById('title');
+    const message = document.getElementById('message');
+
+    if (success) {
+      successIcon.style.display = 'flex';
+      title.textContent = 'Connected!';
+      message.innerHTML = email 
+        ? 'Connected as <span class="email">' + email + '</span>'
+        : 'Your Google account is now connected.';
+
+      // Notify parent window
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'google-oauth-success',
+          email: email,
+          feature: feature,
+        }, '*');
       }
-    })();
+
+      // Close after delay
+      setTimeout(() => window.close(), 2000);
+    } else {
+      errorIcon.style.display = 'flex';
+      title.textContent = 'Connection Failed';
+      
+      const errorMessages = {
+        'access_denied': 'You declined the permission request.',
+        'missing_params': 'Missing required parameters.',
+        'invalid_state': 'Invalid state parameter.',
+        'state_not_found': 'Session expired. Please try again.',
+        'state_mismatch': 'Session mismatch. Please try again.',
+        'token_exchange_failed': 'Failed to complete authentication.',
+        'storage_failed': 'Failed to save connection.',
+        'config_error': 'Google OAuth is not configured.',
+      };
+
+      message.textContent = errorMessages[error] || error || 'An error occurred.';
+
+      // Notify parent window
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'google-oauth-error',
+          error: error,
+        }, '*');
+      }
+
+      // Close after delay
+      setTimeout(() => window.close(), 3000);
+    }
   </script>
 </body>
 </html>

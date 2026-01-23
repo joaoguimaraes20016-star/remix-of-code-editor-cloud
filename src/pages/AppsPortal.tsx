@@ -8,17 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
-import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
+import { GoogleAccountCard } from "@/components/GoogleAccountCard";
 import { Check, ExternalLink } from "lucide-react";
 
 // Import logos
 import calendlyLogo from "@/assets/integrations/calendly.svg";
 import ghlLogo from "@/assets/integrations/ghl.svg";
 import zoomLogo from "@/assets/integrations/zoom.svg";
-import googleMeetLogo from "@/assets/integrations/google-meet.svg";
-import googleSheetsLogo from "@/assets/integrations/google-sheets.svg";
-import googleCalendarLogo from "@/assets/integrations/google-calendar.svg";
-import googleDriveLogo from "@/assets/integrations/google-drive.svg";
 import zapierLogo from "@/assets/integrations/zapier.svg";
 import slackLogo from "@/assets/integrations/slack.svg";
 import hubspotLogo from "@/assets/integrations/hubspot.svg";
@@ -87,48 +83,6 @@ const apps: App[] = [
   },
 ];
 
-// Google features configuration
-const googleFeatures: {
-  feature: GoogleFeature;
-  name: string;
-  description: string;
-  logo: string;
-  usageInstructions: string[];
-}[] = [
-  {
-    feature: "sheets",
-    name: "Google Sheets",
-    description: "Append rows to spreadsheets automatically",
-    logo: googleSheetsLogo,
-    usageInstructions: [
-      "Create an automation with any trigger (e.g., 'Appointment Booked')",
-      "Add a 'Google Sheets: Append Row' action",
-      "Enter your spreadsheet URL and map columns to lead/appointment data",
-    ],
-  },
-  {
-    feature: "calendar",
-    name: "Google Calendar",
-    description: "Create events with Google Meet links",
-    logo: googleCalendarLogo,
-    usageInstructions: [
-      "Create an automation with a trigger like 'Appointment Booked'",
-      "Add a 'Google Calendar: Create Event' action",
-      "The event will automatically include a Google Meet link",
-    ],
-  },
-  {
-    feature: "drive",
-    name: "Google Drive",
-    description: "Access and organize files",
-    logo: googleDriveLogo,
-    usageInstructions: [
-      "Use in automations to upload or access files",
-      "Organize client documents automatically",
-      "Sync files with your team's Drive folders",
-    ],
-  },
-];
 
 const categoryLabels: Record<string, string> = {
   scheduling: "Scheduling",
@@ -228,24 +182,14 @@ export default function AppsPortal() {
             <h2 className="text-lg font-semibold text-foreground mb-4">
               {categoryLabels.google}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {googleFeatures.map((gf) => (
-                <GoogleFeatureCard
-                  key={gf.feature}
-                  feature={gf.feature}
-                  teamId={teamId || ""}
-                  name={gf.name}
-                  description={gf.description}
-                  logo={gf.logo}
-                  isConnected={teamData?.google_connected ?? false}
-                  isEnabled={teamData?.google_enabled_features?.[gf.feature] ?? false}
-                  connectedEmail={teamData?.google_email}
-                  connectedAt={teamData?.google_connected_at}
-                  usageInstructions={gf.usageInstructions}
-                  onUpdate={refetch}
-                />
-              ))}
-            </div>
+            <GoogleAccountCard
+              teamId={teamId || ""}
+              isConnected={teamData?.google_connected ?? false}
+              connectedEmail={teamData?.google_email}
+              connectedAt={teamData?.google_connected_at}
+              enabledFeatures={teamData?.google_enabled_features ?? {}}
+              onUpdate={refetch}
+            />
           </div>
 
           {/* Other App Categories */}
