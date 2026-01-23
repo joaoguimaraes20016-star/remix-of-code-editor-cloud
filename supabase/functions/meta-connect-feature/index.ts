@@ -8,7 +8,6 @@ const corsHeaders = {
 // Feature-specific scopes mapping
 const FEATURE_SCOPES: Record<string, string[]> = {
   ads_reporting: ["ads_read"],
-  ads_management: ["ads_management", "ads_read"],
   lead_forms: ["leads_retrieval", "pages_read_engagement", "pages_manage_metadata"],
   capi: ["ads_management"],
 };

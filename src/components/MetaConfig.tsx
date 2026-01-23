@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Check, AlertCircle, ExternalLink, ChevronRight, FileText, BarChart3, Zap, Target } from "lucide-react";
+import { Loader2, Check, AlertCircle, ExternalLink, ChevronRight, FileText, BarChart3, Zap } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -34,14 +34,13 @@ interface MetaIntegrationPublic {
     enabled_features?: {
       lead_forms?: boolean;
       ads_reporting?: boolean;
-      ads_management?: boolean;
       capi?: boolean;
     };
     selected_pages?: { id: string; name: string }[];
   } | null;
 }
 
-type MetaFeature = "lead_forms" | "ads_reporting" | "ads_management" | "capi";
+type MetaFeature = "lead_forms" | "ads_reporting" | "capi";
 
 const FEATURES: { id: MetaFeature; name: string; description: string; icon: any; scopes: string }[] = [
   {
@@ -57,13 +56,6 @@ const FEATURES: { id: MetaFeature; name: string; description: string; icon: any;
     description: "View campaign performance, spend, and ROI metrics",
     icon: BarChart3,
     scopes: "ads_read",
-  },
-  {
-    id: "ads_management",
-    name: "Ads Management",
-    description: "Create and manage ad campaigns (coming soon)",
-    icon: Target,
-    scopes: "ads_management, ads_read",
   },
   {
     id: "capi",
@@ -225,11 +217,6 @@ export function MetaConfig({ teamId, onUpdate }: MetaConfigProps) {
   };
 
   const handleEnableFeature = async (feature: MetaFeature) => {
-    if (feature === "ads_management") {
-      toast.info("Ads Management is coming soon!");
-      return;
-    }
-
     setEnablingFeature(feature);
 
     const popup = openPopup();
@@ -376,14 +363,11 @@ export function MetaConfig({ teamId, onUpdate }: MetaConfigProps) {
                       ) : (
                         <Button
                           size="sm"
-                          variant={feature.id === "ads_management" ? "outline" : "default"}
                           onClick={() => handleEnableFeature(feature.id)}
                           disabled={isLoading}
                         >
                           {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : feature.id === "ads_management" ? (
-                            "Coming Soon"
                           ) : (
                             <>
                               Enable
