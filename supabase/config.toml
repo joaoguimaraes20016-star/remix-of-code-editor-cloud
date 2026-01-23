@@ -152,3 +152,15 @@ verify_jwt = false
 
 [functions.fathom-oauth-callback]
 verify_jwt = false
+
+[functions.meta-oauth-start]
+verify_jwt = false
+
+[functions.meta-oauth-callback]
+verify_jwt = false
+
+[functions.google-ads-oauth-start]
+verify_jwt = false
+
+[functions.google-ads-oauth-callback]
+verify_jwt = false
