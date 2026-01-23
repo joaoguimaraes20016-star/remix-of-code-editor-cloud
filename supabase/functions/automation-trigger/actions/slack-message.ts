@@ -1,8 +1,7 @@
 // supabase/functions/automation-trigger/actions/slack-message.ts
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
 import { renderTemplate } from "../template-engine.ts";
-
-const GATEWAY_URL = 'https://gateway.lovable.dev/slack/api';
 
 interface SlackMessageConfig {
   channel: string;
@@ -13,24 +12,10 @@ interface SlackMessageConfig {
 
 export async function executeSlackMessage(
   config: Record<string, any>,
-  context: AutomationContext
+  context: AutomationContext,
+  supabase: SupabaseClient
 ): Promise<Partial<StepExecutionLog>> {
   const slackConfig = config as SlackMessageConfig;
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    return {
-      status: "error",
-      error: "LOVABLE_API_KEY is not configured",
-    };
-  }
-
-  const SLACK_API_KEY = Deno.env.get('SLACK_API_KEY');
-  if (!SLACK_API_KEY) {
-    return {
-      status: "error",
-      error: "SLACK_API_KEY is not configured. Please connect Slack in the integrations portal.",
-    };
-  }
 
   if (!slackConfig.channel) {
     return {
@@ -47,6 +32,30 @@ export async function executeSlackMessage(
   }
 
   try {
+    // Fetch the team's Slack integration from team_integrations
+    const { data: integration, error: fetchError } = await supabase
+      .from("team_integrations")
+      .select("config")
+      .eq("team_id", context.teamId)
+      .eq("integration_type", "slack")
+      .single();
+
+    if (fetchError || !integration) {
+      console.error("[Slack] No integration found for team:", context.teamId);
+      return {
+        status: "error",
+        error: "Slack is not connected for this team. Please connect Slack in the Apps section.",
+      };
+    }
+
+    const accessToken = integration.config?.access_token;
+    if (!accessToken) {
+      return {
+        status: "error",
+        error: "Slack access token not found. Please reconnect Slack.",
+      };
+    }
+
     // Render template variables in the message
     const renderedMessage = renderTemplate(slackConfig.message, context);
 
@@ -65,12 +74,12 @@ export async function executeSlackMessage(
 
     console.log("[Slack] Sending message to channel:", slackConfig.channel);
 
-    const response = await fetch(`${GATEWAY_URL}/chat.postMessage`, {
-      method: 'POST',
+    // Call Slack API directly with the team's access token
+    const response = await fetch("https://slack.com/api/chat.postMessage", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'X-Connection-Api-Key': SLACK_API_KEY,
-        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });

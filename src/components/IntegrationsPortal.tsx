@@ -8,12 +8,14 @@ import {
   BarChart3,
   Zap,
   Check,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CalendlyConfig } from "./CalendlyConfig";
+import { SlackConfig } from "./SlackConfig";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -52,6 +54,15 @@ const integrations: Integration[] = [
     icon: Zap,
     category: "automation",
     status: "available",
+  },
+  {
+    id: "slack",
+    name: "Slack",
+    description: "Team messaging and notifications",
+    icon: MessageSquare,
+    category: "automation",
+    status: "available",
+    configurable: true,
   },
   {
     id: "zoom",
@@ -97,26 +108,43 @@ const categoryLabels: Record<string, string> = {
 export function IntegrationsPortal() {
   const { teamId } = useParams();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
+  const [slackDialogOpen, setSlackDialogOpen] = useState(false);
 
   const { data: teamData, refetch } = useQuery({
-    queryKey: ["team-integrations", teamId],
+    queryKey: ["team-integrations-portal", teamId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teams")
-        .select("calendly_access_token, calendly_organization_uri, calendly_webhook_id, calendly_event_types, calendly_enabled_for_funnels, calendly_enabled_for_crm")
-        .eq("id", teamId)
-        .single();
+      const [teamsResult, slackResult] = await Promise.all([
+        supabase
+          .from("teams")
+          .select("calendly_access_token, calendly_organization_uri, calendly_webhook_id, calendly_event_types, calendly_enabled_for_funnels, calendly_enabled_for_crm")
+          .eq("id", teamId)
+          .single(),
+        supabase
+          .from("team_integrations")
+          .select("config")
+          .eq("team_id", teamId)
+          .eq("integration_type", "slack")
+          .maybeSingle(),
+      ]);
       
-      if (error) throw error;
-      return data;
+      if (teamsResult.error) throw teamsResult.error;
+      
+      return {
+        ...teamsResult.data,
+        slack_connected: !!(slackResult.data?.config as Record<string, unknown>)?.access_token,
+      };
     },
     enabled: !!teamId,
   });
 
   const isCalendlyConnected = !!teamData?.calendly_access_token;
+  const isSlackConnected = !!teamData?.slack_connected;
 
   const getIntegrationStatus = (integration: Integration) => {
     if (integration.id === "calendly" && isCalendlyConnected) {
+      return "connected";
+    }
+    if (integration.id === "slack" && isSlackConnected) {
       return "connected";
     }
     return integration.status;
@@ -125,6 +153,9 @@ export function IntegrationsPortal() {
   const handleIntegrationClick = (integration: Integration) => {
     if (integration.id === "calendly") {
       setCalendlyDialogOpen(true);
+    }
+    if (integration.id === "slack") {
+      setSlackDialogOpen(true);
     }
   };
 
@@ -227,6 +258,21 @@ export function IntegrationsPortal() {
               currentEventTypes={teamData?.calendly_event_types}
               calendlyEnabledForFunnels={teamData?.calendly_enabled_for_funnels ?? false}
               calendlyEnabledForCrm={teamData?.calendly_enabled_for_crm ?? false}
+              onUpdate={() => refetch()}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Slack Configuration Dialog */}
+      <Dialog open={slackDialogOpen} onOpenChange={setSlackDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Slack Integration</DialogTitle>
+          </DialogHeader>
+          {teamId && (
+            <SlackConfig 
+              teamId={teamId}
               onUpdate={() => refetch()}
             />
           )}

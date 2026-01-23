@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
+import { SlackConfig } from "@/components/SlackConfig";
 import { Check, ExternalLink } from "lucide-react";
 
 // Import logos
@@ -61,6 +62,7 @@ const apps: App[] = [
     logo: slackLogo,
     category: "communication",
     status: "available",
+    configurable: true,
   },
   {
     id: "hubspot",
@@ -98,18 +100,32 @@ const categoryLabels: Record<string, string> = {
 export default function AppsPortal() {
   const { teamId } = useParams();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
+  const [slackDialogOpen, setSlackDialogOpen] = useState(false);
 
   // Fetch team integrations
   const { data: teamData, refetch } = useQuery({
     queryKey: ["team-integrations", teamId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teams")
-        .select("calendly_access_token, calendly_webhook_id")
-        .eq("id", teamId)
-        .single();
-      if (error) throw error;
-      return data;
+      const [teamsResult, slackResult] = await Promise.all([
+        supabase
+          .from("teams")
+          .select("calendly_access_token, calendly_webhook_id")
+          .eq("id", teamId)
+          .single(),
+        supabase
+          .from("team_integrations")
+          .select("config")
+          .eq("team_id", teamId)
+          .eq("integration_type", "slack")
+          .maybeSingle(),
+      ]);
+      
+      if (teamsResult.error) throw teamsResult.error;
+      
+      return {
+        ...teamsResult.data,
+        slack_connected: !!(slackResult.data?.config as Record<string, unknown>)?.access_token,
+      };
     },
     enabled: !!teamId,
   });
@@ -118,12 +134,18 @@ export default function AppsPortal() {
     if (app.id === "calendly" && teamData?.calendly_access_token) {
       return "connected";
     }
+    if (app.id === "slack" && teamData?.slack_connected) {
+      return "connected";
+    }
     return app.status;
   };
 
   const handleAppClick = (app: App) => {
     if (app.id === "calendly" && app.configurable) {
       setCalendlyDialogOpen(true);
+    }
+    if (app.id === "slack" && app.configurable) {
+      setSlackDialogOpen(true);
     }
   };
 
@@ -230,6 +252,19 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <CalendlyConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Slack Config Dialog */}
+        <Dialog open={slackDialogOpen} onOpenChange={setSlackDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={slackLogo} alt="Slack" className="h-6 w-6" />
+                Slack Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <SlackConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>

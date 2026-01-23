@@ -899,7 +899,7 @@ async function runAutomation(
             log.skipReason = rateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const result = await executeSlackMessage(step.config, context);
+          const result = await executeSlackMessage(step.config, context, supabase);
           log = { ...log, ...result };
           break;
         }
