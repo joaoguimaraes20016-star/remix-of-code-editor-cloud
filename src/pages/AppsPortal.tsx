@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
 import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
-import { Check, ExternalLink } from "lucide-react";
+import { GoogleAccountBanner } from "@/components/GoogleAccountBanner";
+import { Check, ExternalLink, Lock } from "lucide-react";
 
 // Import logos
 import calendlyLogo from "@/assets/integrations/calendly.svg";
@@ -19,7 +20,7 @@ import zapierLogo from "@/assets/integrations/zapier.svg";
 import slackLogo from "@/assets/integrations/slack.svg";
 import hubspotLogo from "@/assets/integrations/hubspot.svg";
 
-// Google features - each is an independent integration card
+// Google features - excludes signin (handled by banner)
 const GOOGLE_FEATURES: Array<{
   feature: GoogleFeature;
   name: string;
@@ -27,17 +28,6 @@ const GOOGLE_FEATURES: Array<{
   logo: string;
   usageInstructions: string[];
 }> = [
-  {
-    feature: "signin",
-    name: "Google Sign-In",
-    description: "Connect your Google identity",
-    logo: "https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png",
-    usageInstructions: [
-      "This connects your Google account to your team",
-      "Once connected, you can enable specific features like Sheets or Calendar",
-      "Your email and profile will be used for team integrations",
-    ],
-  },
   {
     feature: "sheets",
     name: "Google Sheets",
@@ -241,12 +231,23 @@ export default function AppsPortal() {
         </div>
 
         <div className="space-y-10">
-          {/* Google Workspace Section - Individual Feature Cards */}
-          <div>
-            <h2 className="text-lg font-semibold text-foreground mb-4">
+          {/* Google Workspace Section */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">
               Google Workspace
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            
+            {/* Master Identity Banner */}
+            <GoogleAccountBanner
+              teamId={teamId || ""}
+              isConnected={teamData?.google_connected ?? false}
+              connectedEmail={teamData?.google_email}
+              connectedAt={teamData?.google_connected_at}
+              onUpdate={refetch}
+            />
+
+            {/* Feature Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {GOOGLE_FEATURES.map((gf) => (
                 <GoogleFeatureCard
                   key={gf.feature}
@@ -256,11 +257,7 @@ export default function AppsPortal() {
                   description={gf.description}
                   logo={gf.logo}
                   isConnected={teamData?.google_connected ?? false}
-                  isEnabled={
-                    gf.feature === "signin"
-                      ? (teamData?.google_connected ?? false)
-                      : (teamData?.google_enabled_features?.[gf.feature] ?? false)
-                  }
+                  isEnabled={teamData?.google_enabled_features?.[gf.feature] ?? false}
                   connectedEmail={teamData?.google_email}
                   connectedAt={teamData?.google_connected_at}
                   usageInstructions={gf.usageInstructions}

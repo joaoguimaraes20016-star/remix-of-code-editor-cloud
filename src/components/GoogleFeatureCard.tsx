@@ -12,6 +12,7 @@ import {
   ExternalLink, 
   Unlink,
   CheckCircle2,
+  Lock,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -25,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export type GoogleFeature = "signin" | "sheets" | "calendar" | "drive" | "forms";
+export type GoogleFeature = "sheets" | "calendar" | "drive" | "forms";
 
 interface GoogleFeatureCardProps {
   feature: GoogleFeature;
@@ -338,66 +339,60 @@ export function GoogleFeatureCard({
     },
   });
 
-  // Special handling for signin card
-  const isSignIn = feature === "signin";
-  const buttonLabel = isSignIn
-    ? (isConnected ? "Manage" : "Sign in with Google")
-    : (isEnabled ? "Manage" : isConnected ? "Enable" : "Connect");
-  const buttonVariant = (isSignIn && isConnected) || isEnabled ? "outline" : "default";
+  // Determine button state
+  const buttonLabel = isEnabled ? "Manage" : isConnected ? "Enable" : "Connect";
+  const buttonVariant = isEnabled ? "outline" : "default";
+  const isLocked = !isConnected;
 
   return (
     <>
       <Card
-        className="border-border/50 transition-all hover:border-primary/30 hover:shadow-md cursor-pointer"
-        onClick={() => setDialogOpen(true)}
+        className={`border-border/50 transition-all ${
+          isLocked 
+            ? "opacity-60 cursor-not-allowed" 
+            : "hover:border-primary/30 hover:shadow-md cursor-pointer"
+        }`}
+        onClick={() => !isLocked && setDialogOpen(true)}
       >
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden relative">
               <img 
                 src={logo} 
                 alt={name}
                 className="h-8 w-8 object-contain"
               />
+              {isLocked && (
+                <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-lg">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-foreground truncate">
-                  {name}
-                </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-foreground">{name}</h3>
                 {isEnabled && (
                   <Badge variant="secondary" className="bg-success/10 text-success border-0">
                     <Check className="h-3 w-3 mr-1" />
-                    Connected
-                  </Badge>
-                )}
-                {isConnected && !isEnabled && (
-                  <Badge variant="outline" className="text-muted-foreground">
-                    Available
+                    Enabled
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                {description}
-              </p>
-              {isConnected && connectedEmail && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {connectedEmail}
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground mt-1">{description}</p>
             </div>
           </div>
           <Button
-            variant={buttonVariant}
+            variant={isLocked ? "secondary" : buttonVariant}
             size="sm"
             className="w-full mt-4"
+            disabled={isLocked}
             onClick={(e) => {
               e.stopPropagation();
-              setDialogOpen(true);
+              if (!isLocked) setDialogOpen(true);
             }}
           >
-            {buttonLabel}
-            <ExternalLink className="h-3 w-3 ml-2" />
+            {isLocked ? "Sign in first" : buttonLabel}
+            {!isLocked && <ExternalLink className="h-3 w-3 ml-2" />}
           </Button>
         </CardContent>
       </Card>
