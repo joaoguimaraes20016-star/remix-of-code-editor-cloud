@@ -16,7 +16,7 @@ interface FathomConfigProps {
 interface FathomIntegrationPublic {
   integration_type: string;
   is_connected: boolean;
-  config: {
+  config_safe: {
     user_email?: string;
     user_name?: string;
     connected_at?: string;
@@ -80,7 +80,7 @@ export function FathomConfig({ teamId, onUpdate }: FathomConfigProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("team_integrations_public" as any)
-        .select("integration_type, is_connected, config")
+        .select("integration_type, is_connected, config_safe")
         .eq("team_id", teamId)
         .eq("integration_type", "fathom")
         .maybeSingle();
@@ -92,9 +92,9 @@ export function FathomConfig({ teamId, onUpdate }: FathomConfigProps) {
   });
 
   const isConnected = integration?.is_connected ?? false;
-  const userEmail = integration?.config?.user_email;
-  const userName = integration?.config?.user_name;
-  const connectedAt = integration?.config?.connected_at;
+  const userEmail = integration?.config_safe?.user_email;
+  const userName = integration?.config_safe?.user_name;
+  const connectedAt = integration?.config_safe?.connected_at;
 
   // Handle postMessage from popup
   useEffect(() => {
