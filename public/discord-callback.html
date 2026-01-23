@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Connection</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #5865F2 0%, #3C45A5 100%);
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 20px;
+    }
+    .success-icon {
+      fill: #57F287;
+    }
+    .error-icon {
+      fill: #ED4245;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0 0 12px 0;
+    }
+    p {
+      font-size: 16px;
+      opacity: 0.9;
+      margin: 0;
+    }
+    .closing {
+      font-size: 14px;
+      opacity: 0.7;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content"></div>
+  </div>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const success = params.get('success') === 'true';
+      const error = params.get('error');
+      const guild = params.get('guild');
+
+      const content = document.getElementById('content');
+
+      if (success) {
+        content.innerHTML = `
+          <svg class="icon success-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <h1>Connected!</h1>
+          <p>Successfully connected to ${guild || 'Discord'}</p>
+          <p class="closing">This window will close automatically...</p>
+        `;
+      } else {
+        content.innerHTML = `
+          <svg class="icon error-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          <h1>Connection Failed</h1>
+          <p>${error || 'Unable to connect to Discord'}</p>
+          <p class="closing">This window will close automatically...</p>
+        `;
+      }
+
+      // Post message to opener
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'discord-oauth-callback',
+          success: success,
+          error: error,
+          guild: guild
+        }, '*');
+      }
+
+      // Auto-close after delay
+      setTimeout(function() {
+        window.close();
+      }, 1500);
+    })();
+  </script>
+</body>
+</html>

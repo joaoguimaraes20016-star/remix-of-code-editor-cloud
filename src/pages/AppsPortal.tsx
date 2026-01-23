@@ -10,6 +10,7 @@ import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
 import { ZoomConfig } from "@/components/ZoomConfig";
 import { TypeformConfig } from "@/components/TypeformConfig";
+import { DiscordConfig } from "@/components/DiscordConfig";
 import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { GoogleAccountBanner } from "@/components/GoogleAccountBanner";
 import { Check, ExternalLink, Lock } from "lucide-react";
@@ -22,6 +23,7 @@ import zapierLogo from "@/assets/integrations/zapier.svg";
 import slackLogo from "@/assets/integrations/slack.svg";
 import hubspotLogo from "@/assets/integrations/hubspot.svg";
 import typeformLogo from "@/assets/integrations/typeform.svg";
+import discordLogo from "@/assets/integrations/discord.svg";
 
 // Google features - excludes signin (handled by banner)
 const GOOGLE_FEATURES: Array<{
@@ -124,6 +126,15 @@ const apps: App[] = [
     configurable: true,
   },
   {
+    id: "discord",
+    name: "Discord",
+    description: "Server notifications and messages",
+    logo: discordLogo,
+    category: "communication",
+    status: "available",
+    configurable: true,
+  },
+  {
     id: "hubspot",
     name: "HubSpot",
     description: "CRM and sales automation",
@@ -164,6 +175,7 @@ export default function AppsPortal() {
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
   const [typeformDialogOpen, setTypeformDialogOpen] = useState(false);
+  const [discordDialogOpen, setDiscordDialogOpen] = useState(false);
 
   // Fetch team integrations from secure view (tokens masked)
   const { data: teamData, refetch } = useQuery({
@@ -193,12 +205,14 @@ export default function AppsPortal() {
       const zoomIntegration = integrations.find(i => i.integration_type === "zoom");
       const typeformIntegration = integrations.find(i => i.integration_type === "typeform");
       const googleIntegration = integrations.find(i => i.integration_type === "google");
+      const discordIntegration = integrations.find(i => i.integration_type === "discord");
       
       return {
         ...teamsResult.data,
         slack_connected: slackIntegration?.is_connected ?? false,
         zoom_connected: zoomIntegration?.is_connected ?? false,
         typeform_connected: typeformIntegration?.is_connected ?? false,
+        discord_connected: discordIntegration?.is_connected ?? false,
         google_connected: googleIntegration?.is_connected ?? false,
         google_email: (googleIntegration?.config_safe as any)?.email ?? null,
         google_connected_at: (googleIntegration?.config_safe as any)?.connected_at ?? null,
@@ -226,6 +240,9 @@ export default function AppsPortal() {
     if (app.id === "typeform" && teamData?.typeform_connected) {
       return "connected";
     }
+    if (app.id === "discord" && teamData?.discord_connected) {
+      return "connected";
+    }
     return app.status;
   };
 
@@ -241,6 +258,9 @@ export default function AppsPortal() {
     }
     if (app.id === "typeform" && app.configurable) {
       setTypeformDialogOpen(true);
+    }
+    if (app.id === "discord" && app.configurable) {
+      setDiscordDialogOpen(true);
     }
   };
 
@@ -423,6 +443,19 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <TypeformConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Discord Config Dialog */}
+        <Dialog open={discordDialogOpen} onOpenChange={setDiscordDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={discordLogo} alt="Discord" className="h-6 w-6" />
+                Discord Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <DiscordConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>
