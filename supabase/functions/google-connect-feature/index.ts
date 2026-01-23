@@ -10,6 +10,7 @@ const FEATURE_SCOPES: Record<string, string[]> = {
   sheets: ["https://www.googleapis.com/auth/spreadsheets"],
   calendar: ["https://www.googleapis.com/auth/calendar"],
   drive: ["https://www.googleapis.com/auth/drive.readonly"],
+  forms: ["https://www.googleapis.com/auth/forms.responses.readonly"],
 };
 
 // Base identity scopes (always included on first connection)

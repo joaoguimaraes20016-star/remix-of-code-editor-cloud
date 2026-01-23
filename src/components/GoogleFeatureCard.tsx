@@ -25,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export type GoogleFeature = "sheets" | "calendar" | "drive";
+export type GoogleFeature = "sheets" | "calendar" | "drive" | "forms";
 
 interface GoogleFeatureCardProps {
   feature: GoogleFeature;
