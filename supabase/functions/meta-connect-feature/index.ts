@@ -5,6 +5,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Feature-specific scopes mapping
+const FEATURE_SCOPES: Record<string, string[]> = {
+  ads_reporting: ["ads_read"],
+  ads_management: ["ads_management", "ads_read"],
+  lead_forms: ["leads_retrieval", "pages_read_engagement", "pages_manage_metadata"],
+  capi: ["ads_management"],
+};
+
+type MetaFeature = keyof typeof FEATURE_SCOPES;
+
 function getSupabaseClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -39,11 +49,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { teamId, redirectUri } = await req.json();
+    const { teamId, feature, redirectUri } = await req.json();
 
-    if (!teamId) {
+    if (!teamId || !feature) {
       return new Response(
-        JSON.stringify({ error: "Missing teamId" }),
+        JSON.stringify({ error: "Missing teamId or feature" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate feature
+    if (!FEATURE_SCOPES[feature as MetaFeature]) {
+      return new Response(
+        JSON.stringify({ error: `Invalid feature: ${feature}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -63,6 +81,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if Meta is already connected (Phase 1 complete)
+    const { data: integration, error: integrationError } = await supabase
+      .from("team_integrations")
+      .select("is_connected, config")
+      .eq("team_id", teamId)
+      .eq("integration_type", "meta")
+      .single();
+
+    if (integrationError || !integration?.is_connected) {
+      return new Response(
+        JSON.stringify({ error: "Meta account not connected. Please connect your Meta account first." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get Meta credentials
     const clientId = Deno.env.get("META_CLIENT_ID");
     if (!clientId) {
@@ -75,56 +108,60 @@ Deno.serve(async (req) => {
     // Generate state token for CSRF protection
     const stateToken = crypto.randomUUID();
 
-    // Store state token and redirect URI in database
-    const { error: upsertError } = await supabase
-      .from("team_integrations")
-      .upsert(
-        {
-          team_id: teamId,
-          integration_type: "meta",
-          oauth_state: stateToken,
-          redirect_uri: redirectUri,
-          is_connected: false,
-        },
-        { onConflict: "team_id,integration_type" }
-      );
+    // Get existing granted scopes
+    const config = integration.config as Record<string, any> || {};
+    const existingScopes = config.granted_scopes || ["public_profile", "email"];
+    
+    // Get new scopes for this feature
+    const featureScopes = FEATURE_SCOPES[feature as MetaFeature];
+    
+    // Combine all scopes (existing + new)
+    const allScopes = [...new Set([...existingScopes, ...featureScopes])];
 
-    if (upsertError) {
-      console.error("Error storing state:", upsertError);
+    // Update state token and feature request in database
+    const { error: updateError } = await supabase
+      .from("team_integrations")
+      .update({
+        oauth_state: stateToken,
+        redirect_uri: redirectUri,
+        config: {
+          ...config,
+          pending_feature: feature,
+          pending_scopes: featureScopes,
+        },
+      })
+      .eq("team_id", teamId)
+      .eq("integration_type", "meta");
+
+    if (updateError) {
+      console.error("Error storing state:", updateError);
       return new Response(
         JSON.stringify({ error: "Failed to initialize OAuth flow" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Build Meta OAuth URL
-    const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/meta-oauth-callback`;
+    // Build Meta OAuth URL with incremental authorization
+    const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/meta-feature-callback`;
     
-    // Phase 1: Identity-only scopes (2-phase OAuth strategy)
-    // Only request basic profile permissions initially
-    // Business permissions (ads_management, leads_retrieval, etc.) are requested
-    // incrementally via meta-connect-feature when user enables specific features
-    const scopes = [
-      "public_profile",
-      "email",
-    ].join(",");
-
-    // State includes teamId for callback routing
-    const state = btoa(`${teamId}:${stateToken}`);
+    // State includes teamId and feature for callback routing
+    const state = btoa(`${teamId}:${stateToken}:${feature}`);
 
     const authUrl = new URL("https://www.facebook.com/v18.0/dialog/oauth");
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", callbackUrl);
     authUrl.searchParams.set("state", state);
-    authUrl.searchParams.set("scope", scopes);
+    authUrl.searchParams.set("scope", allScopes.join(","));
     authUrl.searchParams.set("response_type", "code");
+    // Use auth_type=rerequest to request only new permissions
+    authUrl.searchParams.set("auth_type", "rerequest");
 
     return new Response(
       JSON.stringify({ authUrl: authUrl.toString() }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in meta-oauth-start:", error);
+    console.error("Error in meta-connect-feature:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
