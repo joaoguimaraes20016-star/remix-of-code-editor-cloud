@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
 
     // Build Zoom OAuth URL
     const callbackUrl = `${supabaseUrl}/functions/v1/zoom-oauth-callback`;
-    const scopes = "meeting:write meeting:read user:read";
+    const scopes = "meeting:write:meeting meeting:read:meeting user:read:user";
 
     const authUrl = new URL("https://zoom.us/oauth/authorize");
     authUrl.searchParams.set("response_type", "code");
