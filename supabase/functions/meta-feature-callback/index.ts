@@ -55,12 +55,12 @@ Deno.serve(async (req) => {
       }
     }
     
-    return Response.redirect(buildRedirectUrl(`${redirectUri}/meta-callback.html`, params), 302);
+    return Response.redirect(buildRedirectUrl(`${redirectUri}/meta-feature-callback.html`, params), 302);
   }
 
   // Handle OAuth error
   if (error) {
-    console.error("Meta OAuth error:", error, errorReason, errorDescription);
+    console.error("Meta feature OAuth error:", error, errorReason, errorDescription);
     return buildCallbackRedirect(null, {
       success: "false",
       error: errorDescription || errorReason || error,
@@ -76,13 +76,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Decode state
+    // Decode state (teamId:stateToken:feature)
     let teamId: string;
     let stateToken: string;
+    let feature: string;
     
     try {
       const decoded = atob(state);
-      [teamId, stateToken] = decoded.split(":");
+      [teamId, stateToken, feature] = decoded.split(":");
     } catch {
       return buildCallbackRedirect(null, {
         success: "false",
@@ -90,10 +91,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify state token
+    // Verify state token and get existing config
     const { data: integration, error: fetchError } = await supabase
       .from("team_integrations")
-      .select("oauth_state, redirect_uri")
+      .select("oauth_state, redirect_uri, config")
       .eq("team_id", teamId)
       .eq("integration_type", "meta")
       .single();
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
     // Exchange code for access token
     const clientId = Deno.env.get("META_CLIENT_ID")!;
     const clientSecret = Deno.env.get("META_CLIENT_SECRET")!;
-    const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/meta-oauth-callback`;
+    const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/meta-feature-callback`;
 
     const tokenUrl = new URL("https://graph.facebook.com/v18.0/oauth/access_token");
     tokenUrl.searchParams.set("client_id", clientId);
@@ -149,52 +150,42 @@ Deno.serve(async (req) => {
     const finalToken = longLivedData.access_token || access_token;
     const finalExpiresIn = longLivedData.expires_in || expires_in;
 
-    // Fetch user info
-    const userResponse = await fetch(
-      `https://graph.facebook.com/me?fields=id,name,email&access_token=${finalToken}`
-    );
-    const userData = await userResponse.json();
-
-    if (!userResponse.ok || userData.error) {
-      console.error("User info error:", userData);
-      return buildCallbackRedirect(teamId, {
-        success: "false",
-        error: "Failed to fetch user info",
-      });
-    }
-
     // Calculate token expiration
     const tokenExpiresAt = new Date(
       Date.now() + (finalExpiresIn || 5184000) * 1000
     ).toISOString();
 
-    // Update integration with tokens and user info
-    // Phase 1 complete: identity_connected - only basic profile permissions granted
-    // Business permissions will be added incrementally via meta-connect-feature
+    // Get existing config and merge with new permissions
+    const config = (integration.config as Record<string, any>) || {};
+    const existingScopes = config.granted_scopes || ["public_profile", "email"];
+    const pendingScopes = config.pending_scopes || [];
+    const newGrantedScopes = [...new Set([...existingScopes, ...pendingScopes])];
+
+    // Update enabled features
+    const enabledFeatures = config.enabled_features || {};
+    enabledFeatures[feature] = true;
+
+    // Determine new phase based on features enabled
+    let phase = "identity_connected";
+    if (Object.values(enabledFeatures).some(v => v === true)) {
+      phase = "business_connected";
+    }
+
+    // Update integration with new token and enabled feature
     const { error: updateError } = await supabase
       .from("team_integrations")
       .update({
-        is_connected: true,
         access_token: finalToken,
         token_expires_at: tokenExpiresAt,
         oauth_state: null,
         config: {
-          phase: "identity_connected",
-          user_id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          connected_at: new Date().toISOString(),
-          granted_scopes: ["public_profile", "email"],
-          enabled_features: {
-            lead_forms: false,
-            ads_reporting: false,
-            ads_management: false,
-            capi: false,
-          },
-          selected_business: null,
-          selected_ad_account: null,
-          selected_pages: [],
-          subscribed_forms: [],
+          ...config,
+          phase,
+          granted_scopes: newGrantedScopes,
+          enabled_features: enabledFeatures,
+          pending_feature: null,
+          pending_scopes: null,
+          [`${feature}_enabled_at`]: new Date().toISOString(),
         },
       })
       .eq("team_id", teamId)
@@ -211,11 +202,10 @@ Deno.serve(async (req) => {
     // Success redirect
     return buildCallbackRedirect(teamId, {
       success: "true",
-      name: userData.name || "",
-      email: userData.email || "",
+      feature,
     });
   } catch (error) {
-    console.error("Error in meta-oauth-callback:", error);
+    console.error("Error in meta-feature-callback:", error);
     return buildCallbackRedirect(null, {
       success: "false",
       error: "Internal server error",
