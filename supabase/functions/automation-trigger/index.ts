@@ -34,6 +34,7 @@ import {
   executeStopWorkflow,
   executeGoTo,
 } from "./actions/workflow-actions.ts";
+import { executeSlackMessage } from "./actions/slack-message.ts";
 import { executeVoiceCall } from "./actions/voice-ai.ts";
 import {
   executeSendInvoice,
@@ -887,6 +888,18 @@ async function runAutomation(
             break;
           }
           const result = await executeCustomWebhook(step.config, context);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "slack_message": {
+          const rateCheck = await checkRateLimit(supabase, context.teamId, "slack", automation.id);
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const result = await executeSlackMessage(step.config, context);
           log = { ...log, ...result };
           break;
         }

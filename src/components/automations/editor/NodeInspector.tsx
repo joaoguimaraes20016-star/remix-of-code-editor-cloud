@@ -38,6 +38,7 @@ const SUPPORTED_ACTIONS: ActionType[] = [
   "close_deal",
   // Integrations
   "custom_webhook",
+  "slack_message",
 ];
 
 interface NodeInspectorProps {
