@@ -11,6 +11,7 @@ import { SlackConfig } from "@/components/SlackConfig";
 import { ZoomConfig } from "@/components/ZoomConfig";
 import { TypeformConfig } from "@/components/TypeformConfig";
 import { DiscordConfig } from "@/components/DiscordConfig";
+import { FathomConfig } from "@/components/FathomConfig";
 import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { GoogleAccountBanner } from "@/components/GoogleAccountBanner";
 import { Check, ExternalLink, Lock } from "lucide-react";
@@ -24,6 +25,7 @@ import slackLogo from "@/assets/integrations/slack.svg";
 import hubspotLogo from "@/assets/integrations/hubspot.svg";
 import typeformLogo from "@/assets/integrations/typeform.svg";
 import discordLogo from "@/assets/integrations/discord.svg";
+import fathomLogo from "@/assets/integrations/fathom.svg";
 
 // Google features - excludes signin (handled by banner)
 const GOOGLE_FEATURES: Array<{
@@ -160,6 +162,15 @@ const apps: App[] = [
     status: "available",
     configurable: true,
   },
+  {
+    id: "fathom",
+    name: "Fathom",
+    description: "Meeting recordings and transcriptions",
+    logo: fathomLogo,
+    category: "scheduling",
+    status: "available",
+    configurable: true,
+  },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -176,6 +187,7 @@ export default function AppsPortal() {
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
   const [typeformDialogOpen, setTypeformDialogOpen] = useState(false);
   const [discordDialogOpen, setDiscordDialogOpen] = useState(false);
+  const [fathomDialogOpen, setFathomDialogOpen] = useState(false);
 
   // Fetch team integrations from secure view (tokens masked)
   const { data: teamData, refetch } = useQuery({
@@ -206,6 +218,7 @@ export default function AppsPortal() {
       const typeformIntegration = integrations.find(i => i.integration_type === "typeform");
       const googleIntegration = integrations.find(i => i.integration_type === "google");
       const discordIntegration = integrations.find(i => i.integration_type === "discord");
+      const fathomIntegration = integrations.find(i => i.integration_type === "fathom");
       
       return {
         ...teamsResult.data,
@@ -213,6 +226,7 @@ export default function AppsPortal() {
         zoom_connected: zoomIntegration?.is_connected ?? false,
         typeform_connected: typeformIntegration?.is_connected ?? false,
         discord_connected: discordIntegration?.is_connected ?? false,
+        fathom_connected: fathomIntegration?.is_connected ?? false,
         google_connected: googleIntegration?.is_connected ?? false,
         google_email: (googleIntegration?.config_safe as any)?.email ?? null,
         google_connected_at: (googleIntegration?.config_safe as any)?.connected_at ?? null,
@@ -243,6 +257,9 @@ export default function AppsPortal() {
     if (app.id === "discord" && teamData?.discord_connected) {
       return "connected";
     }
+    if (app.id === "fathom" && teamData?.fathom_connected) {
+      return "connected";
+    }
     return app.status;
   };
 
@@ -261,6 +278,9 @@ export default function AppsPortal() {
     }
     if (app.id === "discord" && app.configurable) {
       setDiscordDialogOpen(true);
+    }
+    if (app.id === "fathom" && app.configurable) {
+      setFathomDialogOpen(true);
     }
   };
 
@@ -456,6 +476,19 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <DiscordConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Fathom Config Dialog */}
+        <Dialog open={fathomDialogOpen} onOpenChange={setFathomDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={fathomLogo} alt="Fathom" className="h-6 w-6" />
+                Fathom Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <FathomConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>
