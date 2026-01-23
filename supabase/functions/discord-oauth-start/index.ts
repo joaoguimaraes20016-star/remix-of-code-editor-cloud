@@ -103,10 +103,10 @@ Deno.serve(async (req) => {
     }
 
     // Build Discord OAuth URL
-    // Using bot scope with SEND_MESSAGES permission (2048)
+    // Bot permissions: VIEW_CHANNEL + SEND_MESSAGES + EMBED_LINKS + ATTACH_FILES
     const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/discord-oauth-callback`;
     const scopes = "bot applications.commands";
-    const permissions = "2048"; // SEND_MESSAGES
+    const permissions = "52224"; // VIEW_CHANNEL (1024) + SEND_MESSAGES (2048) + EMBED_LINKS (16384) + ATTACH_FILES (32768)
 
     const authUrl = new URL("https://discord.com/api/oauth2/authorize");
     authUrl.searchParams.set("client_id", discordClientId);
