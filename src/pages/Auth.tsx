@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/Logo';
+import { Separator } from '@/components/ui/separator';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -272,6 +273,37 @@ const Auth = () => {
       subscription.unsubscribe();
     };
   }, [toast, location, navigate]);
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      
+      if (error) {
+        toast({
+          title: 'Error signing in with Google',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Error signing in with Google',
+        description: err.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    }
+    setLoading(false);
+  };
 
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -836,6 +868,27 @@ const Auth = () => {
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Signing in...' : inviteToken ? 'Sign In & Join Team' : 'Sign In'}
                   </Button>
+                  
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator className="w-full" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                  >
+                    <img src="/google-icon.svg" alt="Google" className="w-5 h-5 mr-2" />
+                    Continue with Google
+                  </Button>
+                  
                   <button
                     type="button"
                     onClick={() => setShowResetForm(true)}
@@ -1008,6 +1061,30 @@ const Auth = () => {
                         'Sign Up'
                       )}
                     </Button>
+                    
+                    {!inviteToken && (
+                      <>
+                        <div className="relative my-4">
+                          <div className="absolute inset-0 flex items-center">
+                            <Separator className="w-full" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          className="w-full"
+                          onClick={handleGoogleSignIn}
+                          disabled={loading}
+                        >
+                          <img src="/google-icon.svg" alt="Google" className="w-5 h-5 mr-2" />
+                          Continue with Google
+                        </Button>
+                      </>
+                    )}
                   </>
                 )}
               </form>
