@@ -2825,6 +2825,8 @@ export type Database = {
           id: string
           integration_type: string
           is_connected: boolean | null
+          oauth_state: string | null
+          redirect_uri: string | null
           team_id: string
           updated_at: string
         }
@@ -2835,6 +2837,8 @@ export type Database = {
           id?: string
           integration_type: string
           is_connected?: boolean | null
+          oauth_state?: string | null
+          redirect_uri?: string | null
           team_id: string
           updated_at?: string
         }
@@ -2845,6 +2849,8 @@ export type Database = {
           id?: string
           integration_type?: string
           is_connected?: boolean | null
+          oauth_state?: string | null
+          redirect_uri?: string | null
           team_id?: string
           updated_at?: string
         }
