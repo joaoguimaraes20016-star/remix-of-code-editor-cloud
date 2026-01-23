@@ -28,6 +28,17 @@ const GOOGLE_FEATURES: Array<{
   usageInstructions: string[];
 }> = [
   {
+    feature: "signin",
+    name: "Google Sign-In",
+    description: "Connect your Google identity",
+    logo: "https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png",
+    usageInstructions: [
+      "This connects your Google account to your team",
+      "Once connected, you can enable specific features like Sheets or Calendar",
+      "Your email and profile will be used for team integrations",
+    ],
+  },
+  {
     feature: "sheets",
     name: "Google Sheets",
     description: "Sync leads and data with spreadsheets",
@@ -235,7 +246,7 @@ export default function AppsPortal() {
             <h2 className="text-lg font-semibold text-foreground mb-4">
               Google Workspace
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {GOOGLE_FEATURES.map((gf) => (
                 <GoogleFeatureCard
                   key={gf.feature}
@@ -245,7 +256,11 @@ export default function AppsPortal() {
                   description={gf.description}
                   logo={gf.logo}
                   isConnected={teamData?.google_connected ?? false}
-                  isEnabled={teamData?.google_enabled_features?.[gf.feature] ?? false}
+                  isEnabled={
+                    gf.feature === "signin"
+                      ? (teamData?.google_connected ?? false)
+                      : (teamData?.google_enabled_features?.[gf.feature] ?? false)
+                  }
                   connectedEmail={teamData?.google_email}
                   connectedAt={teamData?.google_connected_at}
                   usageInstructions={gf.usageInstructions}

@@ -25,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export type GoogleFeature = "sheets" | "calendar" | "drive" | "forms";
+export type GoogleFeature = "signin" | "sheets" | "calendar" | "drive" | "forms";
 
 interface GoogleFeatureCardProps {
   feature: GoogleFeature;
@@ -338,8 +338,12 @@ export function GoogleFeatureCard({
     },
   });
 
-  const buttonLabel = isEnabled ? "Manage" : isConnected ? "Enable" : "Connect";
-  const buttonVariant = isEnabled ? "outline" : "default";
+  // Special handling for signin card
+  const isSignIn = feature === "signin";
+  const buttonLabel = isSignIn
+    ? (isConnected ? "Manage" : "Sign in with Google")
+    : (isEnabled ? "Manage" : isConnected ? "Enable" : "Connect");
+  const buttonVariant = (isSignIn && isConnected) || isEnabled ? "outline" : "default";
 
   return (
     <>
