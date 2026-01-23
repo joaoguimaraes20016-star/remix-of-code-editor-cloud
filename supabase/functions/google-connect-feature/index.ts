@@ -7,6 +7,7 @@ const corsHeaders = {
 
 // Feature-specific scopes
 const FEATURE_SCOPES: Record<string, string[]> = {
+  signin: [], // Master identity - no additional scopes beyond identity
   sheets: ["https://www.googleapis.com/auth/spreadsheets"],
   calendar: ["https://www.googleapis.com/auth/calendar"],
   drive: ["https://www.googleapis.com/auth/drive.readonly"],
