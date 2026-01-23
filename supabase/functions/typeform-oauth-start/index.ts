@@ -103,12 +103,13 @@ Deno.serve(async (req) => {
 
     // Build Typeform authorization URL
     const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/typeform-oauth-callback`;
-    const scopes = "accounts:read+forms:read+responses:read+webhooks:read+webhooks:write";
+    const scopes = "accounts:read forms:read responses:read webhooks:read webhooks:write";
 
     const authUrl = new URL("https://api.typeform.com/oauth/authorize");
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", callbackUrl);
     authUrl.searchParams.set("scope", scopes);
+    authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("state", `${teamId}:${stateToken}`);
 
     return new Response(
