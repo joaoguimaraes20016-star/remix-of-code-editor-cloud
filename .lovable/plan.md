@@ -1,73 +1,65 @@
 
-# Add Fathom to Apps Portal
+# Fix: FathomConfig Not Showing Connected State
 
-## Problem
-The Fathom integration was added to the wrong component (`IntegrationsPortal.tsx`) instead of the actual Apps page component (`AppsPortal.tsx`). That's why you don't see it on the Apps page.
+## Problem Identified
+The `FathomConfig` component queries for `config` field but the `team_integrations_public` view only exposes `config_safe` (for security - to hide tokens).
 
-## Solution
-Add Fathom to `AppsPortal.tsx` following the same pattern as the other integrations (Zoom, Slack, Discord, etc.).
+**Current code (line 83):**
+```typescript
+.select("integration_type, is_connected, config")
+```
+
+**Should be:**
+```typescript
+.select("integration_type, is_connected, config_safe")
+```
 
 ## Changes Required
 
-### 1. Add Fathom Logo
-Create a Fathom logo SVG file at `src/assets/integrations/fathom.svg` (Fathom's brand color is purple `#5636D3`)
+### File: `src/components/FathomConfig.tsx`
 
-### 2. Update AppsPortal.tsx
+| Line | Change |
+|------|--------|
+| 16-24 | Update interface to use `config_safe` instead of `config` |
+| 83 | Change select query from `config` to `config_safe` |
+| 95-97 | Update property access from `config` to `config_safe` |
 
-| Change | Location |
-|--------|----------|
-| Import FathomConfig component | Line 13 |
-| Import Fathom logo | Line 27 |
-| Add Fathom to apps array | After line 162 |
-| Add fathomDialogOpen state | Line 179 |
-| Add fathom_connected to query | Lines 204-225 |
-| Add Fathom status check | Lines 243-245 |
-| Add Fathom click handler | Lines 262-264 |
-| Add Fathom Dialog | After line 460 |
+### Specific Changes
 
-### 3. Apps Array Entry
+**1. Update interface (lines 16-24):**
 ```typescript
-{
-  id: "fathom",
-  name: "Fathom",
-  description: "Meeting recordings and transcriptions",
-  logo: fathomLogo,
-  category: "scheduling", // Same category as Zoom
-  status: "available",
-  configurable: true,
+interface FathomIntegrationPublic {
+  integration_type: string;
+  is_connected: boolean;
+  config_safe: {
+    user_email?: string;
+    user_name?: string;
+    connected_at?: string;
+  } | null;
 }
 ```
 
-### 4. Query Updates
-- Find fathom integration: `integrations.find(i => i.integration_type === "fathom")`
-- Return `fathom_connected` boolean in query result
-
-### 5. Status Check
+**2. Update query select (line 83):**
 ```typescript
-if (app.id === "fathom" && teamData?.fathom_connected) {
-  return "connected";
-}
+.select("integration_type, is_connected, config_safe")
 ```
 
-### 6. Click Handler
+**3. Update property access (lines 95-97):**
 ```typescript
-if (app.id === "fathom" && app.configurable) {
-  setFathomDialogOpen(true);
-}
+const userEmail = integration?.config_safe?.user_email;
+const userName = integration?.config_safe?.user_name;
+const connectedAt = integration?.config_safe?.connected_at;
 ```
 
-### 7. Dialog Component
-Add the Fathom configuration dialog using the same pattern as Zoom/Discord dialogs.
+## Root Cause
+The `team_integrations_public` view is a security layer that masks sensitive data like access tokens. It exposes:
+- `is_connected` - connection status
+- `config_safe` - safe metadata (email, name, connected_at)
 
-## Files to Modify
-- `src/assets/integrations/fathom.svg` (create)
-- `src/pages/AppsPortal.tsx` (update)
+It does NOT expose:
+- `config` - the raw config (would contain tokens)
 
-## Files Already Created (No Changes Needed)
-- `src/components/FathomConfig.tsx` - Already exists and working
-- `supabase/functions/fathom-oauth-start/index.ts` - Already deployed
-- `supabase/functions/fathom-oauth-callback/index.ts` - Already deployed
-- `public/fathom-callback.html` - Already exists
+Since `config` isn't in the view, the query returns `null` for that field, making the component think there's no connected data even though `is_connected` is `true`.
 
 ## Result
-After this fix, Fathom will appear in the "Scheduling" category on the Apps page alongside Calendly and Zoom.
+After this fix, when you click "Manage" on a connected Fathom integration, it will correctly show the connected status with user details and a disconnect button.
