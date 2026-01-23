@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
-import { GoogleAccountCard } from "@/components/GoogleAccountCard";
+import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { Check, ExternalLink } from "lucide-react";
 
 // Import logos
@@ -19,12 +19,66 @@ import zapierLogo from "@/assets/integrations/zapier.svg";
 import slackLogo from "@/assets/integrations/slack.svg";
 import hubspotLogo from "@/assets/integrations/hubspot.svg";
 
+// Google features - each is an independent integration card
+const GOOGLE_FEATURES: Array<{
+  feature: GoogleFeature;
+  name: string;
+  description: string;
+  logo: string;
+  usageInstructions: string[];
+}> = [
+  {
+    feature: "sheets",
+    name: "Google Sheets",
+    description: "Sync leads and data with spreadsheets",
+    logo: "https://www.gstatic.com/images/branding/product/1x/sheets_2020q4_48dp.png",
+    usageInstructions: [
+      "Go to Automations and create a new workflow",
+      "Add 'Export to Google Sheets' action",
+      "Select your spreadsheet and configure mapping",
+    ],
+  },
+  {
+    feature: "calendar",
+    name: "Google Calendar",
+    description: "Sync appointments and create events",
+    logo: "https://www.gstatic.com/images/branding/product/1x/calendar_2020q4_48dp.png",
+    usageInstructions: [
+      "Use in booking flows to create calendar events",
+      "Calendar events include Google Meet links automatically",
+      "Sync appointments with your team calendars",
+    ],
+  },
+  {
+    feature: "drive",
+    name: "Google Drive",
+    description: "Access and manage files",
+    logo: "https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png",
+    usageInstructions: [
+      "Upload attachments to Google Drive",
+      "Access files from automations",
+      "Store documents securely in the cloud",
+    ],
+  },
+  {
+    feature: "forms",
+    name: "Google Forms",
+    description: "Collect form responses as leads",
+    logo: "https://www.gstatic.com/images/branding/product/1x/forms_2020q4_48dp.png",
+    usageInstructions: [
+      "Connect your Google Forms to capture responses",
+      "Automatically create leads from form submissions",
+      "Trigger automations on new responses",
+    ],
+  },
+];
+
 interface App {
   id: string;
   name: string;
   description: string;
   logo: string;
-  category: "scheduling" | "crm" | "communication" | "analytics" | "google";
+  category: "scheduling" | "crm" | "communication" | "analytics";
   status: "connected" | "available" | "coming_soon";
   configurable?: boolean;
 }
@@ -83,13 +137,11 @@ const apps: App[] = [
   },
 ];
 
-
 const categoryLabels: Record<string, string> = {
   scheduling: "Scheduling",
   crm: "CRM & Marketing",
   communication: "Communication",
   analytics: "Analytics",
-  google: "Google Workspace",
 };
 
 export default function AppsPortal() {
@@ -134,6 +186,7 @@ export default function AppsPortal() {
           sheets: false,
           calendar: false,
           drive: false,
+          forms: false,
         },
       };
     },
@@ -177,19 +230,29 @@ export default function AppsPortal() {
         </div>
 
         <div className="space-y-10">
-          {/* Google Workspace Section */}
+          {/* Google Workspace Section - Individual Feature Cards */}
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">
-              {categoryLabels.google}
+              Google Workspace
             </h2>
-            <GoogleAccountCard
-              teamId={teamId || ""}
-              isConnected={teamData?.google_connected ?? false}
-              connectedEmail={teamData?.google_email}
-              connectedAt={teamData?.google_connected_at}
-              enabledFeatures={teamData?.google_enabled_features ?? {}}
-              onUpdate={refetch}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {GOOGLE_FEATURES.map((gf) => (
+                <GoogleFeatureCard
+                  key={gf.feature}
+                  feature={gf.feature}
+                  teamId={teamId || ""}
+                  name={gf.name}
+                  description={gf.description}
+                  logo={gf.logo}
+                  isConnected={teamData?.google_connected ?? false}
+                  isEnabled={teamData?.google_enabled_features?.[gf.feature] ?? false}
+                  connectedEmail={teamData?.google_email}
+                  connectedAt={teamData?.google_connected_at}
+                  usageInstructions={gf.usageInstructions}
+                  onUpdate={refetch}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Other App Categories */}
