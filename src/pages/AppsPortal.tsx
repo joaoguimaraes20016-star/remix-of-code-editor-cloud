@@ -12,6 +12,8 @@ import { ZoomConfig } from "@/components/ZoomConfig";
 import { TypeformConfig } from "@/components/TypeformConfig";
 import { DiscordConfig } from "@/components/DiscordConfig";
 import { FathomConfig } from "@/components/FathomConfig";
+import { MetaConfig } from "@/components/MetaConfig";
+import { GoogleAdsConfig } from "@/components/GoogleAdsConfig";
 import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { GoogleAccountBanner } from "@/components/GoogleAccountBanner";
 import { Check, ExternalLink, Lock } from "lucide-react";
@@ -26,6 +28,8 @@ import hubspotLogo from "@/assets/integrations/hubspot.svg";
 import typeformLogo from "@/assets/integrations/typeform.svg";
 import discordLogo from "@/assets/integrations/discord.svg";
 import fathomLogo from "@/assets/integrations/fathom.svg";
+import metaLogo from "@/assets/integrations/meta.svg";
+import googleAdsLogo from "@/assets/integrations/google-ads.svg";
 
 // Google features - excludes signin (handled by banner)
 const GOOGLE_FEATURES: Array<{
@@ -86,7 +90,7 @@ interface App {
   name: string;
   description: string;
   logo: string;
-  category: "scheduling" | "crm" | "communication" | "analytics";
+  category: "scheduling" | "crm" | "communication" | "analytics" | "ads";
   status: "connected" | "available" | "coming_soon";
   configurable?: boolean;
 }
@@ -171,6 +175,24 @@ const apps: App[] = [
     status: "available",
     configurable: true,
   },
+  {
+    id: "meta",
+    name: "Meta",
+    description: "Facebook & Instagram ads and lead forms",
+    logo: metaLogo,
+    category: "ads",
+    status: "available",
+    configurable: true,
+  },
+  {
+    id: "google_ads",
+    name: "Google Ads",
+    description: "Conversion tracking and lead forms",
+    logo: googleAdsLogo,
+    category: "ads",
+    status: "available",
+    configurable: true,
+  },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -178,6 +200,7 @@ const categoryLabels: Record<string, string> = {
   crm: "CRM & Marketing",
   communication: "Communication",
   analytics: "Analytics",
+  ads: "Ads & Marketing",
 };
 
 export default function AppsPortal() {
@@ -188,6 +211,8 @@ export default function AppsPortal() {
   const [typeformDialogOpen, setTypeformDialogOpen] = useState(false);
   const [discordDialogOpen, setDiscordDialogOpen] = useState(false);
   const [fathomDialogOpen, setFathomDialogOpen] = useState(false);
+  const [metaDialogOpen, setMetaDialogOpen] = useState(false);
+  const [googleAdsDialogOpen, setGoogleAdsDialogOpen] = useState(false);
 
   // Fetch team integrations from secure view (tokens masked)
   const { data: teamData, refetch } = useQuery({
@@ -219,6 +244,8 @@ export default function AppsPortal() {
       const googleIntegration = integrations.find(i => i.integration_type === "google");
       const discordIntegration = integrations.find(i => i.integration_type === "discord");
       const fathomIntegration = integrations.find(i => i.integration_type === "fathom");
+      const metaIntegration = integrations.find(i => i.integration_type === "meta");
+      const googleAdsIntegration = integrations.find(i => i.integration_type === "google_ads");
       
       return {
         ...teamsResult.data,
@@ -227,6 +254,8 @@ export default function AppsPortal() {
         typeform_connected: typeformIntegration?.is_connected ?? false,
         discord_connected: discordIntegration?.is_connected ?? false,
         fathom_connected: fathomIntegration?.is_connected ?? false,
+        meta_connected: metaIntegration?.is_connected ?? false,
+        google_ads_connected: googleAdsIntegration?.is_connected ?? false,
         google_connected: googleIntegration?.is_connected ?? false,
         google_email: (googleIntegration?.config_safe as any)?.email ?? null,
         google_connected_at: (googleIntegration?.config_safe as any)?.connected_at ?? null,
@@ -260,6 +289,12 @@ export default function AppsPortal() {
     if (app.id === "fathom" && teamData?.fathom_connected) {
       return "connected";
     }
+    if (app.id === "meta" && teamData?.meta_connected) {
+      return "connected";
+    }
+    if (app.id === "google_ads" && teamData?.google_ads_connected) {
+      return "connected";
+    }
     return app.status;
   };
 
@@ -281,6 +316,12 @@ export default function AppsPortal() {
     }
     if (app.id === "fathom" && app.configurable) {
       setFathomDialogOpen(true);
+    }
+    if (app.id === "meta" && app.configurable) {
+      setMetaDialogOpen(true);
+    }
+    if (app.id === "google_ads" && app.configurable) {
+      setGoogleAdsDialogOpen(true);
     }
   };
 
@@ -489,6 +530,32 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <FathomConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Meta Config Dialog */}
+        <Dialog open={metaDialogOpen} onOpenChange={setMetaDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={metaLogo} alt="Meta" className="h-6 w-6" />
+                Meta Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <MetaConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Google Ads Config Dialog */}
+        <Dialog open={googleAdsDialogOpen} onOpenChange={setGoogleAdsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={googleAdsLogo} alt="Google Ads" className="h-6 w-6" />
+                Google Ads Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <GoogleAdsConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>
