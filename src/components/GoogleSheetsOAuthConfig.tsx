@@ -21,13 +21,10 @@ interface GoogleSheetsOAuthConfigProps {
   onUpdate?: () => void;
 }
 
-interface GoogleSheetsIntegration {
-  access_token?: string;
-  refresh_token?: string;
+interface GoogleSheetsIntegrationPublic {
   email?: string;
   name?: string;
   connected_at?: string;
-  expires_at?: string;
 }
 
 const POPUP_LOADING_HTML = `
@@ -74,24 +71,25 @@ export function GoogleSheetsOAuthConfig({ teamId, onUpdate }: GoogleSheetsOAuthC
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch current integration status
-  const { data: integration, isLoading, refetch } = useQuery({
+  // Fetch current integration status from secure view (tokens masked)
+  const { data: integrationData, isLoading, refetch } = useQuery({
     queryKey: ["google-sheets-integration", teamId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("team_integrations")
-        .select("config")
+        .from("team_integrations_public" as any)
+        .select("is_connected, config_safe")
         .eq("team_id", teamId)
         .eq("integration_type", "google_sheets")
         .maybeSingle();
 
       if (error) throw error;
-      return data?.config as GoogleSheetsIntegration | null;
+      return data as unknown as { is_connected: boolean; config_safe: GoogleSheetsIntegrationPublic | null } | null;
     },
     enabled: !!teamId,
   });
 
-  const isConnected = !!integration?.access_token;
+  const isConnected = integrationData?.is_connected ?? false;
+  const integration = integrationData?.config_safe;
 
   // Listen for OAuth callback messages
   useEffect(() => {
@@ -136,14 +134,14 @@ export function GoogleSheetsOAuthConfig({ teamId, onUpdate }: GoogleSheetsOAuthC
         if (popupRef.current?.closed) {
           // Check if connection succeeded
           const { data } = await supabase
-            .from("team_integrations")
-            .select("config")
+            .from("team_integrations_public" as any)
+            .select("is_connected, config_safe")
             .eq("team_id", teamId)
             .eq("integration_type", "google_sheets")
             .maybeSingle();
 
-          const config = data?.config as GoogleSheetsIntegration | null;
-          if (config?.access_token) {
+          const result = data as unknown as { is_connected: boolean; config_safe: GoogleSheetsIntegrationPublic | null } | null;
+          if (result?.is_connected) {
             setConnecting(false);
             clearInterval(pollTimerRef.current!);
             pollTimerRef.current = null;
@@ -151,8 +149,8 @@ export function GoogleSheetsOAuthConfig({ teamId, onUpdate }: GoogleSheetsOAuthC
             onUpdate?.();
             toast({
               title: "Google Sheets Connected",
-              description: config.email
-                ? `Connected as ${config.email}`
+              description: result.config_safe?.email
+                ? `Connected as ${result.config_safe.email}`
                 : "Your Google account is now connected.",
             });
           } else {

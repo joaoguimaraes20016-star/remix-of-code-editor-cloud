@@ -84,14 +84,22 @@ export function StripeConfig({ teamId, onUpdate }: StripeConfigProps) {
     queryKey: ["stripe-integration-config", teamId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("team_integrations")
-        .select("id, team_id, integration_type, is_connected, config, created_at, updated_at")
+        .from("team_integrations_public" as any)
+        .select("id, team_id, integration_type, is_connected, config_safe, created_at, updated_at")
         .eq("team_id", teamId)
         .eq("integration_type", "stripe")
         .maybeSingle();
 
       if (error) throw error;
-      return data;
+      return data as unknown as {
+        id: string;
+        team_id: string;
+        integration_type: string;
+        is_connected: boolean;
+        config_safe: Record<string, any> | null;
+        created_at: string;
+        updated_at: string;
+      } | null;
     },
     enabled: !!teamId,
   });
@@ -135,7 +143,7 @@ export function StripeConfig({ teamId, onUpdate }: StripeConfigProps) {
     );
   }
 
-  const config = integration?.config as Record<string, any> | null;
+  const config = integration?.config_safe;
   const stripeAccountId = config?.stripe_account_id;
   const livemode = config?.livemode;
 

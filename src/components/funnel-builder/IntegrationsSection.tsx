@@ -51,17 +51,25 @@ export function IntegrationsSection({ teamId }: IntegrationsSectionProps) {
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
   const [isTesting, setIsTesting] = useState(false);
 
-  // Fetch integrations
+  // Fetch integrations from secure view (tokens masked)
   const { data: integrations = [], isLoading } = useQuery({
     queryKey: ['team-integrations', teamId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('team_integrations')
-        .select('*')
+        .from('team_integrations_public' as any)
+        .select('id, team_id, integration_type, is_connected, config_safe')
         .eq('team_id', teamId);
       
       if (error) throw error;
-      return data as Integration[];
+      // Map to expected Integration interface
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        team_id: item.team_id,
+        integration_type: item.integration_type,
+        config: item.config_safe || {},
+        is_connected: item.is_connected,
+        connected_at: item.config_safe?.connected_at || null,
+      })) as Integration[];
     },
   });
 

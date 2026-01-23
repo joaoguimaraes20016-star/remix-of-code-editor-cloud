@@ -113,36 +113,37 @@ export default function AppsPortal() {
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
   const [googleSheetsDialogOpen, setGoogleSheetsDialogOpen] = useState(false);
 
-  // Fetch team integrations
+  // Fetch team integrations from secure view (tokens masked)
   const { data: teamData, refetch } = useQuery({
     queryKey: ["team-integrations", teamId],
     queryFn: async () => {
-      const [teamsResult, slackResult, googleSheetsResult] = await Promise.all([
+      const [teamsResult, integrationsResult] = await Promise.all([
         supabase
           .from("teams")
           .select("calendly_access_token, calendly_webhook_id")
           .eq("id", teamId)
           .single(),
         supabase
-          .from("team_integrations")
-          .select("config")
-          .eq("team_id", teamId)
-          .eq("integration_type", "slack")
-          .maybeSingle(),
-        supabase
-          .from("team_integrations")
-          .select("config")
-          .eq("team_id", teamId)
-          .eq("integration_type", "google_sheets")
-          .maybeSingle(),
+          .from("team_integrations_public" as any)
+          .select("integration_type, is_connected, config_safe")
+          .eq("team_id", teamId),
       ]);
       
       if (teamsResult.error) throw teamsResult.error;
       
+      const integrations = ((integrationsResult.data || []) as unknown) as Array<{
+        integration_type: string;
+        is_connected: boolean;
+        config_safe: Record<string, unknown> | null;
+      }>;
+      
+      const slackIntegration = integrations.find(i => i.integration_type === "slack");
+      const googleSheetsIntegration = integrations.find(i => i.integration_type === "google_sheets");
+      
       return {
         ...teamsResult.data,
-        slack_connected: !!(slackResult.data?.config as Record<string, unknown>)?.access_token,
-        google_sheets_connected: !!(googleSheetsResult.data?.config as Record<string, unknown>)?.access_token,
+        slack_connected: slackIntegration?.is_connected ?? false,
+        google_sheets_connected: googleSheetsIntegration?.is_connected ?? false,
       };
     },
     enabled: !!teamId,
