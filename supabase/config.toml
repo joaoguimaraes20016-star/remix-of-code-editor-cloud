@@ -9,6 +9,15 @@ verify_jwt = true
 [functions.calendly-webhook]
 verify_jwt = false
 
+[functions.google-oauth-start]
+verify_jwt = false
+
+[functions.google-oauth-callback]
+verify_jwt = false
+
+[functions.refresh-google-token]
+verify_jwt = false
+
 [functions.calendly-oauth-start]
 verify_jwt = true
 

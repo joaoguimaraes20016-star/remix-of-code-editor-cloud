@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
+import { GoogleSheetsOAuthConfig } from "@/components/GoogleSheetsOAuthConfig";
 import { Check, ExternalLink } from "lucide-react";
 
 // Import logos
@@ -36,6 +37,15 @@ const apps: App[] = [
     description: "Scheduling and appointment booking",
     logo: calendlyLogo,
     category: "scheduling",
+    status: "available",
+    configurable: true,
+  },
+  {
+    id: "google-sheets",
+    name: "Google Sheets",
+    description: "Append rows to spreadsheets",
+    logo: googleMeetLogo, // Using Google Meet logo temporarily
+    category: "crm",
     status: "available",
     configurable: true,
   },
@@ -101,12 +111,13 @@ export default function AppsPortal() {
   const { teamId } = useParams();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
+  const [googleSheetsDialogOpen, setGoogleSheetsDialogOpen] = useState(false);
 
   // Fetch team integrations
   const { data: teamData, refetch } = useQuery({
     queryKey: ["team-integrations", teamId],
     queryFn: async () => {
-      const [teamsResult, slackResult] = await Promise.all([
+      const [teamsResult, slackResult, googleSheetsResult] = await Promise.all([
         supabase
           .from("teams")
           .select("calendly_access_token, calendly_webhook_id")
@@ -118,6 +129,12 @@ export default function AppsPortal() {
           .eq("team_id", teamId)
           .eq("integration_type", "slack")
           .maybeSingle(),
+        supabase
+          .from("team_integrations")
+          .select("config")
+          .eq("team_id", teamId)
+          .eq("integration_type", "google_sheets")
+          .maybeSingle(),
       ]);
       
       if (teamsResult.error) throw teamsResult.error;
@@ -125,6 +142,7 @@ export default function AppsPortal() {
       return {
         ...teamsResult.data,
         slack_connected: !!(slackResult.data?.config as Record<string, unknown>)?.access_token,
+        google_sheets_connected: !!(googleSheetsResult.data?.config as Record<string, unknown>)?.access_token,
       };
     },
     enabled: !!teamId,
@@ -137,6 +155,9 @@ export default function AppsPortal() {
     if (app.id === "slack" && teamData?.slack_connected) {
       return "connected";
     }
+    if (app.id === "google-sheets" && teamData?.google_sheets_connected) {
+      return "connected";
+    }
     return app.status;
   };
 
@@ -146,6 +167,9 @@ export default function AppsPortal() {
     }
     if (app.id === "slack" && app.configurable) {
       setSlackDialogOpen(true);
+    }
+    if (app.id === "google-sheets" && app.configurable) {
+      setGoogleSheetsDialogOpen(true);
     }
   };
 
@@ -265,6 +289,19 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <SlackConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Google Sheets Config Dialog */}
+        <Dialog open={googleSheetsDialogOpen} onOpenChange={setGoogleSheetsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={googleMeetLogo} alt="Google Sheets" className="h-6 w-6" />
+                Google Sheets Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <GoogleSheetsOAuthConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>

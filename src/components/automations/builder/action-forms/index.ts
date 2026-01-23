@@ -27,3 +27,6 @@ export { SplitTestForm } from "./SplitTestForm";
 export { GoToForm } from "./GoToForm";
 export { RunWorkflowForm } from "./RunWorkflowForm";
 export { StopWorkflowForm } from "./StopWorkflowForm";
+
+// Integrations
+export { GoogleSheetsForm } from "./GoogleSheetsForm";

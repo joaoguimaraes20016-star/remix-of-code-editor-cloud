@@ -22,6 +22,7 @@ import {
   GoToForm,
   RunWorkflowForm,
   StopWorkflowForm,
+  GoogleSheetsForm,
 } from "@/components/automations/builder/action-forms";
 
 interface ActionInspectorProps {
@@ -70,6 +71,7 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
       {/* Integrations */}
       {step.type === "custom_webhook" && <WebhookForm {...formProps} />}
       {step.type === "slack_message" && <SlackMessageForm {...formProps} />}
+      {step.type === "google_sheets" && <GoogleSheetsForm {...formProps} />}
       {step.type === "enqueue_dialer" && (
         <p className="text-white/50 text-sm">Power dialer configuration coming soon</p>
       )}
