@@ -134,3 +134,15 @@ verify_jwt = false
 
 [functions.zoom-oauth-callback]
 verify_jwt = false
+
+[functions.typeform-oauth-start]
+verify_jwt = false
+
+[functions.typeform-oauth-callback]
+verify_jwt = false
+
+[functions.discord-oauth-start]
+verify_jwt = false
+
+[functions.discord-oauth-callback]
+verify_jwt = false
