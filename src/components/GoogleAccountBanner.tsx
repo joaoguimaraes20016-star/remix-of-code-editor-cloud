@@ -213,8 +213,8 @@ export function GoogleAccountBanner({
                   Signed in as <span className="font-medium text-foreground">{connectedEmail}</span>
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Connect your Google identity to enable integrations below
+              <p className="text-sm text-muted-foreground mt-0.5">
+                  Connect once to unlock all Google features
                 </p>
               )}
             </div>
