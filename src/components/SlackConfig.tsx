@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -32,9 +32,39 @@ interface SlackIntegration {
   connected_at?: string;
 }
 
+// Loading HTML for the popup placeholder (opened synchronously to avoid popup blockers)
+const POPUP_LOADING_HTML = () => `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Connecting to Slack...</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           display: flex; justify-content: center; align-items: center;
+           height: 100vh; margin: 0; background: #f8fafc; }
+    .container { text-align: center; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0;
+               border-top-color: #4f46e5; border-radius: 50%;
+               animation: spin 1s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h2 { color: #1e293b; margin: 0 0 8px; font-size: 18px; }
+    p { color: #64748b; margin: 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spinner"></div>
+    <h2>Connecting to Slack</h2>
+    <p>Please wait...</p>
+  </div>
+</body>
+</html>`;
+
 export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
   const queryClient = useQueryClient();
   const [connecting, setConnecting] = useState(false);
+  const popupRef = useRef<Window | null>(null);
+  const pollTimerRef = useRef<number | null>(null);
 
   // Fetch Slack integration status
   const { data: integration, isLoading, refetch } = useQuery({
@@ -59,11 +89,13 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "slack-oauth-success") {
+        console.debug("[SlackConfig] Received slack-oauth-success message");
         setConnecting(false);
         toast.success(`Connected to ${event.data.workspace || "Slack"}!`);
         refetch();
         onUpdate?.();
       } else if (event.data?.type === "slack-oauth-error") {
+        console.debug("[SlackConfig] Received slack-oauth-error message", event.data.error);
         setConnecting(false);
         toast.error(event.data.error || "Failed to connect Slack");
       }
@@ -72,6 +104,60 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [refetch, onUpdate]);
+
+  // Fallback completion strategy: while connecting, poll DB for access_token
+  // Also detect user closing the popup so we never stay stuck on "Connecting...".
+  useEffect(() => {
+    if (!connecting) {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+      return;
+    }
+
+    const poll = async () => {
+      try {
+        // 1) First, check if the integration is now connected
+        const result = await refetch();
+        if (result.data?.access_token) {
+          console.debug("[SlackConfig] Detected access_token via polling");
+          try {
+            popupRef.current?.close();
+          } catch {
+            // ignore
+          }
+          popupRef.current = null;
+          setConnecting(false);
+          toast.success(`Connected to ${result.data.team_name || "Slack"}!`);
+          onUpdate?.();
+          return;
+        }
+
+        // 2) If popup was closed and we're still not connected, stop and explain
+        const popup = popupRef.current;
+        if (popup && popup.closed) {
+          console.debug("[SlackConfig] Popup closed before connection completed");
+          popupRef.current = null;
+          setConnecting(false);
+          toast.info("Slack window closed before authorization completed.");
+        }
+      } catch (e) {
+        console.debug("[SlackConfig] Polling error", e);
+      }
+    };
+
+    // run immediately + interval
+    poll();
+    pollTimerRef.current = window.setInterval(poll, 2500);
+
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, [connecting, refetch, onUpdate]);
 
   // Watchdog timer for popup
   useEffect(() => {
@@ -86,12 +172,45 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
   }, [connecting]);
 
   const handleConnect = async () => {
+    // Open popup synchronously (prevents popup blockers in most browsers)
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    const popup = window.open(
+      "about:blank",
+      "slack-oauth",
+      `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes`
+    );
+
+    if (!popup || popup.closed) {
+      toast.error("Popup blocked. Please allow popups and try again.", { duration: 10000 });
+      return;
+    }
+
+    popupRef.current = popup;
+    try {
+      popup.document.write(POPUP_LOADING_HTML());
+      popup.document.close();
+    } catch {
+      // ignore
+    }
+
     try {
       setConnecting(true);
+
+      console.debug("[SlackConfig] Starting Slack OAuth", { teamId });
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error("Please sign in to connect Slack");
+        try {
+          popup.close();
+        } catch {
+          // ignore
+        }
+        popupRef.current = null;
         setConnecting(false);
         return;
       }
@@ -109,23 +228,40 @@ export function SlackConfig({ teamId, onUpdate }: SlackConfigProps) {
         throw new Error("No authorization URL returned");
       }
 
-      // Open popup for OAuth
-      const width = 600;
-      const height = 700;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      window.open(
-        authUrl,
-        "slack-oauth",
-        `width=${width},height=${height},left=${left},top=${top},popup=1`
-      );
+      console.debug("[SlackConfig] Received Slack authUrl, navigating popup");
+      try {
+        popup.location.href = authUrl;
+      } catch (e) {
+        console.debug("[SlackConfig] Failed to navigate popup", e);
+        throw new Error("Failed to open Slack authorization window");
+      }
     } catch (error) {
       console.error("Slack OAuth error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to start Slack connection");
+      try {
+        popupRef.current?.close();
+      } catch {
+        // ignore
+      }
+      popupRef.current = null;
       setConnecting(false);
     }
   };
+
+  // Cleanup timers/popup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+      try {
+        popupRef.current?.close();
+      } catch {
+        // ignore
+      }
+      popupRef.current = null;
+    };
+  }, []);
 
   const disconnectMutation = useMutation({
     mutationFn: async () => {
