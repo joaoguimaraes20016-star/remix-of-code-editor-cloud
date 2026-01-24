@@ -1,11 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Constants
+const EXPECTED_CLIENT_ID = "stackit_zapier_client_9f3a7c2d1b84e6f0";
+const ALLOWED_REDIRECT_URI = "https://zapier.com/dashboard/auth/oauth/return/App235737CLIAPI/";
+const AUTH_CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-// Centralized HTML response headers to ensure proper content-type
+// HTML response headers
 const htmlHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -14,11 +14,13 @@ const htmlHeaders = {
   "Pragma": "no-cache",
 };
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 function htmlResponse(body: string, status = 200): Response {
-  return new Response(body, { 
-    status,
-    headers: htmlHeaders,
-  });
+  return new Response(body, { status, headers: htmlHeaders });
 }
 
 function getSupabaseClient() {
@@ -28,139 +30,23 @@ function getSupabaseClient() {
   );
 }
 
-function generateAuthCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+// Secure random code generation using crypto.getRandomValues
+function generateSecureCode(length: number = 32): string {
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const url = new URL(req.url);
-    const clientId = url.searchParams.get("client_id");
-    const redirectUri = url.searchParams.get("redirect_uri");
-    const state = url.searchParams.get("state");
-    const responseType = url.searchParams.get("response_type");
-
-    // Validate required OAuth parameters
-    if (!clientId || !redirectUri || !state) {
-      return htmlResponse(renderErrorPage("Missing required OAuth parameters (client_id, redirect_uri, or state)"));
-    }
-
-    // Validate client_id with actionable error messages
-    const expectedClientId = Deno.env.get("ZAPIER_CLIENT_ID");
-    
-    if (!expectedClientId) {
-      console.error("ZAPIER_CLIENT_ID secret is not configured in Supabase");
-      return htmlResponse(renderErrorPage("Server misconfigured: missing ZAPIER_CLIENT_ID secret. Please contact the administrator."));
-    }
-    
-    if (clientId !== expectedClientId) {
-      // Log redacted hint for debugging (first 4 chars + length)
-      const receivedHint = clientId.length > 4 ? `${clientId.slice(0, 4)}... (len=${clientId.length})` : "(too short)";
-      const expectedHint = expectedClientId.length > 4 ? `${expectedClientId.slice(0, 4)}... (len=${expectedClientId.length})` : "(too short)";
-      console.error(`client_id mismatch - received: ${receivedHint}, expected: ${expectedHint}`);
-      
-      return htmlResponse(renderErrorPage("Invalid client_id. Ensure the Zapier integration's Client ID matches the ZAPIER_CLIENT_ID secret in Supabase."));
-    }
-
-    // Check for authorization header (user session)
-    const authHeader = req.headers.get("Authorization");
-    const teamIdParam = url.searchParams.get("team_id");
-
-    // If POST request, user is submitting the authorization form
-    if (req.method === "POST") {
-      const formData = await req.formData();
-      const teamId = formData.get("team_id") as string;
-      const userToken = formData.get("user_token") as string;
-
-      if (!teamId || !userToken) {
-        return htmlResponse(renderErrorPage("Missing team selection or authentication"));
-      }
-
-      const supabase = getSupabaseClient();
-
-      // Verify user token
-      const { data: userData, error: userError } = await supabase.auth.getUser(userToken);
-      if (userError || !userData.user) {
-        return htmlResponse(renderErrorPage("Invalid or expired session"));
-      }
-
-      // Verify user is member of the team
-      const { data: membership, error: memberError } = await supabase
-        .from("team_members")
-        .select("id")
-        .eq("team_id", teamId)
-        .eq("user_id", userData.user.id)
-        .single();
-
-      if (memberError || !membership) {
-        return htmlResponse(renderErrorPage("You don't have access to this team"));
-      }
-
-      // Generate authorization code
-      const authCode = generateAuthCode();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
-
-      // Store the authorization code in team_integrations
-      const { error: upsertError } = await supabase
-        .from("team_integrations")
-        .upsert({
-          team_id: teamId,
-          integration_type: "zapier",
-          oauth_state: state,
-          config: {
-            auth_code: authCode,
-            auth_code_expires_at: expiresAt,
-            redirect_uri: redirectUri,
-            user_id: userData.user.id,
-            user_email: userData.user.email,
-          },
-          is_connected: false,
-        }, {
-          onConflict: "team_id,integration_type",
-        });
-
-      if (upsertError) {
-        console.error("Error storing auth code:", upsertError);
-        return htmlResponse(renderErrorPage("Failed to process authorization"));
-      }
-
-      // Redirect back to Zapier with the auth code
-      const callbackUrl = new URL(redirectUri);
-      callbackUrl.searchParams.set("code", authCode);
-      callbackUrl.searchParams.set("state", state);
-
-      return Response.redirect(callbackUrl.toString(), 302);
-    }
-
-    // GET request - render authorization page
-    // For the authorization page, we need to get team list from query param or show login prompt
-    return htmlResponse(renderAuthPage(clientId, redirectUri, state, teamIdParam));
-
-  } catch (error) {
-    console.error("Authorization error:", error);
-    return htmlResponse(renderErrorPage("An unexpected error occurred"));
-  }
-});
-
-function renderAuthPage(clientId: string, redirectUri: string, state: string, teamId: string | null): string {
+function renderErrorPage(error: string, details?: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Authorize Stackit - Zapier</title>
+  <title>Authorization Error - Stackit</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
+    body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
       min-height: 100vh;
@@ -170,92 +56,121 @@ function renderAuthPage(clientId: string, redirectUri: string, state: string, te
       padding: 20px;
     }
     .container {
-      background: #fff;
+      background: white;
       border-radius: 16px;
-      padding: 40px;
+      padding: 48px;
       max-width: 420px;
       width: 100%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      text-align: center;
     }
-    .logo-row {
+    .error-icon {
+      width: 64px;
+      height: 64px;
+      background: #fee2e2;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 20px;
-      margin-bottom: 30px;
+      margin: 0 auto 24px;
+      font-size: 32px;
+    }
+    h1 { color: #dc2626; font-size: 24px; margin-bottom: 12px; }
+    p { color: #6b7280; line-height: 1.6; }
+    .details { 
+      margin-top: 16px; 
+      padding: 12px; 
+      background: #f3f4f6; 
+      border-radius: 8px; 
+      font-family: monospace;
+      font-size: 13px;
+      color: #374151;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="error-icon">⚠️</div>
+    <h1>Authorization Error</h1>
+    <p>${escapeHtml(error)}</p>
+    ${details ? `<div class="details">${escapeHtml(details)}</div>` : ''}
+  </div>
+</body>
+</html>`;
+}
+
+function renderAuthPage(state: string, redirectUri: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect to Stackit</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 48px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
     .logo {
-      width: 48px;
-      height: 48px;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      margin: 0 auto 24px;
+      font-size: 28px;
+      font-weight: bold;
+      color: white;
     }
-    .stackit { background: #6366f1; color: white; }
-    .zapier { background: #ff4a00; color: white; }
-    .connector { color: #94a3b8; font-size: 24px; }
-    h1 {
-      font-size: 24px;
-      color: #1e293b;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-    p {
-      color: #64748b;
-      font-size: 14px;
-      line-height: 1.6;
-      margin-bottom: 25px;
-      text-align: center;
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: 500;
-      color: #374151;
+    h1 { 
+      text-align: center; 
+      color: #1f2937; 
+      font-size: 24px; 
       margin-bottom: 8px;
     }
-    input, select {
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    .form-group { margin-bottom: 20px; }
+    label { 
+      display: block; 
+      margin-bottom: 6px; 
+      font-weight: 500; 
+      color: #374151;
+      font-size: 14px;
+    }
+    input {
       width: 100%;
       padding: 12px 16px;
-      border: 1px solid #e5e7eb;
+      border: 1px solid #d1d5db;
       border-radius: 8px;
-      font-size: 14px;
-      transition: border-color 0.2s;
+      font-size: 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    input:focus, select:focus {
+    input:focus {
       outline: none;
       border-color: #6366f1;
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    }
-    .permissions {
-      background: #f8fafc;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 25px;
-    }
-    .permissions h3 {
-      font-size: 13px;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 12px;
-    }
-    .permission-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      color: #64748b;
-      padding: 6px 0;
-    }
-    .permission-item svg {
-      color: #22c55e;
-      width: 16px;
-      height: 16px;
     }
     .btn {
       width: 100%;
@@ -266,310 +181,357 @@ function renderAuthPage(clientId: string, redirectUri: string, state: string, te
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
+      margin-bottom: 12px;
     }
     .btn-primary {
-      background: #6366f1;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       color: white;
     }
-    .btn-primary:hover {
-      background: #4f46e5;
-    }
-    .btn-cancel {
-      background: transparent;
-      color: #64748b;
-      margin-top: 10px;
-    }
-    .btn-cancel:hover {
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: #f3f4f6;
       color: #374151;
     }
-    .error {
+    .btn-secondary:hover { background: #e5e7eb; }
+    .error-message {
       background: #fef2f2;
-      border: 1px solid #fecaca;
       color: #dc2626;
       padding: 12px;
       border-radius: 8px;
-      font-size: 14px;
       margin-bottom: 20px;
+      font-size: 14px;
       display: none;
     }
-    .loading {
-      display: none;
-      text-align: center;
-      padding: 20px;
+    .permissions {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
     }
+    .permissions h3 {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .permission-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      font-size: 14px;
+      color: #374151;
+    }
+    .permission-item::before {
+      content: "✓";
+      color: #10b981;
+      font-weight: bold;
+    }
+    .loading { display: none; }
     .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #e5e7eb;
-      border-top-color: #6366f1;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ffffff;
+      border-top-color: transparent;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 15px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo-row">
-      <div class="logo stackit">📊</div>
-      <span class="connector">↔</span>
-      <div class="logo zapier">⚡</div>
-    </div>
+    <div class="logo">S</div>
+    <h1>Connect to Stackit</h1>
+    <p class="subtitle">Zapier wants to access your Stackit account</p>
     
-    <h1>Connect to Zapier</h1>
-    <p>Zapier is requesting access to your Stackit account to automate your workflows.</p>
+    <div class="error-message" id="error"></div>
     
-    <div id="error" class="error"></div>
-    
-    <div id="auth-form">
-      <div id="login-section" style="display: none;">
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" placeholder="Enter your email" />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" placeholder="Enter your password" />
-        </div>
-        <button class="btn btn-primary" onclick="login()">Sign In</button>
+    <form id="authForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
       </div>
       
-      <div id="team-section" style="display: none;">
-        <div class="form-group">
-          <label for="team">Select Team</label>
-          <select id="team">
-            <option value="">Select a team...</option>
-          </select>
-        </div>
-        
-        <div class="permissions">
-          <h3>Zapier will be able to:</h3>
-          <div class="permission-item">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Read and create leads/contacts</span>
-          </div>
-          <div class="permission-item">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Read appointments</span>
-          </div>
-          <div class="permission-item">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Trigger automations on new events</span>
-          </div>
-        </div>
-        
-        <button class="btn btn-primary" onclick="authorize()">Authorize Access</button>
-        <button class="btn btn-cancel" onclick="cancel()">Cancel</button>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="current-password">
       </div>
-    </div>
-    
-    <div id="loading" class="loading">
-      <div class="spinner"></div>
-      <p>Authorizing...</p>
-    </div>
+      
+      <div class="permissions">
+        <h3>Zapier will be able to:</h3>
+        <div class="permission-item">Read your leads and appointments</div>
+        <div class="permission-item">Create new leads and contacts</div>
+        <div class="permission-item">Update lead information</div>
+      </div>
+      
+      <button type="submit" class="btn btn-primary" id="submitBtn">
+        <span class="normal">Authorize Access</span>
+        <span class="loading"><span class="spinner"></span>Authorizing...</span>
+      </button>
+      <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+    </form>
   </div>
-  
+
   <script>
-    const SUPABASE_URL = 'https://kqfyevdblvgxaycdvfxe.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZnlldmRibHZneGF5Y2R2ZnhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1ODEzNDUsImV4cCI6MjA4MTE1NzM0NX0.2qw-D1zz7uPumYRqDfFm1ur-0uxqXiBDPH4EWIDH66o';
+    const form = document.getElementById('authForm');
+    const errorEl = document.getElementById('error');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const state = ${JSON.stringify(state)};
+    const redirectUri = ${JSON.stringify(redirectUri)};
     
-    const params = new URLSearchParams(window.location.search);
-    const clientId = params.get('client_id');
-    const redirectUri = params.get('redirect_uri');
-    const state = params.get('state');
-    const teamIdParam = ${teamId ? `"${teamId}"` : 'null'};
-    
-    let accessToken = null;
-    let teams = [];
-    
-    // Check for existing session
-    async function checkSession() {
-      try {
-        const stored = localStorage.getItem('sb-kqfyevdblvgxaycdvfxe-auth-token');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.access_token) {
-            accessToken = parsed.access_token;
-            await loadTeams();
-            return;
-          }
-        }
-      } catch (e) {}
-      
-      document.getElementById('login-section').style.display = 'block';
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
     }
     
-    async function login() {
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      submitBtn.querySelector('.normal').style.display = loading ? 'none' : 'inline';
+      submitBtn.querySelector('.loading').style.display = loading ? 'inline-flex' : 'none';
+    }
+    
+    cancelBtn.addEventListener('click', () => {
+      window.location.href = redirectUri + '?error=access_denied&state=' + encodeURIComponent(state);
+    });
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.style.display = 'none';
+      setLoading(true);
+      
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       
-      if (!email || !password) {
-        showError('Please enter email and password');
-        return;
-      }
-      
       try {
-        const response = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+        const res = await fetch(window.location.origin + '/functions/v1/zapier-oauth-authorize', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({ email, password }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, state, redirect_uri: redirectUri })
         });
         
-        const data = await response.json();
+        const data = await res.json();
         
-        if (data.error) {
-          showError(data.error_description || data.error);
-          return;
+        if (!res.ok) {
+          throw new Error(data.error || 'Authorization failed');
         }
         
-        accessToken = data.access_token;
-        localStorage.setItem('sb-kqfyevdblvgxaycdvfxe-auth-token', JSON.stringify(data));
-        await loadTeams();
-      } catch (e) {
-        showError('Login failed. Please try again.');
+        // Redirect with authorization code
+        window.location.href = data.redirect_url;
+      } catch (err) {
+        showError(err.message);
+        setLoading(false);
       }
-    }
-    
-    async function loadTeams() {
-      try {
-        const response = await fetch(SUPABASE_URL + '/rest/v1/team_members?select=team_id,teams(id,name)', {
-          headers: {
-            'Authorization': 'Bearer ' + accessToken,
-            'apikey': SUPABASE_ANON_KEY,
-          },
-        });
-        
-        const data = await response.json();
-        teams = data.map(tm => tm.teams).filter(Boolean);
-        
-        const select = document.getElementById('team');
-        select.innerHTML = '<option value="">Select a team...</option>';
-        teams.forEach(team => {
-          const option = document.createElement('option');
-          option.value = team.id;
-          option.textContent = team.name;
-          if (teamIdParam && team.id === teamIdParam) {
-            option.selected = true;
-          }
-          select.appendChild(option);
-        });
-        
-        document.getElementById('login-section').style.display = 'none';
-        document.getElementById('team-section').style.display = 'block';
-      } catch (e) {
-        showError('Failed to load teams');
-      }
-    }
-    
-    async function authorize() {
-      const teamId = document.getElementById('team').value;
-      if (!teamId) {
-        showError('Please select a team');
-        return;
-      }
-      
-      document.getElementById('auth-form').style.display = 'none';
-      document.getElementById('loading').style.display = 'block';
-      
-      try {
-        const formData = new FormData();
-        formData.append('team_id', teamId);
-        formData.append('user_token', accessToken);
-        
-        const response = await fetch(window.location.href, {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (response.redirected) {
-          window.location.href = response.url;
-        } else {
-          const text = await response.text();
-          document.body.innerHTML = text;
-        }
-      } catch (e) {
-        showError('Authorization failed');
-        document.getElementById('auth-form').style.display = 'block';
-        document.getElementById('loading').style.display = 'none';
-      }
-    }
-    
-    function cancel() {
-      const callbackUrl = new URL(redirectUri);
-      callbackUrl.searchParams.set('error', 'access_denied');
-      callbackUrl.searchParams.set('state', state);
-      window.location.href = callbackUrl.toString();
-    }
-    
-    function showError(msg) {
-      const el = document.getElementById('error');
-      el.textContent = msg;
-      el.style.display = 'block';
-    }
-    
-    checkSession();
+    });
   </script>
 </body>
 </html>`;
 }
 
-function renderErrorPage(message: string): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Authorization Error</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a2e;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .container {
-      background: #fff;
-      border-radius: 16px;
-      padding: 40px;
-      max-width: 400px;
-      text-align: center;
-    }
-    .error-icon {
-      width: 60px;
-      height: 60px;
-      background: #fef2f2;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 20px;
-      font-size: 30px;
-    }
-    h1 { color: #dc2626; font-size: 20px; margin-bottom: 10px; }
-    p { color: #64748b; font-size: 14px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="error-icon">❌</div>
-    <h1>Authorization Failed</h1>
-    <p>${message}</p>
-  </div>
-</body>
-</html>`;
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const url = new URL(req.url);
+
+  // Handle POST request (form submission from auth page)
+  if (req.method === "POST") {
+    try {
+      const body = await req.json();
+      const { email, password, state, redirect_uri } = body;
+
+      if (!email || !password) {
+        return new Response(
+          JSON.stringify({ error: "Email and password are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Validate redirect_uri
+      if (redirect_uri !== ALLOWED_REDIRECT_URI) {
+        return new Response(
+          JSON.stringify({ error: "Invalid redirect_uri" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const supabase = getSupabaseClient();
+
+      // Authenticate user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError || !authData.user) {
+        console.error("Auth error:", authError?.message);
+        return new Response(
+          JSON.stringify({ error: "Invalid email or password" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get user's team
+      const { data: teamMember, error: teamError } = await supabase
+        .from("team_members")
+        .select("team_id, teams(id, name)")
+        .eq("user_id", authData.user.id)
+        .limit(1)
+        .single();
+
+      if (teamError || !teamMember) {
+        console.error("Team lookup error:", teamError?.message);
+        return new Response(
+          JSON.stringify({ error: "No team found for this user" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const teamId = teamMember.team_id;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const teamsData = teamMember.teams as unknown as { id: string; name: string } | null;
+      const teamName = teamsData?.name || "Unknown Team";
+
+      // Generate secure authorization code
+      const authCode = generateSecureCode(32);
+      const authCodeExpiresAt = new Date(Date.now() + AUTH_CODE_TTL_MS).toISOString();
+
+      // Check if integration already exists
+      const { data: existingIntegration } = await supabase
+        .from("team_integrations")
+        .select("id")
+        .eq("team_id", teamId)
+        .eq("integration_type", "zapier")
+        .single();
+
+      const integrationData = {
+        team_id: teamId,
+        integration_type: "zapier",
+        is_connected: false,
+        oauth_state: state,
+        config: {
+          auth_code: authCode,
+          auth_code_expires_at: authCodeExpiresAt,
+          auth_code_redirect_uri: redirect_uri,
+          user_email: email,
+          team_name: teamName,
+        },
+      };
+
+      if (existingIntegration) {
+        const { error: updateError } = await supabase
+          .from("team_integrations")
+          .update(integrationData)
+          .eq("id", existingIntegration.id);
+
+        if (updateError) {
+          console.error("Update integration error:", updateError);
+          return new Response(
+            JSON.stringify({ error: "Failed to create authorization" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from("team_integrations")
+          .insert(integrationData);
+
+        if (insertError) {
+          console.error("Insert integration error:", insertError);
+          return new Response(
+            JSON.stringify({ error: "Failed to create authorization" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      // Build redirect URL with auth code
+      const redirectUrl = `${redirect_uri}?code=${encodeURIComponent(authCode)}&state=${encodeURIComponent(state)}`;
+
+      console.log(`Auth code issued for team ${teamId}, redirecting to Zapier`);
+
+      return new Response(
+        JSON.stringify({ redirect_url: redirectUrl }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
+    } catch (error) {
+      console.error("POST handler error:", error);
+      return new Response(
+        JSON.stringify({ error: "Internal server error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+  }
+
+  // Handle GET request (OAuth authorize endpoint)
+  if (req.method === "GET") {
+    const clientId = url.searchParams.get("client_id");
+    const redirectUri = url.searchParams.get("redirect_uri");
+    const responseType = url.searchParams.get("response_type");
+    const state = url.searchParams.get("state") || "";
+
+    console.log("OAuth authorize request:", { 
+      clientId: clientId ? `${clientId.substring(0, 8)}...` : null,
+      redirectUri,
+      responseType,
+      hasState: !!state 
+    });
+
+    // Validate client_id
+    if (!clientId || clientId !== EXPECTED_CLIENT_ID) {
+      console.error(`Invalid client_id. Expected: ${EXPECTED_CLIENT_ID.substring(0, 8)}..., Got: ${clientId?.substring(0, 8) || 'null'}...`);
+      return htmlResponse(
+        renderErrorPage(
+          "Invalid client_id",
+          "The client_id does not match the expected value. Please check your Zapier integration settings."
+        ),
+        400
+      );
+    }
+
+    // Validate redirect_uri (strict match)
+    if (!redirectUri || redirectUri !== ALLOWED_REDIRECT_URI) {
+      console.error(`Invalid redirect_uri. Expected: ${ALLOWED_REDIRECT_URI}, Got: ${redirectUri}`);
+      return htmlResponse(
+        renderErrorPage(
+          "Invalid redirect_uri",
+          `Expected: ${ALLOWED_REDIRECT_URI}`
+        ),
+        400
+      );
+    }
+
+    // Validate response_type
+    if (responseType !== "code") {
+      return htmlResponse(
+        renderErrorPage(
+          "Invalid response_type",
+          "Only 'code' response type is supported for OAuth 2.0 authorization code flow."
+        ),
+        400
+      );
+    }
+
+    // Render the authorization page
+    return htmlResponse(renderAuthPage(state, redirectUri));
+  }
+
+  return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+});
