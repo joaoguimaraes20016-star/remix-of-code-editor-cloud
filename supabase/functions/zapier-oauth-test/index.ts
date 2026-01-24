@@ -45,62 +45,41 @@ Deno.serve(async (req) => {
       return jsonError("Invalid access token", 401);
     }
 
+    // Safe debug log
+    console.log("OAuth test request:", {
+      has_token: !!accessToken,
+      token_prefix: accessToken.substring(0, 4)
+    });
+
     const supabase = getSupabaseClient();
 
-    // Look up the team_integrations record with matching access_token
-    const { data: integration, error: integrationError } = await supabase
-      .from("team_integrations")
-      .select("team_id, is_connected, token_expires_at, config, created_at")
-      .eq("integration_type", "zapier")
+    // Look up the token in oauth_tokens table
+    const { data: tokenRecord, error: tokenError } = await supabase
+      .from("oauth_tokens")
+      .select("*")
       .eq("access_token", accessToken)
+      .is("revoked_at", null)
       .single();
 
-    if (integrationError || !integration) {
-      console.error("Integration lookup failed:", integrationError?.message);
+    if (tokenError || !tokenRecord) {
+      console.error("Token lookup failed:", tokenError?.message);
       return jsonError("Invalid access token", 401);
     }
 
-    // Check if connected
-    if (!integration.is_connected) {
-      console.error("Integration is not connected");
-      return jsonError("Integration is not connected", 401);
-    }
-
     // Check token expiry
-    if (integration.token_expires_at && new Date(integration.token_expires_at) < new Date()) {
+    if (new Date(tokenRecord.expires_at) < new Date()) {
       console.error("Access token has expired");
       return jsonError("Access token has expired", 401);
     }
 
-    // Get config data
-    const config = integration.config as Record<string, unknown> || {};
-    const userEmail = config.user_email as string || "";
-    const teamName = config.team_name as string || "";
-    const connectedAt = config.connected_at as string || integration.created_at;
-
-    // Fetch team info
-    const { data: team, error: teamError } = await supabase
-      .from("teams")
-      .select("id, name")
-      .eq("id", integration.team_id)
-      .single();
-
-    if (teamError || !team) {
-      console.error("Team lookup failed:", teamError?.message);
-      return jsonError("Team not found", 404);
-    }
-
-    console.log(`Test authentication successful for team: ${team.id}`);
+    console.log(`Test authentication successful for team: ${tokenRecord.team_id}`);
 
     // Return user/team info for Zapier connection label
     // Zapier expects 'id' and 'email' fields for the connection label
     return new Response(
       JSON.stringify({
-        id: team.id,
-        email: userEmail,
-        name: teamName || team.name,
-        team_name: team.name,
-        connected_at: connectedAt,
+        id: tokenRecord.team_id || tokenRecord.user_id,
+        email: tokenRecord.user_email || "",
       }),
       { status: 200, headers: corsHeaders }
     );

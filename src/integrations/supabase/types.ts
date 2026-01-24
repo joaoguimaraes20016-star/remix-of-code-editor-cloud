@@ -2085,6 +2085,100 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_auth_codes: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string | null
+          expires_at: string
+          redirect_uri: string
+          state: string | null
+          team_id: string | null
+          used_at: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string | null
+          expires_at: string
+          redirect_uri: string
+          state?: string | null
+          team_id?: string | null
+          used_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          redirect_uri?: string
+          state?: string | null
+          team_id?: string | null
+          used_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_auth_codes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_tokens: {
+        Row: {
+          access_token: string
+          client_id: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          refresh_token: string
+          revoked_at: string | null
+          team_id: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_token: string
+          client_id: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          refresh_token: string
+          revoked_at?: string | null
+          team_id?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          client_id?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          refresh_token?: string
+          revoked_at?: string | null
+          team_id?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_tokens_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_reset_tokens: {
         Row: {
           created_at: string

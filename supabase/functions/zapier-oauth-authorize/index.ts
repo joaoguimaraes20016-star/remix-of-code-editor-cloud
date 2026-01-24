@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Constants
-const EXPECTED_CLIENT_ID = "stackit_zapier_client_9f3a7c2d1b84e6f0";
+// Read from environment - DO NOT hardcode
+const EXPECTED_CLIENT_ID = Deno.env.get("ZAPIER_CLIENT_ID");
 const ALLOWED_REDIRECT_URI = "https://zapier.com/dashboard/auth/oauth/return/App235737CLIAPI/";
 const AUTH_CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -244,7 +244,7 @@ function renderAuthPage(state: string, redirectUri: string): string {
   <div class="container">
     <div class="logo">S</div>
     <h1>Connect to Stackit</h1>
-    <p class="subtitle">Zapier wants to access your Stackit account</p>
+    <p class="subtitle">Allow Zapier to access your Stackit account?</p>
     
     <div class="error-message" id="error"></div>
     
@@ -353,6 +353,14 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { email, password, state, redirect_uri } = body;
 
+      // Safe debug log - NEVER log secrets
+      console.log("OAuth authorize POST:", {
+        has_email: !!email,
+        has_password: !!password,
+        has_state: !!state,
+        received_redirect_uri: redirect_uri
+      });
+
       if (!email || !password) {
         return new Response(
           JSON.stringify({ error: "Email and password are required" }),
@@ -362,6 +370,7 @@ Deno.serve(async (req) => {
 
       // Validate redirect_uri
       if (redirect_uri !== ALLOWED_REDIRECT_URI) {
+        console.error(`Invalid redirect_uri. Expected: ${ALLOWED_REDIRECT_URI}, Got: ${redirect_uri}`);
         return new Response(
           JSON.stringify({ error: "Invalid redirect_uri" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -401,61 +410,31 @@ Deno.serve(async (req) => {
       }
 
       const teamId = teamMember.team_id;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const teamsData = teamMember.teams as unknown as { id: string; name: string } | null;
-      const teamName = teamsData?.name || "Unknown Team";
 
       // Generate secure authorization code
       const authCode = generateSecureCode(32);
       const authCodeExpiresAt = new Date(Date.now() + AUTH_CODE_TTL_MS).toISOString();
 
-      // Check if integration already exists
-      const { data: existingIntegration } = await supabase
-        .from("team_integrations")
-        .select("id")
-        .eq("team_id", teamId)
-        .eq("integration_type", "zapier")
-        .single();
-
-      const integrationData = {
-        team_id: teamId,
-        integration_type: "zapier",
-        is_connected: false,
-        oauth_state: state,
-        config: {
-          auth_code: authCode,
-          auth_code_expires_at: authCodeExpiresAt,
-          auth_code_redirect_uri: redirect_uri,
+      // Store auth code in oauth_auth_codes table
+      const { error: insertError } = await supabase
+        .from("oauth_auth_codes")
+        .insert({
+          code: authCode,
+          client_id: EXPECTED_CLIENT_ID,
+          redirect_uri: redirect_uri,
+          state: state,
+          user_id: authData.user.id,
+          team_id: teamId,
           user_email: email,
-          team_name: teamName,
-        },
-      };
+          expires_at: authCodeExpiresAt
+        });
 
-      if (existingIntegration) {
-        const { error: updateError } = await supabase
-          .from("team_integrations")
-          .update(integrationData)
-          .eq("id", existingIntegration.id);
-
-        if (updateError) {
-          console.error("Update integration error:", updateError);
-          return new Response(
-            JSON.stringify({ error: "Failed to create authorization" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      } else {
-        const { error: insertError } = await supabase
-          .from("team_integrations")
-          .insert(integrationData);
-
-        if (insertError) {
-          console.error("Insert integration error:", insertError);
-          return new Response(
-            JSON.stringify({ error: "Failed to create authorization" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+      if (insertError) {
+        console.error("Insert auth code error:", insertError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create authorization" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       // Build redirect URL with auth code
@@ -484,16 +463,17 @@ Deno.serve(async (req) => {
     const responseType = url.searchParams.get("response_type");
     const state = url.searchParams.get("state") || "";
 
-    console.log("OAuth authorize request:", { 
-      clientId: clientId ? `${clientId.substring(0, 8)}...` : null,
-      redirectUri,
-      responseType,
-      hasState: !!state 
+    // Safe debug log - NEVER log secrets
+    console.log("OAuth authorize GET request:", { 
+      received_client_id: clientId,
+      received_redirect_uri: redirectUri,
+      received_response_type: responseType,
+      has_state: !!state 
     });
 
     // Validate client_id
     if (!clientId || clientId !== EXPECTED_CLIENT_ID) {
-      console.error(`Invalid client_id. Expected: ${EXPECTED_CLIENT_ID.substring(0, 8)}..., Got: ${clientId?.substring(0, 8) || 'null'}...`);
+      console.error(`Invalid client_id. Expected starts with: ${EXPECTED_CLIENT_ID?.substring(0, 8) || 'NOT_SET'}..., Got: ${clientId?.substring(0, 8) || 'null'}...`);
       return htmlResponse(
         renderErrorPage(
           "Invalid client_id",
@@ -517,6 +497,7 @@ Deno.serve(async (req) => {
 
     // Validate response_type
     if (responseType !== "code") {
+      console.error(`Invalid response_type. Expected: code, Got: ${responseType}`);
       return htmlResponse(
         renderErrorPage(
           "Invalid response_type",

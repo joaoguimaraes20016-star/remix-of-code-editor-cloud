@@ -1,8 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Constants - must match token endpoint
-const EXPECTED_CLIENT_ID = "stackit_zapier_client_9f3a7c2d1b84e6f0";
-const EXPECTED_CLIENT_SECRET = "sk_stackit_zapier_live_7c1f93e4a2d8b6f059e1c4a9d3b2f8aa";
+// Read from environment - DO NOT hardcode
+const EXPECTED_CLIENT_ID = Deno.env.get("ZAPIER_CLIENT_ID");
+const EXPECTED_CLIENT_SECRET = Deno.env.get("ZAPIER_CLIENT_SECRET");
 const ACCESS_TOKEN_TTL_SECONDS = 3600; // 1 hour
 
 const corsHeaders = {
@@ -65,7 +65,12 @@ Deno.serve(async (req) => {
 
     const { grant_type, refresh_token, client_id, client_secret } = body;
 
-    console.log("Refresh request:", { grant_type, hasRefreshToken: !!refresh_token });
+    // Safe debug log - NEVER log secrets
+    console.log("Refresh request:", { 
+      grant_type, 
+      received_client_id: client_id,
+      has_refresh_token: !!refresh_token 
+    });
 
     // Validate grant_type
     if (grant_type !== "refresh_token") {
@@ -74,7 +79,7 @@ Deno.serve(async (req) => {
 
     // Validate client credentials
     if (client_id !== EXPECTED_CLIENT_ID) {
-      console.error(`Invalid client_id: ${client_id?.substring(0, 8)}...`);
+      console.error(`Invalid client_id. Expected starts with: ${EXPECTED_CLIENT_ID?.substring(0, 8) || 'NOT_SET'}..., Got: ${client_id?.substring(0, 8) || 'null'}...`);
       return jsonError("invalid_client", "Invalid client_id", 401);
     }
 
@@ -89,23 +94,17 @@ Deno.serve(async (req) => {
 
     const supabase = getSupabaseClient();
 
-    // Find integration with this refresh token
-    const { data: integration, error: findError } = await supabase
-      .from("team_integrations")
+    // Find token record with this refresh token
+    const { data: tokenRecord, error: findError } = await supabase
+      .from("oauth_tokens")
       .select("*")
-      .eq("integration_type", "zapier")
       .eq("refresh_token", refresh_token)
+      .is("revoked_at", null)
       .single();
 
-    if (findError || !integration) {
-      console.error("Invalid refresh token");
+    if (findError || !tokenRecord) {
+      console.error("Invalid refresh token:", findError?.message);
       return jsonError("invalid_grant", "Invalid refresh token", 400);
-    }
-
-    // Check if integration is still connected
-    if (!integration.is_connected) {
-      console.error("Integration is disconnected");
-      return jsonError("invalid_grant", "Integration has been disconnected", 400);
     }
 
     // Generate new tokens (rotate both access and refresh)
@@ -115,20 +114,20 @@ Deno.serve(async (req) => {
 
     // Update with new tokens
     const { error: updateError } = await supabase
-      .from("team_integrations")
+      .from("oauth_tokens")
       .update({
         access_token: newAccessToken,
         refresh_token: newRefreshToken,
-        token_expires_at: tokenExpiresAt,
+        expires_at: tokenExpiresAt,
       })
-      .eq("id", integration.id);
+      .eq("id", tokenRecord.id);
 
     if (updateError) {
       console.error("Error refreshing token:", updateError);
       return jsonError("server_error", "Failed to refresh token", 500);
     }
 
-    console.log(`Token refreshed for team: ${integration.team_id}`);
+    console.log(`Token refreshed for team: ${tokenRecord.team_id}`);
 
     return new Response(
       JSON.stringify({
