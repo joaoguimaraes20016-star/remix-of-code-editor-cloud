@@ -106,10 +106,20 @@ Deno.serve(async (req) => {
     const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/tiktok-oauth-callback`;
     const state = `${teamId}:${stateToken}`;
     
-    // TikTok OAuth scopes
-    const scopes = ["user.info.basic", "user.info.profile"];
+    // TikTok Business API scopes
+    const scopes = [
+      "user.info.basic",
+      "user.info.profile",
+      "lead.management",
+      "crm.event.management",
+      "reporting.read",
+      "measurement.read",
+      "pixel.read",
+      "offline.event.manage",
+      "ad.account.read",
+    ];
     
-    const authUrl = new URL("https://www.tiktok.com/v2/auth/authorize/");
+    const authUrl = new URL("https://business-api.tiktok.com/open_api/v1.3/oauth2/authorize/");
     authUrl.searchParams.set("client_key", clientId);
     authUrl.searchParams.set("redirect_uri", callbackUrl);
     authUrl.searchParams.set("response_type", "code");

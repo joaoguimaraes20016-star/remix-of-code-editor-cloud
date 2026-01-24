@@ -110,65 +110,64 @@ Deno.serve(async (req) => {
       return Response.redirect(redirectUrl, 302);
     }
 
-    // Exchange code for tokens
+    // Exchange code for tokens using Business API
     const clientId = Deno.env.get("TIKTOK_CLIENT_ID");
     const clientSecret = Deno.env.get("TIKTOK_CLIENT_SECRET");
-    const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/tiktok-oauth-callback`;
 
-    const tokenResponse = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+    const tokenResponse = await fetch("https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/", {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
-      body: new URLSearchParams({
-        client_key: clientId!,
-        client_secret: clientSecret!,
-        code: code,
-        grant_type: "authorization_code",
-        redirect_uri: callbackUrl,
+      body: JSON.stringify({
+        app_id: clientId,
+        secret: clientSecret,
+        auth_code: code,
       }),
     });
 
     const tokenData = await tokenResponse.json();
 
-    if (tokenData.error || !tokenData.access_token) {
+    if (tokenData.code !== 0 || !tokenData.data?.access_token) {
       console.error("TikTok token exchange error:", tokenData);
       const redirectUrl = await buildCallbackRedirect(teamId, {
         success: "false",
-        error: tokenData.error_description || tokenData.error || "Token exchange failed",
+        error: tokenData.message || "Token exchange failed",
       });
       return Response.redirect(redirectUrl, 302);
     }
 
-    const { access_token, refresh_token, expires_in, open_id } = tokenData;
+    const { access_token, refresh_token, refresh_token_expires_in } = tokenData.data;
+    const advertiserIds = tokenData.data.advertiser_ids || [];
 
-    // Fetch user info
-    let userInfo: { display_name?: string; avatar_url?: string; username?: string } = {};
-    try {
-      const userResponse = await fetch(
-        "https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name,username",
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
+    // Fetch advertiser info for connected ad accounts
+    let advertiserInfo: Array<{ advertiser_id: string; advertiser_name?: string }> = [];
+    if (advertiserIds.length > 0) {
+      try {
+        const advertiserResponse = await fetch(
+          `https://business-api.tiktok.com/open_api/v1.3/advertiser/info/?advertiser_ids=${JSON.stringify(advertiserIds)}`,
+          {
+            headers: {
+              "Access-Token": access_token,
+            },
+          }
+        );
+        const advertiserData = await advertiserResponse.json();
+        if (advertiserData.code === 0 && advertiserData.data?.list) {
+          advertiserInfo = advertiserData.data.list.map((adv: { advertiser_id: string; advertiser_name?: string }) => ({
+            advertiser_id: adv.advertiser_id,
+            advertiser_name: adv.advertiser_name,
+          }));
         }
-      );
-      const userData = await userResponse.json();
-      if (userData.data?.user) {
-        userInfo = {
-          display_name: userData.data.user.display_name,
-          avatar_url: userData.data.user.avatar_url,
-          username: userData.data.user.username,
-        };
+      } catch (advError) {
+        console.error("Error fetching TikTok advertiser info:", advError);
       }
-    } catch (userError) {
-      console.error("Error fetching TikTok user info:", userError);
     }
 
-    // Calculate token expiration
-    const tokenExpiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
+    // Calculate token expiration (Business API returns seconds until expiry)
+    const tokenExpiresAt = new Date(Date.now() + (refresh_token_expires_in || 86400) * 1000).toISOString();
 
-    // Update integration with tokens
+    // Update integration with tokens and advertiser info
     const { error: updateError } = await supabase
       .from("team_integrations")
       .update({
@@ -178,10 +177,8 @@ Deno.serve(async (req) => {
         token_expires_at: tokenExpiresAt,
         oauth_state: null,
         config: {
-          open_id: open_id,
-          display_name: userInfo.display_name,
-          username: userInfo.username,
-          avatar_url: userInfo.avatar_url,
+          advertiser_ids: advertiserIds,
+          advertisers: advertiserInfo,
           connected_at: new Date().toISOString(),
         },
         updated_at: new Date().toISOString(),
@@ -199,9 +196,10 @@ Deno.serve(async (req) => {
     }
 
     // Redirect to success page
+    const advertiserName = advertiserInfo[0]?.advertiser_name || `${advertiserIds.length} Ad Account(s)`;
     const redirectUrl = await buildCallbackRedirect(teamId, {
       success: "true",
-      username: userInfo.username || userInfo.display_name || "TikTok User",
+      username: advertiserName,
     });
     return Response.redirect(redirectUrl, 302);
   } catch (err) {
