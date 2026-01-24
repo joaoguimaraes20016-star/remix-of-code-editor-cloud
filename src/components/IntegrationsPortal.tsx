@@ -11,6 +11,7 @@ import {
   ChevronRight,
   MessageSquare
 } from "lucide-react";
+import zapierIcon from "@/assets/integrations/zapier.svg";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ import { CalendlyConfig } from "./CalendlyConfig";
 import { SlackConfig } from "./SlackConfig";
 import { ZoomConfig } from "./ZoomConfig";
 import { FathomConfig } from "./FathomConfig";
+import { ZapierConfig } from "./ZapierConfig";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -56,6 +58,7 @@ const integrations: Integration[] = [
     icon: Zap,
     category: "automation",
     status: "available",
+    configurable: true,
   },
   {
     id: "slack",
@@ -123,6 +126,7 @@ export function IntegrationsPortal() {
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
   const [fathomDialogOpen, setFathomDialogOpen] = useState(false);
+  const [zapierDialogOpen, setZapierDialogOpen] = useState(false);
 
   const { data: teamData, refetch } = useQuery({
     queryKey: ["team-integrations-portal", teamId],
@@ -149,12 +153,14 @@ export function IntegrationsPortal() {
       const slackIntegration = integrations.find(i => i.integration_type === "slack");
       const zoomIntegration = integrations.find(i => i.integration_type === "zoom");
       const fathomIntegration = integrations.find(i => i.integration_type === "fathom");
+      const zapierIntegration = integrations.find(i => i.integration_type === "zapier");
       
       return {
         ...teamsResult.data,
         slack_connected: slackIntegration?.is_connected ?? false,
         zoom_connected: zoomIntegration?.is_connected ?? false,
         fathom_connected: fathomIntegration?.is_connected ?? false,
+        zapier_connected: zapierIntegration?.is_connected ?? false,
       };
     },
     enabled: !!teamId,
@@ -164,6 +170,7 @@ export function IntegrationsPortal() {
   const isSlackConnected = !!teamData?.slack_connected;
   const isZoomConnected = !!teamData?.zoom_connected;
   const isFathomConnected = !!teamData?.fathom_connected;
+  const isZapierConnected = !!teamData?.zapier_connected;
 
   const getIntegrationStatus = (integration: Integration) => {
     if (integration.id === "calendly" && isCalendlyConnected) {
@@ -176,6 +183,9 @@ export function IntegrationsPortal() {
       return "connected";
     }
     if (integration.id === "fathom" && isFathomConnected) {
+      return "connected";
+    }
+    if (integration.id === "zapier" && isZapierConnected) {
       return "connected";
     }
     return integration.status;
@@ -193,6 +203,9 @@ export function IntegrationsPortal() {
     }
     if (integration.id === "fathom") {
       setFathomDialogOpen(true);
+    }
+    if (integration.id === "zapier") {
+      setZapierDialogOpen(true);
     }
   };
 
@@ -339,6 +352,21 @@ export function IntegrationsPortal() {
           </DialogHeader>
           {teamId && (
             <FathomConfig 
+              teamId={teamId}
+              onUpdate={() => refetch()}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Zapier Configuration Dialog */}
+      <Dialog open={zapierDialogOpen} onOpenChange={setZapierDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Zapier Integration</DialogTitle>
+          </DialogHeader>
+          {teamId && (
+            <ZapierConfig 
               teamId={teamId}
               onUpdate={() => refetch()}
             />

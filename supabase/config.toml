@@ -185,3 +185,18 @@ verify_jwt = false
 
 [functions.tiktok-oauth-callback]
 verify_jwt = false
+
+[functions.zapier-oauth-authorize]
+verify_jwt = false
+
+[functions.zapier-oauth-token]
+verify_jwt = false
+
+[functions.zapier-oauth-refresh]
+verify_jwt = false
+
+[functions.zapier-triggers]
+verify_jwt = false
+
+[functions.zapier-actions]
+verify_jwt = false

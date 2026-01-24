@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zapier Connection</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 32px;
+    }
+    .icon.success { background: #dcfce7; }
+    .icon.error { background: #fef2f2; }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    h1.success { color: #16a34a; }
+    h1.error { color: #dc2626; }
+    p {
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .close-text {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content">
+      <div class="icon" id="icon">⏳</div>
+      <h1 id="title">Processing...</h1>
+      <p id="message">Please wait while we complete the connection.</p>
+    </div>
+  </div>
+  
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success') === 'true';
+    const error = params.get('error');
+    
+    const icon = document.getElementById('icon');
+    const title = document.getElementById('title');
+    const message = document.getElementById('message');
+    
+    if (success) {
+      icon.className = 'icon success';
+      icon.textContent = '✓';
+      title.className = 'success';
+      title.textContent = 'Connected!';
+      message.innerHTML = 'Zapier has been successfully connected to your Infostack account.<br><br><span class="close-text">You can close this window.</span>';
+    } else if (error) {
+      icon.className = 'icon error';
+      icon.textContent = '✕';
+      title.className = 'error';
+      title.textContent = 'Connection Failed';
+      message.textContent = error || 'An error occurred during the connection process.';
+    }
+    
+    // Try to notify parent/opener window
+    if (window.opener) {
+      try {
+        window.opener.postMessage({
+          type: 'zapier-oauth-callback',
+          success: success,
+          error: error
+        }, '*');
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>
