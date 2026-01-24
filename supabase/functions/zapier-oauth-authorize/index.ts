@@ -5,22 +5,19 @@ const EXPECTED_CLIENT_ID = "stackit_zapier_client_9f3a7c2d1b84e6f0";
 const ALLOWED_REDIRECT_URI = "https://zapier.com/dashboard/auth/oauth/return/App235737CLIAPI/";
 const AUTH_CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-// HTML response headers
-const htmlHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "text/html; charset=utf-8",
-  "Cache-Control": "no-store",
-  "Pragma": "no-cache",
-};
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 function htmlResponse(body: string, status = 200): Response {
-  return new Response(body, { status, headers: htmlHeaders });
+  return new Response(body, {
+    status,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store"
+    }
+  });
 }
 
 function getSupabaseClient() {
