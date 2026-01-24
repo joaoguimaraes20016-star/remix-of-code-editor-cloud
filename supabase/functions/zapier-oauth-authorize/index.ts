@@ -6,14 +6,19 @@ const corsHeaders = {
 };
 
 // Centralized HTML response headers to ensure proper content-type
-function htmlHeaders(): Headers {
-  const h = new Headers();
-  h.set("Access-Control-Allow-Origin", "*");
-  h.set("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
-  h.set("Content-Type", "text/html; charset=utf-8");
-  h.set("Cache-Control", "no-store");
-  h.set("Pragma", "no-cache");
-  return h;
+const htmlHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "text/html; charset=utf-8",
+  "Cache-Control": "no-store",
+  "Pragma": "no-cache",
+};
+
+function htmlResponse(body: string, status = 200): Response {
+  return new Response(body, { 
+    status,
+    headers: htmlHeaders,
+  });
 }
 
 function getSupabaseClient() {
@@ -46,10 +51,7 @@ Deno.serve(async (req) => {
 
     // Validate required OAuth parameters
     if (!clientId || !redirectUri || !state) {
-      return new Response(
-        renderErrorPage("Missing required OAuth parameters (client_id, redirect_uri, or state)"),
-        { headers: htmlHeaders() }
-      );
+      return htmlResponse(renderErrorPage("Missing required OAuth parameters (client_id, redirect_uri, or state)"));
     }
 
     // Validate client_id with actionable error messages
@@ -57,10 +59,7 @@ Deno.serve(async (req) => {
     
     if (!expectedClientId) {
       console.error("ZAPIER_CLIENT_ID secret is not configured in Supabase");
-      return new Response(
-        renderErrorPage("Server misconfigured: missing ZAPIER_CLIENT_ID secret. Please contact the administrator."),
-        { headers: htmlHeaders() }
-      );
+      return htmlResponse(renderErrorPage("Server misconfigured: missing ZAPIER_CLIENT_ID secret. Please contact the administrator."));
     }
     
     if (clientId !== expectedClientId) {
@@ -69,10 +68,7 @@ Deno.serve(async (req) => {
       const expectedHint = expectedClientId.length > 4 ? `${expectedClientId.slice(0, 4)}... (len=${expectedClientId.length})` : "(too short)";
       console.error(`client_id mismatch - received: ${receivedHint}, expected: ${expectedHint}`);
       
-      return new Response(
-        renderErrorPage("Invalid client_id. Ensure the Zapier integration's Client ID matches the ZAPIER_CLIENT_ID secret in Supabase."),
-        { headers: htmlHeaders() }
-      );
+      return htmlResponse(renderErrorPage("Invalid client_id. Ensure the Zapier integration's Client ID matches the ZAPIER_CLIENT_ID secret in Supabase."));
     }
 
     // Check for authorization header (user session)
@@ -86,10 +82,7 @@ Deno.serve(async (req) => {
       const userToken = formData.get("user_token") as string;
 
       if (!teamId || !userToken) {
-        return new Response(
-          renderErrorPage("Missing team selection or authentication"),
-          { headers: htmlHeaders() }
-        );
+        return htmlResponse(renderErrorPage("Missing team selection or authentication"));
       }
 
       const supabase = getSupabaseClient();
@@ -97,10 +90,7 @@ Deno.serve(async (req) => {
       // Verify user token
       const { data: userData, error: userError } = await supabase.auth.getUser(userToken);
       if (userError || !userData.user) {
-        return new Response(
-          renderErrorPage("Invalid or expired session"),
-          { headers: htmlHeaders() }
-        );
+        return htmlResponse(renderErrorPage("Invalid or expired session"));
       }
 
       // Verify user is member of the team
@@ -112,10 +102,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (memberError || !membership) {
-        return new Response(
-          renderErrorPage("You don't have access to this team"),
-          { headers: htmlHeaders() }
-        );
+        return htmlResponse(renderErrorPage("You don't have access to this team"));
       }
 
       // Generate authorization code
@@ -143,10 +130,7 @@ Deno.serve(async (req) => {
 
       if (upsertError) {
         console.error("Error storing auth code:", upsertError);
-        return new Response(
-          renderErrorPage("Failed to process authorization"),
-          { headers: htmlHeaders() }
-        );
+        return htmlResponse(renderErrorPage("Failed to process authorization"));
       }
 
       // Redirect back to Zapier with the auth code
@@ -159,17 +143,11 @@ Deno.serve(async (req) => {
 
     // GET request - render authorization page
     // For the authorization page, we need to get team list from query param or show login prompt
-    return new Response(
-      renderAuthPage(clientId, redirectUri, state, teamIdParam),
-      { headers: htmlHeaders() }
-    );
+    return htmlResponse(renderAuthPage(clientId, redirectUri, state, teamIdParam));
 
   } catch (error) {
     console.error("Authorization error:", error);
-    return new Response(
-      renderErrorPage("An unexpected error occurred"),
-      { headers: htmlHeaders() }
-    );
+    return htmlResponse(renderErrorPage("An unexpected error occurred"));
   }
 });
 
