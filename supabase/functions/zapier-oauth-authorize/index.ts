@@ -154,7 +154,7 @@ function renderAuthPage(clientId: string, redirectUri: string, state: string, te
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Authorize Infostack - Zapier</title>
+  <title>Authorize Stackit - Zapier</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -190,7 +190,7 @@ function renderAuthPage(clientId: string, redirectUri: string, state: string, te
       justify-content: center;
       font-size: 24px;
     }
-    .infostack { background: #6366f1; color: white; }
+    .stackit { background: #6366f1; color: white; }
     .zapier { background: #ff4a00; color: white; }
     .connector { color: #94a3b8; font-size: 24px; }
     h1 {
@@ -311,13 +311,13 @@ function renderAuthPage(clientId: string, redirectUri: string, state: string, te
 <body>
   <div class="container">
     <div class="logo-row">
-      <div class="logo infostack">📊</div>
+      <div class="logo stackit">📊</div>
       <span class="connector">↔</span>
       <div class="logo zapier">⚡</div>
     </div>
     
     <h1>Connect to Zapier</h1>
-    <p>Zapier is requesting access to your Infostack account to automate your workflows.</p>
+    <p>Zapier is requesting access to your Stackit account to automate your workflows.</p>
     
     <div id="error" class="error"></div>
     
