@@ -1,92 +1,50 @@
 
 
-## Add TikTok Integration
+## Update TikTok Integration for Business API
 
-This plan adds a complete TikTok OAuth integration following the established pattern used by Discord, Zoom, and Typeform.
-
----
-
-### Summary
-
-| Component | Status | Action |
-|-----------|--------|--------|
-| Logo (`tiktok.svg`) | Exists | No change needed |
-| Edge Functions | Missing | Create `tiktok-oauth-start` and `tiktok-oauth-callback` |
-| Config Component | Missing | Create `TikTokConfig.tsx` |
-| Apps Portal | Not listed | Add TikTok to `apps` array |
-| Callback HTML | Missing | Create `tiktok-callback.html` |
-| Secrets | Not configured | Add `TIKTOK_CLIENT_ID` and `TIKTOK_CLIENT_SECRET` |
-| Config.toml | Not registered | Add function entries |
+This plan updates the existing TikTok integration to use TikTok Business API scopes instead of the basic Login Kit scopes.
 
 ---
 
-### Prerequisites
+### Redirect URL for TikTok Developer Portal
 
-Before implementation, I will prompt you to add these secrets:
-- `TIKTOK_CLIENT_ID` - Your TikTok app's client ID
-- `TIKTOK_CLIENT_SECRET` - Your TikTok app's client secret
+Add this exact URL to your TikTok app's redirect URI settings:
 
----
-
-### Implementation Steps
-
-**Step 1: Create Edge Functions**
-
-**`supabase/functions/tiktok-oauth-start/index.ts`**
-- Accept `teamId` and `redirectUri` from request body
-- Verify user authentication and team membership
-- Generate state token for CSRF protection
-- Store state in `team_integrations` table
-- Build TikTok OAuth URL with scopes for user info and business access
-- Return the auth URL to the frontend
-
-**`supabase/functions/tiktok-oauth-callback/index.ts`**
-- Parse OAuth response (`code`, `state`, `error`)
-- Verify state token matches stored value
-- Exchange authorization code for access/refresh tokens
-- Fetch TikTok user info (username, display name)
-- Update `team_integrations` with tokens and connection status
-- Redirect to callback HTML page with success/error status
-
-**Step 2: Create TikTok Callback HTML**
-
-**`public/tiktok-callback.html`**
-- Parse URL query params for success/error
-- Use `postMessage` to notify parent window of result
-- Auto-close popup after short delay
-
-**Step 3: Create TikTok Config Component**
-
-**`src/components/TikTokConfig.tsx`**
-- Query `team_integrations` for TikTok connection status
-- Handle OAuth popup flow similar to Discord/Zoom
-- Display connected account info when connected
-- Provide disconnect functionality with confirmation dialog
-- Show usage instructions for automations
-
-**Step 4: Update Apps Portal**
-
-**`src/pages/AppsPortal.tsx`**
-- Import `TikTokConfig` component
-- Import `tiktokLogo` from assets
-- Add TikTok to `apps` array in "ads" category
-- Add state for TikTok dialog
-- Add click handler for TikTok app card
-- Add TikTok dialog with config component
-
-**Step 5: Register Edge Functions**
-
-**`supabase/config.toml`**
-- Add `[functions.tiktok-oauth-start]` with `verify_jwt = false`
-- Add `[functions.tiktok-oauth-callback]` with `verify_jwt = false`
+```
+https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/tiktok-oauth-callback
+```
 
 ---
 
-### TikTok OAuth Scopes
+### Changes Required
 
-The integration will request these scopes:
-- `user.info.basic` - Access basic user profile
-- `user.info.profile` - Access display name and avatar
+**Update `supabase/functions/tiktok-oauth-start/index.ts`**
+
+Change the OAuth scopes from basic Login Kit to TikTok Business API scopes:
+
+| Current Scopes | New Business API Scopes |
+|----------------|------------------------|
+| `user.info.basic` | `user.info.basic` |
+| `user.info.profile` | `user.info.profile` |
+| | `lead.management` |
+| | `crm.event.management` |
+| | `reporting.read` |
+| | `measurement.read` |
+| | `pixel.read` |
+| | `offline.event.manage` |
+| | `ad.account.read` |
+
+The authorization endpoint also changes for Business API:
+- **From**: `https://www.tiktok.com/v2/auth/authorize/`
+- **To**: `https://business-api.tiktok.com/open_api/v1.3/oauth2/authorize/`
+
+**Update `supabase/functions/tiktok-oauth-callback/index.ts`**
+
+Update the token exchange endpoint for Business API:
+- **From**: `https://open.tiktokapis.com/v2/oauth/token/`
+- **To**: `https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/`
+
+After token exchange, fetch advertiser info using the Business API to get the connected ad accounts.
 
 ---
 
@@ -94,51 +52,20 @@ The integration will request these scopes:
 
 | File | Action |
 |------|--------|
-| `supabase/functions/tiktok-oauth-start/index.ts` | Create |
-| `supabase/functions/tiktok-oauth-callback/index.ts` | Create |
-| `public/tiktok-callback.html` | Create |
-| `src/components/TikTokConfig.tsx` | Create |
-| `src/pages/AppsPortal.tsx` | Modify |
-| `supabase/config.toml` | Modify |
+| `supabase/functions/tiktok-oauth-start/index.ts` | Update scopes and auth endpoint |
+| `supabase/functions/tiktok-oauth-callback/index.ts` | Update token endpoint and add advertiser info fetch |
 
 ---
 
-### Data Flow
+### Technical Details
 
-```text
-┌─────────────────┐     ┌────────────────────┐     ┌─────────────┐
-│   AppsPortal    │────▶│  TikTokConfig.tsx  │────▶│   Popup     │
-│  (click TikTok) │     │  (opens popup)     │     │  Window     │
-└─────────────────┘     └────────────────────┘     └──────┬──────┘
-                                                          │
-                        ┌────────────────────┐            │
-                        │ tiktok-oauth-start │◀───────────┘
-                        │   (edge function)  │
-                        └─────────┬──────────┘
-                                  │
-                                  ▼
-                        ┌────────────────────┐
-                        │   TikTok OAuth     │
-                        │   (authorize app)  │
-                        └─────────┬──────────┘
-                                  │
-                                  ▼
-                        ┌─────────────────────┐
-                        │tiktok-oauth-callback│
-                        │   (exchange code)   │
-                        └─────────┬───────────┘
-                                  │
-                                  ▼
-                        ┌─────────────────────┐
-                        │tiktok-callback.html │
-                        │(postMessage result) │
-                        └─────────┬───────────┘
-                                  │
-                                  ▼
-                        ┌─────────────────────┐
-                        │  TikTokConfig.tsx   │
-                        │(receives message,   │
-                        │ refetches status)   │
-                        └─────────────────────┘
-```
+**tiktok-oauth-start changes:**
+- Update `scopes` array to include all Business API scopes you selected
+- Change authorization URL to Business API endpoint
+- Keep existing state management and CSRF protection
+
+**tiktok-oauth-callback changes:**
+- Update token exchange URL to Business API endpoint
+- After getting access token, call `/advertiser/info/` endpoint to get connected ad accounts
+- Store advertiser IDs in the `config` JSONB field alongside existing user info
 
