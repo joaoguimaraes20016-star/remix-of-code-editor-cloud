@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect to Stackit</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 48px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    .logo {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 28px;
+      font-weight: bold;
+      color: white;
+    }
+    h1 { 
+      text-align: center; 
+      color: #1f2937; 
+      font-size: 24px; 
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    .form-group { margin-bottom: 20px; }
+    label { 
+      display: block; 
+      margin-bottom: 6px; 
+      font-weight: 500; 
+      color: #374151;
+      font-size: 14px;
+    }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+      text-align: center;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .error-message {
+      background: #fef2f2;
+      color: #dc2626;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    .permissions {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .permissions h3 {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .permission-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      font-size: 14px;
+      color: #374151;
+    }
+    .permission-check {
+      color: #10b981;
+      font-weight: bold;
+    }
+    .loading { display: none; }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ffffff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-page {
+      text-align: center;
+    }
+    .error-icon {
+      width: 64px;
+      height: 64px;
+      background: #fee2e2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 32px;
+    }
+    .error-title { color: #dc2626; font-size: 24px; margin-bottom: 12px; }
+    .error-text { color: #6b7280; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="container" id="authContainer">
+    <div class="logo">S</div>
+    <h1>Connect to Stackit</h1>
+    <p class="subtitle">Allow Zapier to access your Stackit account?</p>
+    
+    <div class="error-message" id="errorMessage"></div>
+    
+    <form id="authForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="current-password">
+      </div>
+      
+      <div class="permissions">
+        <h3>Zapier will be able to:</h3>
+        <div class="permission-item"><span class="permission-check">✓</span> Read your leads and appointments</div>
+        <div class="permission-item"><span class="permission-check">✓</span> Create new leads and contacts</div>
+        <div class="permission-item"><span class="permission-check">✓</span> Update lead information</div>
+      </div>
+      
+      <button type="submit" class="btn btn-primary" id="submitBtn">
+        <span class="normal">Authorize Access</span>
+        <span class="loading"><span class="spinner"></span>Authorizing...</span>
+      </button>
+      <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+    </form>
+  </div>
+
+  <div class="container error-page" id="errorContainer" style="display: none;">
+    <div class="error-icon">⚠️</div>
+    <h1 class="error-title">Authorization Error</h1>
+    <p class="error-text" id="errorText"></p>
+  </div>
+
+  <script>
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const clientId = params.get('client_id');
+    const redirectUri = params.get('redirect_uri');
+    const responseType = params.get('response_type');
+    const state = params.get('state') || '';
+    const errorParam = params.get('error');
+
+    const SUPABASE_URL = 'https://kqfyevdblvgxaycdvfxe.supabase.co';
+    const EXPECTED_REDIRECT_URI = 'https://zapier.com/dashboard/auth/oauth/return/App235737CLIAPI/';
+
+    const authContainer = document.getElementById('authContainer');
+    const errorContainer = document.getElementById('errorContainer');
+    const errorText = document.getElementById('errorText');
+    const errorMessage = document.getElementById('errorMessage');
+    const form = document.getElementById('authForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    function showError(title, message) {
+      authContainer.style.display = 'none';
+      errorContainer.style.display = 'block';
+      errorText.textContent = message;
+    }
+
+    function showFormError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+    }
+
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      submitBtn.querySelector('.normal').style.display = loading ? 'none' : 'inline';
+      submitBtn.querySelector('.loading').style.display = loading ? 'inline-flex' : 'none';
+    }
+
+    // Validate params
+    if (errorParam) {
+      showError('Authorization Error', errorParam);
+    } else if (!clientId) {
+      showError('Invalid Request', 'Missing client_id parameter.');
+    } else if (!redirectUri || redirectUri !== EXPECTED_REDIRECT_URI) {
+      showError('Invalid Request', 'Invalid redirect_uri parameter.');
+    } else if (responseType !== 'code') {
+      showError('Invalid Request', 'Invalid response_type. Only "code" is supported.');
+    }
+
+    // Cancel button
+    cancelBtn.addEventListener('click', function() {
+      window.location.href = redirectUri + '?error=access_denied&state=' + encodeURIComponent(state);
+    });
+
+    // Form submission
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      errorMessage.style.display = 'none';
+      setLoading(true);
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch(SUPABASE_URL + '/functions/v1/zapier-oauth-authorize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            state: state,
+            redirect_uri: redirectUri,
+            client_id: clientId
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Authorization failed');
+        }
+
+        // Redirect to Zapier with auth code
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        } else {
+          throw new Error('No redirect URL received');
+        }
+      } catch (err) {
+        showFormError(err.message || 'An error occurred. Please try again.');
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
