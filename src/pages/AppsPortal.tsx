@@ -14,6 +14,7 @@ import { DiscordConfig } from "@/components/DiscordConfig";
 import { FathomConfig } from "@/components/FathomConfig";
 import { MetaConfig } from "@/components/MetaConfig";
 import { GoogleAdsConfig } from "@/components/GoogleAdsConfig";
+import { TikTokConfig } from "@/components/TikTokConfig";
 import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { GoogleAccountBanner } from "@/components/GoogleAccountBanner";
 import { Check, ExternalLink, Lock } from "lucide-react";
@@ -30,6 +31,7 @@ import discordLogo from "@/assets/integrations/discord.svg";
 import fathomLogo from "@/assets/integrations/fathom.svg";
 import metaLogo from "@/assets/integrations/meta.svg";
 import googleAdsLogo from "@/assets/integrations/google-ads.svg";
+import tiktokLogo from "@/assets/integrations/tiktok.svg";
 
 // Google features - excludes signin (handled by banner)
 const GOOGLE_FEATURES: Array<{
@@ -193,6 +195,15 @@ const apps: App[] = [
     status: "available",
     configurable: true,
   },
+  {
+    id: "tiktok",
+    name: "TikTok",
+    description: "Social media content and analytics",
+    logo: tiktokLogo,
+    category: "ads",
+    status: "available",
+    configurable: true,
+  },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -213,6 +224,7 @@ export default function AppsPortal() {
   const [fathomDialogOpen, setFathomDialogOpen] = useState(false);
   const [metaDialogOpen, setMetaDialogOpen] = useState(false);
   const [googleAdsDialogOpen, setGoogleAdsDialogOpen] = useState(false);
+  const [tiktokDialogOpen, setTiktokDialogOpen] = useState(false);
 
   // Fetch team integrations from secure view (tokens masked)
   const { data: teamData, refetch } = useQuery({
@@ -246,6 +258,7 @@ export default function AppsPortal() {
       const fathomIntegration = integrations.find(i => i.integration_type === "fathom");
       const metaIntegration = integrations.find(i => i.integration_type === "meta");
       const googleAdsIntegration = integrations.find(i => i.integration_type === "google_ads");
+      const tiktokIntegration = integrations.find(i => i.integration_type === "tiktok");
       
       return {
         ...teamsResult.data,
@@ -256,6 +269,7 @@ export default function AppsPortal() {
         fathom_connected: fathomIntegration?.is_connected ?? false,
         meta_connected: metaIntegration?.is_connected ?? false,
         google_ads_connected: googleAdsIntegration?.is_connected ?? false,
+        tiktok_connected: tiktokIntegration?.is_connected ?? false,
         google_connected: googleIntegration?.is_connected ?? false,
         google_email: (googleIntegration?.config_safe as any)?.email ?? null,
         google_connected_at: (googleIntegration?.config_safe as any)?.connected_at ?? null,
@@ -295,6 +309,9 @@ export default function AppsPortal() {
     if (app.id === "google_ads" && teamData?.google_ads_connected) {
       return "connected";
     }
+    if (app.id === "tiktok" && teamData?.tiktok_connected) {
+      return "connected";
+    }
     return app.status;
   };
 
@@ -322,6 +339,9 @@ export default function AppsPortal() {
     }
     if (app.id === "google_ads" && app.configurable) {
       setGoogleAdsDialogOpen(true);
+    }
+    if (app.id === "tiktok" && app.configurable) {
+      setTiktokDialogOpen(true);
     }
   };
 
@@ -556,6 +576,19 @@ export default function AppsPortal() {
               </DialogTitle>
             </DialogHeader>
             <GoogleAdsConfig teamId={teamId || ""} onUpdate={refetch} />
+          </DialogContent>
+        </Dialog>
+
+        {/* TikTok Config Dialog */}
+        <Dialog open={tiktokDialogOpen} onOpenChange={setTiktokDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <img src={tiktokLogo} alt="TikTok" className="h-6 w-6" />
+                TikTok Configuration
+              </DialogTitle>
+            </DialogHeader>
+            <TikTokConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
       </div>
