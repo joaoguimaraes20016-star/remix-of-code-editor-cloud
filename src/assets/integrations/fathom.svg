@@ -1,4 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
-  <rect width="48" height="48" rx="8" fill="#5636D3"/>
-  <path d="M14 16h20v3H14v-3zm0 6.5h16v3H14v-3zm0 6.5h12v3H14v-3z" fill="white"/>
+  <!-- Fathom official icon-only mark (cyan) -->
+  <path d="M38.5 17.5L12.5 3.3c-2.4-1.4-3.2-4.2-1.8-6.6 1.4-2.2 4.4-3 6.8-1.8l26 14.2c2.4 1.4 3.2 4.2 1.8 6.6-1.2 2.4-4.4 3.2-6.8 1.8z" transform="translate(4, 14) scale(0.7)" fill="#00BEFF"/>
+  <path d="M26.5 26.1L12.7 18.5c-2.4-1.4-3.2-4.2-1.8-6.6 1.4-2.2 4.4-3 6.8-1.8l13.8 7.6c2.4 1.4 3.2 4.2 1.8 6.6-1.4 2.2-4.4 3-6.8 1.8z" transform="translate(4, 14) scale(0.7)" fill="#00BEFF"/>
+  <path d="M8 28.8V14c0-2.8 2.2-5 5-5s5 2.2 5 5v14.8c0 2.8-2.2 5-5 5s-5-2.2-5-5z" transform="translate(4, 14) scale(0.7)" fill="#00BEFF" opacity="0.5"/>
 </svg>
