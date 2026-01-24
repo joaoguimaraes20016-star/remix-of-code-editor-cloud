@@ -1,8 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Constants
-const EXPECTED_CLIENT_ID = "stackit_zapier_client_9f3a7c2d1b84e6f0";
-const EXPECTED_CLIENT_SECRET = "sk_stackit_zapier_live_7c1f93e4a2d8b6f059e1c4a9d3b2f8aa";
+// Read from environment - DO NOT hardcode
+const EXPECTED_CLIENT_ID = Deno.env.get("ZAPIER_CLIENT_ID");
+const EXPECTED_CLIENT_SECRET = Deno.env.get("ZAPIER_CLIENT_SECRET");
 const ACCESS_TOKEN_TTL_SECONDS = 3600; // 1 hour
 
 const corsHeaders = {
@@ -66,11 +66,18 @@ Deno.serve(async (req) => {
 
     const { grant_type, code, client_id, client_secret, refresh_token, redirect_uri } = body;
 
-    console.log("Token request:", { grant_type, hasCode: !!code, hasRefreshToken: !!refresh_token });
+    // Safe debug log - NEVER log secrets
+    console.log("Token request:", { 
+      grant_type, 
+      received_client_id: client_id,
+      has_code: !!code, 
+      has_refresh_token: !!refresh_token,
+      has_redirect_uri: !!redirect_uri
+    });
 
     // Validate client credentials
     if (client_id !== EXPECTED_CLIENT_ID) {
-      console.error(`Invalid client_id: ${client_id?.substring(0, 8)}...`);
+      console.error(`Invalid client_id. Expected starts with: ${EXPECTED_CLIENT_ID?.substring(0, 8) || 'NOT_SET'}..., Got: ${client_id?.substring(0, 8) || 'null'}...`);
       return jsonError("invalid_client", "Invalid client_id", 401);
     }
 
@@ -87,43 +94,39 @@ Deno.serve(async (req) => {
         return jsonError("invalid_request", "Missing authorization code", 400);
       }
 
-      // Find the team_integration with this auth code
-      const { data: integrations, error: findError } = await supabase
-        .from("team_integrations")
+      // Lookup code in oauth_auth_codes table
+      const { data: authCodeRecord, error: findError } = await supabase
+        .from("oauth_auth_codes")
         .select("*")
-        .eq("integration_type", "zapier")
-        .not("config", "is", null);
+        .eq("code", code)
+        .is("used_at", null)
+        .single();
 
-      if (findError) {
-        console.error("Error finding integration:", findError);
-        return jsonError("server_error", "Database error", 500);
-      }
-
-      // Find matching integration with the auth code
-      const integration = integrations?.find(i => {
-        const config = i.config as Record<string, unknown>;
-        return config?.auth_code === code;
-      });
-
-      if (!integration) {
-        console.error("Auth code not found");
+      if (findError || !authCodeRecord) {
+        console.error("Auth code not found or already used:", findError?.message);
         return jsonError("invalid_grant", "Invalid or expired authorization code", 400);
       }
 
-      const config = integration.config as Record<string, unknown>;
-
       // Check if code is expired
-      const expiresAt = config.auth_code_expires_at as string;
-      if (expiresAt && new Date(expiresAt) < new Date()) {
+      if (new Date(authCodeRecord.expires_at) < new Date()) {
         console.error("Auth code expired");
         return jsonError("invalid_grant", "Authorization code has expired", 400);
       }
 
       // Validate redirect_uri if provided (OAuth 2.0 spec)
-      const storedRedirectUri = config.auth_code_redirect_uri as string;
-      if (redirect_uri && redirect_uri !== storedRedirectUri) {
-        console.error("Redirect URI mismatch");
+      if (redirect_uri && redirect_uri !== authCodeRecord.redirect_uri) {
+        console.error(`Redirect URI mismatch. Expected: ${authCodeRecord.redirect_uri}, Got: ${redirect_uri}`);
         return jsonError("invalid_grant", "redirect_uri mismatch", 400);
+      }
+
+      // Mark code as used (one-time use)
+      const { error: updateCodeError } = await supabase
+        .from("oauth_auth_codes")
+        .update({ used_at: new Date().toISOString() })
+        .eq("code", code);
+
+      if (updateCodeError) {
+        console.error("Error marking code as used:", updateCodeError);
       }
 
       // Generate new tokens using secure random generation
@@ -131,30 +134,25 @@ Deno.serve(async (req) => {
       const newRefreshToken = generateSecureToken("zrt");
       const tokenExpiresAt = new Date(Date.now() + ACCESS_TOKEN_TTL_SECONDS * 1000).toISOString();
 
-      // Update the integration with new tokens and clear auth code
-      const { error: updateError } = await supabase
-        .from("team_integrations")
-        .update({
+      // Store tokens in oauth_tokens table
+      const { error: insertTokenError } = await supabase
+        .from("oauth_tokens")
+        .insert({
           access_token: accessToken,
           refresh_token: newRefreshToken,
-          token_expires_at: tokenExpiresAt,
-          is_connected: true,
-          config: {
-            ...config,
-            auth_code: null, // Clear used auth code (one-time use)
-            auth_code_expires_at: null,
-            auth_code_redirect_uri: null,
-            connected_at: new Date().toISOString(),
-          },
-        })
-        .eq("id", integration.id);
+          client_id: client_id,
+          user_id: authCodeRecord.user_id,
+          team_id: authCodeRecord.team_id,
+          user_email: authCodeRecord.user_email,
+          expires_at: tokenExpiresAt
+        });
 
-      if (updateError) {
-        console.error("Error updating tokens:", updateError);
+      if (insertTokenError) {
+        console.error("Error storing tokens:", insertTokenError);
         return jsonError("server_error", "Failed to issue tokens", 500);
       }
 
-      console.log(`Tokens issued for team: ${integration.team_id}`);
+      console.log(`Tokens issued for team: ${authCodeRecord.team_id}`);
 
       return new Response(
         JSON.stringify({
@@ -173,40 +171,40 @@ Deno.serve(async (req) => {
         return jsonError("invalid_request", "Missing refresh token", 400);
       }
 
-      // Find integration with this refresh token
-      const { data: integration, error: findError } = await supabase
-        .from("team_integrations")
+      // Find token record with this refresh token
+      const { data: tokenRecord, error: findError } = await supabase
+        .from("oauth_tokens")
         .select("*")
-        .eq("integration_type", "zapier")
         .eq("refresh_token", refresh_token)
+        .is("revoked_at", null)
         .single();
 
-      if (findError || !integration) {
-        console.error("Invalid refresh token");
+      if (findError || !tokenRecord) {
+        console.error("Invalid refresh token:", findError?.message);
         return jsonError("invalid_grant", "Invalid refresh token", 400);
       }
 
-      // Generate new access token (optionally rotate refresh token)
+      // Generate new tokens (rotate both access and refresh)
       const newAccessToken = generateSecureToken("zat");
-      const newRefreshToken = generateSecureToken("zrt"); // Rotate refresh token
+      const newRefreshToken = generateSecureToken("zrt");
       const tokenExpiresAt = new Date(Date.now() + ACCESS_TOKEN_TTL_SECONDS * 1000).toISOString();
 
       // Update with new tokens
       const { error: updateError } = await supabase
-        .from("team_integrations")
+        .from("oauth_tokens")
         .update({
           access_token: newAccessToken,
           refresh_token: newRefreshToken,
-          token_expires_at: tokenExpiresAt,
+          expires_at: tokenExpiresAt,
         })
-        .eq("id", integration.id);
+        .eq("id", tokenRecord.id);
 
       if (updateError) {
         console.error("Error refreshing token:", updateError);
         return jsonError("server_error", "Failed to refresh token", 500);
       }
 
-      console.log(`Token refreshed for team: ${integration.team_id}`);
+      console.log(`Token refreshed for team: ${tokenRecord.team_id}`);
 
       return new Response(
         JSON.stringify({
