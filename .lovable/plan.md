@@ -1,127 +1,68 @@
 
-## Zapier Integration Setup
+## Add Zapier OAuth Test Endpoint
 
-This plan creates a full Zapier integration using Zapier's "Private Integration" model, where **you** act as the OAuth provider and generate your own credentials.
-
----
-
-### How Zapier Works (Different from other integrations!)
-
-Unlike Slack/Zoom where **they** give you credentials, with Zapier:
-1. **You generate** a Client ID and Secret (we'll create random UUIDs)
-2. **You provide** OAuth endpoints that Zapier calls to authorize users
-3. Users connect via Zapier → Zapier calls your OAuth server → tokens issued
-
-This allows Zapier to trigger actions in your app (e.g., "New Lead" triggers a Zap) and let Zaps write data to your app.
+Zapier requires a **Test Authentication** endpoint to verify that the OAuth flow is working correctly. This endpoint validates the access token and returns basic account information.
 
 ---
 
-### Credentials to Generate
+### The Issue
 
-You'll need to generate these and save them as Supabase secrets:
+Your Zapier configuration is looking for:
+```
+GET https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-oauth-test
+```
 
-| Secret Name | Description |
-|-------------|-------------|
-| `ZAPIER_CLIENT_ID` | Random UUID you generate (e.g., `zap_abc123...`) |
-| `ZAPIER_CLIENT_SECRET` | Random UUID you generate (strong random string) |
-
-You can generate these yourself or I can provide values for you to copy.
+This endpoint doesn't exist yet, so Zapier can't complete the authentication test.
 
 ---
 
-### Edge Functions to Create
+### Solution
 
-| Function | Purpose |
-|----------|---------|
-| `zapier-oauth-authorize` | Authorization page where users approve Zapier access |
-| `zapier-oauth-token` | Token exchange endpoint Zapier calls |
-| `zapier-oauth-refresh` | Token refresh endpoint |
-| `zapier-triggers` | Exposes triggers (New Lead, New Appointment, etc.) |
-| `zapier-actions` | Receives actions from Zaps (Create Lead, Send Message, etc.) |
+Create a new edge function that:
+1. Validates the Bearer access token from the Authorization header
+2. Returns basic account/team info that Zapier can use for the connection label
 
 ---
 
-### Frontend Changes
+### File to Create
 
-| File | Action |
+| File | Purpose |
+|------|---------|
+| `supabase/functions/zapier-oauth-test/index.ts` | Validates access token and returns team info |
+
+---
+
+### File to Modify
+
+| File | Change |
 |------|--------|
-| `src/components/ZapierConfig.tsx` | New config component for Zapier setup |
-| `src/components/IntegrationsPortal.tsx` | Add Zapier dialog and connection status |
-| `public/zapier-callback.html` | OAuth callback page |
+| `supabase/config.toml` | Add `zapier-oauth-test` function configuration |
 
 ---
 
-### Database Usage
+### What the Test Endpoint Returns
 
-Zapier tokens will be stored in the existing `team_integrations` table with `integration_type = 'zapier'`, following the established pattern.
+```json
+{
+  "id": "team-uuid",
+  "name": "Team Name",
+  "connected_at": "2024-01-24T..."
+}
+```
 
----
-
-### Zapier Developer Portal Configuration
-
-After implementation, you'll configure these URLs in Zapier Developer Platform:
-
-| Setting | Value |
-|---------|-------|
-| Authorization URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-oauth-authorize` |
-| Token URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-oauth-token` |
-| Refresh URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-oauth-refresh` |
-| Triggers URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-triggers` |
+This allows Zapier to:
+- Verify the token is valid
+- Display a meaningful connection label (e.g., "Team Name" instead of just "Connected")
 
 ---
 
-### Files to Create/Modify
+### Technical Implementation
 
-| File | Action |
-|------|--------|
-| `supabase/functions/zapier-oauth-authorize/index.ts` | Create |
-| `supabase/functions/zapier-oauth-token/index.ts` | Create |
-| `supabase/functions/zapier-oauth-refresh/index.ts` | Create |
-| `supabase/functions/zapier-triggers/index.ts` | Create |
-| `supabase/functions/zapier-actions/index.ts` | Create |
-| `src/components/ZapierConfig.tsx` | Create |
-| `src/components/IntegrationsPortal.tsx` | Modify |
-| `public/zapier-callback.html` | Create |
-| `supabase/config.toml` | Add function configurations |
+The function will:
+1. Extract the Bearer token from the `Authorization` header
+2. Look up the `team_integrations` record with matching `access_token`
+3. Check that `is_connected = true` and token hasn't expired
+4. Fetch the associated team name from the `teams` table
+5. Return team info or 401 if invalid
 
----
-
-### Triggers to Expose
-
-Initial triggers available to Zapier users:
-
-- **New Lead** - Fires when a new lead is created
-- **New Appointment** - Fires when a Calendly appointment is booked
-- **Lead Status Changed** - Fires when a lead moves pipeline stages
-
-### Actions to Expose
-
-Initial actions Zapier users can trigger:
-
-- **Create Lead** - Add a new lead to CRM
-- **Update Lead** - Modify an existing lead
-- **Add Note to Lead** - Append a note to a lead record
-
----
-
-### Technical Details
-
-**zapier-oauth-authorize:**
-- Renders an authorization page with team selector
-- Validates user session via Supabase Auth
-- Generates authorization code and redirects to Zapier's `redirect_uri`
-
-**zapier-oauth-token:**
-- Validates `client_id` and `client_secret` against stored secrets
-- Exchanges authorization code for access token
-- Returns access_token, refresh_token, and expiry
-
-**zapier-triggers:**
-- Uses polling or REST hooks pattern
-- Returns latest data for trigger type
-- Supports deduplication via unique IDs
-
-**zapier-actions:**
-- Validates access token
-- Performs requested action (create lead, etc.)
-- Returns result to Zapier
+This follows the same token validation pattern already used in `zapier-triggers` and `zapier-actions`.
