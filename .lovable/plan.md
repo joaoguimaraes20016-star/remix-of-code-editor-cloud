@@ -1,71 +1,127 @@
 
+## Zapier Integration Setup
 
-## Update TikTok Integration for Business API
-
-This plan updates the existing TikTok integration to use TikTok Business API scopes instead of the basic Login Kit scopes.
-
----
-
-### Redirect URL for TikTok Developer Portal
-
-Add this exact URL to your TikTok app's redirect URI settings:
-
-```
-https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/tiktok-oauth-callback
-```
+This plan creates a full Zapier integration using Zapier's "Private Integration" model, where **you** act as the OAuth provider and generate your own credentials.
 
 ---
 
-### Changes Required
+### How Zapier Works (Different from other integrations!)
 
-**Update `supabase/functions/tiktok-oauth-start/index.ts`**
+Unlike Slack/Zoom where **they** give you credentials, with Zapier:
+1. **You generate** a Client ID and Secret (we'll create random UUIDs)
+2. **You provide** OAuth endpoints that Zapier calls to authorize users
+3. Users connect via Zapier → Zapier calls your OAuth server → tokens issued
 
-Change the OAuth scopes from basic Login Kit to TikTok Business API scopes:
-
-| Current Scopes | New Business API Scopes |
-|----------------|------------------------|
-| `user.info.basic` | `user.info.basic` |
-| `user.info.profile` | `user.info.profile` |
-| | `lead.management` |
-| | `crm.event.management` |
-| | `reporting.read` |
-| | `measurement.read` |
-| | `pixel.read` |
-| | `offline.event.manage` |
-| | `ad.account.read` |
-
-The authorization endpoint also changes for Business API:
-- **From**: `https://www.tiktok.com/v2/auth/authorize/`
-- **To**: `https://business-api.tiktok.com/open_api/v1.3/oauth2/authorize/`
-
-**Update `supabase/functions/tiktok-oauth-callback/index.ts`**
-
-Update the token exchange endpoint for Business API:
-- **From**: `https://open.tiktokapis.com/v2/oauth/token/`
-- **To**: `https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/`
-
-After token exchange, fetch advertiser info using the Business API to get the connected ad accounts.
+This allows Zapier to trigger actions in your app (e.g., "New Lead" triggers a Zap) and let Zaps write data to your app.
 
 ---
 
-### File Changes Summary
+### Credentials to Generate
+
+You'll need to generate these and save them as Supabase secrets:
+
+| Secret Name | Description |
+|-------------|-------------|
+| `ZAPIER_CLIENT_ID` | Random UUID you generate (e.g., `zap_abc123...`) |
+| `ZAPIER_CLIENT_SECRET` | Random UUID you generate (strong random string) |
+
+You can generate these yourself or I can provide values for you to copy.
+
+---
+
+### Edge Functions to Create
+
+| Function | Purpose |
+|----------|---------|
+| `zapier-oauth-authorize` | Authorization page where users approve Zapier access |
+| `zapier-oauth-token` | Token exchange endpoint Zapier calls |
+| `zapier-oauth-refresh` | Token refresh endpoint |
+| `zapier-triggers` | Exposes triggers (New Lead, New Appointment, etc.) |
+| `zapier-actions` | Receives actions from Zaps (Create Lead, Send Message, etc.) |
+
+---
+
+### Frontend Changes
 
 | File | Action |
 |------|--------|
-| `supabase/functions/tiktok-oauth-start/index.ts` | Update scopes and auth endpoint |
-| `supabase/functions/tiktok-oauth-callback/index.ts` | Update token endpoint and add advertiser info fetch |
+| `src/components/ZapierConfig.tsx` | New config component for Zapier setup |
+| `src/components/IntegrationsPortal.tsx` | Add Zapier dialog and connection status |
+| `public/zapier-callback.html` | OAuth callback page |
+
+---
+
+### Database Usage
+
+Zapier tokens will be stored in the existing `team_integrations` table with `integration_type = 'zapier'`, following the established pattern.
+
+---
+
+### Zapier Developer Portal Configuration
+
+After implementation, you'll configure these URLs in Zapier Developer Platform:
+
+| Setting | Value |
+|---------|-------|
+| Authorization URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-oauth-authorize` |
+| Token URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-oauth-token` |
+| Refresh URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-oauth-refresh` |
+| Triggers URL | `https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-triggers` |
+
+---
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `supabase/functions/zapier-oauth-authorize/index.ts` | Create |
+| `supabase/functions/zapier-oauth-token/index.ts` | Create |
+| `supabase/functions/zapier-oauth-refresh/index.ts` | Create |
+| `supabase/functions/zapier-triggers/index.ts` | Create |
+| `supabase/functions/zapier-actions/index.ts` | Create |
+| `src/components/ZapierConfig.tsx` | Create |
+| `src/components/IntegrationsPortal.tsx` | Modify |
+| `public/zapier-callback.html` | Create |
+| `supabase/config.toml` | Add function configurations |
+
+---
+
+### Triggers to Expose
+
+Initial triggers available to Zapier users:
+
+- **New Lead** - Fires when a new lead is created
+- **New Appointment** - Fires when a Calendly appointment is booked
+- **Lead Status Changed** - Fires when a lead moves pipeline stages
+
+### Actions to Expose
+
+Initial actions Zapier users can trigger:
+
+- **Create Lead** - Add a new lead to CRM
+- **Update Lead** - Modify an existing lead
+- **Add Note to Lead** - Append a note to a lead record
 
 ---
 
 ### Technical Details
 
-**tiktok-oauth-start changes:**
-- Update `scopes` array to include all Business API scopes you selected
-- Change authorization URL to Business API endpoint
-- Keep existing state management and CSRF protection
+**zapier-oauth-authorize:**
+- Renders an authorization page with team selector
+- Validates user session via Supabase Auth
+- Generates authorization code and redirects to Zapier's `redirect_uri`
 
-**tiktok-oauth-callback changes:**
-- Update token exchange URL to Business API endpoint
-- After getting access token, call `/advertiser/info/` endpoint to get connected ad accounts
-- Store advertiser IDs in the `config` JSONB field alongside existing user info
+**zapier-oauth-token:**
+- Validates `client_id` and `client_secret` against stored secrets
+- Exchanges authorization code for access token
+- Returns access_token, refresh_token, and expiry
 
+**zapier-triggers:**
+- Uses polling or REST hooks pattern
+- Returns latest data for trigger type
+- Supports deduplication via unique IDs
+
+**zapier-actions:**
+- Validates access token
+- Performs requested action (create lead, etc.)
+- Returns result to Zapier
