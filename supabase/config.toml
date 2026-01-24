@@ -200,3 +200,6 @@ verify_jwt = false
 
 [functions.zapier-actions]
 verify_jwt = false
+
+[functions.zapier-oauth-test]
+verify_jwt = false
