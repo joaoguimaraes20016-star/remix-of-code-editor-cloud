@@ -22,13 +22,20 @@ function htmlResponse(body: string, status = 200): Response {
   // Set both cases to maximize compatibility with proxies/edge runtime
   headers.set("content-type", "text/html; charset=utf-8");
   headers.set("Content-Type", "text/html; charset=utf-8");
+  // Encourage browsers/embeds to render instead of treating as a download or plain text
+  headers.set("content-disposition", "inline");
+  headers.set("Content-Disposition", "inline");
   headers.set("cache-control", "no-store");
   headers.set("Cache-Control", "no-store");
+  headers.set("pragma", "no-cache");
+  headers.set("Pragma", "no-cache");
   headers.set("x-content-type-options", "nosniff");
   headers.set("X-Content-Type-Options", "nosniff");
   // Override any injected sandbox CSP
   headers.set("content-security-policy", CONTENT_SECURITY_POLICY);
   headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+  // Debug marker to verify which version is being served (safe, no secrets)
+  headers.set("x-stackit-zapier-authorize", "v3-force-html-2026-01-24");
   
   return new Response(body, { status, headers });
 }
@@ -40,6 +47,7 @@ function redirectResponse(location: string): Response {
   const headers = new Headers();
   headers.set("Location", location);
   headers.set("Cache-Control", "no-store");
+  headers.set("x-stackit-zapier-authorize", "v3-force-html-2026-01-24");
   return new Response(null, { status: 302, headers });
 }
 
