@@ -11,13 +11,12 @@ const corsHeaders = {
 };
 
 function htmlResponse(body: string, status = 200): Response {
-  return new Response(body, {
-    status,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "no-store"
-    }
-  });
+  const headers = new Headers();
+  headers.set("content-type", "text/html; charset=utf-8");
+  headers.set("cache-control", "no-store");
+  headers.set("x-content-type-options", "nosniff");
+  
+  return new Response(body, { status, headers });
 }
 
 function getSupabaseClient() {
@@ -463,12 +462,15 @@ Deno.serve(async (req) => {
     const responseType = url.searchParams.get("response_type");
     const state = url.searchParams.get("state") || "";
 
-    // Safe debug log - NEVER log secrets
+    // Safe debug log - mask client_id partially, never log secrets
+    const maskedClientId = clientId ? `${clientId.substring(0, 12)}...` : 'null';
     console.log("OAuth authorize GET request:", { 
-      received_client_id: clientId,
+      received_client_id_masked: maskedClientId,
       received_redirect_uri: redirectUri,
       received_response_type: responseType,
-      has_state: !!state 
+      has_state: !!state,
+      env_client_id_exists: !!EXPECTED_CLIENT_ID,
+      client_id_matches: clientId === EXPECTED_CLIENT_ID
     });
 
     // Validate client_id
