@@ -5,6 +5,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Centralized HTML response headers to ensure proper content-type
+function htmlHeaders(): Headers {
+  const h = new Headers();
+  h.set("Access-Control-Allow-Origin", "*");
+  h.set("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+  h.set("Content-Type", "text/html; charset=utf-8");
+  h.set("Cache-Control", "no-store");
+  h.set("Pragma", "no-cache");
+  return h;
+}
+
 function getSupabaseClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -36,17 +47,31 @@ Deno.serve(async (req) => {
     // Validate required OAuth parameters
     if (!clientId || !redirectUri || !state) {
       return new Response(
-        renderErrorPage("Missing required OAuth parameters"),
-        { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+        renderErrorPage("Missing required OAuth parameters (client_id, redirect_uri, or state)"),
+        { headers: htmlHeaders() }
       );
     }
 
-    // Validate client_id
+    // Validate client_id with actionable error messages
     const expectedClientId = Deno.env.get("ZAPIER_CLIENT_ID");
-    if (clientId !== expectedClientId) {
+    
+    if (!expectedClientId) {
+      console.error("ZAPIER_CLIENT_ID secret is not configured in Supabase");
       return new Response(
-        renderErrorPage("Invalid client_id"),
-        { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+        renderErrorPage("Server misconfigured: missing ZAPIER_CLIENT_ID secret. Please contact the administrator."),
+        { headers: htmlHeaders() }
+      );
+    }
+    
+    if (clientId !== expectedClientId) {
+      // Log redacted hint for debugging (first 4 chars + length)
+      const receivedHint = clientId.length > 4 ? `${clientId.slice(0, 4)}... (len=${clientId.length})` : "(too short)";
+      const expectedHint = expectedClientId.length > 4 ? `${expectedClientId.slice(0, 4)}... (len=${expectedClientId.length})` : "(too short)";
+      console.error(`client_id mismatch - received: ${receivedHint}, expected: ${expectedHint}`);
+      
+      return new Response(
+        renderErrorPage("Invalid client_id. Ensure the Zapier integration's Client ID matches the ZAPIER_CLIENT_ID secret in Supabase."),
+        { headers: htmlHeaders() }
       );
     }
 
@@ -63,7 +88,7 @@ Deno.serve(async (req) => {
       if (!teamId || !userToken) {
         return new Response(
           renderErrorPage("Missing team selection or authentication"),
-          { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+          { headers: htmlHeaders() }
         );
       }
 
@@ -74,7 +99,7 @@ Deno.serve(async (req) => {
       if (userError || !userData.user) {
         return new Response(
           renderErrorPage("Invalid or expired session"),
-          { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+          { headers: htmlHeaders() }
         );
       }
 
@@ -89,7 +114,7 @@ Deno.serve(async (req) => {
       if (memberError || !membership) {
         return new Response(
           renderErrorPage("You don't have access to this team"),
-          { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+          { headers: htmlHeaders() }
         );
       }
 
@@ -120,7 +145,7 @@ Deno.serve(async (req) => {
         console.error("Error storing auth code:", upsertError);
         return new Response(
           renderErrorPage("Failed to process authorization"),
-          { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+          { headers: htmlHeaders() }
         );
       }
 
@@ -136,14 +161,14 @@ Deno.serve(async (req) => {
     // For the authorization page, we need to get team list from query param or show login prompt
     return new Response(
       renderAuthPage(clientId, redirectUri, state, teamIdParam),
-      { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+      { headers: htmlHeaders() }
     );
 
   } catch (error) {
     console.error("Authorization error:", error);
     return new Response(
       renderErrorPage("An unexpected error occurred"),
-      { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+      { headers: htmlHeaders() }
     );
   }
 });
