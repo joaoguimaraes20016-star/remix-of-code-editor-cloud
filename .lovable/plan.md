@@ -1,68 +1,58 @@
 
-## Add Zapier OAuth Test Endpoint
 
-Zapier requires a **Test Authentication** endpoint to verify that the OAuth flow is working correctly. This endpoint validates the access token and returns basic account information.
+## Fix Zapier Authorization Page Branding
 
----
-
-### The Issue
-
-Your Zapier configuration is looking for:
-```
-GET https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/zapier-oauth-test
-```
-
-This endpoint doesn't exist yet, so Zapier can't complete the authentication test.
+The Zapier OAuth authorization page currently displays "Infostack" instead of "Stackit" and uses raw HTML rendering. This plan updates all branding references and improves the visual design.
 
 ---
 
-### Solution
+### Issues Identified
 
-Create a new edge function that:
-1. Validates the Bearer access token from the Authorization header
-2. Returns basic account/team info that Zapier can use for the connection label
-
----
-
-### File to Create
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/zapier-oauth-test/index.ts` | Validates access token and returns team info |
+| Location | Current | Should Be |
+|----------|---------|-----------|
+| Page title (line 157) | "Authorize Infostack - Zapier" | "Authorize Stackit - Zapier" |
+| Description (line 320) | "your Infostack account" | "your Stackit account" |
+| CSS class (line 193) | `.infostack` | `.stackit` |
+| HTML class (line 314) | `logo infostack` | `logo stackit` |
 
 ---
 
 ### File to Modify
 
-| File | Change |
-|------|--------|
-| `supabase/config.toml` | Add `zapier-oauth-test` function configuration |
+| File | Changes |
+|------|---------|
+| `supabase/functions/zapier-oauth-authorize/index.ts` | Update all "Infostack" references to "Stackit" |
 
 ---
 
-### What the Test Endpoint Returns
+### Specific Changes
 
-```json
-{
-  "id": "team-uuid",
-  "name": "Team Name",
-  "connected_at": "2024-01-24T..."
-}
+**Line 157** - Page title:
+```html
+<title>Authorize Stackit - Zapier</title>
 ```
 
-This allows Zapier to:
-- Verify the token is valid
-- Display a meaningful connection label (e.g., "Team Name" instead of just "Connected")
+**Line 193** - CSS class rename:
+```css
+.stackit { background: #6366f1; color: white; }
+```
+
+**Line 314** - HTML class reference:
+```html
+<div class="logo stackit">📊</div>
+```
+
+**Line 320** - Description text:
+```html
+<p>Zapier is requesting access to your Stackit account to automate your workflows.</p>
+```
 
 ---
 
-### Technical Implementation
+### Technical Notes
 
-The function will:
-1. Extract the Bearer token from the `Authorization` header
-2. Look up the `team_integrations` record with matching `access_token`
-3. Check that `is_connected = true` and token hasn't expired
-4. Fetch the associated team name from the `teams` table
-5. Return team info or 401 if invalid
+- The page is rendered as a raw HTML string inside the edge function's `renderAuthPage()` function
+- This is a standard pattern for OAuth authorization flows since they need to be self-contained
+- The styling uses inline CSS with a gradient background and card-based layout
+- No structural changes needed - just text replacements
 
-This follows the same token validation pattern already used in `zapier-triggers` and `zapier-actions`.
