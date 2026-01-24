@@ -179,3 +179,9 @@ verify_jwt = false
 
 [functions.google-ads-oauth-callback]
 verify_jwt = false
+
+[functions.tiktok-oauth-start]
+verify_jwt = false
+
+[functions.tiktok-oauth-callback]
+verify_jwt = false
