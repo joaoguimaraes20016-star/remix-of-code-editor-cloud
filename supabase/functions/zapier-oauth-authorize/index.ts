@@ -10,13 +10,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// CSP that allows inline styles, form submissions, but no sandbox
+const CONTENT_SECURITY_POLICY = "default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; form-action 'self' https://zapier.com; base-uri 'none'; frame-ancestors 'none'";
+
+/**
+ * Returns HTML with explicit headers to ensure proper rendering.
+ * Sets BOTH lowercase and canonical case for maximum compatibility.
+ */
 function htmlResponse(body: string, status = 200): Response {
   const headers = new Headers();
+  // Set both cases to maximize compatibility with proxies/edge runtime
   headers.set("content-type", "text/html; charset=utf-8");
+  headers.set("Content-Type", "text/html; charset=utf-8");
   headers.set("cache-control", "no-store");
+  headers.set("Cache-Control", "no-store");
   headers.set("x-content-type-options", "nosniff");
+  headers.set("X-Content-Type-Options", "nosniff");
+  // Override any injected sandbox CSP
+  headers.set("content-security-policy", CONTENT_SECURITY_POLICY);
+  headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
   
   return new Response(body, { status, headers });
+}
+
+/**
+ * Returns a 302 redirect response
+ */
+function redirectResponse(location: string): Response {
+  const headers = new Headers();
+  headers.set("Location", location);
+  headers.set("Cache-Control", "no-store");
+  return new Response(null, { status: 302, headers });
 }
 
 function getSupabaseClient() {
@@ -31,6 +55,15 @@ function generateSecureCode(length: number = 32): string {
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
   return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function renderErrorPage(error: string, details?: string): string {
@@ -96,7 +129,13 @@ function renderErrorPage(error: string, details?: string): string {
 </html>`;
 }
 
-function renderAuthPage(state: string, redirectUri: string): string {
+/**
+ * Renders auth page with plain HTML form - NO JavaScript required.
+ * Form POSTs directly, server responds with 302 redirect.
+ */
+function renderAuthPage(clientId: string, redirectUri: string, state: string, errorMessage?: string): string {
+  const cancelUrl = `${redirectUri}?error=access_denied&state=${encodeURIComponent(state)}`;
+  
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -155,7 +194,8 @@ function renderAuthPage(state: string, redirectUri: string): string {
       color: #374151;
       font-size: 14px;
     }
-    input {
+    input[type="email"],
+    input[type="password"] {
       width: 100%;
       padding: 12px 16px;
       border: 1px solid #d1d5db;
@@ -169,6 +209,7 @@ function renderAuthPage(state: string, redirectUri: string): string {
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     }
     .btn {
+      display: block;
       width: 100%;
       padding: 14px;
       border: none;
@@ -178,13 +219,14 @@ function renderAuthPage(state: string, redirectUri: string): string {
       cursor: pointer;
       transition: all 0.2s;
       margin-bottom: 12px;
+      text-align: center;
+      text-decoration: none;
     }
     .btn-primary {
       background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       color: white;
     }
     .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
     .btn-secondary {
       background: #f3f4f6;
       color: #374151;
@@ -197,7 +239,6 @@ function renderAuthPage(state: string, redirectUri: string): string {
       border-radius: 8px;
       margin-bottom: 20px;
       font-size: 14px;
-      display: none;
     }
     .permissions {
       background: #f9fafb;
@@ -220,23 +261,10 @@ function renderAuthPage(state: string, redirectUri: string): string {
       font-size: 14px;
       color: #374151;
     }
-    .permission-item::before {
-      content: "✓";
+    .permission-check {
       color: #10b981;
       font-weight: bold;
     }
-    .loading { display: none; }
-    .spinner {
-      width: 20px;
-      height: 20px;
-      border: 2px solid #ffffff;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      display: inline-block;
-      margin-right: 8px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -245,9 +273,15 @@ function renderAuthPage(state: string, redirectUri: string): string {
     <h1>Connect to Stackit</h1>
     <p class="subtitle">Allow Zapier to access your Stackit account?</p>
     
-    <div class="error-message" id="error"></div>
+    ${errorMessage ? `<div class="error-message">${escapeHtml(errorMessage)}</div>` : ''}
     
-    <form id="authForm">
+    <form method="POST" action="">
+      <!-- Hidden OAuth fields -->
+      <input type="hidden" name="client_id" value="${escapeHtml(clientId)}">
+      <input type="hidden" name="redirect_uri" value="${escapeHtml(redirectUri)}">
+      <input type="hidden" name="state" value="${escapeHtml(state)}">
+      <input type="hidden" name="response_type" value="code">
+      
       <div class="form-group">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
@@ -260,82 +294,17 @@ function renderAuthPage(state: string, redirectUri: string): string {
       
       <div class="permissions">
         <h3>Zapier will be able to:</h3>
-        <div class="permission-item">Read your leads and appointments</div>
-        <div class="permission-item">Create new leads and contacts</div>
-        <div class="permission-item">Update lead information</div>
+        <div class="permission-item"><span class="permission-check">✓</span> Read your leads and appointments</div>
+        <div class="permission-item"><span class="permission-check">✓</span> Create new leads and contacts</div>
+        <div class="permission-item"><span class="permission-check">✓</span> Update lead information</div>
       </div>
       
-      <button type="submit" class="btn btn-primary" id="submitBtn">
-        <span class="normal">Authorize Access</span>
-        <span class="loading"><span class="spinner"></span>Authorizing...</span>
-      </button>
-      <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn btn-primary">Authorize Access</button>
+      <a href="${escapeHtml(cancelUrl)}" class="btn btn-secondary">Cancel</a>
     </form>
   </div>
-
-  <script>
-    const form = document.getElementById('authForm');
-    const errorEl = document.getElementById('error');
-    const submitBtn = document.getElementById('submitBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const state = ${JSON.stringify(state)};
-    const redirectUri = ${JSON.stringify(redirectUri)};
-    
-    function showError(msg) {
-      errorEl.textContent = msg;
-      errorEl.style.display = 'block';
-    }
-    
-    function setLoading(loading) {
-      submitBtn.disabled = loading;
-      submitBtn.querySelector('.normal').style.display = loading ? 'none' : 'inline';
-      submitBtn.querySelector('.loading').style.display = loading ? 'inline-flex' : 'none';
-    }
-    
-    cancelBtn.addEventListener('click', () => {
-      window.location.href = redirectUri + '?error=access_denied&state=' + encodeURIComponent(state);
-    });
-    
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errorEl.style.display = 'none';
-      setLoading(true);
-      
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      try {
-        const res = await fetch(window.location.origin + '/functions/v1/zapier-oauth-authorize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, state, redirect_uri: redirectUri })
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-          throw new Error(data.error || 'Authorization failed');
-        }
-        
-        // Redirect with authorization code
-        window.location.href = data.redirect_url;
-      } catch (err) {
-        showError(err.message);
-        setLoading(false);
-      }
-    });
-  </script>
 </body>
 </html>`;
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 Deno.serve(async (req) => {
@@ -349,30 +318,69 @@ Deno.serve(async (req) => {
   // Handle POST request (form submission from auth page)
   if (req.method === "POST") {
     try {
-      const body = await req.json();
-      const { email, password, state, redirect_uri } = body;
+      // Parse form data (application/x-www-form-urlencoded from HTML form)
+      const contentType = req.headers.get("content-type") || "";
+      let email: string | null = null;
+      let password: string | null = null;
+      let state: string | null = null;
+      let redirectUri: string | null = null;
+      let clientId: string | null = null;
 
-      // Safe debug log - NEVER log secrets
+      if (contentType.includes("application/x-www-form-urlencoded")) {
+        const formData = await req.formData();
+        email = formData.get("email") as string | null;
+        password = formData.get("password") as string | null;
+        state = formData.get("state") as string | null;
+        redirectUri = formData.get("redirect_uri") as string | null;
+        clientId = formData.get("client_id") as string | null;
+      } else if (contentType.includes("application/json")) {
+        // Also support JSON for backwards compatibility
+        const body = await req.json();
+        email = body.email;
+        password = body.password;
+        state = body.state;
+        redirectUri = body.redirect_uri;
+        clientId = body.client_id || EXPECTED_CLIENT_ID;
+      } else {
+        console.error("Unsupported content-type:", contentType);
+        return htmlResponse(renderErrorPage("Invalid request", "Unsupported content type"), 400);
+      }
+
+      // Safe debug log - NEVER log secrets or passwords
+      const maskedClientId = clientId ? `${clientId.substring(0, 12)}...` : 'null';
       console.log("OAuth authorize POST:", {
         has_email: !!email,
         has_password: !!password,
         has_state: !!state,
-        received_redirect_uri: redirect_uri
+        received_redirect_uri: redirectUri,
+        received_client_id_masked: maskedClientId,
+        env_client_id_exists: !!EXPECTED_CLIENT_ID,
+        client_id_matches: clientId === EXPECTED_CLIENT_ID
       });
 
-      if (!email || !password) {
-        return new Response(
-          JSON.stringify({ error: "Email and password are required" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      // Re-validate client_id on POST (never trust hidden fields)
+      if (!clientId || clientId !== EXPECTED_CLIENT_ID) {
+        console.error(`POST: Invalid client_id`);
+        return htmlResponse(
+          renderErrorPage("Invalid client_id", "The client credentials are invalid."),
+          400
         );
       }
 
-      // Validate redirect_uri
-      if (redirect_uri !== ALLOWED_REDIRECT_URI) {
-        console.error(`Invalid redirect_uri. Expected: ${ALLOWED_REDIRECT_URI}, Got: ${redirect_uri}`);
-        return new Response(
-          JSON.stringify({ error: "Invalid redirect_uri" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      // Re-validate redirect_uri on POST
+      if (!redirectUri || redirectUri !== ALLOWED_REDIRECT_URI) {
+        console.error(`POST: Invalid redirect_uri. Expected: ${ALLOWED_REDIRECT_URI}, Got: ${redirectUri}`);
+        return htmlResponse(
+          renderErrorPage("Invalid redirect_uri", `Expected: ${ALLOWED_REDIRECT_URI}`),
+          400
+        );
+      }
+
+      if (!email || !password) {
+        // Show auth page again with error message
+        return htmlResponse(
+          renderAuthPage(clientId, redirectUri, state || "", "Email and password are required"),
+          400
         );
       }
 
@@ -386,9 +394,10 @@ Deno.serve(async (req) => {
 
       if (authError || !authData.user) {
         console.error("Auth error:", authError?.message);
-        return new Response(
-          JSON.stringify({ error: "Invalid email or password" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        // Show auth page again with error message
+        return htmlResponse(
+          renderAuthPage(clientId, redirectUri, state || "", "Invalid email or password"),
+          401
         );
       }
 
@@ -402,9 +411,9 @@ Deno.serve(async (req) => {
 
       if (teamError || !teamMember) {
         console.error("Team lookup error:", teamError?.message);
-        return new Response(
-          JSON.stringify({ error: "No team found for this user" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return htmlResponse(
+          renderAuthPage(clientId, redirectUri, state || "", "No team found for this user"),
+          403
         );
       }
 
@@ -420,8 +429,8 @@ Deno.serve(async (req) => {
         .insert({
           code: authCode,
           client_id: EXPECTED_CLIENT_ID,
-          redirect_uri: redirect_uri,
-          state: state,
+          redirect_uri: redirectUri,
+          state: state || null,
           user_id: authData.user.id,
           team_id: teamId,
           user_email: email,
@@ -430,27 +439,25 @@ Deno.serve(async (req) => {
 
       if (insertError) {
         console.error("Insert auth code error:", insertError);
-        return new Response(
-          JSON.stringify({ error: "Failed to create authorization" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return htmlResponse(
+          renderAuthPage(clientId, redirectUri, state || "", "Failed to create authorization. Please try again."),
+          500
         );
       }
 
-      // Build redirect URL with auth code
-      const redirectUrl = `${redirect_uri}?code=${encodeURIComponent(authCode)}&state=${encodeURIComponent(state)}`;
+      // Build redirect URL with auth code and perform 302 redirect
+      const redirectUrl = `${redirectUri}?code=${encodeURIComponent(authCode)}&state=${encodeURIComponent(state || "")}`;
 
       console.log(`Auth code issued for team ${teamId}, redirecting to Zapier`);
 
-      return new Response(
-        JSON.stringify({ redirect_url: redirectUrl }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // Return 302 redirect - no JavaScript needed
+      return redirectResponse(redirectUrl);
 
     } catch (error) {
       console.error("POST handler error:", error);
-      return new Response(
-        JSON.stringify({ error: "Internal server error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      return htmlResponse(
+        renderErrorPage("Internal server error", "An unexpected error occurred. Please try again."),
+        500
       );
     }
   }
@@ -509,8 +516,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Render the authorization page
-    return htmlResponse(renderAuthPage(state, redirectUri));
+    // Render the authorization page with plain HTML form (no JS dependency)
+    return htmlResponse(renderAuthPage(clientId, redirectUri, state));
   }
 
   return new Response("Method not allowed", { status: 405, headers: corsHeaders });
