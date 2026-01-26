@@ -3,6 +3,7 @@ import { useParams, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamSidebar } from "@/components/TeamSidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TeamLabelsProvider } from "@/contexts/TeamLabelsContext";
 
 export function TeamLayout() {
   const { teamId } = useParams();
@@ -45,11 +46,13 @@ export function TeamLayout() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-white">
-      <TeamSidebar teamName={teamName} teamLogo={teamLogo} />
-      <main className="flex-1 overflow-auto bg-white">
-        <Outlet context={{ teamName, teamLogo }} />
-      </main>
-    </div>
+    <TeamLabelsProvider>
+      <div className="flex h-screen w-full bg-white">
+        <TeamSidebar teamName={teamName} teamLogo={teamLogo} />
+        <main className="flex-1 overflow-auto bg-white">
+          <Outlet context={{ teamName, teamLogo }} />
+        </main>
+      </div>
+    </TeamLabelsProvider>
   );
 }

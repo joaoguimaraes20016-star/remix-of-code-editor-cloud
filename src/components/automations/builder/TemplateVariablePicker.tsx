@@ -48,8 +48,8 @@ const VARIABLE_GROUPS: VariableGroup[] = [
     icon: <Users className="h-4 w-4" />,
     variables: [
       { key: "team.name", label: "Team Name", description: "Your team name" },
-      { key: "setter.name", label: "Setter Name", description: "Assigned setter" },
-      { key: "closer.name", label: "Closer Name", description: "Assigned closer" },
+      { key: "setter.name", label: "Role 1 Name", description: "Assigned role 1 member" },
+      { key: "closer.name", label: "Role 2 Name", description: "Assigned role 2 member" },
     ],
   },
   {

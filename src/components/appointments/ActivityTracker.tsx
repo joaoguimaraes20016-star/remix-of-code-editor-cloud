@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, Activity } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useTeamLabels } from "@/contexts/TeamLabelsContext";
 
 interface ActivityTrackerProps {
   teamId: string;
@@ -27,6 +28,7 @@ export function ActivityTracker({ teamId }: ActivityTrackerProps) {
   const [loading, setLoading] = useState(true);
   const [setterActivity, setSetterActivity] = useState<TeamMemberActivity[]>([]);
   const [closerActivity, setCloserActivity] = useState<TeamMemberActivity[]>([]);
+  const { getRoleLabel } = useTeamLabels();
 
   useEffect(() => {
     loadActivity();
@@ -126,13 +128,13 @@ export function ActivityTracker({ teamId }: ActivityTrackerProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Setters Activity Today
+            {getRoleLabel('setter', true)} Activity Today
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {setterActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No active setters found</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No active {getRoleLabel('setter', true).toLowerCase()} found</p>
             ) : (
               setterActivity.map(setter => {
                 const status = getActivityStatus(setter.lastActivity);
@@ -172,13 +174,13 @@ export function ActivityTracker({ teamId }: ActivityTrackerProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Closers Activity Today
+            {getRoleLabel('closer', true)} Activity Today
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {closerActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No active closers found</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No active {getRoleLabel('closer', true).toLowerCase()} found</p>
             ) : (
               closerActivity.map(closer => {
                 const status = getActivityStatus(closer.lastActivity);

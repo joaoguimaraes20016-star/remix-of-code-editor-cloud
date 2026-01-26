@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { UserCheck, UserCircle, Calendar, RefreshCw } from "lucide-react";
+import { useTeamLabels } from "@/contexts/TeamLabelsContext";
 
 interface DefaultTaskRouting {
   follow_up: "setter" | "closer";
@@ -16,6 +17,8 @@ interface TaskTypeDefaultsProps {
 }
 
 export function TaskTypeDefaults({ defaultRouting, onChange }: TaskTypeDefaultsProps) {
+  const { getRoleLabel } = useTeamLabels();
+  
   const updateRouting = (taskType: keyof DefaultTaskRouting, role: "setter" | "closer") => {
     onChange({
       ...defaultRouting,
@@ -38,7 +41,7 @@ export function TaskTypeDefaults({ defaultRouting, onChange }: TaskTypeDefaultsP
             <Calendar className="h-4 w-4 text-primary" />
             <Label className="text-sm font-medium">Follow-up Tasks</Label>
             <Badge variant="outline" className="ml-auto text-xs">
-              {defaultRouting.follow_up === "setter" ? "Setter" : "Closer"}
+              {defaultRouting.follow_up === "setter" ? getRoleLabel('setter') : getRoleLabel('closer')}
             </Badge>
           </div>
           <RadioGroup
@@ -57,7 +60,7 @@ export function TaskTypeDefaults({ defaultRouting, onChange }: TaskTypeDefaultsP
               <RadioGroupItem value="setter" id="follow-up-setter" />
               <div className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4 text-success" />
-                <span className="text-sm font-medium">Setter</span>
+                <span className="text-sm font-medium">{getRoleLabel('setter')}</span>
               </div>
             </Label>
             <Label
@@ -71,7 +74,7 @@ export function TaskTypeDefaults({ defaultRouting, onChange }: TaskTypeDefaultsP
               <RadioGroupItem value="closer" id="follow-up-closer" />
               <div className="flex items-center gap-2">
                 <UserCircle className="h-4 w-4 text-info" />
-                <span className="text-sm font-medium">Closer</span>
+                <span className="text-sm font-medium">{getRoleLabel('closer')}</span>
               </div>
             </Label>
           </RadioGroup>
@@ -86,7 +89,7 @@ export function TaskTypeDefaults({ defaultRouting, onChange }: TaskTypeDefaultsP
             <RefreshCw className="h-4 w-4 text-primary" />
             <Label className="text-sm font-medium">Reschedule Tasks</Label>
             <Badge variant="outline" className="ml-auto text-xs">
-              {defaultRouting.reschedule === "setter" ? "Setter" : "Closer"}
+              {defaultRouting.reschedule === "setter" ? getRoleLabel('setter') : getRoleLabel('closer')}
             </Badge>
           </div>
           <RadioGroup
@@ -105,7 +108,7 @@ export function TaskTypeDefaults({ defaultRouting, onChange }: TaskTypeDefaultsP
               <RadioGroupItem value="setter" id="reschedule-setter" />
               <div className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4 text-success" />
-                <span className="text-sm font-medium">Setter</span>
+                <span className="text-sm font-medium">{getRoleLabel('setter')}</span>
               </div>
             </Label>
             <Label
@@ -119,7 +122,7 @@ export function TaskTypeDefaults({ defaultRouting, onChange }: TaskTypeDefaultsP
               <RadioGroupItem value="closer" id="reschedule-closer" />
               <div className="flex items-center gap-2">
                 <UserCircle className="h-4 w-4 text-info" />
-                <span className="text-sm font-medium">Closer</span>
+                <span className="text-sm font-medium">{getRoleLabel('closer')}</span>
               </div>
             </Label>
           </RadioGroup>
