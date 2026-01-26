@@ -5,10 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/Logo';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, Zap, BarChart3 } from 'lucide-react';
 import stackitLogo from '@/assets/stackit-logo.png';
 import authHeroBg from '@/assets/auth-hero-bg.png';
 
@@ -1095,19 +1096,76 @@ const Auth = () => {
       
       {/* Right Side - Hero (Hidden on mobile) */}
       <div 
-        className="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center"
+        className="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center p-12"
         style={{
           backgroundImage: `url(${authHeroBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       >
-        {/* Overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+        {/* Subtle overlay for text readability */}
+        <div className="absolute inset-0 bg-black/20" />
         
-        {/* Center Logo */}
-        <div className="relative z-10 flex flex-col items-center">
-          <img src={stackitLogo} alt="Stackit" className="w-24 h-24 mb-6 drop-shadow-2xl" />
+        {/* Center Content - Feature Card */}
+        <div className="relative z-10">
+          <Card className="bg-slate-900/70 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <img src={stackitLogo} alt="Stackit" className="w-10 h-10" />
+                <div>
+                  <h3 className="font-semibold text-white">Stackit Dashboard</h3>
+                  <p className="text-xs text-slate-400">Business Operating System</p>
+                </div>
+              </div>
+              
+              {/* Stats Row */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-white">12</p>
+                  <p className="text-xs text-slate-400">Funnels</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-emerald-400">847</p>
+                  <p className="text-xs text-slate-400">Leads</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-blue-400">94%</p>
+                  <p className="text-xs text-slate-400">Show Rate</p>
+                </div>
+              </div>
+              
+              {/* Progress Items */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Lead captured</p>
+                    <p className="text-xs text-slate-400">Auto-synced to CRM</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Automation triggered</p>
+                    <p className="text-xs text-slate-400">Follow-up sequence started</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-violet-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Revenue tracked</p>
+                    <p className="text-xs text-slate-400">$24,500 this month</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
         {/* Bottom Copy */}
