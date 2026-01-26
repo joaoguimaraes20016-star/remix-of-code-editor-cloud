@@ -15,10 +15,10 @@ const gradients = {
   purple: "from-violet-600 via-purple-600 to-indigo-700",
   pink: "from-pink-500 via-rose-500 to-orange-500",
   teal: "from-emerald-600 via-teal-600 to-cyan-700",
-  blue: "from-violet-500 via-purple-500 to-indigo-600",
+  blue: "from-blue-500 via-blue-600 to-indigo-600",
   orange: "from-orange-500 via-amber-500 to-yellow-500",
   green: "from-emerald-500 via-teal-500 to-cyan-600",
-  red: "from-red-500 via-rose-500 to-pink-600",
+  red: "from-violet-500 via-purple-500 to-fuchsia-600",
 };
 
 export function DashboardMetricCard({
