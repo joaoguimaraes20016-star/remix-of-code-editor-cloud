@@ -1102,22 +1102,15 @@ const Auth = () => {
           <img 
             src={authHeroBg}
             alt=""
-            className="absolute -inset-8 w-[calc(100%+64px)] h-[calc(100%+64px)] object-cover opacity-60 animate-float-layer-1"
+            className="absolute -inset-8 w-[calc(100%+64px)] h-[calc(100%+64px)] object-cover opacity-70 animate-float-layer-1"
             style={{ objectPosition: 'center center' }}
           />
           {/* Mid layer - medium speed, offset position */}
           <img 
             src={authHeroBg}
             alt=""
-            className="absolute -inset-12 w-[calc(100%+96px)] h-[calc(100%+96px)] object-cover opacity-25 animate-float-layer-2 mix-blend-lighten"
+            className="absolute -inset-12 w-[calc(100%+96px)] h-[calc(100%+96px)] object-cover opacity-18 animate-float-layer-2 mix-blend-lighten"
             style={{ objectPosition: '30% 40%' }}
-          />
-          {/* Top layer - fastest, different direction */}
-          <img 
-            src={authHeroBg}
-            alt=""
-            className="absolute -inset-16 w-[calc(100%+128px)] h-[calc(100%+128px)] object-cover opacity-15 animate-float-layer-3 mix-blend-screen"
-            style={{ objectPosition: '70% 60%' }}
           />
         </div>
         

@@ -341,7 +341,7 @@
     transform: translate(0, 0) scale(1.1);
   }
   50% {
-    transform: translate(-15px, -10px) scale(1.12);
+    transform: translate(-18px, -12px) scale(1.13);
   }
 }
 
@@ -350,16 +350,7 @@
     transform: translate(0, 0) scale(1.15);
   }
   50% {
-    transform: translate(20px, -15px) scale(1.18);
-  }
-}
-
-@keyframes float-layer-3 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1.2);
-  }
-  50% {
-    transform: translate(-10px, 12px) scale(1.22);
+    transform: translate(22px, -16px) scale(1.19);
   }
 }
 
@@ -371,11 +362,5 @@
 .animate-float-layer-2 {
   animation: float-layer-2 16s ease-in-out infinite;
   animation-delay: -4s;
-  will-change: transform;
-}
-
-.animate-float-layer-3 {
-  animation: float-layer-3 20s ease-in-out infinite;
-  animation-delay: -8s;
   will-change: transform;
 }
