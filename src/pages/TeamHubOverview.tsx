@@ -8,11 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { 
   TrendingUp, 
-  Layers, 
   Users, 
   FileText,
   Play,
-  ChevronRight,
   Loader2,
   Plus,
   Video,
@@ -60,16 +58,8 @@ interface AssetCategory {
   order_index: number;
 }
 
-// Default categories fallback
-const DEFAULT_CATEGORIES: AssetCategory[] = [
-  { id: "resources", label: "Resources", icon: "BookOpen", order_index: 0 },
-  { id: "offer", label: "Offer", icon: "Briefcase", order_index: 1 },
-  { id: "scripts", label: "Scripts & SOPs", icon: "FileText", order_index: 2 },
-  { id: "training", label: "Training", icon: "Video", order_index: 3 },
-  { id: "tracking", label: "Tracking Sheets", icon: "FileSpreadsheet", order_index: 4 },
-  { id: "team_onboarding", label: "Team Onboarding", icon: "Users", order_index: 5 },
-  { id: "client_onboarding", label: "Prospect Onboarding", icon: "Briefcase", order_index: 6 },
-];
+// Default categories - start empty for full customization
+const DEFAULT_CATEGORIES: AssetCategory[] = [];
 
 // Color palette for categories - using primary coral as main color with subtle variations
 const CATEGORY_COLORS = [
@@ -483,24 +473,6 @@ export function TeamHubOverview() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const quickActions = [
-    {
-      title: "Sales CRM",
-      description: "Pipeline & revenue tracking",
-      icon: TrendingUp,
-      path: `/team/${teamId}/crm`,
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-    },
-    {
-      title: "Funnels",
-      description: "Lead capture forms",
-      icon: Layers,
-      path: `/team/${teamId}/funnels`,
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-    },
-  ];
 
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -668,23 +640,34 @@ export function TeamHubOverview() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-14 w-14 rounded-lg">
-            <AvatarImage src={teamLogo || undefined} className="object-cover" />
-            <AvatarFallback className="rounded-lg bg-primary text-primary-foreground text-lg font-semibold">
-              {getInitials(teamName || "Team")}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{teamName}</h1>
-            <p className="text-muted-foreground">Team Overview</p>
+      {/* Hero Header - Fanbasis Style */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600/10 via-purple-600/10 to-indigo-700/10 border border-violet-500/20 p-6">
+        {/* Background decorations */}
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-violet-500/10" />
+        <div className="absolute -bottom-8 -left-8 h-40 w-40 rounded-full bg-purple-500/5" />
+        
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-14 w-14 rounded-lg border-2 border-violet-500/30">
+              <AvatarImage src={teamLogo || undefined} className="object-cover" />
+              <AvatarFallback className="rounded-lg bg-violet-600 text-white text-lg font-semibold">
+                {getInitials(teamName || "Team")}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <BookOpen className="h-6 w-6 text-violet-500" />
+                Resources
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                Training materials, resources & team assets
+              </p>
+            </div>
           </div>
+          <Badge variant="secondary" className="text-sm">
+            {role || "Member"}
+          </Badge>
         </div>
-        <Badge variant="secondary" className="text-sm">
-          {role || "Member"}
-        </Badge>
       </div>
 
       {/* Stats Row */}
@@ -736,31 +719,6 @@ export function TeamHubOverview() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {quickActions.map((action) => (
-          <Card 
-            key={action.title}
-            className="cursor-pointer transition-all hover:shadow-md border-border/50 hover:border-primary/30"
-            onClick={() => navigate(action.path)}
-          >
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-lg ${action.bgColor} flex items-center justify-center`}>
-                    <action.icon className={`h-6 w-6 ${action.color}`} />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">{action.title}</h3>
-                    <p className="text-sm text-muted-foreground">{action.description}</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       {/* Team Assets Header */}
       <div className="flex flex-col gap-4">
@@ -816,6 +774,24 @@ export function TeamHubOverview() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
+      ) : localCategories.length === 0 ? (
+        <Card className="border-dashed border-2 border-border/50 bg-muted/20">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <BookOpen className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">No sections yet</h3>
+            <p className="text-muted-foreground text-sm text-center mb-4 max-w-md">
+              Create custom sections to organize your team's training materials, resources, and onboarding content.
+            </p>
+            {canManage && (
+              <Button onClick={() => { setEditingSection(null); setSectionDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Section
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <DndContext
           sensors={sectionSensors}
