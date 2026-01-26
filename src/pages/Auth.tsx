@@ -5,11 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/Logo';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Eye, EyeOff, Sparkles, CheckCircle, Zap, BarChart3 } from 'lucide-react';
+import stackitLogo from '@/assets/stackit-logo.png';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -32,15 +34,15 @@ const Auth = () => {
   const [inviteTeamName, setInviteTeamName] = useState('');
   const [inviteMode, setInviteMode] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
   // Check URL params immediately to set initial tab
   const urlParams = new URLSearchParams(location.search);
   const hasInvite = urlParams.get('invite');
   const hasCreator = urlParams.get('creator');
-  const [activeTab, setActiveTab] = useState(hasInvite || hasCreator ? 'signup' : 'signin');
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>(hasInvite || hasCreator ? 'signup' : 'signin');
   const [isCreatorUpgrade, setIsCreatorUpgrade] = useState(false);
   const [creatorCode, setCreatorCode] = useState('');
-
-
 
   useEffect(() => {
     const checkAuthAndInvite = async () => {
@@ -378,9 +380,6 @@ const Auth = () => {
     
     // Handle creator upgrade
     if (isCreatorUpgrade) {
-      // Creator code validation happens server-side via creator_codes table
-      // No client-side validation needed
-
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { error: updateError } = await supabase
@@ -691,408 +690,509 @@ const Auth = () => {
     setLoading(false);
   };
 
-  console.log('Auth render - inviteMode:', inviteMode, 'inviteLoading:', inviteLoading, 'inviteToken:', inviteToken);
+  // Render sign in form
+  const renderSignInForm = () => (
+    <form onSubmit={handleSignIn} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="signin-email">
+          Email <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="signin-email"
+          type="email"
+          placeholder="you@company.com"
+          value={signInData.email}
+          onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+          required
+          className="h-11"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="signin-password">
+          Password <span className="text-destructive">*</span>
+        </Label>
+        <div className="relative">
+          <Input
+            id="signin-password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter your password"
+            value={signInData.password}
+            onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+            required
+            className="h-11 pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+      
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowResetForm(true)}
+          className="text-sm text-primary hover:underline"
+        >
+          Forgot password?
+        </button>
+      </div>
+      
+      <Button type="submit" className="w-full h-11" disabled={loading}>
+        {loading ? 'Signing in...' : 'Sign in'}
+      </Button>
+    </form>
+  );
+
+  // Render sign up form
+  const renderSignUpForm = () => (
+    <form onSubmit={handleSignUp} className="space-y-4">
+      {!inviteToken && (
+        <div className="space-y-2">
+          <Label htmlFor="creator-code">Creator Code (Optional)</Label>
+          <Input
+            id="creator-code"
+            type="text"
+            placeholder="Enter creator code to create teams"
+            value={signUpData.creatorCode}
+            onChange={(e) => setSignUpData({ ...signUpData, creatorCode: e.target.value })}
+            className="h-11"
+          />
+        </div>
+      )}
+      
+      <div className="space-y-2">
+        <Label htmlFor="signup-name">
+          Full Name <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="signup-name"
+          type="text"
+          placeholder="John Doe"
+          value={signUpData.fullName}
+          onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
+          required
+          className="h-11"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="signup-email">
+          Email <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="signup-email"
+          type="email"
+          placeholder="you@company.com"
+          value={signUpData.email}
+          onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+          required
+          className="h-11"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="signup-password">
+          Password <span className="text-destructive">*</span>
+        </Label>
+        <div className="relative">
+          <Input
+            id="signup-password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Minimum 6 characters"
+            value={signUpData.password}
+            onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+            required
+            minLength={6}
+            className="h-11 pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+      
+      <Button type="submit" className="w-full h-11" disabled={loading}>
+        {loading ? 'Creating account...' : 'Create account'}
+      </Button>
+    </form>
+  );
+
+  // Render reset password form
+  const renderResetForm = () => (
+    <form onSubmit={handleResetPassword} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="reset-email">Email</Label>
+        <Input
+          id="reset-email"
+          type="email"
+          value={resetEmail}
+          onChange={(e) => setResetEmail(e.target.value)}
+          placeholder="Enter your email"
+          required
+          className="h-11"
+        />
+      </div>
+      <Button type="submit" className="w-full h-11" disabled={loading}>
+        {loading ? 'Sending...' : 'Send Reset Link'}
+      </Button>
+      <button
+        type="button"
+        onClick={() => setShowResetForm(false)}
+        className="text-sm text-primary hover:underline w-full text-center"
+      >
+        Back to Sign In
+      </button>
+    </form>
+  );
+
+  // Render update password form (for password recovery)
+  const renderUpdatePasswordForm = () => (
+    <form onSubmit={handleUpdatePassword} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="reset-email-display">Email</Label>
+        <Input
+          id="reset-email-display"
+          type="email"
+          value={userEmail}
+          disabled
+          className="bg-muted h-11"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="new-password">New Password</Label>
+        <Input
+          id="new-password"
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          required
+          minLength={6}
+          placeholder="Enter new password"
+          className="h-11"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="confirm-password">Confirm New Password</Label>
+        <Input
+          id="confirm-password"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          minLength={6}
+          placeholder="Confirm new password"
+          className="h-11"
+        />
+      </div>
+      <Button type="submit" className="w-full h-11" disabled={loading}>
+        {loading ? 'Updating...' : 'Update Password'}
+      </Button>
+    </form>
+  );
+
+  // Render invite mode form
+  const renderInviteForm = () => (
+    <form onSubmit={handleSignUp} className="space-y-4">
+      <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 space-y-3">
+        <h3 className="font-semibold text-lg">Welcome to {inviteTeamName}! 🎉</h3>
+        <div className="space-y-1 text-sm">
+          <p className="flex items-center gap-2">
+            <span className="font-semibold">📧 Email:</span>
+            <span className="text-muted-foreground">{inviteEmail}</span>
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Create your account to get started with the team
+        </p>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="invite-fullname">Your Full Name</Label>
+        <Input
+          id="invite-fullname"
+          type="text"
+          placeholder="John Doe"
+          value={signUpData.fullName}
+          onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
+          required
+          autoFocus
+          className="h-11"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="invite-password">Choose Your Password</Label>
+        <div className="relative">
+          <Input
+            id="invite-password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Minimum 6 characters"
+            value={signUpData.password}
+            onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+            required
+            minLength={6}
+            className="h-11 pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+      
+      <Button type="submit" className="w-full h-11" disabled={loading}>
+        {loading ? 'Creating your account...' : 'Create Account & Join Team'}
+      </Button>
+      
+      <div className="text-center pt-2 border-t">
+        <p className="text-sm text-muted-foreground">
+          Already have an account?{' '}
+          <button
+            type="button"
+            onClick={() => {
+              setInviteMode(false);
+              setActiveTab('signin');
+              setSignInData({ email: inviteEmail, password: '' });
+            }}
+            className="text-primary hover:underline font-medium"
+          >
+            Sign in here
+          </button>
+        </p>
+      </div>
+    </form>
+  );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-3 md:p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center px-4 md:px-6 py-4 md:py-6">
-          <div className="flex justify-center mb-4">
-            <Logo size="xlarge" />
+    <div className="min-h-screen flex">
+      {/* Left Side - Form */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-8 md:px-16 lg:px-20 xl:px-24 py-8 md:py-12 bg-background">
+        <div className="w-full max-w-md mx-auto">
+          {/* Logo */}
+          <div className="mb-8">
+            <Logo size="medium" showText />
           </div>
-          <CardTitle className="text-2xl md:text-3xl font-bold">
-            {inviteMode ? '🎉 Welcome to the Team!' : 'Infostack'}
-          </CardTitle>
-          <CardDescription className="text-sm md:text-base">
-            {isResettingPassword 
-              ? 'Reset your password' 
-              : inviteMode 
-              ? `Create your account for ${inviteTeamName}`
-              : inviteLoading
-              ? 'Loading invitation...'
-              : 'Track your sales performance'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6 py-4 md:py-6">
+          
+          {/* Welcome Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+              {isResettingPassword 
+                ? 'Reset Password' 
+                : inviteMode 
+                ? '🎉 Welcome!' 
+                : activeTab === 'signin' 
+                ? 'Welcome back' 
+                : 'Create account'}
+            </h1>
+            <p className="text-muted-foreground">
+              {isResettingPassword 
+                ? 'Enter your new password below'
+                : inviteMode 
+                ? `Join ${inviteTeamName} on Stackit`
+                : activeTab === 'signin'
+                ? 'Sign in to your account to continue'
+                : 'Get started with Stackit today'}
+            </p>
+          </div>
+          
           {inviteLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin text-4xl">⏳</div>
             </div>
           ) : inviteMode ? (
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 space-y-3">
-                <h3 className="font-semibold text-lg">Welcome to {inviteTeamName}! 🎉</h3>
-                <div className="space-y-1 text-sm">
-                  <p className="flex items-center gap-2">
-                    <span className="font-semibold">📧 Email:</span>
-                    <span className="text-muted-foreground">{inviteEmail}</span>
-                  </p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Create your account to get started with the team
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="invite-fullname">Your Full Name</Label>
-                <Input
-                  id="invite-fullname"
-                  type="text"
-                  placeholder="John Doe"
-                  value={signUpData.fullName}
-                  onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
-                  required
-                  autoFocus
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="invite-password">Choose Your Password</Label>
-                <Input
-                  id="invite-password"
-                  type="password"
-                  placeholder="Minimum 6 characters"
-                  value={signUpData.password}
-                  onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
-                  required
-                  minLength={6}
-                />
-                <p className="text-xs text-muted-foreground">Create a secure password for your account</p>
-              </div>
-              
-              <Button type="submit" className="w-full" disabled={loading} size="lg">
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="animate-spin">⏳</span> 
-                    Creating your account...
-                  </span>
-                ) : (
-                  'Create Account & Join Team'
-                )}
-              </Button>
-              
-              <div className="text-center pt-2 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInviteMode(false);
-                      setActiveTab('signin');
-                      setSignInData({ email: inviteEmail, password: '' });
-                    }}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Sign in here
-                  </button>
-                </p>
-              </div>
-            </form>
+            renderInviteForm()
           ) : isResettingPassword ? (
-            <form onSubmit={handleUpdatePassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="reset-email-display">Email</Label>
-                <Input
-                  id="reset-email-display"
-                  type="email"
-                  value={userEmail}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  placeholder="Enter new password"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  placeholder="Confirm new password"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Password'}
-              </Button>
-            </form>
+            renderUpdatePasswordForm()
           ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-auto">
-              <TabsTrigger value="signin" className="text-sm md:text-base py-2 md:py-2.5">Sign In</TabsTrigger>
-              <TabsTrigger value="signup" className="text-sm md:text-base py-2 md:py-2.5">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
-              {inviteToken && (
-                <div className="mb-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
-                  <p className="text-sm">
-                    💡 <strong>Already have an account?</strong> Sign in below to join the team.
-                  </p>
-                </div>
-              )}
-              {!showResetForm ? (
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      value={signInData.email}
-                      onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
-                      required
-                    />
+            <>
+              {/* Social Buttons - Only show for sign in */}
+              {activeTab === 'signin' && !showResetForm && (
+                <>
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <Button 
+                      variant="outline" 
+                      className="h-11"
+                      onClick={handleGoogleSignIn}
+                      disabled={loading}
+                    >
+                      <img src="/google-icon.svg" alt="Google" className="w-5 h-5 mr-2" />
+                      Google
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="h-11"
+                      disabled
+                    >
+                      <svg className="w-5 h-5 mr-2" viewBox="0 0 23 23" fill="none">
+                        <path fill="#f35325" d="M1 1h10v10H1z"/>
+                        <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                        <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                        <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                      </svg>
+                      Outlook
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      value={signInData.password}
-                      onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Signing in...' : inviteToken ? 'Sign In & Join Team' : 'Sign In'}
-                  </Button>
                   
-                  <div className="relative my-4">
+                  {/* Divider */}
+                  <div className="relative mb-6">
                     <div className="absolute inset-0 flex items-center">
                       <Separator className="w-full" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                      <span className="bg-background px-2 text-muted-foreground">
+                        or continue with email
+                      </span>
                     </div>
                   </div>
-                  
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="w-full"
-                    onClick={handleGoogleSignIn}
-                    disabled={loading}
-                  >
-                    <img src="/google-icon.svg" alt="Google" className="w-5 h-5 mr-2" />
-                    Continue with Google
-                  </Button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setShowResetForm(true)}
-                    className="text-sm text-primary hover:underline w-full text-center"
-                  >
-                    Forgot Password?
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleResetPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">Email</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Sending...' : 'Send Reset Link'}
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => setShowResetForm(false)}
-                    className="text-sm text-primary hover:underline w-full text-center"
-                  >
-                    Back to Sign In
-                  </button>
-                </form>
+                </>
               )}
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                {isCreatorUpgrade && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                      <h3 className="font-semibold text-lg mb-2">🚀 Upgrade to Creator</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Enter your creator code to unlock the ability to create teams.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="upgrade-email">Email Address</Label>
-                      <Input
-                        id="upgrade-email"
-                        type="email"
-                        value={signUpData.email}
-                        disabled
-                        className="bg-muted"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="creator-code">Creator Code</Label>
-                      <Input
-                        id="creator-code"
-                        type="text"
-                        placeholder="Enter your creator code"
-                        value={creatorCode}
-                        onChange={(e) => setCreatorCode(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading} size="lg">
-                      {loading ? (
-                        <span className="flex items-center gap-2">
-                          <span className="animate-spin">⏳</span> 
-                          Upgrading...
-                        </span>
-                      ) : (
-                        '✨ Upgrade to Creator'
-                      )}
-                    </Button>
-                  </div>
-                )}
-                {!isCreatorUpgrade && inviteToken && (
-                  <>
-                    <div className="space-y-4">
-                      <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                        <h3 className="font-semibold text-lg mb-2">🎉 You're Invited to Join a Team!</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Don't have an account? Create one below to join the team.
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Already have an account? Switch to the <strong>Sign In</strong> tab.
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="invite-email">Email Address</Label>
-                        <Input
-                          id="invite-email"
-                          type="email"
-                          value={inviteEmail}
-                          disabled
-                          className="bg-muted"
-                        />
-                        <p className="text-xs text-muted-foreground">This is the email that received the invitation</p>
-                      </div>
-                    </div>
-                    <div className="hidden">DEBUG: inviteToken={inviteToken}, inviteEmail={inviteEmail}</div>
-                  </>
-                )}
-                {!isCreatorUpgrade && !inviteToken && (
-                  <div className="space-y-2">
-                    <Label htmlFor="creator-code">Creator Code (Optional)</Label>
-                    <Input
-                      id="creator-code"
-                      type="text"
-                      placeholder="Enter creator code to create teams"
-                      value={signUpData.creatorCode}
-                      onChange={(e) => setSignUpData({ ...signUpData, creatorCode: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">Leave blank if you were invited to a team</p>
-                  </div>
-                )}
-                {!isCreatorUpgrade && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-name">Full Name *</Label>
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="John Doe"
-                        value={signUpData.fullName}
-                        onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
-                        required
-                      />
-                      {inviteToken && (
-                        <p className="text-xs text-muted-foreground">This will be your display name on the team</p>
-                      )}
-                    </div>
-                    {!inviteToken && (
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-email">Email</Label>
-                        <Input
-                          id="signup-email"
-                          type="email"
-                          placeholder="Enter your email"
-                          value={signUpData.email}
-                          onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
-                          required
-                        />
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Create Password *</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Minimum 6 characters"
-                        value={signUpData.password}
-                        onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
-                        required
-                        minLength={6}
-                      />
-                      <p className="text-xs text-muted-foreground">Use at least 6 characters for your password</p>
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading} size="lg">
-                      {loading ? (
-                        <span className="flex items-center gap-2">
-                          <span className="animate-spin">⏳</span> 
-                          Creating account...
-                        </span>
-                      ) : inviteToken ? (
-                        '✨ Join Team'
-                      ) : (
-                        'Sign Up'
-                      )}
-                    </Button>
-                    
-                    {!inviteToken && (
-                      <>
-                        <div className="relative my-4">
-                          <div className="absolute inset-0 flex items-center">
-                            <Separator className="w-full" />
-                          </div>
-                          <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                          </div>
-                        </div>
-                        
-                        <Button 
-                          type="button"
-                          variant="outline" 
-                          className="w-full"
-                          onClick={handleGoogleSignIn}
-                          disabled={loading}
-                        >
-                          <img src="/google-icon.svg" alt="Google" className="w-5 h-5 mr-2" />
-                          Continue with Google
-                        </Button>
-                      </>
-                    )}
-                  </>
-                )}
-              </form>
-            </TabsContent>
-          </Tabs>
+              
+              {/* Form */}
+              {showResetForm ? renderResetForm() : activeTab === 'signin' ? renderSignInForm() : renderSignUpForm()}
+              
+              {/* Switch between sign in/up */}
+              {!showResetForm && (
+                <p className="mt-6 text-center text-sm text-muted-foreground">
+                  {activeTab === 'signin' ? (
+                    <>
+                      Don't have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('signup')}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Create an account
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('signin')}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  )}
+                </p>
+              )}
+            </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      
+      {/* Right Side - Hero (Hidden on mobile) */}
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center p-12">
+        {/* Decorative background elements */}
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-3xl" />
+        
+        {/* Top Badge */}
+        <div className="absolute top-8 left-1/2 -translate-x-1/2">
+          <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-4 py-1.5">
+            <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+            Join 500+ teams worldwide
+          </Badge>
+        </div>
+        
+        {/* Center Content - Mockup Card */}
+        <div className="relative z-10">
+          {/* Main Card */}
+          <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <img src={stackitLogo} alt="Stackit" className="w-10 h-10" />
+                <div>
+                  <h3 className="font-semibold text-white">Stackit Dashboard</h3>
+                  <p className="text-xs text-slate-400">Business Operating System</p>
+                </div>
+              </div>
+              
+              {/* Stats Row */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-white">12</p>
+                  <p className="text-xs text-slate-400">Funnels</p>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-emerald-400">847</p>
+                  <p className="text-xs text-slate-400">Leads</p>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-blue-400">94%</p>
+                  <p className="text-xs text-slate-400">Show Rate</p>
+                </div>
+              </div>
+              
+              {/* Progress Items */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Lead captured</p>
+                    <p className="text-xs text-slate-400">Auto-synced to CRM</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Automation triggered</p>
+                    <p className="text-xs text-slate-400">Follow-up sequence started</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-violet-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">Revenue tracked</p>
+                    <p className="text-xs text-slate-400">$24,500 this month</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Floating Badges */}
+          <Badge className="absolute -top-4 -right-8 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-lg">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Real-time sync
+          </Badge>
+          <Badge className="absolute -bottom-4 -left-8 bg-violet-500/20 text-violet-300 border-violet-500/30 shadow-lg">
+            <Zap className="w-3 h-3 mr-1" />
+            Automations
+          </Badge>
+        </div>
+        
+        {/* Bottom Copy */}
+        <div className="absolute bottom-12 left-0 right-0 px-12 text-center">
+          <h2 className="text-2xl font-bold text-white mb-3">
+            The Operating System for Scaling Digital Offers.
+          </h2>
+          <p className="text-slate-400 text-sm max-w-md mx-auto">
+            Stackit builds your funnels, captures leads, books calls, tracks deals, 
+            and automates follow-ups — all in one system.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
