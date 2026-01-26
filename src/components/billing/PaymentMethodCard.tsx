@@ -40,22 +40,28 @@ export const PaymentMethodCard = React.forwardRef<HTMLDivElement, PaymentMethodC
     if (hasPaymentMethod) {
       return (
         <>
-          <div ref={ref} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 p-6 text-white shadow-lg">
+          <div ref={ref} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 p-6 text-white shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+            {/* Glossy glass overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+            
             {/* Background decoration */}
-            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-            <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/15 backdrop-blur-sm" />
+            <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/10" />
             
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-white/80">Payment Method</span>
-                <CreditCard className="h-5 w-5 text-white/60" />
+                <span className="text-sm font-medium text-white/90 drop-shadow-sm">Payment Method</span>
+                <div className="p-2 rounded-lg bg-white/25 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                  <CreditCard className="h-5 w-5 text-white drop-shadow-sm" />
+                </div>
               </div>
               
               <div className="mb-4">
-                <div className="text-2xl font-bold tracking-tight">
+                <div className="text-2xl font-bold tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]">
                   {formatCardBrand(billing.payment_method_brand)}
                 </div>
-                <p className="text-lg text-white/90 font-mono mt-1">
+                <p className="text-lg text-white/90 font-mono mt-1 drop-shadow-sm">
                   •••• •••• •••• {billing.payment_method_last4}
                 </p>
               </div>
@@ -82,15 +88,21 @@ export const PaymentMethodCard = React.forwardRef<HTMLDivElement, PaymentMethodC
 
     return (
       <>
-        <div ref={ref} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 p-6 text-white shadow-lg border border-slate-600">
+        <div ref={ref} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 p-6 text-white shadow-[0_8px_32px_rgba(0,0,0,0.2)] border border-slate-600">
+          {/* Glossy glass overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          
           {/* Background decoration */}
-          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/5" />
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 backdrop-blur-sm" />
           <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
           
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-white/60">Payment Method</span>
-              <CreditCard className="h-5 w-5 text-white/40" />
+              <span className="text-sm font-medium text-white/70 drop-shadow-sm">Payment Method</span>
+              <div className="p-2 rounded-lg bg-white/15 backdrop-blur-sm">
+                <CreditCard className="h-5 w-5 text-white/60" />
+              </div>
             </div>
             
             <div className="mb-4">

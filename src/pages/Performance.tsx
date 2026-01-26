@@ -177,70 +177,82 @@ export default function Performance() {
       {/* Task Summary Gradient Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         {/* Overdue Tasks - Red/Orange Gradient */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 via-red-500 to-orange-600 p-5 text-white shadow-lg">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 via-red-500 to-orange-600 p-5 text-white shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+          {/* Glossy glass overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+          
           {/* Background decorations */}
-          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/15 backdrop-blur-sm" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/10" />
           
           <div className="relative">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-white/80">Overdue Tasks</span>
-              <div className="p-2 rounded-lg bg-white/20">
-                <AlertCircle className="h-4 w-4 text-white" />
+              <span className="text-sm font-medium text-white/90 drop-shadow-sm">Overdue Tasks</span>
+              <div className="p-2 rounded-lg bg-white/25 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                <AlertCircle className="h-4 w-4 text-white drop-shadow-sm" />
               </div>
             </div>
-            <div className="text-3xl font-bold">{taskSummary.overdue}</div>
+            <div className="text-3xl font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]">{taskSummary.overdue}</div>
             {taskSummary.overdue > 0 && (
-              <p className="text-sm text-white/70 mt-1">
+              <p className="text-sm text-white/80 mt-1">
                 {labels.role_1_short}: {taskSummary.overdueSetters} · {labels.role_2_short}: {taskSummary.overdueClosers}
               </p>
             )}
             {taskSummary.overdue === 0 && (
-              <p className="text-sm text-white/70 mt-1">All caught up!</p>
+              <p className="text-sm text-white/80 mt-1">All caught up!</p>
             )}
           </div>
         </div>
 
         {/* Due Today - Amber/Yellow Gradient */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-500 p-5 text-white shadow-lg">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-500 p-5 text-white shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+          {/* Glossy glass overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+          
           {/* Background decorations */}
-          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/15 backdrop-blur-sm" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/10" />
           
           <div className="relative">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-white/80">Due Today</span>
-              <div className="p-2 rounded-lg bg-white/20">
-                <Clock className="h-4 w-4 text-white" />
+              <span className="text-sm font-medium text-white/90 drop-shadow-sm">Due Today</span>
+              <div className="p-2 rounded-lg bg-white/25 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                <Clock className="h-4 w-4 text-white drop-shadow-sm" />
               </div>
             </div>
-            <div className="text-3xl font-bold">{taskSummary.dueToday}</div>
+            <div className="text-3xl font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]">{taskSummary.dueToday}</div>
             {taskSummary.dueToday > 0 && (
-              <p className="text-sm text-white/70 mt-1">
+              <p className="text-sm text-white/80 mt-1">
                 {labels.role_1_short}: {taskSummary.dueTodaySetters} · {labels.role_2_short}: {taskSummary.dueTodayClosers}
               </p>
             )}
             {taskSummary.dueToday === 0 && (
-              <p className="text-sm text-white/70 mt-1">Nothing due today</p>
+              <p className="text-sm text-white/80 mt-1">Nothing due today</p>
             )}
           </div>
         </div>
 
         {/* Upcoming - Green/Teal Gradient */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 p-5 text-white shadow-lg">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 p-5 text-white shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+          {/* Glossy glass overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+          
           {/* Background decorations */}
-          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/15 backdrop-blur-sm" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/10" />
           
           <div className="relative">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-white/80">Upcoming (7 days)</span>
-              <div className="p-2 rounded-lg bg-white/20">
-                <Calendar className="h-4 w-4 text-white" />
+              <span className="text-sm font-medium text-white/90 drop-shadow-sm">Upcoming (7 days)</span>
+              <div className="p-2 rounded-lg bg-white/25 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                <Calendar className="h-4 w-4 text-white drop-shadow-sm" />
               </div>
             </div>
-            <div className="text-3xl font-bold">{taskSummary.upcoming}</div>
-            <p className="text-sm text-white/70 mt-1">Tasks scheduled this week</p>
+            <div className="text-3xl font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]">{taskSummary.upcoming}</div>
+            <p className="text-sm text-white/80 mt-1">Tasks scheduled this week</p>
           </div>
         </div>
       </div>

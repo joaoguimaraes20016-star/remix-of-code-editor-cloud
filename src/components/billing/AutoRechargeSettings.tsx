@@ -89,16 +89,22 @@ export const AutoRechargeSettings = React.forwardRef<HTMLDivElement, AutoRecharg
     };
 
     return (
-      <div ref={ref} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-6 text-white shadow-lg">
+      <div ref={ref} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-6 text-white shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+        {/* Glossy glass overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+        
         {/* Background decoration */}
-        <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-        <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+        <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/15 backdrop-blur-sm" />
+        <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/10" />
         
         <div className="relative">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-white/80" />
-              <span className="text-sm font-medium text-white/80">Auto-Recharge</span>
+              <div className="p-2 rounded-lg bg-white/25 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+                <Zap className="h-5 w-5 text-white drop-shadow-sm" />
+              </div>
+              <span className="text-sm font-medium text-white/90 drop-shadow-sm">Auto-Recharge</span>
             </div>
             <Switch
               checked={enabled}
