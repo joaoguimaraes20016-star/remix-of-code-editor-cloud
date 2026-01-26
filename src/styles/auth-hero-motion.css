@@ -1,0 +1,119 @@
+/* Auth hero background motion
+   Goal: keep base image static (no gaps) while a few masked overlays drift in different directions.
+*/
+
+.auth-hero-base {
+  transform: scale(1.08);
+  will-change: transform;
+}
+
+.auth-hero-piece {
+  position: absolute;
+  inset: -18%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0.14;
+  pointer-events: none;
+  will-change: transform;
+  mix-blend-mode: screen;
+  filter: saturate(1.08) contrast(1.05);
+
+  /* reveal only a localized “piece” area so the motion feels like individual blocks */
+  -webkit-mask-image: radial-gradient(
+    circle at var(--mx, 50%) var(--my, 50%),
+    #000 0%,
+    rgba(0, 0, 0, 0.9) 34%,
+    transparent 62%
+  );
+  mask-image: radial-gradient(
+    circle at var(--mx, 50%) var(--my, 50%),
+    #000 0%,
+    rgba(0, 0, 0, 0.9) 34%,
+    transparent 62%
+  );
+}
+
+@keyframes auth-piece-1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1.14);
+  }
+  33% {
+    transform: translate3d(-14px, -10px, 0) scale(1.15);
+  }
+  66% {
+    transform: translate3d(-6px, -18px, 0) scale(1.14);
+  }
+}
+
+@keyframes auth-piece-2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1.12);
+  }
+  33% {
+    transform: translate3d(16px, -12px, 0) scale(1.13);
+  }
+  66% {
+    transform: translate3d(8px, -4px, 0) scale(1.12);
+  }
+}
+
+@keyframes auth-piece-3 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1.16);
+  }
+  33% {
+    transform: translate3d(-10px, 14px, 0) scale(1.17);
+  }
+  66% {
+    transform: translate3d(-18px, 6px, 0) scale(1.16);
+  }
+}
+
+@keyframes auth-piece-4 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  33% {
+    transform: translate3d(12px, 14px, 0) scale(1.11);
+  }
+  66% {
+    transform: translate3d(18px, 6px, 0) scale(1.1);
+  }
+}
+
+.auth-hero-piece-1 {
+  --mx: 84%;
+  --my: 18%;
+  background-position: 100% 0%;
+  animation: auth-piece-1 9s linear infinite;
+}
+
+.auth-hero-piece-2 {
+  --mx: 18%;
+  --my: 78%;
+  background-position: 0% 100%;
+  animation: auth-piece-2 11s linear infinite;
+  opacity: 0.12;
+}
+
+.auth-hero-piece-3 {
+  --mx: 22%;
+  --my: 26%;
+  background-position: 15% 15%;
+  animation: auth-piece-3 13s linear infinite;
+  opacity: 0.1;
+}
+
+.auth-hero-piece-4 {
+  --mx: 78%;
+  --my: 80%;
+  background-position: 85% 85%;
+  animation: auth-piece-4 10s linear infinite;
+  opacity: 0.11;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-hero-piece {
+    animation: none !important;
+  }
+}
