@@ -1,191 +1,139 @@
 
+# Fix Performance Page - Team Performance Focus
 
-# Sidebar Navigation Reorganization
+## The Problem
+The Performance page I created shows revenue metrics (DashboardHero with period toggle, CC Revenue, MRR, Close Rate), which is essentially a duplicate of Dashboard functionality. 
 
-## Overview
-Reorganize the sidebar navigation by creating a new "Performance" page with a simplified overview, keeping Dashboard separate for detailed CRM views, and updating the Schedule page to include a filter for viewing appointments, tasks, or both.
-
----
-
-## Summary of Changes
-
-1. **Create new "Performance" page** - A focused view with just the Today toggle/period selector and quick revenue metrics
-2. **Update sidebar navigation** - Add Performance item, keep Pipeline separate
-3. **Update Schedule page** - Add filter to show "All", "Appointments only", or "Tasks only"
+The user wants **Performance** to show **Team Performance** - the actual activity tracking for setters and closers, task management, and EOD reports. This is the content currently shown in the "Overview" tab of the Pipeline page.
 
 ---
 
-## Detailed Implementation
+## Solution
 
-### 1. Create New Performance Page
+### 1. Rewrite `src/pages/Performance.tsx`
 
-**File**: `src/pages/Performance.tsx` (new file)
+Replace the current revenue-focused content with team performance content:
+- **Task Summary Cards** - Overdue tasks, Due Today, Upcoming (7 days)
+- **EOD Reports Hub** - Team member end-of-day reports
+- **Team Performance Section** - ActivityTracker showing Setters/Closers activity
+- **Appointments Booked Breakdown** - Performance metrics by team member
 
-This page will contain:
-- The period toggle (Daily/Weekly/Monthly) 
-- Large revenue display for the selected period
-- Quick summary metric cards (CC Revenue, Total MRR, Close Rate)
+This mirrors the `AdminOverview` component structure but as a standalone page.
 
-Structure:
-```text
-+--------------------------------------------+
-|  Performance                               |
-|  Your revenue at a glance                  |
-|                                            |
-|  [Daily] [Weekly] [Monthly]                |
-|                                            |
-|  $12,500.00                                |
-|  Total Revenue Today                       |
-|                                            |
-|  ┌─────────┐ ┌─────────┐ ┌─────────┐      |
-|  │CC Rev   │ │Total MRR│ │Close %  │      |
-|  │$8,500   │ │$4,200   │ │68%      │      |
-|  └─────────┘ └─────────┘ └─────────┘      |
-+--------------------------------------------+
-```
-
-The component will:
-- Reuse `DashboardHero` component for revenue display
-- Reuse `DashboardMetricCard` components for the 3 metric cards
-- Pull the same data currently used in the SalesDashboard
-
----
-
-### 2. Update Sidebar Navigation
-
-**File**: `src/components/TeamSidebar.tsx`
-
-Update the `mainNavItems` array to:
-- Add "Performance" item with `TrendingUp` icon (or similar) pointing to `/performance`
-- Keep "Dashboard" (detailed CRM analytics)  
-- Keep "Pipeline" separate
-
-New structure:
-```typescript
-const mainNavItems = [
-  { id: "home", label: "Team Hub", icon: Home, path: "" },
-  { id: "performance", label: "Performance", icon: TrendingUp, path: "/performance" },
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { id: "pipeline", label: "Pipeline", icon: Kanban, path: "/pipeline" },
-  { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
-  { id: "workflows", label: "Workflows", icon: Workflow, path: "/workflows" },
-  { id: "marketing", label: "Marketing", icon: Megaphone, path: "/marketing" },
-  { id: "schedule", label: "Schedule", icon: CalendarDays, path: "/schedule" },
-  { id: "chat", label: "Team Chat", icon: MessageCircle, path: "/chat" },
-  { id: "payments", label: "Payments", icon: CreditCard, path: "/payments" },
-  { id: "apps", label: "Apps", icon: Grid3X3, path: "/apps" },
-];
-```
-
----
-
-### 3. Add Route for Performance Page
-
-**File**: `src/App.tsx`
-
-Add new route within the TeamLayout:
-```typescript
-<Route path="performance" element={<Performance />} />
-```
-
----
-
-### 4. Update Schedule Page with Filter
-
-**File**: `src/pages/Schedule.tsx`
-
-Add a filter toggle to the page header that allows users to view:
-- **All** - Both appointments and tasks (current behavior)
-- **Appointments** - Only appointments
-- **Tasks** - Only tasks
-
-Implementation approach:
-- Add `filterMode` state: `"all" | "appointments" | "tasks"`
-- Add a segmented toggle next to the existing "My Schedule" / "Team Schedule" toggle
-- Modify `getScheduleItems()` to filter based on the selected mode
-
-UI structure:
+**New Structure:**
 ```text
 +------------------------------------------------------------+
-|  📅 Schedule                                               |
-|  Your upcoming calls and tasks                             |
-|                                                            |
-|  [My Schedule] [Team Schedule]    [All] [Appointments] [Tasks]
+|  Team Performance                                           |
+|  Monitor your team's activity and productivity              |
+|                                                             |
+|  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           |
+|  │ Overdue     │ │ Due Today   │ │ Upcoming    │           |
+|  │ Tasks: 2    │ │ Tasks: 5    │ │ (7 days): 8 │           |
+|  │ S:1  C:1    │ │ S:3  C:2    │ │             │           |
+|  └─────────────┘ └─────────────┘ └─────────────┘           |
+|                                                             |
+|  📋 EOD Reports                                             |
+|  └─ Team member daily reports expandable section            |
+|                                                             |
+|  👥 Team Performance                                        |
+|  ┌─────────────────────────┬─────────────────────────┐     |
+|  │ Setters Activity Today  │ Closers Activity Today  │     |
+|  │ - Member 1 (Active)     │ - Member A (Active)     │     |
+|  │ - Member 2 (Idle)       │ - Member B (Inactive)   │     |
+|  └─────────────────────────┴─────────────────────────┘     |
+|                                                             |
+|  📊 Appointments Booked Breakdown                           |
+|  └─ Performance metrics by team member                      |
 +------------------------------------------------------------+
 ```
 
 ---
 
-## Technical Details
+## Implementation Details
 
-### Performance Page Component Structure
+### File Changes
+
+| File | Change |
+|------|--------|
+| `src/pages/Performance.tsx` | **Rewrite** - Replace revenue metrics with team performance content |
+
+### Component Reuse
+
+The Performance page will import and use existing components:
+
+```typescript
+import { ActivityTracker } from "@/components/appointments/ActivityTracker";
+import { EODReportsHub } from "@/components/appointments/EODReportsHub";
+import { AppointmentsBookedBreakdown } from "@/components/AppointmentsBookedBreakdown";
+```
+
+### Data Requirements
+
+The page will load:
+1. **Confirmation tasks** - To show overdue, due today, upcoming counts
+2. **MRR follow-up tasks** - Additional task counts
+3. **Team members** - To determine setter vs closer assignments
+
+### Key Code Structure
 
 ```typescript
 // src/pages/Performance.tsx
 export default function Performance() {
-  // Uses same data fetching logic as SalesDashboard
-  // - Fetch appointments for CC Revenue calculation
-  // - Fetch appointments for close rate
-  // - Fetch MRR data
+  const { teamId } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [taskSummary, setTaskSummary] = useState({
+    overdue: 0,
+    dueToday: 0,
+    upcoming: 0,
+    overdueSetters: 0,
+    overdueClosers: 0,
+    dueTodaySetters: 0,
+    dueTodayClosers: 0,
+  });
+
+  // Load task summary data (same logic as AdminOverview)
   
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto">
       {/* Header */}
-      <DashboardHero userName={currentUserName} teamId={teamId} />
-      
-      {/* Metric Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <DashboardMetricCard ... gradient="green" />  {/* CC Revenue */}
-        <DashboardMetricCard ... gradient="blue" />   {/* Total MRR */}
-        <DashboardMetricCard ... gradient="red" />    {/* Close Rate */}
+      <div>
+        <h1 className="text-2xl font-bold">Team Performance</h1>
+        <p className="text-muted-foreground text-sm">
+          Monitor your team's activity and productivity
+        </p>
       </div>
+
+      {/* Task Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Overdue, Due Today, Upcoming cards */}
+      </div>
+
+      {/* EOD Reports */}
+      <EODReportsHub teamId={teamId} />
+
+      {/* Team Performance - Activity Tracker */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityTracker teamId={teamId} />
+          <Separator />
+          <AppointmentsBookedBreakdown teamId={teamId} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
 ```
 
-### Schedule Filter Implementation
-
-```typescript
-// In Schedule.tsx
-const [filterMode, setFilterMode] = useState<"all" | "appointments" | "tasks">("all");
-
-const getScheduleItems = (): ScheduleItem[] => {
-  if (!data) return [];
-  const items: ScheduleItem[] = [];
-  
-  // Add appointments only if not filtering for tasks only
-  if (filterMode !== "tasks") {
-    data.appointments.forEach((apt) => { ... });
-  }
-  
-  // Add tasks only if not filtering for appointments only  
-  if (filterMode !== "appointments") {
-    data.tasks.forEach((task) => { ... });
-  }
-  
-  return items.sort((a, b) => a.time.getTime() - b.time.getTime());
-};
-```
-
 ---
 
-## Files to Create/Modify
+## Result
 
-| File | Action |
-|------|--------|
-| `src/pages/Performance.tsx` | Create new page |
-| `src/components/TeamSidebar.tsx` | Add Performance nav item |
-| `src/App.tsx` | Add Performance route |
-| `src/pages/Schedule.tsx` | Add filter toggle for appointments/tasks |
+After this change:
+- **Performance** = Team activity, task management, setter/closer tracking
+- **Dashboard** = Revenue metrics, CC Revenue, MRR, Close Rate (DashboardHero with "Keep stacking" message)
+- **Pipeline** = Kanban board for deals
 
----
-
-## Visual Result
-
-After implementation:
-- **Sidebar** will have "Performance" as a quick-access item for revenue overview
-- **Dashboard** remains for detailed CRM analytics
-- **Pipeline** stays separate for the kanban board
-- **Schedule** allows filtering between all items, appointments only, or tasks only
-
+Each section has a clear, distinct purpose without duplication.
