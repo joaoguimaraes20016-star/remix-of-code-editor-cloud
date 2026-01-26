@@ -337,20 +337,26 @@
 
 /* Floating background animation for auth hero */
 @keyframes float-bg {
-  0%, 100% {
-    transform: scale(1.05) translate(0, 0);
+  0% {
+    transform: scale(1.08) translate(0, 0);
   }
-  25% {
-    transform: scale(1.08) translate(-1%, -1%);
+  20% {
+    transform: scale(1.12) translate(-2%, -1.5%);
   }
-  50% {
-    transform: scale(1.1) translate(0, -2%);
+  40% {
+    transform: scale(1.1) translate(1%, -3%);
   }
-  75% {
-    transform: scale(1.08) translate(1%, -1%);
+  60% {
+    transform: scale(1.14) translate(-1%, -1%);
+  }
+  80% {
+    transform: scale(1.1) translate(2%, -2%);
+  }
+  100% {
+    transform: scale(1.08) translate(0, 0);
   }
 }
 
 .animate-float-bg {
-  animation: float-bg 10s ease-in-out infinite;
+  animation: float-bg 12s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
