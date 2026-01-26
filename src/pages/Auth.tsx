@@ -1106,9 +1106,10 @@ const Auth = () => {
         {/* Subtle overlay for text readability */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/40 via-transparent to-slate-950/40" />
         
-        {/* Center Content - Feature Card */}
-        <div className="relative z-10">
-          <Card className="bg-slate-900/70 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl">
+        {/* Center Content - Card at top, copy below */}
+        <div className="relative z-10 flex flex-col items-center">
+          {/* Feature Card - Top */}
+          <Card className="bg-slate-900/70 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl mb-8">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <img src={stackitLogo} alt="Stackit" className="w-10 h-10" />
@@ -1166,17 +1167,16 @@ const Auth = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
-        
-        {/* Bottom Copy */}
-        <div className="absolute bottom-12 left-0 right-0 px-12 text-center z-10">
-          <h2 className="text-2xl font-bold text-white mb-3 drop-shadow-lg">
-            The Operating System for Scaling Digital Offers.
-          </h2>
-          <p className="text-slate-300 text-sm max-w-md mx-auto drop-shadow-md">
-            Stackit builds your funnels, captures leads, books calls, tracks deals, 
-            and automates follow-ups — all in one system.
-          </p>
+          
+          {/* Copy - Below Card */}
+          <div className="text-center max-w-md">
+            <h2 className="text-2xl font-bold text-white mb-3 drop-shadow-lg">
+              The Operating System for Scaling Digital Offers.
+            </h2>
+            <p className="text-slate-300 text-sm drop-shadow-md">
+              Build funnels, get leads, book calls, manage deals, and automate follow-ups — all inside Stackit.
+            </p>
+          </div>
         </div>
       </div>
     </div>
