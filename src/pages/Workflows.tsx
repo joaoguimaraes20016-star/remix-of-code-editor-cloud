@@ -14,7 +14,6 @@ import { MessageLogsList } from "@/components/automations/MessageLogsList";
 import { TaskFlowBuilder } from "@/components/TaskFlowBuilder";
 import { FollowUpSettings } from "@/components/FollowUpSettings";
 import { ActionPipelineMappings } from "@/components/ActionPipelineMappings";
-import { DebugPanel } from "@/components/automations/DebugPanel";
 import { cn } from "@/lib/utils";
 
 interface AutomationFolder {
@@ -123,7 +122,6 @@ export default function Workflows() {
             <ClipboardCheck className="h-3.5 w-3.5" />
             <span>3 task rules</span>
           </div>
-          <DebugPanel />
         </div>
       </div>
 
