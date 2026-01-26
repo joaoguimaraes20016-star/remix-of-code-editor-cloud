@@ -808,10 +808,26 @@ const Index = ({ defaultTab = "dashboard" }: SalesDashboardProps) => {
                 : "Manage your sales pipeline"}
             </p>
           </div>
-          <AddSaleDialog
-            onAddSale={handleAddSale}
-            preselectedOfferOwner={userRole === "offer_owner" ? currentUserName : undefined}
-          />
+          <div className="flex items-center gap-2">
+            {activeTab === "appointments" && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  // Trigger the stage manager in AppointmentsHub via a custom event
+                  window.dispatchEvent(new CustomEvent('open-stage-manager'));
+                }}
+                className="h-9"
+              >
+                <span className="hidden sm:inline">Manage Pipeline Stages</span>
+                <span className="sm:hidden">Stages</span>
+              </Button>
+            )}
+            <AddSaleDialog
+              onAddSale={handleAddSale}
+              preselectedOfferOwner={userRole === "offer_owner" ? currentUserName : undefined}
+            />
+          </div>
         </div>
 
         {/* Content - tabs controlled by route */}
