@@ -1558,10 +1558,24 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         // Determine wrapper styles for alignment using textAlign
         // Default to center alignment for better UX
         const buttonAlignment = (element.styles?.textAlign as 'left' | 'center' | 'right' | undefined) || 'center';
+        // BUG FIX #7: Handle absolute positioning - wrapper adapts based on position mode
+        const isAbsolutePosition = element.styles?.position === 'absolute';
+        
         // SINGLE SURFACE FIX: Wrapper is for LAYOUT ONLY - strip ALL visual styles
         // Only keep margin/layout properties, NOT background/gradient/border/shadow
-        const wrapperStyle: React.CSSProperties = {
-          // Layout properties only - NO visual styles from element.styles
+        const wrapperStyle: React.CSSProperties = isAbsolutePosition ? {
+          // Absolute positioning mode - free movement
+          position: 'absolute',
+          top: element.styles?.top || undefined,
+          left: element.styles?.left || undefined,
+          right: element.styles?.right || undefined,
+          bottom: element.styles?.bottom || undefined,
+          zIndex: element.styles?.zIndex || 10,
+          // CRITICAL: Explicitly NO background on wrapper
+          backgroundColor: 'transparent',
+          background: 'none',
+        } : {
+          // Normal flow mode - layout properties only
           margin: style.margin,
           marginTop: style.marginTop,
           marginRight: style.marginRight,
@@ -1593,37 +1607,44 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const customWidth = element.props?.customWidth as number | undefined;
         const buttonWidth = isFullWidth ? '100%' : customWidth ? `${customWidth}px` : 'fit-content';
         
-        // Text color: outline uses foreground, filled uses contrast or user-set
+        // Text color: outline uses user-set color OR theme foreground, filled uses contrast or user-set
+        // BUG FIX #1: Outline mode now respects user's textColor setting
         const buttonTextColor = isNavPill 
           ? (isDarkTheme ? '#ffffff' : '#1f2937')
           : isFooterLink 
             ? (isDarkTheme ? '#9ca3af' : '#6b7280')
             : isOutlineMode
-              ? (isDarkTheme ? '#ffffff' : '#18181b') // Foreground for outline
+              ? (element.props?.textColor as string || (isDarkTheme ? '#ffffff' : '#18181b')) // User color OR default
               : (element.props?.textColor as string || getContrastTextColor(effectiveBgForContrast));
         
-        // Border for outline mode
+        // Border for outline mode - BUG FIX #3: Allow user-defined border settings
         const outlineBorderColor = isDarkTheme ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
+        const userBorderWidth = element.styles?.borderWidth as string | undefined;
+        const userBorderColor = element.styles?.borderColor as string | undefined;
+        
+        // BUG FIX #2: Allow shadows on outline buttons when explicitly set by user
+        const hasShadowSetting = element.props?.shadow && element.props?.shadow !== 'none';
+        const effectiveShadow = hasShadowSetting 
+          ? (buttonShadowStyle.boxShadow || 'none')
+          : ((isOutlineMode || isNavPill || isFooterLink || isGhostButton) ? 'none' : (buttonShadowStyle.boxShadow || 'none'));
         
         // SINGLE VISUAL SURFACE RULE:
-        // - Outline mode: transparent bg + border, no shadow
-        // - Solid/Gradient mode: filled bg, NO border, optional shadow
+        // - Outline mode: transparent bg + border, optional shadow if set
+        // - Solid/Gradient mode: filled bg, optional border, optional shadow
         const customButtonStyle: React.CSSProperties = {
           backgroundColor: isGradient ? undefined : buttonBg,
           background: buttonGradient,
           color: buttonTextColor,
           // Width is controlled by the button element itself (unified: fullWidth or customWidth)
           width: buttonWidth,
-          // Outline buttons get no shadow; filled buttons can have shadow
-          boxShadow: (isOutlineMode || isNavPill || isFooterLink || isGhostButton) 
-            ? 'none' 
-            : (buttonShadowStyle.boxShadow || 'none'),
-          // CRITICAL: Only outline mode gets border; filled buttons have NO border
-          borderWidth: isOutlineMode ? '2px' : (isNavPill ? '1px' : '0'),
-          borderColor: isOutlineMode 
+          // BUG FIX #2: Shadows now work on outline buttons when explicitly set
+          boxShadow: effectiveShadow,
+          // BUG FIX #3: Respect user border settings, fallback to mode defaults
+          borderWidth: userBorderWidth || (isOutlineMode ? '2px' : (isNavPill ? '1px' : '0')),
+          borderColor: userBorderColor || (isOutlineMode 
             ? outlineBorderColor 
-            : (isNavPill ? (isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)') : 'transparent'),
-          borderStyle: (isOutlineMode || isNavPill) ? 'solid' : 'none',
+            : (isNavPill ? (isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)') : 'transparent')),
+          borderStyle: (userBorderWidth || isOutlineMode || isNavPill) ? 'solid' : 'none',
           borderRadius: isNavPill ? '9999px' : (element.styles?.borderRadius || '12px'),
           transition: `transform ${transitionDuration}ms ease, box-shadow ${transitionDuration}ms ease`,
           // Apply custom dimensions (height only; width is unified above)
@@ -2336,20 +2357,28 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const iconFillType = (element.props?.fillType as string) || 'solid';
         const iconGradient = element.props?.gradient as GradientValue;
         
-        // Build icon style based on fill type
+        // BUG FIX #6: Icon gradient using CSS mask technique (works on SVGs)
+        // WebkitBackgroundClip: 'text' doesn't work on SVG icons, use mask instead
         const iconStyle: React.CSSProperties = iconFillType === 'gradient' && iconGradient ? {
           width: iconSize,
           height: iconSize,
           background: gradientToCSS(iconGradient),
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
+          // Use mask to make gradient visible through SVG shape
+          WebkitMaskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center',
+          maskSize: 'contain',
+          maskRepeat: 'no-repeat',
+          maskPosition: 'center',
           display: 'inline-block',
         } : {
           width: iconSize,
           height: iconSize,
           color: iconColor,
         };
+        
+        // For gradient icons, we need to render differently
+        const isGradientIcon = iconFillType === 'gradient' && iconGradient;
         
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
@@ -2384,6 +2413,29 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             >
               {(() => {
                 const IconComponent = getButtonIconComponent(element.content || 'Star');
+                // BUG FIX #6: For gradient icons, wrap in a div with mask
+                if (isGradientIcon) {
+                  return (
+                    <div 
+                      style={{
+                        width: iconSize,
+                        height: iconSize,
+                        background: gradientToCSS(iconGradient),
+                        WebkitMask: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3C/svg%3E")`,
+                        mask: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3C/svg%3E")`,
+                      }}
+                    >
+                      <IconComponent 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%',
+                          // Make icon act as mask
+                          color: 'transparent',
+                        }} 
+                      />
+                    </div>
+                  );
+                }
                 return <IconComponent style={iconStyle} />;
               })()}
             </div>

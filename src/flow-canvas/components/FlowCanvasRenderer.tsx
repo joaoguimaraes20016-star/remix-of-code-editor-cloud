@@ -745,10 +745,25 @@ function ButtonRenderer({ element, onClick, isSubmitting }: ButtonRendererProps)
   
   const stateClassName = stateStyles ? `runtime-state-${element.id.replace(/[^a-zA-Z0-9]/g, '')}` : '';
   
-  // Get custom styles from element
-  const customBackground = element.styles?.backgroundColor || element.props?.backgroundColor as string;
+  // BUG FIX #8: Get custom styles from element - check all possible locations
+  const fillType = element.props?.fillType as string;
+  const gradient = element.props?.gradient as { type: string; angle: number; stops: Array<{ color: string; position: number }> } | undefined;
+  
+  // Resolve background: gradient takes priority, then backgroundColor from styles or props
+  const customBackground = fillType === 'gradient' && gradient 
+    ? undefined  // Will use background (gradient) instead
+    : (element.styles?.backgroundColor || element.props?.backgroundColor as string);
+  
+  // Generate gradient CSS if applicable
+  const gradientBackground = fillType === 'gradient' && gradient
+    ? (gradient.type === 'radial'
+        ? `radial-gradient(circle, ${gradient.stops.sort((a, b) => a.position - b.position).map(s => `${s.color} ${s.position}%`).join(', ')})`
+        : `linear-gradient(${gradient.angle}deg, ${gradient.stops.sort((a, b) => a.position - b.position).map(s => `${s.color} ${s.position}%`).join(', ')})`)
+    : undefined;
+  
   const customTextColor = element.props?.textColor as string;
   const customBorderRadius = element.styles?.borderRadius;
+  const isOutlineMode = fillType === 'outline';
   
   return (
     <>
@@ -760,16 +775,23 @@ function ButtonRenderer({ element, onClick, isSubmitting }: ButtonRendererProps)
         disabled={isSubmitting}
         className={cn(
           'w-full rounded-lg font-semibold transition-all',
-          !customBackground && 'bg-primary',
+          !customBackground && !gradientBackground && !isOutlineMode && 'bg-primary',
           !customTextColor && 'text-primary-foreground',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           sizeClasses[size],
           stateClassName
         )}
         style={{
-          backgroundColor: customBackground,
+          backgroundColor: isOutlineMode ? 'transparent' : customBackground,
+          background: gradientBackground,
           color: customTextColor,
           borderRadius: customBorderRadius,
+          // Handle outline mode border
+          ...(isOutlineMode ? {
+            borderWidth: '2px',
+            borderStyle: 'solid',
+            borderColor: element.styles?.borderColor || 'currentColor',
+          } : {}),
         }}
       >
         {isSubmitting ? (

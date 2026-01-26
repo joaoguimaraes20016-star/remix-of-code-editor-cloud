@@ -260,17 +260,44 @@ export default function FunnelEditor() {
     // Selection state is handled internally by EditorShell
   }, []);
 
-  // Handle publish
+  // BUG FIX #5: Handle publish with better error handling
   const handlePublish = useCallback((page: FlowCanvasPage) => {
     // Clear any pending auto-save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     
-    // Save first, then publish
+    // Clear localStorage history to prevent quota issues
+    try {
+      const historyKeys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('infostack_history')) {
+          historyKeys.push(key);
+        }
+      }
+      // Keep only current page history, remove old ones
+      const currentKey = `infostack_history_${page.id}`;
+      historyKeys.filter(k => k !== currentKey).forEach(k => localStorage.removeItem(k));
+    } catch (e) {
+      console.warn('Could not clear old history:', e);
+    }
+    
+    // Save first, then publish - with error handling
     setSaveStatus('saving');
     saveMutation.mutate(page, {
       onSuccess: () => {
+        publishMutation.mutate(page);
+      },
+      onError: (error) => {
+        console.error('Save before publish failed:', error);
+        toast({ 
+          title: 'Save failed', 
+          description: 'Could not save changes before publishing. Please try again.',
+          variant: 'destructive' 
+        });
+        // Still try to publish with current state
+        toast({ title: 'Attempting to publish anyway...' });
         publishMutation.mutate(page);
       },
     });

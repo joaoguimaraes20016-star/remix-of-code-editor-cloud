@@ -359,8 +359,21 @@ export const ButtonStyleInspector: React.FC<ButtonStyleInspectorProps> = ({
         icon={<Square className="w-3.5 h-3.5" />}
         defaultOpen={!compact}
       >
-        {/* Icon */}
-        {showIconProp && settings.showIcon !== false && (
+        {/* BUG FIX #4: Show Icon Toggle - prominently visible */}
+        {showIconProp && (
+          <FieldGroup label="Show Icon">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Display icon with text</span>
+              <Switch
+                checked={settings.showIcon ?? false}
+                onCheckedChange={(checked) => onChange({ showIcon: checked })}
+              />
+            </div>
+          </FieldGroup>
+        )}
+
+        {/* Icon Picker - only show when showIcon is true */}
+        {showIconProp && settings.showIcon === true && (
           <FieldGroup label="Icon">
             <ButtonIconPicker 
               value={settings.icon || 'ArrowRight'} 
