@@ -6,6 +6,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   TrendingUp, 
   Users, 
@@ -670,79 +681,118 @@ export function TeamHubOverview() {
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="border-border/50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Team Members</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {loadingStats ? <Loader2 className="h-5 w-5 animate-spin" /> : stats?.members}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-primary" />
+      {/* Stats Row - Fanbasis Gradient Style */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Team Members - Blue/Indigo gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-5 text-white shadow-lg">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-white/80">Team Members</span>
+              <div className="p-2 rounded-lg bg-white/20">
+                <Users className="h-4 w-4 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Team Assets</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {loadingStats ? <Loader2 className="h-5 w-5 animate-spin" /> : stats?.assets}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-blue-500" />
+            <div className="text-3xl font-bold">
+              {loadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : stats?.members ?? 0}
+            </div>
+          </div>
+        </div>
+
+        {/* Team Assets - Violet/Purple gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-600 p-5 text-white shadow-lg">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-white/80">Team Assets</span>
+              <div className="p-2 rounded-lg bg-white/20">
+                <FileText className="h-4 w-4 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Closed Deals</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {loadingStats ? <Loader2 className="h-5 w-5 animate-spin" /> : stats?.closedDeals}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-emerald-500" />
+            <div className="text-3xl font-bold">
+              {loadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : stats?.assets ?? 0}
+            </div>
+          </div>
+        </div>
+
+        {/* Closed Deals - Green/Teal gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 p-5 text-white shadow-lg">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-white/80">Closed Deals</span>
+              <div className="p-2 rounded-lg bg-white/20">
+                <TrendingUp className="h-4 w-4 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-3xl font-bold">
+              {loadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : stats?.closedDeals ?? 0}
+            </div>
+          </div>
+        </div>
       </div>
 
 
-      {/* Team Assets Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold">Team Assets</h2>
-            <p className="text-sm text-muted-foreground">Training materials, resources & onboarding</p>
-          </div>
-        </div>
-        
-        {/* Admin Section Management Panel */}
-        {canManage && (
-          <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4">
+      {/* Admin Section Management Panel */}
+      {canManage && (
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Settings2 className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                  <Settings2 className="h-5 w-5 text-violet-500" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm">Admin Controls</h3>
-                  <p className="text-xs text-muted-foreground">Manage sections, add assets, and reorder content</p>
+                  <p className="text-xs text-muted-foreground">
+                    Manage sections and organize content
+                  </p>
                 </div>
               </div>
               <div className="flex gap-2">
+                {localCategories.length > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        Clear All
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Clear All Sections?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will remove all sections and their organization. Assets will remain but become uncategorized.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={async () => {
+                            setLocalCategories([]);
+                            try {
+                              await supabase
+                                .from("teams")
+                                .update({ asset_categories: [] })
+                                .eq("id", teamId);
+                              toast.success("All sections cleared");
+                              queryClient.invalidateQueries({ queryKey: ["team-categories", teamId] });
+                            } catch (error) {
+                              console.error("Error clearing sections:", error);
+                              toast.error("Failed to clear sections");
+                            }
+                          }}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Clear All
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -750,24 +800,22 @@ export function TeamHubOverview() {
                     setEditingSection(null);
                     setSectionDialogOpen(true);
                   }}
-                  className="gap-1.5 border-primary/30 hover:bg-primary/10"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-3.5 w-3.5 mr-1" />
                   Add Section
                 </Button>
                 <Button 
                   size="sm"
-                  onClick={() => setUploadDialogOpen(true)} 
-                  className="gap-1.5"
+                  onClick={() => setUploadDialogOpen(true)}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-3.5 w-3.5 mr-1" />
                   Add Asset
                 </Button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Category Sections */}
       {loadingAssets || loadingTeam ? (
