@@ -1100,7 +1100,7 @@ const Auth = () => {
         <img 
           src={authHeroBg}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-70 animate-float-bg"
+          className="absolute inset-0 w-full h-full object-cover opacity-80 animate-float-bg"
         />
         
         {/* Subtle overlay for text readability */}
