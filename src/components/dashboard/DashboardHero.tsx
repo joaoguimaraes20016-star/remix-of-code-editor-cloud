@@ -86,9 +86,9 @@ export function DashboardHero({ userName, teamId }: DashboardHeroProps) {
 
   const currentRevenue = revenue[period];
   const periodLabels: Record<Period, string> = {
-    today: "Total Earnings Today",
-    week: "Total Earnings This Week",
-    month: "Total Earnings This Month",
+    today: "Total Revenue Today",
+    week: "Total Revenue This Week",
+    month: "Total Revenue This Month",
   };
 
   const firstName = userName?.split(" ")[0] || "there";
