@@ -1,195 +1,183 @@
 
-
-# Customizable Role Labels - Remove Hardcoded "Setter" / "Closer"
+# Simplify Pipeline Page - Remove Tabs and Admin CRM Branding
 
 ## Overview
 
-Replace all hardcoded "Setter" and "Closer" terminology throughout the CRM with customizable labels that team admins can configure. This creates a generic "Member Leaderboard" approach while allowing teams to define their own role names if desired.
+The Pipeline page currently shows an "Admin CRM" branded header with multiple tabs (Today, Overview, Team Pipeline, MRR, Tasks). The user wants to simplify this to show ONLY the pipeline kanban board directly, removing:
+- The "Admin CRM" gradient header/branding
+- All the tabs (Today, Overview, MRR, Tasks)
+- The tabbed navigation system entirely
+
+The "Manage Pipeline Stages" button should remain accessible.
 
 ---
 
-## Summary of Changes
-
-1. **Add `custom_labels` JSONB column** to the `teams` table to store customizable terminology
-2. **Create a React Context** (`TeamLabelsContext`) to provide labels throughout the app
-3. **Update all components** to use dynamic labels instead of hardcoded strings
-4. **Add a "Terminology" settings section** in Team Settings for admins to customize labels
-
----
-
-## Database Schema Change
-
-### Migration: Add `custom_labels` column to `teams` table
-
-```sql
-ALTER TABLE public.teams 
-ADD COLUMN custom_labels jsonb DEFAULT '{
-  "role_1": "Setter",
-  "role_2": "Closer",
-  "role_1_plural": "Setters",
-  "role_2_plural": "Closers",
-  "role_1_short": "S",
-  "role_2_short": "C"
-}'::jsonb;
-
-COMMENT ON COLUMN public.teams.custom_labels IS 'Customizable terminology for roles and CRM elements';
-```
-
-This allows teams to customize:
-- `role_1` / `role_2`: Singular names (default: "Setter" / "Closer")
-- `role_1_plural` / `role_2_plural`: Plural names (default: "Setters" / "Closers")
-- `role_1_short` / `role_2_short`: Abbreviations for compact displays (default: "S" / "C")
-
----
-
-## Implementation Details
-
-### 1. Create TeamLabelsContext
-
-**New File**: `src/contexts/TeamLabelsContext.tsx`
-
-This context will:
-- Fetch the team's `custom_labels` from Supabase
-- Provide a `getLabel()` helper function
-- Default to standard terminology if not customized
-
-```typescript
-interface TeamLabels {
-  role_1: string;        // "Setter" by default
-  role_2: string;        // "Closer" by default
-  role_1_plural: string; // "Setters" by default
-  role_2_plural: string; // "Closers" by default
-  role_1_short: string;  // "S" by default
-  role_2_short: string;  // "C" by default
-}
-
-interface TeamLabelsContextValue {
-  labels: TeamLabels;
-  getLabel: (key: keyof TeamLabels) => string;
-  getRoleLabel: (dbRole: 'setter' | 'closer', plural?: boolean) => string;
-  loading: boolean;
-}
-```
-
-Usage example:
-```typescript
-const { getRoleLabel } = useTeamLabels();
-// getRoleLabel('setter') => "Setter" (or custom label)
-// getRoleLabel('closer', true) => "Closers" (or custom plural label)
-```
-
-### 2. Update Components to Use Dynamic Labels
-
-| Component | Current Hardcoded Text | Change To |
-|-----------|------------------------|-----------|
-| `ActivityTracker.tsx` | "Setters Activity Today" | `{getRoleLabel('setter', true)} Activity Today` |
-| `ActivityTracker.tsx` | "Closers Activity Today" | `{getRoleLabel('closer', true)} Activity Today` |
-| `AppointmentsBookedBreakdown.tsx` | "Setter" / "Closer" labels | Dynamic via `getRoleLabel()` |
-| `Performance.tsx` | "S: X · C: Y" | `{labels.role_1_short}: X · {labels.role_2_short}: Y` |
-| `TaskTypeDefaults.tsx` | "Setter" / "Closer" radio options | Dynamic labels |
-| `TemplateVariablePicker.tsx` | "Setter Name" / "Closer Name" | Dynamic labels for descriptions |
-| `TeamSettings.tsx` | Role dropdown options | Dynamic labels |
-
-### 3. Add Terminology Settings UI
-
-**Update**: `src/pages/TeamSettings.tsx`
-
-Add a new tab called "Terminology" (or add a section to the existing "Branding" tab) where admins can:
+## Current Structure (Before)
 
 ```text
-+--------------------------------------------------+
-|  Terminology                                      |
-|  Customize the labels used in your CRM            |
-|                                                   |
-|  Role 1 (Database: setter)                        |
-|  ┌──────────────────────────────────────┐        |
-|  │ Setter                               │        |
-|  └──────────────────────────────────────┘        |
-|  Plural: Setters    Short: S                     |
-|                                                   |
-|  Role 2 (Database: closer)                        |
-|  ┌──────────────────────────────────────┐        |
-|  │ Closer                               │        |
-|  └──────────────────────────────────────┘        |
-|  Plural: Closers    Short: C                     |
-|                                                   |
-|  [Reset to Defaults]  [Save]                     |
-+--------------------------------------------------+
++----------------------------------------------------------+
+| Pipeline                                                  |
+| Manage your sales pipeline                    [+ Add Sale]|
+|                                                           |
+| ┌───────────────────────────────────────────────────────┐|
+| │ Admin CRM                      [Manage Pipeline Stages]││
+| │ Comprehensive team performance & management           ││
+| └───────────────────────────────────────────────────────┘|
+|                                                           |
+| [Today] [Overview] [Team Pipeline] [MRR] [Tasks]         |
+|                                                           |
+| ... content based on selected tab ...                     |
++----------------------------------------------------------+
 ```
 
----
-
-## Files to Create/Modify
-
-| File | Action | Description |
-|------|--------|-------------|
-| **Database Migration** | Create | Add `custom_labels` JSONB column to `teams` |
-| `src/contexts/TeamLabelsContext.tsx` | Create | Context provider for team labels |
-| `src/components/TeamLabelsProvider.tsx` | Create | Provider wrapper component |
-| `src/pages/TeamSettings.tsx` | Modify | Add Terminology settings tab |
-| `src/components/appointments/ActivityTracker.tsx` | Modify | Use dynamic labels |
-| `src/components/AppointmentsBookedBreakdown.tsx` | Modify | Use dynamic labels |
-| `src/pages/Performance.tsx` | Modify | Use dynamic labels for S:/C: |
-| `src/components/task-flow/TaskTypeDefaults.tsx` | Modify | Use dynamic labels |
-| `src/components/automations/builder/TemplateVariablePicker.tsx` | Modify | Use dynamic labels |
-| `src/integrations/supabase/types.ts` | Update | Add `custom_labels` to Teams type |
-
----
-
-## Technical Architecture
+## Target Structure (After)
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                        TeamLayout                           │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │              TeamLabelsProvider                        │  │
-│  │   ┌─────────────────────────────────────────────────┐ │  │
-│  │   │  Fetches custom_labels from teams table         │ │  │
-│  │   │  Provides: labels, getLabel(), getRoleLabel()   │ │  │
-│  │   └─────────────────────────────────────────────────┘ │  │
-│  │                          │                             │  │
-│  │    ┌─────────────────────┴───────────────────────┐    │  │
-│  │    ▼                     ▼                       ▼    │  │
-│  │ Performance     ActivityTracker     AppointmentsBreakdown│
-│  │ (uses labels)   (uses labels)       (uses labels)     │  │
-│  └───────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
++----------------------------------------------------------+
+| Pipeline                              [Manage Pipeline    |
+| Manage your sales pipeline             Stages] [+ Add Sale|
+|                                                           |
+| ┌──────────────────────────────────────────────────────┐ |
+| │                 KANBAN PIPELINE BOARD                 │ |
+| │  [New] [Contacted] [Deposit Collected] [Closed Won]   │ |
+| │   ...     ...           ...              ...          │ |
+| └──────────────────────────────────────────────────────┘ |
++----------------------------------------------------------+
 ```
 
 ---
 
-## Default Values and Backward Compatibility
+## Implementation Plan
 
-- If `custom_labels` is NULL or missing keys, fall back to defaults:
-  - `role_1`: "Setter"
-  - `role_2`: "Closer"
-  - `role_1_plural`: "Setters"
-  - `role_2_plural`: "Closers"
-  - `role_1_short`: "S"
-  - `role_2_short`: "C"
+### Modify `src/components/appointments/AppointmentsHub.tsx`
 
-- Existing teams won't need to do anything; they'll see the same labels they see now
-- Only teams that want custom terminology need to configure it
+The changes will be minimal - just removing the UI elements that aren't needed:
+
+1. **Remove the "Admin CRM" gradient header block** (lines 639-657)
+   - This removes the branded header with the gradient background
+   
+2. **Remove the Tabs wrapper and TabsList** (lines 659-695)
+   - No more tab navigation needed
+   
+3. **Remove all TabsContent wrappers** except the pipeline content
+   - Today, Overview, MRR, Tasks content won't be rendered
+   
+4. **Render DealPipeline directly** without tabs
+   - The kanban board shows immediately
+
+5. **Move "Manage Pipeline Stages" button** to the page header in `SalesDashboard.tsx`
+   - This keeps the functionality accessible
+
+### Modify `src/pages/SalesDashboard.tsx`
+
+1. **Add "Manage Pipeline Stages" button** to the Pipeline page header
+   - Place it next to the "+ Add Sale" button
+   
+2. **Pass the stage manager state** to AppointmentsHub or handle locally
 
 ---
 
-## Example Customization Scenarios
+## Technical Details
 
-| Use Case | role_1 | role_2 | role_1_plural | role_2_plural |
-|----------|--------|--------|---------------|---------------|
-| Default Sales Team | Setter | Closer | Setters | Closers |
-| Real Estate | Agent | Broker | Agents | Brokers |
-| Consulting | Rep | Consultant | Reps | Consultants |
-| Generic | Member | Lead | Members | Leads |
-| Support Team | Intake | Specialist | Intake | Specialists |
+### Changes to AppointmentsHub.tsx
+
+**Remove**:
+- Lines 639-657: The "Admin CRM" gradient header
+- Lines 659-695: The TabsList with all tab triggers
+- Lines 698-700: TabsContent for "today"
+- Lines 702-704: TabsContent for "overview"  
+- Lines 716-724: TabsContent for "setters" (conditional)
+- Lines 726-737: TabsContent for "closers" (conditional)
+- Lines 739-741: TabsContent for "mrr"
+- Lines 743-745: TabsContent for "tasks"
+
+**Keep**:
+- Lines 706-714: The DealPipeline component (render directly, not in TabsContent)
+- Lines 748-756: PipelineStageManager dialog
+- Lines 758-779: CloseDealDialog
+
+**Simplified structure**:
+```typescript
+export function AppointmentsHub({...props}) {
+  // ... existing state and effects ...
+  
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      {/* Render pipeline directly - no tabs */}
+      <DealPipeline
+        teamId={teamId}
+        userRole={userRole}
+        currentUserId={user?.id || ''}
+        onCloseDeal={handleCloseDeal}
+        viewFilter="all"
+      />
+      
+      {/* Keep dialogs */}
+      <PipelineStageManager ... />
+      <CloseDealDialog ... />
+    </div>
+  );
+}
+```
+
+### Changes to SalesDashboard.tsx
+
+Add the "Manage Pipeline Stages" button to the header when showing the Pipeline view:
+
+```typescript
+// In the header section (around line 860-880)
+{activeTab === "appointments" && (
+  <Button 
+    variant="outline" 
+    size="sm"
+    onClick={() => setShowStageManager(true)}
+  >
+    Manage Pipeline Stages
+  </Button>
+)}
+```
+
+Add state for stage manager:
+```typescript
+const [showStageManager, setShowStageManager] = useState(false);
+```
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/appointments/AppointmentsHub.tsx` | Remove Admin CRM header, remove tabs, render DealPipeline directly |
+| `src/pages/SalesDashboard.tsx` | Add "Manage Pipeline Stages" button to header, add state for dialog |
+
+---
+
+## What Gets Preserved
+
+- **DealPipeline kanban board** - The main pipeline visualization
+- **PipelineStageManager dialog** - Ability to customize pipeline stages
+- **CloseDealDialog** - Deal closing functionality
+- **All real-time subscriptions** - Pipeline updates in real-time
+- **Deep linking** - URL params for focusing on specific appointments
+
+## What Gets Removed
+
+- "Admin CRM" branded gradient header
+- Tab navigation (Today, Overview, Team Pipeline, MRR, Tasks)
+- TodaysDashboard component (content moved to Performance/Dashboard)
+- AdminOverview component (content moved to Performance)
+- MRRFollowUps/MRRScheduleList (accessible elsewhere)
+- UnifiedTasksView (accessible via Schedule page)
+- SettersView / ByCloserView tabs
 
 ---
 
 ## Result
 
-After implementation:
-- All "Setter" / "Closer" labels throughout the app will be dynamically pulled from team settings
-- Admins can customize these labels in Team Settings > Terminology
-- The database role values (`setter`, `closer`) remain unchanged for compatibility
-- Only the **display labels** are customizable
+After this change:
+- **Pipeline** = Clean, focused kanban board only
+- **Performance** = Team activity, tasks, EOD reports (already implemented)
+- **Dashboard** = Revenue metrics, CRM analytics
 
+Each section has a single, clear purpose with no duplicate functionality.
