@@ -21,11 +21,9 @@ import { Check, ExternalLink, Lock } from "lucide-react";
 
 // Import logos
 import calendlyLogo from "@/assets/integrations/calendly.svg";
-import ghlLogo from "@/assets/integrations/ghl.svg";
 import zoomLogo from "@/assets/integrations/zoom.svg";
 import zapierLogo from "@/assets/integrations/zapier.svg";
 import slackLogo from "@/assets/integrations/slack.svg";
-import hubspotLogo from "@/assets/integrations/hubspot.svg";
 import typeformLogo from "@/assets/integrations/typeform.svg";
 import discordLogo from "@/assets/integrations/discord.svg";
 import fathomLogo from "@/assets/integrations/fathom.svg";
@@ -92,7 +90,7 @@ interface App {
   name: string;
   description: string;
   logo: string;
-  category: "scheduling" | "crm" | "communication" | "analytics" | "ads";
+  category: "scheduling" | "communication" | "analytics" | "ads";
   status: "connected" | "available" | "coming_soon";
   configurable?: boolean;
 }
@@ -107,14 +105,6 @@ const apps: App[] = [
     category: "scheduling",
     status: "available",
     configurable: true,
-  },
-  {
-    id: "ghl",
-    name: "GoHighLevel",
-    description: "CRM and marketing automation",
-    logo: ghlLogo,
-    category: "crm",
-    status: "available",
   },
   {
     id: "zapier",
@@ -141,14 +131,6 @@ const apps: App[] = [
     category: "communication",
     status: "available",
     configurable: true,
-  },
-  {
-    id: "hubspot",
-    name: "HubSpot",
-    description: "CRM and sales automation",
-    logo: hubspotLogo,
-    category: "crm",
-    status: "coming_soon",
   },
   {
     id: "typeform",
@@ -208,7 +190,6 @@ const apps: App[] = [
 
 const categoryLabels: Record<string, string> = {
   scheduling: "Scheduling",
-  crm: "CRM & Marketing",
   communication: "Communication",
   analytics: "Analytics",
   ads: "Ads & Marketing",
