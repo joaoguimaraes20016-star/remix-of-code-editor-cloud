@@ -161,6 +161,13 @@ export function AppointmentsHub({
     loadUserProfile();
   }, [user?.id]);
 
+  // Listen for stage manager open event from parent
+  useEffect(() => {
+    const handleOpenStageManager = () => setShowStageManager(true);
+    window.addEventListener('open-stage-manager', handleOpenStageManager);
+    return () => window.removeEventListener('open-stage-manager', handleOpenStageManager);
+  }, []);
+
   useEffect(() => {
     const loadAppointments = async () => {
       const { data } = await supabase
@@ -632,118 +639,19 @@ export function AppointmentsHub({
     );
   }
 
-  // Admin sees: Overview, Team Pipeline, Setters View, Closers View, MRR Deals, and Tasks
+  // Admin sees: Team Pipeline only (simplified view)
   return (
     <div className="space-y-4 sm:space-y-6">
       <InitializeDefaultStages teamId={teamId} />
-      <div className="bg-gradient-to-br from-primary/15 via-accent/15 to-primary/10 rounded-lg sm:rounded-xl p-3 sm:p-6 border border-primary/40 shadow-lg">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h2 className="text-base sm:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent truncate">
-              Admin CRM
-            </h2>
-            <p className="text-muted-foreground mt-0.5 sm:mt-1 text-[10px] sm:text-base hidden sm:block">Comprehensive team performance & management</p>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowStageManager(true)}
-            className="h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-3 shrink-0"
-          >
-            <span className="hidden sm:inline">Manage Pipeline Stages</span>
-            <span className="sm:hidden">Stages</span>
-          </Button>
-        </div>
-      </div>
       
-      <Tabs value={adminTab} onValueChange={setAdminTab} className="w-full">
-        <div className="w-full overflow-x-auto -mx-1 px-1">
-          <TabsList className="w-max min-w-full h-9 sm:h-12">
-            <TabsTrigger value="today" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-              Today
-            </TabsTrigger>
-            <TabsTrigger value="overview" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="pipeline" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-              Team Pipeline
-            </TabsTrigger>
-            {isSalesTeamMode && (
-              <TabsTrigger value="setters" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-                Setters View
-              </TabsTrigger>
-            )}
-            {isSalesTeamMode && (
-              <TabsTrigger value="closers" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-                Closers View
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="mrr" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-              MRR {counts.mrrDue > 0 && <Badge className="ml-1 sm:ml-2 text-[8px] sm:text-xs h-4 sm:h-5 px-1" variant="secondary">{counts.mrrDue}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="text-[10px] sm:text-base whitespace-nowrap px-2 sm:px-3">
-              Tasks
-              {counts.totalPendingTasks > 0 && (
-                <Badge 
-                  variant={counts.overdue > 0 ? "destructive" : "secondary"}
-                  className="ml-1 sm:ml-2 text-[8px] sm:text-xs h-4 sm:h-5 px-1"
-                >
-                  {counts.totalPendingTasks}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="today" className="mt-4 sm:mt-6">
-          <TodaysDashboard teamId={teamId} userRole={userRole} />
-        </TabsContent>
-
-        <TabsContent value="overview" className="mt-6">
-          <AdminOverview teamId={teamId} />
-        </TabsContent>
-
-        <TabsContent value="pipeline" className="mt-6">
-          <DealPipeline
-            teamId={teamId}
-            userRole={userRole}
-            currentUserId={user?.id || ''}
-            onCloseDeal={handleCloseDeal}
-            viewFilter="all"
-          />
-        </TabsContent>
-
-        {isSalesTeamMode && (
-          <TabsContent value="setters" className="mt-6">
-            <SettersView
-              teamId={teamId}
-              closerCommissionPct={closerCommissionPct}
-              setterCommissionPct={setterCommissionPct}
-            />
-          </TabsContent>
-        )}
-
-        {isSalesTeamMode && (
-          <TabsContent value="closers" className="mt-6">
-            <ByCloserView
-              teamId={teamId}
-              onCloseDeal={handleCloseDeal}
-              onViewTeamPipeline={() => setAdminTab("pipeline")}
-            />
-          </TabsContent>
-        )}
-
-        <TabsContent value="mrr" className="mt-6">
-          <div className="space-y-6">
-            <MRRScheduleList teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
-            <MRRFollowUps teamId={teamId} userRole={userRole} currentUserId={user?.id || ''} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tasks" className="mt-6">
-          <UnifiedTasksView teamId={teamId} />
-        </TabsContent>
-      </Tabs>
+      {/* Pipeline kanban board - rendered directly without tabs */}
+      <DealPipeline
+        teamId={teamId}
+        userRole={userRole}
+        currentUserId={user?.id || ''}
+        onCloseDeal={handleCloseDeal}
+        viewFilter="all"
+      />
 
       <PipelineStageManager 
         open={showStageManager} 
