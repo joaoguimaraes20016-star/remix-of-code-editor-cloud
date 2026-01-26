@@ -59,15 +59,16 @@ export function RunWorkflowForm({ config, onChange, teamId }: RunWorkflowFormPro
             <SelectValue placeholder="Choose a workflow" />
           </SelectTrigger>
           <SelectContent>
-            {workflows?.map((workflow) => (
-              <SelectItem key={workflow.id} value={workflow.id}>
-                {workflow.name}
-              </SelectItem>
-            ))}
-            {(!workflows || workflows.length === 0) && (
-              <SelectItem value="" disabled>
+            {workflows && workflows.length > 0 ? (
+              workflows.map((workflow) => (
+                <SelectItem key={workflow.id} value={workflow.id}>
+                  {workflow.name}
+                </SelectItem>
+              ))
+            ) : (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">
                 No active workflows found
-              </SelectItem>
+              </div>
             )}
           </SelectContent>
         </Select>

@@ -39,15 +39,16 @@ export function GoToForm({ config, onChange, availableSteps = [] }: GoToFormProp
             <SelectValue placeholder="Select a step" />
           </SelectTrigger>
           <SelectContent>
-            {availableSteps.map((step) => (
-              <SelectItem key={step.id} value={step.id}>
-                {step.label}
-              </SelectItem>
-            ))}
-            {availableSteps.length === 0 && (
-              <SelectItem value="" disabled>
+            {availableSteps.length > 0 ? (
+              availableSteps.map((step) => (
+                <SelectItem key={step.id} value={step.id}>
+                  {step.label}
+                </SelectItem>
+              ))
+            ) : (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">
                 No other steps available
-              </SelectItem>
+              </div>
             )}
           </SelectContent>
         </Select>
