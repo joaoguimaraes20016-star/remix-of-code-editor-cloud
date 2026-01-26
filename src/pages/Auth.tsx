@@ -1095,16 +1095,16 @@ const Auth = () => {
       </div>
       
       {/* Right Side - Hero (Hidden on mobile) */}
-      <div 
-        className="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center p-12"
-        style={{
-          backgroundImage: `url(${authHeroBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        {/* Subtle overlay for text readability */}
-        <div className="absolute inset-0 bg-black/20" />
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center p-12 bg-slate-950">
+        {/* Animated Background Image */}
+        <img 
+          src={authHeroBg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-30 animate-float-bg"
+        />
+        
+        {/* Overlay for text readability */}
+        <div className="absolute inset-0 bg-black/30" />
         
         {/* Center Content - Feature Card */}
         <div className="relative z-10">
