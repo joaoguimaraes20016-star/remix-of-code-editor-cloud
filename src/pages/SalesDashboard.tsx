@@ -4,7 +4,6 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamPaymentsInRange, sumPayments } from "@/lib/payments";
-import { MetricCard } from "@/components/MetricCard";
 import { SalesTable, Sale } from "@/components/SalesTable";
 import { AddSaleDialog } from "@/components/AddSaleDialog";
 import { FixCommissionsButton } from "@/components/FixCommissionsButton";
@@ -23,6 +22,7 @@ import { MRRDashboard } from "@/components/MRRDashboard";
 import { MRRFollowUps } from "@/components/appointments/MRRFollowUps";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { AppointmentsHub } from "@/components/appointments/AppointmentsHub";
+import { DashboardHero, DashboardMetricCard, RecentActivity } from "@/components/dashboard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -40,159 +40,6 @@ const isAppointmentClosedWithRevenue = (apt: any): boolean => {
   const isDepositStage = stage.includes("deposit");
   const isClosedStatus = status === "CLOSED" || status === "CLOSED_WON";
   return (isDepositStage || isClosedStatus) && revenue > 0;
-};
-
-const RevenueSummaryCard = ({ teamId }: { teamId: string }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [todayTotal, setTodayTotal] = useState(0);
-  const [weekTotal, setWeekTotal] = useState(0);
-  const [monthTotal, setMonthTotal] = useState(0);
-
-  useEffect(() => {
-    if (!teamId) return;
-
-    async function loadRevenue() {
-      try {
-        const now = new Date();
-
-        // Today
-        const startOfToday = new Date(now);
-        startOfToday.setHours(0, 0, 0, 0);
-        const endOfToday = new Date(now);
-        endOfToday.setHours(23, 59, 59, 999);
-
-        // Start of week (Sunday-based)
-        const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-
-        // Start of month
-        const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
-
-        const [todayPayments, weekPayments, monthPayments] = await Promise.all([
-          getTeamPaymentsInRange(teamId, startOfToday.toISOString(), endOfToday.toISOString()),
-          getTeamPaymentsInRange(teamId, startOfWeek.toISOString(), endOfToday.toISOString()),
-          getTeamPaymentsInRange(teamId, startOfMonth.toISOString(), endOfToday.toISOString()),
-        ]);
-
-        // Also include deposits recorded on appointments (cc_collected) for the same ranges
-        // Helper: fetch appointments by timestamp field (try updated_at, fallback to created_at) and sum cc_collected for deposit/closed
-        const fetchAppointmentsAndSum = async (startIso: string, endIso: string, label: string) => {
-          const tryQuery = async (tsField: string) => {
-            const { data, error } = await supabase
-              .from('appointments')
-              .select('id,cc_collected,pipeline_stage,status,created_at,updated_at')
-              .eq('team_id', teamId)
-              .gte(tsField, startIso)
-              .lte(tsField, endIso);
-            return { data, error };
-          };
-
-          // Try updated_at first
-          let result = await tryQuery('updated_at');
-          let arr = result.data || [];
-          const computeSum = (rows: any[]) =>
-            rows.reduce((s: number, r: any) => {
-              const stage = (r.pipeline_stage || '').toLowerCase();
-              const status = (r.status || '').toString().toUpperCase();
-              const isDepositStage = stage.includes('deposit');
-              const isClosedStatus = status === 'CLOSED' || status === 'CLOSED_WON';
-              if ((isDepositStage || isClosedStatus) && Number(r.cc_collected || 0) > 0) {
-                return s + Number(r.cc_collected || 0);
-              }
-              return s;
-            }, 0);
-
-          let sum = computeSum(arr);
-
-          if (import.meta.env.DEV) {
-            try {
-              console.debug(`[SalesDashboard][dev][${label}] using updated_at range`, { start: startIso, end: endIso });
-              console.debug(`[SalesDashboard][dev][${label}] fetched count`, arr.length);
-              console.debug(`[SalesDashboard][dev][${label}] sample rows`, arr.slice(0, 5).map((r: any) => ({ id: r.id, cc_collected: r.cc_collected, status: r.status, pipeline_stage: r.pipeline_stage, created_at: r.created_at, updated_at: r.updated_at })));
-              console.debug(`[SalesDashboard][dev][${label}] computed deposit sum (updated_at)`, sum);
-            } catch (err) {
-              console.debug('[SalesDashboard][dev] logging failed', err);
-            }
-          }
-
-          // If no rows or sum is zero, try fallback using created_at
-          if ((arr.length === 0 || sum === 0) && import.meta.env.DEV) {
-            try {
-              const fallback = await tryQuery('created_at');
-              const fallbackArr = fallback.data || [];
-              const fallbackSum = computeSum(fallbackArr);
-              console.debug(`[SalesDashboard][dev][${label}] fallback using created_at range`, { start: startIso, end: endIso });
-              console.debug(`[SalesDashboard][dev][${label}] fallback fetched count`, fallbackArr.length);
-              console.debug(`[SalesDashboard][dev][${label}] fallback sample rows`, fallbackArr.slice(0, 5).map((r: any) => ({ id: r.id, cc_collected: r.cc_collected, status: r.status, pipeline_stage: r.pipeline_stage, created_at: r.created_at, updated_at: r.updated_at })));
-              console.debug(`[SalesDashboard][dev][${label}] computed deposit sum (created_at)`, fallbackSum);
-
-              // If fallback returned more useful data, prefer it
-              if (fallbackArr.length > 0 || fallbackSum > 0) {
-                arr = fallbackArr;
-                sum = fallbackSum;
-              }
-            } catch (err) {
-              console.debug('[SalesDashboard][dev] fallback query failed', err);
-            }
-          }
-
-          return { rows: arr, sum };
-        };
-
-        const [todayA, weekA, monthA] = await Promise.all([
-          fetchAppointmentsAndSum(startOfToday.toISOString(), endOfToday.toISOString(), 'today'),
-          fetchAppointmentsAndSum(startOfWeek.toISOString(), endOfToday.toISOString(), 'week'),
-          fetchAppointmentsAndSum(startOfMonth.toISOString(), endOfToday.toISOString(), 'month'),
-        ]);
-
-        setTodayTotal(sumPayments(todayPayments) + todayA.sum);
-        setWeekTotal(sumPayments(weekPayments) + weekA.sum);
-        setMonthTotal(sumPayments(monthPayments) + monthA.sum);
-      } catch (err) {
-        console.warn("[RevenueSummaryCard] Failed to load revenue:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadRevenue();
-  }, [teamId]);
-
-  return (
-    <Card className="p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-sm font-medium text-muted-foreground">Revenue overview</h2>
-          <p className="text-xs text-muted-foreground">Cash collected across this team</p>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="text-xs text-muted-foreground">Loading revenue…</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">Today</div>
-            <div className="text-xl font-semibold">
-              ${todayTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">This week</div>
-            <div className="text-xl font-semibold">
-              ${weekTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">This month</div>
-            <div className="text-xl font-semibold">
-              ${monthTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            </div>
-          </div>
-        </div>
-      )}
-    </Card>
-  );
 };
 
 interface SalesDashboardProps {
@@ -995,69 +842,86 @@ const Index = ({ defaultTab = "dashboard" }: SalesDashboardProps) => {
               </div>
             </div>
 
-            {/* Revenue summary from payments table */}
-            {teamId && <RevenueSummaryCard teamId={teamId!} />}
+            {/* Dashboard Hero - Welcome + Revenue */}
+            {teamId && <DashboardHero userName={currentUserName} teamId={teamId} />}
 
-            <div className="grid gap-2 sm:gap-4 grid-cols-2 lg:grid-cols-6">
-              <MetricCard
+            {/* Gradient Metric Cards Row */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+              <DashboardMetricCard
                 title="CC Revenue"
                 value={`$${totalCCRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                subtitle={`${totalClosedDeals} deals closed`}
                 icon={DollarSign}
-                trend={`${totalClosedDeals} deals closed`}
-                trendUp
+                gradient="purple"
               />
-              <MetricCard
+              <DashboardMetricCard
                 title="Total MRR"
                 value={`$${totalMRR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                icon={DollarSign}
-                trend="All recurring revenue"
-                trendUp
-              />
-              <MetricCard
-                title="Total Commissions"
-                value={`$${totalCommissions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                subtitle="All recurring revenue"
                 icon={TrendingUp}
-                trend="From closed deals"
-                trendUp
+                gradient="pink"
               />
-              <MetricCard
+              <DashboardMetricCard
                 title="Close Rate"
                 value={`${closeRate}%`}
+                subtitle={`${totalClosedDeals}/${showedAppointments.length} showed closed`}
                 icon={Users}
-                trend={`${totalClosedDeals}/${showedAppointments.length} showed closed`}
-                trendUp={Number(closeRate) >= 30}
-              />
-              <MetricCard
-                title="Show Up Rate"
-                value={`${showUpRate}%`}
-                icon={Calendar}
-                trend={`${showedAppointments.length}/${totalScheduledAppointments} showed`}
-                trendUp={Number(showUpRate) >= 70}
-              />
-              <MetricCard
-                title="No-Show Rate"
-                value={`${noShowRate}%`}
-                icon={Calendar}
-                trend={`${noShowAppointments.length}/${totalScheduledAppointments} no-shows`}
-                trendUp={false}
+                gradient="teal"
               />
             </div>
 
-            {/* Not Closed Deals Alert */}
-            {showedButNotClosed > 0 && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  ⚠️ <strong>{showedButNotClosed}</strong> appointment{showedButNotClosed !== 1 ? "s" : ""} showed up
-                  but {showedButNotClosed !== 1 ? "were" : "was"} not closed yet
-                </p>
+            {/* Secondary Metrics Row */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Commissions</p>
+                    <p className="text-xl font-bold">${totalCommissions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="text-xs text-muted-foreground">From closed deals</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-500/10">
+                    <Calendar className="h-5 w-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Show Up Rate</p>
+                    <p className="text-xl font-bold">{showUpRate}%</p>
+                    <p className="text-xs text-muted-foreground">{showedAppointments.length}/{totalScheduledAppointments} showed</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-orange-500/10">
+                    <Calendar className="h-5 w-5 text-orange-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">No-Show Rate</p>
+                    <p className="text-xl font-bold">{noShowRate}%</p>
+                    <p className="text-xs text-muted-foreground">{noShowAppointments.length}/{totalScheduledAppointments} no-shows</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Chart + Recent Activity Side by Side */}
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <RevenueChart data={chartData} />
               </div>
-            )}
+              <div className="lg:col-span-1">
+                <RecentActivity teamId={teamId!} />
+              </div>
+            </div>
 
             {/* Commission Breakdown */}
             <CommissionBreakdown sales={filteredSales} teamId={teamId} />
-
-            {/* Chart */}
-            <RevenueChart data={chartData} />
 
             {/* Sales Table */}
             <div className="space-y-4">
