@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "my" | "team";
+type FilterMode = "all" | "appointments" | "tasks";
 
 interface ScheduleItem {
   id: string;
@@ -28,6 +29,7 @@ export default function Schedule() {
   const { teamId } = useParams();
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>("my");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
   
   const { data: myData, isLoading: myLoading } = useMySchedule(teamId, user?.id);
   const { data: teamData, isLoading: teamLoading } = useTeamSchedule(teamId);
@@ -41,34 +43,38 @@ export default function Schedule() {
     
     const items: ScheduleItem[] = [];
     
-    // Add appointments
-    data.appointments.forEach((apt) => {
-      items.push({
-        id: apt.id,
-        type: "appointment",
-        title: apt.lead_name,
-        subtitle: apt.event_type_name || "Call",
-        time: parseISO(apt.start_at_utc),
-        assignee: apt.closer_name || apt.setter_name || undefined,
-        status: apt.status,
-        meetingLink: apt.meeting_link,
+    // Add appointments (unless filtering for tasks only)
+    if (filterMode !== "tasks") {
+      data.appointments.forEach((apt) => {
+        items.push({
+          id: apt.id,
+          type: "appointment",
+          title: apt.lead_name,
+          subtitle: apt.event_type_name || "Call",
+          time: parseISO(apt.start_at_utc),
+          assignee: apt.closer_name || apt.setter_name || undefined,
+          status: apt.status,
+          meetingLink: apt.meeting_link,
+        });
       });
-    });
+    }
     
-    // Add tasks
-    data.tasks.forEach((task) => {
-      const appointment = task.appointment;
-      items.push({
-        id: task.id,
-        type: "task",
-        title: appointment?.lead_name || "Task",
-        subtitle: formatTaskType(task.task_type),
-        time: parseISO(task.due_at),
-        assignee: task.assignee_name,
-        taskType: task.task_type,
-        status: task.status,
+    // Add tasks (unless filtering for appointments only)
+    if (filterMode !== "appointments") {
+      data.tasks.forEach((task) => {
+        const appointment = task.appointment;
+        items.push({
+          id: task.id,
+          type: "task",
+          title: appointment?.lead_name || "Task",
+          subtitle: formatTaskType(task.task_type),
+          time: parseISO(task.due_at),
+          assignee: task.assignee_name,
+          taskType: task.task_type,
+          status: task.status,
+        });
       });
-    });
+    }
     
     // Sort by time
     return items.sort((a, b) => a.time.getTime() - b.time.getTime());
@@ -210,30 +216,70 @@ export default function Schedule() {
           </div>
         </div>
         
-        {/* View Toggle */}
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
-          <Button
-            variant={viewMode === "my" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("my")}
-            className={cn(
-              "h-8",
-              viewMode === "my" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
-            )}
-          >
-            My Schedule
-          </Button>
-          <Button
-            variant={viewMode === "team" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("team")}
-            className={cn(
-              "h-8",
-              viewMode === "team" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
-            )}
-          >
-            Team Schedule
-          </Button>
+        {/* Toggles */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            <Button
+              variant={viewMode === "my" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("my")}
+              className={cn(
+                "h-8",
+                viewMode === "my" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
+              )}
+            >
+              My Schedule
+            </Button>
+            <Button
+              variant={viewMode === "team" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("team")}
+              className={cn(
+                "h-8",
+                viewMode === "team" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
+              )}
+            >
+              Team Schedule
+            </Button>
+          </div>
+
+          {/* Filter Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            <Button
+              variant={filterMode === "all" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilterMode("all")}
+              className={cn(
+                "h-8",
+                filterMode === "all" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
+              )}
+            >
+              All
+            </Button>
+            <Button
+              variant={filterMode === "appointments" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilterMode("appointments")}
+              className={cn(
+                "h-8",
+                filterMode === "appointments" && "bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600"
+              )}
+            >
+              Appointments
+            </Button>
+            <Button
+              variant={filterMode === "tasks" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilterMode("tasks")}
+              className={cn(
+                "h-8",
+                filterMode === "tasks" && "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600"
+              )}
+            >
+              Tasks
+            </Button>
+          </div>
         </div>
       </div>
       

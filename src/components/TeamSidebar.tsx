@@ -16,7 +16,8 @@ import {
   CalendarDays,
   Megaphone,
   Wallet,
-  CreditCard
+  CreditCard,
+  TrendingUp
 } from "lucide-react";
 import { useTeamRole } from "@/hooks/useTeamRole";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ interface TeamSidebarProps {
 // Main navigation items (visible to all)
 const mainNavItems = [
   { id: "home", label: "Team Hub", icon: Home, path: "" },
+  { id: "performance", label: "Performance", icon: TrendingUp, path: "/performance" },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { id: "pipeline", label: "Pipeline", icon: Kanban, path: "/pipeline" },
   { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
