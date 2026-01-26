@@ -98,10 +98,10 @@ export function DashboardHero({ userName, teamId }: DashboardHeroProps) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-            Welcome Back, {firstName}! 👋
+            Glad you're back, {firstName} 👋
           </h1>
           <p className="text-muted-foreground text-sm">
-            Here's your revenue performance overview
+            Keep stacking.
           </p>
         </div>
 
