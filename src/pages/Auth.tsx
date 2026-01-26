@@ -1120,52 +1120,68 @@ const Auth = () => {
             </p>
           </div>
           
-          {/* Feature Card - Now BELOW */}
-          <Card className="bg-slate-900/70 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl">
-            <CardContent className="p-6">
-              {/* Stats Row - Matching actual system metrics */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-emerald-400">$48K</p>
-                  <p className="text-xs text-slate-400">Revenue</p>
-                </div>
-                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-blue-400">$12K</p>
-                  <p className="text-xs text-slate-400">MRR</p>
-                </div>
-                <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-violet-400">32%</p>
-                  <p className="text-xs text-slate-400">Close Rate</p>
+          {/* Feature Card - Dynamic & Engaging */}
+          <Card className="bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 backdrop-blur-md border-slate-600/30 w-[360px] shadow-2xl overflow-hidden relative">
+            {/* Subtle glow effect */}
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl" />
+            
+            <CardContent className="p-5 relative z-10">
+              {/* Header with Live Indicator */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Live Dashboard</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs text-emerald-400 font-medium">LIVE</span>
                 </div>
               </div>
               
-              {/* Feature Items - Matching actual system modules */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              {/* Stats Row - Gradient cards */}
+              <div className="grid grid-cols-3 gap-2 mb-5">
+                <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/20 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold text-emerald-400">$48K</p>
+                  <p className="text-[10px] text-emerald-300/60 uppercase tracking-wide">Revenue</p>
+                </div>
+                <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/5 border border-blue-500/20 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold text-blue-400">$12K</p>
+                  <p className="text-[10px] text-blue-300/60 uppercase tracking-wide">MRR</p>
+                </div>
+                <div className="bg-gradient-to-br from-violet-500/20 to-violet-600/5 border border-violet-500/20 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold text-violet-400">32%</p>
+                  <p className="text-[10px] text-violet-300/60 uppercase tracking-wide">Close Rate</p>
+                </div>
+              </div>
+              
+              {/* Activity Feed - More dynamic */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-3 bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/30 to-emerald-600/10 flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-emerald-400" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">Funnels & Lead Capture</p>
-                    <p className="text-xs text-slate-400">Build & publish in minutes</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium">New lead captured</p>
+                    <p className="text-[10px] text-slate-500">Synced to pipeline • 2m ago</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <div className="flex items-center gap-3 bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/30 to-blue-600/10 flex items-center justify-center">
                     <Zap className="w-4 h-4 text-blue-400" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">CRM & Pipeline</p>
-                    <p className="text-xs text-slate-400">Manage deals & contacts</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium">Automation triggered</p>
+                    <p className="text-[10px] text-slate-500">Follow-up sent • 5m ago</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+                <div className="flex items-center gap-3 bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/30 to-violet-600/10 flex items-center justify-center">
                     <BarChart3 className="w-4 h-4 text-violet-400" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">Automations</p>
-                    <p className="text-xs text-slate-400">Follow-ups on autopilot</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium">Deal closed</p>
+                    <p className="text-[10px] text-slate-500">+$4,500 revenue • 12m ago</p>
                   </div>
                 </div>
               </div>
