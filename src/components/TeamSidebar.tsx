@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { 
   Home, 
-  TrendingUp, 
+  LayoutDashboard, 
+  Kanban,
   Layers, 
   MessageCircle, 
   Grid3X3, 
@@ -31,7 +32,8 @@ interface TeamSidebarProps {
 // Main navigation items (visible to all)
 const mainNavItems = [
   { id: "home", label: "Team Hub", icon: Home, path: "" },
-  { id: "crm", label: "Sales CRM", icon: TrendingUp, path: "/crm" },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+  { id: "pipeline", label: "Pipeline", icon: Kanban, path: "/pipeline" },
   { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
   { id: "workflows", label: "Workflows", icon: Workflow, path: "/workflows" },
   { id: "marketing", label: "Marketing", icon: Megaphone, path: "/marketing" },

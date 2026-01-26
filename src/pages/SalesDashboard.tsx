@@ -195,7 +195,11 @@ const RevenueSummaryCard = ({ teamId }: { teamId: string }) => {
   );
 };
 
-const Index = () => {
+interface SalesDashboardProps {
+  defaultTab?: "dashboard" | "appointments";
+}
+
+const Index = ({ defaultTab = "dashboard" }: SalesDashboardProps) => {
   const { teamId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -216,7 +220,9 @@ const Index = () => {
   const [calendlyOrgUri, setCalendlyOrgUri] = useState<string | null>(null);
   const [calendlyWebhookId, setCalendlyWebhookId] = useState<string | null>(null);
   const [calendlyEventTypes, setCalendlyEventTypes] = useState<string[] | null>(null);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  
+  // Tab is now controlled by route via defaultTab prop
+  const activeTab = defaultTab;
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; preset: DateRangePreset }>({
     from: null,
@@ -304,6 +310,7 @@ const Index = () => {
     };
   }, [user, teamId, navigate]);
 
+  // Handle URL params that indicate pipeline intent by redirecting to pipeline route
   useEffect(() => {
     const params = new URLSearchParams(location.search || "");
     const tab = params.get("tab");
@@ -317,15 +324,11 @@ const Index = () => {
       !!leadId ||
       !!focusContactId;
 
-    if (!hasPipelineIntent) {
-      return;
+    // If we're on dashboard but have pipeline intent, redirect to pipeline
+    if (hasPipelineIntent && activeTab !== "appointments") {
+      navigate(`/team/${teamId}/pipeline${location.search}`, { replace: true });
     }
-
-    // Always land on the pipeline (appointments) tab when there is pipeline intent
-    if (activeTab !== "appointments") {
-      setActiveTab("appointments");
-    }
-  }, [location.search, activeTab]);
+  }, [location.search, activeTab, navigate, teamId]);
 
   const loadUserProfile = async () => {
     try {
@@ -949,8 +952,14 @@ const Index = () => {
         {/* Clean Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Sales CRM</h1>
-            <p className="text-muted-foreground text-sm">Track performance, pipeline, and commissions</p>
+            <h1 className="text-2xl font-bold text-foreground">
+              {activeTab === "dashboard" ? "Dashboard" : "Pipeline"}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {activeTab === "dashboard" 
+                ? "Track performance and commissions" 
+                : "Manage your sales pipeline"}
+            </p>
           </div>
           <AddSaleDialog
             onAddSale={handleAddSale}
@@ -958,16 +967,8 @@ const Index = () => {
           />
         </div>
 
-        {/* Navigation Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="h-auto p-1 bg-muted/50">
-            <TabsTrigger value="dashboard" className="text-sm py-2 px-4">
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="appointments" className="text-sm py-2 px-4">
-              Pipeline
-            </TabsTrigger>
-          </TabsList>
+        {/* Content - tabs controlled by route */}
+        <Tabs value={activeTab} className="w-full">
 
           <TabsContent value="dashboard" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             {/* Filters */}
