@@ -796,39 +796,68 @@ const Index = ({ defaultTab = "dashboard" }: SalesDashboardProps) => {
   return (
     <div className="h-full bg-background overflow-auto">
       <div className="p-6 space-y-6 w-full">
-        {/* Clean Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {activeTab === "dashboard" ? "Dashboard" : "Pipeline"}
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              {activeTab === "dashboard" 
-                ? "Track performance and commissions" 
-                : "Manage your sales pipeline"}
-            </p>
+        {/* Header - Different styles for Dashboard vs Pipeline */}
+        {activeTab === "dashboard" ? (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              <p className="text-muted-foreground text-sm">Track performance and commissions</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <AddSaleDialog
+                onAddSale={handleAddSale}
+                preselectedOfferOwner={userRole === "offer_owner" ? currentUserName : undefined}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {activeTab === "appointments" && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  // Trigger the stage manager in AppointmentsHub via a custom event
-                  window.dispatchEvent(new CustomEvent('open-stage-manager'));
-                }}
-                className="h-9"
-              >
-                <span className="hidden sm:inline">Manage Pipeline Stages</span>
-                <span className="sm:hidden">Stages</span>
-              </Button>
-            )}
-            <AddSaleDialog
-              onAddSale={handleAddSale}
-              preselectedOfferOwner={userRole === "offer_owner" ? currentUserName : undefined}
-            />
+        ) : (
+          /* Pipeline Header - Subtle Gradient Style */
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-900/5 to-slate-800/5 dark:from-slate-100/5 dark:to-slate-200/5 border border-border/50 p-4 sm:p-5">
+            {/* Background decorations */}
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/5" />
+            <div className="absolute -bottom-6 -left-6 h-28 w-28 rounded-full bg-primary/3" />
+            
+            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Settings className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-foreground">Pipeline</h1>
+                    {/* Live indicator */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                      </span>
+                      <span className="text-xs font-medium text-muted-foreground">LIVE</span>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm">Drag cards to update deal status</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('open-stage-manager'));
+                  }}
+                  className="h-9 bg-background/50 backdrop-blur-sm"
+                >
+                  <span className="hidden sm:inline">Manage Stages</span>
+                  <span className="sm:hidden">Stages</span>
+                </Button>
+                <AddSaleDialog
+                  onAddSale={handleAddSale}
+                  preselectedOfferOwner={userRole === "offer_owner" ? currentUserName : undefined}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Content - tabs controlled by route */}
         <Tabs value={activeTab} className="w-full">

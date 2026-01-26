@@ -294,14 +294,28 @@ export function EODReportsHub({ teamId }: EODReportsHubProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          EOD Reports
-        </CardTitle>
+    <Card className="overflow-hidden">
+      <CardHeader className="relative bg-gradient-to-r from-violet-600/5 via-purple-600/5 to-indigo-700/5 border-b border-violet-500/10">
+        {/* Background decoration */}
+        <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-violet-500/5" />
+        <div className="relative flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-violet-500/10">
+              <Activity className="h-4 w-4 text-violet-500" />
+            </div>
+            EOD Reports
+          </CardTitle>
+          {/* Live indicator */}
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">LIVE</span>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 pt-4">
         {teamStats.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No team members found</p>
         ) : (
