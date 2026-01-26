@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityTracker } from "@/components/appointments/ActivityTracker";
 import { EODReportsHub } from "@/components/appointments/EODReportsHub";
 import { AppointmentsBookedBreakdown } from "@/components/AppointmentsBookedBreakdown";
+import { useTeamLabels } from "@/contexts/TeamLabelsContext";
 
 interface TaskSummary {
   overdue: number;
@@ -20,6 +21,7 @@ interface TaskSummary {
 
 export default function Performance() {
   const { teamId } = useParams();
+  const { labels } = useTeamLabels();
   const [loading, setLoading] = useState(true);
   const [taskSummary, setTaskSummary] = useState<TaskSummary>({
     overdue: 0,
@@ -168,7 +170,7 @@ export default function Performance() {
             </div>
             {taskSummary.overdue > 0 && (
               <p className="text-xs text-muted-foreground mt-1">
-                S: {taskSummary.overdueSetters} · C: {taskSummary.overdueClosers}
+                {labels.role_1_short}: {taskSummary.overdueSetters} · {labels.role_2_short}: {taskSummary.overdueClosers}
               </p>
             )}
           </CardContent>
@@ -188,7 +190,7 @@ export default function Performance() {
             </div>
             {taskSummary.dueToday > 0 && (
               <p className="text-xs text-muted-foreground mt-1">
-                S: {taskSummary.dueTodaySetters} · C: {taskSummary.dueTodayClosers}
+                {labels.role_1_short}: {taskSummary.dueTodaySetters} · {labels.role_2_short}: {taskSummary.dueTodayClosers}
               </p>
             )}
           </CardContent>

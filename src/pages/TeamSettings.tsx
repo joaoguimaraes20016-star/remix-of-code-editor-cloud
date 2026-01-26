@@ -10,10 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, DollarSign, Trash2, Loader2, Upload, UserPlus, Mail, AlertTriangle } from "lucide-react";
+import { Users, Settings, DollarSign, Trash2, Loader2, Upload, UserPlus, Mail, AlertTriangle, Type } from "lucide-react";
 import { toast } from "sonner";
 import { CommissionSettings } from "@/components/CommissionSettings";
 import { ClearTeamData } from "@/components/ClearTeamData";
+import { TerminologySettings } from "@/components/settings/TerminologySettings";
+import { useTeamLabels } from "@/contexts/TeamLabelsContext";
 import { cn } from "@/lib/utils";
 
 interface TeamMember {
@@ -33,6 +35,7 @@ export default function TeamSettings() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin, loading: roleLoading } = useTeamRole(teamId);
+  const { getRoleLabel } = useTeamLabels();
 
   const [teamName, setTeamName] = useState("");
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
@@ -249,6 +252,10 @@ export default function TeamSettings() {
           <TabsTrigger value="branding" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/10 data-[state=active]:to-indigo-500/10">
             Branding
           </TabsTrigger>
+          <TabsTrigger value="terminology" className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500/10 data-[state=active]:to-purple-500/10">
+            <Type className="h-4 w-4" />
+            Terminology
+          </TabsTrigger>
           <TabsTrigger value="members" className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500/10 data-[state=active]:to-cyan-500/10">
             <Users className="h-4 w-4" />
             Members
@@ -354,12 +361,12 @@ export default function TeamSettings() {
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="closer">Closer</SelectItem>
-                    <SelectItem value="setter">Setter</SelectItem>
-                  </SelectContent>
-                </Select>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="closer">{getRoleLabel('closer')}</SelectItem>
+                      <SelectItem value="setter">{getRoleLabel('setter')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 <Button onClick={handleInvite} disabled={inviting} className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600">
                   {inviting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -413,8 +420,8 @@ export default function TeamSettings() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="closer">Closer</SelectItem>
-                          <SelectItem value="setter">Setter</SelectItem>
+                          <SelectItem value="closer">{getRoleLabel('closer')}</SelectItem>
+                          <SelectItem value="setter">{getRoleLabel('setter')}</SelectItem>
                         </SelectContent>
                       </Select>
                       {member.user_id !== user?.id && (
@@ -438,6 +445,11 @@ export default function TeamSettings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Terminology Tab */}
+        <TabsContent value="terminology">
+          <TerminologySettings />
         </TabsContent>
 
         {/* Commissions Tab */}

@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { AssignDialog } from "./appointments/AssignDialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useTeamLabels } from "@/contexts/TeamLabelsContext";
 
 interface DetailedStats {
   thisMonth: number;
@@ -125,6 +126,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
   const [setterStats, setSetterStats] = useState<TeamMemberSetterStats[]>([]);
   const [closerStats, setCloserStats] = useState<TeamMemberCloserStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getRoleLabel } = useTeamLabels();
   const [expandedMembers, setExpandedMembers] = useState<Set<string>>(new Set());
   const [memberTimeFilters, setMemberTimeFilters] = useState<Record<string, 'today' | 'week' | 'month' | 'total'>>({});
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
@@ -899,7 +901,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
             </Avatar>
             <div>
               <h3 className="font-semibold">{member.name}</h3>
-              <p className="text-sm text-muted-foreground">Setter</p>
+              <p className="text-sm text-muted-foreground">{getRoleLabel('setter')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1656,14 +1658,14 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
       <CardContent>
         <Tabs defaultValue="closers" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="closers">Closers</TabsTrigger>
-            <TabsTrigger value="setters">Setters</TabsTrigger>
+            <TabsTrigger value="closers">{getRoleLabel('closer', true)}</TabsTrigger>
+            <TabsTrigger value="setters">{getRoleLabel('setter', true)}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="closers" className="mt-4">
             {closerStats.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                No closer data available yet
+                No {getRoleLabel('closer').toLowerCase()} data available yet
               </p>
             ) : (
               <div className="space-y-4">
@@ -1675,7 +1677,7 @@ export function AppointmentsBookedBreakdown({ teamId }: AppointmentsBookedBreakd
           <TabsContent value="setters" className="mt-4">
             {setterStats.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                No setter data available yet
+                No {getRoleLabel('setter').toLowerCase()} data available yet
               </p>
             ) : (
               <div className="space-y-4">

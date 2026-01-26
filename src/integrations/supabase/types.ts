@@ -3286,6 +3286,7 @@ export type Database = {
           confirmation_schedule: Json | null
           created_at: string | null
           created_by: string
+          custom_labels: Json | null
           dashboard_preferences: Json | null
           default_from_name: string | null
           default_reply_to: string | null
@@ -3326,6 +3327,7 @@ export type Database = {
           confirmation_schedule?: Json | null
           created_at?: string | null
           created_by: string
+          custom_labels?: Json | null
           dashboard_preferences?: Json | null
           default_from_name?: string | null
           default_reply_to?: string | null
@@ -3366,6 +3368,7 @@ export type Database = {
           confirmation_schedule?: Json | null
           created_at?: string | null
           created_by?: string
+          custom_labels?: Json | null
           dashboard_preferences?: Json | null
           default_from_name?: string | null
           default_reply_to?: string | null
