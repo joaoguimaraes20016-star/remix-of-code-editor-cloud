@@ -1,287 +1,274 @@
 
-
-# Funnel Builder Mobile-First Reconstruction
+# Funnel Builder Bug Fixes - Comprehensive Plan
 
 ## Executive Summary
 
-This plan transforms the existing funnel builder from a dense, desktop-oriented tool into a mobile-first, touch-friendly creative environment. The goal is to reduce visual noise, consolidate controls, and make editing feel natural on a phone while preserving all functionality.
-
-## Current State Analysis
-
-The existing builder (`src/flow-canvas/builder/components/EditorShell.tsx`) already has:
-- A `useIsMobile()` hook detecting viewport < 768px
-- Mobile sheet drawers for left/right panels
-- Device preview modes (desktop/tablet/mobile)
-- A dense TopToolbar with 15+ buttons visible
-- Three-column layout with collapsible panels
-
-**Key Issues Identified:**
-1. TopToolbar has ~20 buttons visible simultaneously
-2. Left panel shows drag handles, icons, and menus on every item
-3. Right panel (inspector) uses small controls with tabs
-4. Multiple floating toolbars appear on element selection
-5. No bottom sheet pattern for mobile editing
+This plan addresses **9 critical bugs** in the funnel builder affecting styling, publishing, and element behavior. Each bug has been traced to its root cause through code analysis.
 
 ---
 
-## Phase 1: Simplified Action Bar (TopToolbar)
+## Bug Analysis & Fixes
 
-### Current Problems
-The TopToolbar shows: Back, Logo dropdown, Add Content (+), Add Section, Text Styles, Design Mode, Grid, Theme, AI Generate, Undo, Redo, Device switcher, Preview, Collaborators, SEO, Analytics, Share, Publish.
+### Bug 1: Text Color for Outline Mode Not Working
 
-### Proposed Changes
+**Problem**: When a CTA button is set to "Outline" mode, changing the text color in the inspector has no effect.
 
-**Mobile (< 768px):**
+**Root Cause**: In `CanvasRenderer.tsx` lines 1596-1603, outline mode text color is **hardcoded** based on theme:
+```typescript
+: isOutlineMode
+  ? (isDarkTheme ? '#ffffff' : '#18181b') // Hardcoded - ignores user setting
+  : (element.props?.textColor as string || getContrastTextColor(...))
 ```
-┌─────────────────────────────────────────────────────┐
-│  ←  [Page Name]              [Add +]  [Preview]  ⋮  │
-└─────────────────────────────────────────────────────┘
-```
-- Only 3-4 visible actions: Back, Add, Preview, More (⋮)
-- More menu contains: Publish, Undo/Redo, Analytics, SEO, Theme, Settings, Share
-- Touch target: minimum 44px
 
-**Tablet/Desktop:**
+**Fix**: Modify the logic to respect the user's `textColor` prop even in outline mode:
+```typescript
+: isOutlineMode
+  ? (element.props?.textColor as string || (isDarkTheme ? '#ffffff' : '#18181b'))
+  : (element.props?.textColor as string || getContrastTextColor(...))
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  ←  [Logo ▾]  │  [+] [Layers] [AI ✨]  │  [Undo] [Redo]  │  [📱 💻 🖥️]  │  [Preview] [Publish]  ⋮ │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-- Grouped by function: Creation | History | Viewport | Actions
-- Overflow menu: Collaborators, SEO, Analytics, Theme, Grid, Share
 
-**Files to modify:**
-- `src/flow-canvas/builder/components/TopToolbar.tsx`
-- `src/flow-canvas/builder/index.css` (or create `mobile-toolbar.css`)
+**Files**: `src/flow-canvas/builder/components/CanvasRenderer.tsx`
 
 ---
 
-## Phase 2: Touch-First Step List (Left Panel)
+### Bug 2: Shadows Not Working / Can't Change Shadow Color
 
-### Current Problems
-- Each step row shows: drag handle, index badge, icon, name, context menu
-- Dense 10-12px spacing
-- Small tap targets
+**Problem**: Shadow presets don't apply visually, and there's no way to change shadow color.
 
-### Proposed Changes
+**Root Cause**: Two issues:
+1. In `CanvasRenderer.tsx` line 1618, outline mode buttons force `boxShadow: 'none'`
+2. The shadow system uses presets but doesn't expose glow color controls in the button inspector
+3. The `getButtonShadowStyle()` function may not be properly resolving shadow values
 
-**Mobile Step Card Design:**
-```
-┌─────────────────────────────────────────┐
-│  ┌───┐                                  │
-│  │ 1 │  Welcome Page                ⋮   │
-│  └───┘  "Your journey starts here"      │
-│                                         │
-│  ┌───┐                                  │
-│  │ 2 │  Email Capture               ⋮   │
-│  └───┘  "Get their contact"             │
-│                                         │
-│         ╭───────────────────╮           │
-│         │   + Add Page      │           │
-│         ╰───────────────────╯           │
-└─────────────────────────────────────────┘
-```
+**Fix**:
+1. Allow shadows on outline buttons when explicitly set
+2. Add glow color picker to `ButtonStyleInspector` when shadow type is "glow" or "neon"
+3. Ensure `shadowLayers` or `shadowPreset` from element props are properly applied
 
-**Key Changes:**
-- Minimum row height: 64px (touch-friendly)
-- Drag handle only visible on long-press or drag mode
-- Inline icons removed; replaced with large number badges
-- Context menu (duplicate/delete/rename) in overflow (⋮)
-- "Add Page" as clear CTA at bottom
-- Swipe-to-delete gesture support (optional enhancement)
-
-**Desktop behavior:**
-- Larger cards still, but can show more metadata
-- Hover reveals drag handle
-
-**Files to modify:**
-- `src/flow-canvas/builder/components/LeftPanel.tsx`
-- `src/flow-canvas/builder/components/LeftPanel.css` (new file)
-
----
-
-## Phase 3: Single Contextual Edit Panel (Right Panel + Bottom Sheet)
-
-### Current Problems
-- Desktop: Fixed right panel with 4 tabs (Content/Design/Blocks/Settings)
-- Mobile: Sheet drawer from right (feels desktop-ported)
-- Multiple floating toolbars on selection
-
-### Proposed Architecture
-
-**Mobile: Bottom Sheet Inspector**
-```
-┌─────────────────────────────────────────┐
-│              [Canvas View]              │
-│                                         │
-│     ┌─────────────────────────┐         │
-│     │     Selected: Button    │         │
-│     │  ───────────────────────│         │
-│     │  Text: "Get Started"    │         │
-│     │  Color: ●●●●●●●●        │         │
-│     │  Size:  [S] [M] [L]     │         │
-│     │                         │         │
-│     │  [Delete] [Duplicate]   │         │
-│     └─────────────────────────┘         │
-└─────────────────────────────────────────┘
-```
-
-**Behavior:**
-- Appears from bottom when element is selected
-- Draggable to expand (peek → half → full)
-- Tap canvas to dismiss
-- Large touch controls (44px minimum)
-- No tabs on mobile; show most relevant fields contextually
-
-**Desktop: Keep floating panel but consolidate**
-- One panel at a time (not overlapping toolbars)
-- Tabs remain but auto-switch based on selection type
-
-**Files to modify/create:**
-- `src/flow-canvas/builder/components/MobileBottomSheet.tsx` (new)
-- `src/flow-canvas/builder/components/RightPanel.tsx`
-- `src/flow-canvas/builder/components/EditorShell.tsx`
-
----
-
-## Phase 4: Canvas & Block Selection
-
-### Current Problems
-- Multiple "+" buttons scattered on canvas
-- Hover toolbars appear on every element
-- Small action buttons on selection
-
-### Proposed Changes
-
-**Single Add Block Action:**
-- One clear "Add Block" button at insertion points
-- Tapping opens a full-screen picker (mobile) or dropdown (desktop)
-
-**Block Picker Design (Mobile):**
-```
-┌─────────────────────────────────────────┐
-│  ← Add Content                          │
-│                                         │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  │
-│  │   📝    │  │   🖼️    │  │   📹    │  │
-│  │  Text   │  │  Image  │  │  Video  │  │
-│  └─────────┘  └─────────┘  └─────────┘  │
-│                                         │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  │
-│  │   📧    │  │   📱    │  │   📋    │  │
-│  │  Email  │  │  Phone  │  │  Form   │  │
-│  └─────────┘  └─────────┘  └─────────┘  │
-│                                         │
-└─────────────────────────────────────────┘
-```
-
-- Large visual tiles (80x80px minimum)
-- Categories: Capture, Content, Media, Layout
-- No tiny icons; use recognizable graphics
-
-**Selection Behavior:**
-- Tap element → single outline + bottom sheet opens
-- No floating toolbars on hover (mobile)
-- Desktop: subtle hover outline, selection shows inline actions
-
-**Files to modify:**
-- `src/flow-canvas/builder/components/BlockPickerPanel.tsx`
+**Files**: 
 - `src/flow-canvas/builder/components/CanvasRenderer.tsx`
-- `src/builder_v2/EditorLayout.css` (remove `.builder-v2-hover-toolbar` on mobile)
+- `src/components/builder/ButtonStyleInspector.tsx`
 
 ---
 
-## Phase 5: Navigation & Flow UX
+### Bug 3: Border Width/Color Not Adjustable for CTA Buttons
 
-### Add Page Flow
+**Problem**: Users cannot adjust border width or color for CTA buttons - the border is either on (outline mode) or off.
+
+**Root Cause**: In `CanvasRenderer.tsx` lines 1621-1626, borders are hardcoded:
+```typescript
+borderWidth: isOutlineMode ? '2px' : '0',
+borderColor: isOutlineMode ? outlineBorderColor : 'transparent',
 ```
-User taps "Add Page" → Full-screen template picker → Tap template → Page added
+The code ignores `element.styles?.borderWidth` and `element.styles?.borderColor`.
+
+**Fix**: Respect user-defined border settings:
+```typescript
+borderWidth: element.styles?.borderWidth || (isOutlineMode ? '2px' : '0'),
+borderColor: element.styles?.borderColor || (isOutlineMode ? outlineBorderColor : 'transparent'),
+borderStyle: element.styles?.borderWidth ? 'solid' : (isOutlineMode ? 'solid' : 'none'),
 ```
 
-### Editing Flow
+Also add Border Width/Color controls to the CTA button inspector section in `RightPanel.tsx`.
+
+**Files**: 
+- `src/flow-canvas/builder/components/CanvasRenderer.tsx`
+- `src/flow-canvas/builder/components/RightPanel.tsx`
+
+---
+
+### Bug 4: CTA Buttons Always Show Icons (Should Be Optional)
+
+**Problem**: CTA buttons always display an icon; users want to hide icons entirely.
+
+**Root Cause**: In `CanvasRenderer.tsx` line 1737-1746, icon rendering checks `showIcon !== false`, but new buttons default to having icons shown. The issue is:
+1. Default value for `showIcon` is `true` (in `RightPanel.tsx` line 904)
+2. No easy toggle to turn icons off in the UI
+
+**Fix**:
+1. Add a clear "Show Icon" toggle switch in the button inspector
+2. Ensure the toggle is prominently visible (not hidden in a collapsible section)
+3. Change default value to `false` for new buttons, or make it a clear choice
+
+**Files**: 
+- `src/flow-canvas/builder/components/RightPanel.tsx`
+- `src/components/builder/ButtonStyleInspector.tsx`
+
+---
+
+### Bug 5: Publish Button Does Not Save/Publish
+
+**Problem**: Clicking Publish doesn't save the funnel building session.
+
+**Root Cause**: In `FunnelEditor.tsx` lines 264-277, the publish flow is:
+```typescript
+saveMutation.mutate(page, {
+  onSuccess: () => {
+    publishMutation.mutate(page);
+  },
+});
 ```
-Tap page in list → Canvas updates → Tap element → Bottom sheet opens → Edit
+If `saveMutation` fails silently (e.g., due to localStorage quota issues seen in console logs), the publish never triggers.
+
+**Fix**:
+1. Add better error handling and user feedback for save failures
+2. Show a clear error toast if save fails before publish
+3. Clear localStorage history when quota is exceeded (already partially implemented but may not be effective)
+4. Ensure `publishMutation` proceeds even if save has issues by using the current page state
+
+**Files**: 
+- `src/pages/FunnelEditor.tsx`
+- `src/flow-canvas/builder/hooks/useHistory.ts` (localStorage issue)
+
+---
+
+### Bug 6: Icon Gradient Not Working (Only Background Affected)
+
+**Problem**: When setting a gradient fill for standalone icon elements, only the background changes - the icon itself doesn't show the gradient.
+
+**Root Cause**: In `CanvasRenderer.tsx` lines 2340-2352, the gradient is applied correctly:
+```typescript
+background: gradientToCSS(iconGradient),
+WebkitBackgroundClip: 'text',
+WebkitTextFillColor: 'transparent',
+```
+However, Lucide icons are SVGs with `currentColor` fill. The `WebkitBackgroundClip: 'text'` technique only works on actual text, not on SVG paths.
+
+**Fix**: For icon gradient support:
+1. Use SVG `fill="url(#gradient)"` with an inline SVG gradient definition
+2. Or apply the gradient as a mask: `mask: url(icon.svg)` with the gradient as background
+3. Create a wrapper that renders the icon as a mask image
+
+**Files**: 
+- `src/flow-canvas/builder/components/CanvasRenderer.tsx`
+- `src/flow-canvas/components/FlowCanvasRenderer.tsx`
+
+---
+
+### Bug 7: Absolute Positioning Doesn't Work
+
+**Problem**: Setting elements to `position: absolute` doesn't allow free movement.
+
+**Root Cause**: In `CanvasRenderer.tsx` lines 1561-1578, the button wrapper forces its own layout:
+```typescript
+const wrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  width: '100%',
+  // ... ignores position styles
+};
+```
+Position styles are applied to the base element style but then overwritten by wrapper styles.
+
+**Fix**: 
+1. Pass position-related styles to the wrapper when `position !== 'static'`
+2. When `position: absolute`, the wrapper should not force `display: flex` or `width: 100%`
+3. Ensure the position offsets (top, left, right, bottom) are applied
+
+```typescript
+const wrapperStyle: React.CSSProperties = {
+  ...(element.styles?.position === 'absolute' ? {
+    position: 'absolute',
+    top: element.styles?.top,
+    left: element.styles?.left,
+    right: element.styles?.right,
+    bottom: element.styles?.bottom,
+  } : {
+    display: 'flex',
+    width: '100%',
+    justifyContent: ...,
+  }),
+};
 ```
 
-### Visual Cues
-- Active page highlighted with accent color
-- Clear page number badges
-- Step indicator: "Step 2 of 5"
+**Files**: `src/flow-canvas/builder/components/CanvasRenderer.tsx`
 
 ---
 
-## Technical Implementation
+### Bug 8: CTA Button Fill Not Showing When Published
 
-### New Components Needed
+**Problem**: The button's fill/background color doesn't appear in the published version.
 
-| Component | Purpose |
-|-----------|---------|
-| `MobileActionBar.tsx` | Compact top toolbar for mobile |
-| `MobileBottomSheet.tsx` | Draggable inspector from bottom |
-| `TouchStepCard.tsx` | Large card for step list |
-| `BlockPickerGrid.tsx` | Full-screen tile picker |
+**Root Cause**: The runtime renderer `FlowCanvasRenderer.tsx` uses `CanvasRenderer` in read-only mode, but there may be a mismatch in how button styles are resolved. In `ButtonRenderer` (lines 749-773), it only checks `element.styles?.backgroundColor` but the editor stores it differently.
 
-### CSS Strategy
+**Fix**:
+1. Ensure `FlowCanvasRenderer` passes the correct props to the button
+2. Verify that `element.props?.fillType`, `element.styles?.backgroundColor`, and `element.props?.gradient` are all properly resolved
+3. The runtime should use the same style resolution logic as the editor
 
-1. Create `src/flow-canvas/builder/styles/mobile.css`
-2. Use CSS container queries for responsive behavior
-3. Set `--touch-target-min: 44px` design token
-4. Apply `touch-action: manipulation` to prevent zoom
-
-### Breakpoints
-
-| Breakpoint | Layout |
-|------------|--------|
-| < 640px | Mobile-first: bottom sheet, hamburger menu |
-| 640-1024px | Tablet: side sheets, compact toolbar |
-| > 1024px | Desktop: three-column, full toolbar |
+**Files**: 
+- `src/flow-canvas/components/FlowCanvasRenderer.tsx`
+- `src/flow-canvas/builder/components/CanvasRenderer.tsx` (ensure parity)
 
 ---
 
-## Migration Path
+## Technical Implementation Details
 
-### Step 1: Mobile TopToolbar (Low Risk)
-- Add mobile variant to TopToolbar
-- Implement overflow menu
-- No breaking changes to desktop
+### Phase 1: Critical Style Fixes (High Priority)
 
-### Step 2: Touch Step List (Medium Risk)
-- Create new component alongside existing
-- Feature flag to switch
-- Test drag-and-drop on touch
+| Bug | File | Estimated Lines Changed |
+|-----|------|------------------------|
+| 1 - Outline text color | CanvasRenderer.tsx | ~5 |
+| 2 - Shadows | CanvasRenderer.tsx, ButtonStyleInspector.tsx | ~30 |
+| 3 - Borders | CanvasRenderer.tsx, RightPanel.tsx | ~40 |
 
-### Step 3: Bottom Sheet Inspector (Medium Risk)
-- New component, additive
-- Replace mobile right-sheet with bottom-sheet
-- Keep desktop inspector unchanged
+### Phase 2: Feature Fixes (Medium Priority)
 
-### Step 4: Canvas Cleanup (High Risk)
-- Remove hover toolbars on mobile
-- Consolidate add-block interactions
-- Requires thorough testing
+| Bug | File | Estimated Lines Changed |
+|-----|------|------------------------|
+| 4 - Icon toggle | ButtonStyleInspector.tsx, RightPanel.tsx | ~20 |
+| 7 - Absolute position | CanvasRenderer.tsx | ~30 |
 
----
+### Phase 3: Runtime Parity (Critical for Publishing)
 
-## Success Criteria
+| Bug | File | Estimated Lines Changed |
+|-----|------|------------------------|
+| 5 - Publish save | FunnelEditor.tsx, useHistory.ts | ~25 |
+| 8 - Published fill | FlowCanvasRenderer.tsx | ~20 |
 
-1. **One-handed editing on mobile** - All primary actions reachable with thumb
-2. **No hunting for buttons** - Maximum 4 visible actions at once
-3. **Fewer visible controls** - 50% reduction in simultaneous UI elements
-4. **Touch-friendly** - All tap targets ≥ 44px
-5. **Same functionality** - No features removed, just reorganized
+### Phase 4: Complex Fix (Requires Research)
+
+| Bug | File | Estimated Lines Changed |
+|-----|------|------------------------|
+| 6 - Icon gradient | CanvasRenderer.tsx, FlowCanvasRenderer.tsx | ~50 |
 
 ---
 
-## Files Overview
+## Code Changes Summary
 
-| File | Action |
-|------|--------|
-| `src/flow-canvas/builder/components/TopToolbar.tsx` | Major refactor |
-| `src/flow-canvas/builder/components/LeftPanel.tsx` | Major refactor |
-| `src/flow-canvas/builder/components/RightPanel.tsx` | Conditionally replaced on mobile |
-| `src/flow-canvas/builder/components/EditorShell.tsx` | Update layout logic |
-| `src/flow-canvas/builder/components/MobileBottomSheet.tsx` | New file |
-| `src/flow-canvas/builder/components/BlockPickerPanel.tsx` | Refactor for tiles |
-| `src/flow-canvas/builder/styles/mobile.css` | New file |
-| `src/builder_v2/EditorLayout.css` | Add mobile media queries |
+### CanvasRenderer.tsx (Primary)
+- Line ~1601: Allow user textColor for outline mode
+- Line ~1618: Allow shadows on outline buttons when explicitly set
+- Line ~1621-1626: Respect user border settings
+- Line ~1561-1578: Handle absolute positioning in wrapper
 
+### ButtonStyleInspector.tsx
+- Add "Show Icon" toggle with clear visibility
+- Add shadow color picker for glow/neon presets
+- Expose border width/color controls
+
+### RightPanel.tsx
+- Wire up new border controls for CTA buttons
+- Ensure `showIcon` toggle is accessible
+
+### FlowCanvasRenderer.tsx
+- Ensure runtime button rendering matches editor
+- Apply gradient/fill correctly for published funnels
+
+### FunnelEditor.tsx
+- Improve save/publish error handling
+- Add user feedback for failures
+
+---
+
+## Testing Checklist
+
+After implementation, verify:
+- [ ] Outline button text color changes when set
+- [ ] Shadow presets apply visually (sm, md, lg, xl, glow)
+- [ ] Border width can be adjusted (0-10px)
+- [ ] Border color can be changed
+- [ ] Icons can be hidden via toggle
+- [ ] Publish saves the funnel successfully
+- [ ] Icon gradients display on the icon itself
+- [ ] Absolute positioned elements can be moved
+- [ ] Published CTA buttons show correct fill/gradient
