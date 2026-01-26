@@ -101,7 +101,7 @@ export function DashboardHero({ userName, teamId }: DashboardHeroProps) {
             Glad you're back, {firstName} 👋
           </h1>
           <p className="text-muted-foreground text-sm">
-            Keep stacking. Keep building. Keep growing.
+            Keep building. Keep growing. Keep stacking.
           </p>
         </div>
 
