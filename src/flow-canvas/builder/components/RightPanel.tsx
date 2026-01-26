@@ -901,7 +901,8 @@ const ElementInspector: React.FC<{
                   fullWidth: element.props?.fullWidth as boolean ?? false,
                   customWidth: element.props?.customWidth as number | undefined,
                   icon: element.props?.iconType as string || 'ArrowRight',
-                  showIcon: element.props?.showIcon as boolean ?? true,
+                  // BUG FIX #4: Default showIcon to false for cleaner default buttons
+                  showIcon: element.props?.showIcon as boolean ?? false,
                 }}
                 onChange={(updates) => {
                   const newProps: Record<string, unknown> = { ...element.props };
