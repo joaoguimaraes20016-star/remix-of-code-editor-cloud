@@ -44,14 +44,6 @@ const integrations: Integration[] = [
     configurable: true,
   },
   {
-    id: "ghl",
-    name: "GoHighLevel",
-    description: "CRM and automation webhooks",
-    icon: Webhook,
-    category: "automation",
-    status: "available",
-  },
-  {
     id: "zapier",
     name: "Zapier",
     description: "Connect to 5,000+ apps",
