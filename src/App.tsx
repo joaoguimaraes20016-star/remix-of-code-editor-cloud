@@ -133,7 +133,9 @@ const App = () => (
             {/* Team routes with sidebar layout */}
             <Route path="/team/:teamId" element={<TeamLayout />}>
               <Route index element={<TeamHubOverview />} />
-              <Route path="crm" element={<SalesDashboard />} />
+              <Route path="dashboard" element={<SalesDashboard defaultTab="dashboard" />} />
+              <Route path="pipeline" element={<SalesDashboard defaultTab="appointments" />} />
+              <Route path="crm" element={<Navigate to="../dashboard" replace />} />
               <Route path="funnels" element={<FunnelList />} />
               <Route path="schedule" element={<Schedule />} />
               <Route path="chat" element={<TeamChatPage />} />
