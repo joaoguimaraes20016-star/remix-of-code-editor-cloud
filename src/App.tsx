@@ -27,6 +27,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Marketing from "./pages/Marketing";
 import Billing from "./pages/Billing";
 import PaymentsPortal from "./pages/PaymentsPortal";
+import Performance from "./pages/Performance";
 import { EditorShell } from "./builder_v2/EditorShell";
 import { RuntimePage } from "./builder_v2/runtime";
 // Flow-canvas builder (new version)
@@ -133,6 +134,7 @@ const App = () => (
             {/* Team routes with sidebar layout */}
             <Route path="/team/:teamId" element={<TeamLayout />}>
               <Route index element={<TeamHubOverview />} />
+              <Route path="performance" element={<Performance />} />
               <Route path="dashboard" element={<SalesDashboard defaultTab="dashboard" />} />
               <Route path="pipeline" element={<SalesDashboard defaultTab="appointments" />} />
               <Route path="crm" element={<Navigate to="../dashboard" replace />} />
