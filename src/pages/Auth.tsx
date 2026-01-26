@@ -1110,7 +1110,7 @@ const Auth = () => {
         <div className="relative z-10 flex flex-col items-center">
           {/* Copy - Now at TOP */}
           <div className="text-center max-w-md mb-8">
-            <img src={stackitLogo} alt="Stackit" className="w-16 h-16 mx-auto mb-2" />
+            <img src={stackitLogo} alt="Stackit" className="w-16 h-16 mx-auto mb-1" />
             <span className="text-white font-bold text-xl tracking-tight mb-6 block">Stackit</span>
             <h2 className="text-2xl font-bold text-white mb-3 drop-shadow-lg">
               The Operating System for Scaling Digital Offers.
