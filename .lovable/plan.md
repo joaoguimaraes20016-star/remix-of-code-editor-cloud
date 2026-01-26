@@ -1,183 +1,239 @@
 
-# Simplify Pipeline Page - Remove Tabs and Admin CRM Branding
+
+# Update Performance & Pipeline UI to Fanbasis Style
 
 ## Overview
 
-The Pipeline page currently shows an "Admin CRM" branded header with multiple tabs (Today, Overview, Team Pipeline, MRR, Tasks). The user wants to simplify this to show ONLY the pipeline kanban board directly, removing:
-- The "Admin CRM" gradient header/branding
-- All the tabs (Today, Overview, MRR, Tasks)
-- The tabbed navigation system entirely
-
-The "Manage Pipeline Stages" button should remain accessible.
+Apply the premium "Fanbasis style" design patterns (gradient cards, visual hierarchy, glassmorphism, backdrop-blur) to both the Performance and Pipeline pages for a cohesive, high-impact UI.
 
 ---
 
-## Current Structure (Before)
+## Design Patterns to Apply
+
+Based on the Dashboard's Fanbasis style:
+
+| Pattern | Description |
+|---------|-------------|
+| **Gradient Hero Cards** | Vibrant gradient backgrounds (`from-violet-600 via-purple-600 to-indigo-700`) with white text |
+| **Background Decorations** | Circular shapes with `bg-white/10` and `bg-white/5` for depth |
+| **Icon Containers** | `p-2 rounded-lg bg-white/20` for icons on gradient cards |
+| **Backdrop Blur Buttons** | `bg-white/20 hover:bg-white/30 backdrop-blur-sm` for actions on gradients |
+| **Secondary Cards** | Clean cards with `p-4`, colored icon backgrounds (`bg-primary/10`), and clear hierarchy |
+| **Live Indicators** | Animated ping dots for real-time data |
+
+---
+
+## Performance Page Updates
+
+### Current State
+- Plain header with `text-2xl font-bold`
+- Basic cards with conditional borders for task states
+- Standard Card components for EODReportsHub and ActivityTracker
+
+### Target State
 
 ```text
 +----------------------------------------------------------+
-| Pipeline                                                  |
-| Manage your sales pipeline                    [+ Add Sale]|
+|  ┌────────────────────────────────────────────────────┐  |
+|  │  GRADIENT HERO HEADER                               │  |
+|  │  🎯 Team Performance                                │  |
+|  │  Monitor your team's productivity        [● LIVE]   │  |
+|  └────────────────────────────────────────────────────┘  |
 |                                                           |
-| ┌───────────────────────────────────────────────────────┐|
-| │ Admin CRM                      [Manage Pipeline Stages]││
-| │ Comprehensive team performance & management           ││
-| └───────────────────────────────────────────────────────┘|
+|  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐      |
+|  │ GRADIENT     │ │ GRADIENT     │ │ GRADIENT     │      |
+|  │ Red/Orange   │ │ Amber/Yellow │ │ Green/Teal   │      |
+|  │ OVERDUE: 3   │ │ TODAY: 5     │ │ UPCOMING: 12 │      |
+|  └──────────────┘ └──────────────┘ └──────────────┘      |
 |                                                           |
-| [Today] [Overview] [Team Pipeline] [MRR] [Tasks]         |
+|  ┌────────────────────────────────────────────────────┐  |
+|  │  EOD Reports (styled header)                        │  |
+|  │  Team members with clean cards                      │  |
+|  └────────────────────────────────────────────────────┘  |
 |                                                           |
-| ... content based on selected tab ...                     |
+|  ┌────────────────────────────────────────────────────┐  |
+|  │  Team Activity (styled header)                      │  |
+|  │  ActivityTracker + AppointmentsBreakdown            │  |
+|  └────────────────────────────────────────────────────┘  |
 +----------------------------------------------------------+
 ```
 
-## Target Structure (After)
+### Changes to `src/pages/Performance.tsx`
+
+1. **Add Gradient Hero Header**
+   - Replace plain header with gradient banner similar to DashboardHero
+   - Include live indicator dot
+   - Use `bg-gradient-to-br from-violet-600/10 via-purple-600/10 to-indigo-700/10` for subtle gradient
+
+2. **Convert Task Summary Cards to Gradient Cards**
+   - Overdue: `from-rose-500 via-red-500 to-orange-600` gradient
+   - Due Today: `from-amber-500 via-orange-500 to-yellow-500` gradient  
+   - Upcoming: `from-emerald-500 via-teal-500 to-cyan-600` gradient
+   - Add circular background decorations
+   - White text with proper hierarchy
+
+3. **Style Section Cards**
+   - Add subtle gradient headers to EODReportsHub and Team Activity sections
+   - Use consistent padding and spacing
+
+---
+
+## Pipeline Page Updates
+
+### Current State
+- Direct render of DealPipeline without any header
+- No visual branding or context
+
+### Target State (Minimized)
 
 ```text
 +----------------------------------------------------------+
-| Pipeline                              [Manage Pipeline    |
-| Manage your sales pipeline             Stages] [+ Add Sale|
+|  ┌────────────────────────────────────────────────────┐  |
+|  │  Pipeline                      [Manage Stages] [+] │  |
+|  │  Your sales pipeline                [● LIVE]       │  |
+|  └────────────────────────────────────────────────────┘  |
 |                                                           |
-| ┌──────────────────────────────────────────────────────┐ |
-| │                 KANBAN PIPELINE BOARD                 │ |
-| │  [New] [Contacted] [Deposit Collected] [Closed Won]   │ |
-| │   ...     ...           ...              ...          │ |
-| └──────────────────────────────────────────────────────┘ |
+|  ┌────────────────────────────────────────────────────┐  |
+|  │            KANBAN PIPELINE BOARD                    │  |
+|  │  [New] [Contacted] [Deposit] [Closed Won]          │  |
+|  └────────────────────────────────────────────────────┘  |
 +----------------------------------------------------------+
 ```
 
----
+### Changes to `src/pages/SalesDashboard.tsx` (Pipeline View)
 
-## Implementation Plan
+1. **Add Compact Gradient Header**
+   - Subtle gradient banner (lighter than Dashboard)
+   - Live indicator for real-time updates
+   - Keep "Manage Pipeline Stages" and "+ Add Sale" buttons in header
 
-### Modify `src/components/appointments/AppointmentsHub.tsx`
+2. **Minimize Chrome**
+   - No metric cards on Pipeline (they live on Dashboard)
+   - Focus purely on the kanban board
+   - Use a muted/subtle gradient for the header
 
-The changes will be minimal - just removing the UI elements that aren't needed:
+### Changes to `src/components/appointments/AppointmentsHub.tsx`
 
-1. **Remove the "Admin CRM" gradient header block** (lines 639-657)
-   - This removes the branded header with the gradient background
-   
-2. **Remove the Tabs wrapper and TabsList** (lines 659-695)
-   - No more tab navigation needed
-   
-3. **Remove all TabsContent wrappers** except the pipeline content
-   - Today, Overview, MRR, Tasks content won't be rendered
-   
-4. **Render DealPipeline directly** without tabs
-   - The kanban board shows immediately
-
-5. **Move "Manage Pipeline Stages" button** to the page header in `SalesDashboard.tsx`
-   - This keeps the functionality accessible
-
-### Modify `src/pages/SalesDashboard.tsx`
-
-1. **Add "Manage Pipeline Stages" button** to the Pipeline page header
-   - Place it next to the "+ Add Sale" button
-   
-2. **Pass the stage manager state** to AppointmentsHub or handle locally
+1. **Add Minimal Header Inside Component**
+   - Small context header with live indicator
+   - Clean, minimal branding consistent with Fanbasis style
 
 ---
 
-## Technical Details
+## Implementation Details
 
-### Changes to AppointmentsHub.tsx
-
-**Remove**:
-- Lines 639-657: The "Admin CRM" gradient header
-- Lines 659-695: The TabsList with all tab triggers
-- Lines 698-700: TabsContent for "today"
-- Lines 702-704: TabsContent for "overview"  
-- Lines 716-724: TabsContent for "setters" (conditional)
-- Lines 726-737: TabsContent for "closers" (conditional)
-- Lines 739-741: TabsContent for "mrr"
-- Lines 743-745: TabsContent for "tasks"
-
-**Keep**:
-- Lines 706-714: The DealPipeline component (render directly, not in TabsContent)
-- Lines 748-756: PipelineStageManager dialog
-- Lines 758-779: CloseDealDialog
-
-**Simplified structure**:
-```typescript
-export function AppointmentsHub({...props}) {
-  // ... existing state and effects ...
-  
-  return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Render pipeline directly - no tabs */}
-      <DealPipeline
-        teamId={teamId}
-        userRole={userRole}
-        currentUserId={user?.id || ''}
-        onCloseDeal={handleCloseDeal}
-        viewFilter="all"
-      />
-      
-      {/* Keep dialogs */}
-      <PipelineStageManager ... />
-      <CloseDealDialog ... />
-    </div>
-  );
-}
-```
-
-### Changes to SalesDashboard.tsx
-
-Add the "Manage Pipeline Stages" button to the header when showing the Pipeline view:
-
-```typescript
-// In the header section (around line 860-880)
-{activeTab === "appointments" && (
-  <Button 
-    variant="outline" 
-    size="sm"
-    onClick={() => setShowStageManager(true)}
-  >
-    Manage Pipeline Stages
-  </Button>
-)}
-```
-
-Add state for stage manager:
-```typescript
-const [showStageManager, setShowStageManager] = useState(false);
-```
-
----
-
-## Files to Modify
+### File Changes
 
 | File | Changes |
 |------|---------|
-| `src/components/appointments/AppointmentsHub.tsx` | Remove Admin CRM header, remove tabs, render DealPipeline directly |
-| `src/pages/SalesDashboard.tsx` | Add "Manage Pipeline Stages" button to header, add state for dialog |
+| `src/pages/Performance.tsx` | Add gradient hero header, convert task cards to gradient style |
+| `src/pages/SalesDashboard.tsx` | Add subtle gradient header for Pipeline view |
+| `src/components/appointments/EODReportsHub.tsx` | Style header with gradient accent |
+| `src/components/appointments/ActivityTracker.tsx` | Add styled section header |
 
----
+### New Gradient Definitions
 
-## What Gets Preserved
+```typescript
+// Task status gradients
+const taskGradients = {
+  overdue: "from-rose-500 via-red-500 to-orange-600",
+  today: "from-amber-500 via-orange-500 to-yellow-500", 
+  upcoming: "from-emerald-500 via-teal-500 to-cyan-600",
+};
+```
 
-- **DealPipeline kanban board** - The main pipeline visualization
-- **PipelineStageManager dialog** - Ability to customize pipeline stages
-- **CloseDealDialog** - Deal closing functionality
-- **All real-time subscriptions** - Pipeline updates in real-time
-- **Deep linking** - URL params for focusing on specific appointments
+### Performance Hero Header
 
-## What Gets Removed
+```typescript
+<div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600/10 via-purple-600/10 to-indigo-700/10 border border-violet-500/20 p-6">
+  {/* Background decorations */}
+  <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-violet-500/10" />
+  <div className="absolute -bottom-8 -left-8 h-40 w-40 rounded-full bg-purple-500/5" />
+  
+  <div className="relative flex items-center justify-between">
+    <div>
+      <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+        <Target className="h-6 w-6 text-violet-500" />
+        Team Performance
+      </h1>
+      <p className="text-muted-foreground text-sm mt-1">
+        Monitor your team's activity and productivity
+      </p>
+    </div>
+    
+    {/* Live indicator */}
+    <div className="flex items-center gap-2">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+      </span>
+      <span className="text-xs font-medium text-muted-foreground">LIVE</span>
+    </div>
+  </div>
+</div>
+```
 
-- "Admin CRM" branded gradient header
-- Tab navigation (Today, Overview, Team Pipeline, MRR, Tasks)
-- TodaysDashboard component (content moved to Performance/Dashboard)
-- AdminOverview component (content moved to Performance)
-- MRRFollowUps/MRRScheduleList (accessible elsewhere)
-- UnifiedTasksView (accessible via Schedule page)
-- SettersView / ByCloserView tabs
+### Task Summary Gradient Cards
+
+```typescript
+<div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 via-red-500 to-orange-600 p-5 text-white shadow-lg">
+  {/* Background decorations */}
+  <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+  <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+  
+  <div className="relative">
+    <div className="flex items-center justify-between mb-3">
+      <span className="text-sm font-medium text-white/80">Overdue Tasks</span>
+      <div className="p-2 rounded-lg bg-white/20">
+        <AlertCircle className="h-4 w-4 text-white" />
+      </div>
+    </div>
+    <div className="text-3xl font-bold">{taskSummary.overdue}</div>
+    <p className="text-sm text-white/70 mt-1">
+      {labels.role_1_short}: {taskSummary.overdueSetters} · {labels.role_2_short}: {taskSummary.overdueClosers}
+    </p>
+  </div>
+</div>
+```
+
+### Pipeline Subtle Header
+
+```typescript
+<div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-slate-900/5 to-slate-800/5 border border-border/50">
+  <div className="flex items-center gap-3">
+    <div className="p-2 rounded-lg bg-primary/10">
+      <Kanban className="h-5 w-5 text-primary" />
+    </div>
+    <div>
+      <h2 className="font-semibold">Pipeline</h2>
+      <p className="text-xs text-muted-foreground">Drag cards to update status</p>
+    </div>
+  </div>
+  
+  {/* Live indicator */}
+  <div className="flex items-center gap-2">
+    <span className="relative flex h-2 w-2">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+    </span>
+    <span className="text-xs font-medium text-muted-foreground">LIVE</span>
+  </div>
+</div>
+```
 
 ---
 
 ## Result
 
-After this change:
-- **Pipeline** = Clean, focused kanban board only
-- **Performance** = Team activity, tasks, EOD reports (already implemented)
-- **Dashboard** = Revenue metrics, CRM analytics
+After implementation:
+- **Performance** = Premium gradient hero + gradient task summary cards + styled sections
+- **Pipeline** = Minimal subtle header + kanban board focus + live indicator
+- **Dashboard** = Unchanged (already has Fanbasis style)
 
-Each section has a single, clear purpose with no duplicate functionality.
+All three sections share the same design DNA:
+- Gradient accents
+- Background decorations  
+- Live indicators
+- Consistent typography hierarchy
+- Premium glassmorphism effects
+
