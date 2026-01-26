@@ -1139,19 +1139,22 @@ const Auth = () => {
                 </div>
               </div>
               
-              {/* Stats Row - Gradient cards */}
+              {/* Stats Row - Glass cards */}
               <div className="grid grid-cols-3 gap-2 mb-5">
-                <div className="bg-white/5 border border-emerald-400/30 rounded-xl p-3 text-center">
-                  <p className="text-lg font-bold text-emerald-400">$48K</p>
-                  <p className="text-[10px] text-emerald-300/60 uppercase tracking-wide">Revenue</p>
+                <div className="relative bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-xl p-3 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
+                  <p className="relative text-lg font-bold text-emerald-400">$48K</p>
+                  <p className="relative text-[10px] text-emerald-300/70 uppercase tracking-wide">Revenue</p>
                 </div>
-                <div className="bg-white/5 border border-blue-400/30 rounded-xl p-3 text-center">
-                  <p className="text-lg font-bold text-blue-400">$12K</p>
-                  <p className="text-[10px] text-blue-300/60 uppercase tracking-wide">MRR</p>
+                <div className="relative bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-xl p-3 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-transparent pointer-events-none" />
+                  <p className="relative text-lg font-bold text-blue-400">$12K</p>
+                  <p className="relative text-[10px] text-blue-300/70 uppercase tracking-wide">MRR</p>
                 </div>
-                <div className="bg-white/5 border border-violet-400/30 rounded-xl p-3 text-center">
-                  <p className="text-lg font-bold text-violet-400">32%</p>
-                  <p className="text-[10px] text-violet-300/60 uppercase tracking-wide">Close Rate</p>
+                <div className="relative bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-xl p-3 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-transparent pointer-events-none" />
+                  <p className="relative text-lg font-bold text-violet-400">32%</p>
+                  <p className="relative text-[10px] text-violet-300/70 uppercase tracking-wide">Close Rate</p>
                 </div>
               </div>
               
