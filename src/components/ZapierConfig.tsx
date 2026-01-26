@@ -189,7 +189,27 @@ export function ZapierConfig({ teamId, onUpdate }: ZapierConfigProps) {
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Lead Status Changed
+                Appointment Rescheduled
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Appointment Canceled
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Appointment No-Show
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Deal Won / Closed
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Pipeline Stage Changed
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Tag Added to Contact
               </li>
             </ul>
           </CardContent>
@@ -211,7 +231,23 @@ export function ZapierConfig({ teamId, onUpdate }: ZapierConfigProps) {
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                Add Note to Lead
+                Add Note
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                Create Appointment
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                Update Appointment
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                Add/Remove Tags
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                Change Pipeline Stage
               </li>
             </ul>
           </CardContent>
