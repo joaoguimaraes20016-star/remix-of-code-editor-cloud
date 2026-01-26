@@ -1,99 +1,128 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { TrendingUp, DollarSign, Users } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { AlertCircle, Clock, Calendar, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { DashboardHero, DashboardMetricCard } from "@/components/dashboard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ActivityTracker } from "@/components/appointments/ActivityTracker";
+import { EODReportsHub } from "@/components/appointments/EODReportsHub";
+import { AppointmentsBookedBreakdown } from "@/components/AppointmentsBookedBreakdown";
 
-// Helper: check if an appointment is "closed with revenue"
-const isAppointmentClosedWithRevenue = (apt: any): boolean => {
-  if (!apt) return false;
-  const stage = apt.pipeline_stage?.toLowerCase() ?? "";
-  const status = (apt.status ?? "").toString().toUpperCase();
-  const revenue = Number(apt.cc_collected ?? 0);
-  const isDepositStage = stage.includes("deposit");
-  const isClosedStatus = status === "CLOSED" || status === "CLOSED_WON";
-  return (isDepositStage || isClosedStatus) && revenue > 0;
-};
+interface TaskSummary {
+  overdue: number;
+  dueToday: number;
+  upcoming: number;
+  overdueSetters: number;
+  overdueClosers: number;
+  dueTodaySetters: number;
+  dueTodayClosers: number;
+}
 
 export default function Performance() {
   const { teamId } = useParams();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
-  const [metrics, setMetrics] = useState({
-    totalCCRevenue: 0,
-    totalMRR: 0,
-    closeRate: "0",
-    totalClosedDeals: 0,
-    showedCount: 0,
+  const [taskSummary, setTaskSummary] = useState<TaskSummary>({
+    overdue: 0,
+    dueToday: 0,
+    upcoming: 0,
+    overdueSetters: 0,
+    overdueClosers: 0,
+    dueTodaySetters: 0,
+    dueTodayClosers: 0,
   });
 
   useEffect(() => {
-    if (!user || !teamId) return;
+    if (!teamId) return;
 
-    async function loadData() {
-      try {
-        // Load user profile
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .maybeSingle();
+    loadTaskSummary();
 
-        if (profile?.full_name) {
-          setCurrentUserName(profile.full_name);
+    // Real-time subscription
+    const channel = supabase
+      .channel(`performance-${teamId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'confirmation_tasks', filter: `team_id=eq.${teamId}` }, loadTaskSummary)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments', filter: `team_id=eq.${teamId}` }, loadTaskSummary)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [teamId]);
+
+  const loadTaskSummary = async () => {
+    if (!teamId) return;
+
+    try {
+      setLoading(true);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      const sevenDaysFromNow = new Date(today);
+      sevenDaysFromNow.setDate(today.getDate() + 7);
+
+      // Load confirmation tasks with assigned user's role
+      const { data: tasks } = await supabase
+        .from('confirmation_tasks')
+        .select('*, assigned_to, due_at, appointment:appointments!inner(start_at_utc, team_id)')
+        .eq('team_id', teamId)
+        .eq('status', 'pending')
+        .gte('appointment.start_at_utc', now.toISOString())
+        .eq('appointment.team_id', teamId);
+
+      // Get team members with roles
+      const { data: teamMembers } = await supabase
+        .from('team_members')
+        .select('user_id, role')
+        .eq('team_id', teamId);
+
+      const memberRoles = new Map(teamMembers?.map(m => [m.user_id, m.role]) || []);
+
+      // Load MRR tasks
+      const { data: mrrTasks } = await supabase
+        .from('mrr_follow_up_tasks')
+        .select('due_date')
+        .eq('team_id', teamId)
+        .eq('status', 'due');
+
+      let overdue = 0, dueToday = 0, upcoming = 0;
+      let overdueSetters = 0, overdueClosers = 0, dueTodaySetters = 0, dueTodayClosers = 0;
+
+      tasks?.forEach(task => {
+        const dueAt = new Date(task.due_at);
+        const isOverdue = dueAt < now;
+        const isDueToday = dueAt >= today && dueAt < tomorrow;
+        const isUpcoming = dueAt >= tomorrow && dueAt <= sevenDaysFromNow;
+
+        const assigneeRole = task.assigned_to ? memberRoles.get(task.assigned_to) : null;
+        const isSetter = assigneeRole === 'setter';
+        const isCloser = assigneeRole === 'closer';
+
+        if (isOverdue) {
+          overdue++;
+          if (isSetter) overdueSetters++;
+          if (isCloser) overdueClosers++;
+        } else if (isDueToday) {
+          dueToday++;
+          if (isSetter) dueTodaySetters++;
+          if (isCloser) dueTodayClosers++;
+        } else if (isUpcoming) {
+          upcoming++;
         }
+      });
 
-        // Load appointments for metrics
-        const { data: appointments } = await supabase
-          .from("appointments")
-          .select("*")
-          .eq("team_id", teamId);
+      mrrTasks?.forEach(task => {
+        const dueDate = new Date(task.due_date);
+        if (dueDate < today) overdue++;
+        else if (dueDate.toDateString() === today.toDateString()) dueToday++;
+        else if (dueDate <= sevenDaysFromNow) upcoming++;
+      });
 
-        const allAppointments = appointments || [];
-
-        // Calculate metrics
-        // CC Revenue: from deposits in closed appointments
-        const closedWithRevenue = allAppointments.filter(isAppointmentClosedWithRevenue);
-        const totalCCRevenue = closedWithRevenue.reduce(
-          (sum, apt) => sum + Number(apt.cc_collected || 0),
-          0
-        );
-
-        // Total MRR
-        const totalMRR = closedWithRevenue.reduce(
-          (sum, apt) => sum + Number(apt.mrr_amount || 0),
-          0
-        );
-
-        // Close Rate
-        const showedAppointments = allAppointments.filter(
-          (apt) => apt.status === "SHOWED" || apt.status === "CLOSED"
-        );
-        const totalClosedDeals = closedWithRevenue.length;
-        const closeRate =
-          showedAppointments.length > 0
-            ? ((totalClosedDeals / showedAppointments.length) * 100).toFixed(1)
-            : "0";
-
-        setMetrics({
-          totalCCRevenue,
-          totalMRR,
-          closeRate,
-          totalClosedDeals,
-          showedCount: showedAppointments.length,
-        });
-      } catch (error) {
-        console.error("Failed to load performance data:", error);
-      } finally {
-        setLoading(false);
-      }
+      setTaskSummary({ overdue, dueToday, upcoming, overdueSetters, overdueClosers, dueTodaySetters, dueTodayClosers });
+    } catch (error) {
+      console.error("Failed to load task summary:", error);
+    } finally {
+      setLoading(false);
     }
-
-    loadData();
-  }, [user, teamId]);
+  };
 
   if (loading) {
     return (
@@ -102,12 +131,13 @@ export default function Performance() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-64" />
         </div>
-        <Skeleton className="h-48 w-full rounded-xl" />
         <div className="grid gap-4 md:grid-cols-3">
-          <Skeleton className="h-36 rounded-xl" />
-          <Skeleton className="h-36 rounded-xl" />
-          <Skeleton className="h-36 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
         </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
@@ -116,45 +146,91 @@ export default function Performance() {
     <div className="flex-1 p-6 space-y-6 overflow-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Performance</h1>
+        <h1 className="text-2xl font-bold text-foreground">Team Performance</h1>
         <p className="text-muted-foreground text-sm">
-          Your revenue at a glance
+          Monitor your team's activity and productivity
         </p>
       </div>
 
-      {/* Dashboard Hero - Welcome + Revenue with period toggle */}
-      {teamId && <DashboardHero userName={currentUserName} teamId={teamId} />}
+      {/* Task Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Overdue Tasks */}
+        <Card className={taskSummary.overdue > 0 ? "border-destructive/50 bg-destructive/5" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <AlertCircle className={`h-4 w-4 ${taskSummary.overdue > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              Overdue Tasks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-3xl font-bold ${taskSummary.overdue > 0 ? "text-destructive" : ""}`}>
+              {taskSummary.overdue}
+            </div>
+            {taskSummary.overdue > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                S: {taskSummary.overdueSetters} · C: {taskSummary.overdueClosers}
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Gradient Metric Cards Row */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-        <DashboardMetricCard
-          title="CC Revenue"
-          value={`$${metrics.totalCCRevenue.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`}
-          subtitle={`${metrics.totalClosedDeals} deals closed`}
-          icon={DollarSign}
-          gradient="green"
-        />
-        <DashboardMetricCard
-          title="Total MRR"
-          value={`$${metrics.totalMRR.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`}
-          subtitle="All recurring revenue"
-          icon={TrendingUp}
-          gradient="blue"
-        />
-        <DashboardMetricCard
-          title="Close Rate"
-          value={`${metrics.closeRate}%`}
-          subtitle={`${metrics.totalClosedDeals}/${metrics.showedCount} showed closed`}
-          icon={Users}
-          gradient="red"
-        />
+        {/* Due Today */}
+        <Card className={taskSummary.dueToday > 0 ? "border-warning/50 bg-warning/5" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Clock className={`h-4 w-4 ${taskSummary.dueToday > 0 ? "text-warning" : "text-muted-foreground"}`} />
+              Due Today
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-3xl font-bold ${taskSummary.dueToday > 0 ? "text-warning" : ""}`}>
+              {taskSummary.dueToday}
+            </div>
+            {taskSummary.dueToday > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                S: {taskSummary.dueTodaySetters} · C: {taskSummary.dueTodayClosers}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Upcoming */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              Upcoming (7 days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {taskSummary.upcoming}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Tasks scheduled this week
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* EOD Reports */}
+      {teamId && <EODReportsHub teamId={teamId} />}
+
+      {/* Team Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Team Activity
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {teamId && <ActivityTracker teamId={teamId} />}
+        </CardContent>
+      </Card>
+
+      {/* Appointments Booked Breakdown */}
+      {teamId && <AppointmentsBookedBreakdown teamId={teamId} />}
     </div>
   );
 }
