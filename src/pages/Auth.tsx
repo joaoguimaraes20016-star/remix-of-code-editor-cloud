@@ -1170,10 +1170,10 @@ const Auth = () => {
           
           {/* Copy - Below Card */}
           <div className="text-center max-w-md">
-            <h2 className="text-2xl font-bold text-white mb-3 drop-shadow-lg">
+            <h2 className="text-2xl font-bold text-white/60 mb-3 drop-shadow-lg">
               The Operating System for Scaling Digital Offers.
             </h2>
-            <p className="text-slate-300 text-sm drop-shadow-md">
+            <p className="text-slate-400/80 text-sm drop-shadow-md">
               Build funnels, get leads, book calls, manage deals, and automate follow-ups — all inside Stackit.
             </p>
           </div>
