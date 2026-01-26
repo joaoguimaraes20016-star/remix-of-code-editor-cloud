@@ -124,22 +124,28 @@ export function ActivityTracker({ teamId }: ActivityTrackerProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* Setters Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            {getRoleLabel('setter', true)} Activity Today
-          </CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="relative bg-gradient-to-r from-blue-600/5 via-indigo-600/5 to-violet-700/5 border-b border-blue-500/10">
+          {/* Background decoration */}
+          <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-blue-500/5" />
+          <div className="relative flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="p-1.5 rounded-lg bg-blue-500/10">
+                <Activity className="h-4 w-4 text-blue-500" />
+              </div>
+              {getRoleLabel('setter', true)} Activity Today
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="pt-4">
+          <div className="space-y-3">
             {setterActivity.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No active {getRoleLabel('setter', true).toLowerCase()} found</p>
             ) : (
               setterActivity.map(setter => {
                 const status = getActivityStatus(setter.lastActivity);
                 return (
-                  <div key={setter.userId} className="flex items-start justify-between p-3 rounded-lg border bg-card">
+                  <div key={setter.userId} className="flex items-start justify-between p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{status.icon}</span>
@@ -170,22 +176,28 @@ export function ActivityTracker({ teamId }: ActivityTrackerProps) {
       </Card>
 
       {/* Closers Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            {getRoleLabel('closer', true)} Activity Today
-          </CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="relative bg-gradient-to-r from-emerald-600/5 via-teal-600/5 to-cyan-700/5 border-b border-emerald-500/10">
+          {/* Background decoration */}
+          <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-emerald-500/5" />
+          <div className="relative flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                <Activity className="h-4 w-4 text-emerald-500" />
+              </div>
+              {getRoleLabel('closer', true)} Activity Today
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="pt-4">
+          <div className="space-y-3">
             {closerActivity.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No active {getRoleLabel('closer', true).toLowerCase()} found</p>
             ) : (
               closerActivity.map(closer => {
                 const status = getActivityStatus(closer.lastActivity);
                 return (
-                  <div key={closer.userId} className="flex items-start justify-between p-3 rounded-lg border bg-card">
+                  <div key={closer.userId} className="flex items-start justify-between p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{status.icon}</span>

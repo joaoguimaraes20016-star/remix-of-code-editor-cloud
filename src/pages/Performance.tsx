@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { AlertCircle, Clock, Calendar, Users } from "lucide-react";
+import { AlertCircle, Clock, Calendar, Users, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -146,73 +146,103 @@ export default function Performance() {
 
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Team Performance</h1>
-        <p className="text-muted-foreground text-sm">
-          Monitor your team's activity and productivity
-        </p>
+      {/* Gradient Hero Header */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600/10 via-purple-600/10 to-indigo-700/10 border border-violet-500/20 p-6">
+        {/* Background decorations */}
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-violet-500/10" />
+        <div className="absolute -bottom-8 -left-8 h-40 w-40 rounded-full bg-purple-500/5" />
+        
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <Target className="h-6 w-6 text-violet-500" />
+              Team Performance
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Monitor your team's activity and productivity
+            </p>
+          </div>
+          
+          {/* Live indicator */}
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">LIVE</span>
+          </div>
+        </div>
       </div>
 
-      {/* Task Summary Cards */}
+      {/* Task Summary Gradient Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        {/* Overdue Tasks */}
-        <Card className={taskSummary.overdue > 0 ? "border-destructive/50 bg-destructive/5" : ""}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertCircle className={`h-4 w-4 ${taskSummary.overdue > 0 ? "text-destructive" : "text-muted-foreground"}`} />
-              Overdue Tasks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${taskSummary.overdue > 0 ? "text-destructive" : ""}`}>
-              {taskSummary.overdue}
+        {/* Overdue Tasks - Red/Orange Gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 via-red-500 to-orange-600 p-5 text-white shadow-lg">
+          {/* Background decorations */}
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-white/80">Overdue Tasks</span>
+              <div className="p-2 rounded-lg bg-white/20">
+                <AlertCircle className="h-4 w-4 text-white" />
+              </div>
             </div>
+            <div className="text-3xl font-bold">{taskSummary.overdue}</div>
             {taskSummary.overdue > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm text-white/70 mt-1">
                 {labels.role_1_short}: {taskSummary.overdueSetters} · {labels.role_2_short}: {taskSummary.overdueClosers}
               </p>
             )}
-          </CardContent>
-        </Card>
+            {taskSummary.overdue === 0 && (
+              <p className="text-sm text-white/70 mt-1">All caught up!</p>
+            )}
+          </div>
+        </div>
 
-        {/* Due Today */}
-        <Card className={taskSummary.dueToday > 0 ? "border-warning/50 bg-warning/5" : ""}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className={`h-4 w-4 ${taskSummary.dueToday > 0 ? "text-warning" : "text-muted-foreground"}`} />
-              Due Today
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${taskSummary.dueToday > 0 ? "text-warning" : ""}`}>
-              {taskSummary.dueToday}
+        {/* Due Today - Amber/Yellow Gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-500 p-5 text-white shadow-lg">
+          {/* Background decorations */}
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-white/80">Due Today</span>
+              <div className="p-2 rounded-lg bg-white/20">
+                <Clock className="h-4 w-4 text-white" />
+              </div>
             </div>
+            <div className="text-3xl font-bold">{taskSummary.dueToday}</div>
             {taskSummary.dueToday > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm text-white/70 mt-1">
                 {labels.role_1_short}: {taskSummary.dueTodaySetters} · {labels.role_2_short}: {taskSummary.dueTodayClosers}
               </p>
             )}
-          </CardContent>
-        </Card>
+            {taskSummary.dueToday === 0 && (
+              <p className="text-sm text-white/70 mt-1">Nothing due today</p>
+            )}
+          </div>
+        </div>
 
-        {/* Upcoming */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              Upcoming (7 days)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {taskSummary.upcoming}
+        {/* Upcoming - Green/Teal Gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 p-5 text-white shadow-lg">
+          {/* Background decorations */}
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+          
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-white/80">Upcoming (7 days)</span>
+              <div className="p-2 rounded-lg bg-white/20">
+                <Calendar className="h-4 w-4 text-white" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Tasks scheduled this week
-            </p>
-          </CardContent>
-        </Card>
+            <div className="text-3xl font-bold">{taskSummary.upcoming}</div>
+            <p className="text-sm text-white/70 mt-1">Tasks scheduled this week</p>
+          </div>
+        </div>
       </div>
 
       {/* EOD Reports */}
