@@ -1121,7 +1121,7 @@ const Auth = () => {
           </div>
           
           {/* Feature Card - Dynamic & Engaging */}
-          <Card className="bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 backdrop-blur-md border-slate-600/30 w-[360px] shadow-2xl overflow-hidden relative">
+          <Card className="bg-gradient-to-br from-slate-900/40 via-slate-800/30 to-slate-900/40 backdrop-blur-md border-slate-500/20 w-[360px] shadow-2xl overflow-hidden relative">
             {/* Subtle glow effect */}
             <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl" />
@@ -1141,15 +1141,15 @@ const Auth = () => {
               
               {/* Stats Row - Gradient cards */}
               <div className="grid grid-cols-3 gap-2 mb-5">
-                <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/20 rounded-xl p-3 text-center">
+                <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/10 rounded-xl p-3 text-center">
                   <p className="text-lg font-bold text-emerald-400">$48K</p>
                   <p className="text-[10px] text-emerald-300/60 uppercase tracking-wide">Revenue</p>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/5 border border-blue-500/20 rounded-xl p-3 text-center">
+                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/10 rounded-xl p-3 text-center">
                   <p className="text-lg font-bold text-blue-400">$12K</p>
                   <p className="text-[10px] text-blue-300/60 uppercase tracking-wide">MRR</p>
                 </div>
-                <div className="bg-gradient-to-br from-violet-500/20 to-violet-600/5 border border-violet-500/20 rounded-xl p-3 text-center">
+                <div className="bg-gradient-to-br from-violet-500/10 to-violet-600/5 border border-violet-500/10 rounded-xl p-3 text-center">
                   <p className="text-lg font-bold text-violet-400">32%</p>
                   <p className="text-[10px] text-violet-300/60 uppercase tracking-wide">Close Rate</p>
                 </div>
@@ -1157,7 +1157,7 @@ const Auth = () => {
               
               {/* Activity Feed - More dynamic */}
               <div className="space-y-2.5">
-                <div className="flex items-center gap-3 bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30">
+                <div className="flex items-center gap-3 bg-slate-800/20 rounded-lg p-2.5 border border-slate-700/20">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/30 to-emerald-600/10 flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-emerald-400" />
                   </div>
@@ -1166,7 +1166,7 @@ const Auth = () => {
                     <p className="text-[10px] text-slate-500">Synced to pipeline • 2m ago</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30">
+                <div className="flex items-center gap-3 bg-slate-800/20 rounded-lg p-2.5 border border-slate-700/20">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/30 to-blue-600/10 flex items-center justify-center">
                     <Zap className="w-4 h-4 text-blue-400" />
                   </div>
@@ -1175,7 +1175,7 @@ const Auth = () => {
                     <p className="text-[10px] text-slate-500">Follow-up sent • 5m ago</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30">
+                <div className="flex items-center gap-3 bg-slate-800/20 rounded-lg p-2.5 border border-slate-700/20">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/30 to-violet-600/10 flex items-center justify-center">
                     <BarChart3 className="w-4 h-4 text-violet-400" />
                   </div>
