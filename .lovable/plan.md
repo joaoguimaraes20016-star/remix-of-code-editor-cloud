@@ -1,101 +1,148 @@
 
-
-# Remove Placeholder Integrations (HubSpot & GoHighLevel)
+# Separate Dashboard and Pipeline into Sidebar Sections
 
 ## Overview
-Remove HubSpot and GoHighLevel from the Apps Portal since they are placeholder entries with no actual integration logic. All other integrations are properly implemented with standardized OAuth flows.
+Currently, the Sales CRM page contains two tabs: "Dashboard" and "Pipeline". This plan separates them into distinct sidebar navigation items, each with their own route and page.
 
 ---
 
-## Current State
+## Current vs New Structure
 
-| Integration | Status | Has Config Component | Has OAuth Flow | Action |
-|-------------|--------|---------------------|----------------|--------|
-| HubSpot | `coming_soon` | No | No | **Remove** |
-| GoHighLevel | `available` | No | No | **Remove** |
-| Calendly | Connected | Yes | Yes | Keep |
-| Slack | Connected | Yes | Yes | Keep |
-| Zoom | Connected | Yes | Yes | Keep |
-| Typeform | Connected | Yes | Yes | Keep |
-| Discord | Connected | Yes | Yes | Keep |
-| Fathom | Connected | Yes | Yes | Keep |
-| Meta | Connected | Yes | Yes | Keep |
-| Google Ads | Connected | Yes | Yes | Keep |
-| TikTok | Connected | Yes | Yes | Keep |
-| Zapier | Connected | Yes | Yes (OAuth v2) | Keep |
-| Google Workspace | Connected | Yes | Yes | Keep |
+| Current | New |
+|---------|-----|
+| Sales CRM (single sidebar item) | Dashboard (sidebar item) |
+| └─ Dashboard tab | Pipeline (sidebar item) |
+| └─ Pipeline tab | |
 
 ---
 
 ## Changes Required
 
-### 1. Update AppsPortal.tsx
+### 1. Update TeamSidebar.tsx
 
-**Remove from imports:**
-```typescript
-// Remove these lines
-import ghlLogo from "@/assets/integrations/ghl.svg";
-import hubspotLogo from "@/assets/integrations/hubspot.svg";
+Replace the single "Sales CRM" nav item with two separate items:
+
+```
+Current:
+{ id: "crm", label: "Sales CRM", icon: TrendingUp, path: "/crm" }
+
+New:
+{ id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" }
+{ id: "pipeline", label: "Pipeline", icon: Kanban, path: "/pipeline" }
 ```
 
-**Remove from apps array:**
-```typescript
-// Remove GoHighLevel entry (lines 112-118)
-{
-  id: "ghl",
-  name: "GoHighLevel",
-  description: "CRM and marketing automation",
-  logo: ghlLogo,
-  category: "crm",
-  status: "available",
-},
+This also requires importing additional icons (`LayoutDashboard`, `Kanban`) from lucide-react.
 
-// Remove HubSpot entry (lines 146-152)
-{
-  id: "hubspot",
-  name: "HubSpot",
-  description: "CRM and sales automation",
-  logo: hubspotLogo,
-  category: "crm",
-  status: "coming_soon",
-},
+---
+
+### 2. Update Routes in App.tsx
+
+Add new routes and redirect the old `/crm` route:
+
+```
+Current:
+<Route path="crm" element={<SalesDashboard />} />
+
+New:
+<Route path="dashboard" element={<SalesDashboard defaultTab="dashboard" />} />
+<Route path="pipeline" element={<SalesDashboard defaultTab="appointments" />} />
+<Route path="crm" element={<Navigate to="../dashboard" replace />} />  // Legacy redirect
 ```
 
-### 2. Delete Unused Logo Assets (Optional Cleanup)
+---
 
-| File | Action |
-|------|--------|
-| `src/assets/integrations/ghl.svg` | Delete |
-| `src/assets/integrations/hubspot.svg` | Delete |
+### 3. Update SalesDashboard.tsx
+
+Modify to accept a `defaultTab` prop and hide the internal tab navigation since the tabs are now controlled by the sidebar:
+
+- Accept `defaultTab` prop to determine which view to show
+- Remove the internal `TabsList` (the tabs at the top of the page)
+- Still use `Tabs` component internally but without visible tabs
+- Update page title based on which view is active
 
 ---
 
-## Result
-
-After this change, the Apps Portal will only show integrations that are fully functional:
-
-**Scheduling:** Calendly, Zoom, Fathom
-**Communication:** Slack, Discord, Zapier
-**Analytics:** Typeform
-**Ads & Marketing:** Meta, Google Ads, TikTok
-**Google Workspace:** Sheets, Calendar, Drive, Forms
-
----
-
-## Technical Notes
-
-- No database changes required
-- No Edge Function changes required
-- This is purely a UI cleanup
-- The `crm` category will become empty (can be removed from `categoryLabels` if desired)
-
----
-
-## Files to Modify
+## File Changes Summary
 
 | File | Changes |
 |------|---------|
-| `src/pages/AppsPortal.tsx` | Remove 2 imports, remove 2 app entries |
-| `src/assets/integrations/ghl.svg` | Delete (optional) |
-| `src/assets/integrations/hubspot.svg` | Delete (optional) |
+| `src/components/TeamSidebar.tsx` | Replace "Sales CRM" with "Dashboard" and "Pipeline" items, add new icons |
+| `src/App.tsx` | Add `/dashboard` and `/pipeline` routes, redirect `/crm` |
+| `src/pages/SalesDashboard.tsx` | Accept `defaultTab` prop, hide internal tab UI |
 
+---
+
+## Visual Result
+
+**Before (Sidebar):**
+```
+Team Hub
+Sales CRM    <- clicking opens page with tabs
+Funnels
+...
+```
+
+**After (Sidebar):**
+```
+Team Hub
+Dashboard    <- goes directly to dashboard view
+Pipeline     <- goes directly to pipeline view
+Funnels
+...
+```
+
+---
+
+## Technical Details
+
+### TeamSidebar.tsx changes:
+
+```typescript
+import { 
+  Home, 
+  LayoutDashboard,  // NEW
+  Kanban,           // NEW for Pipeline
+  Layers, 
+  // ... rest
+} from "lucide-react";
+
+const mainNavItems = [
+  { id: "home", label: "Team Hub", icon: Home, path: "" },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+  { id: "pipeline", label: "Pipeline", icon: Kanban, path: "/pipeline" },
+  { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
+  // ... rest of items
+];
+```
+
+### SalesDashboard.tsx changes:
+
+```typescript
+interface SalesDashboardProps {
+  defaultTab?: "dashboard" | "appointments";
+}
+
+const Index = ({ defaultTab = "dashboard" }: SalesDashboardProps) => {
+  // Use defaultTab instead of internal state
+  const activeTab = defaultTab;
+  
+  // Remove setActiveTab calls
+  // Remove TabsList from JSX
+  // Keep TabsContent components
+};
+```
+
+### App.tsx route changes:
+
+```typescript
+<Route path="dashboard" element={<SalesDashboard defaultTab="dashboard" />} />
+<Route path="pipeline" element={<SalesDashboard defaultTab="appointments" />} />
+<Route path="crm" element={<Navigate to="../dashboard" replace />} />
+```
+
+---
+
+## URL Handling
+
+- Links using `?tab=pipeline` will need to redirect to `/pipeline`
+- The existing URL parameter handling in SalesDashboard will be simplified since tabs are now controlled by routes
