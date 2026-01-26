@@ -1106,19 +1106,23 @@ const Auth = () => {
         {/* Subtle overlay for text readability */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/40 via-transparent to-slate-950/40" />
         
-        {/* Center Content - Card at top, copy below */}
+        {/* Center Content - Logo & Headline at top, Card below */}
         <div className="relative z-10 flex flex-col items-center">
-          {/* Feature Card - Top */}
-          <Card className="bg-slate-900/70 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl mb-8">
+          {/* Copy - Now at TOP */}
+          <div className="text-center max-w-md mb-8">
+            <img src={stackitLogo} alt="Stackit" className="w-16 h-16 mx-auto mb-4" />
+            <span className="text-white font-bold text-xl tracking-tight mb-6 block">Stackit</span>
+            <h2 className="text-2xl font-bold text-white mb-3 drop-shadow-lg">
+              The Operating System for Scaling Digital Offers.
+            </h2>
+            <p className="text-slate-400 text-sm drop-shadow-md">
+              Build funnels, get leads, book calls, manage deals, and automate follow-ups — all inside Stackit.
+            </p>
+          </div>
+          
+          {/* Feature Card - Now BELOW */}
+          <Card className="bg-slate-900/70 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl">
             <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <img src={stackitLogo} alt="Stackit" className="w-10 h-10" />
-                <div>
-                  <h3 className="font-semibold text-white">Stackit Dashboard</h3>
-                  <p className="text-xs text-slate-400">Business Operating System</p>
-                </div>
-              </div>
-              
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-3 mb-6">
                 <div className="bg-slate-800/50 rounded-lg p-3 text-center">
@@ -1167,16 +1171,6 @@ const Auth = () => {
               </div>
             </CardContent>
           </Card>
-          
-          {/* Copy - Below Card */}
-          <div className="text-center max-w-md">
-            <h2 className="text-2xl font-bold text-white/40 mb-3 drop-shadow-lg">
-              The Operating System for Scaling Digital Offers.
-            </h2>
-            <p className="text-slate-500/60 text-sm drop-shadow-md">
-              Build funnels, get leads, book calls, manage deals, and automate follow-ups — all inside Stackit.
-            </p>
-          </div>
         </div>
       </div>
     </div>
