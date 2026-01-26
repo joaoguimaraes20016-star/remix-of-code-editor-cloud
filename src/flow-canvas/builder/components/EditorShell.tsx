@@ -4,6 +4,10 @@ import { LeftPanel } from './LeftPanel';
 import { CanvasRenderer } from './CanvasRenderer';
 import { RightPanel } from './RightPanel';
 import { TopToolbar, DeviceMode } from './TopToolbar';
+import { MobileActionBar } from './MobileActionBar';
+import { TouchStepList } from './TouchStepCard';
+import { MobileBottomSheet, ControlGroup, TouchInput, TouchSegmentedControl } from './MobileBottomSheet';
+import { BlockPickerGrid } from './BlockPickerGrid';
 import { AIBuilderCopilot } from './AIBuilderCopilot';
 import { BlockPickerPanel } from './BlockPickerPanel';
 import { useHistory } from '../hooks/useHistory';
@@ -33,6 +37,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { PanelLeftClose, PanelRightClose, Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Drawer } from 'vaul';
 import { InlineEditProvider } from '../contexts/InlineEditContext';
 import { CaptureFlowProvider } from '../contexts/CaptureFlowContext';
 import { FlowContainerProvider, FlowStep } from '../contexts/FlowContainerContext';
@@ -147,8 +152,12 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   
   // Block picker state - for left panel integration
   const [blockPickerOpen, setBlockPickerOpen] = useState(false);
+  const [mobileBlockPickerOpen, setMobileBlockPickerOpen] = useState(false);
   const [blockPickerTargetStackId, setBlockPickerTargetStackId] = useState<string | null>(null);
   const [blockPickerMode, setBlockPickerMode] = useState<'blocks' | 'sections'>('blocks');
+  
+  // Mobile bottom sheet state for element editing
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   
   // Editor UI theme state - controls panels/toolbar appearance (LIGHT by default to match brand aesthetic)
   const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('light');
@@ -1599,56 +1608,90 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           : 'editor-light bg-background')
       }
     >
-      {/* Top Toolbar */}
-      <TopToolbar
-        pageName={page.name}
-        pageSlug={page.slug}
-        deviceMode={deviceMode}
-        onDeviceModeChange={setDeviceMode}
-        previewMode={previewMode}
-        onPreviewToggle={() => setPreviewMode(!previewMode)}
-        onPublish={onPublish ? handlePublishClick : undefined}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onOpenBlockPalette={() => {
-          setBlockPickerOpen(true);
-          setBlockPickerMode('blocks');
-        }}
-        onAddFrame={handleAddFrame}
-        onOpenTextStyles={() => setIsTextStylesOpen(true)}
-        showGrid={showGrid}
-        onToggleGrid={() => setShowGrid(!showGrid)}
-        onOpenCollaborators={() => setIsCollaboratorsOpen(true)}
-        onOpenSEO={() => setIsSEOOpen(true)}
-        onOpenAnalytics={() => setIsAnalyticsOpen(true)}
-        onOpenTheme={() => setIsSettingsOpen(true)}
-        onOpenShare={() => setIsShareOpen(true)}
-        onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
-        onRenameProject={handleRenameProject}
-        onExportProject={handleExportProject}
-        canvasTheme={editorTheme}
-        saveStatus={saveStatus}
-        lastSavedAt={lastSavedAt}
-        onCanvasThemeToggle={() => {
-          setEditorTheme(prev => prev === 'dark' ? 'light' : 'dark');
-        }}
-        isPublished={funnelStatus === 'published'}
-        hasUnpublishedChanges={saveStatus === 'pending' || saveStatus === 'saving'}
-        isPublishing={isPublishing}
-      />
+      {/* Top Toolbar - Desktop */}
+      {!isMobile && (
+        <TopToolbar
+          pageName={page.name}
+          pageSlug={page.slug}
+          deviceMode={deviceMode}
+          onDeviceModeChange={setDeviceMode}
+          previewMode={previewMode}
+          onPreviewToggle={() => setPreviewMode(!previewMode)}
+          onPublish={onPublish ? handlePublishClick : undefined}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onOpenBlockPalette={() => {
+            setBlockPickerOpen(true);
+            setBlockPickerMode('blocks');
+          }}
+          onAddFrame={handleAddFrame}
+          onOpenTextStyles={() => setIsTextStylesOpen(true)}
+          showGrid={showGrid}
+          onToggleGrid={() => setShowGrid(!showGrid)}
+          onOpenCollaborators={() => setIsCollaboratorsOpen(true)}
+          onOpenSEO={() => setIsSEOOpen(true)}
+          onOpenAnalytics={() => setIsAnalyticsOpen(true)}
+          onOpenTheme={() => setIsSettingsOpen(true)}
+          onOpenShare={() => setIsShareOpen(true)}
+          onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
+          onRenameProject={handleRenameProject}
+          onExportProject={handleExportProject}
+          canvasTheme={editorTheme}
+          saveStatus={saveStatus}
+          lastSavedAt={lastSavedAt}
+          onCanvasThemeToggle={() => {
+            setEditorTheme(prev => prev === 'dark' ? 'light' : 'dark');
+          }}
+          isPublished={funnelStatus === 'published'}
+          hasUnpublishedChanges={saveStatus === 'pending' || saveStatus === 'saving'}
+          isPublishing={isPublishing}
+        />
+      )}
+
+      {/* Mobile Action Bar - Simplified for touch */}
+      {isMobile && (
+        <MobileActionBar
+          pageName={activeStep?.name || page.name || 'Untitled'}
+          onBack={() => {
+            if (teamId) {
+              window.location.href = `/team/${teamId}/funnels`;
+            } else {
+              window.history.back();
+            }
+          }}
+          onAdd={() => setMobileBlockPickerOpen(true)}
+          previewMode={previewMode}
+          onPreviewToggle={() => setPreviewMode(!previewMode)}
+          onPublish={onPublish ? handlePublishClick : undefined}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onOpenSEO={() => setIsSEOOpen(true)}
+          onOpenAnalytics={() => setIsAnalyticsOpen(true)}
+          onOpenTheme={() => setIsSettingsOpen(true)}
+          onOpenShare={() => setIsShareOpen(true)}
+          onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          isPublished={funnelStatus === 'published'}
+          hasUnpublishedChanges={saveStatus === 'pending' || saveStatus === 'saving'}
+          isPublishing={isPublishing}
+        />
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden min-h-0 relative">
-        {/* Mobile panel toggles */}
+        {/* Mobile panel toggles - Now using simpler button */}
         {isMobile && !previewMode && (
           <div className="absolute top-2 left-2 z-50 flex gap-2">
             <button
               onClick={() => setMobileLeftOpen(true)}
-              className="p-2 rounded-lg bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] text-[hsl(var(--builder-text-muted))]"
+              className="mobile-toolbar-btn"
+              aria-label="Open pages"
             >
-              <Menu size={18} />
+              <Menu size={20} />
             </button>
           </div>
         )}
@@ -1740,32 +1783,58 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           </div>
         )}
         
-        {/* Left Panel - Mobile Sheet */}
+        {/* Left Panel - Mobile Bottom Sheet (Touch-First Step List) */}
         {isMobile && !previewMode && (
-          <Sheet open={mobileLeftOpen} onOpenChange={setMobileLeftOpen}>
-            <SheetContent side="left" className="w-72 p-0 bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]">
-              <LeftPanel
-                steps={page.steps}
-                activeStepId={activeStepId}
-                selection={selection}
-                onStepSelect={(id) => { handleStepSelect(id); setMobileLeftOpen(false); }}
-                onAddStep={handleAddStep}
-                onDeleteStep={handleDeleteStep}
-                onDuplicateStep={handleDuplicateStep}
-                onAddBlankStep={handleAddBlankStep}
-                onReorderSteps={handleReorderSteps}
-                onSelectFrame={(id, path) => { handleSelectFrame(id, path); setMobileLeftOpen(false); }}
-                onSelectBlock={(id, path) => { handleSelectBlock(id, path); setMobileLeftOpen(false); }}
-                onSelectElement={(id, path) => { handleSelectElement(id, path); setMobileLeftOpen(false); }}
-                onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
-                onOpenBlockPicker={() => {
-                  setBlockPickerOpen(true);
-                  setBlockPickerMode('sections');
-                  setMobileLeftOpen(false);
-                }}
-              />
-            </SheetContent>
-          </Sheet>
+          <Drawer.Root open={mobileLeftOpen} onOpenChange={setMobileLeftOpen}>
+            <Drawer.Portal>
+              <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
+              <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[hsl(var(--builder-surface))] rounded-t-[20px] max-h-[80vh]">
+                {/* Handle */}
+                <div className="mobile-bottom-sheet__handle">
+                  <div className="mobile-bottom-sheet__handle-bar" />
+                </div>
+                
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 pb-2">
+                  <Drawer.Title className="text-lg font-semibold text-[hsl(var(--builder-text))]">
+                    Pages
+                  </Drawer.Title>
+                  <button
+                    onClick={() => setMobileLeftOpen(false)}
+                    className="mobile-toolbar-btn"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                {/* Touch-First Step List */}
+                <div className="flex-1 overflow-y-auto">
+                  <TouchStepList
+                    steps={page.steps}
+                    activeStepId={activeStepId}
+                    onStepSelect={(id) => { handleStepSelect(id); setMobileLeftOpen(false); }}
+                    onAddStep={handleAddBlankStep}
+                    onDuplicateStep={handleDuplicateStep}
+                    onDeleteStep={handleDeleteStep}
+                    onRenameStep={handleRenameStep}
+                  />
+                </div>
+              </Drawer.Content>
+            </Drawer.Portal>
+          </Drawer.Root>
+        )}
+
+        {/* Mobile Block Picker - Full Screen Grid */}
+        {isMobile && (
+          <BlockPickerGrid
+            open={mobileBlockPickerOpen}
+            onClose={() => setMobileBlockPickerOpen(false)}
+            onSelectBlock={(blockType) => {
+              handleAddBlock({ type: blockType } as any);
+              setMobileBlockPickerOpen(false);
+            }}
+          />
         )}
 
         {/* Canvas */}
@@ -1903,6 +1972,49 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           </div>
         )}
       </div>
+
+      {/* Mobile Inspector Bottom Sheet */}
+      {isMobile && !previewMode && selection.id && (
+        <MobileBottomSheet
+          open={!!selection.id}
+          onClose={handleClearSelection}
+          title={selection.type === 'element' ? 'Edit Element' : selection.type === 'block' ? 'Edit Block' : 'Edit'}
+          subtitle={selection.type || undefined}
+          onDelete={() => {
+            if (selection.type === 'element' && selection.id) {
+              handleDeleteElement(selection.id);
+            } else if (selection.type === 'block' && selection.id) {
+              handleDeleteBlock(selection.id);
+            }
+            handleClearSelection();
+          }}
+          onDuplicate={() => {
+            if (selection.type === 'element' && selection.id) {
+              handleDuplicateElement(selection.id);
+            } else if (selection.type === 'block' && selection.id) {
+              handleDuplicateBlock(selection.id);
+            }
+          }}
+        >
+          <ControlGroup label="Quick Actions">
+            <div className="flex gap-2">
+              <TouchSegmentedControl
+                value="medium"
+                onChange={() => {}}
+                options={[
+                  { value: 'small', label: 'S' },
+                  { value: 'medium', label: 'M' },
+                  { value: 'large', label: 'L' },
+                ]}
+                label="Size"
+              />
+            </div>
+          </ControlGroup>
+          <p className="text-sm text-[hsl(var(--builder-text-muted))]">
+            Tap elements on the canvas to edit them. Full inspector coming soon for mobile.
+          </p>
+        </MobileBottomSheet>
+      )}
 
       {/* AI Copilot */}
       {!readOnly && !previewMode && (

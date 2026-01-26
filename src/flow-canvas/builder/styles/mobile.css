@@ -1,0 +1,379 @@
+/* Mobile-First Funnel Builder Styles */
+
+/* Design token for minimum touch target */
+:root {
+  --touch-target-min: 44px;
+}
+
+/* ===== PHASE 1: Mobile Action Bar ===== */
+
+/* Mobile toolbar base */
+.mobile-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 12px;
+  background: hsl(var(--builder-surface));
+  border-bottom: 1px solid hsl(var(--builder-border));
+  touch-action: manipulation;
+}
+
+/* Mobile toolbar button - minimum 44px touch target */
+.mobile-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  padding: 10px;
+  border-radius: 10px;
+  background: hsl(var(--builder-surface-hover));
+  color: hsl(var(--builder-text-muted));
+  transition: all 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-toolbar-btn:active {
+  transform: scale(0.95);
+  background: hsl(var(--builder-surface-active));
+}
+
+.mobile-toolbar-btn--primary {
+  background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-mid)), hsl(var(--gradient-end)));
+  color: white;
+  font-weight: 600;
+}
+
+.mobile-toolbar-btn--primary:active {
+  filter: brightness(0.9);
+}
+
+/* Page name in mobile toolbar */
+.mobile-page-name {
+  flex: 1;
+  margin: 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: hsl(var(--builder-text));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* More menu items */
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 15px;
+  color: hsl(var(--builder-text));
+  border-radius: 8px;
+  transition: background 150ms ease;
+}
+
+.mobile-menu-item:hover,
+.mobile-menu-item:active {
+  background: hsl(var(--builder-surface-hover));
+}
+
+.mobile-menu-item--destructive {
+  color: hsl(var(--destructive));
+}
+
+.mobile-menu-divider {
+  height: 1px;
+  margin: 8px 0;
+  background: hsl(var(--builder-border-subtle));
+}
+
+/* ===== PHASE 2: Touch Step Cards ===== */
+
+.touch-step-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: hsl(var(--builder-surface));
+  border-radius: 12px;
+  border: 1px solid hsl(var(--builder-border-subtle));
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 150ms ease;
+}
+
+.touch-step-card:active {
+  transform: scale(0.98);
+}
+
+.touch-step-card--active {
+  background: hsl(var(--builder-accent) / 0.1);
+  border-color: hsl(var(--builder-accent) / 0.3);
+}
+
+.touch-step-card__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: hsl(var(--builder-surface-hover));
+  color: hsl(var(--builder-text-muted));
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.touch-step-card--active .touch-step-card__badge {
+  background: hsl(var(--builder-accent));
+  color: white;
+}
+
+.touch-step-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.touch-step-card__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: hsl(var(--builder-text));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.touch-step-card__subtitle {
+  font-size: 13px;
+  color: hsl(var(--builder-text-muted));
+  margin-top: 2px;
+}
+
+.touch-step-card__menu {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--builder-text-muted));
+  border-radius: 8px;
+}
+
+.touch-step-card__menu:active {
+  background: hsl(var(--builder-surface-hover));
+}
+
+/* Add page button */
+.touch-add-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 8px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 2px dashed hsl(var(--builder-border));
+  background: transparent;
+  color: hsl(var(--builder-text-muted));
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 150ms ease;
+}
+
+.touch-add-page:active {
+  background: hsl(var(--builder-surface-hover));
+  border-color: hsl(var(--builder-accent));
+  color: hsl(var(--builder-accent));
+}
+
+/* ===== PHASE 3: Bottom Sheet Inspector ===== */
+
+.mobile-bottom-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  background: hsl(var(--builder-surface));
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -10px 40px hsl(0 0% 0% / 0.25);
+  touch-action: none;
+}
+
+.mobile-bottom-sheet__handle {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  cursor: grab;
+}
+
+.mobile-bottom-sheet__handle-bar {
+  width: 40px;
+  height: 5px;
+  background: hsl(var(--builder-border));
+  border-radius: 3px;
+}
+
+.mobile-bottom-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 16px;
+  border-bottom: 1px solid hsl(var(--builder-border-subtle));
+}
+
+.mobile-bottom-sheet__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: hsl(var(--builder-text));
+}
+
+.mobile-bottom-sheet__content {
+  padding: 20px;
+  max-height: 50vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-bottom-sheet__actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid hsl(var(--builder-border-subtle));
+}
+
+.mobile-bottom-sheet__action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--touch-target-min);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 150ms ease;
+}
+
+.mobile-bottom-sheet__action-btn--secondary {
+  background: hsl(var(--builder-surface-hover));
+  color: hsl(var(--builder-text));
+}
+
+.mobile-bottom-sheet__action-btn--destructive {
+  background: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
+}
+
+/* ===== PHASE 4: Block Picker Grid ===== */
+
+.block-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 20px;
+}
+
+.block-picker-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  aspect-ratio: 1;
+  min-height: 90px;
+  padding: 16px;
+  background: hsl(var(--builder-surface-hover));
+  border-radius: 16px;
+  border: 2px solid transparent;
+  transition: all 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.block-picker-tile:active {
+  transform: scale(0.95);
+  background: hsl(var(--builder-surface-active));
+  border-color: hsl(var(--builder-accent));
+}
+
+.block-picker-tile__icon {
+  font-size: 28px;
+  color: hsl(var(--builder-text));
+}
+
+.block-picker-tile__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(var(--builder-text-muted));
+  text-align: center;
+}
+
+/* Block picker header */
+.block-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid hsl(var(--builder-border-subtle));
+}
+
+.block-picker-back-btn {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.block-picker-back-btn:active {
+  background: hsl(var(--builder-surface-hover));
+}
+
+.block-picker-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: hsl(var(--builder-text));
+}
+
+/* ===== Responsive Overrides ===== */
+
+@media (max-width: 640px) {
+  /* Hide desktop toolbar elements on mobile */
+  .desktop-only {
+    display: none !important;
+  }
+  
+  /* Force touch-friendly sizing */
+  .toolbar-btn {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+}
+
+@media (min-width: 641px) {
+  /* Hide mobile-specific elements on desktop */
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .touch-step-card {
+    min-height: 56px;
+  }
+  
+  .block-picker-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
