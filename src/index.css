@@ -352,5 +352,5 @@
 }
 
 .animate-float-bg {
-  animation: float-bg 20s ease-in-out infinite;
+  animation: float-bg 10s ease-in-out infinite;
 }
