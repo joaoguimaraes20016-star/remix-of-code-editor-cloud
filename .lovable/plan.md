@@ -1,138 +1,109 @@
 
-# Animate & Reduce Opacity of Auth Page Background
 
-## Overview
+# Auth Hero Background: Soft Glow Patches with Independent Motion
 
-Enhance the right-side hero panel by reducing the background image opacity and adding a subtle floating/panning animation for a more dynamic, modern feel.
+## Problem
+The current implementation still shows the entire background image moving, which causes visible gaps at the edges. The "block" effect also looks too sharp/puzzle-like.
 
----
-
-## Summary of Changes
-
-| Area | Change |
-|------|--------|
-| **Background Image** | Move to separate `<img>` element with reduced opacity (30-40%) |
-| **Animation** | Add slow, subtle scale/pan animation using CSS keyframes |
-| **CSS** | Add new keyframe animation to `index.css` |
+## Solution
+Replace the current approach with:
+1. **Static base layer** - The full background image stays completely still (no animation)
+2. **Soft glow overlays** - 3-4 independent patches using large, soft radial gradients as masks (no hard edges)
+3. **Faster, varied motion** - Each patch moves in a distinctly different direction at noticeable speed
 
 ---
 
-## Implementation Approach
+## Technical Details
 
-### Current State
-The background is applied via inline `style={{ backgroundImage }}` with a `bg-black/20` overlay on top. This makes it difficult to animate or control opacity of the image itself.
+### File: `src/styles/auth-hero-motion.css`
 
-### New Approach
-Separate the background image into its own absolutely-positioned `<img>` element. This allows us to:
-1. Apply `opacity` directly to the image (e.g., `opacity-30` or `opacity-40`)
-2. Add CSS animation classes for smooth movement
-3. Keep the dark overlay for text readability
-
----
-
-## 1. Add Animation Keyframes
-
-### File: `src/index.css`
-
-Add a slow, subtle floating animation:
-
-```css
-@keyframes float-bg {
-  0%, 100% {
-    transform: scale(1.05) translate(0, 0);
-  }
-  25% {
-    transform: scale(1.08) translate(-1%, -1%);
-  }
-  50% {
-    transform: scale(1.1) translate(0, -2%);
-  }
-  75% {
-    transform: scale(1.08) translate(1%, -1%);
-  }
-}
-
-.animate-float-bg {
-  animation: float-bg 20s ease-in-out infinite;
-}
-```
-
-This creates a very slow (20 second loop), gentle floating effect that subtly scales and pans the background without being distracting.
-
----
-
-## 2. Update Auth.tsx Right Panel
+**Changes:**
+- Remove animation from `.auth-hero-base` (keep it static)
+- Update `.auth-hero-piece` mask to use **much softer gradients** (larger radius, smoother falloff)
+- Increase **opacity to 0.2-0.3** for more visible glow effect
+- Add blur filter for softer appearance
+- Update keyframes for **faster animations** (5-7s instead of 9-13s)
+- Increase **translation distances** (30-50px instead of 14-18px) for more noticeable movement
+- Ensure each piece moves in a **completely different direction**:
+  - Piece 1: moves up-left
+  - Piece 2: moves down-right
+  - Piece 3: moves right-up
+  - Piece 4: moves left-down
 
 ### File: `src/pages/Auth.tsx`
 
-Replace the inline background style with a separate image element:
+**Changes:**
+- Remove animation class from base image (just keep static with opacity)
+- Keep the 4 overlay divs but they'll use the updated CSS
 
-```text
-Current structure:
-┌─────────────────────────────────┐
-│ <div style={backgroundImage}>   │ ← Background on container
-│   <div bg-black/20 overlay />   │
-│   <Card>...</Card>              │
-│   <Bottom copy>...</Bottom>     │
-└─────────────────────────────────┘
+---
 
-New structure:
-┌─────────────────────────────────┐
-│ <div relative overflow-hidden>  │ ← Plain container
-│   <img                          │ ← Separate animated image
-│     src={authHeroBg}            │
-│     className="absolute inset-0 │
-│       w-full h-full             │
-│       object-cover              │
-│       opacity-30                │  ← Reduced opacity (30%)
-│       animate-float-bg"         │  ← Floating animation
-│   />                            │
-│   <div bg-black/30 overlay />   │ ← Slightly stronger overlay
-│   <Card>...</Card>              │
-│   <Bottom copy>...</Bottom>     │
-└─────────────────────────────────┘
-```
+## Key CSS Updates
 
-### Code Changes (lines ~1097-1110):
+```css
+/* Static base - no animation, no gaps */
+.auth-hero-base {
+  transform: scale(1.05); /* slight scale to prevent any edge issues */
+  /* NO animation */
+}
 
-```tsx
-{/* Right Side - Hero (Hidden on mobile) */}
-<div className="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center p-12 bg-slate-950">
-  {/* Animated Background Image */}
-  <img 
-    src={authHeroBg}
-    alt=""
-    className="absolute inset-0 w-full h-full object-cover opacity-30 animate-float-bg"
-  />
+/* Soft glow patches - larger, softer masks */
+.auth-hero-piece {
+  inset: -25%;  /* larger overflow */
+  opacity: 0.25;  /* more visible */
+  filter: blur(20px) saturate(1.2);  /* softer glow look */
   
-  {/* Overlay for text readability */}
-  <div className="absolute inset-0 bg-black/30" />
-  
-  {/* Center Content - Feature Card */}
-  <div className="relative z-10">
-    {/* ... existing card content ... */}
-  </div>
-  
-  {/* Bottom Copy */}
-  {/* ... existing bottom content ... */}
-</div>
+  /* Much softer mask - larger gradient with smoother edges */
+  mask-image: radial-gradient(
+    ellipse 45% 45% at var(--mx) var(--my),
+    rgba(0,0,0,0.8) 0%,
+    rgba(0,0,0,0.4) 40%,
+    transparent 70%
+  );
+}
+
+/* Faster keyframes with more movement */
+@keyframes auth-piece-1 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-40px, -30px, 0); }  /* up-left */
+}
+
+@keyframes auth-piece-2 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(35px, 40px, 0); }  /* down-right */
+}
+
+@keyframes auth-piece-3 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(45px, -25px, 0); }  /* right-up */
+}
+
+@keyframes auth-piece-4 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-35px, 35px, 0); }  /* left-down */
+}
+
+/* Faster durations */
+.auth-hero-piece-1 { animation: auth-piece-1 5s ease-in-out infinite; }
+.auth-hero-piece-2 { animation: auth-piece-2 6s ease-in-out infinite; }
+.auth-hero-piece-3 { animation: auth-piece-3 7s ease-in-out infinite; }
+.auth-hero-piece-4 { animation: auth-piece-4 5.5s ease-in-out infinite; }
 ```
 
 ---
 
-## Visual Effect
+## Visual Result
 
-The result will be:
-- **Dimmer background** - Image at 30% opacity makes it more subtle
-- **Gentle floating motion** - Slow, continuous scale/pan creates depth
-- **Dark base color** - `bg-slate-950` provides a fallback behind the transparent image
-- **Preserved readability** - Feature card and text remain crisp and clear
+- **Base image**: Completely static, full coverage, no gaps ever
+- **Glow patches**: Soft, blurred light areas that drift independently
+- **Motion**: Clearly noticeable, each moving in opposite directions
+- **Feel**: Premium, subtle but alive - like soft light reflections drifting across glass
 
 ---
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/index.css` | Add `@keyframes float-bg` and `.animate-float-bg` class |
-| `src/pages/Auth.tsx` | Replace inline background with animated `<img>` element |
+1. `src/styles/auth-hero-motion.css` - Update all animation and mask styles
+2. `src/pages/Auth.tsx` - Ensure base image has no animation class
+3. `src/index.css` - Remove old float-layer animations (cleanup)
+
