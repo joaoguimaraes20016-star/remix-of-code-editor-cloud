@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Mail, History, Megaphone } from "lucide-react";
+import { Mail, History, Megaphone, Phone } from "lucide-react";
 
 // Import marketing components
 import { EmailSettings } from "@/components/messaging/EmailSettings";
+import { PhoneSettings } from "@/components/messaging/PhoneSettings";
 import { UsageHistory } from "@/components/messaging/UsageHistory";
 
-type MarketingSection = "email" | "history";
+type MarketingSection = "email" | "phone" | "history";
 
 const sections = [
   { id: "email" as const, label: "Email Services", icon: Mail, description: "Configure sending domains" },
+  { id: "phone" as const, label: "Phone Services", icon: Phone, description: "Manage phone numbers" },
   { id: "history" as const, label: "Usage History", icon: History, description: "View transactions" },
 ];
 
@@ -22,6 +24,8 @@ export default function Marketing() {
     switch (activeSection) {
       case "email":
         return <EmailSettings teamId={teamId!} />;
+      case "phone":
+        return <PhoneSettings teamId={teamId!} />;
       case "history":
         return <UsageHistory teamId={teamId!} />;
     }
