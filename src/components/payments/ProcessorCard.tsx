@@ -34,13 +34,17 @@ export function ProcessorCard({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg transition-all hover:shadow-xl ${gradient} ${
+      className={`relative overflow-hidden rounded-xl p-6 text-white shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.25)] ${gradient} ${
         isComingSoon ? "opacity-70" : ""
       }`}
     >
+      {/* Glossy glass overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+      
       {/* Background decoration */}
-      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-      <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5" />
+      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/15 backdrop-blur-sm" />
+      <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/10" />
 
       <div className="relative">
         {/* Header */}
@@ -49,13 +53,13 @@ export function ProcessorCard({
             <div className={`flex items-center justify-center ${
               logoStyle === "branded" 
                 ? "w-12 h-12 rounded-xl bg-white shadow-md" 
-                : "w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm"
+                : "w-10 h-10 rounded-lg bg-white/25 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
             }`}>
               {logo}
             </div>
             <div>
-              <h3 className="font-semibold text-lg">{name}</h3>
-              <p className="text-sm text-white/70">{description}</p>
+              <h3 className="font-semibold text-lg drop-shadow-sm">{name}</h3>
+              <p className="text-sm text-white/80">{description}</p>
             </div>
           </div>
         </div>
