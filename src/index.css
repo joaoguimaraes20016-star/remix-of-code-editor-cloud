@@ -335,32 +335,23 @@
   background-position: 100% 0;
 }
 
-/* Floating background animations for auth hero - parallax layers */
-@keyframes float-layer-1 {
-  0%, 100% {
+/* Smooth continuous floating animation for auth hero */
+@keyframes float-bg {
+  0% {
     transform: translate(0, 0) scale(1.1);
   }
-  50% {
-    transform: translate(-18px, -12px) scale(1.13);
+  33% {
+    transform: translate(-12px, -8px) scale(1.12);
+  }
+  66% {
+    transform: translate(8px, -12px) scale(1.11);
+  }
+  100% {
+    transform: translate(0, 0) scale(1.1);
   }
 }
 
-@keyframes float-layer-2 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1.15);
-  }
-  50% {
-    transform: translate(22px, -16px) scale(1.19);
-  }
-}
-
-.animate-float-layer-1 {
-  animation: float-layer-1 12s ease-in-out infinite;
-  will-change: transform;
-}
-
-.animate-float-layer-2 {
-  animation: float-layer-2 16s ease-in-out infinite;
-  animation-delay: -4s;
+.animate-float-bg {
+  animation: float-bg 18s linear infinite;
   will-change: transform;
 }
