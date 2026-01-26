@@ -1097,38 +1097,30 @@ const Auth = () => {
       
       {/* Right Side - Hero (Hidden on mobile) */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center p-12 bg-slate-950">
-        {/* Background: static base (prevents gaps) + a few masked drifting overlays */}
+        {/* Background: static base + animated gradient glow patches */}
         <div className="absolute inset-0 overflow-hidden">
+          {/* Static base image - scaled up to prevent edge gaps */}
           <img
             src={authHeroBg}
             alt=""
-            className="auth-hero-base absolute -inset-16 w-[calc(100%+128px)] h-[calc(100%+128px)] object-cover opacity-80"
+            className="auth-hero-base absolute -inset-24 w-[calc(100%+192px)] h-[calc(100%+192px)] object-cover opacity-80"
           />
 
-          <div
-            aria-hidden
-            className="auth-hero-piece auth-hero-piece-1"
-            style={{ backgroundImage: `url(${authHeroBg})` }}
-          />
-          <div
-            aria-hidden
-            className="auth-hero-piece auth-hero-piece-2"
-            style={{ backgroundImage: `url(${authHeroBg})` }}
-          />
-          <div
-            aria-hidden
-            className="auth-hero-piece auth-hero-piece-3"
-            style={{ backgroundImage: `url(${authHeroBg})` }}
-          />
-          <div
-            aria-hidden
-            className="auth-hero-piece auth-hero-piece-4"
-            style={{ backgroundImage: `url(${authHeroBg})` }}
-          />
+          {/* Animated glow patches - pure CSS gradients for reliable motion */}
+          <div aria-hidden className="auth-hero-glow auth-hero-glow-1" />
+          <div aria-hidden className="auth-hero-glow auth-hero-glow-2" />
+          <div aria-hidden className="auth-hero-glow auth-hero-glow-3" />
+          <div aria-hidden className="auth-hero-glow auth-hero-glow-4" />
         </div>
         
         {/* Subtle overlay for text readability */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/50 via-slate-950/20 to-slate-950/50" />
+        
+        {/* Right-edge seam cover - hides any subpixel gap artifacts */}
+        <div 
+          aria-hidden 
+          className="absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-slate-950 via-slate-950/80 to-transparent z-10"
+        />
         
         {/* Center Content - Card at top, copy below */}
         <div className="relative z-10 flex flex-col items-center">

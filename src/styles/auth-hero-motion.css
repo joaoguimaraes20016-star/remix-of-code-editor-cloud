@@ -1,114 +1,113 @@
 /* Auth hero background motion
    - Static base image (no gaps ever)
-   - Soft glow patches that drift independently in different directions
+   - Soft radial-gradient glow patches that drift independently
 */
 
-/* Static base - no animation */
+/* Static base - no animation, GPU layer to prevent seams */
 .auth-hero-base {
-  transform: scale(1.05);
+  transform: translateZ(0) scale(1.08);
   will-change: auto;
+  backface-visibility: hidden;
 }
 
-/* Soft glow patches - large, blurred overlays */
-.auth-hero-piece {
+/* ========================================
+   GLOW PATCHES - Pure CSS radial gradients
+   These are NOT image-based, so they render
+   reliably across all browsers/GPUs.
+   ======================================== */
+
+.auth-hero-glow {
   position: absolute;
-  inset: -25%;
-  background-repeat: no-repeat;
-  background-size: cover;
-  opacity: 0.25;
+  inset: -30%;
   pointer-events: none;
   will-change: transform;
+  filter: blur(60px);
   mix-blend-mode: screen;
-  filter: blur(20px) saturate(1.2) contrast(1.05);
+}
 
-  /* Soft elliptical mask - large gradient with smooth falloff */
-  -webkit-mask-image: radial-gradient(
-    ellipse 45% 45% at var(--mx, 50%) var(--my, 50%),
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.4) 40%,
+/* Glow 1: Cyan blob - moves up-left */
+@keyframes auth-glow-1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-50px, -40px, 0) scale(1.05);
+  }
+}
+
+.auth-hero-glow-1 {
+  background: radial-gradient(
+    ellipse 50% 40% at 70% 30%,
+    rgba(56, 189, 248, 0.35) 0%,
+    rgba(56, 189, 248, 0.15) 40%,
     transparent 70%
   );
-  mask-image: radial-gradient(
-    ellipse 45% 45% at var(--mx, 50%) var(--my, 50%),
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.4) 40%,
+  animation: auth-glow-1 5.5s ease-in-out infinite;
+}
+
+/* Glow 2: Blue blob - moves down-right */
+@keyframes auth-glow-2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(45px, 50px, 0) scale(1.08);
+  }
+}
+
+.auth-hero-glow-2 {
+  background: radial-gradient(
+    ellipse 45% 50% at 25% 70%,
+    rgba(59, 130, 246, 0.32) 0%,
+    rgba(59, 130, 246, 0.12) 45%,
+    transparent 75%
+  );
+  animation: auth-glow-2 6.5s ease-in-out infinite;
+}
+
+/* Glow 3: Indigo blob - moves right-up */
+@keyframes auth-glow-3 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(55px, -35px, 0) scale(1.04);
+  }
+}
+
+.auth-hero-glow-3 {
+  background: radial-gradient(
+    ellipse 40% 45% at 30% 35%,
+    rgba(99, 102, 241, 0.28) 0%,
+    rgba(99, 102, 241, 0.1) 50%,
     transparent 70%
   );
+  animation: auth-glow-3 7.5s ease-in-out infinite;
 }
 
-/* Piece 1: moves up-left */
-@keyframes auth-piece-1 {
+/* Glow 4: Sky blob - moves left-down */
+@keyframes auth-glow-4 {
   0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1.1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(-40px, -30px, 0) scale(1.12);
+    transform: translate3d(-40px, 45px, 0) scale(1.06);
   }
 }
 
-/* Piece 2: moves down-right */
-@keyframes auth-piece-2 {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1.1);
-  }
-  50% {
-    transform: translate3d(35px, 40px, 0) scale(1.12);
-  }
+.auth-hero-glow-4 {
+  background: radial-gradient(
+    ellipse 55% 40% at 75% 65%,
+    rgba(14, 165, 233, 0.3) 0%,
+    rgba(14, 165, 233, 0.12) 40%,
+    transparent 70%
+  );
+  animation: auth-glow-4 9s ease-in-out infinite;
 }
 
-/* Piece 3: moves right-up */
-@keyframes auth-piece-3 {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1.1);
-  }
-  50% {
-    transform: translate3d(45px, -25px, 0) scale(1.12);
-  }
-}
-
-/* Piece 4: moves left-down */
-@keyframes auth-piece-4 {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1.1);
-  }
-  50% {
-    transform: translate3d(-35px, 35px, 0) scale(1.12);
-  }
-}
-
-.auth-hero-piece-1 {
-  --mx: 80%;
-  --my: 20%;
-  background-position: 100% 0%;
-  animation: auth-piece-1 5s ease-in-out infinite;
-}
-
-.auth-hero-piece-2 {
-  --mx: 20%;
-  --my: 80%;
-  background-position: 0% 100%;
-  animation: auth-piece-2 6s ease-in-out infinite;
-  opacity: 0.22;
-}
-
-.auth-hero-piece-3 {
-  --mx: 25%;
-  --my: 25%;
-  background-position: 15% 15%;
-  animation: auth-piece-3 7s ease-in-out infinite;
-  opacity: 0.2;
-}
-
-.auth-hero-piece-4 {
-  --mx: 75%;
-  --my: 75%;
-  background-position: 85% 85%;
-  animation: auth-piece-4 5.5s ease-in-out infinite;
-  opacity: 0.22;
-}
-
+/* Accessibility: respect user preference for reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .auth-hero-piece {
+  .auth-hero-glow {
     animation: none !important;
   }
 }
