@@ -852,21 +852,21 @@ const Index = ({ defaultTab = "dashboard" }: SalesDashboardProps) => {
                 value={`$${totalCCRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 subtitle={`${totalClosedDeals} deals closed`}
                 icon={DollarSign}
-                gradient="purple"
+                gradient="green"
               />
               <DashboardMetricCard
                 title="Total MRR"
                 value={`$${totalMRR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 subtitle="All recurring revenue"
                 icon={TrendingUp}
-                gradient="pink"
+                gradient="blue"
               />
               <DashboardMetricCard
                 title="Close Rate"
                 value={`${closeRate}%`}
                 subtitle={`${totalClosedDeals}/${showedAppointments.length} showed closed`}
                 icon={Users}
-                gradient="teal"
+                gradient="red"
               />
             </div>
 

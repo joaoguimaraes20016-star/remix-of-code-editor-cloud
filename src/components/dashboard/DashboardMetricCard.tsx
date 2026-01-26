@@ -6,7 +6,7 @@ interface DashboardMetricCardProps {
   value: string;
   subtitle: string;
   icon: LucideIcon;
-  gradient: "purple" | "pink" | "teal" | "blue" | "orange";
+  gradient: "purple" | "pink" | "teal" | "blue" | "orange" | "green" | "red";
   actionLabel?: string;
   onAction?: () => void;
 }
@@ -17,6 +17,8 @@ const gradients = {
   teal: "from-emerald-600 via-teal-600 to-cyan-700",
   blue: "from-blue-500 via-blue-600 to-indigo-600",
   orange: "from-orange-500 via-amber-500 to-yellow-500",
+  green: "from-emerald-500 via-teal-500 to-cyan-600",
+  red: "from-red-500 via-rose-500 to-pink-600",
 };
 
 export function DashboardMetricCard({
