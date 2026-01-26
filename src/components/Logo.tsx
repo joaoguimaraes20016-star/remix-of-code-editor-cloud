@@ -1,4 +1,4 @@
-import logo from "@/assets/logo.png";
+import logo from "@/assets/stackit-logo.png";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -20,7 +20,7 @@ export const Logo = ({ size = "medium", className, showText = false, gradientTex
     <div className={cn("flex items-center gap-2 sm:gap-2.5", className)}>
       <img 
         src={logo} 
-        alt="Infostack Logo" 
+        alt="Stackit Logo" 
         className={cn(sizeClasses[size], "object-contain")}
       />
       {showText && (
@@ -30,7 +30,7 @@ export const Logo = ({ size = "medium", className, showText = false, gradientTex
             ? "text-gradient-brand" 
             : "text-foreground"
         )}>
-          Infostack
+          Stackit
         </span>
       )}
     </div>
