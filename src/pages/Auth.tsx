@@ -5,13 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/Logo';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, Sparkles, CheckCircle, Zap, BarChart3 } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import stackitLogo from '@/assets/stackit-logo.png';
+import authHeroBg from '@/assets/auth-hero-bg.png';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -1095,99 +1094,28 @@ const Auth = () => {
       </div>
       
       {/* Right Side - Hero (Hidden on mobile) */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center p-12">
-        {/* Decorative background elements */}
-        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-3xl" />
+      <div 
+        className="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center"
+        style={{
+          backgroundImage: `url(${authHeroBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
         
-        {/* Top Badge */}
-        <div className="absolute top-8 left-1/2 -translate-x-1/2">
-          <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-4 py-1.5">
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-            Join 500+ teams worldwide
-          </Badge>
-        </div>
-        
-        {/* Center Content - Mockup Card */}
-        <div className="relative z-10">
-          {/* Main Card */}
-          <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <img src={stackitLogo} alt="Stackit" className="w-10 h-10" />
-                <div>
-                  <h3 className="font-semibold text-white">Stackit Dashboard</h3>
-                  <p className="text-xs text-slate-400">Business Operating System</p>
-                </div>
-              </div>
-              
-              {/* Stats Row */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-white">12</p>
-                  <p className="text-xs text-slate-400">Funnels</p>
-                </div>
-                <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-emerald-400">847</p>
-                  <p className="text-xs text-slate-400">Leads</p>
-                </div>
-                <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-blue-400">94%</p>
-                  <p className="text-xs text-slate-400">Show Rate</p>
-                </div>
-              </div>
-              
-              {/* Progress Items */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">Lead captured</p>
-                    <p className="text-xs text-slate-400">Auto-synced to CRM</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">Automation triggered</p>
-                    <p className="text-xs text-slate-400">Follow-up sequence started</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
-                    <BarChart3 className="w-4 h-4 text-violet-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">Revenue tracked</p>
-                    <p className="text-xs text-slate-400">$24,500 this month</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Floating Badges */}
-          <Badge className="absolute -top-4 -right-8 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-lg">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Real-time sync
-          </Badge>
-          <Badge className="absolute -bottom-4 -left-8 bg-violet-500/20 text-violet-300 border-violet-500/30 shadow-lg">
-            <Zap className="w-3 h-3 mr-1" />
-            Automations
-          </Badge>
+        {/* Center Logo */}
+        <div className="relative z-10 flex flex-col items-center">
+          <img src={stackitLogo} alt="Stackit" className="w-24 h-24 mb-6 drop-shadow-2xl" />
         </div>
         
         {/* Bottom Copy */}
-        <div className="absolute bottom-12 left-0 right-0 px-12 text-center">
-          <h2 className="text-2xl font-bold text-white mb-3">
+        <div className="absolute bottom-12 left-0 right-0 px-12 text-center z-10">
+          <h2 className="text-2xl font-bold text-white mb-3 drop-shadow-lg">
             The Operating System for Scaling Digital Offers.
           </h2>
-          <p className="text-slate-400 text-sm max-w-md mx-auto">
+          <p className="text-slate-300 text-sm max-w-md mx-auto drop-shadow-md">
             Stackit builds your funnels, captures leads, books calls, tracks deals, 
             and automates follow-ups — all in one system.
           </p>
