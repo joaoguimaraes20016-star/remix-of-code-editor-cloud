@@ -1,245 +1,278 @@
 
-# Add Phone Services to Marketing Page
+
+# Redesign Login Page with Stackit Branding
 
 ## Overview
 
-Add a "Phone Services" section to the Marketing page, matching the GHL-style interface where users can purchase phone numbers from Twilio. All the infrastructure already exists - we just need to wire it up with the correct styling.
+Transform the current centered card login page into a modern split-screen design matching the Academy reference, updated with Stackit branding.
 
 ---
 
-## Current State
-
-The Marketing page currently has:
-- Email Services (configure sending domains)
-- Usage History (view transactions)
-
-The following components already exist but are not used:
-- `PhoneNumberList.tsx` - Displays owned phone numbers
-- `PhoneNumberMarketplace.tsx` - Dialog to search/purchase numbers
-
-Backend already has:
-- `team_phone_numbers` table in database
-- `search-phone-numbers` edge function (Twilio search)
-- `purchase-phone-number` edge function (Twilio purchase)
-- `release-phone-number` edge function (Twilio release)
-
----
-
-## Changes Summary
+## Summary of Changes
 
 | Area | Change |
 |------|--------|
-| **Marketing.tsx** | Add "phone" section to navigation, update types, render PhoneSettings |
-| **PhoneSettings.tsx** | NEW component styled like EmailSettings with gradient headers |
+| **Logo Assets** | Add new Stackit blue icon, update Logo component |
+| **Auth.tsx Layout** | Convert to split-screen (left form, right hero) |
+| **Branding** | Replace "Infostack" with "Stackit" throughout |
+| **Visual Style** | Dark blue gradient hero, modern form styling |
 
 ---
 
-## 1. Update Marketing Page Navigation
+## 1. Add Stackit Logo Asset
 
-### File: `src/pages/Marketing.tsx`
-
-**Add Phone icon to imports:**
-```typescript
-import { Mail, History, Megaphone, Phone } from "lucide-react";
+Copy the blue Stackit logo to assets:
+```
+user-uploads://bluuee-removebg-preview.png → src/assets/stackit-logo.png
 ```
 
-**Add phone section:**
+---
+
+## 2. Update Logo Component
+
+### File: `src/components/Logo.tsx`
+
+Update to use the new Stackit logo and branding:
+
 ```typescript
-type MarketingSection = "email" | "phone" | "history";
+import logo from "@/assets/stackit-logo.png";
+import { cn } from "@/lib/utils";
 
-const sections = [
-  { id: "email" as const, label: "Email Services", icon: Mail, description: "Configure sending domains" },
-  { id: "phone" as const, label: "Phone Services", icon: Phone, description: "Manage phone numbers" },
-  { id: "history" as const, label: "Usage History", icon: History, description: "View transactions" },
-];
-```
+interface LogoProps {
+  size?: "small" | "medium" | "large" | "xlarge";
+  className?: string;
+  showText?: boolean;
+  gradientText?: boolean;
+}
 
-**Import and render PhoneSettings:**
-```typescript
-import { PhoneSettings } from "@/components/messaging/PhoneSettings";
+export const Logo = ({ size = "medium", className, showText = false, gradientText = true }: LogoProps) => {
+  const sizeClasses = {
+    small: "h-6 w-6 sm:h-7 sm:w-7",
+    medium: "h-8 w-8 sm:h-9 sm:w-9",
+    large: "h-12 w-12 sm:h-16 sm:w-16",
+    xlarge: "h-20 w-20 sm:h-24 sm:w-24",
+  };
 
-const renderContent = () => {
-  switch (activeSection) {
-    case "email":
-      return <EmailSettings teamId={teamId!} />;
-    case "phone":
-      return <PhoneSettings teamId={teamId!} />;
-    case "history":
-      return <UsageHistory teamId={teamId!} />;
-  }
+  return (
+    <div className={cn("flex items-center gap-2 sm:gap-2.5", className)}>
+      <img 
+        src={logo} 
+        alt="Stackit Logo" 
+        className={cn(sizeClasses[size], "object-contain")}
+      />
+      {showText && (
+        <span className={cn(
+          "font-bold text-base sm:text-xl tracking-tight",
+          gradientText 
+            ? "text-gradient-brand" 
+            : "text-foreground"
+        )}>
+          Stackit
+        </span>
+      )}
+    </div>
+  );
 };
 ```
 
 ---
 
-## 2. Create PhoneSettings Component
+## 3. Redesign Auth Page Layout
 
-### File: `src/components/messaging/PhoneSettings.tsx` (NEW)
+### File: `src/pages/Auth.tsx`
 
-This component will follow the same structure as EmailSettings with:
-- Gradient hero header (green/teal theme to match phone branding)
-- Stats about phone usage
-- List of owned phone numbers
-- "Get a Phone Number" button
+Transform from centered card to split-screen layout:
 
 ```text
 +----------------------------------------------------------+
-|  PHONE SERVICES PAGE                                      |
-|----------------------------------------------------------|
-|  ┌────────────────────────────────────────────────────┐  |
-|  │  GREEN GRADIENT HERO HEADER                        │  |
-|  │  📞 Stackit Phone                                   │  |
-|  │  Send SMS and make calls with your team numbers    │  |
-|  │                              [+ Get a Phone Number] │  |
-|  └────────────────────────────────────────────────────┘  |
-|                                                           |
-|  ┌────────────────────────────────────────────────────┐  |
-|  │  YOUR PHONE NUMBERS                                │  |
-|  │  ┌─────────────────────────────────────────────┐   │  |
-|  │  │ (512) 555-1234    SMS | Voice   $2.50/mo  ⚙ │   │  |
-|  │  └─────────────────────────────────────────────┘   │  |
-|  │  ┌─────────────────────────────────────────────┐   │  |
-|  │  │ (800) 555-5678    SMS | Voice   $5.00/mo  ⚙ │   │  |
-|  │  └─────────────────────────────────────────────┘   │  |
-|  └────────────────────────────────────────────────────┘  |
-|                                                           |
-|  ┌────────────────────────────────────────────────────┐  |
-|  │  EMPTY STATE (if no numbers)                       │  |
-|  │  📞 Get Your First Phone Number                    │  |
-|  │  Purchase a number to send SMS and make calls     │  |
-|  │  [Get a Phone Number]                              │  |
-|  └────────────────────────────────────────────────────┘  |
-+----------------------------------------------------------+
+|  LEFT SIDE (Form - White/Light)  |  RIGHT SIDE (Hero)    |
+|----------------------------------|------------------------|
+|  🔵 Stackit                      |                        |
+|                                  |  ✨ Dark blue gradient |
+|  Welcome back                    |                        |
+|  Sign in to your account         |  📦 Logo icon          |
+|                                  |                        |
+|  [   Google   ] [  Outlook  ]    |  💡 Floating badges:   |
+|  (social buttons)                |     - "Certificate"    |
+|                                  |     - "Interactive"    |
+|  ─── or continue with email ───  |                        |
+|                                  |  🚀 Hero copy:         |
+|  Email                           |  "The Operating System |
+|  [___________________________]   |   for Scaling Digital  |
+|                                  |   Offers."             |
+|  Password                  👁    |                        |
+|  [___________________________]   |  Sub-copy: Stack It    |
+|                                  |  builds your funnels...|
+|  [Forgot password?]              |                        |
+|                                  |                        |
+|  [====== Sign in ======]         |                        |
+|                                  |                        |
+|  Don't have account? Sign up     |                        |
++----------------------------------+------------------------+
 ```
 
-**Component Structure:**
+### Key Layout Changes:
 
 ```typescript
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Phone, Plus, MessageSquare, Volume2, Star, MoreHorizontal, Trash2 } from "lucide-react";
-import { PhoneNumberMarketplace } from "./PhoneNumberMarketplace";
-import { toast } from "sonner";
-// ... other imports
-
-interface PhoneSettingsProps {
-  teamId: string;
-}
-
-export function PhoneSettings({ teamId }: PhoneSettingsProps) {
-  const queryClient = useQueryClient();
-  const [marketplaceOpen, setMarketplaceOpen] = useState(false);
-
-  // Fetch team phone numbers
-  const { data: phoneNumbers, isLoading } = useQuery({
-    queryKey: ["team-phone-numbers", teamId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_phone_numbers")
-        .select("*")
-        .eq("team_id", teamId)
-        .eq("is_active", true)
-        .order("is_default", { ascending: false })
-        .order("purchased_at", { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h2 className="text-2xl font-semibold">Phone Services</h2>
-        <p className="text-muted-foreground">Manage phone numbers for SMS and voice</p>
+return (
+  <div className="min-h-screen flex">
+    {/* Left Side - Form */}
+    <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 bg-background">
+      {/* Logo */}
+      <div className="mb-8">
+        <Logo size="medium" showText />
       </div>
-
-      {/* Stackit Phone - Green Gradient Header */}
-      <Card className="overflow-hidden">
-        <CardHeader className="relative bg-gradient-to-r from-emerald-500 to-green-600 text-white">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="flex items-center justify-between relative">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
-                <Phone className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2 text-white">
-                  Stackit Phone
-                  <Badge className="bg-white/20 text-white border-white/30 text-xs">Twilio Powered</Badge>
-                </CardTitle>
-                <CardDescription className="text-white/70">
-                  Send SMS, make calls, and use with your automations
-                </CardDescription>
-              </div>
-            </div>
-            <Button 
-              onClick={() => setMarketplaceOpen(true)} 
-              size="sm"
-              className="bg-white text-emerald-600 hover:bg-white/90"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Get a Phone Number
-            </Button>
+      
+      {/* Welcome Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+          Welcome back
+        </h1>
+        <p className="text-muted-foreground">
+          Sign in to your account to continue
+        </p>
+      </div>
+      
+      {/* Social Buttons - Side by Side */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <Button variant="outline" onClick={handleGoogleSignIn}>
+          <GoogleIcon /> Google
+        </Button>
+        <Button variant="outline" disabled>
+          <OutlookIcon /> Outlook
+        </Button>
+      </div>
+      
+      {/* Divider */}
+      <div className="relative my-6">
+        <Separator />
+        <span className="absolute ...">or continue with email</span>
+      </div>
+      
+      {/* Form Fields */}
+      <form onSubmit={handleSignIn} className="space-y-4">
+        <div className="space-y-2">
+          <Label>Email <span className="text-destructive">*</span></Label>
+          <Input placeholder="you@company.com" ... />
+        </div>
+        
+        <div className="space-y-2">
+          <Label>Password <span className="text-destructive">*</span></Label>
+          <div className="relative">
+            <Input type={showPassword ? "text" : "password"} ... />
+            <button onClick={togglePassword}>
+              <Eye />
+            </button>
           </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {/* Phone number list or empty state */}
-        </CardContent>
-      </Card>
-
-      <PhoneNumberMarketplace
-        open={marketplaceOpen}
-        onOpenChange={setMarketplaceOpen}
-        teamId={teamId}
-        onNumberPurchased={() => {
-          queryClient.invalidateQueries({ queryKey: ["team-phone-numbers", teamId] });
-        }}
-      />
+        </div>
+        
+        <div className="flex justify-end">
+          <button className="text-primary text-sm">Forgot password?</button>
+        </div>
+        
+        <Button type="submit" className="w-full bg-primary">
+          Sign in
+        </Button>
+      </form>
+      
+      {/* Switch to Sign Up */}
+      <p className="mt-6 text-center text-sm">
+        Don't have an account? <Link>Create an account</Link>
+      </p>
     </div>
-  );
-}
+    
+    {/* Right Side - Hero (Hidden on mobile) */}
+    <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center">
+      {/* Decorative Elements */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2">
+        <Badge className="bg-blue-600/20 text-blue-300">
+          ✨ Join 500+ teams worldwide
+        </Badge>
+      </div>
+      
+      {/* Floating Cards (decorative) */}
+      <div className="relative">
+        <Card className="bg-slate-800/50 backdrop-blur border-slate-700">
+          ...course progress mockup...
+        </Card>
+        <Badge className="absolute ...">Certificate Earned</Badge>
+        <Badge className="absolute ...">Interactive lessons</Badge>
+      </div>
+      
+      {/* Bottom Copy */}
+      <div className="absolute bottom-12 px-12 text-center">
+        <h2 className="text-2xl font-bold text-white mb-3">
+          The Operating System for Scaling Digital Offers.
+        </h2>
+        <p className="text-slate-400 text-sm">
+          Stack It builds your funnels, captures leads, books calls, 
+          tracks deals, and automates follow-ups, all in one system.
+        </p>
+      </div>
+    </div>
+  </div>
+);
 ```
 
 ---
 
-## 3. Features Included
+## 4. Features to Implement
 
-The PhoneSettings component will include:
+### Form Enhancements
+- Password visibility toggle (eye icon)
+- Red asterisk for required fields
+- Placeholder text styling
+- "Forgot password?" link aligned right
 
-1. **Hero Header** - Green gradient matching the Fanbasis style
-2. **Phone Number List** - Table showing:
-   - Phone number (formatted)
-   - Capabilities (SMS, Voice badges)
-   - Monthly cost
-   - Default indicator
-   - Actions dropdown (Set as Default, Release)
-3. **Empty State** - Clean CTA when no numbers exist
-4. **Marketplace Dialog** - Already exists, will be triggered by button
-5. **Set Default** - Ability to mark a number as default
-6. **Release Number** - Ability to release a number back to Twilio
+### Right Side Hero
+- Dark blue gradient background
+- Decorative circular glows/blurs
+- Floating badge: "Join X+ teams worldwide"
+- Mockup card with progress indicators (decorative)
+- Marketing headline: "The Operating System for Scaling Digital Offers."
+- Sub-copy from Stackit website
+
+### Responsive Behavior
+- **Desktop (lg+)**: Split 50/50 layout
+- **Tablet/Mobile**: Full-width form only, hero hidden
 
 ---
 
-## Files to Create/Modify
+## 5. Color Scheme
+
+Based on the reference images:
+
+```text
+Left Side (Form):
+- Background: bg-background (white/light)
+- Text: text-foreground
+- Input borders: border-input
+- Primary button: bg-blue-600 (Stackit blue)
+
+Right Side (Hero):
+- Background: gradient from-slate-900 via-blue-950 to-slate-900
+- Accent: blue-500/blue-600 for badges and glows
+- Text: text-white, text-slate-400 for secondary
+```
+
+---
+
+## Files to Modify
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/pages/Marketing.tsx` | Modify | Add phone section to navigation |
-| `src/components/messaging/PhoneSettings.tsx` | Create | New component with phone management UI |
+| `src/assets/stackit-logo.png` | Create (copy) | New Stackit blue icon |
+| `src/components/Logo.tsx` | Modify | Update to use Stackit logo and name |
+| `src/pages/Auth.tsx` | Modify | Complete redesign to split-screen layout |
 
 ---
 
 ## Visual Result
 
 After implementation:
-- **Marketing sidebar** will have 3 sections: Email Services, Phone Services, Usage History
-- **Phone Services page** will show a green gradient hero header with phone icon
-- **Phone numbers** displayed in a clean table with capabilities and pricing
-- **"Get a Phone Number"** button opens the marketplace dialog
-- **Consistent styling** matches Email Services with the gradient header pattern
+- **Modern split-screen login** matching the Academy reference
+- **Stackit branding** with blue logo throughout
+- **Professional dark hero section** with marketing copy
+- **Clean form UX** with social login, password toggle, and clear CTAs
+- **Fully responsive** - hero hidden on mobile, form takes full width
+
