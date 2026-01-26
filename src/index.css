@@ -335,31 +335,4 @@
   background-position: 100% 0;
 }
 
-/* Floating background animations for auth hero - parallax depth */
-@keyframes float-layer-1 {
-  0% {
-    transform: translate(0, 0) scale(1.18);
-  }
-  100% {
-    transform: translate(-16px, -12px) scale(1.18);
-  }
-}
-
-@keyframes float-layer-2 {
-  0% {
-    transform: translate(0, 0) scale(1.22);
-  }
-  100% {
-    transform: translate(14px, 10px) scale(1.22);
-  }
-}
-
-.animate-float-layer-1 {
-  animation: float-layer-1 10s linear infinite alternate;
-  will-change: transform;
-}
-
-.animate-float-layer-2 {
-  animation: float-layer-2 13s linear infinite alternate;
-  will-change: transform;
-}
+/* Auth hero animations are now in src/styles/auth-hero-motion.css */
