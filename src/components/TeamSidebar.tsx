@@ -16,7 +16,8 @@ import {
   Wallet,
   CreditCard,
   TrendingUp,
-  BookOpen
+  BookOpen,
+  Layers
 } from "lucide-react";
 import { useTeamRole } from "@/hooks/useTeamRole";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const mainNavItems = [
   { id: "resources", label: "Resources", icon: BookOpen, path: "" },
   { id: "performance", label: "Performance", icon: TrendingUp, path: "/performance" },
   { id: "pipeline", label: "Pipeline", icon: Kanban, path: "/pipeline" },
+  { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
   { id: "workflows", label: "Workflows", icon: Workflow, path: "/workflows" },
   { id: "marketing", label: "Marketing", icon: Megaphone, path: "/marketing" },
   { id: "schedule", label: "Schedule", icon: CalendarDays, path: "/schedule" },
