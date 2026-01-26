@@ -1139,22 +1139,25 @@ const Auth = () => {
                 </div>
               </div>
               
-              {/* Stats Row - Glass cards */}
+              {/* Stats Row - Glossy glass cards */}
               <div className="grid grid-cols-3 gap-2 mb-5">
-                <div className="relative bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-xl p-3 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
-                  <p className="relative text-lg font-bold text-emerald-400">$48K</p>
-                  <p className="relative text-[10px] text-emerald-300/70 uppercase tracking-wide">Revenue</p>
+                <div className="relative bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-xl border border-white/30 rounded-xl p-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+                  <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-transparent to-transparent pointer-events-none" />
+                  <p className="relative text-lg font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">$48K</p>
+                  <p className="relative text-[10px] text-emerald-300/80 uppercase tracking-wide">Revenue</p>
                 </div>
-                <div className="relative bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-xl p-3 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-transparent pointer-events-none" />
-                  <p className="relative text-lg font-bold text-blue-400">$12K</p>
-                  <p className="relative text-[10px] text-blue-300/70 uppercase tracking-wide">MRR</p>
+                <div className="relative bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-xl border border-white/30 rounded-xl p-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+                  <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/15 via-transparent to-transparent pointer-events-none" />
+                  <p className="relative text-lg font-bold text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.3)]">$12K</p>
+                  <p className="relative text-[10px] text-blue-300/80 uppercase tracking-wide">MRR</p>
                 </div>
-                <div className="relative bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-xl p-3 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-transparent pointer-events-none" />
-                  <p className="relative text-lg font-bold text-violet-400">32%</p>
-                  <p className="relative text-[10px] text-violet-300/70 uppercase tracking-wide">Close Rate</p>
+                <div className="relative bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-xl border border-white/30 rounded-xl p-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+                  <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-400/15 via-transparent to-transparent pointer-events-none" />
+                  <p className="relative text-lg font-bold text-violet-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.3)]">32%</p>
+                  <p className="relative text-[10px] text-violet-300/80 uppercase tracking-wide">Close Rate</p>
                 </div>
               </div>
               
