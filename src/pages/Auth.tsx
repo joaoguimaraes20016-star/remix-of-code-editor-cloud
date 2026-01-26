@@ -1123,31 +1123,31 @@ const Auth = () => {
           {/* Feature Card - Now BELOW */}
           <Card className="bg-slate-900/70 backdrop-blur-sm border-slate-700/50 w-[340px] shadow-2xl">
             <CardContent className="p-6">
-              {/* Stats Row */}
+              {/* Stats Row - Matching actual system metrics */}
               <div className="grid grid-cols-3 gap-3 mb-6">
                 <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-white">12</p>
-                  <p className="text-xs text-slate-400">Funnels</p>
+                  <p className="text-xl font-bold text-emerald-400">$48K</p>
+                  <p className="text-xs text-slate-400">Revenue</p>
                 </div>
                 <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-emerald-400">847</p>
-                  <p className="text-xs text-slate-400">Leads</p>
+                  <p className="text-xl font-bold text-blue-400">$12K</p>
+                  <p className="text-xs text-slate-400">MRR</p>
                 </div>
                 <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-blue-400">94%</p>
-                  <p className="text-xs text-slate-400">Show Rate</p>
+                  <p className="text-xl font-bold text-violet-400">32%</p>
+                  <p className="text-xs text-slate-400">Close Rate</p>
                 </div>
               </div>
               
-              {/* Progress Items */}
+              {/* Feature Items - Matching actual system modules */}
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-white">Lead captured</p>
-                    <p className="text-xs text-slate-400">Auto-synced to CRM</p>
+                    <p className="text-sm text-white">Funnels & Lead Capture</p>
+                    <p className="text-xs text-slate-400">Build & publish in minutes</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1155,8 +1155,8 @@ const Auth = () => {
                     <Zap className="w-4 h-4 text-blue-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-white">Automation triggered</p>
-                    <p className="text-xs text-slate-400">Follow-up sequence started</p>
+                    <p className="text-sm text-white">CRM & Pipeline</p>
+                    <p className="text-xs text-slate-400">Manage deals & contacts</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1164,8 +1164,8 @@ const Auth = () => {
                     <BarChart3 className="w-4 h-4 text-violet-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-white">Revenue tracked</p>
-                    <p className="text-xs text-slate-400">$24,500 this month</p>
+                    <p className="text-sm text-white">Automations</p>
+                    <p className="text-xs text-slate-400">Follow-ups on autopilot</p>
                   </div>
                 </div>
               </div>
