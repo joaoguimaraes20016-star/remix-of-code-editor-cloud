@@ -1,109 +1,78 @@
 
+Goal
+- Make the auth hero background show clearly visible, “soft glow patch” drift (no “nothing happens”).
+- Remove the thin black line on the far-right edge of the hero panel.
 
-# Auth Hero Background: Soft Glow Patches with Independent Motion
+What’s happening now (based on your screenshot + code)
+- The hero right panel uses a static base image plus 4 masked overlays (`.auth-hero-piece-*`) that animate via CSS.
+- You’re reporting “no movement” even though animations exist. The most likely causes:
+  1) The current effect is too subtle on your screen because the overlays are low-opacity, heavily blurred, and blended.
+  2) Mask/blend rendering quirks can make these overlays effectively invisible depending on browser/GPU/compositing.
+- The “black line” on the far-right edge is most likely an edge/compositing artifact from:
+  - sub-pixel rendering + overflow clipping + blur/masks, or
+  - the base container background peeking through at the extreme edge.
 
-## Problem
-The current implementation still shows the entire background image moving, which causes visible gaps at the edges. The "block" effect also looks too sharp/puzzle-like.
+Solution approach (predictable + explainable)
+- Keep the base image completely static (already correct).
+- Replace the masked “image patches” approach with “true glow patches” that do not depend on `mask-image` to be visible:
+  - Each glow patch is a large radial-gradient blob (blue/cyan tones) with blur.
+  - Each blob animates independently in different directions.
+  - This guarantees obvious motion even if masking/blending behaves differently across browsers.
+- Add a small “seam cover” overlay on the far-right edge of the hero panel to remove the black line deterministically.
 
-## Solution
-Replace the current approach with:
-1. **Static base layer** - The full background image stays completely still (no animation)
-2. **Soft glow overlays** - 3-4 independent patches using large, soft radial gradients as masks (no hard edges)
-3. **Faster, varied motion** - Each patch moves in a distinctly different direction at noticeable speed
+Implementation steps (code changes)
+1) Update `src/styles/auth-hero-motion.css`
+   A. Keep `.auth-hero-base` static, but make it more “bulletproof” against edge artifacts:
+      - Increase overscan (either via larger negative inset in TSX or via scale here).
+      - Add `transform: translateZ(0) scale(...)` (GPU compositing helps avoid 1px seams).
+   B. Introduce new glow patch classes that are not image-based:
+      - `.auth-hero-glow` (base glow style):
+        - `position: absolute; inset: -20%` (big enough so movement never reveals edges)
+        - `background: radial-gradient(...)` (soft blob)
+        - `filter: blur(50px) saturate(1.2)` (soft + “premium”)
+        - `opacity: 0.18–0.35` (noticeable)
+        - `mix-blend-mode: screen` or `soft-light` (we’ll pick the one that reads best on your background)
+      - Create 4 variants `.auth-hero-glow-1..4` each with:
+        - Different starting positions
+        - Different gradient colors (all within your blue palette)
+        - Different animation durations (e.g. 5.5s, 6.5s, 7.5s, 9s)
+        - Different directions (up-left, down-right, right-up, left-down)
+   C. Add `@media (prefers-reduced-motion: reduce)` to disable the glow animations (keeps accessibility; you can still get motion if your system is not reduced-motion).
 
----
+2) Update `src/pages/Auth.tsx` (hero section only)
+   A. Keep the base image as-is but increase coverage:
+      - Change the base image overscan from `-inset-16 w-[calc(100%+128px)] ...` to a slightly larger overscan (e.g. `-inset-24` / `-inset-28`) to guarantee no edge reveal on any DPI/rounding scenario.
+   B. Replace the 4 current overlay `div`s:
+      - Remove `auth-hero-piece auth-hero-piece-*` layers.
+      - Add 4 `div`s with `auth-hero-glow auth-hero-glow-*`.
+      - These will be visually obvious and reliably animated.
+   C. Fix the right-edge black line with a deterministic seam-cover:
+      - Add an absolute overlay inside the hero container:
+        - `right: 0; top: 0; bottom: 0; width: 6–12px;`
+        - background: `bg-gradient-to-l from-slate-950 via-slate-950/70 to-transparent`
+      - This hides any 1px GPU/compositing seam without changing layout or relying on “magic”.
 
-## Technical Details
+3) Verification checklist (what we’ll confirm in preview)
+- Motion:
+  - You can clearly see at least 2–4 independent glow blobs drifting at all times.
+  - Motion is “noticeable drift” (not subtle) while still smooth (no jitter).
+- No gaps:
+  - The base image never reveals empty edges during the animation (it won’t be animated).
+- No black line:
+  - The far-right edge seam is gone at all zoom levels (100% and 90/110%).
+- Consistency:
+  - Works on large screens (lg+) where the hero shows; mobile remains unchanged (hero hidden).
+  - No new “weird block” artifacts because we’re not using hard masks.
 
-### File: `src/styles/auth-hero-motion.css`
+Files touched
+- `src/styles/auth-hero-motion.css` (rework overlays to gradient glow patches, improve compositing)
+- `src/pages/Auth.tsx` (swap overlay elements, increase base overscan, add seam cover overlay)
 
-**Changes:**
-- Remove animation from `.auth-hero-base` (keep it static)
-- Update `.auth-hero-piece` mask to use **much softer gradients** (larger radius, smoother falloff)
-- Increase **opacity to 0.2-0.3** for more visible glow effect
-- Add blur filter for softer appearance
-- Update keyframes for **faster animations** (5-7s instead of 9-13s)
-- Increase **translation distances** (30-50px instead of 14-18px) for more noticeable movement
-- Ensure each piece moves in a **completely different direction**:
-  - Piece 1: moves up-left
-  - Piece 2: moves down-right
-  - Piece 3: moves right-up
-  - Piece 4: moves left-down
+Notes / tradeoffs
+- This approach is more robust than mask-based “moving pieces” because it doesn’t depend on browser-specific mask rendering and it’s easy to tune (opacity/blur/speed).
+- It stays consistent with your “predictable, transparent” rule: base is static; glows are clearly separate layers; no hidden logic.
 
-### File: `src/pages/Auth.tsx`
-
-**Changes:**
-- Remove animation class from base image (just keep static with opacity)
-- Keep the 4 overlay divs but they'll use the updated CSS
-
----
-
-## Key CSS Updates
-
-```css
-/* Static base - no animation, no gaps */
-.auth-hero-base {
-  transform: scale(1.05); /* slight scale to prevent any edge issues */
-  /* NO animation */
-}
-
-/* Soft glow patches - larger, softer masks */
-.auth-hero-piece {
-  inset: -25%;  /* larger overflow */
-  opacity: 0.25;  /* more visible */
-  filter: blur(20px) saturate(1.2);  /* softer glow look */
-  
-  /* Much softer mask - larger gradient with smoother edges */
-  mask-image: radial-gradient(
-    ellipse 45% 45% at var(--mx) var(--my),
-    rgba(0,0,0,0.8) 0%,
-    rgba(0,0,0,0.4) 40%,
-    transparent 70%
-  );
-}
-
-/* Faster keyframes with more movement */
-@keyframes auth-piece-1 {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(-40px, -30px, 0); }  /* up-left */
-}
-
-@keyframes auth-piece-2 {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(35px, 40px, 0); }  /* down-right */
-}
-
-@keyframes auth-piece-3 {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(45px, -25px, 0); }  /* right-up */
-}
-
-@keyframes auth-piece-4 {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(-35px, 35px, 0); }  /* left-down */
-}
-
-/* Faster durations */
-.auth-hero-piece-1 { animation: auth-piece-1 5s ease-in-out infinite; }
-.auth-hero-piece-2 { animation: auth-piece-2 6s ease-in-out infinite; }
-.auth-hero-piece-3 { animation: auth-piece-3 7s ease-in-out infinite; }
-.auth-hero-piece-4 { animation: auth-piece-4 5.5s ease-in-out infinite; }
-```
-
----
-
-## Visual Result
-
-- **Base image**: Completely static, full coverage, no gaps ever
-- **Glow patches**: Soft, blurred light areas that drift independently
-- **Motion**: Clearly noticeable, each moving in opposite directions
-- **Feel**: Premium, subtle but alive - like soft light reflections drifting across glass
-
----
-
-## Files to Modify
-
-1. `src/styles/auth-hero-motion.css` - Update all animation and mask styles
-2. `src/pages/Auth.tsx` - Ensure base image has no animation class
-3. `src/index.css` - Remove old float-layer animations (cleanup)
-
+Acceptance criteria (what you should see when done)
+- The hero background feels “alive”: 4 soft glows drifting independently.
+- No visible black line on the far right edge.
+- The effect looks premium (soft, not blocky), with clearly noticeable motion.
