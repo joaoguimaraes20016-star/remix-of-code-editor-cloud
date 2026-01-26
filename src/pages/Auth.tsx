@@ -1096,12 +1096,22 @@ const Auth = () => {
       
       {/* Right Side - Hero (Hidden on mobile) */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden items-center justify-center p-12 bg-slate-950">
-        {/* Animated Background Image - Single Layer */}
-        <img 
-          src={authHeroBg}
-          alt=""
-          className="absolute -inset-8 w-[calc(100%+64px)] h-[calc(100%+64px)] object-cover opacity-80 animate-float-bg"
-        />
+        {/* Layered Animated Background - Opposite Directions for Depth */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Base layer - moves up-left */}
+          <img 
+            src={authHeroBg}
+            alt=""
+            className="absolute -inset-16 w-[calc(100%+128px)] h-[calc(100%+128px)] object-cover opacity-75 animate-float-layer-1"
+          />
+          {/* Second layer - moves down-right (opposite) for parallax */}
+          <img 
+            src={authHeroBg}
+            alt=""
+            className="absolute -inset-20 w-[calc(100%+160px)] h-[calc(100%+160px)] object-cover opacity-15 animate-float-layer-2 mix-blend-lighten"
+            style={{ objectPosition: '60% 60%' }}
+          />
+        </div>
         
         {/* Subtle overlay for text readability */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/50 via-slate-950/20 to-slate-950/50" />
