@@ -1680,80 +1680,8 @@ export function FlowCanvasRenderer({
           </div>
         );
 
-      case 'video-thumbnail': {
-        const thumbnailUrl = (element.props?.thumbnailUrl as string);
-        const videoUrl = (element.props?.videoUrl as string);
-        const showPlayButton = element.props?.showPlayButton !== false;
-        const playButtonStyle = (element.props?.playButtonStyle as string) || 'rounded';
-        const overlayStyle = (element.props?.overlayStyle as string) || 'gradient';
-        const autoplayOnClick = element.props?.autoplayOnClick !== false;
-        const playButtonStyleMap: Record<string, string> = {
-          rounded: 'rounded-full bg-white/90',
-          square: 'rounded-lg bg-white/90',
-          minimal: 'bg-transparent border-2 border-white',
-        };
-        
-        // State for video playback (using a simple approach for SSR compatibility)
-        const [isPlaying, setIsPlaying] = React.useState(false);
-        
-        const handlePlayClick = () => {
-          if (autoplayOnClick && videoUrl) {
-            setIsPlaying(true);
-          }
-        };
-        
-        // If playing, render the video
-        if (isPlaying && videoUrl) {
-          const embedUrl = videoUrl.includes('youtube') 
-            ? videoUrl.replace('watch?v=', 'embed/').split('&')[0] + '?autoplay=1'
-            : videoUrl.includes('vimeo') 
-              ? `https://player.vimeo.com/video/${videoUrl.split('/').pop()}?autoplay=1`
-              : videoUrl;
-          
-          return (
-            <div key={element.id} className="relative aspect-video rounded-2xl overflow-hidden bg-muted">
-              <iframe 
-                src={embedUrl} 
-                className="absolute inset-0 w-full h-full" 
-                allow="autoplay; fullscreen; encrypted-media"
-                allowFullScreen
-              />
-            </div>
-          );
-        }
-        
-        return (
-          <div 
-            key={element.id} 
-            className={cn(
-              "relative aspect-video rounded-2xl overflow-hidden bg-muted",
-              autoplayOnClick && videoUrl && "cursor-pointer"
-            )}
-            onClick={handlePlayClick}
-          >
-            {thumbnailUrl ? (
-              <img src={thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                <Video className="w-12 h-12 text-muted-foreground/30" />
-              </div>
-            )}
-            <div className={cn(
-              "absolute inset-0 flex items-center justify-center",
-              overlayStyle === 'gradient' && "bg-gradient-to-b from-transparent to-black/50"
-            )}>
-              {showPlayButton && (
-                <div className={cn(
-                  "w-16 h-16 flex items-center justify-center backdrop-blur-sm transition-transform hover:scale-110",
-                  playButtonStyleMap[playButtonStyle] || playButtonStyleMap.rounded
-                )}>
-                  <Play className={cn("w-8 h-8 ml-1", playButtonStyle === 'minimal' ? 'text-white' : 'text-gray-900')} />
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      }
+      // NOTE: 'video-thumbnail' is deprecated - use 'video' with displayMode: 'thumbnail'
+      // All video-thumbnail elements are now handled by the unified 'video' case above
 
       case 'underline-text':
         const underlineFrom = (element.props?.underlineFrom as string) || (page as FlowCanvasPage).settings?.primary_color || '#8B5CF6';
