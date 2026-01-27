@@ -1,224 +1,416 @@
 
-# Fix Contrast-Adaptive "Add Section" and "Add Content" Buttons
 
-## Problem Statement
+# Comprehensive Funnel Builder Enhancement Plan
 
-The screenshot clearly shows the issue: on a blue background (#3B82F6), the "+ Add content" button and the dotted-circle empty state are barely visible because they use hardcoded gray/white colors.
+## Overview
 
-### Current Hardcoded Styling (Not Adaptive)
+Based on my investigation, I've identified **multiple issues and enhancement opportunities** across three main areas:
 
-**Empty State Card** (`CanvasRenderer.tsx:4388-4421`):
-```tsx
-// Uses hardcoded colors - fails on blue/dark backgrounds
-className="border-2 border-dashed border-purple-300/50 rounded-2xl bg-white"
-// ...
-<span className="text-lg font-semibold text-gray-800 mb-1">
-<span className="text-sm text-gray-400 mb-6">
-```
-
-**"+ Add content" Button** (`CanvasRenderer.tsx:4486-4492`):
-```tsx
-className="text-xs text-gray-500 hover:text-gray-700"
-```
-
-### Why It Fails
-
-On a blue background (#3B82F6):
-- `text-gray-500` (#6b7280) has only ~2.1:1 contrast ratio (needs 4.5:1 for AA)
-- `border-purple-300/50` is nearly invisible
-- White card with bg-white creates jarring visual contrast
+1. **AI Color/Gradient Monotony** - Templates and AI always default to the same purple-pink (#8B5CF6 → #D946EF) gradient
+2. **Redundant Element Types** - `video-thumbnail` and `video` are two separate elements that should be unified
+3. **Button Style Confusion** - Outline/fill/solid logic is complex and has edge cases
+4. **Missing Full-Funnel AI Generation** - AI generates single sections, not complete funnel flows
 
 ---
 
-## Solution Overview
+## Part 1: Fix AI Color Palette Monotony
 
-Use the existing `ContrastEngine` from `src/builder/utils/ContrastEngine.ts` to compute adaptive colors based on the parent frame's background. The key functions we already have:
-
+### Problem
+The AI Copilot and templates always fall back to the same purple-pink gradient:
 ```typescript
-isLightColor(color: string): boolean
-getContrastTextColor(backgroundColor: string): string
-getThemeAwareColors(backgroundColor: string): ThemeAwareColors
+// gradientHelpers.ts:21
+return 'linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%)';
+
+// templateThemeUtils.ts:247
+const primaryColor = settings?.primary_color || '#8B5CF6';
 ```
 
----
+Every hero, badge, and gradient-text element defaults to this same palette.
 
-## Implementation Details
+### Solution
 
-### Change 1: Pass Background Context to StackRenderer
+#### 1.1: Create a Dynamic Color Palette System
 
-The `StackRenderer` needs to know the parent frame's background color. Add a new prop:
+Create a new file `supabase/functions/ai-copilot/colorPalettes.ts`:
 
 ```typescript
-interface StackRendererProps {
-  // ... existing props
-  parentBackgroundColor?: string;  // NEW: Pass from FrameRenderer
+export const COLOR_PALETTES = {
+  // Warm/Energetic
+  sunset: { primary: '#F97316', accent: '#EF4444', gradient: ['#F97316', '#EF4444'] },
+  coral: { primary: '#FB7185', accent: '#F43F5E', gradient: ['#FB7185', '#F43F5E'] },
+  amber: { primary: '#F59E0B', accent: '#D97706', gradient: ['#F59E0B', '#EAB308'] },
+  
+  // Cool/Professional
+  ocean: { primary: '#0EA5E9', accent: '#06B6D4', gradient: ['#0EA5E9', '#06B6D4'] },
+  sapphire: { primary: '#3B82F6', accent: '#6366F1', gradient: ['#3B82F6', '#8B5CF6'] },
+  teal: { primary: '#14B8A6', accent: '#0D9488', gradient: ['#14B8A6', '#0D9488'] },
+  
+  // Rich/Premium
+  violet: { primary: '#8B5CF6', accent: '#A855F7', gradient: ['#8B5CF6', '#D946EF'] },
+  rose: { primary: '#E11D48', accent: '#BE185D', gradient: ['#E11D48', '#DB2777'] },
+  emerald: { primary: '#10B981', accent: '#059669', gradient: ['#10B981', '#047857'] },
+  
+  // Neutral/Minimal
+  slate: { primary: '#475569', accent: '#64748B', gradient: ['#334155', '#475569'] },
+  zinc: { primary: '#3F3F46', accent: '#52525B', gradient: ['#27272A', '#3F3F46'] }
+};
+
+export function selectPaletteForIndustry(industry: string): typeof COLOR_PALETTES[keyof typeof COLOR_PALETTES] {
+  const mapping: Record<string, keyof typeof COLOR_PALETTES> = {
+    saas: 'sapphire',
+    coaching: 'coral',
+    ecommerce: 'amber',
+    agency: 'slate',
+    newsletter: 'teal',
+    event: 'rose',
+    fitness: 'emerald',
+    finance: 'ocean'
+  };
+  return COLOR_PALETTES[mapping[industry] || 'violet'];
 }
 ```
 
-### Change 2: Update FrameRenderer to Pass Background
+#### 1.2: Update AI Prompts to Use Industry-Aware Palettes
 
-In `FrameRenderer`, compute the effective background color and pass it to `StackRenderer`:
-
-```typescript
-// Compute effective background color for the frame
-const effectiveBackgroundColor = (() => {
-  const bg = frame.background || 'transparent';
-  if (bg === 'custom') return frame.backgroundColor || '#ffffff';
-  if (bg === 'white') return '#ffffff';
-  if (bg === 'dark') return '#111827';
-  if (bg === 'transparent') return 'transparent';
-  // For gradient/image/video, extract dominant color or default
-  return 'transparent';
-})();
-
-// Pass to StackRenderer
-<StackRenderer
-  // ... existing props
-  parentBackgroundColor={effectiveBackgroundColor}
-/>
-```
-
-### Change 3: Update StackRenderer Empty State (Contrast-Adaptive)
-
-Import and use ContrastEngine:
+Modify `supabase/functions/ai-copilot/prompts.ts` to inject color guidance:
 
 ```typescript
-import { isLightColor, getContrastTextColor } from '@/builder/utils/ContrastEngine';
-
-// Inside component:
-const isParentDark = parentBackgroundColor && !isLightColor(parentBackgroundColor);
-
-// Empty state - adapt colors
-<div 
-  className={cn(
-    "relative flex flex-col items-center justify-center py-16 px-8 rounded-xl cursor-pointer transition-all",
-    "border-2 border-dashed",
-    isParentDark 
-      ? "border-white/30 hover:border-white/50 bg-white/5"
-      : "border-gray-300 hover:border-gray-400 bg-gray-50/50",
-    "group/empty"
-  )}
->
-  <div className={cn(
-    "w-12 h-12 rounded-xl border shadow-sm flex items-center justify-center transition-all",
-    isParentDark
-      ? "bg-white/10 border-white/20 group-hover/empty:bg-white/15"
-      : "bg-white border-gray-200 group-hover/empty:border-gray-300"
-  )}>
-    <LayoutGrid className={cn(
-      "w-5 h-5 transition-colors",
-      isParentDark 
-        ? "text-white/60 group-hover/empty:text-white/80" 
-        : "text-gray-400 group-hover/empty:text-gray-600"
-    )} />
-  </div>
-  <div className="text-center">
-    <p className={cn(
-      "text-sm font-medium transition-colors",
-      isParentDark 
-        ? "text-white/80 group-hover/empty:text-white" 
-        : "text-gray-600 group-hover/empty:text-gray-800"
-    )}>
-      Add Block
-    </p>
-    <p className={cn(
-      "text-xs mt-0.5",
-      isParentDark ? "text-white/50" : "text-gray-400"
-    )}>
-      Click to add content
-    </p>
-  </div>
-</div>
+// Add to getRelevantKnowledge() function
+if (context?.industry) {
+  const palette = selectPaletteForIndustry(context.industry);
+  knowledge += `\n=== COLOR PALETTE ===\nPrimary: ${palette.primary}\nAccent: ${palette.accent}\nGradient: ${palette.gradient.join(' → ')}\n`;
+}
 ```
 
-### Change 4: Update "+ Add content" Button (Contrast-Adaptive)
+#### 1.3: Update Template Theme Utils
+
+Modify `templateThemeUtils.ts` to generate varied gradients:
 
 ```typescript
-{/* Add content button */}
-{!readOnly && stack.blocks.length > 0 && (
-  <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
-    <button
-      onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
-      className={cn(
-        "flex items-center justify-center gap-1.5 w-full py-2 text-xs transition-colors",
-        isParentDark
-          ? "text-white/50 hover:text-white/80"
-          : "text-gray-500 hover:text-gray-700"
-      )}
-    >
-      <Plus size={14} />
-      <span>Add content</span>
-    </button>
-  </div>
-)}
+export function generateAccentGradient(primaryColor: string): [string, string] {
+  // Instead of always shifting +40 degrees, use a palette-aware approach
+  const palettes = Object.values(COLOR_PALETTES);
+  const matchedPalette = palettes.find(p => p.primary.toLowerCase() === primaryColor.toLowerCase());
+  
+  if (matchedPalette) {
+    return matchedPalette.gradient as [string, string];
+  }
+  
+  // Fallback to hue shift for custom colors
+  const shifted = shiftHue(primaryColor, 40);
+  return [primaryColor, shifted];
+}
 ```
-
-### Change 5: Update Main CanvasRenderer StackRenderer (Same Pattern)
-
-The inline `StackRenderer` in `CanvasRenderer.tsx` (lines 4260-4499) also needs the same treatment:
-
-1. Add `parentBackgroundColor` prop computation in the parent loop
-2. Apply identical adaptive styling
-
-### Change 6: Update StackRenderer.tsx (Standalone Component)
-
-The standalone `StackRenderer.tsx` file needs:
-1. Add `parentBackgroundColor?: string` prop
-2. Import ContrastEngine
-3. Apply same adaptive styling pattern
 
 ---
+
+## Part 2: Unify Video Elements
+
+### Problem
+Currently there are **two separate video-related elements**:
+1. **`video`** - Full video embed with iframe (lines 2221-2287)
+2. **`video-thumbnail`** - Static thumbnail with play button (lines 3103-3168)
+
+This causes confusion:
+- Templates use `video-thumbnail` for placeholders
+- Inspector has different controls for each
+- Users don't understand which to use
+
+### Solution: Merge into Single Video Element
+
+#### 2.1: Consolidate to Single `video` Element Type
+
+Update `CanvasRenderer.tsx` to handle both modes in one element:
+
+```typescript
+case 'video':
+  const videoUrl = element.props?.videoSettings?.url || element.props?.videoUrl;
+  const thumbnailUrl = element.props?.thumbnailUrl;
+  const displayMode = element.props?.displayMode || (videoUrl ? 'embed' : 'thumbnail');
+  
+  // Thumbnail mode (no URL yet, or explicitly set to thumbnail)
+  if (displayMode === 'thumbnail' || !videoUrl) {
+    // Render thumbnail with play button overlay
+    // On click in runtime → open video modal or inline play
+  }
+  
+  // Embed mode (has URL)
+  else {
+    // Render iframe embed
+  }
+```
+
+#### 2.2: Update Inspector for Unified Video
+
+Create single video inspector section:
+- **Source Tab**: URL input, auto-detect platform
+- **Display Tab**: Thumbnail image (auto-generated from URL or custom)
+- **Playback Tab**: Autoplay, mute, loop toggles
+- **Style Tab**: Overlay, play button style, border radius
+
+#### 2.3: Migrate Existing `video-thumbnail` Elements
+
+Add migration function:
+```typescript
+// In CanvasRenderer or during page load
+if (element.type === 'video-thumbnail') {
+  // Convert to unified video type
+  element.type = 'video';
+  element.props = {
+    ...element.props,
+    displayMode: 'thumbnail',
+    videoSettings: { url: element.props?.videoUrl }
+  };
+}
+```
+
+---
+
+## Part 3: Simplify Button Style System
+
+### Problem
+Button styling has **too many overlapping controls**:
+- `buttonStyle`: 'solid' | 'outline' | 'ghost'
+- `fillType`: 'solid' | 'gradient' | 'none'
+- `variant`: 'primary' | 'secondary' | 'nav-pill' | 'footer-link' | 'ghost' | 'link'
+- `backgroundColor`, `borderWidth`, `borderColor` all override each other
+
+Edge cases:
+- Setting `borderWidth: 0` doesn't always remove the border
+- Shadow appears on outline buttons unexpectedly
+- `fillType: none` conflicts with `buttonStyle: solid`
+
+### Solution: Unified Button Style Model
+
+#### 3.1: Single Source of Truth
+
+Create unified button style type:
+```typescript
+interface UnifiedButtonStyle {
+  // PRIMARY control - determines base appearance
+  appearance: 'filled' | 'outline' | 'ghost' | 'link';
+  
+  // Fill settings (only for 'filled' appearance)
+  fillType: 'solid' | 'gradient';
+  fillColor?: string;
+  fillGradient?: GradientValue;
+  
+  // Border settings (for 'outline', or explicit on 'filled')
+  borderWidth: number; // px, 0 = none
+  borderColor?: string;
+  borderStyle: 'solid' | 'dashed' | 'dotted';
+  
+  // Text
+  textColor?: string; // auto-contrast if not set
+  
+  // Shape
+  borderRadius: number | 'pill';
+  
+  // Effects
+  shadow: 'none' | 'sm' | 'md' | 'lg' | 'custom';
+  customShadow?: string;
+}
+```
+
+#### 3.2: Simplify Inspector UI
+
+Replace multiple controls with single **Appearance** selector:
+
+```
+┌─────────────────────────────────────────┐
+│  Appearance                              │
+│  [Filled] [Outline] [Ghost] [Link]       │
+├─────────────────────────────────────────┤
+│  Fill (when Filled selected)             │
+│  [Solid ⬤] [Gradient ◐]                  │
+│  Color: [picker]                         │
+├─────────────────────────────────────────┤
+│  Border                                  │
+│  Width: [slider 0-6px]                   │
+│  Color: [picker]                         │
+│  Style: [solid] [dashed] [dotted]        │
+└─────────────────────────────────────────┘
+```
+
+#### 3.3: Update Rendering Logic
+
+Simplify the button rendering in `CanvasRenderer.tsx`:
+```typescript
+case 'button':
+  const appearance = element.props?.appearance || 'filled';
+  
+  const getButtonStyles = (): React.CSSProperties => {
+    switch (appearance) {
+      case 'filled':
+        return {
+          background: element.props?.fillType === 'gradient' 
+            ? gradientToCSS(element.props?.fillGradient) 
+            : element.props?.fillColor || primaryColor,
+          border: `${element.props?.borderWidth || 0}px solid ${element.props?.borderColor || 'transparent'}`,
+          color: element.props?.textColor || getContrastTextColor(effectiveBg),
+        };
+      case 'outline':
+        return {
+          background: 'transparent',
+          border: `${element.props?.borderWidth || 2}px solid ${element.props?.borderColor || primaryColor}`,
+          color: element.props?.textColor || primaryColor,
+        };
+      case 'ghost':
+        return {
+          background: 'transparent',
+          border: 'none',
+          color: element.props?.textColor || primaryColor,
+        };
+      case 'link':
+        return {
+          background: 'transparent',
+          border: 'none',
+          color: element.props?.textColor || primaryColor,
+          textDecoration: 'underline',
+        };
+    }
+  };
+```
+
+---
+
+## Part 4: Enable Full Funnel AI Generation
+
+### Problem
+Currently the AI generates **single sections** only. Users want to say "build me a coaching funnel" and get a complete multi-page flow.
+
+### Solution: Full Funnel Generation Mode
+
+#### 4.1: Add Funnel Templates to AI Knowledge
+
+Enhance `designExamples.ts` with complete funnel structures:
+
+```typescript
+export const FULL_FUNNEL_TEMPLATES = {
+  coaching_vsl: {
+    name: "Coaching VSL Funnel",
+    pages: [
+      {
+        name: "Watch Free Training",
+        sections: ["credibility-bar", "hero-video", "trust-badges", "cta-button"]
+      },
+      {
+        name: "Book Your Call", 
+        sections: ["headline", "benefits-list", "calendar-embed", "testimonial"]
+      },
+      {
+        name: "Application Submitted",
+        sections: ["thank-you", "next-steps", "social-share"]
+      }
+    ]
+  },
+  lead_magnet: {
+    name: "Lead Magnet Funnel",
+    pages: [
+      {
+        name: "Get Your Free Guide",
+        sections: ["hero-split", "lead-form", "preview-image"]
+      },
+      {
+        name: "Thank You",
+        sections: ["confirmation", "download-button", "bonus-offer"]
+      }
+    ]
+  },
+  // ... more funnel types
+};
+```
+
+#### 4.2: Add "Generate Full Funnel" Mode to AI Copilot
+
+Update `AIGenerateModal.tsx`:
+- Add toggle: "Generate Section" vs "Generate Full Funnel"
+- When "Full Funnel" selected, show funnel type picker
+- Generate all pages with proper flow connections
+
+#### 4.3: Update AI Prompt for Multi-Page Generation
+
+Add to `prompts.ts`:
+```typescript
+const GENERATE_FUNNEL_PROMPT = `
+You are generating a COMPLETE multi-page funnel, not just a single section.
+
+For each page, include:
+1. Page name and purpose
+2. 3-6 sections in conversion-optimized order
+3. Button actions that connect to next pages
+4. Consistent styling across all pages
+
+Funnel structure:
+${JSON.stringify(FULL_FUNNEL_TEMPLATES[funnelType], null, 2)}
+`;
+```
+
+---
+
+## Part 5: Fix Console Warnings
+
+### Issue Found
+```
+Warning: Function components cannot be given refs. 
+Check the render method of `UnifiedElementToolbar`.
+```
+
+### Solution
+Wrap `Tooltip` children with `forwardRef`:
+
+```typescript
+// In UnifiedElementToolbar.tsx
+const TooltipButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ children, ...props }, ref) => (
+    <button ref={ref} {...props}>{children}</button>
+  )
+);
+
+// Use TooltipButton as Tooltip.Trigger child
+```
+
+---
+
+## Implementation Order
+
+| Phase | Task | Effort |
+|-------|------|--------|
+| 1 | Create color palette system | 2-3 hours |
+| 2 | Unify video elements | 3-4 hours |
+| 3 | Simplify button styling | 4-5 hours |
+| 4 | Full funnel generation | 4-5 hours |
+| 5 | Fix console warnings | 1 hour |
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/ai-copilot/colorPalettes.ts` | Industry-aware color palette system |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Add background color prop to StackRenderer, update inline StackRenderer styling, update FrameRenderer to pass background |
-| `src/flow-canvas/builder/components/renderers/StackRenderer.tsx` | Add background prop, import ContrastEngine, apply adaptive colors |
+| `supabase/functions/ai-copilot/prompts.ts` | Inject color palette and funnel generation prompts |
+| `src/flow-canvas/builder/utils/templateThemeUtils.ts` | Use varied gradients |
+| `src/flow-canvas/builder/utils/gradientHelpers.ts` | Remove hardcoded purple-pink default |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Unify video types, simplify button logic |
+| `src/flow-canvas/builder/components/inspectors/PremiumElementInspector.tsx` | Merge video-thumbnail into video |
+| `src/flow-canvas/builder/components/UnifiedElementToolbar.tsx` | Fix forwardRef warning |
+| `src/flow-canvas/builder/components/modals/AIGenerateModal.tsx` | Add full funnel generation mode |
 
 ---
 
-## Visual Result
+## Expected Outcomes
 
-### Before (Current - Broken)
-- Blue background → gray text barely visible
-- Dotted border invisible
-- Poor contrast ratio (~2.1:1)
+After implementation:
 
-### After (Fixed)
-- Blue background → white/light text with good contrast
-- Dashed border visible as white/30% opacity
-- Contrast ratio ≥4.5:1 (WCAG AA compliant)
-- Dark backgrounds → light UI elements
-- Light backgrounds → dark UI elements (unchanged behavior)
+1. **Color Variety**: AI generates different palettes based on industry (blue for SaaS, coral for coaching, etc.)
+2. **Unified Video**: Single video element with smart thumbnail/embed switching
+3. **Clear Button Styling**: One "Appearance" control that does what users expect
+4. **Full Funnel Generation**: "Build me a coaching funnel" creates complete multi-page flow
+5. **Clean Console**: No more ref warnings
 
----
-
-## Testing Scenarios
-
-After implementation, verify:
-
-| Background | Expected Empty State | Expected "+ Add content" |
-|------------|---------------------|--------------------------|
-| White (#fff) | Dark text, gray borders | Gray text |
-| Blue (#3B82F6) | White text, white/30 borders | White/50 text |
-| Dark (#111827) | White text, white/30 borders | White/50 text |
-| Red (#ef4444) | White text, white/30 borders | White/50 text |
-| Yellow (#fbbf24) | Dark text, gray borders | Gray text |
-| Transparent | Inherit from page background | Inherit from page background |
-
----
-
-## Technical Notes
-
-### Handling Transparent Backgrounds
-
-When `parentBackgroundColor` is `'transparent'` or not provided, we need to check the step/page background as fallback. This is already done in the "Add Section" button logic (lines 5296-5310) and can be reused.
-
-### Gradient Backgrounds
-
-For gradient backgrounds, extract the first color stop (already have `extractGradientFirstColor` in ContrastEngine) to determine contrast.
-
-### Performance
-
-The `isLightColor` function is lightweight (simple luminance calculation) and only runs on mount/background change, not on every render.
