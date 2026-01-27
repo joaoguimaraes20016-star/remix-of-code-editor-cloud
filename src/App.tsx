@@ -32,6 +32,8 @@ import { EditorShell } from "./builder_v2/EditorShell";
 import { RuntimePage } from "./builder_v2/runtime";
 // Flow-canvas builder (new version)
 import FlowCanvasIndex from "./flow-canvas/pages/Index";
+// Token test harness for visual verification
+import TokenTestHarness from "./builder/test/TokenTestHarness";
 
 // Legacy workflow route redirect component
 function LegacyWorkflowRedirect() {
@@ -92,6 +94,7 @@ const App = () => (
             {/* 🔓 TEMP DEV ROUTE — must stay outside auth */}
             <Route path="/builder-v2" element={<EditorShell />} />
             <Route path="/flow-canvas" element={<FlowCanvasIndex />} />
+            <Route path="/builder/token-test" element={<TokenTestHarness />} />
             
             {/* Funnel Editor - Full screen, no team layout */}
             <Route path="/team/:teamId/funnels/:funnelId/edit" element={<FunnelEditor />} />

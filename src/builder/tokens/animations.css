@@ -1,0 +1,194 @@
+/**
+ * Token Animation Keyframes
+ * 
+ * All keyframe animations for the style token system.
+ * Prefixed with 'token-' to avoid conflicts with other animations.
+ */
+
+/* =============================================================================
+   ENTRY ANIMATIONS
+   ============================================================================= */
+
+@keyframes token-fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes token-fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes token-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes token-slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes token-scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes token-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* =============================================================================
+   EFFECT UTILITY CLASSES
+   ============================================================================= */
+
+.token-effect-fadeIn {
+  animation: token-fadeIn 0.3s ease-out forwards;
+}
+
+.token-effect-fadeOut {
+  animation: token-fadeOut 0.3s ease-out forwards;
+}
+
+.token-effect-slideUp {
+  animation: token-slideUp 0.4s ease-out forwards;
+}
+
+.token-effect-slideDown {
+  animation: token-slideDown 0.4s ease-out forwards;
+}
+
+.token-effect-scaleIn {
+  animation: token-scaleIn 0.2s ease-out forwards;
+}
+
+.token-effect-bounce {
+  animation: token-bounce 0.5s ease-out forwards;
+}
+
+/* =============================================================================
+   HOVER UTILITY CLASSES
+   ============================================================================= */
+
+.token-hover-lift {
+  transition: transform 0.2s ease-out;
+}
+
+.token-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.token-hover-scale {
+  transition: transform 0.2s ease-out;
+}
+
+.token-hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.token-hover-glow {
+  transition: filter 0.2s ease-out;
+}
+
+.token-hover-glow:hover {
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+}
+
+.token-hover-brighten {
+  transition: filter 0.2s ease-out;
+}
+
+.token-hover-brighten:hover {
+  filter: brightness(1.1);
+}
+
+/* =============================================================================
+   SHADOW UTILITY CLASSES (for CSS-only usage)
+   ============================================================================= */
+
+.token-shadow-none {
+  box-shadow: none;
+}
+
+.token-shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.token-shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.token-shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.token-shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* =============================================================================
+   RADIUS UTILITY CLASSES (for CSS-only usage)
+   ============================================================================= */
+
+.token-radius-none {
+  border-radius: 0;
+}
+
+.token-radius-sm {
+  border-radius: 4px;
+}
+
+.token-radius-md {
+  border-radius: 8px;
+}
+
+.token-radius-lg {
+  border-radius: 12px;
+}
+
+.token-radius-xl {
+  border-radius: 16px;
+}
+
+.token-radius-full {
+  border-radius: 9999px;
+}
