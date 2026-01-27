@@ -22,11 +22,22 @@ export function renderRuntimeNode(node: CanvasNode, depth = 0, path = '0'): JSX.
   const reactKey = `${node.id}::${path}`;
 
   try {
+    const definition = RuntimeRegistry[node.type] ?? runtimeFallbackComponent;
+    
+    const props = {
+      ...definition.defaultProps,
+      ...node.props,
+    };
+
+    // A1: Skip hidden elements in runtime
+    const isHidden = props.hidden === true;
+    if (isHidden) {
+      return <></>;
+    }
+
     const children = node.children.map((child, index) =>
       renderRuntimeNode(child, depth + 1, `${path}.${index}`)
     );
-
-    const definition = RuntimeRegistry[node.type] ?? runtimeFallbackComponent;
 
     // Guard: Ensure definition.render is a valid function
     if (!definition || typeof definition.render !== 'function') {
@@ -50,11 +61,6 @@ export function renderRuntimeNode(node: CanvasNode, depth = 0, path = '0'): JSX.
 
     const safeChildren = definition.constraints?.canHaveChildren ? children : [];
 
-    const props = {
-      ...definition.defaultProps,
-      ...node.props,
-    };
-
     const rendered = definition.render(props, safeChildren);
 
     // Guard: Check that render returned a valid React element
@@ -73,10 +79,18 @@ export function renderRuntimeNode(node: CanvasNode, depth = 0, path = '0'): JSX.
       );
     }
 
+    // A2: Build animation and hover effect classes for runtime
+    const animationClass = props.animation && props.animation !== 'none'
+      ? ` builder-v2-anim--${props.animation}`
+      : '';
+    const hoverClass = props.hoverEffect && props.hoverEffect !== 'none'
+      ? ` builder-v2-hover--${props.hoverEffect}`
+      : '';
+
     return (
       <div
         key={reactKey}
-        className="runtime-node"
+        className={`runtime-node${animationClass}${hoverClass}`}
         data-node-id={node.id}
         data-node-type={node.type}
       >

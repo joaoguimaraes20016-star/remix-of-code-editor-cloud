@@ -1,5 +1,7 @@
 // Types for step components in Builder V2
 
+import type { ButtonAction } from '@/builder_v2/hooks/useButtonAction';
+
 export interface StepDesign {
   backgroundColor?: string;
   textColor?: string;
@@ -16,6 +18,8 @@ export interface StepDesign {
   inputTextColor?: string;
   inputBorder?: string;
   inputRadius?: number;
+  // A4: Button action support
+  buttonAction?: ButtonAction;
 }
 
 export interface StepContent {
@@ -25,12 +29,16 @@ export interface StepContent {
   placeholder?: string;
   video_url?: string;
   embed_url?: string;
+  // A3: Autoplay support for video
+  autoplay?: boolean;
   options?: Array<{ id: string; label: string; emoji?: string }>;
   fields?: Array<{ id: string; label: string; type: string; required?: boolean }>;
   element_order?: string[];
   dynamic_elements?: Record<string, any>;
   design?: StepDesign;
   intent?: 'capture' | 'collect' | 'schedule' | 'complete';
+  // A4: Button action support
+  buttonAction?: ButtonAction;
 }
 
 export interface StepComponentProps {

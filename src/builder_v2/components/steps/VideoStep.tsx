@@ -3,20 +3,38 @@ import { Play } from 'lucide-react';
 import type { StepComponentProps } from './types';
 import { FONT_SIZE_MAP, DEFAULT_DESIGN } from './types';
 import { UnifiedButton, presetToVariant, sizeToVariant } from '@/components/builder/UnifiedButton';
+import { useButtonAction, type ButtonAction } from '@/builder_v2/hooks/useButtonAction';
 
-function getVideoEmbedUrl(url?: string): string | null {
+/**
+ * A3: Updated to support autoplay parameter
+ * Browsers require videos to be muted for autoplay
+ */
+function getVideoEmbedUrl(url?: string, autoplay = false): string | null {
   if (!url) return null;
   
+  const autoplayParam = autoplay ? '1' : '0';
+  const muteParam = autoplay ? '&mute=1' : '';
+  
   const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (youtubeMatch) return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+  if (youtubeMatch) {
+    return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=${autoplayParam}${muteParam}`;
+  }
   
   const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  if (vimeoMatch) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=${autoplayParam}${autoplay ? '&muted=1' : ''}`;
+  }
   
   const loomMatch = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
-  if (loomMatch) return `https://www.loom.com/embed/${loomMatch[1]}`;
+  if (loomMatch) {
+    return `https://www.loom.com/embed/${loomMatch[1]}?autoplay=${autoplayParam}`;
+  }
   
-  if (url.includes('/embed/') || url.includes('player.vimeo.com')) return url;
+  // Existing embed URLs - append autoplay if not present
+  if (url.includes('/embed/') || url.includes('player.vimeo.com')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}autoplay=${autoplayParam}`;
+  }
   
   return null;
 }
@@ -30,11 +48,17 @@ export function VideoStep({
   const d = { ...DEFAULT_DESIGN, ...design, ...content.design };
   const fontSize = d.fontSize || 'medium';
   const sizes = FONT_SIZE_MAP[fontSize];
-  const embedUrl = getVideoEmbedUrl(content.video_url);
+  
+  // A3: Pass autoplay from content
+  const embedUrl = getVideoEmbedUrl(content.video_url, content.autoplay ?? false);
 
   const backgroundStyle = d.useGradient && d.gradientFrom && d.gradientTo
     ? { background: `linear-gradient(${d.gradientDirection || 'to bottom'}, ${d.gradientFrom}, ${d.gradientTo})` }
     : { backgroundColor: d.backgroundColor };
+
+  // A4: Wire button action
+  const buttonAction: ButtonAction | undefined = content.buttonAction || (d as any).buttonAction;
+  const handleButtonClick = useButtonAction(buttonAction);
 
   return (
     <div
@@ -82,6 +106,7 @@ export function VideoStep({
             borderRadiusPx={d.borderRadius}
             fullWidth={(d as any).buttonFullWidth ?? false}
             className="mt-4"
+            onClick={handleButtonClick}
           >
             {content.button_text}
           </UnifiedButton>

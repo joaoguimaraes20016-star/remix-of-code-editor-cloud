@@ -3,6 +3,7 @@ import { User, Mail, Phone } from 'lucide-react';
 import type { StepComponentProps } from './types';
 import { FONT_SIZE_MAP, DEFAULT_DESIGN } from './types';
 import { UnifiedButton, presetToVariant, sizeToVariant } from '@/components/builder/UnifiedButton';
+import { useButtonAction, type ButtonAction } from '@/builder_v2/hooks/useButtonAction';
 
 export function OptInStep({
   content,
@@ -24,6 +25,10 @@ export function OptInStep({
     borderRadius: `${d.inputRadius || d.borderRadius}px`,
     borderColor: d.inputBorder || 'rgba(255,255,255,0.2)',
   };
+
+  // A4: Wire button action
+  const buttonAction: ButtonAction | undefined = content.buttonAction || (d as any).buttonAction;
+  const handleButtonClick = useButtonAction(buttonAction);
 
   return (
     <div
@@ -87,6 +92,7 @@ export function OptInStep({
           borderRadiusPx={d.borderRadius}
           fullWidth={(d as any).buttonFullWidth ?? false}
           className="mt-4"
+          onClick={handleButtonClick}
         >
           {content.button_text || 'Submit'}
         </UnifiedButton>

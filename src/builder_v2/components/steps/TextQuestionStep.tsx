@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import type { StepComponentProps } from './types';
 import { FONT_SIZE_MAP, DEFAULT_DESIGN } from './types';
 import { UnifiedButton } from '@/components/builder/UnifiedButton';
+import { useButtonAction, type ButtonAction } from '@/builder_v2/hooks/useButtonAction';
 
 export function TextQuestionStep({
   content,
@@ -16,6 +17,10 @@ export function TextQuestionStep({
   const backgroundStyle = d.useGradient && d.gradientFrom && d.gradientTo
     ? { background: `linear-gradient(${d.gradientDirection || 'to bottom'}, ${d.gradientFrom}, ${d.gradientTo})` }
     : { backgroundColor: d.backgroundColor };
+
+  // A4: Wire button action
+  const buttonAction: ButtonAction | undefined = content.buttonAction || (d as any).buttonAction;
+  const handleButtonClick = useButtonAction(buttonAction);
 
   return (
     <div
@@ -53,7 +58,7 @@ export function TextQuestionStep({
             readOnly
           />
         </div>
-        {/* UNIFIED BUTTON - no wrapper, no fake backgrounds */}
+        {/* UNIFIED BUTTON - now with onClick handler */}
         <UnifiedButton
           backgroundColor={d.buttonColor}
           textColor={d.buttonTextColor}
@@ -61,6 +66,7 @@ export function TextQuestionStep({
           fullWidth={(d as any).buttonFullWidth ?? false}
           size={sizes.button === 'text-sm' ? 'sm' : sizes.button === 'text-lg' ? 'lg' : 'md'}
           className="mt-4"
+          onClick={handleButtonClick}
         >
           {content.button_text || 'Continue'}
         </UnifiedButton>
