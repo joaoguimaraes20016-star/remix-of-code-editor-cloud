@@ -14,7 +14,8 @@ import {
 } from '@/builder_v2/templates/sectionTemplates';
 import { HighTicketPreviewCard } from '../HighTicketPreviewCard';
 import { CategoryIcon } from './CategoryIcon';
-import { BlockGrid } from './BlockGrid';
+import { BasicBlockGrid } from './BasicBlockGrid';
+import { InteractiveBlockGrid } from './InteractiveBlockGrid';
 
 export interface SectionPickerProps {
   isOpen: boolean;
@@ -225,7 +226,11 @@ export function SectionPicker({
               {/* Content - Block Grid or Template Gallery */}
               <div className="flex-1 overflow-y-auto">
                 {showBlockGrid ? (
-                  <BlockGrid onAddBlock={handleAddBlock} category={activeCategory as 'content' | 'cta'} />
+                  activeCategory === 'content' ? (
+                    <BasicBlockGrid onAddBlock={handleAddBlock} />
+                  ) : (
+                    <InteractiveBlockGrid onAddBlock={handleAddBlock} />
+                  )
                 ) : templates.length > 0 ? (
                   <div className="p-6">
                     <div className="grid grid-cols-2 gap-4">
