@@ -1,29 +1,30 @@
 
 
-# Add Team Templates - Perspective-Style
+# Add Testimonials Templates - Perspective-Style
 
 ## Summary
 
-Expand the Team section from 1 basic template to 10 Perspective-style templates matching the reference screenshots. These showcase individual team members and team grids with consistent light-themed visual language.
+Expand the Testimonials section from 2 basic templates to 11 Perspective-style templates matching the reference screenshots. These include single-quote layouts, split layouts with images, and 3-column grids with various card styles.
 
 ---
 
 ## Template Patterns Identified
 
-From the uploaded screenshots, I identified **10 distinct Team patterns**:
+From the uploaded screenshots, I identified **11 distinct Testimonial patterns**:
 
 | Template | Layout | Key Elements |
 |----------|--------|--------------|
-| **Team Member Split - Text Left** | 50/50 | Name + blue role label + bio on left, large image on right |
-| **Team Member Split - Image Left** | 50/50 | Large image on left, blue role label + name + bio on right |
-| **Team Member Split + Features** | 50/50 | Name + role + icon features on left, image on right |
-| **Team Grid Simple** | Centered | Title + subtext, 3-column grid of photo cards with name + description |
-| **Team Grid + Label** | Centered | Blue "This is our Team" label + title, 3-column photo grid |
-| **Team Grid No Description** | Centered | Same as simple but without description text under names |
-| **Team Full Image** | Centered | Blue label + title + subtext + full-width team photo |
-| **Team Grid Cards** | Centered | 2x3 white cards with avatar, name, role, description |
-| **Team Grid Cards (Gray)** | Centered | Same but with gray background |
-| **Team Split + CTA** | 50/50 | "Get to know our Team" + button on left, 2x2 team member grid on right |
+| **Testimonial Single Centered** | Centered | Logo/icon at top, large quote, avatar + name + role below |
+| **Testimonial Single + Stars** | Centered | 5-star rating, large quote, avatar + name + role |
+| **Testimonial Single Full Image** | Full bleed | Dark background image, logo overlay, white quote text, avatar + name |
+| **Testimonial Single Image (Rounded)** | Full bleed | Same as above but with rounded corners |
+| **Testimonial Split - Text Left** | 50/50 | Logo + quote + name on left, large image on right |
+| **Testimonial Split - Image Left** | 50/50 | Large image on left, quote + name + role on right |
+| **Testimonial Grid 3-Column (Yellow Stars)** | Centered | Title + subtext, 3 white cards with yellow 5-star ratings |
+| **Testimonial Grid 3-Column (Cards)** | Centered | Same but with gray card styling/shadows |
+| **Testimonial Grid 3-Column (No Cards)** | Centered | 3 columns without card borders, extended description |
+| **Testimonial Grid Photo Cards (Overlay)** | Centered | 3 photo cards with gradient overlay and text at bottom |
+| **Testimonial Grid Photo Cards (Below)** | Centered | 3 photos above, quote + name text below each photo |
 
 ---
 
@@ -33,160 +34,182 @@ From the uploaded screenshots, I identified **10 distinct Team patterns**:
 
 | Element | Style |
 |---------|-------|
-| **Section Label** | Blue text "This is our Team" above title |
-| **Headlines** | Bold slate-800 text (e.g., "Meet our Experts") |
-| **Role Labels** | Blue text for job titles (e.g., "Head of Engineering") |
-| **Subtext** | Light slate-400/500 text for descriptions |
-| **Images** | Rounded corners, professional photos |
-| **Cards** | White background with subtle borders/shadows |
+| **Logo/Icon** | Small blue icon or "Perspective" logo at top |
+| **Stars** | Yellow/amber 5-star ratings |
+| **Quotes** | Bold slate-800 text with quotation marks |
+| **Subtext** | Light slate-400/500 for role/company |
+| **Avatars** | Circular, gradient placeholder |
+| **Cards** | White or gray-50 with subtle borders |
+| **Photo Overlays** | Dark gradient from bottom |
 
 ---
 
 ## ASCII Template Layouts
 
-### Team Member Split - Text Left (Philipp Schilling style)
+### Testimonial Single Centered
+```text
++------------------------------------------------+
+|               [P] Perspective                   |
+|                                                 |
+|    "Partnering with Perspektive resulted       |
+|     in over 2000 new leads in 3 months."       |
+|                                                 |
+|               (o) Ferdinand Schulz              |
+|           Software Engineer, Example GmbH       |
++------------------------------------------------+
+```
+
+### Testimonial Single + Stars
+```text
++------------------------------------------------+
+|               ★★★★★                            |
+|                                                 |
+|    "Partnering with Perspektive resulted       |
+|     in over 2000 new leads in 3 months."       |
+|                                                 |
+|               (o) Ferdinand Schulz              |
+|           Software Engineer, Example GmbH       |
++------------------------------------------------+
+```
+
+### Testimonial Single Full Image (Dark)
+```text
++------------------------------------------------+
+| [Full Background Image - Office/Person]        |
+|          with dark overlay                      |
+|               [P] Perspective                   |
+|                                                 |
+|    "Partnering with Perspektive resulted       |
+|     in over 2000 new leads in 3 months."       |
+|                                                 |
+|               (o) Ferdinand Schulz              |
+|           Software Engineer, Example GmbH       |
++------------------------------------------------+
+```
+
+### Testimonial Single Image (Rounded)
+```text
++------------------------------------------------+
+|  ┌────────────────────────────────────────┐   |
+|  │ [Full Background Image with rounded]    │   |
+|  │            [P] Perspective              │   |
+|  │                                         │   |
+|  │  "Partnering with Perspektive..."      │   |
+|  │                                         │   |
+|  │       (o) Ferdinand Schulz              │   |
+|  │   Software Engineer, Example GmbH       │   |
+|  └────────────────────────────────────────┘   |
++------------------------------------------------+
+```
+
+### Testimonial Split - Text Left
 ```text
 +------------------------+------------------------+
-|  Philipp Schilling     |                        |
-|  [Head of Engineering] |   [Large Professional  |
-|  (blue text)           |    Photo]              |
+| [P] Perspective        |                        |
+|                        |   [Large Professional  |
+| "Partnering with       |    Photo]              |
+| Perspektive resulted   |                        |
+| in over 2000 new       |                        |
+| leads in 3 months."    |                        |
 |                        |                        |
-|  Philipp is Head of    |                        |
-|  Engineering at...     |                        |
+| Ferdinand Schulz       |                        |
+| Software Engineer      |                        |
++------------------------+------------------------+
+```
+
+### Testimonial Split - Image Left
+```text
++------------------------+------------------------+
 |                        |                        |
-|  He brings experience  |                        |
-|  in software dev...    |                        |
-+------------------------+------------------------+
-```
-
-### Team Member Split - Image Left (Julia Schmidt style)
-```text
-+------------------------+------------------------+
-|                        |  [Digital Marketing]   |
-|   [Large Professional  |  Julia Schmidt         |
-|    Photo]              |                        |
-|                        |  Julia is Head of      |
-|                        |  Digital Marketing...  |
+|   [Large Professional  |   "Partnering with     |
+|    Photo]              |   Perspektive resulted |
+|                        |   in over 2000 new     |
+|                        |   leads in 3 months."  |
 |                        |                        |
-|                        |  With her experience   |
-|                        |  in online marketing...|
+|                        |   Ferdinand Schulz     |
+|                        |   Software Engineer    |
 +------------------------+------------------------+
 ```
 
-### Team Member Split + Features (Maximilian Weber style)
-```text
-+------------------------+------------------------+
-|  [Digital Marketing]   |                        |
-|  Maximilian Weber      |   [Large Professional  |
-|                        |    Photo]              |
-|  💰 Financial Planning |                        |
-|     Maximilian leads...|                        |
-|                        |                        |
-|  📊 Risk Management    |                        |
-|     Monitors risk...   |                        |
-|                        |                        |
-|  📈 Investment Strategy|                        |
-|     Develops strategy..|                        |
-+------------------------+------------------------+
-```
-
-### Team Grid Simple
+### Testimonial Grid 3-Column (Yellow Stars)
 ```text
 +------------------------------------------------+
-|          Meet our experts                       |
-|  Discover our diverse, talented team...         |
+|          What our customers say                 |
+|  With Perspective, our customers make...        |
 |                                                 |
-|  ┌──────┐    ┌──────┐    ┌──────┐             |
-|  │ PHOTO│    │ PHOTO│    │ PHOTO│             |
-|  │      │    │      │    │      │             |
-|  └──────┘    └──────┘    └──────┘             |
-|  Philipp     Julia       Maximilian            |
-|  Schilling   Schmidt     Weber                 |
-|  [bio text]  [bio text]  [bio text]            |
+| ┌──────────┐ ┌──────────┐ ┌──────────┐        |
+| │ ★★★★★   │ │ ★★★★★   │ │ ★★★★★   │        |
+| │          │ │          │ │          │        |
+| │ "Working │ │ "With    │ │ "Through │        |
+| │ with..." │ │ help..." │ │ we have..│        |
+| │          │ │          │ │          │        |
+| │(o) Name  │ │(o) Name  │ │(o) Name  │        |
+| │ Role     │ │ Role     │ │ Role     │        |
+| └──────────┘ └──────────┘ └──────────┘        |
 +------------------------------------------------+
 ```
 
-### Team Grid + Label
+### Testimonial Grid 3-Column (Cards/Gray)
+```text
+Same layout but cards have:
+- Gray background (slate-50)
+- Subtle border/shadow
+- Slightly darker styling
+```
+
+### Testimonial Grid 3-Column (No Cards)
 ```text
 +------------------------------------------------+
-|           [This is our Team]                    |
-|          Meet our Experts                       |
-|  Discover our diverse, talented team...         |
+|          What our customers say                 |
+|  With Perspective, our customers make...        |
 |                                                 |
-|  ┌──────┐    ┌──────┐    ┌──────┐             |
-|  │ PHOTO│    │ PHOTO│    │ PHOTO│             |
-|  └──────┘    └──────┘    └──────┘             |
-|  Name        Name        Name                  |
-|  [bio]       [bio]       [bio]                 |
-+------------------------------------------------+
-```
-
-### Team Grid No Description
-```text
-+------------------------------------------------+
-|          Meet our experts                       |
-|  Discover our diverse, talented team...         |
+|  ★★★★★        ★★★★★        ★★★★★              |
 |                                                 |
-|  ┌──────┐    ┌──────┐    ┌──────┐             |
-|  │ PHOTO│    │ PHOTO│    │ PHOTO│             |
-|  └──────┘    └──────┘    └──────┘             |
-|  Philipp     Julia       Maximilian            |
-|  Schilling   Schmidt     Weber                 |
-+------------------------------------------------+
-```
-
-### Team Full Image
-```text
-+------------------------------------------------+
-|           [This is our Team]                    |
-|          Meet our Experts                       |
-|  Discover our diverse, talented team...         |
+| "Working with  "With         "Through           |
+| Perspective    Perspective's  Perspective,      |
+| increased      help, we were  we have been     |
+| revenue..."    able to..."    able to..."       |
 |                                                 |
-|   [Full-Width Office/Meeting Room Photo]        |
+| Thanks to      Through        We have set new   |
+| innovative...  creative...    standards with... |
 |                                                 |
+| Philipp S.     Laura S.       Maximilian W.    |
 +------------------------------------------------+
 ```
 
-### Team Grid Cards (2x3)
+### Testimonial Grid Photo Cards (Overlay)
 ```text
 +------------------------------------------------+
-|           [This is our Team]                    |
-|          Meet our Experts                       |
+|          What our customers say                 |
+|  With Perspective, our customers make...        |
 |                                                 |
-| ┌─────────────┐ ┌─────────────┐ ┌─────────────┐|
-| │ (o) Name    │ │ (o) Name    │ │ (o) Name    │|
-| │  Role       │ │  Role       │ │  Role       │|
-| │             │ │             │ │             │|
-| │ Description │ │ Description │ │ Description │|
-| │ text...     │ │ text...     │ │ text...     │|
-| └─────────────┘ └─────────────┘ └─────────────┘|
-| ┌─────────────┐ ┌─────────────┐ ┌─────────────┐|
-| │ (o) Name    │ │ (o) Name    │ │ (o) Name    │|
-| │  Role       │ │  Role       │ │  Role       │|
-| │ Description │ │ Description │ │ Description │|
-| └─────────────┘ └─────────────┘ └─────────────┘|
+| ┌──────────┐ ┌──────────┐ ┌──────────┐        |
+| │  [PHOTO] │ │  [PHOTO] │ │  [PHOTO] │        |
+| │          │ │          │ │          │        |
+| │▓▓▓▓▓▓▓▓▓│ │▓▓▓▓▓▓▓▓▓│ │▓▓▓▓▓▓▓▓▓│        |
+| │"Working  │ │"With     │ │"Through  │        |
+| │with..."  │ │help..."  │ │we have...│        |
+| │Name,Role │ │Name,Role │ │Name,Role │        |
+| └──────────┘ └──────────┘ └──────────┘        |
 +------------------------------------------------+
 ```
 
-### Team Grid Cards (Gray BG)
+### Testimonial Grid Photo Cards (Text Below)
 ```text
-Same as above but with gray/slate-50 background
-```
-
-### Team Split + CTA
-```text
-+------------------------+------------------------+
-| [Become part of the    |  ┌────┐    ┌────┐    |
-|  community]            |  │PHOTO│   │PHOTO│    |
-|                        |  │Name │   │Name │    |
-| Get to know            |  │bio  │   │bio  │    |
-| our Team               |  └────┘    └────┘    |
-|                        |  ┌────┐    ┌────┐    |
-| [Apply now]            |  │PHOTO│   │PHOTO│    |
-|                        |  │Name │   │Name │    |
-|                        |  │bio  │   │bio  │    |
-|                        |  └────┘    └────┘    |
-+------------------------+------------------------+
++------------------------------------------------+
+|          What our customers say                 |
+|  With Perspective, our customers make...        |
+|                                                 |
+| ┌──────────┐ ┌──────────┐ ┌──────────┐        |
+| │  [PHOTO] │ │  [PHOTO] │ │  [PHOTO] │        |
+| │          │ │          │ │          │        |
+| └──────────┘ └──────────┘ └──────────┘        |
+|                                                 |
+| "Working with  "With help..."  "Through..."     |
+| Perspective..."                                 |
+|                                                 |
+| Name, Role     Name, Role      Name, Role       |
++------------------------------------------------+
 ```
 
 ---
@@ -195,151 +218,159 @@ Same as above but with gray/slate-50 background
 
 ### 1. `sectionTemplates.ts`
 
-Remove the single `teamSection` template and add 10 new Team templates:
+Remove the 2 existing testimonial templates and add 11 new Perspective-style templates:
 
 | New Template ID | Name |
 |-----------------|------|
-| `team-member-text-left` | Team Member (Text Left) |
-| `team-member-image-left` | Team Member (Image Left) |
-| `team-member-features` | Team Member + Features |
-| `team-grid-simple` | Team Grid |
-| `team-grid-label` | Team Grid + Label |
-| `team-grid-no-desc` | Team Grid (No Description) |
-| `team-full-image` | Team Full Image |
-| `team-grid-cards` | Team Grid Cards |
-| `team-grid-cards-gray` | Team Grid Cards (Gray) |
-| `team-split-cta` | Team + CTA |
+| `testimonial-single-centered` | Single Centered |
+| `testimonial-single-stars` | Single + Stars |
+| `testimonial-single-full-image` | Single Full Image |
+| `testimonial-single-image-rounded` | Single Image (Rounded) |
+| `testimonial-split-text-left` | Split (Text Left) |
+| `testimonial-split-image-left` | Split (Image Left) |
+| `testimonial-grid-yellow-stars` | Grid (Yellow Stars) |
+| `testimonial-grid-cards` | Grid Cards |
+| `testimonial-grid-no-cards` | Grid (No Cards) |
+| `testimonial-grid-photo-overlay` | Grid Photo (Overlay) |
+| `testimonial-grid-photo-below` | Grid Photo (Text Below) |
 
 Update:
 - `allSectionTemplates` array
-- `sectionTemplatesByCategory.team` array
+- `sectionTemplatesByCategory.testimonials` array
 
 ### 2. `HighTicketPreviewCard.tsx`
 
-Replace the single `TeamPreview` component with a multi-variant `TeamPreview` component:
+Replace the simple `TestimonialsPreview` component with a multi-variant version:
 
 ```tsx
-const TeamPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
+const TestimonialsPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
   ({ template }, ref) => {
     const id = template.id;
     
     // Shared components
-    const BlueSectionLabel = () => (
-      <div className="text-[6px] text-blue-500 font-medium">This is our Team</div>
-    );
-    
-    const BlueRoleLabel = () => (
-      <div className="text-[5px] text-blue-500 font-medium">Head of Engineering</div>
-    );
-    
-    const TeamMemberCard = ({ hasDesc = true }: { hasDesc?: boolean }) => (
-      <div className="flex flex-col items-center">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 mb-1" />
-        <div className="h-1 w-6 bg-slate-700 rounded mb-0.5" />
-        {hasDesc && <div className="h-0.5 w-8 bg-slate-300 rounded" />}
+    const YellowStarRating = () => (
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star key={i} size={6} className="fill-amber-400 text-amber-400" />
+        ))}
       </div>
     );
     
-    const TeamCardWithAvatar = () => (
-      <div className="bg-white rounded border border-slate-100 p-1.5 flex flex-col gap-0.5">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-br from-slate-300 to-slate-400" />
-          <div>
-            <div className="h-0.5 w-8 bg-slate-700 rounded" />
-            <div className="h-0.5 w-5 bg-slate-400 rounded mt-0.5" />
-          </div>
+    const BlueLogo = () => (
+      <div className="flex items-center gap-0.5">
+        <div className="w-2.5 h-2.5 rounded bg-blue-500" />
+        <span className="text-[5px] text-slate-600 font-medium">Perspective</span>
+      </div>
+    );
+    
+    const TestimonialAvatar = () => (
+      <div className="flex items-center gap-1">
+        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-slate-300 to-slate-400" />
+        <div>
+          <div className="h-0.5 w-8 bg-slate-700 rounded" />
+          <div className="h-0.5 w-10 bg-slate-400 rounded mt-0.5" />
         </div>
-        <div className="h-0.5 w-full bg-slate-200 rounded" />
       </div>
     );
     
-    // Variant implementations based on id...
+    const TestimonialCard = ({ hasStars = true, grayBg = false }: { hasStars?: boolean; grayBg?: boolean }) => (
+      <div className={cn(
+        "p-1.5 rounded flex flex-col gap-1",
+        grayBg ? "bg-slate-50 border border-slate-100" : "bg-white border border-slate-100"
+      )}>
+        {hasStars && <YellowStarRating />}
+        <div className="h-1 w-full bg-slate-600 rounded" />
+        <div className="h-0.5 w-4/5 bg-slate-400 rounded" />
+        <TestimonialAvatar />
+      </div>
+    );
+    
+    // Variant implementations...
   }
 );
 ```
 
-Update `getPreviewComponent` to handle 10 variants:
+---
 
-```tsx
-case 'team':
-  return <TeamPreview template={template} />;
-```
+## New Preview Component Structure
+
+### Single Centered
+- White background
+- Blue logo at top
+- Large quote placeholder (dark bars)
+- Centered avatar + name/role
+
+### Single + Stars
+- White background
+- 5-star yellow rating at top
+- Large quote placeholder
+- Centered avatar + name/role
+
+### Single Full Image
+- Dark gradient background (simulating image overlay)
+- Blue logo
+- White quote text
+- Avatar + name in white
+
+### Single Image (Rounded)
+- Similar to full image but with rounded container
+- Inset padding showing outer background
+
+### Split - Text Left
+- 50/50 layout
+- Logo + quote + avatar on left
+- Image placeholder on right
+
+### Split - Image Left
+- 50/50 layout
+- Image placeholder on left
+- Quote + avatar on right
+
+### Grid Yellow Stars
+- Title + subtext centered
+- 3 white cards with yellow stars, quote, avatar
+
+### Grid Cards
+- Title + subtext centered
+- 3 gray-50 cards with stars, quote, avatar
+
+### Grid No Cards
+- Title + subtext centered
+- 3 columns without borders, stars above, quote, extended text, name
+
+### Grid Photo Overlay
+- Title + subtext centered
+- 3 photo cards with gradient overlay at bottom containing text
+
+### Grid Photo Below
+- Title + subtext centered
+- 3 photo placeholders above
+- Quote + name text below each photo
 
 ---
 
 ## Implementation Order
 
 1. **Update `sectionTemplates.ts`**:
-   - Remove `teamSection` 
-   - Add 10 new team templates with proper `createNode` functions
+   - Remove `testimonialSingle` and `testimonialCarousel`
+   - Add 11 new testimonial templates with proper `createNode` functions
    - Update `allSectionTemplates` array
-   - Update `sectionTemplatesByCategory.team` array
+   - Update `sectionTemplatesByCategory.testimonials` array
 
 2. **Update `HighTicketPreviewCard.tsx`**:
-   - Replace simple `TeamPreview` with multi-variant component
-   - Add shared components (BlueSectionLabel, BlueRoleLabel, TeamMemberCard, etc.)
-   - Implement all 10 variant layouts
-   - Update `getPreviewComponent` switch case
-
----
-
-## New Preview Component Structure
-
-### Shared Helper Components
-
-```tsx
-// Blue section label
-const BlueSectionLabel = () => (
-  <div className="text-[6px] text-blue-500 font-medium">This is our Team</div>
-);
-
-// Blue role label (for individual member templates)
-const BlueRoleLabel = () => (
-  <div className="text-[5px] text-blue-500 font-medium">Head of Engineering</div>
-);
-
-// Photo card for grid layouts
-const TeamMemberCard = ({ hasDesc = true }: { hasDesc?: boolean }) => (
-  <div className="flex flex-col items-center gap-0.5">
-    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300" />
-    <div className="h-1 w-5 bg-slate-700 rounded" />
-    {hasDesc && <div className="h-0.5 w-7 bg-slate-300 rounded" />}
-  </div>
-);
-
-// Avatar card for card grid layouts
-const TeamCardWithAvatar = () => (
-  <div className="bg-white rounded border border-slate-100 p-1 flex flex-col gap-0.5">
-    <div className="flex items-center gap-1">
-      <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-      <div>
-        <div className="h-0.5 w-6 bg-slate-700 rounded" />
-        <div className="h-0.5 w-4 bg-slate-400 rounded mt-0.5" />
-      </div>
-    </div>
-    <div className="h-0.5 w-full bg-slate-200 rounded" />
-  </div>
-);
-
-// Icon feature row for team member + features
-const FeatureRow = ({ color }: { color: string }) => (
-  <div className="flex items-start gap-1">
-    <div className={cn("w-2 h-2 rounded flex-shrink-0", color)} />
-    <div className="flex-1">
-      <div className="h-0.5 w-6 bg-slate-600 rounded" />
-      <div className="h-0.5 w-10 bg-slate-300 rounded mt-0.5" />
-    </div>
-  </div>
-);
-```
+   - Replace simple `TestimonialsPreview` with multi-variant component
+   - Add shared components (YellowStarRating, BlueLogo, TestimonialAvatar, TestimonialCard)
+   - Implement all 11 variant layouts
+   - Update `getPreviewComponent` to pass template object
 
 ---
 
 ## Result
 
 After implementation:
-- "Team" category expanded from 1 to 10 Perspective-style templates
-- Light-themed previews matching the visual language of Hero, Features, CTA, About Us, and Quiz/Form
-- Professional team showcasing layouts for individual members and team grids
-- Consistent blue accent for role labels and section labels
+- "Testimonials" category expanded from 2 to 11 Perspective-style templates
+- Light-themed previews matching the visual language of other sections
+- Variety of layouts: single quotes, splits, and 3-column grids
+- Yellow star ratings and blue logo accents for brand consistency
+- Photo overlay and text-below variants for visual variety
 
