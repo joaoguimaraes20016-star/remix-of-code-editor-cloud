@@ -697,10 +697,11 @@
    ============================================================================ */
 
 .builder-v2-canvas--preview .builder-v2-node {
-  /* Remove all editing affordances in preview */
-  background: transparent;
+  /* Remove editing affordances but preserve visual styling */
+  /* background: transparent; ← REMOVED - preserve section backgrounds */
   border-color: transparent;
   box-shadow: none;
+  pointer-events: auto;
 }
 
 .builder-v2-canvas--preview .builder-v2-canvas-guides {
