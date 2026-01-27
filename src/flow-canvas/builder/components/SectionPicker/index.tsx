@@ -7,4 +7,6 @@ export { SectionPicker } from './SectionPicker';
 export { CategoryIcon } from './CategoryIcon';
 export { QuickPicks } from './QuickPicks';
 export { TemplateGallery } from './TemplateGallery';
+export { BlockGrid } from './BlockGrid';
+export { BlockTileCard } from './BlockTileCard';
 export type { SectionPickerProps } from './SectionPicker';

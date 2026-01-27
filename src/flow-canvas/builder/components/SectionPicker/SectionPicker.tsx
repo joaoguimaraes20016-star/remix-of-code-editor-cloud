@@ -1,6 +1,7 @@
 /**
  * SectionPicker - Clean, Perspective-style section picker modal
  * Simple icons, grouped categories, light theme
+ * Shows tile grid for blocks, template gallery for sections
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -13,6 +14,7 @@ import {
 } from '@/builder_v2/templates/sectionTemplates';
 import { HighTicketPreviewCard } from '../HighTicketPreviewCard';
 import { CategoryIcon } from './CategoryIcon';
+import { BlockGrid } from './BlockGrid';
 
 export interface SectionPickerProps {
   isOpen: boolean;
@@ -20,13 +22,13 @@ export interface SectionPickerProps {
   onSelectTemplate: (templateId: string) => void;
 }
 
-// Block categories (basic elements)
+// Block categories (basic elements) - show tile grid
 const BLOCK_CATEGORIES = [
   { id: 'content', label: 'Basic blocks', icon: 'text' as const },
   { id: 'cta', label: 'Interactive blocks', icon: 'sparkles' as const },
 ] as const;
 
-// Section categories (full sections)
+// Section categories (full sections) - show template gallery
 const SECTION_CATEGORIES = [
   { id: 'hero', label: 'Hero', icon: 'square' as const },
   { id: 'features', label: 'Features', icon: 'grid' as const },
@@ -45,19 +47,25 @@ function getTemplatesForCategory(categoryId: string): SectionTemplate[] {
   );
 }
 
+// Check if category is a block category (shows tile grid)
+function isBlockCategory(categoryId: string): boolean {
+  return categoryId === 'content' || categoryId === 'cta';
+}
+
 export function SectionPicker({
   isOpen,
   onClose,
   onSelectTemplate,
 }: SectionPickerProps) {
-  const [activeCategory, setActiveCategory] = useState<string>('hero');
+  const [activeCategory, setActiveCategory] = useState<string>('content');
   const containerRef = useRef<HTMLDivElement>(null);
   const templates = getTemplatesForCategory(activeCategory);
+  const showBlockGrid = isBlockCategory(activeCategory);
 
-  // Reset to hero when picker opens
+  // Reset to content (blocks) when picker opens
   useEffect(() => {
     if (isOpen) {
-      setActiveCategory('hero');
+      setActiveCategory('content');
     }
   }, [isOpen]);
 
@@ -95,11 +103,18 @@ export function SectionPicker({
     onClose();
   };
 
+  const handleAddBlock = (blockId: string) => {
+    // For now, use the blockId as template ID - will need mapping
+    onSelectTemplate(blockId);
+    onClose();
+  };
+
   const renderCategoryButton = (
     category: { id: string; label: string; icon: 'text' | 'sparkles' | 'square' | 'grid' | 'bars' | 'squares' | 'people' | 'quote' },
     isActive: boolean
   ) => {
-    const templateCount = getTemplatesForCategory(category.id).length;
+    const isBlock = isBlockCategory(category.id);
+    const templateCount = isBlock ? 1 : getTemplatesForCategory(category.id).length;
     
     return (
       <button
@@ -130,6 +145,11 @@ export function SectionPicker({
         />
       </button>
     );
+  };
+
+  const getCategoryLabel = () => {
+    const allCategories = [...BLOCK_CATEGORIES, ...SECTION_CATEGORIES];
+    return allCategories.find(c => c.id === activeCategory)?.label || 'Templates';
   };
 
   return (
@@ -182,13 +202,13 @@ export function SectionPicker({
               </div>
             </div>
 
-            {/* Right Panel - Template Gallery */}
+            {/* Right Panel - Template Gallery or Block Grid */}
             <div className="flex-1 flex flex-col bg-white">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {[...BLOCK_CATEGORIES, ...SECTION_CATEGORIES].find(c => c.id === activeCategory)?.label || 'Templates'}
+                    {getCategoryLabel()}
                   </h3>
                   <p className="text-sm text-gray-500 mt-0.5">
                     Click to add to your page
@@ -202,17 +222,21 @@ export function SectionPicker({
                 </button>
               </div>
 
-              {/* Template Grid */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {templates.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    {templates.map((template) => (
-                      <HighTicketPreviewCard
-                        key={template.id}
-                        template={template}
-                        onAdd={() => handleSelectTemplate(template)}
-                      />
-                    ))}
+              {/* Content - Block Grid or Template Gallery */}
+              <div className="flex-1 overflow-y-auto">
+                {showBlockGrid ? (
+                  <BlockGrid onAddBlock={handleAddBlock} />
+                ) : templates.length > 0 ? (
+                  <div className="p-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      {templates.map((template) => (
+                        <HighTicketPreviewCard
+                          key={template.id}
+                          template={template}
+                          onAdd={() => handleSelectTemplate(template)}
+                        />
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center py-12">
