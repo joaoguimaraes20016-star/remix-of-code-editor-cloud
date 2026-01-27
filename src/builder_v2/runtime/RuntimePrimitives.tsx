@@ -231,15 +231,27 @@ export function RuntimePhoneInput({
   const hasError = Boolean(fieldError);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Basic phone formatting
-    let formatted = e.target.value.replace(/\D/g, '');
+    const rawValue = e.target.value;
+    
+    // FIXED: Support international phone numbers (starting with +)
+    // Preserve the + prefix and allow longer numbers
+    if (rawValue.startsWith('+')) {
+      // International format - just clean non-digit except leading +
+      const formatted = '+' + rawValue.slice(1).replace(/[^\d]/g, '');
+      runtime?.actions.updateField(fieldName, formatted);
+      return;
+    }
+    
+    // US formatting for domestic numbers
+    let formatted = rawValue.replace(/\D/g, '');
     if (formatted.length > 0) {
       if (formatted.length <= 3) {
         formatted = `(${formatted}`;
       } else if (formatted.length <= 6) {
         formatted = `(${formatted.slice(0, 3)}) ${formatted.slice(3)}`;
       } else {
-        formatted = `(${formatted.slice(0, 3)}) ${formatted.slice(3, 6)}-${formatted.slice(6, 10)}`;
+        // FIXED: Allow more than 10 digits (could be international without +)
+        formatted = `(${formatted.slice(0, 3)}) ${formatted.slice(3, 6)}-${formatted.slice(6)}`;
       }
     }
     runtime?.actions.updateField(fieldName, formatted);

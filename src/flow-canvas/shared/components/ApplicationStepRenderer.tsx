@@ -119,19 +119,15 @@ export const ApplicationStepRenderer: React.FC<ApplicationStepRendererProps> = (
       case 'phone':
         return (
           <div className="flex items-center gap-2">
-            <span className="px-3 py-3 rounded-xl text-sm" style={{ ...inputStyle, flexShrink: 0 }}>
-              🇺🇸 +1
-            </span>
             <input
               ref={inputRef}
               type="tel"
               value={(value as string) || ''}
-              onChange={(e) => onChange(formatPhone(e.target.value))}
+              onChange={(e) => onChange(formatPhoneInternational(e.target.value))}
               onKeyDown={handleKeyDown}
-              placeholder={step.settings.placeholder || '(555) 123-4567'}
+              placeholder={step.settings.placeholder || '+1 (555) 123-4567'}
               className="flex-1 px-4 py-3 text-base outline-none transition-colors"
               style={inputStyle}
-              maxLength={14}
               disabled={isPreview}
             />
           </div>
@@ -456,17 +452,13 @@ const FullIdentityInput: React.FC<FullIdentityInputProps> = ({
       )}
       {step.settings.collectPhone !== false && (
         <div className="flex items-center gap-2">
-          <span className="px-3 py-3 rounded-xl text-sm" style={{ ...inputStyle, flexShrink: 0 }}>
-            🇺🇸 +1
-          </span>
           <input
             type="tel"
             value={identityValue.phone || ''}
-            onChange={(e) => update('phone', formatPhone(e.target.value))}
-            placeholder={step.settings.phonePlaceholder || '(555) 123-4567'}
+            onChange={(e) => update('phone', formatPhoneInternational(e.target.value))}
+            placeholder={step.settings.phonePlaceholder || '+1 (555) 123-4567'}
             className="flex-1 px-4 py-3 text-base outline-none transition-colors"
             style={inputStyle}
-            maxLength={14}
             disabled={isPreview}
           />
         </div>
@@ -477,11 +469,24 @@ const FullIdentityInput: React.FC<FullIdentityInputProps> = ({
 
 // ============ UTILITIES ============
 
-function formatPhone(input: string): string {
+/**
+ * FIXED: Phone formatting that supports international numbers.
+ * Preserves international format (starting with +) without truncation.
+ */
+function formatPhoneInternational(input: string): string {
+  // Preserve international format - just clean non-digit except leading +
+  if (input.startsWith('+')) {
+    return '+' + input.slice(1).replace(/[^\d]/g, '');
+  }
+  
+  // US formatting for domestic numbers
   const digits = input.replace(/\D/g, '');
   if (digits.length <= 3) return digits;
   if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  
+  // Allow more than 10 digits (could be international without +)
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
 export default ApplicationStepRenderer;
