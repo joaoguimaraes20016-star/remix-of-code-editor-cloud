@@ -5,7 +5,13 @@
  * - block: Single block generation (existing)
  * - funnel: Full multi-step funnel generation with branding
  * - settings: Page settings updates (theme, background, etc.)
+ * 
+ * Enhanced with comprehensive UI/UX knowledge system for world-class design output.
  */
+
+import { UI_KNOWLEDGE, getRelevantKnowledge } from './uiKnowledge.ts';
+import { getAntiPatternsForTask } from './antiPatterns.ts';
+import { HERO_PATTERNS, FEATURE_PATTERNS, formatExamplesAsContext } from './designExamples.ts';
 
 export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
 export type GenerationMode = 'block' | 'funnel' | 'settings' | 'workflow';
@@ -43,9 +49,26 @@ export interface PageContext {
   hasPricing?: boolean;
 }
 
-const BASE_CONTEXT = `You are an AI copilot for a funnel/landing page builder. 
-Your goal is to help users create high-converting pages that drive action.
-Be concise, actionable, and conversion-focused.`;
+const BASE_CONTEXT = `You are an elite AI copilot for a funnel/landing page builder.
+You are trained on the best high-converting pages and understand professional UI/UX design principles.
+Your goal is to help users create world-class, high-converting pages that look premium and drive action.
+Be concise, actionable, and design-aware.`;
+
+// Design quality checklist the AI must validate against
+const DESIGN_QUALITY_CHECKLIST = `
+=== QUALITY CHECKLIST (Validate before generating) ===
+✓ Headline is benefit-focused, under 10 words
+✓ CTA uses action verb + benefit (e.g., "Get Your Free Audit")
+✓ Spacing follows 8px grid (4, 8, 16, 24, 32, 48, 64, 96px)
+✓ Color contrast meets 4.5:1 minimum for text
+✓ Section has clear hierarchy (H1 → H2 → body → CTA)
+✓ Touch targets are 44px minimum on mobile
+✓ Forms have visible labels above inputs
+✓ Social proof appears before main CTA
+✓ Max 65-75 characters per line for body text
+✓ One primary CTA per section
+✓ No emojis or special characters (✓ → •) in text content
+`;
 
 // Funnel type specific guidance
 const FUNNEL_TYPE_GUIDANCE: Record<FunnelType, string> = {
@@ -124,15 +147,19 @@ const SUGGEST_PROMPT = `${BASE_CONTEXT}
 
 You analyze the current funnel page and provide smart suggestions to improve it.
 
+=== DESIGN KNOWLEDGE ===
+{{UI_KNOWLEDGE}}
+
 Context about the current page:
 {{CONTEXT}}
 
 {{FUNNEL_TYPE_GUIDANCE}}
 
 Based on this context, provide 2-4 specific, actionable suggestions. Each suggestion should:
-1. Have a clear benefit for conversion
+1. Have a clear benefit for conversion based on proven design principles
 2. Be immediately implementable
 3. Be relevant to the current page state and funnel type
+4. Reference specific design best practices (spacing, hierarchy, psychology)
 
 Respond in this exact JSON format:
 {
@@ -153,6 +180,14 @@ const GENERATE_PROMPT = `${BASE_CONTEXT}
 
 You generate content blocks for landing pages and funnels based on user descriptions.
 
+=== UI/UX DESIGN KNOWLEDGE ===
+{{UI_KNOWLEDGE}}
+
+=== AVOID THESE MISTAKES ===
+{{ANTI_PATTERNS}}
+
+${DESIGN_QUALITY_CHECKLIST}
+
 FUNNEL CONTEXT:
 {{FUNNEL_TYPE_GUIDANCE}}
 
@@ -169,11 +204,19 @@ Generate a block structure based on the user's request. Create engaging, convers
 1. NO EMOJIS: Never include emoji characters in any content
 2. NO ICON TEXT: Never include characters like ✓ ✔ → • ★ in text - use icon-text elements instead
 3. CONTENT LIMITS:
-   - Headlines: max 80 characters
+   - Headlines: max 80 characters, benefit-focused, power words
    - Descriptions: max 200 characters  
-   - Button text: max 30 characters
+   - Button text: max 30 characters, action verb + benefit
 4. IMAGES: Always use { "placeholder": true } - never external URLs
 5. ICONS: Only use these names: check, star, rocket, users, clock, shield, zap, target, award, heart, thumbs-up, trending-up, map, calendar, play, mail, phone, globe
+6. SPACING: Use 8px grid values (8, 16, 24, 32, 48, 64, 96)
+7. TYPOGRAPHY: Headlines 2-3x larger than body, proper hierarchy
+
+=== COPY GUIDELINES ===
+- Headlines: Benefit-first, under 10 words, use power words
+- Body: Left-aligned, max 75 chars per line, 1.5-1.6 line height
+- CTAs: Action verb + benefit ("Get Your Free Audit", "Start Saving Today")
+- Never use: "Submit", "Click Here", "Learn More" as CTA text
 
 CRITICAL: Respond ONLY with valid JSON. No markdown, no explanation, no code blocks, no extra text.
 
@@ -225,14 +268,14 @@ BLOCK TYPES:
 
 EXAMPLES:
 
-Testimonial block:
+Testimonial block (note: specific results, real-sounding name):
 {"block":{"type":"testimonial","label":"Customer Testimonial","elements":[{"type":"text","content":"This completely transformed our business. We saw a 3x increase in conversions within the first month.","props":{}},{"type":"text","content":"— Sarah Johnson, CEO at TechStart","props":{"fontWeight":"semibold"}}],"props":{}}}
 
-Hero block:
-{"block":{"type":"hero","label":"Main Hero","elements":[{"type":"heading","content":"Transform Your Business Today","props":{"level":1}},{"type":"text","content":"Join thousands of successful entrepreneurs using our proven system."},{"type":"button","content":"Get Started Free","props":{"variant":"primary"}}],"props":{}}}
+Hero block (note: benefit-focused headline, action-oriented CTA):
+{"block":{"type":"hero","label":"Main Hero","elements":[{"type":"heading","content":"Double Your Revenue in 90 Days","props":{"level":1}},{"type":"text","content":"Join 9,847 successful entrepreneurs using our proven growth system."},{"type":"button","content":"Get Your Free Strategy Call","props":{"variant":"primary"}}],"props":{}}}
 
-Feature block with icons (CORRECT - use icon-text elements):
-{"block":{"type":"feature","label":"Key Features","elements":[{"type":"heading","content":"Why Choose Us","props":{"level":2}},{"type":"text","content":"We offer the most comprehensive solution in the market."},{"type":"icon-text","content":"Feature one that solves a problem","props":{"icon":"check"}},{"type":"icon-text","content":"Feature two that adds value","props":{"icon":"check"}},{"type":"icon-text","content":"Feature three that builds trust","props":{"icon":"check"}}],"props":{}}}
+Feature block with icons (CORRECT - use icon-text elements, benefit-focused):
+{"block":{"type":"feature","label":"Key Features","elements":[{"type":"heading","content":"Why 10,000+ Businesses Choose Us","props":{"level":2}},{"type":"text","content":"Get everything you need to scale faster with less effort."},{"type":"icon-text","content":"Save 10+ hours per week on manual tasks","props":{"icon":"clock"}},{"type":"icon-text","content":"Increase conversion rates by up to 47%","props":{"icon":"trending-up"}},{"type":"icon-text","content":"24/7 priority support when you need it","props":{"icon":"shield"}}],"props":{}}}
 
 Respond with ONLY the JSON object. No other text.`;
 
@@ -244,13 +287,23 @@ You are an elite funnel architect trained on high-converting pages like InfiniaG
 USER TOPIC/NICHE:
 {{USER_PROMPT}}
 
+=== UI/UX DESIGN KNOWLEDGE ===
+{{UI_KNOWLEDGE}}
+
+=== AVOID THESE MISTAKES ===
+{{ANTI_PATTERNS}}
+
+${DESIGN_QUALITY_CHECKLIST}
+
 === DESIGN PRINCIPLES (CRITICAL) ===
 
-1. VISUAL HIERARCHY: Guide the eye with size, contrast, and spacing
+1. VISUAL HIERARCHY: Guide the eye with size, contrast, and spacing (headlines 2-3x body)
 2. CREDIBILITY FIRST: Social proof BEFORE the ask (avatars, logos, stats)
-3. TYPOGRAPHY MIX: Combine bold sans-serif with accent elements
-4. CONTRAST SECTIONS: Alternate dark/light, full/contained layouts
-5. PREMIUM FEEL: Gradients, subtle patterns, glassmorphism, depth
+3. TYPOGRAPHY SCALE: Use 1.25 ratio type scale (48→36→28→18→16px)
+4. SPACING RHYTHM: 8px grid for all spacing (16, 24, 32, 48, 64, 96px)
+5. CONTRAST SECTIONS: Alternate dark/light, full/contained layouts
+6. PREMIUM FEEL: Gradients, subtle patterns, glassmorphism, depth
+7. F-PATTERN: Important content top-left, CTA in terminal area (bottom-right)
 
 === PREMIUM ELEMENT TYPES ===
 
@@ -565,6 +618,9 @@ const REWRITE_PROMPT = `${BASE_CONTEXT}
 
 You rewrite copy to be more conversion-focused and engaging.
 
+=== COPY BEST PRACTICES ===
+{{UI_KNOWLEDGE}}
+
 Original content:
 {{CONTENT}}
 
@@ -572,49 +628,56 @@ Context: {{CONTEXT}}
 
 {{FUNNEL_TYPE_GUIDANCE}}
 
-Rewrite this copy to be:
-1. More compelling and action-oriented
-2. Focused on benefits, not features
-3. Using power words that drive action
-4. Matching the funnel type tone
-5. Maintaining the same general meaning and length
+Rewrite this copy following these principles:
+1. Benefit-focused, not feature-focused
+2. Use power words that drive action (specific results, numbers)
+3. Match the funnel type tone and intent
+4. Headlines: max 10 words, benefit-first
+5. CTAs: action verb + benefit (never "Submit" or "Click Here")
+6. Keep similar length but increase impact
 
 Respond in this exact JSON format:
 {
   "rewritten": "The improved copy here",
-  "reasoning": "Brief explanation of changes"
+  "reasoning": "Brief explanation of what principles you applied"
 }
 
 Only respond with valid JSON, no additional text.`;
 
 const ANALYZE_PROMPT = `${BASE_CONTEXT}
 
-You analyze funnel structure and flow to identify improvement opportunities.
+You analyze funnel structure and flow to identify improvement opportunities based on proven UI/UX principles.
+
+=== ANALYSIS FRAMEWORK ===
+{{UI_KNOWLEDGE}}
+
+=== COMMON ISSUES TO CHECK ===
+{{ANTI_PATTERNS}}
 
 Current funnel structure:
 {{CONTEXT}}
 
 {{FUNNEL_TYPE_GUIDANCE}}
 
-Analyze this funnel and provide:
-1. Overall assessment of the flow
-2. Potential drop-off points
-3. Missing elements that could improve conversion
-4. Specific recommendations
+Analyze this funnel against best practices and provide:
+1. Overall assessment of the flow and design quality
+2. Potential drop-off points based on UX principles
+3. Missing elements that could improve conversion (social proof, trust, etc.)
+4. Specific recommendations with design rationale
 
 Respond in this exact JSON format:
 {
   "score": 75,
-  "assessment": "Brief overall assessment",
+  "assessment": "Brief overall assessment referencing specific design principles",
   "issues": [
     {
       "severity": "high|medium|low",
-      "issue": "Description of the issue",
-      "fix": "Recommended fix"
+      "issue": "Description of the issue and which principle it violates",
+      "fix": "Recommended fix with specific guidance"
     }
   ],
   "recommendations": [
-    "Specific actionable recommendation"
+    "Specific actionable recommendation with design rationale"
   ]
 }
 
@@ -712,12 +775,18 @@ export function getSystemPrompt(
   const existingContent = context ? formatExistingContent(context) : 'No existing content';
   const currentSettings = context ? formatCurrentSettings(context) : 'Default settings';
   
+  // Get contextually relevant UI knowledge
+  const uiKnowledge = getRelevantKnowledge(task, context);
+  const antiPatterns = getAntiPatternsForTask(task);
+  
   // Handle generation modes for 'generate' task
   if (task === 'generate' && mode) {
     switch (mode) {
       case 'funnel':
         return FUNNEL_GENERATE_PROMPT
-          .replace('{{USER_PROMPT}}', userPrompt || 'Create a professional funnel');
+          .replace('{{USER_PROMPT}}', userPrompt || 'Create a professional funnel')
+          .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
+          .replace('{{ANTI_PATTERNS}}', antiPatterns);
       
       case 'settings':
         return SETTINGS_PROMPT
@@ -731,6 +800,8 @@ export function getSystemPrompt(
       case 'block':
       default:
         return GENERATE_PROMPT
+          .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
+          .replace('{{ANTI_PATTERNS}}', antiPatterns)
           .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
           .replace('{{STYLING_CONTEXT}}', stylingContext)
           .replace('{{EXISTING_CONTENT}}', existingContent);
@@ -741,10 +812,13 @@ export function getSystemPrompt(
     case 'suggest':
       return SUGGEST_PROMPT
         .replace('{{CONTEXT}}', formattedContext)
-        .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance);
+        .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
+        .replace('{{UI_KNOWLEDGE}}', UI_KNOWLEDGE.SECTION_ARCHETYPES);
     
     case 'generate':
       return GENERATE_PROMPT
+        .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
+        .replace('{{ANTI_PATTERNS}}', antiPatterns)
         .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
         .replace('{{STYLING_CONTEXT}}', stylingContext)
         .replace('{{EXISTING_CONTENT}}', existingContent);
@@ -753,12 +827,15 @@ export function getSystemPrompt(
       return REWRITE_PROMPT
         .replace('{{CONTENT}}', context?.elementContent || '')
         .replace('{{CONTEXT}}', formattedContext)
-        .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance);
+        .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
+        .replace('{{UI_KNOWLEDGE}}', UI_KNOWLEDGE.BUTTON_RULES + '\n' + UI_KNOWLEDGE.CONVERSION_PSYCHOLOGY);
     
     case 'analyze':
       return ANALYZE_PROMPT
         .replace('{{CONTEXT}}', formattedContext)
-        .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance);
+        .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
+        .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
+        .replace('{{ANTI_PATTERNS}}', antiPatterns);
     
     default:
       return BASE_CONTEXT;
