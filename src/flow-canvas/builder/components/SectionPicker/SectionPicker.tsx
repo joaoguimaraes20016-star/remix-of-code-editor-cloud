@@ -225,7 +225,7 @@ export function SectionPicker({
               {/* Content - Block Grid or Template Gallery */}
               <div className="flex-1 overflow-y-auto">
                 {showBlockGrid ? (
-                  <BlockGrid onAddBlock={handleAddBlock} />
+                  <BlockGrid onAddBlock={handleAddBlock} category={activeCategory as 'content' | 'cta'} />
                 ) : templates.length > 0 ? (
                   <div className="p-6">
                     <div className="grid grid-cols-2 gap-4">
