@@ -1,664 +1,746 @@
 
-# Builder V2 UI Polish: Dark Theme Consistency & Visual Refinements
+# Funnel Builder UI/UX Audit Fix Plan
 
 ## Executive Summary
 
-This plan addresses **22 micro UI bugs** across 6 categories identified in the builder audit. The core issue is that `EditorLayout.css` contains **hardcoded light-mode hex values** (`#f1f5f9`, `#ffffff`, `#334155`) within a dark-themed builder, creating visual "light islands" that break theme cohesion.
+This plan addresses **20 identified issues** across 8 categories from the static audit. The core problems fall into three groups:
 
-The fixes are organized into 3 tiers by impact and effort.
-
----
-
-## Issue Categories Overview
-
-| Category | Issues | Impact | Files |
-|----------|--------|--------|-------|
-| A. Micro UI Bugs | 7 | High - Visual breaks | EditorLayout.css, primitives.css |
-| B. Visual Inconsistencies | 4 | Medium - Brand mismatch | EditorLayout.css, types.ts |
-| C. Interaction Polish | 3 | Low - Animation jitter | EditorLayout.css |
-| D. Responsive Glitches | 3 | Medium - Layout breaks | EditorLayout.css |
-| E. Premium Feel | 2 | Medium - "Cheap" appearance | EditorLayout.css |
+1. **Trust Failures**: Inspector controls that don't work (Hide, Animation, Hover, Autoplay, CTA actions)
+2. **Visual Inconsistencies**: Theme clashes between inspector and dark builder shell
+3. **CSS Conflicts**: Duplicate/conflicting rules causing unpredictable visuals
 
 ---
 
-## Tier 1: Critical Dark Theme Alignment (10 fixes)
+## A. Critical UI Trust Failures (5 issues)
 
-### A1-A3: Panel Tabs, Device Selector, Canvas Toolbar
+### A1: "Hide Element" Toggle Does Nothing
 
-**Problem**: These components use light-mode colors on dark panels:
+**Problem**: The inspector exposes `nodeProps.hidden` but no renderer reads it.
 
-```css
-/* Current - WRONG */
-.builder-panel-tabs { background: #f1f5f9; }  /* Light gray on dark panel */
-.builder-tab--active { background: #ffffff; color: #0f172a; }
-.builder-device-selector { background: #f1f5f9; }
-.builder-device-btn--active { background: #ffffff; }
-.builder-canvas-toolbar { background: #ffffff; }
+**Location**: 
+- Inspector: `EnhancedInspector.tsx:1016-1022` (sets `hidden` prop)
+- Renderers: `renderNode.tsx:48-53` and `renderRuntimeTree.tsx:51-56` (ignore `hidden`)
+
+**Fix**: Add visibility check in both renderers:
+
+```typescript
+// renderNode.tsx - Add after line 50
+const props = {
+  ...definition.defaultProps,
+  ...node.props,
+};
+
+// Skip rendering if hidden (but show ghost in editor for discoverability)
+const isHidden = props.hidden === true;
+if (isHidden && readonly) {
+  return <></>;  // Don't render in preview/runtime
+}
+
+// For editor mode, render with visual indicator
+const hiddenClass = isHidden && !readonly ? ' builder-v2-node--hidden' : '';
 ```
 
-**Fix**: Replace with dark builder tokens:
+Add CSS for hidden state:
+```css
+.builder-v2-node--hidden {
+  opacity: 0.35;
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+}
+.builder-v2-node--hidden::after {
+  content: "Hidden";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  color: white;
+}
+```
+
+**Files to modify**:
+- `src/builder_v2/canvas/renderNode.tsx` (~15 lines)
+- `src/builder_v2/runtime/renderRuntimeTree.tsx` (~10 lines)
+- `src/builder_v2/canvas/canvas.css` (~15 lines)
+
+---
+
+### A2: Animation & Hover Effect Controls Are Non-Functional
+
+**Problem**: Inspector sets `nodeProps.animation` and `nodeProps.hoverEffect` but no CSS or component consumes them.
+
+**Location**:
+- Inspector: `EnhancedInspector.tsx:79-95` (defines presets)
+- Inspector: `EnhancedInspector.tsx:920-933` (UI controls)
+- Renderers: No consumption anywhere
+
+**Fix Options**:
+
+**Option A - Wire the controls (Recommended)**: Add CSS classes based on animation/hover values.
+
+```typescript
+// In renderNode.tsx - build class string
+const animationClass = props.animation && props.animation !== 'none' 
+  ? ` builder-v2-anim--${props.animation}` 
+  : '';
+const hoverClass = props.hoverEffect && props.hoverEffect !== 'none'
+  ? ` builder-v2-hover--${props.hoverEffect}`
+  : '';
+```
+
+Add corresponding CSS:
+```css
+/* Enter animations */
+.builder-v2-anim--fadeIn { animation: fadeIn 0.4s ease-out; }
+.builder-v2-anim--slideUp { animation: slideUp 0.4s ease-out; }
+.builder-v2-anim--slideDown { animation: slideDown 0.4s ease-out; }
+.builder-v2-anim--scale { animation: scaleIn 0.3s ease-out; }
+.builder-v2-anim--bounce { animation: bounce 0.5s ease-out; }
+
+/* Hover effects */
+.builder-v2-hover--lift:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+.builder-v2-hover--glow:hover { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+.builder-v2-hover--scale:hover { transform: scale(1.02); }
+.builder-v2-hover--brighten:hover { filter: brightness(1.08); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes bounce { 0% { transform: scale(0.9); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+```
+
+**Option B - Remove the UI**: If animations are out of scope, remove the controls to avoid misleading users.
+
+**Files to modify**:
+- `src/builder_v2/canvas/renderNode.tsx` (~8 lines)
+- `src/builder_v2/runtime/renderRuntimeTree.tsx` (~8 lines)
+- `src/builder_v2/canvas/canvas.css` (~40 lines)
+
+---
+
+### A3: Video "Autoplay" Toggle Is a Lie
+
+**Problem**: Inspector exposes `autoplay` but `VideoStep.tsx` never uses it when building the iframe URL.
+
+**Location**:
+- Inspector: `EnhancedInspector.tsx:759-763` (UI control)
+- VideoStep: `VideoStep.tsx:7-21` (URL builder ignores autoplay)
+
+**Fix**: Update `getVideoEmbedUrl` to accept autoplay parameter:
+
+```typescript
+function getVideoEmbedUrl(url?: string, autoplay = false): string | null {
+  if (!url) return null;
+  
+  const autoplayParam = autoplay ? '1' : '0';
+  
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (youtubeMatch) return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=${autoplayParam}&mute=1`;
+  
+  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=${autoplayParam}&muted=1`;
+  
+  const loomMatch = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
+  if (loomMatch) return `https://www.loom.com/embed/${loomMatch[1]}?autoplay=${autoplayParam}`;
+  
+  // Existing embed URLs - append autoplay if not present
+  if (url.includes('/embed/') || url.includes('player.vimeo.com')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}autoplay=${autoplayParam}`;
+  }
+  
+  return null;
+}
+```
+
+Update component to pass autoplay:
+```typescript
+const embedUrl = getVideoEmbedUrl(content.video_url, content.autoplay ?? false);
+```
+
+**Note**: Browsers require videos to be muted for autoplay, hence `mute=1` parameter.
+
+**Files to modify**:
+- `src/builder_v2/components/steps/VideoStep.tsx` (~20 lines)
+
+---
+
+### A4: "On Click" Actions for Step CTA Buttons Don't Execute
+
+**Problem**: Step components (WelcomeStep, VideoStep, OptInStep) render `UnifiedButton` with no `onClick` handler.
+
+**Location**:
+- WelcomeStep: `WelcomeStep.tsx:45-54` (no onClick)
+- VideoStep: `VideoStep.tsx:77-88` (no onClick)
+- ButtonActionSection: `EnhancedInspector.tsx:445-494` (sets buttonAction prop)
+
+**Fix**: Add onClick handler to step CTA buttons that reads `buttonAction` from content/design:
+
+```typescript
+// In WelcomeStep.tsx, VideoStep.tsx, etc.
+const handleButtonClick = () => {
+  const action = content.buttonAction || (d as any).buttonAction;
+  if (!action) return;
+  
+  switch (action.type) {
+    case 'next-step':
+    case 'continue':
+      // Emit flow intent - handled by parent
+      window.dispatchEvent(new CustomEvent('flow-intent', { detail: { type: 'next-step' } }));
+      break;
+    case 'go-to-step':
+      window.dispatchEvent(new CustomEvent('flow-intent', { detail: { type: 'go-to-step', stepId: action.stepId } }));
+      break;
+    case 'url':
+    case 'redirect':
+      if (action.url) {
+        if (action.openNewTab) {
+          window.open(action.url, '_blank', 'noopener,noreferrer');
+        } else {
+          window.location.href = action.url;
+        }
+      }
+      break;
+    // ... other action types
+  }
+};
+
+// Update UnifiedButton
+<UnifiedButton
+  onClick={handleButtonClick}
+  // ... existing props
+>
+```
+
+**Better approach**: Create a shared `useButtonAction` hook that all step components use.
+
+**Files to modify**:
+- Create `src/builder_v2/hooks/useButtonAction.ts` (~50 lines)
+- `src/builder_v2/components/steps/WelcomeStep.tsx` (~10 lines)
+- `src/builder_v2/components/steps/VideoStep.tsx` (~10 lines)
+- `src/builder_v2/components/steps/OptInStep.tsx` (~10 lines)
+- `src/builder_v2/components/steps/ThankYouStep.tsx` (~10 lines)
+
+---
+
+## B. Visual Inconsistencies (5 issues)
+
+### B1: Inspector Theme Clashes with Dark Builder Shell
+
+**Problem**: `enhanced-inspector.css` uses bright white theme (`background: #ffffff`) while the builder shell is dark.
+
+**Location**: `enhanced-inspector.css:9` and throughout
+
+**Fix**: Update enhanced-inspector.css to use dark theme tokens:
 
 ```css
-/* Updated - Correct */
-.builder-panel-tabs { 
-  background: var(--builder-hover-bg); /* #1f2024 */
-}
-
-.builder-tab {
-  color: var(--builder-text-secondary);
-}
-
-.builder-tab:hover {
-  color: var(--builder-text-primary);
-}
-
-.builder-tab--active {
-  background: var(--builder-active-bg); /* #252629 */
-  color: var(--builder-text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.builder-device-selector {
-  background: var(--builder-hover-bg);
-}
-
-.builder-device-btn {
-  color: var(--builder-text-muted);
-}
-
-.builder-device-btn--active {
-  background: var(--builder-active-bg);
-  color: var(--builder-text-primary);
-}
-
-.builder-canvas-toolbar {
+.ei-inspector {
   background: var(--builder-panel-bg);
+  color: var(--builder-text-primary);
+}
+
+.ei-header {
   border-bottom: 1px solid var(--builder-panel-border);
 }
 
-.builder-nav-btn {
-  border: 1px solid var(--builder-panel-border);
-  color: var(--builder-text-muted);
-}
-
-.builder-nav-btn:hover:not(:disabled) {
-  background: var(--builder-hover-bg);
+.ei-title {
   color: var(--builder-text-primary);
 }
 
-.builder-canvas-title {
-  color: var(--builder-text-primary);
-}
-```
-
-**Lines to modify**: 700-730, 745-790, 791-821
-
----
-
-### A2: Page List Low-Contrast Styling
-
-**Problem**: Page list uses light hover/active backgrounds and dark text:
-
-```css
-/* Current - WRONG */
-.builder-page-item:hover { background: #f1f5f9; }
-.builder-page-item--active { background: #eef2ff; }
-.builder-page-name { color: #334155; }
-.builder-page-index { background: #e2e8f0; color: #64748b; }
-```
-
-**Fix**:
-
-```css
-.builder-page-item:hover {
+.ei-tabs {
   background: var(--builder-hover-bg);
 }
 
-.builder-page-item--active {
-  background: rgba(59, 130, 246, 0.12);
-}
-
-.builder-page-name {
-  color: var(--builder-text-primary);
-}
-
-.builder-page-index {
-  background: var(--builder-active-bg);
+.ei-tab {
   color: var(--builder-text-secondary);
 }
 
-.builder-page-item--active .builder-page-index {
-  background: var(--builder-accent);
-  color: #ffffff;
+.ei-tab--active {
+  background: var(--builder-active-bg);
+  color: var(--builder-text-primary);
+}
+
+.ei-text-input, .ei-textarea, .ei-select {
+  background: var(--builder-hover-bg);
+  border: 1px solid var(--builder-panel-border);
+  color: var(--builder-text-primary);
+}
+
+.ei-color-popover {
+  background: var(--builder-panel-bg);
+  border: 1px solid var(--builder-panel-border);
 }
 ```
 
-**Lines to modify**: 905-978
+**Files to modify**:
+- `src/builder_v2/inspector/enhanced-inspector.css` (~100 lines of token replacements)
 
 ---
 
-### A4: Content Card Missing Background
+### B2: Multiple Accent Colors Compete
 
-**Problem**: `.builder-content-card` has no background but expects light text:
+**Problem**: Selection uses blue (#3b82f6), indigo (#6366f1), and cyan (#38bdf8) in different places.
+
+**Location**:
+- `EditorLayout.css:1091-1097` (cyan for element wrapper)
+- `canvas.css:235-239` (indigo for node selection)
+- Various other places
+
+**Fix**: Standardize on a single selection color token:
 
 ```css
-/* Current - Missing background */
-.builder-content-card {
-  display: flex;
-  /* No background! */
+:root {
+  --builder-selection-primary: hsl(217 91% 60%); /* Blue */
+  --builder-selection-hover: hsl(217 91% 60% / 0.5);
+  --builder-selection-ring: hsl(217 91% 60% / 0.3);
 }
 ```
 
-**Fix in primitives.css**:
+Replace all hardcoded selection colors with these tokens.
+
+**Files to modify**:
+- `src/builder_v2/EditorLayout.css` (~20 replacements)
+- `src/builder_v2/canvas/canvas.css` (~15 replacements)
+
+---
+
+### B3: CTA Gradients Conflict Between Files
+
+**Problem**: 
+- `visual-parity.css:138-142` defines blue gradient
+- `canvas.css:337` defines purple gradient
+
+**Fix**: Consolidate to single source of truth using CSS variable:
 
 ```css
-.builder-content-card {
+:root {
+  --builder-cta-gradient: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark, 217 91% 45%)) 100%);
+}
+
+/* In both files, use: */
+background: var(--builder-cta-gradient);
+```
+
+**Files to modify**:
+- `src/builder_v2/styles/visual-parity.css` (~5 lines)
+- `src/builder_v2/canvas/canvas.css` (~5 lines)
+
+---
+
+### B4: Duplicate Empty-State Styles Conflict
+
+**Problem**: `.builder-v2-empty-page-state` defined in both `EditorLayout.css` and `canvas.css` with different values.
+
+**Location**:
+- `canvas.css:1294-1330`
+- `EditorLayout.css` (similar classes)
+
+**Fix**: Keep definitions only in `canvas.css` (the authoritative canvas styles) and remove duplicates from `EditorLayout.css`.
+
+**Files to modify**:
+- `src/builder_v2/EditorLayout.css` (remove duplicate ~20 lines)
+
+---
+
+### B5: StepPalette Has No CSS
+
+**Problem**: `StepPalette.tsx` uses classes like `.step-palette`, `.step-palette-grid`, `.step-palette-item` that have no styles anywhere.
+
+**Fix**: Add styles to `EditorLayout.css`:
+
+```css
+/* Step Palette - Add Step Panel */
+.step-palette {
+  padding: 12px;
+}
+
+.step-palette--compact {
+  padding: 8px;
+}
+
+.step-palette-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px;
+  margin-bottom: 8px;
+}
+
+.step-palette-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--builder-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.step-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.step-palette-item {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  width: 100%;
-  gap: 0;
-  text-align: center;
-  overflow: hidden;
-  /* Add proper light background for card content */
-  background: #ffffff;
-  border-radius: 16px;
-}
-```
-
-**File**: `src/builder_v2/components/primitives/primitives.css`, lines 489-497
-
----
-
-### A6: Selection Overlay Radius Mismatch
-
-**Problem**: Overlay uses hardcoded 8px radius while step cards use 24px:
-
-```css
-/* Current */
-.builder-v2-node-overlay { border-radius: 8px; }  /* Too small! */
-.element-wrapper-overlay { border-radius: 8px; }
-
-/* Step cards use 24px */
-.step-card { border-radius: 24px; }
-```
-
-**Fix**: Use `inherit` or larger value:
-
-```css
-.builder-v2-node-overlay {
-  border-radius: inherit;
-}
-
-.element-wrapper-overlay {
-  border-radius: inherit;
-}
-```
-
-**Lines to modify**: 246-254, 1066-1074
-
----
-
-### A7 + E2: Theme Popovers to Dark
-
-**Problem**: Action menus and text toolbars are bright white:
-
-```css
-/* Current - WRONG */
-.element-action-menu {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-}
-
-.text-edit-toolbar {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-}
-```
-
-**Fix**:
-
-```css
-.element-action-menu {
-  background: var(--builder-panel-bg);
-  border: 1px solid var(--builder-panel-border);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.element-action-btn {
-  color: var(--builder-text-secondary);
-}
-
-.element-action-btn:hover:not(:disabled) {
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
   background: var(--builder-hover-bg);
-  color: var(--builder-text-primary);
-}
-
-.text-edit-toolbar {
-  background: var(--builder-panel-bg);
   border: 1px solid var(--builder-panel-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 150ms ease;
 }
 
-.text-edit-btn {
-  color: var(--builder-text-secondary);
+.step-palette-item:hover {
+  background: var(--builder-active-bg);
+  border-color: var(--builder-accent);
 }
 
-.text-edit-btn:hover {
-  background: var(--builder-hover-bg);
-  color: var(--builder-text-primary);
-}
-
-.text-edit-dropdown-menu {
-  background: var(--builder-panel-bg);
-  border: 1px solid var(--builder-panel-border);
-}
-
-.text-edit-dropdown-item {
-  color: var(--builder-text-primary);
-}
-
-.text-edit-dropdown-item:hover {
-  background: var(--builder-hover-bg);
-}
-```
-
-**Lines to modify**: 1124-1170, 1192-1297
-
----
-
-## Tier 2: Visual Consistency & Brand Alignment (6 fixes)
-
-### B1: Replace Hardcoded Builder Tokens
-
-**Problem**: Builder tokens in `:root` use hex values, ignoring global HSL tokens:
-
-```css
-/* Current - Hardcoded */
-:root {
-  --builder-bg: #17181c;
-  --builder-accent: #3b82f6;
-}
-```
-
-**Fix**: Reference global HSL variables (from index.css):
-
-```css
-:root {
-  /* Map to global tokens using HSL */
-  --builder-bg: hsl(var(--builder-bg, 220 13% 8%));
-  --builder-panel-bg: hsl(var(--builder-surface, 220 13% 10%));
-  --builder-accent: hsl(var(--primary, 217 91% 60%));
-  --builder-text-primary: hsl(var(--builder-text, 210 20% 96%));
-  --builder-text-secondary: hsl(var(--builder-text-secondary, 210 15% 80%));
-  --builder-text-muted: hsl(var(--builder-text-muted, 215 12% 62%));
-  --builder-hover-bg: hsl(var(--builder-surface-hover, 220 13% 14%));
-  --builder-active-bg: hsl(var(--builder-surface-active, 220 13% 18%));
-  --builder-panel-border: hsl(var(--builder-border, 220 13% 16%));
-}
-```
-
-**Lines to modify**: 8-35
-
----
-
-### B2: Default Step Design to Theme Tokens
-
-**Problem**: DEFAULT_DESIGN uses hardcoded colors:
-
-```typescript
-// Current - Hardcoded
-export const DEFAULT_DESIGN: StepDesign = {
-  backgroundColor: '#0f0f0f',
-  buttonColor: '#6366f1',
-};
-```
-
-**Fix**: Use CSS variable references:
-
-```typescript
-export const DEFAULT_DESIGN: StepDesign = {
-  backgroundColor: 'hsl(var(--builder-bg))',
-  textColor: 'hsl(var(--builder-text))',
-  buttonColor: 'hsl(var(--primary))',
-  buttonTextColor: 'hsl(var(--primary-foreground))',
-  fontSize: 'medium',
-  borderRadius: 12,
-};
-```
-
-**File**: `src/builder_v2/components/steps/types.ts`, lines 51-58
-
----
-
-### B3: CTA Gradient to Theme Tokens
-
-**Problem**: Primary CTA uses hardcoded purple gradient:
-
-```css
-/* Current */
-.builder-cta-button--primary {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-}
-```
-
-**Fix**:
-
-```css
-.builder-cta-button--primary {
-  background: var(--gradient-button, linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%));
-  box-shadow: 0 4px 14px hsl(var(--primary) / 0.35);
-}
-
-.builder-cta-button--primary:hover {
-  box-shadow: 0 6px 20px hsl(var(--primary) / 0.45);
-}
-```
-
-**File**: `src/builder_v2/components/primitives/primitives.css`, lines 114-123
-
----
-
-### B4: Unify Font Family
-
-**Problem**: Builder uses `'Inter'` while app uses system fonts.
-
-**Fix**: Remove the Google Fonts import and align to global font token:
-
-```css
-/* Remove line 1: @import url('https://fonts.googleapis.com/css2?family=Inter...'); */
-
-.builder-shell {
-  font-family: var(--font-sans, 'DM Sans', 'Inter', system-ui, sans-serif);
-}
-```
-
-**Lines to modify**: 1, 574-580
-
----
-
-### A5: Normalize Mixed Image Option Layout
-
-**Problem**: When `hasImages` is true but some options lack images, they render inconsistently:
-
-```tsx
-// Current - Only applies card class if BOTH hasImages AND option.image
-className={cn(
-  "step-option",
-  hasImages && option.image && "step-option--card"  // Problem: non-image items stay as list
-)}
-```
-
-**Fix**: When `hasImages`, all options should use card layout (with placeholder if no image):
-
-```tsx
-// Fixed - All options get card layout when any has image
-className={cn(
-  "step-option",
-  hasImages && "step-option--card"  // All cards when ANY has image
-)}
-
-// And add placeholder image handling:
-{hasImages && (
-  <div 
-    className="step-option-image"
-    style={{
-      backgroundImage: option.image ? `url(${option.image})` : 'none',
-      backgroundColor: option.image ? undefined : 'rgba(255,255,255,0.06)',
-      borderRadius: `${d.borderRadius}px ${d.borderRadius}px 0 0`,
-    }}
-  >
-    {!option.image && option.emoji && (
-      <span className="step-option-placeholder-emoji">{option.emoji}</span>
-    )}
-  </div>
-)}
-```
-
-**File**: `src/builder_v2/components/steps/MultiChoiceStep.tsx`, lines 56-95
-
-Also add CSS for the emoji placeholder:
-
-```css
-.step-option-placeholder-emoji {
+.step-palette-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-size: 32px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.step-palette-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--builder-text-primary);
+  text-align: center;
 }
 ```
 
-**File**: `src/builder_v2/canvas/canvas-experience.css`, after line 307
+**Files to modify**:
+- `src/builder_v2/EditorLayout.css` (~50 lines)
 
 ---
 
-## Tier 3: Animation & Responsive Polish (6 fixes)
+## C. Alignment & Grid Errors (3 issues)
 
-### C1: Panel Collapse Double Transition
+### C1: Structure Tree Indentation Variable Mismatch
 
-**Problem**: Both `grid-template-columns` and `width/opacity` animate, causing jitter:
+**Problem**: Component sets `--builder-v2-structure-depth` but CSS reads `var(--depth)`.
+
+**Location**:
+- `StructureTree.tsx:78-79` (sets `--builder-v2-structure-depth`)
+- CSS likely uses wrong variable name
+
+**Fix**: Update CSS to use correct variable:
 
 ```css
-/* Current - Double animation */
-.builder-shell {
-  transition: grid-template-columns 250ms...;
-}
-.builder-panel {
-  transition: width 200ms ease, opacity 200ms ease;
+.builder-v2-structure-row {
+  padding-left: calc(12px + (var(--builder-v2-structure-depth, 0) * 16px));
 }
 ```
 
-**Fix**: Remove panel width/opacity transition, rely only on grid:
-
-```css
-.builder-panel {
-  transition: none; /* Grid handles the transition */
-}
-
-.builder-panel--collapsed {
-  opacity: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-```
-
-**Lines to modify**: 596-610
+**Files to modify**:
+- `src/builder_v2/EditorLayout.css` or structure tree CSS (~3 lines)
 
 ---
 
-### C2: Collision-Aware Toolbar Positioning
+### C2: Device Frame Width Calculations Can Collapse
 
-**Problem**: Hover toolbars clip at canvas edges.
+**Problem**: `min(375px, calc(100vw - 560px))` yields negative values on small viewports.
 
-**Fix**: Add CSS that flips toolbar to bottom when near top:
-
-```css
-.builder-v2-hover-toolbar {
-  /* Existing styles */
-}
-
-/* Flip to bottom when near top edge */
-.builder-v2-node--near-top > .builder-v2-hover-toolbar {
-  top: auto;
-  bottom: -32px;
-}
-```
-
-This requires a small JS check in the component to add `--near-top` class when element is close to viewport top.
-
----
-
-### C3: Drag Handle Visibility During Drag
-
-**Problem**: Handle fades out when dragging:
-
-**Fix**:
-
-```css
-.builder-page-item-wrapper--dragging .builder-page-drag-handle {
-  opacity: 1 !important;
-}
-```
-
-**Lines to modify**: After line 936
-
----
-
-### D1-D2: Responsive Device Frames
-
-**Problem**: Fixed widths overflow on narrow viewports.
-
-**Fix**:
+**Fix**: Add minimum floor:
 
 ```css
 .device-frame--phone {
-  width: min(375px, calc(100vw - 560px)); /* 560 = left + right panels + padding */
+  width: max(280px, min(375px, calc(100vw - 560px)));
 }
 
 .device-frame--tablet {
-  width: min(768px, calc(100vw - 560px));
-}
-
-.device-frame--phone .device-screen,
-.device-frame--tablet .device-screen,
-.device-frame--desktop .device-screen {
-  max-height: calc(100vh - 200px);
+  width: max(320px, min(768px, calc(100vw - 560px)));
 }
 ```
 
-**Lines to modify**: 42-82, 105-126, 146-206
+**Files to modify**:
+- `src/builder_v2/EditorLayout.css` (~4 lines)
 
 ---
 
-### D3: Responsive Panel Behavior
+### C3: Selection Outline Geometry Shifts
 
-**Problem**: Panels don't adapt on narrow viewports.
+**Problem**: 
+- `EditorLayout.css` uses `inset: -1px; border: 2px`
+- `canvas.css` uses `inset: 0; border: 1px`
 
-**Fix**: Add breakpoint for overlay mode:
+**Fix**: Standardize on one approach:
 
 ```css
-@media (max-width: 1024px) {
-  .builder-shell {
-    grid-template-columns: 0 1fr 0; /* Panels collapsed by default */
-  }
-  
-  .builder-panel--left,
-  .builder-panel--right {
-    position: fixed;
-    top: 0;
-    height: 100vh;
-    z-index: 50;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
-  }
-  
-  .builder-panel--left {
-    left: 0;
-    width: 280px;
-    transform: translateX(-100%);
-  }
-  
-  .builder-panel--right {
-    right: 0;
-    width: 320px;
-    transform: translateX(100%);
-  }
-  
-  .builder-panel--left.builder-panel--visible,
-  .builder-panel--right.builder-panel--visible {
-    transform: translateX(0);
-  }
+/* Single source of truth */
+.builder-v2-node-overlay {
+  inset: -1px;
+  border: 2px solid transparent;
+  border-radius: inherit;
 }
 ```
 
-**Lines to modify**: Add after line 624
+Remove conflicting rules from the other file.
+
+**Files to modify**:
+- `src/builder_v2/canvas/canvas.css` (~5 lines)
 
 ---
 
-### E1: Soften Dashed Borders
+## D. Hover/Interaction Inconsistencies (2 issues)
 
-**Problem**: Bright dashed borders feel like dev UI:
+### D1: Hidden Affordances with No Focus State
+
+**Problem**: Page context menu and drag handle only appear on hover, no keyboard focus.
+
+**Fix**: Add focus-visible states:
 
 ```css
-/* Current */
-.builder-add-step-btn {
-  border: 1px dashed #cbd5e1;
+.builder-page-item:focus-visible .page-context-trigger,
+.builder-page-item:focus-visible .builder-page-drag-handle {
+  opacity: 1;
+}
+
+.page-context-trigger:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--builder-accent);
+  outline-offset: 2px;
 }
 ```
 
-**Fix**:
+**Files to modify**:
+- `src/builder_v2/EditorLayout.css` (~10 lines)
+
+---
+
+### D2: Structure Tree Controls Are Unstyled
+
+**Problem**: `.builder-v2-structure-chip` buttons are never styled.
+
+**Fix**: Add styles:
 
 ```css
-.builder-add-step-btn {
-  border: 1px dashed rgba(148, 163, 184, 0.4);
+.builder-v2-structure-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  background: var(--builder-hover-bg);
+  border: 1px solid var(--builder-panel-border);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--builder-text-secondary);
+  cursor: pointer;
+  transition: all 150ms ease;
 }
 
-.builder-add-step-btn:hover {
-  border-color: var(--builder-accent);
-  border-style: solid;
+.builder-v2-structure-chip:hover:not(:disabled) {
+  background: var(--builder-active-bg);
+  color: var(--builder-text-primary);
 }
 
-.step-card--empty {
-  border: 2px dashed rgba(255, 255, 255, 0.08);
+.builder-v2-structure-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.builder-v2-structure-chip--add {
+  color: var(--builder-accent);
+}
+
+.builder-v2-structure-chip--danger {
+  color: hsl(0 72% 51%);
+}
+
+.builder-v2-structure-chip--danger:hover {
+  background: hsl(0 72% 51% / 0.15);
 }
 ```
 
-**Lines to modify**: 1017-1043, also canvas-experience.css lines 338-358
+**Files to modify**:
+- `src/builder_v2/EditorLayout.css` (~30 lines)
+
+---
+
+## E. Visual Clutter (2 issues)
+
+### E1: Add Step Palette Overloads Left Panel
+
+**Fix**: Add dismiss button and optional grouping:
+
+```tsx
+// In StepPalette.tsx
+<div className="step-palette-header">
+  <span className="step-palette-title">Add Step</span>
+  <button 
+    className="step-palette-dismiss"
+    onClick={onDismiss}
+    aria-label="Close"
+  >
+    ×
+  </button>
+</div>
+```
+
+Add prop: `onDismiss?: () => void`
+
+**Files to modify**:
+- `src/builder_v2/structure/StepPalette.tsx` (~10 lines)
+- `src/builder_v2/EditorLayout.css` (~5 lines)
+
+---
+
+### E2: Page List Row Density
+
+**Fix**: Simplify by hiding index when not hovered:
+
+```css
+.builder-page-index {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.builder-page-item:hover .builder-page-index,
+.builder-page-item--active .builder-page-index {
+  opacity: 1;
+}
+```
+
+**Files to modify**:
+- `src/builder_v2/EditorLayout.css` (~8 lines)
+
+---
+
+## F. Wording/Label Fixes (2 issues)
+
+### F1: Rename "Blocks" Tab
+
+**Fix**: Rename to "Layout" in EnhancedInspector.tsx:
+
+```tsx
+<button
+  type="button"
+  className={cn("ei-tab", activeTab === 'blocks' && "ei-tab--active")}
+  onClick={() => setActiveTab('blocks')}
+>
+  <LayoutGrid size={14} /> Layout
+</button>
+```
+
+**Files to modify**:
+- `src/builder_v2/inspector/EnhancedInspector.tsx` (~1 line)
+
+---
+
+### F2: Clarify "Layout Personality" Copy
+
+**Fix**: Update description text:
+
+```typescript
+const PERSONALITY_OPTIONS = [
+  { value: 'clean', label: 'Clean', description: 'Minimal spacing, subtle emphasis' },
+  { value: 'bold', label: 'Bold', description: 'Stronger hover effects' },
+  { value: 'editorial', label: 'Editorial', description: 'Reading-focused interactions' },
+  { value: 'dense', label: 'Dense', description: 'Compact, efficient feedback' },
+  { value: 'conversion', label: 'Conversion', description: 'Prominent CTA effects' },
+];
+```
+
+**Files to modify**:
+- `src/builder_v2/inspector/EnhancedInspector.tsx` (~5 lines)
+
+---
+
+## G. Premium-Feel Issues (2 issues)
+
+### G1: Hardcoded StepPalette Colors
+
+**Problem**: Each step type has custom hex colors that ignore theme.
+
+**Fix**: Use theme-derived colors or a consistent palette:
+
+```typescript
+const STEP_TYPE_CONFIG = [
+  { type: 'welcome', icon: Play, color: 'hsl(var(--primary))' },
+  { type: 'text_question', icon: MessageSquare, color: 'hsl(var(--primary) / 0.9)' },
+  // ... use theme variables
+];
+```
+
+**Files to modify**:
+- `src/builder_v2/structure/StepPalette.tsx` (~10 lines)
+
+---
+
+### G2: Typography Drift
+
+**Problem**: `visual-parity.css:227-233` forces system fonts while EditorLayout uses DM Sans.
+
+**Fix**: Align canvas typography to builder tokens:
+
+```css
+.builder-page {
+  font-family: var(--font-sans, 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+}
+```
+
+**Files to modify**:
+- `src/builder_v2/styles/visual-parity.css` (~2 lines)
+
+---
+
+## Implementation Priority
+
+| Priority | Category | Issues | Effort |
+|----------|----------|--------|--------|
+| P0 | Trust Failures | A1-A4 | 3-4 hours |
+| P1 | Visual Theme | B1, B2, B5 | 2-3 hours |
+| P2 | CSS Conflicts | B3, B4, C3 | 1-2 hours |
+| P3 | Interaction Polish | C1, C2, D1, D2 | 1-2 hours |
+| P4 | Clutter/Labels | E1, E2, F1, F2 | 1 hour |
+| P5 | Premium Feel | G1, G2 | 30 min |
 
 ---
 
 ## Files Summary
 
-| File | Changes | Priority |
-|------|---------|----------|
-| `src/builder_v2/EditorLayout.css` | ~200 lines | P0 |
-| `src/builder_v2/components/primitives/primitives.css` | ~30 lines | P0 |
-| `src/builder_v2/components/steps/types.ts` | ~8 lines | P1 |
-| `src/builder_v2/components/steps/MultiChoiceStep.tsx` | ~20 lines | P1 |
-| `src/builder_v2/canvas/canvas-experience.css` | ~25 lines | P1 |
-
----
-
-## Implementation Order
-
-1. **EditorLayout.css token replacement** (Tier 1, A1-A3, A6, A7, E2) - Biggest visual impact
-2. **Panel tabs + device selector dark theme** (Tier 1)
-3. **Page list styling fixes** (Tier 1, A2)
-4. **Popover theming** (Tier 1, A7 + E2)
-5. **Content card background** (Tier 1, A4)
-6. **Selection overlay radius** (Tier 1, A6)
-7. **DEFAULT_DESIGN tokens** (Tier 2, B2)
-8. **CTA gradient tokens** (Tier 2, B3)
-9. **Mixed option layout** (Tier 2, A5)
-10. **Animation polish** (Tier 3, C1-C3)
-11. **Responsive frames** (Tier 3, D1-D3)
+| File | Issues | Changes |
+|------|--------|---------|
+| `src/builder_v2/canvas/renderNode.tsx` | A1, A2 | ~25 lines |
+| `src/builder_v2/runtime/renderRuntimeTree.tsx` | A1, A2 | ~20 lines |
+| `src/builder_v2/components/steps/VideoStep.tsx` | A3 | ~20 lines |
+| `src/builder_v2/hooks/useButtonAction.ts` | A4 | NEW (~50 lines) |
+| `src/builder_v2/components/steps/*.tsx` | A4 | ~10 lines each |
+| `src/builder_v2/inspector/enhanced-inspector.css` | B1 | ~100 lines |
+| `src/builder_v2/inspector/EnhancedInspector.tsx` | F1, F2 | ~10 lines |
+| `src/builder_v2/EditorLayout.css` | B4, B5, C1-C3, D1, D2, E2 | ~120 lines |
+| `src/builder_v2/canvas/canvas.css` | A1, A2, B2, B3, C3 | ~60 lines |
+| `src/builder_v2/styles/visual-parity.css` | B3, G2 | ~10 lines |
+| `src/builder_v2/structure/StepPalette.tsx` | E1, G1 | ~15 lines |
 
 ---
 
 ## Testing Checklist
 
-After implementation:
+**Trust Controls**
+- [ ] Toggle "Hide Element" → element shows ghost in editor, hidden in preview
+- [ ] Select "Fade In" animation → element animates on load
+- [ ] Select "Lift" hover → element lifts on hover
+- [ ] Toggle Video "Autoplay" → video autoplays when visible
+- [ ] Set button action to URL → button navigates on click
 
-**Dark Theme Consistency**
-- [ ] Panel tabs match dark panel background (no light chips)
-- [ ] Device selector buttons are dark-themed
-- [ ] Canvas toolbar is dark, not white
-- [ ] Page list text is readable (light on dark)
-- [ ] Popovers match dark theme
+**Visual Consistency**
+- [ ] Inspector matches dark theme (no white panels)
+- [ ] Selection outlines use consistent blue color
+- [ ] CTA buttons use same gradient everywhere
+- [ ] StepPalette is styled and usable
 
-**Visual Quality**
-- [ ] Selection outlines match component corner radius
-- [ ] Content cards have visible background
-- [ ] CTA buttons use brand gradient
-- [ ] Dashed borders are subtle, not harsh
-
-**Responsive**
-- [ ] Device frames don't overflow on 1280px viewport
-- [ ] Panels overlay on 1024px and below
-- [ ] Device screen heights adapt to viewport
-
-**Animation**
-- [ ] Panel collapse is smooth (no jitter)
-- [ ] Drag handles stay visible while dragging
-- [ ] Hover toolbars don't clip at edges
+**Interactions**
+- [ ] Structure tree chips are styled and clickable
+- [ ] Keyboard navigation shows focus states
+- [ ] Device frames don't collapse on narrow screens
