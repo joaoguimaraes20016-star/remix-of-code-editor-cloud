@@ -39,7 +39,6 @@ const SECTION_CATEGORIES = [
   { id: 'team', label: 'Team', icon: 'people' as const },
   { id: 'testimonials', label: 'Testimonials', icon: 'quote' as const },
   { id: 'social_proof', label: 'Trust', icon: 'grid' as const },
-  { id: 'faq', label: 'FAQ', icon: 'bars' as const },
 ] as const;
 
 // Get templates for a category (filter out legacy)
