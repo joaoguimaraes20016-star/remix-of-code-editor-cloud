@@ -1,174 +1,148 @@
 
-# Hero Templates Redesign - Match Perspective Style
+
+# Features Templates Redesign - Match Perspective Style
 
 ## Reference Analysis
 
-From the uploaded reference images, I can identify **10 distinct hero template variations** that follow a clean, light-themed design language:
-
-### Template Inventory from Reference
+From the uploaded screenshots, I identified **8 distinct Features template patterns**:
 
 | Template | Layout | Key Elements |
 |----------|--------|--------------|
-| **Hero Simple** | Centered | Headline + Subtext + Button + Hero Image below |
-| **Hero + Reviews** | Centered | Headline + Subtext + Button + Avatar stack + Stars + "4.8 from 148 reviews" + Image |
-| **Hero + Logos** | Centered | Headline + Subtext + Button + Logo bar (Coca-Cola, Zalando, Braun, IKEA, Sony) |
-| **Hero Split Left** | 50/50 | Text left + Image right + Logo bar below text |
-| **Hero + Form Card** | Split | Title left + Form card right (Name, Email, Phone + CTA) |
-| **Hero + Inline Form** | Split | Title + inputs + button left + Image right |
-| **Hero Gradient BG** | Centered | Soft blue/gray gradient background + Headline + Button + Logos below card |
-| **Hero Dark BG + Image** | Full | Dark blue-gray background + White headline + Outline button + Large image below |
+| **Split Left + Checklist** | 50/50 | Title + subtext + avatar reviews left, checklist with checkmarks + CTA button right |
+| **Split Right + Image** | 50/50 | Title + subtext + avatar reviews left, person photo right |
+| **Split Left + Image + Icons** | 50/50 | Person photo left, title + icon feature list + CTA right |
+| **3-Column Image Cards** | Centered | Label + title + CTA, 3 image cards with titles + descriptions |
+| **4-Column Icon Grid** | Centered | Label + title + CTA, 4 icon features in 2x2 grid |
+| **2-Column Cards + Icon Features** | Centered | Label + title + CTA, 2 image cards + 4 icon features below |
+| **Split Gray BG + Image** | 50/50 | Gray background, label + title + icon list left, phone/device image right |
+| **Split Gray BG + Stats** | 50/50 | Gray background, title + paragraph + avatar reviews left, image right |
 
 ---
 
 ## Visual Style Specifications
 
-### Card Design (Light Theme)
-```text
-┌─────────────────────────────────────────┐
-│  ┌───────────────────────────────────┐  │
-│  │                                   │  │
-│  │   More Success with              │  │
-│  │   Less Effort                    │  │  ← Bold headline
-│  │                                   │  │
-│  │   With our tailored solutions... │  │  ← Light gray subtext
-│  │                                   │  │
-│  │      ┌──────────────────┐        │  │
-│  │      │  Learn more now  │        │  │  ← Blue button
-│  │      └──────────────────┘        │  │
-│  │                                   │  │
-│  │   ┌─────────────────────────┐    │  │
-│  │   │                         │    │  │  ← Hero image
-│  │   │     Person Photo        │    │  │
-│  │   │                         │    │  │
-│  │   └─────────────────────────┘    │  │
-│  │                                   │  │
-│  └───────────────────────────────────┘  │
-│                                         │
-│           Template Name                 │  ← Label below
-└─────────────────────────────────────────┘
-```
+### Common Elements Across All Features Templates
 
-### Color Palette
-| Element | Color |
+| Element | Style |
 |---------|-------|
-| Card background | White (`#ffffff`) |
-| Headline | Dark gray (`slate-800`) |
-| Subtext | Light gray (`slate-400`) |
-| CTA Button | Blue (`blue-500`) |
-| Avatar border | White |
-| Logo placeholders | Gray (`slate-300`) |
-| Gradient backgrounds | `blue-50` to `slate-100` |
-| Dark hero bg | `slate-600` or `slate-700` |
+| **Section Label** | Blue text "Our Services" above title |
+| **Headline** | Bold dark text (slate-800) |
+| **Subtext** | Light gray (slate-400) |
+| **CTA Button** | Blue (blue-500) with white text |
+| **Avatar Stack** | 3-4 overlapping gradient circles |
+| **Star Rating** | 5 yellow stars with "5.0 from 200+ reviews" |
+| **Icon Features** | Colored icon + bold title + description |
+| **Image Placeholders** | Rounded corners, gradient fills |
+
+### Color Palette for Icons
+
+| Icon Type | Colors |
+|-----------|--------|
+| Integration | Blue gradient |
+| Lightning/Fast | Yellow/Amber |
+| Support/Phone | Indigo |
+| Strategy | Purple |
 
 ---
 
-## New Hero Template Previews
+## New Features Templates
 
-### 1. Hero Simple (Centered + Image)
-```tsx
-// Light card with centered content + image placeholder
-<div className="bg-white rounded-lg p-4">
-  <h3>More Success with Less Effort</h3>
-  <p>With our tailored solutions...</p>
-  <button>Learn more now</button>
-  <img placeholder />
-</div>
+### 1. Features Split + Checklist (`features-split-checklist`)
+```text
+┌────────────────────────────────────────────┐
+│  Title + Subtext     │  ✓ Easy operation  │
+│  ⭐⭐⭐⭐⭐ 5.0       │  ✓ Real-time data  │
+│  👤👤👤             │  ✓ Customizable    │
+│                      │  [Learn more]      │
+└────────────────────────────────────────────┘
 ```
 
-### 2. Hero + Reviews
-```tsx
-// Same as above but with avatar stack + star rating
-<div className="bg-white">
-  ...headline/subtext/button...
-  <div className="flex items-center gap-1">
-    <AvatarStack />
-    <Stars />
-    <span>4.8 from 148 reviews</span>
-  </div>
-  <img />
-</div>
+### 2. Features Split + Image (`features-split-image`)
+```text
+┌────────────────────────────────────────────┐
+│  Title               │                     │
+│  Customer Service    │   [Person Photo]    │
+│  Subtext...          │                     │
+│  ⭐⭐⭐⭐⭐ 5.0       │                     │
+└────────────────────────────────────────────┘
 ```
 
-### 3. Hero + Logo Bar
-```tsx
-// Centered content with trusted-by logos below
-<div className="bg-white">
-  ...headline/subtext/button...
-  <div className="flex gap-4">
-    <Logo /> <Logo /> <Logo /> <Logo /> <Logo />
-  </div>
-</div>
+### 3. Features Split Image + Icons (`features-split-icons`)
+```text
+┌────────────────────────────────────────────┐
+│                      │  Exclusive Analyses │
+│   [Person Photo]     │  📊 Industry Reports│
+│                      │  📈 Forecasts       │
+│                      │  [Get Analysis]     │
+└────────────────────────────────────────────┘
 ```
 
-### 4. Hero Split (Text Left + Image Right)
-```tsx
-// 50/50 layout
-<div className="bg-white grid grid-cols-2">
-  <div>
-    <h3>More Success...</h3>
-    <p>...</p>
-    <button />
-    <LogoBar />
-  </div>
-  <div>
-    <img />
-  </div>
-</div>
+### 4. Features 3-Column Cards (`features-3col-cards`)
+```text
+┌────────────────────────────────────────────┐
+│        Our Services                        │
+│  These Are Your Advantages with Us         │
+│         [Secure Offer Now]                 │
+│                                            │
+│  [Img1]      [Img2]      [Img3]           │
+│  Fast        Personal    Cost-Effective   │
+│  Implement   Consult     Solutions        │
+└────────────────────────────────────────────┘
 ```
 
-### 5. Hero + Form Card
-```tsx
-// Split with form card on right
-<div className="bg-white grid grid-cols-2">
-  <div>
-    <h3>Secure Your Exclusive...</h3>
-    <p>...</p>
-  </div>
-  <div className="bg-slate-50 rounded-lg p-4">
-    <h4>Get your exclusive bundle!</h4>
-    <input placeholder="Name" />
-    <input placeholder="E-Mail" />
-    <input placeholder="Phone" />
-    <button />
-  </div>
-</div>
+### 5. Features 4-Column Icons (`features-4col-icons`)
+```text
+┌────────────────────────────────────────────┐
+│        Our Services                        │
+│  These Are Your Advantages with Us         │
+│         [Secure Offer Now]                 │
+│                                            │
+│  🔗 Easy        ⚡ Immediate               │
+│     Integration    Start                   │
+│                                            │
+│  📞 Personal    💡 Customized             │
+│     Support        Strategies              │
+└────────────────────────────────────────────┘
 ```
 
-### 6. Hero + Inline Form
-```tsx
-// Form inputs inline with content
-<div className="bg-white grid grid-cols-2">
-  <div>
-    <h3>Secure Your...</h3>
-    <p>...</p>
-    <input />
-    <input />
-    <button />
-  </div>
-  <img />
-</div>
+### 6. Features 2-Column + Icons (`features-2col-icons`)
+```text
+┌────────────────────────────────────────────┐
+│        Our Services                        │
+│  These Are Your Advantages                 │
+│         [Secure Offer Now]                 │
+│                                            │
+│  [Image Card 1]    [Image Card 2]         │
+│  Fast Implement    Personal Consult        │
+│                                            │
+│  🔗 Integration   📞 Support              │
+│  ⚡ Start         💡 Strategies            │
+└────────────────────────────────────────────┘
 ```
 
-### 7. Hero Gradient Background
-```tsx
-// Soft gradient bg with centered content
-<div className="bg-gradient-to-b from-blue-50 to-slate-50">
-  <h3>Get Your Exclusive Discount</h3>
-  <p>...</p>
-  <button />
-  <LogoBar />
-</div>
+### 7. Features Gray BG + Image (`features-gray-image`)
+```text
+┌────────────────────────────────────────────┐
+│ [Gray Background]                          │
+│  Our Services        │                     │
+│  Real-Time           │   [Phone/Device]    │
+│  Analytics           │   [Image]           │
+│  ⚡ Quick Operation  │                     │
+│  📊 Real-Time Data   │                     │
+│  📱 Dashboards       │                     │
+└────────────────────────────────────────────┘
 ```
 
-### 8. Hero Dark (Dark BG + Image)
-```tsx
-// Dark background with light text
-<div className="bg-slate-600">
-  <h3 className="text-white">Get Your Exclusive Discount</h3>
-  <p className="text-white/70">...</p>
-  <button className="border-white text-white">...</button>
-  <img />
-</div>
+### 8. Features Gray BG + Reviews (`features-gray-reviews`)
+```text
+┌────────────────────────────────────────────┐
+│ [Gray Background]                          │
+│  Our Services        │                     │
+│  Real-Time           │   [Person]          │
+│  Analytics           │   [Image]           │
+│  Subtext...          │                     │
+│  ⭐⭐⭐⭐⭐ 5.0       │                     │
+└────────────────────────────────────────────┘
 ```
 
 ---
@@ -177,73 +151,78 @@ From the uploaded reference images, I can identify **10 distinct hero template v
 
 ### 1. Update `sectionTemplates.ts`
 
-Add 8 new hero templates to replace the current 5:
+Replace the current 2 features templates with 8 new Perspective-style templates:
 
-| Old Template | New Template |
-|--------------|--------------|
-| `hero-impact` | `hero-simple` |
-| `hero-video` | `hero-reviews` |
-| `hero-authority` | `hero-logos` |
-| `hero-minimal` | `hero-split` |
-| `hero-split` | `hero-form-card` |
-| NEW | `hero-inline-form` |
-| NEW | `hero-gradient` |
-| NEW | `hero-dark` |
+| Current Templates | New Templates |
+|-------------------|---------------|
+| `features-list` | `features-split-checklist` |
+| `features-grid` | `features-split-image` |
+| NEW | `features-split-icons` |
+| NEW | `features-3col-cards` |
+| NEW | `features-4col-icons` |
+| NEW | `features-2col-icons` |
+| NEW | `features-gray-image` |
+| NEW | `features-gray-reviews` |
 
 ### 2. Update `HighTicketPreviewCard.tsx`
 
-Replace the `HeroPreview` component with new Perspective-style previews:
-- Light backgrounds (white/cream)
-- Centered or split layouts
-- Placeholder image areas with gradient fills
-- Avatar stacks with overlapping circles
-- Logo placeholder bars
-- Form input mockups for form variants
-- Dark variant for dark hero
+Redesign the `FeaturesPreview` component to handle 8 distinct variants with:
+- Light backgrounds (white or slate-50)
+- Split layouts (50/50)
+- Centered grid layouts
+- Avatar stacks and star ratings
+- Icon feature lists with colored icons
+- Image card placeholders
+- Gray background variants
 
 ---
 
 ## Technical Implementation
 
-### New HeroPreview Component Structure
+### New FeaturesPreview Component Structure
 
 ```tsx
-const HeroPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
+const FeaturesPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
   ({ variant }, ref) => {
-    // Map variant to specific preview
     switch (variant) {
-      case 'simple':
-        return <HeroSimplePreview ref={ref} />;
-      case 'reviews':
-        return <HeroReviewsPreview ref={ref} />;
-      case 'logos':
-        return <HeroLogosPreview ref={ref} />;
-      case 'split':
-        return <HeroSplitPreview ref={ref} />;
-      case 'form-card':
-        return <HeroFormCardPreview ref={ref} />;
-      case 'inline-form':
-        return <HeroInlineFormPreview ref={ref} />;
-      case 'gradient':
-        return <HeroGradientPreview ref={ref} />;
-      case 'dark':
-        return <HeroDarkPreview ref={ref} />;
+      case 'split-checklist':
+        return <FeaturesSplitChecklistPreview ref={ref} />;
+      case 'split-image':
+        return <FeaturesSplitImagePreview ref={ref} />;
+      case 'split-icons':
+        return <FeaturesSplitIconsPreview ref={ref} />;
+      case '3col-cards':
+        return <Features3ColCardsPreview ref={ref} />;
+      case '4col-icons':
+        return <Features4ColIconsPreview ref={ref} />;
+      case '2col-icons':
+        return <Features2ColIconsPreview ref={ref} />;
+      case 'gray-image':
+        return <FeaturesGrayImagePreview ref={ref} />;
+      case 'gray-reviews':
+        return <FeaturesGrayReviewsPreview ref={ref} />;
     }
   }
 );
 ```
 
-### Visual Elements to Create
+### Visual Elements to Reuse
+
+| Element | Already Exists |
+|---------|----------------|
+| `AvatarStack` | Yes (from Hero) |
+| `StarRating` | Yes (from Hero) |
+| `ImagePlaceholder` | Yes (from Hero) |
+| `LogoBar` | Yes (from Hero) |
+
+### New Visual Elements Needed
 
 | Element | Implementation |
 |---------|----------------|
-| **Avatar Stack** | 3-4 overlapping circles with gradient fills, white borders |
-| **Star Rating** | 5 small yellow stars in a row |
-| **Logo Bar** | 3-5 gray rounded rectangles as placeholders |
-| **Form Inputs** | Gray rounded rectangles with left-aligned placeholder text |
-| **Image Placeholder** | Gradient fill with subtle person silhouette or landscape |
-| **Blue CTA** | Solid blue rounded button with white text |
-| **Outline CTA** | White border button for dark backgrounds |
+| **Section Label** | Blue text badge "Our Services" |
+| **Checklist Row** | Checkmark icon + text line |
+| **Icon Feature** | Colored circle + title + description |
+| **Image Card** | Rounded image placeholder + title below |
 
 ---
 
@@ -251,15 +230,34 @@ const HeroPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
 
 | File | Changes |
 |------|---------|
-| `src/builder_v2/templates/sectionTemplates.ts` | Update hero section templates (8 new templates) |
-| `src/flow-canvas/builder/components/HighTicketPreviewCard.tsx` | Redesign HeroPreview component with 8 Perspective-style variants |
+| `src/builder_v2/templates/sectionTemplates.ts` | Add 8 new features templates, update exports |
+| `src/flow-canvas/builder/components/HighTicketPreviewCard.tsx` | Add 8 new FeaturesPreview variants |
+
+---
+
+## Variant Mapping in getPreviewComponent
+
+```tsx
+case 'features':
+  if (id.includes('split-checklist')) return <FeaturesPreview variant="split-checklist" />;
+  if (id.includes('split-image')) return <FeaturesPreview variant="split-image" />;
+  if (id.includes('split-icons')) return <FeaturesPreview variant="split-icons" />;
+  if (id.includes('3col-cards')) return <FeaturesPreview variant="3col-cards" />;
+  if (id.includes('4col-icons')) return <FeaturesPreview variant="4col-icons" />;
+  if (id.includes('2col-icons')) return <FeaturesPreview variant="2col-icons" />;
+  if (id.includes('gray-image')) return <FeaturesPreview variant="gray-image" />;
+  if (id.includes('gray-reviews')) return <FeaturesPreview variant="gray-reviews" />;
+  return <FeaturesPreview variant="split-checklist" />;
+```
 
 ---
 
 ## Result
 
 After implementation:
-- Hero templates will have a clean, light Perspective-style design
-- 8 distinct variations covering common hero patterns
-- Visual preview cards will accurately represent what users get
-- Consistent with the modern SaaS/landing page aesthetic
+- Features templates will have clean, light Perspective-style design
+- 8 distinct variations covering common features patterns
+- Visual preview cards accurately represent what users get
+- Consistent aesthetic with the already-updated Hero templates
+- Reuses shared components (AvatarStack, StarRating) for consistency
+
