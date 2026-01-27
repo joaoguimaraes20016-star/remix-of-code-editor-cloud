@@ -939,6 +939,232 @@ const TeamPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
 ));
 TeamPreview.displayName = 'TeamPreview';
 
+// Quiz/Form preview - 9 variants
+const QuizFormPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
+  ({ template }, ref) => {
+    const id = template.id;
+    
+    // Shared components
+    const BlueSectionLabel = () => (
+      <div className="text-[6px] text-blue-500 font-medium">One last Question</div>
+    );
+    
+    const QuizOption = ({ filled = false, hasIcon = true }: { filled?: boolean; hasIcon?: boolean }) => (
+      <div className={cn(
+        "h-4 flex items-center gap-1 px-1.5 rounded border",
+        filled 
+          ? "bg-blue-500 border-blue-500" 
+          : "bg-white border-slate-200"
+      )}>
+        {hasIcon && <div className="w-2 h-2 rounded bg-amber-400" />}
+        <div className={cn("h-1 flex-1 rounded", filled ? "bg-white" : "bg-slate-600")} />
+        {!filled && <div className="w-2 h-2 rounded-full border border-slate-300" />}
+      </div>
+    );
+    
+    const ImageCard = ({ small = false }: { small?: boolean }) => (
+      <div className={cn("flex flex-col rounded overflow-hidden", small ? "flex-1" : "")}>
+        <div className={cn("bg-gradient-to-br from-slate-200 to-slate-300", small ? "h-5" : "h-6")} />
+        <div className="h-3 bg-blue-500 flex items-center justify-center">
+          <div className="h-1 w-6 bg-white rounded" />
+        </div>
+      </div>
+    );
+    
+    const BenefitRow = ({ color }: { color: string }) => (
+      <div className="flex items-start gap-1.5">
+        <div className={cn("w-2.5 h-2.5 rounded flex-shrink-0", color)} />
+        <div className="flex-1">
+          <div className="h-1 w-8 bg-slate-600 rounded mb-0.5" />
+          <div className="h-0.5 w-12 bg-slate-300 rounded" />
+        </div>
+      </div>
+    );
+    
+    // Quiz Split + Benefits
+    if (id.includes('split-benefits')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col gap-1">
+            <BlueSectionLabel />
+            <div className="h-2 w-20 bg-slate-700 rounded" />
+            <div className="space-y-1 mt-1">
+              {[1, 2, 3, 4].map((i) => (
+                <QuizOption key={i} />
+              ))}
+            </div>
+            <div className="h-4 w-full bg-blue-500 rounded mt-1" />
+          </div>
+          <div className="flex-1 bg-slate-50 rounded-lg p-2 flex flex-col gap-1.5 border border-slate-100">
+            <div className="h-1.5 w-14 bg-slate-700 rounded" />
+            <BenefitRow color="bg-yellow-500" />
+            <BenefitRow color="bg-blue-500" />
+            <BenefitRow color="bg-green-500" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Quiz Centered Simple (outline options)
+    if (id.includes('centered-simple') || id === 'quiz-centered-simple') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <BlueSectionLabel />
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-24 bg-slate-300 rounded" />
+          <div className="grid grid-cols-2 gap-1.5 w-full mt-2">
+            {[1, 2, 3, 4].map((i) => (
+              <QuizOption key={i} filled={false} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Quiz Centered Filled (filled blue options)
+    if (id.includes('centered-filled')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <BlueSectionLabel />
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-24 bg-slate-300 rounded" />
+          <div className="grid grid-cols-2 gap-1.5 w-full mt-2">
+            {[1, 2, 3, 4].map((i) => (
+              <QuizOption key={i} filled={true} hasIcon={true} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Quiz Centered Gray BG
+    if (id.includes('centered-gray')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-50 p-3 flex flex-col items-center justify-center gap-1.5">
+          <BlueSectionLabel />
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-24 bg-slate-400 rounded" />
+          <div className="grid grid-cols-2 gap-1.5 w-full mt-2">
+            {[1, 2, 3, 4].map((i) => (
+              <QuizOption key={i} filled={false} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Quiz Card (inside a white card on gray bg)
+    if (id.includes('centered-card') || id.includes('card')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-100 p-3 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-2.5 border border-slate-200 shadow-sm w-full max-w-[90%]">
+            <div className="flex flex-col items-center gap-1">
+              <BlueSectionLabel />
+              <div className="h-2 w-20 bg-slate-800 rounded" />
+              <div className="grid grid-cols-2 gap-1 w-full mt-1">
+                {[1, 2, 3, 4].map((i) => (
+                  <QuizOption key={i} filled={false} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Quiz Image Cards (4 images)
+    if (id.includes('image-cards') && !id.includes('gray')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <BlueSectionLabel />
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="flex gap-1.5 w-full mt-2">
+            {[1, 2, 3, 4].map((i) => (
+              <ImageCard key={i} small />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Quiz Image Cards Gray BG
+    if (id.includes('image-cards-gray')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-50 p-3 flex flex-col items-center justify-center gap-1.5">
+          <BlueSectionLabel />
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="flex gap-1.5 w-full mt-2">
+            {[1, 2, 3, 4].map((i) => (
+              <ImageCard key={i} small />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Quiz 2 Image Cards (large)
+    if (id.includes('2-images')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-24 bg-slate-800 rounded" />
+          <div className="h-1.5 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-2 w-full mt-2">
+            <div className="flex-1 flex flex-col rounded overflow-hidden">
+              <div className="h-10 bg-gradient-to-br from-slate-200 to-slate-300" />
+              <div className="h-4 bg-blue-500 flex items-center justify-center">
+                <div className="h-1.5 w-10 bg-white rounded" />
+              </div>
+            </div>
+            <div className="flex-1 flex flex-col rounded overflow-hidden">
+              <div className="h-10 bg-gradient-to-br from-slate-300 to-slate-400" />
+              <div className="h-4 bg-blue-500 flex items-center justify-center">
+                <div className="h-1.5 w-10 bg-white rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Quiz Split + Info
+    if (id.includes('split-info')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col gap-1">
+            <div className="h-2 w-16 bg-slate-700 rounded" />
+            <div className="grid grid-cols-2 gap-1 mt-1">
+              {[1, 2, 3, 4].map((i) => (
+                <ImageCard key={i} small />
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 bg-slate-50 rounded-lg p-2 flex flex-col items-center justify-center gap-1 border border-slate-100">
+            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+              <Sparkles size={10} className="text-blue-500" />
+            </div>
+            <div className="h-1.5 w-14 bg-slate-600 rounded" />
+            <div className="h-1 w-18 bg-slate-300 rounded" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Default fallback
+    return (
+      <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+        <BlueSectionLabel />
+        <div className="h-2.5 w-28 bg-slate-800 rounded" />
+        <div className="grid grid-cols-2 gap-1.5 w-full mt-2">
+          {[1, 2, 3, 4].map((i) => (
+            <QuizOption key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+);
+QuizFormPreview.displayName = 'QuizFormPreview';
+
 // ============================================================================
 // MAIN COMPONENT - Select appropriate preview based on template
 // ============================================================================
@@ -976,6 +1202,9 @@ function getPreviewComponent(template: SectionTemplate) {
     
     case 'about_us':
       return <AboutUsPreview template={template} />;
+    
+    case 'quiz_form':
+      return <QuizFormPreview template={template} />;
     
     case 'social_proof':
       if (id.includes('stars')) return <SocialProofPreview variant="stars" />;
