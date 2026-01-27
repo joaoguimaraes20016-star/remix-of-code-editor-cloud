@@ -12,6 +12,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useUnifiedLeadSubmit, createUnifiedPayload } from '@/flow-canvas/shared/hooks/useUnifiedLeadSubmit';
+import { sanitizeNavigationUrl } from '@/flow-canvas/shared/hooks/normalizeSubmitPayload';
 import { ChevronUp, ChevronDown, Loader2, Play, User, Layout, ArrowRight, Sparkles, Search, Calendar, FileText, Rocket, Video } from 'lucide-react';
 import { generateStateStylesCSS } from './RuntimeElementRenderer';
 import { ScrollTransformWrapper } from './ScrollTransformWrapper';
@@ -948,10 +949,15 @@ export function FlowCanvasRenderer({
   const submitLead = useCallback(async (options?: { 
     stepId?: string; 
     stepType?: string; 
-    submitMode?: 'draft' | 'submit' 
+    submitMode?: 'draft' | 'submit';
+    // FIXED: Accept explicit form data to avoid stale closure state
+    explicitFormData?: Record<string, any>;
   }): Promise<boolean> => {
     const mode = options?.submitMode || 'submit';
     const step = steps[currentStepIndex];
+    
+    // FIXED: Use explicit data if provided, otherwise fall back to state
+    const dataToSubmit = options?.explicitFormData || formData;
     
     // Detect real intent and type from step content
     const detectedIntent = step ? detectStepIntent(step as FlowCanvasStep) : 'capture';
@@ -959,7 +965,7 @@ export function FlowCanvasRenderer({
     
     // Build payload using the unified helper with accurate intent
     const payload = createUnifiedPayload(
-      formData as Record<string, any>,
+      dataToSubmit as Record<string, any>,
       {
         funnelId,
         teamId,
@@ -1041,10 +1047,14 @@ export function FlowCanvasRenderer({
       case 'url':
       case 'redirect':
         if (redirectUrl) {
-          if (openNewTab) {
-            window.open(redirectUrl, '_blank');
-          } else {
-            window.location.href = redirectUrl;
+          // FIXED: Validate URL scheme to prevent XSS via javascript: or data: URLs
+          const safeUrl = sanitizeNavigationUrl(redirectUrl);
+          if (safeUrl) {
+            if (openNewTab) {
+              window.open(safeUrl, '_blank', 'noopener,noreferrer');
+            } else {
+              window.location.href = safeUrl;
+            }
           }
         }
         break;
@@ -1053,6 +1063,8 @@ export function FlowCanvasRenderer({
         if (targetStepId) {
           const stepIndex = steps.findIndex(s => s.id === targetStepId);
           if (stepIndex !== -1) {
+            // FIXED: Save draft before navigation
+            saveDraft();
             setCurrentStepIndex(stepIndex);
           }
         }
@@ -1066,19 +1078,27 @@ export function FlowCanvasRenderer({
 
       case 'phone':
         if (actionValue) {
-          window.location.href = `tel:${actionValue}`;
+          // FIXED: Sanitize tel: URLs
+          const telUrl = `tel:${actionValue.replace(/[^\d+]/g, '')}`;
+          window.location.href = telUrl;
         }
         break;
 
       case 'email':
         if (actionValue) {
-          window.location.href = `mailto:${actionValue}`;
+          // FIXED: Sanitize mailto: URLs (basic XSS prevention)
+          const emailUrl = `mailto:${encodeURIComponent(actionValue)}`;
+          window.location.href = emailUrl;
         }
         break;
 
       case 'download':
         if (actionValue) {
-          window.open(actionValue, '_blank');
+          // FIXED: Validate download URL scheme
+          const safeDownloadUrl = sanitizeNavigationUrl(actionValue);
+          if (safeDownloadUrl) {
+            window.open(safeDownloadUrl, '_blank', 'noopener,noreferrer');
+          }
         }
         break;
         
@@ -1099,20 +1119,24 @@ export function FlowCanvasRenderer({
         return renderText(element, deviceMode);
         
       case 'input':
-        // Detect semantic field type from placeholder/type for identity mapping
-        const rawFieldKey = (element.props.fieldKey as string) || element.id;
-        const placeholder = ((element.props.placeholder as string) || '').toLowerCase();
-        const inputType = ((element.props.type as string) || 'text').toLowerCase();
+        // FIXED: Preserve explicit fieldKey - only apply heuristics when no explicit key is set
+        const explicitFieldKey = element.props.fieldKey as string | undefined;
+        let fieldKey = explicitFieldKey || element.id;
         
-        // Auto-detect identity fields by placeholder or input type
-        let fieldKey = rawFieldKey;
-        if (inputType === 'email' || placeholder.includes('email')) {
-          fieldKey = 'email';
-        } else if (inputType === 'tel' || placeholder.includes('phone') || placeholder.includes('mobile')) {
-          fieldKey = 'phone';
-        } else if ((placeholder.includes('name') && !placeholder.includes('company') && !placeholder.includes('business')) || 
-                   placeholder.includes('full name') || placeholder.includes('your name')) {
-          fieldKey = 'name';
+        // Only apply identity heuristics if no explicit fieldKey was provided
+        if (!explicitFieldKey) {
+          const placeholder = ((element.props.placeholder as string) || '').toLowerCase();
+          const inputType = ((element.props.type as string) || 'text').toLowerCase();
+          
+          // Auto-detect identity fields by placeholder or input type
+          if (inputType === 'email' || placeholder.includes('email')) {
+            fieldKey = 'email';
+          } else if (inputType === 'tel' || placeholder.includes('phone') || placeholder.includes('mobile')) {
+            fieldKey = 'phone';
+          } else if ((placeholder.includes('name') && !placeholder.includes('company') && !placeholder.includes('business')) || 
+                     placeholder.includes('full name') || placeholder.includes('your name')) {
+            fieldKey = 'name';
+          }
         }
         
         return (
@@ -1125,7 +1149,8 @@ export function FlowCanvasRenderer({
         );
         
       case 'radio':
-        const radioName = (element.props.name as string) || 'radio';
+        // FIXED: Use element ID as fallback to prevent collision between multiple radio groups
+        const radioName = (element.props.name as string) || `radio_${element.id}`;
         return (
           <RadioRenderer
             key={element.id}
@@ -1136,7 +1161,8 @@ export function FlowCanvasRenderer({
         );
         
       case 'checkbox':
-        const checkboxName = (element.props.name as string) || 'checkbox';
+        // FIXED: Use element ID as fallback to prevent collision between multiple checkbox groups
+        const checkboxName = (element.props.name as string) || `checkbox_${element.id}`;
         const checkboxValue = (element.props.value as string) || '';
         const checkedValues = (formData[checkboxName] as string[]) || [];
         return (
@@ -2075,15 +2101,21 @@ export function FlowCanvasRenderer({
   
   // Form submission handler for CanvasRenderer's FlowContainerProvider
   const handleFormSubmit = useCallback(async (values: Record<string, string>) => {
-    // Merge with existing form data
+    // FIXED: Build merged data synchronously BEFORE state update to avoid stale closure
+    const mergedData = { ...formData, ...values };
+    
+    // Update state for UI (this is async, but we don't depend on it for submission)
     setFormData(prev => ({ ...prev, ...values }));
     
-    // Submit lead
-    const success = await submitLead({ submitMode: 'submit' });
+    // FIXED: Pass merged data explicitly to avoid stale state issue
+    const success = await submitLead({ 
+      submitMode: 'submit',
+      explicitFormData: mergedData 
+    });
     if (success) {
       setIsComplete(true);
     }
-  }, [submitLead]);
+  }, [formData, submitLead]);
 
   // Complete state - full-bleed background
   if (isComplete) {
@@ -2201,10 +2233,15 @@ export function FlowCanvasRenderer({
         )}
 
         {/* Navigation arrows - fixed to viewport */}
+        {/* FIXED: Save draft on arrow navigation for drop-off tracking */}
         {totalSteps > 1 && (
           <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
             <button
-              onClick={() => setCurrentStepIndex(prev => Math.max(0, prev - 1))}
+              onClick={() => {
+                // FIXED: Save draft before navigation to track progress
+                saveDraft();
+                setCurrentStepIndex(prev => Math.max(0, prev - 1));
+              }}
               disabled={currentStepIndex === 0}
               className={cn(
                 'p-2 rounded-full transition-all',
@@ -2216,7 +2253,11 @@ export function FlowCanvasRenderer({
               <ChevronUp className="w-5 h-5" />
             </button>
             <button
-              onClick={() => setCurrentStepIndex(prev => Math.min(totalSteps - 1, prev + 1))}
+              onClick={() => {
+                // FIXED: Save draft before navigation to track progress
+                saveDraft();
+                setCurrentStepIndex(prev => Math.min(totalSteps - 1, prev + 1));
+              }}
               disabled={currentStepIndex === totalSteps - 1}
               className={cn(
                 'p-2 rounded-full transition-all',

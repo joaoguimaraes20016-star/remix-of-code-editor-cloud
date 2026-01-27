@@ -49,17 +49,34 @@ export function useConsentRequired({
 
     const requiresConsent = steps.some(s => isIdentityStep(s.type));
     
-    // Only show checkbox if we have a privacy policy URL and require consent
-    const showConsentCheckbox = requiresConsent && !!privacyPolicyUrl;
+    // FIXED: Always show checkbox when identity is collected (with or without privacy URL)
+    // This ensures GDPR/CCPA compliance - consent must be captured when collecting personal data
+    const showConsentCheckbox = requiresConsent;
 
-    // Generate appropriate consent message
-    let consentMessage = 'I agree to the Privacy Policy';
-    if (hasEmail && hasPhone) {
-      consentMessage = 'I agree to receive emails and SMS messages per the Privacy Policy';
-    } else if (hasEmail) {
-      consentMessage = 'I agree to receive emails per the Privacy Policy';
-    } else if (hasPhone) {
-      consentMessage = 'I agree to receive SMS messages per the Privacy Policy';
+    // Generate appropriate consent message based on data collected
+    let consentMessage: string;
+    if (privacyPolicyUrl) {
+      // Has privacy policy - reference it
+      if (hasEmail && hasPhone) {
+        consentMessage = 'I agree to receive emails and SMS messages per the Privacy Policy';
+      } else if (hasEmail) {
+        consentMessage = 'I agree to receive emails per the Privacy Policy';
+      } else if (hasPhone) {
+        consentMessage = 'I agree to receive SMS messages per the Privacy Policy';
+      } else {
+        consentMessage = 'I agree to the Privacy Policy';
+      }
+    } else {
+      // No privacy policy URL - use fallback consent message
+      if (hasEmail && hasPhone) {
+        consentMessage = 'I consent to having my information stored and to receiving emails and SMS messages';
+      } else if (hasEmail) {
+        consentMessage = 'I consent to having my information stored and to receiving emails';
+      } else if (hasPhone) {
+        consentMessage = 'I consent to having my information stored and to receiving SMS messages';
+      } else {
+        consentMessage = 'I consent to having my information stored and processed';
+      }
     }
 
     return {
