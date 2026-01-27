@@ -1,326 +1,394 @@
 
-# Premium Visual Section Picker - Perspective-Style Upgrade
 
-## Overview
-Transform the current element/section picker into a high-fidelity, Perspective-style experience with rich visual previews, a two-panel layout, and design language optimized for high-ticket coaching funnels.
+# Funnel Builder Full Refactor - Perspective Consistency Audit
 
----
+## Executive Summary
 
-## Current State Analysis
-
-### What Exists Today
-1. **BlockPickerPanel.tsx** (~2259 lines) - Main picker with Content/Sections tabs
-2. **SectionThumbnail.tsx** - Mini visual previews for grid view (320 lines)
-3. **InlineSectionPicker.tsx** - Centered popover with category → template drill-down
-4. **TemplatePreviewCard.tsx** (builder_v2) - Card component with hover overlay
-
-### Issues with Current Implementation
-- Thumbnails are abstract/schematic (tiny colored rectangles)
-- No realistic "high-ticket coaching" aesthetic in previews
-- Categories use collapsible accordions instead of persistent side navigation
-- Templates show as a flat list, not a visual gallery
-- No preview pane showing what you're about to add
+The funnel builder has accumulated significant architectural debt across multiple areas: inconsistent design tokens, duplicated components, fragmented type definitions, and visual/behavioral inconsistencies. This refactor consolidates everything into a unified "Perspective-style" experience that is predictable, understandable, and consistent.
 
 ---
 
-## Target Experience (Based on Perspective Screenshot)
+## Part 1: Architecture Inconsistencies Found
+
+### 1.1 Dual Builder Systems (Critical)
+
+Two parallel builder systems exist with overlapping responsibilities:
+
+| Directory | Purpose | Issues |
+|-----------|---------|--------|
+| `src/flow-canvas/builder/` | Primary funnel builder | 2183-line EditorShell, 5521-line CanvasRenderer |
+| `src/builder_v2/` | "V2" builder components | Separate EditorShell, templates, state management |
+
+**Problems:**
+- Templates defined in `builder_v2/templates/sectionTemplates.ts` but consumed by `flow-canvas/builder`
+- CSS tokens split between `EditorLayout.css` and inline styles
+- Duplicate `EditorShell.tsx` files with different implementations
+
+### 1.2 Design Token Fragmentation
+
+Three separate token systems in use:
 
 ```text
-┌────────────────────────────────────────────────────────────────────┐
-│  Add Section                                                   [×] │
-├──────────────────┬─────────────────────────────────────────────────┤
-│                  │                                                 │
-│  Basic blocks    │   ┌─────────────────┐  ┌─────────────────┐     │
-│                  │   │  Real-Time      │  │  Premium        │     │
-│  Interactive ▸   │   │  Analytics      │  │  Customer       │     │
-│                  │   │  [Preview]      │  │  Service        │     │
-│  ─────────────   │   │  ★★★★★         │  │  [Preview]      │     │
-│  Sections        │   │  Learn more     │  │  ★★★★★ 200+    │     │
-│  ─────────────   │   └─────────────────┘  └─────────────────┘     │
-│  Hero        ▸   │                                                 │
-│  Product         │   ┌─────────────────┐  ┌─────────────────┐     │
-│  Call to Action  │   │  Exclusive      │  │  Your Advantages│     │
-│  About us        │   │  Market         │  │  [3-col grid]   │     │
-│  Quiz            │   │  Analyses       │  │                 │     │
-│  Team            │   │  [Preview]      │  └─────────────────┘     │
-│  Testimonials    │   └─────────────────┘                          │
-│  Trust           │                                                 │
-│                  │                                                 │
-└──────────────────┴─────────────────────────────────────────────────┘
+1. EditorLayout.css:       --builder-* (HSL values)
+2. EditorLayout.css:       --coaching-* (Premium palette)
+3. Inline Tailwind:        hsl(var(--builder-*)) and direct colors
 ```
 
----
+**Example of inconsistency:**
+- `TopToolbar.tsx` uses `text-builder-accent` (Tailwind utility)
+- `PerspectiveSectionPicker.tsx` uses `hsl(var(--coaching-accent))` (CSS var)
+- `RightPanel.tsx` uses `text-[hsl(var(--builder-text-muted))]` (arbitrary value)
 
-## Implementation Plan
+### 1.3 Component Duplication
 
-### Phase 1: New UI Layout Component
-**Create `PerspectiveSectionPicker.tsx`**
+| Component | Locations | Issue |
+|-----------|-----------|-------|
+| Color utilities | `CanvasUtilities.ts`, `FlowCanvasRenderer.tsx`, `templateThemeUtils.ts` | `shiftHue`, `getContrastTextColor` duplicated |
+| Button component | `FlowButton.tsx` (deprecated), `UnifiedButton.tsx`, `RuntimeButton.tsx` | 3 button implementations |
+| Section picker | `BlockPickerPanel.tsx`, `PerspectiveSectionPicker.tsx`, `InlineSectionPicker.tsx` | 3 picker implementations |
+| Form contexts | `CanvasRenderer.tsx`, `CanvasUtilities.ts` | `FormStateContext`, `ThemeContext` defined twice |
 
-A new two-panel layout replacing the current collapsible accordion approach:
+### 1.4 Console Errors Found
 
-**Left Panel (Categories)**
-- Vertical list of categories with icons
-- Hover/active states with accent highlight
-- Separator between "Basic Blocks" and "Sections"
-- Chevron indicators for expandable sub-categories
-
-**Right Panel (Template Gallery)**
-- 2-column grid of visual preview cards
-- Rich preview showing actual section layout
-- Template name + description overlay
-- Hover: subtle scale + accent border + "Add" CTA
-
-```typescript
-// New component structure
-interface PerspectiveSectionPickerProps {
-  onAddTemplate: (template: SectionTemplate | BlockTemplate) => void;
-  onClose: () => void;
-  defaultCategory?: string;
-}
+```text
+Warning: Function components cannot be given refs. 
+Check the render method of `HighTicketPreviewCard`.
 ```
 
----
+**Cause:** `CTAPreview` and other preview components don't use `forwardRef`.
 
-### Phase 2: High-Fidelity Preview Cards
-**Create `HighTicketPreviewCard.tsx`**
+### 1.5 Type Fragmentation
 
-Rich visual previews that look like actual coaching funnels:
+`StepIntent` defined in 5 files with different values:
 
-```typescript
-interface HighTicketPreviewCardProps {
-  template: SectionTemplate | BlockTemplate;
-  onAdd: () => void;
-}
-```
-
-**Preview Designs by Category:**
-
-| Category | Preview Elements |
-|----------|------------------|
-| Hero | Dark gradient bg, large headline placeholder, subtext, CTA button |
-| Product | Split layout: image placeholder left, text + button right |
-| Call to Action | Gradient banner, centered text, prominent button |
-| Testimonial | Quote marks, avatar circle, name caption |
-| Pricing | Card with price, feature checkmarks, CTA |
-| Features | 3-column icon grid with labels |
-| FAQ | Accordion-style expandable items |
-| Trust | Star rating + review count + logo bar |
-
-**Coaching-Specific Styling:**
-- Dark backgrounds with gradient overlays
-- Premium gold/emerald accents
-- Professional sans-serif typography placeholders
-- Star ratings + social proof indicators
-- "Limited Spots" / "Exclusive" badge overlays
-
----
-
-### Phase 3: Enhanced SectionThumbnail Component
-**Upgrade `SectionThumbnail.tsx`**
-
-Transform from abstract shapes to realistic mini-layouts:
-
-```typescript
-// New thumbnail design principles:
-// 1. Dark mode default (matches coaching aesthetic)
-// 2. Gradient backgrounds (purple → blue, gold → orange)
-// 3. Realistic content placeholders
-// 4. Premium badges and trust indicators
-// 5. Proper typography hierarchy
-```
-
-**Before:**
-```tsx
-// Current (abstract)
-<div className="h-2 w-16 bg-white/90 rounded" />
-<div className="h-1 w-12 bg-white/40 rounded" />
-```
-
-**After:**
-```tsx
-// New (realistic)
-<div className="bg-gradient-to-br from-slate-900 to-slate-800 p-3">
-  <div className="h-3 w-20 bg-gradient-to-r from-white to-white/80 rounded" />
-  <div className="h-1.5 w-24 bg-white/40 rounded mt-1" />
-  <div className="mt-2 flex items-center gap-1">
-    <div className="h-2 w-2 rounded-full bg-emerald-400" />
-    <div className="h-1 w-12 bg-white/30 rounded" />
-  </div>
-  <div className="h-4 w-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded mt-2" />
-</div>
-```
-
----
-
-### Phase 4: Category Navigation with Icons
-**New category configuration:**
-
-```typescript
-const SECTION_CATEGORIES = [
-  { id: 'basic', label: 'Basic Blocks', icon: Type, divider: false },
-  { id: 'interactive', label: 'Interactive Blocks', icon: Sparkles, divider: true },
-  // --- Sections divider ---
-  { id: 'hero', label: 'Hero', icon: Layout, divider: false },
-  { id: 'product', label: 'Product', icon: Package, divider: false },
-  { id: 'cta', label: 'Call to Action', icon: MousePointerClick, divider: false },
-  { id: 'about', label: 'About Us', icon: Users, divider: false },
-  { id: 'quiz', label: 'Quiz', icon: HelpCircle, divider: false },
-  { id: 'team', label: 'Team', icon: Users, divider: false },
-  { id: 'testimonials', label: 'Testimonials', icon: Quote, divider: false },
-  { id: 'trust', label: 'Trust', icon: Star, divider: false },
-];
-```
-
----
-
-### Phase 5: Preview Gallery Grid
-**Right panel rendering:**
-
-```tsx
-<div className="grid grid-cols-2 gap-4 p-4 overflow-y-auto">
-  {templatesForCategory.map((template) => (
-    <HighTicketPreviewCard
-      key={template.id}
-      template={template}
-      onAdd={() => handleAddTemplate(template)}
-    />
-  ))}
-</div>
-```
-
-**Card interactions:**
-- Hover: `scale-[1.02]`, border glow, opacity overlay with "Add" button
-- Click: Add template + close picker
-- Keyboard: Focus-visible ring, Enter to add
-
----
-
-### Phase 6: Integration Points
-
-**Update BlockPickerPanel.tsx:**
-- Add toggle/feature flag to switch between old and new picker
-- Eventually deprecate old collapsible approach
-
-**Update InlineSectionPicker.tsx:**
-- Make it a wrapper that opens the new PerspectiveSectionPicker
-- Keep the popover trigger behavior
-
-**CSS Updates (EditorLayout.css):**
-```css
-/* Premium preview cards */
-.premium-preview-card {
-  position: relative;
-  aspect-ratio: 4/3;
-  border-radius: 12px;
-  overflow: hidden;
-  background: linear-gradient(135deg, hsl(220 20% 10%) 0%, hsl(220 20% 15%) 100%);
-  border: 2px solid hsl(220 10% 20%);
-  transition: all 0.2s ease;
-}
-
-.premium-preview-card:hover {
-  border-color: var(--builder-accent);
-  transform: scale(1.02);
-  box-shadow: 0 8px 24px hsl(0 0% 0% / 0.3);
-}
-
-.premium-preview-card-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 50%, hsl(0 0% 0% / 0.8) 100%);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.premium-preview-card:hover .premium-preview-card-overlay {
-  opacity: 1;
-}
-```
-
----
-
-## Files to Create/Modify
-
-| File | Action |
+| File | Values |
 |------|--------|
-| `src/flow-canvas/builder/components/PerspectiveSectionPicker.tsx` | **CREATE** - New two-panel picker |
-| `src/flow-canvas/builder/components/HighTicketPreviewCard.tsx` | **CREATE** - Rich preview cards |
-| `src/flow-canvas/builder/components/SectionThumbnail.tsx` | **MODIFY** - Upgrade to realistic previews |
-| `src/flow-canvas/builder/components/BlockPickerPanel.tsx` | **MODIFY** - Integrate new picker |
-| `src/builder_v2/EditorLayout.css` | **MODIFY** - Add premium card styles |
+| `infostack.ts` | `'capture' | 'qualify' | 'schedule' | 'convert' | 'complete'` |
+| `builder_v2/types.ts` | `'optin' | 'content' | 'checkout' | 'thank_you'` |
+| `lib/funnel/types.ts` | `'capture' | 'collect' | 'schedule' | 'complete'` |
+| `useUnifiedLeadSubmit.ts` | 6 variants including `'navigate'`, `'info'` |
+| `FlowCanvasRenderer.tsx` | Local `StepIntentType` |
+
+### 1.6 Deprecated Code Still Present
+
+| File | Deprecated Item |
+|------|----------------|
+| `infostack.ts` | `capture-flow-embed` BlockType |
+| `BlockPickerPanel.tsx` | Legacy block templates |
+| `FlowButton.tsx` | Entire file (re-exports only) |
+| `leadCaptureBlocks.ts` | Deprecated utility file |
+| `CanvasRenderer.tsx` | Legacy array gradient format handling |
+
+### 1.7 Inspector Inconsistencies
+
+- `RightPanel.tsx`: 5732 lines - monolithic, hard to maintain
+- Loader element: Missing inspector section (only recently added)
+- Animation section: Uses "legacy element.animation structure"
+- Slide/logo editing: Uses React state but previously used global window variables
 
 ---
 
-## Technical Details
+## Part 2: Refactor Plan
 
-### HighTicketPreviewCard Rendering Logic
+### Phase 1: Design Token Consolidation
+
+**Create unified token system in `EditorLayout.css`:**
+
+```css
+:root {
+  /* === PRIMARY BUILDER TOKENS === */
+  --builder-bg: 225 12% 10%;
+  --builder-surface: 225 12% 14%;
+  --builder-surface-hover: 225 10% 18%;
+  --builder-surface-active: 225 8% 22%;
+  --builder-border: 225 8% 20%;
+  --builder-border-subtle: 225 8% 16%;
+  
+  --builder-text: 210 20% 96%;
+  --builder-text-secondary: 215 16% 65%;
+  --builder-text-muted: 215 12% 50%;
+  --builder-text-dim: 215 8% 40%;
+  
+  --builder-accent: 217 91% 60%;
+  --builder-accent-hover: 217 91% 55%;
+  --builder-accent-secondary: 280 80% 60%;
+  --builder-accent-tertiary: 160 70% 50%;
+  
+  --builder-error: 0 84% 60%;
+  --builder-success: 142 71% 45%;
+  --builder-warning: 45 90% 55%;
+  
+  /* === PREMIUM COACHING TOKENS (Aliased) === */
+  --coaching-dark: var(--builder-bg);
+  --coaching-surface: var(--builder-surface);
+  --coaching-border: var(--builder-border);
+  --coaching-accent: var(--builder-accent);
+  --coaching-text: var(--builder-text);
+  --coaching-muted: var(--builder-text-muted);
+  --coaching-gold: 45 90% 55%;
+  --coaching-emerald: 160 70% 45%;
+}
+```
+
+**Files to update:**
+- All `hsl(var(--coaching-*))` → `hsl(var(--builder-*))`
+- All arbitrary Tailwind values → Tailwind utility classes
+
+### Phase 2: Component Consolidation
+
+#### 2.1 Create Unified Section Picker
+
+Merge `BlockPickerPanel.tsx`, `PerspectiveSectionPicker.tsx`, and `InlineSectionPicker.tsx` into one:
+
+```text
+src/flow-canvas/builder/components/
+├── SectionPicker/
+│   ├── index.tsx           # Main export
+│   ├── SectionPicker.tsx   # Two-panel Perspective-style layout
+│   ├── CategorySidebar.tsx # Left panel with category navigation
+│   ├── TemplateGallery.tsx # Right panel with preview cards
+│   ├── PreviewCard.tsx     # Single preview card component
+│   └── previews/           # Category-specific preview renderers
+│       ├── HeroPreview.tsx
+│       ├── CTAPreview.tsx
+│       ├── MediaPreview.tsx
+│       └── ...
+```
+
+#### 2.2 Consolidate Button Components
+
+Keep only `UnifiedButton.tsx` as the single source:
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│ DELETE: FlowButton.tsx (deprecation wrapper)            │
+│ KEEP:   UnifiedButton.tsx (canonical implementation)    │
+│ UPDATE: RuntimeButton.tsx (import from UnifiedButton)   │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### 2.3 Consolidate Utility Functions
+
+Create single source in `CanvasUtilities.ts`:
+
+| Function | Current Locations | Canonical Location |
+|----------|-------------------|-------------------|
+| `shiftHue` | 3 files | `CanvasUtilities.ts` |
+| `getContrastTextColor` | 2 files | `ContrastEngine.ts` |
+| `gradientToCSS` | 2 files | `GradientPickerPopover.tsx` |
+| `effectClasses` | 2 files | `CanvasUtilities.ts` |
+| `getPageBackgroundStyles` | 2 files | `CanvasUtilities.ts` |
+
+### Phase 3: Type System Cleanup
+
+#### 3.1 Establish Single StepIntent Source
 
 ```typescript
-function HighTicketPreviewCard({ template, onAdd }: Props) {
-  const getPreviewContent = () => {
-    switch (template.category || template.type) {
-      case 'hero':
-        return <HeroPreview hasButton={...} hasVideo={...} />;
-      case 'product':
-        return <ProductPreview layout="split" />;
-      case 'cta':
-        return <CTAPreview variant={template.id} />;
-      case 'testimonial':
-        return <TestimonialPreview />;
-      case 'pricing':
-        return <PricingPreview cards={...} />;
-      case 'features':
-        return <FeaturesPreview layout="grid" />;
-      case 'faq':
-        return <FAQPreview />;
-      case 'trust':
-        return <TrustPreview />;
-      default:
-        return <GenericPreview />;
-    }
-  };
+// src/flow-canvas/types/infostack.ts (canonical)
+export type StepIntent = 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete';
 
+// Other files: Re-export or import from infostack.ts
+```
+
+#### 3.2 Remove Deprecated Types
+
+```typescript
+// DELETE from infostack.ts
+| 'capture-flow-embed' // Remove from BlockType union
+
+// DELETE file
+src/flow-canvas/builder/utils/leadCaptureBlocks.ts
+```
+
+### Phase 4: Inspector Modularization
+
+Split `RightPanel.tsx` (5732 lines) into focused modules:
+
+```text
+src/flow-canvas/builder/components/inspectors/
+├── RightPanel.tsx              # Shell (~300 lines)
+├── SiteInfoSection.tsx         # Domain/publish info
+├── PageSettingsSection.tsx     # Step/page settings
+├── FrameSettingsSection.tsx    # Section/frame settings
+├── BlockInspector.tsx          # Block type inspector
+├── ElementInspector/           
+│   ├── index.tsx               # Element inspector shell
+│   ├── TextElementSection.tsx
+│   ├── ButtonElementSection.tsx
+│   ├── ImageElementSection.tsx
+│   ├── VideoElementSection.tsx
+│   ├── InputElementSection.tsx
+│   ├── LoaderElementSection.tsx
+│   └── CountdownElementSection.tsx
+└── shared/
+    ├── FieldGroup.tsx          # Already exists
+    ├── CollapsibleSection.tsx  # Extract from RightPanel
+    └── ColorPickerField.tsx    # Common color picker wrapper
+```
+
+### Phase 5: Fix Console Errors
+
+#### 5.1 Add forwardRef to Preview Components
+
+```typescript
+// HighTicketPreviewCard.tsx - Fix CTAPreview and other preview components
+const CTAPreview = React.forwardRef<HTMLDivElement, { hasText?: boolean }>(
+  ({ hasText }, ref) => (
+    <div ref={ref} className="w-full h-full bg-gradient-to-r ...">
+      {/* ... */}
+    </div>
+  )
+);
+CTAPreview.displayName = 'CTAPreview';
+```
+
+### Phase 6: Visual Consistency Fixes
+
+#### 6.1 Standardize Selection States
+
+```css
+/* Single selection style system */
+.builder-selection-ring {
+  @apply ring-2 ring-[hsl(var(--builder-accent))] ring-offset-2 ring-offset-[hsl(var(--builder-bg))];
+}
+
+.builder-selection-ring-dashed {
+  @apply ring-2 ring-dashed ring-[hsl(var(--builder-accent))] ring-offset-4;
+}
+```
+
+#### 6.2 Standardize Hover States
+
+```css
+/* Consistent hover treatment */
+.builder-hover-lift {
+  @apply transition-transform duration-150 hover:scale-[1.02];
+}
+
+.builder-hover-glow {
+  @apply transition-shadow duration-200 hover:shadow-lg hover:shadow-[hsl(var(--builder-accent)/0.15)];
+}
+```
+
+#### 6.3 Standardize Empty States
+
+```tsx
+// Create unified EmptyState component
+function BuilderEmptyState({ 
+  icon: Icon, 
+  title, 
+  description, 
+  action 
+}: EmptyStateProps) {
   return (
-    <button onClick={onAdd} className="premium-preview-card group">
-      <div className="preview-content">
-        {getPreviewContent()}
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-[hsl(var(--builder-surface))] 
+                      flex items-center justify-center mb-4">
+        <Icon className="w-8 h-8 text-[hsl(var(--builder-text-muted))]" />
       </div>
-      <div className="premium-preview-card-overlay">
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <span className="text-white font-medium text-sm">{template.name || template.label}</span>
-          <p className="text-white/60 text-xs">{template.description}</p>
-        </div>
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Plus className="w-5 h-5 text-white" />
-        </div>
-      </div>
-    </button>
+      <h3 className="text-sm font-medium text-[hsl(var(--builder-text))]">{title}</h3>
+      <p className="text-xs text-[hsl(var(--builder-text-muted))] mt-1">{description}</p>
+      {action}
+    </div>
   );
 }
 ```
 
 ---
 
-## Expected Outcomes
+## Part 3: Files to Modify
 
-1. **Premium Visual Experience**: Preview cards that look like actual high-ticket coaching funnels
-2. **Efficient Navigation**: Two-panel layout for quick category switching
-3. **Clear Mental Model**: Users see exactly what they're adding before clicking
-4. **High-Ticket Aesthetic**: Dark gradients, premium badges, professional typography
-5. **Pixel-Perfect Parity**: Previews match actual rendered sections
+| File | Action | Changes |
+|------|--------|---------|
+| `EditorLayout.css` | Modify | Consolidate all tokens, add Tailwind utilities |
+| `PerspectiveSectionPicker.tsx` | Modify | Use builder tokens, fix forwardRef issues |
+| `HighTicketPreviewCard.tsx` | Modify | Add forwardRef to all preview components |
+| `RightPanel.tsx` | Split | Extract into 10+ focused modules |
+| `FlowButton.tsx` | Delete | Remove deprecated file |
+| `BlockPickerPanel.tsx` | Deprecate | Route to unified SectionPicker |
+| `InlineSectionPicker.tsx` | Modify | Simplify to wrapper only |
+| `CanvasRenderer.tsx` | Modify | Import utilities from CanvasUtilities |
+| `FlowCanvasRenderer.tsx` | Modify | Import utilities from CanvasUtilities |
+| `infostack.ts` | Modify | Remove deprecated types |
+| `builder_v2/types.ts` | Modify | Re-export StepIntent from infostack.ts |
+| `lib/funnel/types.ts` | Modify | Re-export StepIntent from infostack.ts |
 
 ---
 
-## Design Tokens for Coaching Aesthetic
+## Part 4: Implementation Order
 
-```css
-/* Premium coaching palette */
---coaching-dark: hsl(220 20% 8%);
---coaching-surface: hsl(220 15% 12%);
---coaching-border: hsl(220 10% 20%);
---coaching-gold: hsl(45 90% 55%);
---coaching-emerald: hsl(160 70% 45%);
---coaching-accent: hsl(220 80% 60%);
---coaching-text: hsl(0 0% 95%);
---coaching-muted: hsl(0 0% 60%);
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ Week 1: Foundation                                              │
+├─────────────────────────────────────────────────────────────────┤
+│ • Phase 1: Token consolidation in EditorLayout.css              │
+│ • Phase 3: Type system cleanup (StepIntent unification)         │
+│ • Phase 5: Fix forwardRef console errors                        │
+├─────────────────────────────────────────────────────────────────┤
+│ Week 2: Component Consolidation                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ • Phase 2.1: Unified SectionPicker (Perspective-style)          │
+│ • Phase 2.2: Button component consolidation                     │
+│ • Phase 2.3: Utility function consolidation                     │
+├─────────────────────────────────────────────────────────────────┤
+│ Week 3: Inspector Refactor                                      │
+├─────────────────────────────────────────────────────────────────┤
+│ • Phase 4: RightPanel modularization                            │
+│ • Phase 6: Visual consistency standardization                   │
+├─────────────────────────────────────────────────────────────────┤
+│ Week 4: Cleanup & Polish                                        │
+├─────────────────────────────────────────────────────────────────┤
+│ • Delete deprecated files                                       │
+│ • Remove dead code paths                                        │
+│ • Documentation and comments                                    │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Part 5: Success Criteria
+
+After this refactor:
+
+1. **Single Token System**: All UI uses `--builder-*` tokens consistently
+2. **No Duplicate Components**: One button, one picker, one set of utilities
+3. **Clean Types**: StepIntent defined in exactly one place
+4. **Modular Inspector**: RightPanel split into <500 line modules
+5. **Zero Console Errors**: No forwardRef warnings
+6. **Perspective Feel**: Premium dark aesthetic with coaching-focused previews
+7. **Predictable Behavior**: Every control works consistently across the app
+
+---
+
+## Technical Appendix: Key Code Patterns
+
+### Pattern A: Token Usage
+
+```tsx
+// CORRECT - Use Tailwind utilities
+<div className="bg-builder-surface text-builder-text border-builder-border" />
+
+// AVOID - Arbitrary values
+<div className="bg-[hsl(var(--builder-surface))]" />
+```
+
+### Pattern B: Component Exports
+
+```tsx
+// CORRECT - Named exports with clear purpose
+export { SectionPicker } from './SectionPicker';
+export type { SectionPickerProps } from './SectionPicker';
+
+// AVOID - Default exports with ambiguous names
+export default function Picker() {}
+```
+
+### Pattern C: Type Re-exports
+
+```tsx
+// In builder_v2/types.ts
+export type { StepIntent } from '@/flow-canvas/types/infostack';
+
+// NOT duplicating the type definition
+```
+
